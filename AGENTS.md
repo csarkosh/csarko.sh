@@ -10,12 +10,14 @@ him. No framework, no build step, no CI.
 |---|---|
 | `public/index.html` | **The site.** One file: inline CSS, inline SVG icons, JSON-LD, no JS. |
 | `public/me.jpg` | Portrait (640px wide JPEG, from `~/Pictures/Cyrus/me_1.png`). |
-| `public/og-image.jpg`, `favicon.*`, `apple-touch-icon.png` | **Generated** by the seo skill from `.agents/skills/seo/assets/` — don't hand-edit. |
-| `public/fonts/` | Self-hosted Inter + JetBrains Mono variable fonts (latin subset) and their `OFL.txt`. |
+| `public/assets/` | **Generated, content-hashed, cached for a year:** responsive portraits (AVIF/WebP/JPEG) and self-hosted fonts. |
+| `public/og-image.jpg`, `portrait.jpg`, `favicon.*`, `apple-touch-icon.png` | **Generated** too. Everything generated comes from `.agents/skills/site-quality/assets/` via `generate-assets.sh` — never hand-edit, including the `generated:` blocks inside the HTML. |
+| `public/404.html` | Custom not-found page (noindex, root-relative paths). |
+| `public/licenses/fonts-OFL.txt` | Font licenses. |
 | `public/robots.txt`, `public/sitemap.xml` | Crawl rules and the one-URL sitemap. |
 | `firebase.json`, `.firebaserc` | Firebase Hosting config: publish `public/`, cache headers. |
 | `_infra/` | Terraform for the hosting and DNS. Same shape as `~/Projects/fps/_infra`. |
-| `.agents/skills/` | Agent skills: `preview`, `deploy` and `seo`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
+| `.agents/skills/` | Agent skills: `preview`, `deploy` and `site-quality`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
 | `README.md` | Human-facing overview. `LICENSE` is MIT and predates this version of the site. |
 
 ## Workflows
@@ -29,10 +31,12 @@ him. No framework, no build step, no CI.
 - **Change infrastructure:** `terraform -chdir=_infra plan`, then `apply`. Never
   hand-edit the resources Terraform owns.
 
-**Every change is also an SEO change.** Preview runs the SEO checks, deploy
-refuses to publish if they fail, and the `seo` skill's checklist covers what the
-script can't (stale wording in tags, a regenerated preview card). Read each
-skill's `SKILL.md` before using it.
+**Every change is also a quality change.** The standing targets are Lighthouse
+100/100/100 with Performance ≥ 95, Mozilla Observatory A+, and a layout that
+holds from 320px to 1440px. Preview runs `site-quality`'s checks, deploy refuses
+to publish if they fail, and that skill's checklist covers what the script
+can't. Adding any script or third-party service (analytics included) has its
+own procedure there. Read each skill's `SKILL.md` before using it.
 
 ## Content rules (Cyrus's standing preferences)
 
@@ -80,9 +84,9 @@ match his Substack theme, so keep them stable or tell him when they change.
 
 `--faint` is `#7d8597`, the dimmest text that clears WCAG 4.5:1 on every surface
 (it was `#6e7688`, which failed). Fonts: Inter (text) and JetBrains Mono (labels,
-tags), **self-hosted** from `public/fonts/` — not Google Fonts, whose stylesheet
+tags), **self-hosted** from `public/assets/` — not Google Fonts, whose stylesheet
 blocked the first paint. If a token changes, regenerate the og-image and
-favicons (`.agents/skills/seo/scripts/generate-assets.sh`).
+favicons (`.agents/skills/site-quality/scripts/generate-assets.sh`).
 
 ## Infrastructure
 

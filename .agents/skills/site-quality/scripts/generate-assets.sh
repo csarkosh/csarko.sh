@@ -1,20 +1,25 @@
 #!/usr/bin/env bash
 #
-# generate-assets.sh — rebuild the site's favicons and link-preview card.
+# generate-assets.sh — rebuild every generated asset in public/, deterministically.
 #
-# Sources live in .agents/skills/seo/assets/; outputs land in public/:
+# 1. build_assets.py: hashed portraits (AVIF/WebP/JPEG × 4 widths), hashed fonts,
+#    public/portrait.jpg, and the <!-- generated:… --> blocks in public/*.html.
+# 2. This script: favicons and the link-preview card, rendered with headless Chrome.
+#
+# Sources live in .agents/skills/site-quality/assets/; outputs land in public/:
 #   favicon.svg            copied as-is (modern browsers)
 #   favicon.ico            48×48 (legacy browsers, and Google Search results)
 #   favicon-96x96.png      96×96 (Google Search wants a multiple of 48px)
 #   apple-touch-icon.png   180×180 (iOS home screen)
 #   og-image.jpg           1200×630 link preview for LinkedIn, Slack, X, iMessage
 #
-# Re-run after changing the name, title, tagline, photo, or theme colors.
+# Re-run after changing the name, title, tagline, photo, fonts, or theme colors.
+# To change the photo, replace assets/portrait-source.jpg first.
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
-ASSETS="$ROOT/.agents/skills/seo/assets"
+ASSETS="$ROOT/.agents/skills/site-quality/assets"
 PUBLIC="$ROOT/public"
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 TMP="$(mktemp -d /tmp/csarko-sh-assets.XXXXXX)"
@@ -29,6 +34,9 @@ shot() { # shot <width> <height> <url> <out.png>   (transparent background, so i
     --force-device-scale-factor=1 --virtual-time-budget=3000 \
     --window-size="$1,$2" --screenshot="$4" "$3" 2>/dev/null
 }
+
+python3 "$ROOT/.agents/skills/site-quality/scripts/build_assets.py"
+echo
 
 # Favicons: render the SVG large, then downscale. Headless Chrome won't size a
 # window below ~500px, so rendering at 512 and resampling is also the only way

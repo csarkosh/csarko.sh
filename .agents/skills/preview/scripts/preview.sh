@@ -62,10 +62,11 @@ EOF
   echo "$OUT/mobile.png   (the page is the left 390px; the grey strip is the frame)"
 fi
 
-# Every preview also runs the static SEO checks, so a broken tag shows up while
+# Every preview also runs the static site checks (SEO, performance budgets,
+# accessibility, security headers, layout), so a regression shows up while
 # you're still looking at the change rather than at deploy time.
 echo
-"$ROOT/.agents/skills/seo/scripts/seo_check.py" || echo "(fix the SEO failures above before deploying — see .agents/skills/seo/SKILL.md)"
+"$ROOT/.agents/skills/site-quality/scripts/check.py" || echo "(fix the failures above before deploying — see .agents/skills/site-quality/SKILL.md)"
 echo
 
 if (( SERVE )); then

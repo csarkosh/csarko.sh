@@ -9,7 +9,7 @@ It's a single hand-written HTML page: no framework, no build step, no JavaScript
 ```
 public/            the site: index.html and a portrait
 _infra/            Terraform for hosting (Firebase, GCP) and DNS (Route53, AWS)
-.agents/skills/    preview, deploy and SEO skills for AI agents (and humans)
+.agents/skills/    preview, deploy and site-quality skills for AI agents (and humans)
 firebase.json      what gets published, and how it's cached
 AGENTS.md          working context and rules for agents; CLAUDE.md points to it
 ```
@@ -33,9 +33,16 @@ Or just open `public/index.html` in a browser.
 
 The script publishes `public/` to Firebase Hosting, then fetches the live page and checks that it matches the file you deployed. It needs Node 20+, Terraform, and Google application-default credentials (`gcloud auth application-default login`).
 
-## SEO
+## Quality
 
-Canonical URL, schema.org `Person` data, a 1200×630 link-preview card, real favicon files, `robots.txt` and a sitemap. Fonts are self-hosted so the first paint isn't blocked. `.agents/skills/seo/scripts/seo_check.py` verifies all of it; preview runs it and deploy won't publish without it passing.
+Lighthouse 100 across SEO, accessibility and best practices, performance ≥ 95, and an A+ on Mozilla Observatory — enforced, not aspirational:
+
+- **Fast:** a responsive AVIF/WebP portrait, self-hosted fonts, content-hashed assets cached for a year, and byte budgets for HTML, fonts, images and JavaScript.
+- **Findable:** canonical URL, schema.org `Person` data, a 1200×630 link-preview card, real favicons, `robots.txt` and a sitemap.
+- **Locked down:** a strict Content-Security-Policy and the full set of security headers.
+- **Accessible:** skip link, WCAG AA contrast, and a layout checked from 320px to 1440px.
+
+`.agents/skills/site-quality/scripts/check.py` verifies all of it. Preview runs it, deploy won't publish without it, and `generate-assets.sh` rebuilds every generated asset deterministically.
 
 ## Infrastructure
 

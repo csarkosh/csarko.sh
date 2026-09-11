@@ -29,8 +29,9 @@
   <link rel="icon" href="favicon-96x96.png" type="image/png" sizes="96x96" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
 
-  <link rel="preload" href="fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="me.jpg" as="image" fetchpriority="high" />
+  <!-- generated:head -->
+  <link rel="preload" href="assets/inter-latin-var.c9407645.woff2" as="font" type="font/woff2" crossorigin />
+  <!-- /generated:head -->
 
   <script type="application/ld+json">
 {
@@ -41,7 +42,7 @@
       "@id": "https://csarko.sh/#person",
       "name": "Cyrus Sarkosh",
       "url": "https://csarko.sh/",
-      "image": "https://csarko.sh/me.jpg",
+      "image": "https://csarko.sh/portrait.jpg",
       "jobTitle": "Senior Software Engineer",
       "description": "Engineering lead building AI products, distributed systems, and multiplayer games for the browser.",
       "homeLocation": {
@@ -78,15 +79,25 @@
 }
   </script>
   <style>
-    /* Self-hosted variable fonts (latin subset), SIL OFL 1.1: see /fonts/OFL.txt */
+    /* Self-hosted variable fonts (latin subset), SIL OFL 1.1: see /licenses/fonts-OFL.txt */
+    /* generated:fonts */
     @font-face {
       font-family: "Inter"; font-style: normal; font-weight: 400 700; font-display: swap;
-      src: url("fonts/inter-latin-var.woff2") format("woff2");
+      src: url("assets/inter-latin-var.c9407645.woff2") format("woff2");
     }
     @font-face {
       font-family: "JetBrains Mono"; font-style: normal; font-weight: 400 500; font-display: swap;
-      src: url("fonts/jetbrains-mono-latin-var.woff2") format("woff2");
+      src: url("assets/jetbrains-mono-latin-var.2c32b9b3.woff2") format("woff2");
     }
+    @font-face {
+      font-family: "Inter Fallback"; src: local("Arial");
+      size-adjust: 107.35%; ascent-override: 90.24%; descent-override: 22.47%; line-gap-override: 0%;
+    }
+    @font-face {
+      font-family: "JetBrains Mono Fallback"; src: local("Courier New");
+      size-adjust: 99.98%; ascent-override: 102.02%; descent-override: 30.00%; line-gap-override: 0%;
+    }
+    /* /generated:fonts */
 
     :root {
       --bg: #0a0b0e;
@@ -99,8 +110,8 @@
       --faint: #7d8597;
       --accent: #7dd3c0;
       --accent-soft: rgba(125, 211, 192, 0.12);
-      --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      --sans: "Inter", "Inter Fallback", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --mono: "JetBrains Mono", "JetBrains Mono Fallback", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
       --radius: 14px;
     }
 
@@ -139,11 +150,19 @@
       border-bottom: 1px solid var(--border);
     }
     .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+    .skip-link {
+      position: absolute; left: 16px; top: -60px; z-index: 100;
+      padding: 8px 14px; border-radius: 8px;
+      background: var(--accent); color: #06231d; font-size: 14px; font-weight: 600;
+    }
+    .skip-link:focus { top: 12px; }
+    main:focus { outline: none; }
     .wordmark { font-family: var(--mono); font-weight: 500; font-size: 15px; letter-spacing: -0.01em; }
     .wordmark span { color: var(--accent); }
     .nav ul { display: flex; gap: 24px; list-style: none; margin: 0; padding: 0; }
     .nav ul a { color: var(--muted); font-size: 14px; transition: color .15s ease; }
     .nav ul a:hover { color: var(--text); }
+    .nav .label-short { display: none; }
 
     /* Hero */
     .hero { padding-block: 88px 56px; display: grid; grid-template-columns: 1fr auto; gap: 48px; align-items: center; }
@@ -152,6 +171,7 @@
       border: 1px solid var(--border-strong);
       box-shadow: 0 0 0 6px rgba(125, 211, 192, 0.05), 0 24px 60px -20px rgba(125, 211, 192, 0.25);
     }
+    .portrait picture { display: block; width: 100%; height: 100%; }
     .portrait img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; display: block; }
     .eyebrow {
       font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
@@ -260,8 +280,10 @@
     footer .mono { font-family: var(--mono); }
 
     @media (max-width: 640px) {
-      .nav ul { gap: 16px; }
-      .nav ul li:nth-child(n+3) { display: none; }
+      .nav ul { gap: 14px; }
+      .nav ul a { font-size: 13.5px; }
+      .nav .label-long { display: none; }
+      .nav .label-short { display: inline; }
       .hero { padding-block: 48px 40px; grid-template-columns: 1fr; gap: 28px; }
       .portrait { order: -1; width: 120px; aspect-ratio: 1; border-radius: 50%; }
       .portrait img { object-position: 50% 22%; }
@@ -274,6 +296,10 @@
       section { padding-block: 44px; }
     }
 
+    @media (max-width: 360px) {
+      .nav ul { gap: 11px; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
       .btn, .card, .card-link svg { transition: none; }
@@ -281,6 +307,7 @@
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
       <a class="wordmark" href="#top">csarko<span>.sh</span></a>
@@ -288,12 +315,12 @@
         <li><a href="#work">Work</a></li>
         <li><a href="#games">Games</a></li>
         <li><a href="#skills">Skills</a></li>
-        <li><a href="#contact">Contact</a></li>
+        <li><a href="#contact" aria-label="Contact"><span class="label-long">Contact</span><span class="label-short" aria-hidden="true">Links</span></a></li>
       </ul>
     </div>
   </nav>
 
-  <main id="top" class="wrap">
+  <main id="top" class="wrap" tabindex="-1">
     <header class="hero">
       <div class="hero-text">
       <p class="eyebrow">Senior Software Engineer · New York</p>
@@ -319,7 +346,13 @@
       </div>
       </div>
       <figure class="portrait">
-        <img src="me.jpg" width="640" height="853" alt="Portrait of Cyrus Sarkosh" fetchpriority="high" />
+        <!-- generated:portrait -->
+        <picture>
+          <source type="image/avif" srcset="assets/portrait-240.062f7f52.avif 240w, assets/portrait-360.d2e0d4af.avif 360w, assets/portrait-480.62f5881c.avif 480w, assets/portrait-720.46137073.avif 720w" sizes="(max-width: 640px) 120px, 230px" />
+          <source type="image/webp" srcset="assets/portrait-240.9ace0433.webp 240w, assets/portrait-360.b4d9d33a.webp 360w, assets/portrait-480.d9666929.webp 480w, assets/portrait-720.2b1220c9.webp 720w" sizes="(max-width: 640px) 120px, 230px" />
+          <img src="assets/portrait-480.b67c4705.jpg" srcset="assets/portrait-240.9248becb.jpg 240w, assets/portrait-360.af2e4626.jpg 360w, assets/portrait-480.b67c4705.jpg 480w, assets/portrait-720.457a3240.jpg 720w" sizes="(max-width: 640px) 120px, 230px" width="480" height="640" alt="Portrait of Cyrus Sarkosh" fetchpriority="high" />
+        </picture>
+        <!-- /generated:portrait -->
       </figure>
     </header>
 
