@@ -1,17 +1,53 @@
-# [Portfolio Site](https://csarko.sh) &middot; ![Deploy](https://github.com/csarkosh/portfolio-site/workflows/Deploy/badge.svg) [![Website Status](https://img.shields.io/website/https/csarko.sh.svg)](https://csarko.sh)
-The purpose of this project is to demonstrate a website with [100/100 score on each Core Web Vitals metric](https://developers.google.com/speed/pagespeed/insights/?url=https%3A%2F%2Fcsarko.sh%2F&tab=desktop) and to serve as my portfolio website.
+# csarko.sh
 
-* **Accessible & Responsive:** The website is fully accessible and scores a 100/100 on Google Lighthouse's Accessibility audit, and collapses down from a desktop view into a responsive mobile view.
+The portfolio site of **Cyrus Sarkosh**, a senior software engineer and engineering lead in New York.
 
-* **Fully Automated:** Builds and deployments are fully automated and are initiated from code changes pushed to the master branch of this repository. The automation runs on [Github Actions](https://github.com/features/actions) and [Docker](https://www.docker.com/), and deploys the [React](https://reactjs.org/) application to [AWS](https://aws.amazon.com/).
+**→ [csarko.sh](https://csarko.sh)**
 
-* **Immutable Infrastructure:** All cloud infrastructure written and commited as code using [Terraform](https://www.terraform.io/). As well, infrastructure is created and updated immutably using [Terraform's graph-like configuration language](https://github.com/hashicorp/hcl).
+It's a single hand-written HTML page: no framework, no build step, no JavaScript.
 
-* **SEO & Web Best Practices:** The website scores a 100/100 on Google Lighthouse's SEO & Best Practices audit.
+## What's here
 
-[View the website here.](https://csarko.sh)
+```
+public/            the site: index.html and a portrait
+_infra/            Terraform for hosting (Firebase, GCP) and DNS (Route53, AWS)
+.agents/skills/    preview and deploy skills for AI agents (and humans)
+firebase.json      what gets published, and how it's cached
+AGENTS.md          working context and rules for agents; CLAUDE.md points to it
+```
 
-## Architecture
-![Architecture diagram](./.github/portfolio-site.png)
+## Preview locally
 
-This project is part of an article I wrote on tuning Core Web Vitals performance and [can be read here](https://medium.com/@csarkosh/configure-aws-cloudfront-for-optimal-page-speed-with-core-web-vitals-performance-metrics-2b871e245e20). 
+```bash
+.agents/skills/preview/scripts/preview.sh           # open in Chrome
+.agents/skills/preview/scripts/preview.sh --serve   # serve on http://localhost:4173
+.agents/skills/preview/scripts/preview.sh --shots   # desktop + mobile screenshots in /tmp
+```
+
+Or just open `public/index.html` in a browser.
+
+## Deploy
+
+```bash
+.agents/skills/deploy/scripts/deploy.sh             # publish to csarko.sh
+.agents/skills/deploy/scripts/deploy.sh --preview   # a shareable preview link, valid 7 days
+```
+
+The script publishes `public/` to Firebase Hosting, then fetches the live page and checks that it matches the file you deployed. It needs Node 20+, Terraform, and Google application-default credentials (`gcloud auth application-default login`).
+
+## Infrastructure
+
+```
+csarko.sh ──(Route53 A + TXT)──▶ Firebase Hosting (GCP project csarko-sh) ──▶ public/
+```
+
+Everything is defined in Terraform under `_infra/`, with state in a versioned GCS bucket:
+
+```bash
+terraform -chdir=_infra init
+terraform -chdir=_infra plan
+```
+
+## License
+
+[MIT](./LICENSE)

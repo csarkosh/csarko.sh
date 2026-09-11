@@ -1,31 +1,468 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="description" content="Cyrus Sarkosh Portfolio Site"/>
-    <meta name="og:image" content="https://csarko.sh/preview-image.png">
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/me-circle_192x192.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cyrus Sarkosh · Senior Software Engineer</title>
+  <meta name="description" content="Cyrus Sarkosh is a New York–based senior software engineer and engineering lead building AI products, distributed systems, and browser games." />
+  <meta property="og:title" content="Cyrus Sarkosh · Senior Software Engineer" />
+  <meta property="og:description" content="Engineering lead with 9+ years across distributed systems, product engineering, and AI products." />
+  <meta property="og:url" content="https://csarko.sh" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://csarko.sh/me.jpg" />
+  <meta name="theme-color" content="#0a0b0e" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a0b0e'/%3E%3Ctext x='50%25' y='54%25' text-anchor='middle' dominant-baseline='middle' font-family='ui-monospace,monospace' font-size='28' font-weight='700' fill='%237dd3c0'%3Ecs%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0b0e;
+      --surface: #111318;
+      --surface-2: #161922;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.14);
+      --text: #e8eaf0;
+      --muted: #a0a8b8;
+      --faint: #6e7688;
+      --accent: #7dd3c0;
+      --accent-soft: rgba(125, 211, 192, 0.12);
+      --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      --radius: 14px;
+    }
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>csarko.sh</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-  </body>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -20vh -10vw auto;
+      height: 70vh;
+      background: radial-gradient(ellipse at 30% 0%, rgba(125, 211, 192, 0.10), transparent 60%);
+      pointer-events: none;
+      z-index: -1;
+    }
+    a { color: inherit; text-decoration: none; }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+    ::selection { background: var(--accent); color: var(--bg); }
+
+    .wrap { max-width: 880px; margin: 0 auto; padding-inline: 24px; }
+
+    /* Nav */
+    .nav {
+      position: sticky; top: 0; z-index: 10;
+      backdrop-filter: saturate(140%) blur(12px);
+      -webkit-backdrop-filter: saturate(140%) blur(12px);
+      background: rgba(10, 11, 14, 0.72);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+    .wordmark { font-family: var(--mono); font-weight: 500; font-size: 15px; letter-spacing: -0.01em; }
+    .wordmark span { color: var(--accent); }
+    .nav ul { display: flex; gap: 24px; list-style: none; margin: 0; padding: 0; }
+    .nav ul a { color: var(--muted); font-size: 14px; transition: color .15s ease; }
+    .nav ul a:hover { color: var(--text); }
+
+    /* Hero */
+    .hero { padding-block: 88px 56px; display: grid; grid-template-columns: 1fr auto; gap: 48px; align-items: center; }
+    .portrait {
+      margin: 0; width: 230px; aspect-ratio: 4 / 5; border-radius: 20px; overflow: hidden; position: relative;
+      border: 1px solid var(--border-strong);
+      box-shadow: 0 0 0 6px rgba(125, 211, 192, 0.05), 0 24px 60px -20px rgba(125, 211, 192, 0.25);
+    }
+    .portrait img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; display: block; }
+    .eyebrow {
+      font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--accent); margin: 0 0 20px;
+      display: inline-flex; align-items: center; gap: 10px;
+    }
+    .eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+    h1 {
+      font-size: clamp(2.6rem, 7vw, 4.25rem); line-height: 1.02; letter-spacing: -0.035em;
+      font-weight: 700; margin: 0 0 24px;
+    }
+    .lead { font-size: clamp(1.08rem, 2.2vw, 1.25rem); color: var(--muted); max-width: 60ch; margin: 0 0 36px; }
+    .lead strong { color: var(--text); font-weight: 500; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 18px; border-radius: 999px; font-size: 14px; font-weight: 500;
+      border: 1px solid var(--border-strong); color: var(--text); background: var(--surface);
+      transition: border-color .15s ease, transform .15s ease, background .15s ease;
+    }
+    .btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #06231d; }
+    .btn.primary:hover { background: #95e0cf; }
+    .btn svg { width: 16px; height: 16px; flex: none; }
+
+    /* Values */
+    .values { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 40px; }
+    .value { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+    .value .icon {
+      width: 34px; height: 34px; border-radius: 10px; margin-bottom: 14px;
+      display: grid; place-items: center; background: var(--accent-soft); color: var(--accent);
+    }
+    .value .icon svg { width: 18px; height: 18px; }
+    .value .label { margin: 0 0 6px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .value p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--text); }
+
+    /* Sections */
+    section { padding-block: 56px; border-top: 1px solid var(--border); }
+    .section-label { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); margin: 0 0 8px; }
+    h2 { font-size: 1.75rem; letter-spacing: -0.025em; margin: 0 0 32px; font-weight: 600; }
+
+    /* Experience */
+    .company { margin-bottom: 44px; }
+    .company:last-child { margin-bottom: 0; }
+    .company-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; margin-bottom: 18px; }
+    .company-head h3 { margin: 0; font-size: 1.25rem; letter-spacing: -0.015em; }
+    .company-head h3 small { font-weight: 400; color: var(--faint); font-size: 0.95rem; margin-left: 6px; }
+    .dates { font-family: var(--mono); font-size: 12.5px; color: var(--faint); white-space: nowrap; }
+    .roles { border-left: 1px solid var(--border-strong); margin-left: 4px; padding-left: 24px; display: grid; gap: 30px; }
+    .role { position: relative; }
+    .role::before {
+      content: ""; position: absolute; left: -29px; top: 9px;
+      width: 9px; height: 9px; border-radius: 50%;
+      background: var(--bg); border: 2px solid var(--accent);
+    }
+    .role-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 16px; }
+    .role h4 { margin: 0; font-size: 1.02rem; font-weight: 600; }
+    .role p { margin: 8px 0 0; color: var(--muted); }
+    .role ul:not(.tags) { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+    .role ul:not(.tags) > li { position: relative; padding-left: 18px; color: var(--muted); font-size: 15px; }
+    .role ul:not(.tags) > li::before { content: ""; position: absolute; left: 2px; top: 11px; width: 6px; height: 1.5px; background: var(--accent); }
+    .role li strong { color: var(--text); font-weight: 500; }
+
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; padding: 0; list-style: none; }
+    .tags li {
+      font-family: var(--mono); font-size: 12px; color: var(--muted);
+      background: var(--surface-2); border: 1px solid var(--border);
+      padding: 3px 9px; border-radius: 999px; line-height: 1.5;
+    }
+
+    /* Projects */
+    .projects { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .card {
+      display: flex; flex-direction: column;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 22px; transition: border-color .18s ease, transform .18s ease, background .18s ease;
+    }
+    .card:hover { border-color: rgba(125, 211, 192, 0.45); transform: translateY(-2px); background: #13161c; }
+    .card.featured { grid-column: 1 / -1; background: linear-gradient(135deg, rgba(125, 211, 192, 0.08), transparent 55%), var(--surface); }
+    .card .card-kicker { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin: 0 0 10px; }
+    .card h3 { margin: 0 0 8px; font-size: 1.15rem; letter-spacing: -0.015em; display: flex; align-items: center; gap: 8px; }
+    .card .card-desc { margin: 0; color: var(--muted); font-size: 15px; flex: 1; }
+    .card .tags { margin-top: 16px; }
+    .card-link { margin-top: 18px; font-size: 14px; font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
+    .card-link svg { width: 14px; height: 14px; transition: transform .18s ease; }
+    .card:hover .card-link svg { transform: translate(2px, -2px); }
+    .card.placeholder { border-style: dashed; border-color: var(--border-strong); background: transparent; }
+    .card.placeholder:hover { transform: none; border-color: var(--border-strong); background: transparent; }
+    .card.placeholder .card-link { color: var(--faint); }
+
+    /* Skills */
+    .skills { display: grid; gap: 18px; margin: 0; }
+    .skill-row { display: grid; grid-template-columns: 150px 1fr; gap: 16px; align-items: start; }
+    .skill-row dt { font-family: var(--mono); font-size: 12.5px; color: var(--faint); padding-top: 4px; }
+    .skill-row dd { margin: 0; }
+    .skill-row .tags { margin-top: 0; }
+    .edu { margin-top: 36px; padding: 18px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; }
+    .edu b { font-weight: 600; }
+    .edu span { color: var(--muted); }
+
+    /* Contact */
+    .contact { text-align: left; }
+    .contact h2 { font-size: clamp(2rem, 5vw, 2.75rem); margin-bottom: 14px; letter-spacing: -0.03em; }
+    .contact p { color: var(--muted); margin: 0 0 28px; max-width: 52ch; }
+
+    footer { border-top: 1px solid var(--border); padding-block: 28px 40px; color: var(--faint); font-size: 13px; }
+    footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+    footer .mono { font-family: var(--mono); }
+
+    @media (max-width: 640px) {
+      .nav ul { gap: 16px; }
+      .nav ul li:nth-child(n+3) { display: none; }
+      .hero { padding-block: 48px 40px; grid-template-columns: 1fr; gap: 28px; }
+      .portrait { order: -1; width: 120px; aspect-ratio: 1; border-radius: 50%; }
+      .portrait img { object-position: 50% 22%; }
+      .values { grid-template-columns: 1fr; gap: 10px; }
+      .value { display: grid; grid-template-columns: 34px 1fr; column-gap: 14px; padding: 16px; }
+      .value .icon { margin-bottom: 0; grid-row: span 2; }
+      .projects { grid-template-columns: 1fr; }
+      .skill-row { grid-template-columns: 1fr; gap: 8px; }
+      .skill-row dt { padding-top: 0; }
+      section { padding-block: 44px; }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .hero-text > *, .portrait { animation: rise .6s cubic-bezier(.2, .7, .2, 1) both; }
+      .hero-text > *:nth-child(2) { animation-delay: .05s; }
+      .hero-text > *:nth-child(3) { animation-delay: .1s; }
+      .hero-text > *:nth-child(4) { animation-delay: .15s; }
+      .portrait { animation-delay: .1s; }
+      @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .btn, .card, .card-link svg { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav" aria-label="Primary">
+    <div class="wrap">
+      <a class="wordmark" href="#top">csarko<span>.sh</span></a>
+      <ul>
+        <li><a href="#work">Work</a></li>
+        <li><a href="#games">Games</a></li>
+        <li><a href="#skills">Skills</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main id="top" class="wrap">
+    <header class="hero">
+      <div class="hero-text">
+      <p class="eyebrow">Senior Software Engineer · New York</p>
+      <h1>Cyrus Sarkosh</h1>
+      <p class="lead">
+        Engineering lead with 9+ years across distributed systems, product engineering, and AI.
+        At DoorDash I've taken <strong>two products from zero to one</strong>, and in my spare time
+        I build <strong>multiplayer games that run in the browser</strong>.
+      </p>
+      <div class="actions">
+        <a class="btn primary" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.36V9h3.41v1.56h.05c.47-.9 1.64-1.85 3.37-1.85 3.6 0 4.26 2.37 4.26 5.46v6.28ZM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12ZM7.12 20.45H3.56V9h3.56v11.45ZM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0Z"/></svg>
+          Connect on LinkedIn
+        </a>
+        <a class="btn" href="https://github.com/csarkosh" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.82 1.19 3.08 0 4.41-2.69 5.38-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
+          GitHub
+        </a>
+        <a class="btn" href="https://csarko.substack.com/" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.54 8.24H1.46V5.41h21.08v2.83ZM1.46 10.81V24L12 18.11 22.54 24V10.81H1.46ZM22.54 0H1.46v2.84h21.08V0Z"/></svg>
+          Substack
+        </a>
+      </div>
+      </div>
+      <figure class="portrait">
+        <img src="me.jpg" width="640" height="853" alt="Portrait of Cyrus Sarkosh" />
+      </figure>
+    </header>
+
+    <ul class="values" role="list" style="list-style:none;padding:0">
+      <li class="value">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="10" rx="5"/><path d="M7 10v4M5 12h4"/><circle cx="15.5" cy="11" r=".6"/><circle cx="18" cy="13" r=".6"/></svg></div>
+        <p class="label">Building</p>
+        <p>Day Hike, a co-op survival horror game for the browser.</p>
+      </li>
+      <li class="value">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
+        <p class="label">Writing</p>
+        <p>csarko.log, what I've learned across AI, systems, and games.</p>
+      </li>
+      <li class="value">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
+        <p class="label">Based in</p>
+        <p>New York, by way of Seattle.</p>
+      </li>
+      <li class="value">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 17 6-6-6-6"/><path d="M12 19h8"/></svg></div>
+        <p class="label">Working</p>
+        <p>AI-first. Claude Code is my IDE.</p>
+      </li>
+    </ul>
+
+    <section id="work" aria-labelledby="work-title">
+      <p class="section-label">01 / Experience</p>
+      <h2 id="work-title">Where I've worked</h2>
+
+      <article class="company">
+        <div class="company-head">
+          <h3>DoorDash <small>New York, NY</small></h3>
+          <span class="dates">Mar 2021 – Present</span>
+        </div>
+        <div class="roles">
+          <div class="role">
+            <div class="role-head">
+              <h4>Senior Software Engineer, GEM</h4>
+              <span class="dates">Jun 2025 – Present</span>
+            </div>
+            <p>
+              Founding engineer and engineering lead for GEM (Guest Reputation Management), a platform that helps
+              restaurants monitor and respond to ratings across DoorDash, Google, and Yelp. Took it from prototype to
+              ~650 merchants and ~$510K ARR while growing the team from 1 to 7 engineers.
+            </p>
+            <ul>
+              <li>Built the backend: ratings ingestion that evolved from a daily polling scraper to real-time webhooks, feeding async OpenAI and Anthropic analysis for sentiment, themes, and automated replies, with LLM evals guarding quality.</li>
+              <li><strong>~40K AI replies a month, ~95% sent unedited.</strong> Key enterprise merchants saw a 0.87-star average rating lift and 70–90% faster review responses.</li>
+              <li>Built AI agents, adopted team-wide, that automate QA, end-to-end testing, and post-launch health checks.</li>
+              <li>Set up the team's design reviews, on-call rotations, and real-time SLOs on Prometheus and Chronosphere.</li>
+            </ul>
+            <ul class="tags" aria-label="Tech used">
+              <li>Python</li><li>Kafka</li><li>CockroachDB</li><li>Postgres</li><li>Redis</li><li>Snowflake</li><li>OpenAI</li><li>Anthropic</li>
+            </ul>
+          </div>
+
+          <div class="role">
+            <div class="role-head">
+              <h4>Senior Software Engineer, Voice AI</h4>
+              <span class="dates">Aug 2022 – Jun 2025</span>
+            </div>
+            <p>
+              Built DoorDash's phone-ordering product from scratch as engineering lead, then led its pivot to AI and
+              grew the team to 12 engineers.
+            </p>
+            <ul>
+              <li>Scaled the platform to <strong>~156K calls a month</strong>, from telephony integration to the call-center order-taking workflow.</li>
+              <li>Grew AI-handled orders <strong>~20x in 8 months</strong>, from under 1% to ~19% of monthly calls, at ~94% lower cost per call than a human agent.</li>
+            </ul>
+            <ul class="tags" aria-label="Tech used">
+              <li>Kotlin</li><li>Python</li><li>Twilio</li><li>OpenAI</li><li>Speech recognition</li>
+            </ul>
+          </div>
+
+          <div class="role">
+            <div class="role-head">
+              <h4>Software Engineer II, Drive</h4>
+              <span class="dates">Mar 2021 – Aug 2022</span>
+            </div>
+            <p>
+              Designed, built, and rolled out Drive's support-as-a-service APIs, launching with McDonald's and Papa Johns
+              and onboarding 10 enterprise customers plus SMBs through Toast, Square, and Olo.
+            </p>
+            <ul class="tags" aria-label="Tech used">
+              <li>Kotlin</li><li>gRPC</li>
+            </ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="company">
+        <div class="company-head">
+          <h3>Discuss.io <small>Seattle, WA</small></h3>
+          <span class="dates">Jan 2017 – Mar 2021</span>
+        </div>
+        <div class="roles">
+          <div class="role">
+            <div class="role-head">
+              <h4>Software Engineer → Senior Software Engineer</h4>
+            </div>
+            <p>Full-stack engineer at a video research startup, owning web, mobile, video, and infrastructure.</p>
+            <ul>
+              <li>Led the iOS and Android conferencing apps that <strong>10x'd the research-participant pool</strong> in emerging markets and helped close expansion with Unilever.</li>
+              <li>Owned AWS infrastructure in Terraform; cut video-processing startup by 2 minutes and global page load from over 5s to 0.5s.</li>
+            </ul>
+            <ul class="tags" aria-label="Tech used">
+              <li>PHP</li><li>React</li><li>Postgres</li><li>WebRTC</li><li>AWS</li><li>Terraform</li>
+            </ul>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section id="games" aria-labelledby="games-title">
+      <p class="section-label">02 / Games &amp; projects</p>
+      <h2 id="games-title">Things I build for fun</h2>
+      <div class="projects">
+        <a class="card featured" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener">
+          <p class="card-kicker">Playable now · No install</p>
+          <h3>Day Hike</h3>
+          <p class="card-desc">
+            A co-op first-person survival horror game for 1–5 players that runs in the browser. Send a link and play together:
+            no install, no account, no server bill. Peer-to-peer realtime netcode via WebRTC with client-side prediction,
+            lag compensation, and a deterministic 60 Hz simulation.
+          </p>
+          <ul class="tags"><li>TypeScript</li><li>Babylon.js</li><li>WebRTC</li></ul>
+          <span class="card-link">Play in your browser
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>
+          </span>
+        </a>
+
+        <!-- Placeholder until github.com/csarkosh/game-dayhike is public: swap this div for an <a class="card" href="..."> -->
+        <div class="card placeholder">
+          <p class="card-kicker">Open source · Coming soon</p>
+          <h3>game-dayhike</h3>
+          <p class="card-desc">The game code behind Day Hike: peer-to-peer netcode, client-side prediction, and the deterministic simulation.</p>
+          <ul class="tags"><li>TypeScript</li><li>Babylon.js</li><li>WebRTC</li></ul>
+          <span class="card-link">Repo coming soon</span>
+        </div>
+
+        <a class="card" href="https://github.com/csarkosh/electron-gamepatch" target="_blank" rel="noopener">
+          <p class="card-kicker">Open source</p>
+          <h3>electron-gamepatch</h3>
+          <p class="card-desc">Official Electron releases, republished with small binary patches that remove game-hostile browser behavior.</p>
+          <ul class="tags"><li>Python</li><li>Electron</li></ul>
+          <span class="card-link">View on GitHub
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>
+          </span>
+        </a>
+      </div>
+    </section>
+
+    <section id="skills" aria-labelledby="skills-title">
+      <p class="section-label">03 / Skills</p>
+      <h2 id="skills-title">What I work with</h2>
+      <dl class="skills">
+        <div class="skill-row">
+          <dt>Languages</dt>
+          <dd><ul class="tags"><li>Kotlin</li><li>Python</li><li>TypeScript</li><li>JavaScript</li><li>PHP</li><li>SQL</li></ul></dd>
+        </div>
+        <div class="skill-row">
+          <dt>AI &amp; LLMs</dt>
+          <dd><ul class="tags"><li>OpenAI APIs</li><li>Anthropic APIs</li><li>AI agents</li><li>LLM evals</li><li>Prompt engineering</li><li>Claude Code</li><li>Speech recognition</li></ul></dd>
+        </div>
+        <div class="skill-row">
+          <dt>Backend</dt>
+          <dd><ul class="tags"><li>Distributed systems</li><li>Microservices</li><li>gRPC</li><li>REST APIs</li><li>Kafka</li><li>Event-driven pipelines</li><li>Webhooks</li><li>Authentication</li></ul></dd>
+        </div>
+        <div class="skill-row">
+          <dt>Data</dt>
+          <dd><ul class="tags"><li>Postgres</li><li>CockroachDB</li><li>Redis</li><li>Snowflake</li></ul></dd>
+        </div>
+        <div class="skill-row">
+          <dt>Cloud &amp; infra</dt>
+          <dd><ul class="tags"><li>AWS</li><li>Docker</li><li>Kubernetes</li><li>Terraform</li><li>CI/CD</li><li>Prometheus</li><li>Chronosphere</li><li>Grafana</li><li>On-call &amp; SLOs</li></ul></dd>
+        </div>
+        <div class="skill-row">
+          <dt>Frontend &amp; media</dt>
+          <dd><ul class="tags"><li>React</li><li>WebRTC</li><li>Twilio</li><li>Babylon.js</li></ul></dd>
+        </div>
+      </dl>
+      <div class="edu">
+        <b>University of Washington</b>
+        <span>B.S., Computer Science · 2017</span>
+      </div>
+    </section>
+
+    <section id="contact" class="contact" aria-labelledby="contact-title">
+      <p class="section-label">04 / Contact</p>
+      <h2 id="contact-title">Let's talk.</h2>
+      <p>I'm always happy to talk about AI products, distributed systems, engineering leadership, or browser games.</p>
+      <div class="actions">
+        <a class="btn primary" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">Message me on LinkedIn</a>
+        <a class="btn" href="https://github.com/csarkosh" target="_blank" rel="noopener">GitHub</a>
+        <a class="btn" href="https://csarko.substack.com/" target="_blank" rel="noopener">Substack</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>© 2026 Cyrus Sarkosh</span>
+      <span class="mono">csarko.sh</span>
+    </div>
+  </footer>
+</body>
 </html>
