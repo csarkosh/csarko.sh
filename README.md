@@ -2,7 +2,7 @@
 
 The source code behind my portfolio site **→ [csarko.sh](https://csarko.sh)**.
 
-It's a single hand-written HTML page: no framework, no build step, no JavaScript.
+It's a single hand-written HTML page: no framework, no build step, no JavaScript, fully agent-managed.
 
 ## What's here
 
