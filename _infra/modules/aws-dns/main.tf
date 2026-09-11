@@ -10,10 +10,10 @@ data "aws_route53_zone" "this" {
   name = var.zone_name
 }
 
-# The zone itself is not Terraform-managed, and neither is anything else in it:
-# the apex MX records (Google Workspace mail), the fps repo's games/game CNAMEs,
-# and the older project subdomains all live outside this state. This module owns
-# exactly two record sets — the apex A and the apex TXT — and nothing more.
+# The zone itself is not managed by this state, and neither is anything else in
+# it: the apex MX records (Google Workspace mail) and the fps repo's games/game
+# CNAMEs live elsewhere. This module owns exactly two record sets — the apex A
+# and the apex TXT — and nothing more.
 
 # allow_overwrite lets the first apply UPSERT over the apex A record the old
 # AWS site left behind (an alias to its CloudFront distribution). That swap is

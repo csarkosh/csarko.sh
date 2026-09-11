@@ -79,8 +79,9 @@ Fonts: Inter (text) and JetBrains Mono (labels, tags), from Google Fonts.
   This repo's state owns exactly two record sets: the apex **A**
   (`199.36.158.100`) and the apex **TXT** (`hosting-site=csarko-sh`). Everything
   else there belongs to someone else — the apex **MX records are Google Workspace
-  mail** (never touch them), `games`/`game` belong to `~/Projects/fps/_infra`, and
-  the remaining subdomains are old projects.
+  mail** (never touch them) and `games`/`game` belong to `~/Projects/fps/_infra`.
+  As of 2026-09-11 that is the whole zone — every older project subdomain was
+  taken down (see History).
 - **Apex TXT is one record set.** If another apex TXT value is ever needed (SPF,
   a verification token), add it to the `txt_records` list in `_infra/main.tf`
   rather than creating a second record set.
@@ -109,8 +110,20 @@ Fonts: Inter (text) and JetBrains Mono (labels, tags), from Google Fonts.
     S3 bucket `csarko.sh`, and the state object
     `s3://sh.csarko.terraform/portfolio-site.csarko.sh/terraform.tfstate` (that
     bucket is versioned, so prior versions remain recoverable).
-  - **Deliberately kept:** the wildcard ACM certificate
-    (`*.csarko.sh`, `…5862bd2ce87d`) and its `_d8fcffaef4f2cd2dd3c80ff357cdc63a`
-    validation CNAME — both still serve the `babylonjs-fps-demo`/`webgl`/`fps`,
-    `readme-viewer` and `shooter` CloudFront sites — and the
-    `sh.csarko.terraform` bucket, which holds those projects' state.
+  - **Old project subdomains taken down the same day, at Cyrus's request:**
+    `fps`, `webgl`, `babylonjs-fps-demo`, `readme-viewer` and `shooter`. Deleted:
+    their DNS records, CloudFront distributions `E33WBFXY6RAK4C`,
+    `E3KV21DE1QR0RU`, `E6PTH8ZUPZHU0`, their S3 buckets, readme-viewer's backend
+    (API Gateway `lyqvmoqvd6` + custom domain, Lambdas `readme-viewer` and
+    `cache-gh-data`, the weekly EventBridge rule, two IAM roles, the
+    `readme-viewer.csarko.sh-lambdas2` and `csarko.sh-lambdas` code buckets), the
+    wildcard `*.csarko.sh` ACM certificate and its validation CNAME, an expired
+    2021 certificate, the 2019 `csarko-website` and `inject-headers` Lambdas and
+    their log groups, the `html5-multiplayer-shooter-ec2-sg` security group, and
+    the `shooter`, `webgl` and `webrtc` state objects.
+  - **Kept:** `s3://sh.csarko.terraform/csarko.sh/terraform.tfstate`. It is stale
+    (most of what it lists is gone) but it also claims the **Route53 zone and the
+    apex MX records**. Never run Terraform against it — a destroy would take out
+    the zone and mail. There is no longer any AWS CloudFront, ACM, API Gateway or
+    Lambda for csarko.sh; the zone itself is the only csarko.sh resource left on
+    AWS.
