@@ -79,7 +79,15 @@ module "aws_dns" {
   zone_name   = var.dns_zone_name
   domain_name = var.domain_name
   a_records   = var.firebase_hosting_ips
-  txt_records = ["hosting-site=${module.gcp_hosting.site_id}"]
+
+  # The apex TXT is one record set, so every apex TXT value lives in this list.
+  txt_records = [
+    # Firebase Hosting: proves the csarko-sh site owns the domain.
+    "hosting-site=${module.gcp_hosting.site_id}",
+    # Google Search Console, Domain property csarko.sh (verified 2026-09-11).
+    # Google re-checks it periodically; removing it un-verifies the property.
+    "google-site-verification=r8DHgyFqGEsfamOeyKlLZecMwnv54ysXg91ZFGylr_4",
+  ]
 
   cname_records = { for d in var.redirect_domain_names : d => local.hosting_cname_target }
 

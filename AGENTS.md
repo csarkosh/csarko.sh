@@ -91,7 +91,8 @@ favicons (`.agents/skills/seo/scripts/generate-assets.sh`).
 - **DNS:** Route53 zone `csarko.sh` (`Z905ENUNE0H3I`, AWS account `705624689046`).
   **The zone is not Terraform-managed, and neither is most of what's in it.**
   This repo's state owns exactly three record sets: the apex **A**
-  (`199.36.158.100`), the apex **TXT** (`hosting-site=csarko-sh`), and the
+  (`199.36.158.100`), the apex **TXT** (`hosting-site=csarko-sh` plus the Google
+  Search Console `google-site-verification=…` token — never remove it), and the
   **`www` CNAME** → `csarko-sh.web.app`, which Firebase serves as a 301 to
   `https://csarko.sh` (`redirect_domain_names` in `_infra/variables.tf`). Everything
   else there belongs to someone else — the apex **MX records are Google Workspace
