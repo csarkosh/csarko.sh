@@ -25,8 +25,10 @@ is no build step and no CI: a deploy is one script, run by hand.
 
 1. **Guards** — refuses to deploy if `public/` contains an email address or a
    phone number (Cyrus's standing rule: no contact details on the public page),
-   or if `firebase.json` / `.firebaserc` disagree with Terraform about the site
-   or project.
+   if the **SEO checks** fail (`.agents/skills/seo/scripts/seo_check.py`:
+   canonical, JSON-LD, preview card, favicons, robots/sitemap), or if
+   `firebase.json` / `.firebaserc` disagree with Terraform about the site or
+   project.
 2. **Reads every identifier from Terraform outputs** (`_infra`), never from
    memory.
 3. Runs `npx firebase-tools deploy --only hosting`.
@@ -34,11 +36,19 @@ is no build step and no CI: a deploy is one script, run by hand.
    `https://csarko.sh` and comparing SHA-256 against the local
    `public/index.html`. The web.app check must pass; the custom-domain check is
    reported but only warns, since CDN propagation can lag a few seconds.
+5. **Checks SEO on the live site** (`seo_check.py --live`): robots.txt,
+   sitemap, og-image, favicons, real 404s, http→https, and the www redirect.
 
 ## Before deploying
 
 - Run the **preview** skill and look at the screenshots (desktop and mobile).
   A deploy is public the moment it finishes.
+- Walk the **seo** skill's checklist for what changed (title, tagline, photo,
+  links → tags, JSON-LD, and the og-image may need regenerating). The script
+  catches broken tags, not stale wording.
+- After a visual or performance change, run
+  `.agents/skills/seo/scripts/seo_check.py --lighthouse` once it's live; SEO and
+  Accessibility must stay at 100.
 - Report the verification lines to the user as-is. Don't say "deployed" unless
   the `✓` lines printed.
 

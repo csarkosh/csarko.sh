@@ -28,6 +28,17 @@ variable "txt_records" {
   }
 }
 
+variable "cname_records" {
+  description = "Map of fully qualified hostname to CNAME target, e.g. { \"www.csarko.sh\" = \"csarko-sh.web.app\" }."
+  type        = map(string)
+  default     = {}
+
+  validation {
+    condition     = alltrue([for t in values(var.cname_records) : length(trimspace(t)) > 0])
+    error_message = "A cname_records target is empty — refusing to create a CNAME with no target."
+  }
+}
+
 variable "ttl" {
   description = "TTL in seconds. Low while the domain is being set up."
   type        = number

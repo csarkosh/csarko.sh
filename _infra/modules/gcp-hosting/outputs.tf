@@ -13,6 +13,17 @@ output "required_dns_updates" {
   value       = google_firebase_hosting_custom_domain.this.required_dns_updates
 }
 
+output "redirect_domain_states" {
+  description = "Host, ownership and certificate state of each redirect-only custom domain"
+  value = {
+    for d, r in google_firebase_hosting_custom_domain.redirect : d => {
+      host_state      = r.host_state
+      ownership_state = r.ownership_state
+      cert_state      = try(r.cert[0].state, null)
+    }
+  }
+}
+
 output "custom_domain_state" {
   description = "Host, ownership and certificate state of the custom domain"
   value = {

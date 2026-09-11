@@ -29,6 +29,12 @@ description: >-
   ~500px, so the mobile shot renders the page inside a 390px iframe — the grey
   strip to the right is the frame, not a bug.
 
+Every run also prints the **static SEO check** (`seo` skill). Treat a `FAIL`
+as part of the change you're making, not a separate task: fix it before
+reporting the change as done. If the change touched the name, title, tagline,
+photo, colors or profile links, walk the seo skill's checklist too — the
+script can't tell whether the wording in the tags is stale.
+
 Output goes to `/tmp`, never into the repo or onto the Desktop.
 
 ## After previewing

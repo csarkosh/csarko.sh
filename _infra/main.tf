@@ -52,14 +52,22 @@ provider "google-beta" {
 module "gcp_hosting" {
   source = "./modules/gcp-hosting"
 
-  project_id  = var.gcp_project_id
-  site_id     = var.hosting_site_id
-  domain_name = var.domain_name
+  project_id            = var.gcp_project_id
+  site_id               = var.hosting_site_id
+  domain_name           = var.domain_name
+  redirect_domain_names = var.redirect_domain_names
 
   providers = {
     google      = google
     google-beta = google-beta
   }
+}
+
+# The site's own hostname, e.g. "csarko-sh.web.app". default_url stays populated
+# for the life of the site, unlike required_dns_updates, which empties once a
+# domain reconciles (the fps repo learned this the hard way).
+locals {
+  hosting_cname_target = trimprefix(module.gcp_hosting.default_url, "https://")
 }
 
 # csarko.sh is a zone apex, so it cannot be a CNAME the way games.csarko.sh is
@@ -72,6 +80,8 @@ module "aws_dns" {
   domain_name = var.domain_name
   a_records   = var.firebase_hosting_ips
   txt_records = ["hosting-site=${module.gcp_hosting.site_id}"]
+
+  cname_records = { for d in var.redirect_domain_names : d => local.hosting_cname_target }
 
   providers = {
     aws = aws

@@ -9,8 +9,9 @@
 #   deploy.sh              deploy to the live site, then verify both URLs
 #   deploy.sh --preview    deploy to a temporary preview channel (expires in 7d)
 #
-# Exit status is non-zero if a guard fails, the deploy fails, or the site's own
-# web.app URL does not serve the exact index.html that was just deployed.
+# Exit status is non-zero if a guard fails (privacy, config, SEO), the deploy
+# fails, the site's own web.app URL does not serve the exact index.html that was
+# just deployed, or the live SEO checks fail afterwards.
 
 set -euo pipefail
 
@@ -38,6 +39,11 @@ fi
 if grep -nEo '\+1[ .-]?[0-9]{3}[ .-]?[0-9]{3}[ .-]?[0-9]{4}|\(?[0-9]{3}\)?[ .-][0-9]{3}-[0-9]{4}' public/*.html; then
   die "public/ contains what looks like a phone number — refusing to deploy"
 fi
+
+# SEO gate: canonical, structured data, preview card, favicons, robots/sitemap.
+# See .agents/skills/seo/SKILL.md for what each check protects.
+.agents/skills/seo/scripts/seo_check.py || die "SEO checks failed — fix them (see the seo skill) before deploying"
+echo
 
 [[ -d _infra/.terraform ]] || terraform -chdir=_infra init -input=false >/dev/null
 tf() { terraform -chdir=_infra output -raw "$1"; }
@@ -82,3 +88,6 @@ verify() {
 echo
 verify "$DEFAULT_URL" || die "the deploy did not land on $DEFAULT_URL"
 verify "$SITE_URL" || echo "  (the custom domain may still be propagating or its certificate may still be issuing — check \`terraform -chdir=_infra output hosting_custom_domain_state\`)"
+
+echo
+.agents/skills/seo/scripts/seo_check.py --live "$SITE_URL" || die "the deploy landed, but live SEO checks failed — see above"

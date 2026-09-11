@@ -28,6 +28,11 @@ output "hosting_custom_domain_state" {
   value       = module.gcp_hosting.custom_domain_state
 }
 
+output "redirect_domain_states" {
+  description = "State of each redirect-only custom domain (www). All ACTIVE means done."
+  value       = module.gcp_hosting.redirect_domain_states
+}
+
 output "dns_record_fqdn" {
   description = "The apex record created for the custom domain"
   value       = module.aws_dns.fqdn

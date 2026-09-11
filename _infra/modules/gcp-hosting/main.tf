@@ -51,3 +51,20 @@ resource "google_firebase_hosting_custom_domain" "this" {
 
   cert_preference = "GROUPED"
 }
+
+# Extra hostnames (e.g. www) that exist only to 301 to domain_name, path and
+# query preserved. Firebase serves the redirect itself, with its own cert.
+resource "google_firebase_hosting_custom_domain" "redirect" {
+  for_each = toset(var.redirect_domain_names)
+
+  provider        = google-beta
+  project         = var.project_id
+  site_id         = google_firebase_hosting_site.this.site_id
+  custom_domain   = each.value
+  redirect_target = var.domain_name
+
+  wait_dns_verification = false
+  cert_preference       = "GROUPED"
+
+  depends_on = [google_firebase_hosting_custom_domain.this]
+}

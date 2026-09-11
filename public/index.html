@@ -5,17 +5,89 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Cyrus Sarkosh · Senior Software Engineer</title>
   <meta name="description" content="Cyrus Sarkosh is a New York–based senior software engineer and engineering lead building AI products, distributed systems, and browser games." />
+  <link rel="canonical" href="https://csarko.sh/" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Cyrus Sarkosh" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:url" content="https://csarko.sh/" />
   <meta property="og:title" content="Cyrus Sarkosh · Senior Software Engineer" />
   <meta property="og:description" content="Engineering lead with 9+ years across distributed systems, product engineering, and AI products." />
-  <meta property="og:url" content="https://csarko.sh" />
-  <meta property="og:type" content="website" />
-  <meta property="og:image" content="https://csarko.sh/me.jpg" />
+  <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Cyrus Sarkosh · Senior Software Engineer" />
+  <meta name="twitter:description" content="Engineering lead with 9+ years across distributed systems, product engineering, and AI products." />
+  <meta name="twitter:image" content="https://csarko.sh/og-image.jpg" />
+  <meta name="twitter:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
+
   <meta name="theme-color" content="#0a0b0e" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a0b0e'/%3E%3Ctext x='50%25' y='54%25' text-anchor='middle' dominant-baseline='middle' font-family='ui-monospace,monospace' font-size='28' font-weight='700' fill='%237dd3c0'%3Ecs%3C/text%3E%3C/svg%3E" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="icon" href="favicon.ico" sizes="48x48" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="favicon-96x96.png" type="image/png" sizes="96x96" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+
+  <link rel="preload" href="fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="me.jpg" as="image" fetchpriority="high" />
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Person",
+      "@id": "https://csarko.sh/#person",
+      "name": "Cyrus Sarkosh",
+      "url": "https://csarko.sh/",
+      "image": "https://csarko.sh/me.jpg",
+      "jobTitle": "Senior Software Engineer",
+      "description": "Engineering lead building AI products, distributed systems, and multiplayer games for the browser.",
+      "homeLocation": {
+        "@type": "Place",
+        "name": "New York, NY"
+      },
+      "alumniOf": {
+        "@type": "CollegeOrUniversity",
+        "name": "University of Washington"
+      },
+      "knowsAbout": [
+        "Software engineering",
+        "Artificial intelligence",
+        "Distributed systems",
+        "Game development",
+        "WebRTC"
+      ],
+      "sameAs": [
+        "https://www.linkedin.com/in/csarkosh",
+        "https://github.com/csarkosh",
+        "https://csarko.substack.com/"
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://csarko.sh/#website",
+      "url": "https://csarko.sh/",
+      "name": "Cyrus Sarkosh",
+      "publisher": {
+        "@id": "https://csarko.sh/#person"
+      }
+    }
+  ]
+}
+  </script>
   <style>
+    /* Self-hosted variable fonts (latin subset), SIL OFL 1.1: see /fonts/OFL.txt */
+    @font-face {
+      font-family: "Inter"; font-style: normal; font-weight: 400 700; font-display: swap;
+      src: url("fonts/inter-latin-var.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "JetBrains Mono"; font-style: normal; font-weight: 400 500; font-display: swap;
+      src: url("fonts/jetbrains-mono-latin-var.woff2") format("woff2");
+    }
+
     :root {
       --bg: #0a0b0e;
       --surface: #111318;
@@ -24,7 +96,7 @@
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
-      --faint: #6e7688;
+      --faint: #7d8597;
       --accent: #7dd3c0;
       --accent-soft: rgba(125, 211, 192, 0.12);
       --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -202,14 +274,6 @@
       section { padding-block: 44px; }
     }
 
-    @media (prefers-reduced-motion: no-preference) {
-      .hero-text > *, .portrait { animation: rise .6s cubic-bezier(.2, .7, .2, 1) both; }
-      .hero-text > *:nth-child(2) { animation-delay: .05s; }
-      .hero-text > *:nth-child(3) { animation-delay: .1s; }
-      .hero-text > *:nth-child(4) { animation-delay: .15s; }
-      .portrait { animation-delay: .1s; }
-      @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-    }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
       .btn, .card, .card-link svg { transition: none; }
@@ -255,7 +319,7 @@
       </div>
       </div>
       <figure class="portrait">
-        <img src="me.jpg" width="640" height="853" alt="Portrait of Cyrus Sarkosh" />
+        <img src="me.jpg" width="640" height="853" alt="Portrait of Cyrus Sarkosh" fetchpriority="high" />
       </figure>
     </header>
 

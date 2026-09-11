@@ -62,6 +62,12 @@ EOF
   echo "$OUT/mobile.png   (the page is the left 390px; the grey strip is the frame)"
 fi
 
+# Every preview also runs the static SEO checks, so a broken tag shows up while
+# you're still looking at the change rather than at deploy time.
+echo
+"$ROOT/.agents/skills/seo/scripts/seo_check.py" || echo "(fix the SEO failures above before deploying — see .agents/skills/seo/SKILL.md)"
+echo
+
 if (( SERVE )); then
   if [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
     echo "server already running (pid $(cat "$PIDFILE"))"

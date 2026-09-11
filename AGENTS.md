@@ -8,11 +8,14 @@ him. No framework, no build step, no CI.
 
 | Path | What |
 |---|---|
-| `public/index.html` | **The site.** One self-contained file: inline CSS, inline SVG icons, no JS. |
+| `public/index.html` | **The site.** One file: inline CSS, inline SVG icons, JSON-LD, no JS. |
 | `public/me.jpg` | Portrait (640px wide JPEG, from `~/Pictures/Cyrus/me_1.png`). |
+| `public/og-image.jpg`, `favicon.*`, `apple-touch-icon.png` | **Generated** by the seo skill from `.agents/skills/seo/assets/` — don't hand-edit. |
+| `public/fonts/` | Self-hosted Inter + JetBrains Mono variable fonts (latin subset) and their `OFL.txt`. |
+| `public/robots.txt`, `public/sitemap.xml` | Crawl rules and the one-URL sitemap. |
 | `firebase.json`, `.firebaserc` | Firebase Hosting config: publish `public/`, cache headers. |
 | `_infra/` | Terraform for the hosting and DNS. Same shape as `~/Projects/fps/_infra`. |
-| `.agents/skills/` | Agent skills: `preview` and `deploy`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
+| `.agents/skills/` | Agent skills: `preview`, `deploy` and `seo`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
 | `README.md` | Human-facing overview. `LICENSE` is MIT and predates this version of the site. |
 
 ## Workflows
@@ -26,7 +29,10 @@ him. No framework, no build step, no CI.
 - **Change infrastructure:** `terraform -chdir=_infra plan`, then `apply`. Never
   hand-edit the resources Terraform owns.
 
-Read each skill's `SKILL.md` before using it.
+**Every change is also an SEO change.** Preview runs the SEO checks, deploy
+refuses to publish if they fail, and the `seo` skill's checklist covers what the
+script can't (stale wording in tags, a regenerated preview card). Read each
+skill's `SKILL.md` before using it.
 
 ## Content rules (Cyrus's standing preferences)
 
@@ -70,9 +76,13 @@ match his Substack theme, so keep them stable or tell him when they change.
 | `--accent` | `#7dd3c0` (hover `#95e0cf`, text on accent `#06231d`) |
 | `--bg` | `#0a0b0e` |
 | `--surface` / `--surface-2` | `#111318` / `#161922` |
-| `--text` / `--muted` / `--faint` | `#e8eaf0` / `#a0a8b8` / `#6e7688` |
+| `--text` / `--muted` / `--faint` | `#e8eaf0` / `#a0a8b8` / `#7d8597` |
 
-Fonts: Inter (text) and JetBrains Mono (labels, tags), from Google Fonts.
+`--faint` is `#7d8597`, the dimmest text that clears WCAG 4.5:1 on every surface
+(it was `#6e7688`, which failed). Fonts: Inter (text) and JetBrains Mono (labels,
+tags), **self-hosted** from `public/fonts/` — not Google Fonts, whose stylesheet
+blocked the first paint. If a token changes, regenerate the og-image and
+favicons (`.agents/skills/seo/scripts/generate-assets.sh`).
 
 ## Infrastructure
 
@@ -80,8 +90,10 @@ Fonts: Inter (text) and JetBrains Mono (labels, tags), from Google Fonts.
   (billing: Main Billing). Default URL `https://csarko-sh.web.app`.
 - **DNS:** Route53 zone `csarko.sh` (`Z905ENUNE0H3I`, AWS account `705624689046`).
   **The zone is not Terraform-managed, and neither is most of what's in it.**
-  This repo's state owns exactly two record sets: the apex **A**
-  (`199.36.158.100`) and the apex **TXT** (`hosting-site=csarko-sh`). Everything
+  This repo's state owns exactly three record sets: the apex **A**
+  (`199.36.158.100`), the apex **TXT** (`hosting-site=csarko-sh`), and the
+  **`www` CNAME** → `csarko-sh.web.app`, which Firebase serves as a 301 to
+  `https://csarko.sh` (`redirect_domain_names` in `_infra/variables.tf`). Everything
   else there belongs to someone else — the apex **MX records are Google Workspace
   mail** (never touch them) and `games`/`game` belong to `~/Projects/fps/_infra`.
   As of 2026-09-11 that is the whole zone — every older project subdomain was
@@ -95,6 +107,12 @@ Fonts: Inter (text) and JetBrains Mono (labels, tags), from Google Fonts.
 - **`hosting_required_dns_updates` goes empty once the domain is healthy.** That's
   success, not breakage. `hosting_custom_domain_state` should read
   `HOST_ACTIVE` / `OWNERSHIP_ACTIVE` / `CERT_ACTIVE`.
+- **Stale state lock after an interrupted apply:** the GCS backend's lock ID for
+  `terraform force-unlock` is the lock object's *generation number*
+  (`gcloud storage objects describe gs://csarko-sh-tfstate/csarko-sh/default.tflock
+  --format='value(generation)'`), not the UUID in the error. Confirm no
+  `terraform` process is running first, and `terraform import` anything the
+  interrupted run created but didn't record.
 - **Targeted applies don't write root outputs.** If `deploy.sh` says an output is
   missing after a `-target` apply, run `terraform -chdir=_infra apply -refresh-only`.
 

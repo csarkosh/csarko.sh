@@ -1,0 +1,48 @@
+<!doctype html>
+<!--
+  Source for public/og-image.jpg, the 1200×630 link-preview card.
+  Rendered by .agents/skills/seo/scripts/generate-assets.sh — edit this, then
+  re-run that script. Paths are relative to this file.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: "Inter"; src: url("../../../../public/fonts/inter-latin-var.woff2") format("woff2"); font-weight: 400 700; }
+  @font-face { font-family: "JetBrains Mono"; src: url("../../../../public/fonts/jetbrains-mono-latin-var.woff2") format("woff2"); font-weight: 400 500; }
+  html, body { margin: 0; }
+  body {
+    width: 1200px; height: 630px; overflow: hidden; box-sizing: border-box;
+    background: radial-gradient(ellipse at 20% 0%, rgba(125, 211, 192, 0.14), transparent 60%), #0a0b0e;
+    color: #e8eaf0; font-family: "Inter", system-ui, sans-serif;
+    display: grid; grid-template-columns: 1fr 300px; gap: 64px; align-items: center;
+    padding: 0 88px;
+  }
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace; font-size: 18px; letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap;
+    color: #7dd3c0; display: flex; align-items: center; gap: 14px; margin: 0 0 26px;
+  }
+  .eyebrow::before { content: ""; flex: none; width: 12px; height: 12px; border-radius: 50%; background: #7dd3c0; box-shadow: 0 0 16px #7dd3c0; }
+  h1 { font-size: 92px; line-height: 1; letter-spacing: -0.04em; font-weight: 700; margin: 0 0 28px; }
+  p { font-size: 30px; line-height: 1.4; color: #a0a8b8; margin: 0; max-width: 21em; }
+  p strong { color: #e8eaf0; font-weight: 500; }
+  .url { position: absolute; left: 88px; bottom: 56px; font-family: "JetBrains Mono", monospace; font-size: 24px; color: #e8eaf0; }
+  .url span { color: #7dd3c0; }
+  .portrait {
+    width: 300px; height: 375px; border-radius: 28px; overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 0 0 8px rgba(125, 211, 192, 0.06), 0 30px 80px -24px rgba(125, 211, 192, 0.35);
+  }
+  .portrait img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; display: block; }
+</style>
+</head>
+<body>
+  <div>
+    <p class="eyebrow">Senior Software Engineer · New York</p>
+    <h1>Cyrus Sarkosh</h1>
+    <p>Engineering lead building <strong>AI products</strong>, <strong>distributed systems</strong>, and <strong>multiplayer games for the browser</strong>.</p>
+  </div>
+  <div class="portrait"><img src="../../../../public/me.jpg" alt="" /></div>
+  <div class="url">csarko<span>.sh</span></div>
+</body>
+</html>

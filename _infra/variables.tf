@@ -21,6 +21,12 @@ variable "domain_name" {
   default     = "csarko.sh"
 }
 
+variable "redirect_domain_names" {
+  description = "Hostnames that 301-redirect to domain_name. Each gets a Firebase redirect domain and a CNAME."
+  type        = list(string)
+  default     = ["www.csarko.sh"]
+}
+
 variable "dns_zone_name" {
   description = "Route53 hosted zone that contains domain_name. Trailing dot optional."
   type        = string
