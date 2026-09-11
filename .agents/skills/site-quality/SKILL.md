@@ -9,7 +9,10 @@ description: >-
   friends, Mozilla Observatory A+), the custom 404 page, and phone layout. Use
   whenever the user asks about SEO, Google, speed, Lighthouse, Core Web Vitals,
   security headers, accessibility, link previews, favicons, the 404 page, the
-  mobile menu, analytics, or adding any script or third-party service — and
+  mobile menu, analytics, or adding any script or third-party service; and when
+  they ask how the site is doing, route visitor/traffic questions to GoatCounter
+  (csarko.goatcounter.com) and Google search/indexing questions to Search
+  Console (see AGENTS.md "Where to look") — and
   apply its checklist on EVERY change to public/, even when the user didn't
   mention quality. The preview and deploy skills run its checks automatically.
 ---
@@ -141,6 +144,12 @@ This is the change most likely to regress everything above. In order:
 Content rules in `AGENTS.md` still win (no email/phone, no metrics in Experience).
 
 ## Google Search Console
+
+**Use it for:** search queries, impressions, clicks, average position, indexing
+and coverage, sitemap status, removals, and structured-data reports. For visitor
+counts and referrers use GoatCounter instead. `AGENTS.md` → "Where to look" has
+the URLs, the routing table, and the property's current state (pending items
+with dates).
 
 Domain property `csarko.sh`, verified 2026-09-11 by a `google-site-verification`
 TXT value in `txt_records` in `_infra/main.tf` — **never remove it**. The sitemap

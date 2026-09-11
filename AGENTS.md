@@ -38,6 +38,46 @@ to publish if they fail, and that skill's checklist covers what the script
 can't. Adding any script or third-party service (analytics included) has its
 own procedure there. Read each skill's `SKILL.md` before using it.
 
+## Where to look: measuring the site
+
+Three sources, each for a different question. **Pick by the question, not by habit.**
+
+| Question | Source | Where |
+|---|---|---|
+| Who's visiting? How many visits, which pages, where from (referrers), countries, devices, browsers? Which broken links do people hit (404 paths)? | **GoatCounter** | https://csarko.goatcounter.com |
+| How does the site do in **Google Search**? Queries people search, impressions, clicks, CTR, average position; whether pages are **indexed**; sitemap status; URL removals; structured-data and page-experience reports | **Google Search Console** | https://search.google.com/search-console?resource_id=sc-domain%3Acsarko.sh (Domain property `csarko.sh`) |
+| Is the site fast, accessible, SEO-correct and locked down right now? (lab measurements, not visitors) | **`site-quality` checks** | `.agents/skills/site-quality/scripts/check.py --live --lighthouse --observatory` |
+
+- **"Traffic", "visitors", "views", "where are people coming from"** → GoatCounter.
+  **"Google", "ranking", "search results", "indexed", "impressions", "why doesn't my site show up"** → Search Console.
+  A referrer of `google.com` in GoatCounter tells you a visit came from search;
+  *which query* it came from is only in Search Console.
+- **Neither account is connected to agents.** Both belong to Cyrus, and no API
+  credentials exist on this machine or in this repo. Ask him to open the
+  dashboard (or share a screenshot or export) rather than guessing numbers.
+  If he wants programmatic access: GoatCounter issues API tokens under Settings →
+  API; Search Console needs OAuth with the `webmasters.readonly` scope. **Never
+  commit a token.**
+- **Expect small numbers and lag.** It's a personal site. Search Console's
+  reports run 2–3 days behind and show nothing for queries with very low volume.
+  Its Core Web Vitals report needs real-user traffic volume the site may never
+  reach; use the `site-quality` Lighthouse run for performance instead.
+
+**Search Console state as of 2026-09-11** (check these before re-doing any of them):
+- Domain property verified through the apex TXT `google-site-verification=…` in
+  `_infra/main.tf`. Removing that value un-verifies the property.
+- Sitemap `https://csarko.sh/sitemap.xml` submitted. Its first status was
+  "Couldn't fetch" before Google's first attempt, although the file is valid.
+  If it still isn't "Success" by ~2026-09-13, delete it in Sitemaps and resubmit
+  it once.
+- Indexing requested for `https://csarko.sh/` (URL Inspection).
+- Temporary removals submitted for the retired subdomains `readme-viewer`,
+  `babylonjs-fps-demo`, `shooter`, `fps`, `webgl` (all `*.csarko.sh`, "remove
+  all URLs with this prefix"). They lapse around 2027-03. They shouldn't need
+  renewing, since those hosts no longer resolve.
+- After a meaningful content change, use URL Inspection → Request indexing for
+  `https://csarko.sh/`.
+
 ## Content rules (Cyrus's standing preferences)
 
 - **No email address or phone number anywhere on the page.** He doesn't want
@@ -70,7 +110,7 @@ own procedure there. Read each skill's `SKILL.md` before using it.
 - **The blog is "csarko.log"** at `https://csarko.substack.com/`. It has no
   published posts yet; Cyrus will publish once Day Hike is ready to publicize.
 
-## Analytics
+## Analytics: how GoatCounter is wired in
 
 - **GoatCounter**, dashboard at **https://csarko.goatcounter.com** (Cyrus's account,
   code `csarko`, set up 2026-09-11). No cookies, so no consent banner.
