@@ -2,7 +2,7 @@
 
 The source code behind my portfolio site **→ [csarko.sh](https://csarko.sh)**.
 
-It's a single hand-written HTML page: no framework, no build step, no JavaScript, fully agent-managed.
+It's a single hand-written HTML page: no framework, no build step, fully agent-managed. The only JavaScript is a 3 KB cookie-free visit counter.
 
 ## What's here
 
@@ -41,6 +41,7 @@ Lighthouse 100 across SEO, accessibility and best practices, performance ≥ 95,
 - **Findable:** canonical URL, schema.org `Person` data, a 1200×630 link-preview card, real favicons, `robots.txt` and a sitemap.
 - **Locked down:** a strict Content-Security-Policy and the full set of security headers.
 - **Accessible:** skip link, WCAG AA contrast, and a layout checked from 320px to 1440px.
+- **Private analytics:** [GoatCounter](https://www.goatcounter.com), with its script self-hosted and no cookies, so no consent banner and no third-party code on the page.
 
 `.agents/skills/site-quality/scripts/check.py` verifies all of it. Preview runs it, deploy won't publish without it, and `generate-assets.sh` rebuilds every generated asset deterministically.
 

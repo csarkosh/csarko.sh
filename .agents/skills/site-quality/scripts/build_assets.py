@@ -19,12 +19,18 @@ markers in every public/*.html that contains them:
   <!-- generated:head -->  …  <!-- /generated:head -->          font preload
   /* generated:fonts */    …  /* /generated:fonts */            @font-face rules
   <!-- generated:portrait --> … <!-- /generated:portrait -->    <picture> markup
+  <!-- generated:analytics --> … <!-- /generated:analytics -->  analytics <script>
+
+It also writes the Content-Security-Policy in firebase.json from CSP below plus
+whatever analytics needs, so the page, the policy and check.py's allowlist all
+derive from site.json and can't drift apart.
 
 Never hand-edit inside the markers; re-run this script. Stale hashed files are
 deleted. Requires Pillow with WebP and AVIF support (`pip install Pillow`).
 """
 
 import hashlib
+import json
 import re
 import sys
 from pathlib import Path
@@ -38,6 +44,29 @@ WIDTHS = (240, 360, 480, 720)
 # Rendered size: 230px wide on desktop, a 120px circle at <=640px viewports.
 SIZES = "(max-width: 640px) 120px, 230px"
 FALLBACK_WIDTH = 480
+CONFIG = json.loads((ROOT / ".agents/skills/site-quality/site.json").read_text())
+
+# The site's Content-Security-Policy, before analytics. Order is preserved.
+CSP = [
+    ("default-src", ["'none'"]),
+    ("script-src", []),
+    ("connect-src", ["'self'"]),  # Lighthouse's robots.txt audit fetches from inside the page
+    ("img-src", ["'self'"]),
+    ("font-src", ["'self'"]),
+    ("style-src", ["'self'", "'unsafe-inline'"]),
+    ("base-uri", ["'none'"]),
+    ("form-action", ["'none'"]),
+    ("frame-ancestors", ["'none'"]),
+    ("upgrade-insecure-requests", []),
+]
+VALUELESS = {"upgrade-insecure-requests"}
+
+
+def analytics_origin():
+    a = CONFIG.get("analytics") or {}
+    if a.get("provider") == "goatcounter" and a.get("code"):
+        return f"https://{a['code']}.goatcounter.com"
+    return None
 FONTS = {
     # file stem: (family, weight range, preload?)
     "inter-latin-var": ("Inter", "400 700", True),
@@ -146,6 +175,34 @@ def main() -> int:
         return "\n".join(f'  <link rel="preload" href="{prefix}assets/{name}" as="font" type="font/woff2" crossorigin />'
                           for name, _, _, preload in fonts if preload)
 
+    # ---- analytics: GoatCounter's count.js, self-hosted so no third-party script loads
+    origin = analytics_origin()
+    counter = None
+    if origin:
+        counter = write_hashed("goatcounter-count", "js", (SRC / "vendor/goatcounter-count.js").read_bytes(), keep)
+
+    def analytics(prefix):
+        if not counter:
+            return ""
+        return f'\n  <script data-goatcounter="{origin}/count" async src="{prefix}assets/{counter}"></script>\n  '
+
+    # ---- Content-Security-Policy in firebase.json
+    directives = {k: list(v) for k, v in CSP}
+    if origin:
+        directives["script-src"].append("'self'")
+        directives["connect-src"].append(origin)
+        directives["img-src"].append(origin)  # count.js falls back to an image beacon
+    csp = "; ".join(k if k in VALUELESS else f"{k} {' '.join(v)}" for k, v in directives.items() if v or k in VALUELESS)
+    fb_path = ROOT / "firebase.json"
+    fb = json.loads(fb_path.read_text())
+    for block in fb["hosting"]["headers"]:
+        if block.get("source") == "**":
+            for h in block["headers"]:
+                if h["key"] == "Content-Security-Policy" and h["value"] != csp:
+                    h["value"] = csp
+                    fb_path.write_text(json.dumps(fb, indent=2) + "\n")
+                    print("rewrote Content-Security-Policy in firebase.json")
+
     # ---- remove stale hashed files
     for f in OUT.iterdir():
         if f.name not in keep:
@@ -160,6 +217,7 @@ def main() -> int:
             (r"<!-- generated:head -->", r"<!-- /generated:head -->"): "\n" + preloads(prefix) + "\n  ",
             (r"/\* generated:fonts \*/", r"/\* /generated:fonts \*/"): "\n" + font_faces(prefix) + "\n    ",
             (r"<!-- generated:portrait -->", r"<!-- /generated:portrait -->"): "\n        " + picture(prefix) + "\n        ",
+            (r"<!-- generated:analytics -->", r"<!-- /generated:analytics -->"): analytics(prefix),
         }
         html = page.read_text(encoding="utf-8")
         before = html

@@ -101,7 +101,16 @@ link hidden until focused. On phones "Contact" is shown as "Links"
 (`label-short`), with `aria-label="Contact"` so assistive tech is unchanged; at
 ≤ 360px the nav gap tightens to 11px.
 
-## Adding a script or third-party service (e.g. analytics)
+## Analytics (in place)
+
+GoatCounter, configured only in `site.json` (`analytics.code`). The generator
+writes the async `<script data-goatcounter>` tag into both pages, the hashed
+self-hosted `count.js`, and the CSP; `check.py` derives its allowlist from the
+same file and verifies all three agree. Source script:
+`assets/vendor/goatcounter-count.js` (unmodified, ISC). It fits the 10 KB script
+budget (9.4 KB raw, 3 KB transferred).
+
+## Adding a script or third-party service
 
 This is the change most likely to regress everything above. In order:
 

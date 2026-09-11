@@ -35,13 +35,17 @@ SITE = "https://csarko.sh"
 CANONICAL = SITE + "/"
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
-# Third-party origins the pages may use, per CSP directive. Empty means the site
-# is fully first-party. Anything added here must also appear in the same
-# directive of firebase.json's Content-Security-Policy (checked below).
+# Third-party origins the pages may use, per CSP directive. Derived from
+# site.json, the same config build_assets.py uses to write the page's analytics
+# tag and the CSP, so the three can't drift. Scripts are always self-hosted.
+CONFIG = json.loads((SKILL / "site.json").read_text())
+_analytics = CONFIG.get("analytics") or {}
+ANALYTICS_ORIGIN = (f"https://{_analytics['code']}.goatcounter.com"
+                    if _analytics.get("provider") == "goatcounter" and _analytics.get("code") else None)
 THIRD_PARTY = {
     "script-src": [],
-    "connect-src": [],
-    "img-src": [],
+    "connect-src": [ANALYTICS_ORIGIN] if ANALYTICS_ORIGIN else [],
+    "img-src": [ANALYTICS_ORIGIN] if ANALYTICS_ORIGIN else [],  # GoatCounter's image-beacon fallback
 }
 
 # Performance budgets (bytes).
@@ -617,6 +621,32 @@ def observatory(host):
     check(result.get("grade") == "A+", f"grade {result.get('grade')} (score {result.get('score')}) {result.get('details_url', '')}")
 
 
+def analytics_checks(pages):
+    print("analytics")
+    for name, (page, html) in pages.items():
+        tags = [a for a, _ in page.scripts if "data-goatcounter" in a]
+        if not ANALYTICS_ORIGIN:
+            check(not tags, f"{name}: no analytics tag (analytics is off in site.json)")
+            continue
+        if len(tags) != 1:
+            fail(f"{name}: expected one GoatCounter <script>, found {len(tags)} — run generate-assets.sh")
+            continue
+        t = tags[0]
+        src = t.get("src", "")
+        check(t.get("data-goatcounter") == f"{ANALYTICS_ORIGIN}/count", f"{name}: counts to {t.get('data-goatcounter')}")
+        check("async" in t or "defer" in t, f"{name}: analytics script is async")
+        check(local_path(src) is not None and re.search(r"assets/goatcounter-count\.[0-9a-f]{8}\.js$", src),
+              f"{name}: count.js is self-hosted and content-hashed ({src})")
+        vendored = SKILL / "assets/vendor/goatcounter-count.js"
+        want = f"goatcounter-count.{hashlib.sha256(vendored.read_bytes()).hexdigest()[:8]}.js"
+        check(src.endswith(want), f"{name}: count.js matches the vendored copy")
+    _, catch_all = csp_from_config()
+    csp = parse_csp(catch_all.get("Content-Security-Policy"))
+    if ANALYTICS_ORIGIN:
+        check("'self'" in csp.get("script-src", []) and len(csp.get("script-src", [])) == 1,
+              "CSP script-src is exactly 'self' (no third-party or inline scripts)")
+
+
 def main(argv):
     pages = {"index.html": parse(PUBLIC / "index.html")}
     page, html = pages["index.html"]
@@ -629,6 +659,7 @@ def main(argv):
         performance_checks(*nf, "404.html")
         accessibility_checks(nf[0], "404.html")
     security_checks(pages)
+    analytics_checks(pages)
     layout_checks()
 
     def arg(flag, default):

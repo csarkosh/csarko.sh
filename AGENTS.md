@@ -8,7 +8,7 @@ him. No framework, no build step, no CI.
 
 | Path | What |
 |---|---|
-| `public/index.html` | **The site.** One file: inline CSS, inline SVG icons, JSON-LD, no JS. |
+| `public/index.html` | **The site.** One file: inline CSS, inline SVG icons, JSON-LD. The only JavaScript is the self-hosted GoatCounter counter. |
 | `public/me.jpg` | Portrait (640px wide JPEG, from `~/Pictures/Cyrus/me_1.png`). |
 | `public/assets/` | **Generated, content-hashed, cached for a year:** responsive portraits (AVIF/WebP/JPEG) and self-hosted fonts. |
 | `public/og-image.jpg`, `portrait.jpg`, `favicon.*`, `apple-touch-icon.png` | **Generated** too. Everything generated comes from `.agents/skills/site-quality/assets/` via `generate-assets.sh` — never hand-edit, including the `generated:` blocks inside the HTML. |
@@ -69,6 +69,25 @@ own procedure there. Read each skill's `SKILL.md` before using it.
   `html5-fps` was removed on purpose (an early prototype, not a game).
 - **The blog is "csarko.log"** at `https://csarko.substack.com/`. It has no
   published posts yet; Cyrus will publish once Day Hike is ready to publicize.
+
+## Analytics
+
+- **GoatCounter**, dashboard at **https://csarko.goatcounter.com** (Cyrus's account,
+  code `csarko`, set up 2026-09-11). No cookies, so no consent banner.
+- **Configured in one place:** `.agents/skills/site-quality/site.json`.
+  `generate-assets.sh` derives the `<script>` tag on both pages, the CSP
+  (`script-src 'self'`, beacons to `https://csarko.goatcounter.com` in
+  `connect-src` and `img-src`), and `check.py`'s allowlist from it. Don't edit
+  any of those by hand. Set `code` to `null` to turn analytics off cleanly.
+- **count.js is self-hosted:** vendored unmodified (ISC license) at
+  `.agents/skills/site-quality/assets/vendor/goatcounter-count.js` and served as
+  a content-hashed file, so no third-party script loads and Observatory stays A+.
+  To update it, re-download `https://gc.zgo.at/count.js` over that file (keep the
+  provenance comment accurate) and re-run the generator.
+- The 404 page counts too (the path shows the broken link). `localhost` and
+  `file://` previews are never counted.
+- Verified on first deploy: Lighthouse still 100/100/100/100 (LCP 1.2s, CLS 0),
+  Observatory A+ 120, beacon returns 200, zero console errors.
 
 ## Theme tokens
 
