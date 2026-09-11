@@ -1,8 +1,6 @@
 # csarko.sh
 
-The portfolio site of **Cyrus Sarkosh**, a senior software engineer and engineering lead in New York.
-
-**→ [csarko.sh](https://csarko.sh)**
+The source code behind my portfolio site **→ [csarko.sh](https://csarko.sh)**.
 
 It's a single hand-written HTML page: no framework, no build step, no JavaScript.
 
