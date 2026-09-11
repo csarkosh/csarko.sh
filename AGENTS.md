@@ -41,6 +41,10 @@ Read each skill's `SKILL.md` before using it.
   Engineer" (he was the *de facto* lead — say "engineering lead" in prose, never
   "Tech Lead" as a title); Voice AI was sunset, so never imply it's still running.
 - **Frame him as a lead**, not a supporting engineer.
+- **The Experience section stays high-level** *(Cyrus, 2026-09-11)*: for each role, a
+  short description of the product and his general role on it, plus tech tags.
+  **No metrics, customer names, or accomplishment bullets** (ARR, merchant counts,
+  call volumes, ~20x, McDonald's, Unilever…). Those details live in the résumé only.
 - **The hero tiles are a "Now" snapshot** (Building / Writing / Based in /
   Working), deliberately about him rather than DoorDash metrics. An earlier
   "What I care about" version was tried and replaced.
