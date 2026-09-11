@@ -99,7 +99,18 @@ Fonts: Inter (text) and JetBrains Mono (labels, tags), from Google Fonts.
   `csarko.sh` behind CloudFront, ACM certificate, Terraform state in the S3 bucket
   `sh.csarko.terraform` under `portfolio-site.csarko.sh/`).
 - **2026-09-11:** replaced with this static page on Firebase Hosting. All old
-  files were deleted except `LICENSE`; the README was rewritten. The old AWS
-  resources are to be deleted **after** the new site is verified live, one at a
-  time with Cyrus's approval. Check the AWS console (or ask) before assuming they
-  still exist.
+  files were deleted except `LICENSE`; the README was rewritten.
+  - **Cutover** was a single Route53 UPSERT of the apex A record (CloudFront alias
+    → `199.36.158.100`) at ~02:00 ET, after the certificate had been pre-issued
+    through a temporary `_acme-challenge.csarko.sh` TXT record (hand-made, not in
+    Terraform) so HTTPS worked from the first request. Verified: all public
+    resolvers, byte-identical `index.html`, valid Google Trust Services cert.
+  - **Deleted, with Cyrus's approval:** CloudFront distribution `E2CFFDQ06WHKKO`,
+    S3 bucket `csarko.sh`, and the state object
+    `s3://sh.csarko.terraform/portfolio-site.csarko.sh/terraform.tfstate` (that
+    bucket is versioned, so prior versions remain recoverable).
+  - **Deliberately kept:** the wildcard ACM certificate
+    (`*.csarko.sh`, `…5862bd2ce87d`) and its `_d8fcffaef4f2cd2dd3c80ff357cdc63a`
+    validation CNAME — both still serve the `babylonjs-fps-demo`/`webgl`/`fps`,
+    `readme-viewer` and `shooter` CloudFront sites — and the
+    `sh.csarko.terraform` bucket, which holds those projects' state.
