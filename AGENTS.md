@@ -91,6 +91,15 @@ Three sources, each for a different question. **Pick by the question, not by hab
   Engineer" (he was the *de facto* lead — say "engineering lead" in prose, never
   "Tech Lead" as a title); Voice AI was sunset, so never imply it's still running.
 - **Frame him as a lead**, not a supporting engineer.
+- **Headline identity is "senior software engineer"** *(Cyrus, 2026-09-13)*: the
+  search description, hero, share card and JSON-LD say he's a senior software
+  engineer who was the **founding engineer and lead on several zero-to-one
+  products at DoorDash**. Don't pair "senior software engineer" with "engineering
+  lead" there; it reads as two conflicting titles. "Founding engineer and lead
+  on…" is fine: it describes his role on those products, not a second title. The
+  hero's second clause is exploring generative AI for media and entertainment,
+  starting with game development; keep it broad, not games-only (he may move to
+  short films later, but that's not on the page).
 - **The Experience section stays high-level** *(Cyrus, 2026-09-11)*: for each role, a
   short description of the product and his general role on it, plus tech tags.
   **No metrics, customer names, or accomplishment bullets** (ARR, merchant counts,
@@ -101,8 +110,9 @@ Three sources, each for a different question. **Pick by the question, not by hab
 - **No em-dashes in page copy**; commas, colons, semicolons.
 - **Games section:** Day Hike (playable, links to
   `https://games.csarko.sh/dayhike/`), a **`game-dayhike` "Coming soon"
-  placeholder** (a non-clickable `div.card.placeholder`), and
-  `electron-gamepatch`. When `github.com/csarkosh/game-dayhike` goes public, turn
+  placeholder** (a non-clickable `div.card.placeholder`), `electron-gamepatch`,
+  and a full-width `csarko.sh` card (`.card.wide`, *added 2026-09-13*) linking
+  `github.com/csarkosh/csarko.sh` as a demo of a site managed entirely by agents. When `github.com/csarkosh/game-dayhike` goes public, turn
   the placeholder into `<a class="card" href="...">` with a "View on GitHub" link
   (there's an HTML comment marking the spot). **The asset pipeline is being
   commercialized** — never describe it as open source or part of that repo.
