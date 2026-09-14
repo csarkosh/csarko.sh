@@ -109,12 +109,15 @@ Three sources, each for a different question. **Pick by the question, not by hab
   "What I care about" version was tried and replaced.
 - **No em-dashes in page copy**; commas, colons, semicolons.
 - **Games section:** Day Hike (playable, links to
-  `https://games.csarko.sh/dayhike/`), a **`game-dayhike` "Coming soon"
-  placeholder** (a non-clickable `div.card.placeholder`), `electron-gamepatch`,
+  `https://games.csarko.sh/dayhike/`), **`game-dayhike`** (linked to
+  `github.com/csarkosh/game-dayhike` since it went public, *2026-09-14*), `electron-gamepatch`,
   and a full-width `csarko.sh` card (`.card.wide`, *added 2026-09-13*) linking
-  `github.com/csarkosh/csarko.sh` as a demo of a site managed entirely by agents. When `github.com/csarkosh/game-dayhike` goes public, turn
-  the placeholder into `<a class="card" href="...">` with a "View on GitHub" link
-  (there's an HTML comment marking the spot). **The asset pipeline is being
+  `github.com/csarkosh/csarko.sh` as a demo of a site managed entirely by agents.
+  The Day Hike card carries the game's story (the park ranger and the four missing
+  hikers) and the `game-dayhike` card carries the tech; both follow that repo's
+  README and GitHub description. `game-dayhike` has no licence yet, so its kicker
+  says "Public repo", not "Open source". The `.card.placeholder` style is kept for
+  future "Coming soon" cards. **The asset pipeline is being
   commercialized** — never describe it as open source or part of that repo.
   `html5-fps` was removed on purpose (an early prototype, not a game).
 - **The blog is "csarko.log"** at `https://csarko.substack.com/`. It has no
