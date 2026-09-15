@@ -231,8 +231,9 @@ Its `Person` and `WebSite` JSON-LD is unchanged; `#person` and `#website` are th
 
 `public/sitemap.xml` is generated. It lists `https://csarko.sh/`,
 `https://csarko.sh/docs`, and each doc with `<lastmod>` (`updated`, else
-`published`). `/` and `/docs` take the newest `lastmod` among the docs.
-`robots.txt` is unchanged.
+`published`). `/` and `/docs` carry no `<lastmod>`: a home-page-only edit never
+moves it, so a borrowed value (such as the newest doc's date) would be
+unreliable. `robots.txt` is unchanged.
 
 ### Manual steps after launch
 

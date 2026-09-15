@@ -519,10 +519,11 @@ ${docList(docs.slice(0, HOME_LIMIT), 3, '      ')}
 }
 
 export function sitemap(docs) {
-  const newest = docs.map((d) => d.modified).sort().at(-1);
+  // / and /docs get no <lastmod>: a home-page-only edit never moves it, so it was unreliable.
+  // Each doc keeps its own (updated, else published), which is a real content date.
   const entries = [
-    [`${SITE}/`, newest],
-    ...(docs.length ? [[`${SITE}/docs`, newest]] : []),
+    [`${SITE}/`, null],
+    ...(docs.length ? [[`${SITE}/docs`, null]] : []),
     ...docs.map((d) => [d.url, d.modified]),
   ];
   const urls = entries.map(([loc, lastmod]) =>

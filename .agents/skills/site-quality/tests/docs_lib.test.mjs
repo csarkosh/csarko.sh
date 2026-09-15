@@ -213,13 +213,13 @@ test('homeSection lists the three newest docs and is empty with none', () => {
   assert.equal(homeSection([]), '\n    ');
 });
 
-test('sitemap lists home, the index and every doc with lastmod', () => {
+test('sitemap lists home, the index and every doc, with lastmod only on docs', () => {
   assert.equal(sitemap([]),
     '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>https://csarko.sh/</loc>\n  </url>\n</urlset>\n');
   const xml = sitemap(sortDocs([doc('a', '2026-01-01'), doc('b', '2026-03-01', 'updated: 2026-04-01\n')]));
+  assert.ok(xml.includes('  <url>\n    <loc>https://csarko.sh/</loc>\n  </url>'), '/ has no lastmod');
+  assert.ok(xml.includes('  <url>\n    <loc>https://csarko.sh/docs</loc>\n  </url>'), '/docs has no lastmod');
   assert.deepEqual([...xml.matchAll(/<loc>(.*?)<\/loc>\n    <lastmod>(.*?)<\/lastmod>/g)].map((m) => [m[1], m[2]]), [
-    ['https://csarko.sh/', '2026-04-01'],
-    ['https://csarko.sh/docs', '2026-04-01'],
     ['https://csarko.sh/docs/b', '2026-04-01'],
     ['https://csarko.sh/docs/a', '2026-01-01'],
   ]);
