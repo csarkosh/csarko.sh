@@ -238,5 +238,34 @@ class ArgParsing(unittest.TestCase):
                 gsc.parse_args(argv)
 
 
+class ShortPath(unittest.TestCase):
+    """A Domain property reports every host under it, and a fragment is its own row."""
+
+    HOST = "csarko.sh"
+
+    def test_keeps_path_query_and_fragment(self):
+        self.assertEqual(gsc.short_path("https://csarko.sh/", self.HOST), "/")
+        self.assertEqual(gsc.short_path("https://csarko.sh/docs/x", self.HOST), "/docs/x")
+        self.assertEqual(gsc.short_path("https://csarko.sh/d?a=1", self.HOST), "/d?a=1")
+
+    def test_fragment_rows_do_not_collapse_onto_the_home_page(self):
+        rows = {gsc.short_path(u, self.HOST) for u in (
+            "https://csarko.sh/", "https://csarko.sh/#work", "https://csarko.sh/#games")}
+        self.assertEqual(rows, {"/", "/#work", "/#games"})
+
+    def test_other_hosts_keep_their_host(self):
+        self.assertEqual(gsc.short_path("https://games.csarko.sh/dayhike/", self.HOST), "games.csarko.sh/dayhike/")
+        self.assertEqual(gsc.short_path("https://csarko.sh/x", "other.com"), "csarko.sh/x")
+
+    def test_without_a_host_the_path_stands_alone(self):
+        self.assertEqual(gsc.short_path("https://games.csarko.sh/dayhike/"), "/dayhike/")
+
+
+class PropertyHost(unittest.TestCase):
+    def test_both_property_shapes(self):
+        self.assertEqual(gsc.property_host("sc-domain:csarko.sh"), "csarko.sh")
+        self.assertEqual(gsc.property_host("https://csarko.sh/"), "csarko.sh")
+
+
 if __name__ == "__main__":
     unittest.main()

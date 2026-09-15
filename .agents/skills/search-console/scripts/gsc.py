@@ -141,6 +141,13 @@ def feed_url(kind, value, prop):
     return prop.rstrip("/") + "/sitemap.xml"
 
 
+def property_host(prop):
+    """csarko.sh for sc-domain:csarko.sh and for https://csarko.sh/."""
+    if prop.startswith("sc-domain:"):
+        return prop[len("sc-domain:"):]
+    return urllib.parse.urlparse(prop).netloc
+
+
 def project_slug(prop):
     """A stable directory name for a property: csarko.sh -> csarko-sh."""
     host = prop[len("sc-domain:"):] if prop.startswith("sc-domain:") else urllib.parse.urlparse(prop).netloc
@@ -258,9 +265,19 @@ def render_table(headers, rows):
     return lines
 
 
-def short_path(url):
+def short_path(url, host=None):
+    """The part of a result URL worth reading in a table.
+
+    Google reports a fragment as its own row (`/#work` is not `/`), and a Domain
+    property covers every host under the domain, so both have to survive or
+    unrelated rows look like duplicates of the home page.
+    """
     parsed = urllib.parse.urlparse(url)
-    return (parsed.path or "/") + (f"?{parsed.query}" if parsed.query else "")
+    tail = (parsed.path or "/") + (f"?{parsed.query}" if parsed.query else "")
+    tail += f"#{parsed.fragment}" if parsed.fragment else ""
+    if parsed.netloc and host and parsed.netloc != host:
+        return parsed.netloc + tail
+    return tail
 
 
 def as_date(value):
@@ -414,7 +431,7 @@ def cmd_perf(opts, token):
         print(f"{label}  ({len(rows)} rows)")
         if rows:
             table = [[
-                short_path(r["keys"][0]) if dimension == "page" else r["keys"][0],
+                short_path(r["keys"][0], property_host(opts["property"])) if dimension == "page" else r["keys"][0],
                 r.get("clicks", 0),
                 r.get("impressions", 0),
                 pct(r.get("ctr")),

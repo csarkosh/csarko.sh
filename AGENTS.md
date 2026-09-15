@@ -75,14 +75,23 @@ Three sources, each for a different question. **Pick by the question, not by hab
   Its Core Web Vitals report needs real-user traffic volume the site may never
   reach; use the `site-quality` Lighthouse run for performance instead.
 
-**Search Console state as of 2026-09-11** (check these before re-doing any of them):
+**Search Console state as of 2026-09-15** (check these before re-doing any of
+them; `search-console`'s `gsc.py sitemap` and `gsc.py index` answer the first
+three from the command line):
 - Domain property verified through the apex TXT `google-site-verification=…` in
   `_infra/main.tf`. Removing that value un-verifies the property.
-- Sitemap `https://csarko.sh/sitemap.xml` submitted. Its first status was
-  "Couldn't fetch" before Google's first attempt, although the file is valid.
-  If it still isn't "Success" by ~2026-09-13, delete it in Sitemaps and resubmit
-  it once.
-- Indexing requested for `https://csarko.sh/` (URL Inspection).
+- Sitemap `https://csarko.sh/sitemap.xml` is **fetched**: last downloaded
+  2026-09-14, 0 errors, 0 warnings. The "Couldn't fetch" state resolved itself,
+  so there is nothing to delete and resubmit.
+- That download predates the docs, so the copy Google holds lists **1 URL**, not
+  11. It refetches on its own schedule; a manual resubmit in Sitemaps is the only
+  way to hurry it, and the read-only key cannot do it.
+- `https://csarko.sh/` is indexed (last crawled 2026-09-15). Every `/docs` URL is
+  still "URL is unknown to Google", which is normal for pages published the same
+  day.
+- A Domain property covers **every host** under `csarko.sh`, so search reports
+  still carry rows for the retired subdomains and the old React site's
+  `/contact` and `/projects`.
 - Temporary removals submitted for the retired subdomains `readme-viewer`,
   `babylonjs-fps-demo`, `shooter`, `fps`, `webgl` (all `*.csarko.sh`, "remove
   all URLs with this prefix"). They lapse around 2027-03. They shouldn't need
