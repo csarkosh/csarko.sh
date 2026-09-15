@@ -222,9 +222,13 @@
     main:focus { outline: none; }
     .wordmark { font-family: var(--mono); font-weight: 500; font-size: 15px; letter-spacing: -0.01em; }
     .wordmark span { color: var(--accent); }
-    .nav ul { display: flex; gap: 24px; list-style: none; margin: 0; padding: 0; }
+    .nav ul { display: flex; align-items: center; gap: 20px; list-style: none; margin: 0; padding: 0; }
     .nav ul a { color: var(--muted); font-size: 14px; transition: color .15s ease; }
     .nav ul a:hover { color: var(--text); }
+    /* Same bar as the home page: heading links (dimmer, in front), a divider, then page links.
+       Docs pages carry only page links, so these two rules are here to keep the copies in step. */
+    .nav .heading-link a { color: var(--faint); }
+    .nav .nav-divider { width: 1px; height: 16px; background: var(--border-strong); }
 
     .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin: 0 0 20px; display: flex; align-items: center; gap: 10px; }
     .eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); flex: none; }

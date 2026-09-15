@@ -199,12 +199,13 @@
     main:focus { outline: none; }
     .wordmark { font-family: var(--mono); font-weight: 500; font-size: 15px; letter-spacing: -0.01em; }
     .wordmark span { color: var(--accent); }
-    .nav ul { display: flex; gap: 24px; list-style: none; margin: 0; padding: 0; }
+    .nav ul { display: flex; align-items: center; gap: 20px; list-style: none; margin: 0; padding: 0; }
     .nav ul a { color: var(--muted); font-size: 14px; transition: color .15s ease; }
     .nav ul a:hover { color: var(--text); }
-    .nav .label-short { display: none; }
-    /* Below 640px the section jumps fold away and the bar matches the docs pages: Docs and Links. */
-    .nav [data-collapsible] { display: inline; }
+    /* Heading links jump inside this page, so they sit in front and read dimmer than the page links. */
+    .nav .heading-link a { color: var(--faint); }
+    .nav .heading-link a:hover { color: var(--text); }
+    .nav .nav-divider { width: 1px; height: 16px; background: var(--border-strong); }
 
     /* Hero */
     .hero { padding-block: 88px 56px; display: grid; grid-template-columns: 1fr auto; gap: 48px; align-items: center; }
@@ -338,9 +339,8 @@
     @media (max-width: 640px) {
       .nav ul { gap: 14px; }
       .nav ul a { font-size: 13.5px; }
-      .nav .label-long { display: none; }
-      .nav .label-short { display: inline; }
-      .nav li:has([data-collapsible]) { display: none; }
+      /* The collapse: heading links and their divider go, leaving the page links alone. */
+      .nav .heading-link, .nav .nav-divider { display: none; }
       .hero { padding-block: 48px 40px; grid-template-columns: 1fr; gap: 28px; }
       .portrait { order: -1; width: 120px; aspect-ratio: 1; border-radius: 50%; }
       .portrait img { object-position: 50% 22%; }
@@ -369,11 +369,12 @@
     <div class="wrap">
       <a class="wordmark" href="#top">csarko<span>.sh</span></a>
       <ul>
-        <li><a href="#work" data-collapsible="true">Work</a></li>
-        <li><a href="#games" data-collapsible="true">Games</a></li>
+        <li class="heading-link"><a href="#work" data-collapsible="true">Work</a></li>
+        <li class="heading-link"><a href="#games" data-collapsible="true">Games</a></li>
+        <li class="heading-link"><a href="#skills" data-collapsible="true">Skills</a></li>
+        <li class="heading-link"><a href="#contact" data-collapsible="true">Contact</a></li>
+        <li class="nav-divider" aria-hidden="true"></li>
         <li><a href="/docs">Docs</a></li>
-        <li><a href="#skills" data-collapsible="true">Skills</a></li>
-        <li><a href="#contact" aria-label="Contact"><span class="label-long">Contact</span><span class="label-short" aria-hidden="true">Links</span></a></li>
       </ul>
     </div>
   </nav>
