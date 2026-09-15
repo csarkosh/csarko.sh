@@ -776,6 +776,26 @@ def live_checks(base):
         s, h, _ = fetch(f"{base}/assets/{asset.name}")
         check(s == 200 and "immutable" in h.get("cache-control", ""), f"/assets/{asset.name} -> {s}, {h.get('cache-control')}")
 
+    docs = [rel for rel in indexable_pages() if rel.startswith("docs/")]
+    for rel in docs:
+        path = canonical_for(rel)[len(SITE):]
+        s, h, _ = fetch(base + path)
+        same_csp = h.get("content-security-policy") == catch_all.get("Content-Security-Policy")
+        check(s == 200 and same_csp, f"{path} -> {s}, CSP {'matches' if same_csp else 'differs from'} firebase.json")
+    if docs:
+        s, h, _ = fetch(base + "/docs/")
+        check(s in (301, 308) and h.get("location", "").endswith("/docs"), f"/docs/ -> {s} {h.get('location', '')}")
+    newest = newest_doc()
+    if newest:
+        clean = canonical_for(newest)[len(SITE):]
+        s, h, _ = fetch(base + clean + ".html")
+        check(s in (301, 308) and h.get("location", "").endswith(clean), f"{clean}.html -> {s} {h.get('location', '')}")
+    # A regex, not an XML parser: this is network input, and <loc> is all we need from it.
+    _, _, body = fetch(base + "/sitemap.xml")
+    locs = [loc for loc in re.findall(r"<loc>([^<]+)</loc>", body.decode("utf-8", "replace")) if loc.startswith(SITE)]
+    dead = [loc for loc in locs if fetch(base + loc[len(SITE):])[0] != 200]
+    check(locs and not dead, f"every live sitemap URL returns 200 {dead or f'({len(locs)} URLs)'}")
+
     s, h, body = fetch(base + "/some/missing/page")
     check(s == 404 and b"Page not found" in body and b"noindex" in body, f"missing page -> {s} with the custom 404 page")
     s, h, _ = fetch("http://" + base.split("://", 1)[1] + "/")
@@ -787,15 +807,19 @@ def live_checks(base):
         warn(f"www does not redirect correctly ({s} {h.get('location', '')})")
 
 
-def lighthouse(url):
-    # The page follows the system theme, so audit it once in each (0 = dark, 1 = light).
-    for theme, scheme in (("dark", 0), ("light", 1)):
-        lighthouse_run(url, theme, scheme)
+def lighthouse(base):
+    # Audit the home page and the newest doc, each once per theme (0 = dark, 1 = light).
+    newest = newest_doc()
+    urls = [base + "/"] + ([base + canonical_for(newest)[len(SITE):]] if newest else [])
+    for url in urls:
+        for theme, scheme in (("dark", 0), ("light", 1)):
+            lighthouse_run(url, theme, scheme)
 
 
 def lighthouse_run(url, theme, scheme):
     print(f"lighthouse ({theme} theme): {url}")
-    out = f"/tmp/csarko-sh-lighthouse-{theme}.json"
+    name = re.sub(r"[^a-z0-9]+", "-", url.split("://", 1)[-1].lower()).strip("-")
+    out = f"/tmp/csarko-sh-lighthouse-{name}-{theme}.json"
     subprocess.run(["npx", "-y", "lighthouse@12", url, "--quiet",
                     f"--chrome-flags=--headless=new --blink-settings=preferredColorScheme={scheme}",
                     "--only-categories=seo,accessibility,performance,best-practices",
