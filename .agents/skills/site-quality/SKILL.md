@@ -121,12 +121,23 @@ prints the exact hash); JSON-LD data blocks are exempt. `style-src` keeps
 **404** — `public/404.html` exists, is `noindex`, has no canonical, links home,
 and uses only root-relative paths.
 
-**Layout** — at 320, 360, 390, 768 and 1440px: all four nav links visible on one
+**Layout** — at 320, 360, 390, 768 and 1440px: every nav link visible on one
 line, ≥ 8px from the wordmark, no horizontal scroll, no button off-screen, skip
 link hidden until focused. On phones "Contact" is shown as "Links"
 (`label-short`), with `aria-label="Contact"` so assistive tech is unchanged; at
 ≤ 360px the nav gap tightens to 11px. The same checks run on `/docs` and the
 newest doc.
+
+**One bar, one width, every page** — `.wrap` is `max-width: 1120px` in both
+`public/index.html` and `DOCS_CSS` in `docs_lib.mjs`; change them together or
+the nav jumps width between the home page and a doc. The home page's nav is
+`Work · Games · Docs · Skills · Contact` and the docs pages' is `Docs · Home`.
+The home page's section jumps carry `data-collapsible="true"` and fold away at
+≤ 640px, leaving `Docs · Links`, the same shape the docs pages have: that
+attribute is what lets the layout check accept a hidden link (every link
+without it must stay visible at every width), so a new nav link needs it only
+if it is meant to fold. Long text is bounded by its own measure, not by the
+shell: `78ch` on role and doc-list copy, `72ch` on a doc's `main`.
 
 ## Analytics (in place)
 
@@ -161,7 +172,10 @@ This is the change most likely to regress everything above. In order:
 3. Profile links changed? Update JSON-LD `sameAs`.
 4. New image? `alt`, `width`, `height`; above the fold, never lazy or animated.
 5. New section? Sequential headings, one h1. New nav item? Re-run the layout
-   check — it may need a `label-short`.
+   check — it may need a `label-short`, and a section jump needs
+   `data-collapsible="true"` so it folds away with the others on a phone. Add it
+   to both navs (`public/index.html` and `NAV` in `docs_lib.mjs`) if it belongs
+   site-wide.
 6. New color? Make it a token with a value in both the dark and light blocks;
    text ≥ 4.5:1 on its surface in both. Check both themes' screenshots.
 7. Never add `noindex` to index.html, `Disallow: /`, or remove the canonical.

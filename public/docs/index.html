@@ -57,8 +57,56 @@
           {
             "@type": "ListItem",
             "position": 1,
+            "url": "https://csarko.sh/docs/atmosphere-and-dread-shaders",
+            "name": "Atmosphere and dread: a second shader research pass"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
             "url": "https://csarko.sh/docs/stylized-shader-looks",
             "name": "Stylized shader looks: how games build a visual identity"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "url": "https://csarko.sh/docs/no-visible-pop-in",
+            "name": "No visible pop-in: dissolving a streamed forest"
+          },
+          {
+            "@type": "ListItem",
+            "position": 4,
+            "url": "https://csarko.sh/docs/floating-props-on-procedural-terrain",
+            "name": "Why props float on procedural terrain"
+          },
+          {
+            "@type": "ListItem",
+            "position": 5,
+            "url": "https://csarko.sh/docs/pointer-lock-escape-cooldown",
+            "name": "Pointer lock's Esc cooldown and an 8-byte patch"
+          },
+          {
+            "@type": "ListItem",
+            "position": 6,
+            "url": "https://csarko.sh/docs/babylon-material-plugin-traps",
+            "name": "Babylon.js material plugins: hooks and traps"
+          },
+          {
+            "@type": "ListItem",
+            "position": 7,
+            "url": "https://csarko.sh/docs/procedural-world-as-a-pure-function",
+            "name": "An endless world as a pure function"
+          },
+          {
+            "@type": "ListItem",
+            "position": 8,
+            "url": "https://csarko.sh/docs/webrtc-signaling-on-cloud-run",
+            "name": "Hosting WebRTC signaling on Cloud Run"
+          },
+          {
+            "@type": "ListItem",
+            "position": 9,
+            "url": "https://csarko.sh/docs/browser-coop-netcode",
+            "name": "Host-authoritative co-op netcode in the browser"
           }
         ]
       }
@@ -164,8 +212,8 @@
     a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
     ::selection { background: var(--accent); color: var(--on-accent); }
 
-    .wrap { max-width: 880px; margin: 0 auto; padding-inline: 24px; }
-    .doc-page .wrap { max-width: 1120px; }
+    /* One width for the nav, content and footer on every page of the site (see public/index.html). */
+    .wrap { max-width: 1120px; margin: 0 auto; padding-inline: 24px; }
 
     .nav { position: sticky; top: 0; z-index: 10; backdrop-filter: saturate(140%) blur(12px); -webkit-backdrop-filter: saturate(140%) blur(12px); background: var(--nav-bg); border-bottom: 1px solid var(--border); }
     .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
@@ -189,9 +237,12 @@
 
     .shell { display: grid; grid-template-columns: minmax(0, 1fr); gap: 64px; padding-block: 72px 96px; }
     .rail { display: none; }
+    /* The reading measure, not the shell, bounds the text: the rail and the article then start at
+       the same left edge as the nav's wordmark, at every width. */
+    .doc-page main { max-width: 72ch; }
     @media (min-width: 1060px) {
-      .shell { grid-template-columns: 230px minmax(0, 72ch); justify-content: center; }
-      .shell.no-rail { grid-template-columns: minmax(0, 72ch); }
+      .shell { grid-template-columns: 230px minmax(0, 1fr); }
+      .shell.no-rail { grid-template-columns: minmax(0, 1fr); }
       .rail { display: block; position: sticky; top: 108px; align-self: start; max-height: calc(100vh - 140px); overflow-y: auto; }
     }
     .rail ol { list-style: none; margin: 16px 0 0; padding: 0 0 0 16px; border-left: 1px solid var(--border-strong); display: grid; gap: 4px; }
@@ -239,7 +290,7 @@
     .doc-list .doc-title a { transition: color .15s ease; }
     .doc-list .doc-title a:hover { color: var(--accent); }
     .doc-meta { margin: 0 0 6px; font-family: var(--mono); font-size: 12px; color: var(--faint); }
-    .doc-desc { margin: 0; color: var(--muted); }
+    .doc-desc { margin: 0; color: var(--muted); max-width: 78ch; }
 
     footer { border-top: 1px solid var(--border); padding-block: 28px 40px; color: var(--faint); font-size: 13px; }
     footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
@@ -277,9 +328,49 @@
     </header>
     <ul class="doc-list" role="list">
       <li>
+        <h2 class="doc-title"><a href="/docs/atmosphere-and-dread-shaders">Atmosphere and dread: a second shader research pass</a></h2>
+        <p class="doc-meta">Sep 15, 2026 · 16 min read</p>
+        <p class="doc-desc">How atmospheric and horror games use height fog, grading, film grain and dread-driven effects, and what Babylon.js can do at 60 fps in a browser.</p>
+      </li>
+      <li>
         <h2 class="doc-title"><a href="/docs/stylized-shader-looks">Stylized shader looks: how games build a visual identity</a></h2>
         <p class="doc-meta">Sep 14, 2026 · 5 min read</p>
         <p class="doc-desc">How games use shaders to build a distinct look, from ink outlines and cel lighting to dithering, gradient fog and VHS effects.</p>
+      </li>
+      <li>
+        <h2 class="doc-title"><a href="/docs/no-visible-pop-in">No visible pop-in: dissolving a streamed forest</a></h2>
+        <p class="doc-meta">Sep 1, 2026 · 15 min read</p>
+        <p class="doc-desc">Keeping a streamed browser forest from visibly spawning: pixel-size arithmetic, screen-space dissolve bands, and what discard costs in opaque shaders.</p>
+      </li>
+      <li>
+        <h2 class="doc-title"><a href="/docs/floating-props-on-procedural-terrain">Why props float on procedural terrain</a></h2>
+        <p class="doc-meta">Aug 29, 2026 · 17 min read</p>
+        <p class="doc-desc">Why trees float on slopes and distant ridges in a procedural world, measured, and the shader and clipmap fixes that grounded them in Babylon.js.</p>
+      </li>
+      <li>
+        <h2 class="doc-title"><a href="/docs/pointer-lock-escape-cooldown">Pointer lock&#39;s Esc cooldown and an 8-byte patch</a></h2>
+        <p class="doc-meta">Aug 25, 2026 · 12 min read</p>
+        <p class="doc-desc">Chromium refuses pointer lock for 1.25 s after Esc. What failed in the browser, and how an 8-byte patch to prebuilt Electron removed the cooldown.</p>
+      </li>
+      <li>
+        <h2 class="doc-title"><a href="/docs/babylon-material-plugin-traps">Babylon.js material plugins: hooks and traps</a></h2>
+        <p class="doc-meta">Aug 17, 2026 · 15 min read</p>
+        <p class="doc-desc">Where Babylon.js 9.18 injects material plugin GLSL, what each PBR hook can see, and the silent failures behind preprocessor, comment and bake traps.</p>
+      </li>
+      <li>
+        <h2 class="doc-title"><a href="/docs/procedural-world-as-a-pure-function">An endless world as a pure function</a></h2>
+        <p class="doc-meta">Jul 29, 2026 · 18 min read</p>
+        <p class="doc-desc">Unbounded mountains, a warped coastline, a highway and cliff bands built as pure C² functions with exact derivatives, so every peer builds one world.</p>
+      </li>
+      <li>
+        <h2 class="doc-title"><a href="/docs/webrtc-signaling-on-cloud-run">Hosting WebRTC signaling on Cloud Run</a></h2>
+        <p class="doc-meta">Jul 29, 2026 · 18 min read</p>
+        <p class="doc-desc">Hosting a WebRTC signaling server on Google Cloud Run for a browser co-op game, the platform behaviours that broke it, and what a running match survives.</p>
+      </li>
+      <li>
+        <h2 class="doc-title"><a href="/docs/browser-coop-netcode">Host-authoritative co-op netcode in the browser</a></h2>
+        <p class="doc-meta">Jul 25, 2026 · 15 min read</p>
+        <p class="doc-desc">How Day Hike&#39;s browser co-op stays responsive: a 60 Hz fixed step, redundant inputs, quantized snapshots, prediction, and host-created lobbies.</p>
       </li>
     </ul>
   </main>
