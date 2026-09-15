@@ -27,7 +27,8 @@ self-hosted GoatCounter counter.
 ## Non-goals (this version)
 
 - Per-doc share images (every page uses `og-image.jpg`).
-- Images inside docs. The build fails if a doc references a local image.
+- Images inside docs. The build fails if a doc contains any Markdown image
+  (a remote image would also break the CSP and the third-party allowlist).
 - Categories, tags, subfolders, pagination, search, RSS.
 - Draft or unpublished docs. The repo is public, so anything committed is published.
 - The contents rail's active-section highlight (it needs JavaScript).
@@ -146,7 +147,10 @@ fit the site (embedded fonts, inline script, repository path labels):
   - `http(s)` links get `target="_blank" rel="noopener"` and a `↗` mark.
   - Raw HTML in Markdown is escaped, not passed through.
   - Heading levels in the body must not skip (H2 → H4 fails the build).
-  - A Markdown image with a non-`https` source fails the build.
+  - Any Markdown image fails the build.
+  - Links must be `https://`/`http://`, `#anchor` or root-relative `/path`;
+    anything else (such as `other.md`) fails the build.
+  - An em-dash anywhere in the file fails the build.
 - Contents rail: the H2 list, visible at ≥ 1060px, static (no highlight).
 - Author box after the body: "Written by Cyrus Sarkosh", the identity line
   "Senior software engineer, founding engineer and lead on several zero-to-one
@@ -244,7 +248,8 @@ clean-URL rules. Per page kind:
 | HTML budget | 50 KB | 50 KB | 50 KB | 120 KB |
 | Fonts, scripts, third-party allowlist | ✓ | ✓ | ✓ | ✓ |
 | Portrait rules | ✓ | | | |
-| Accessibility (skip link, alt, in-page anchors, `noopener`) | ✓ | ✓ | ✓ | ✓ |
+| Accessibility (alt, in-page anchors, `noopener`) | ✓ | ✓ | ✓ | ✓ |
+| Skip link first in `<body>`, target has `tabindex="-1"` | ✓ | | ✓ | ✓ |
 | Theme (tokens, light overrides, contrast) | ✓ | ✓ | ✓ | ✓ |
 
 New checks:
@@ -281,8 +286,9 @@ New checks:
   mimics Firebase's routing: `/x` serves `x.html` when it exists, a directory
   serves its `index.html`, a trailing slash redirects to the slashless URL, and
   a missing path serves `404.html` with status 404.
-- `--shots` adds desktop and mobile screenshots of the newest doc, in both
-  themes (`doc.png`, `doc-light.png`, `doc-mobile.png`, `doc-mobile-light.png`).
+- `--shots` loads pages from a temporary `serve.py` and adds desktop and mobile
+  screenshots of the newest doc, in both themes (`doc-desktop.png`,
+  `doc-desktop-light.png`, `doc-mobile.png`, `doc-mobile-light.png`).
 - Plain `preview.sh` still opens `index.html` from disk and prints that the docs
   links need `--serve`.
 
