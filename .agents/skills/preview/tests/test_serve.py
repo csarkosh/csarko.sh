@@ -41,6 +41,12 @@ class Route(unittest.TestCase):
         self.assertEqual(self.route("/nope"), (404, self.public / "404.html"))
         self.assertEqual(self.route("/../../etc/passwd"), (404, self.public / "404.html"))
 
+    def test_collapses_leading_slashes_and_backslashes_before_routing(self):
+        # "//evil.com/" and "/\evil.com/" are protocol-relative in a browser's eyes: an
+        # unqualified Location header built from them would redirect off-site.
+        self.assertEqual(self.route("//evil.com/"), (301, "/evil.com"))
+        self.assertEqual(self.route("/\\evil.com/"), (301, "/evil.com"))
+
 
 if __name__ == "__main__":
     unittest.main()

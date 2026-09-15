@@ -749,6 +749,7 @@ def fetch(url):
 
 
 def live_checks(base):
+    base = base.rstrip("/")
     print(f"live: {base}")
     _, catch_all = csp_from_config()
     status, headers, body = fetch(base + "/")
@@ -812,6 +813,7 @@ def live_checks(base):
 
 def lighthouse(base):
     # Audit the home page and the newest doc, each once per theme (0 = dark, 1 = light).
+    base = base.rstrip("/")
     newest = newest_doc()
     urls = [base + "/"] + ([base + canonical_for(newest)[len(SITE):]] if newest else [])
     for url in urls:

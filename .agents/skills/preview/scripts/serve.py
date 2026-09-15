@@ -27,6 +27,12 @@ for _type, _ext in (("font/woff2", ".woff2"), ("image/avif", ".avif"), ("image/w
 
 def route(public, raw_path):
     """(200, file) | (301, location) | (404, public/404.html) for a request path."""
+    # A path starting "//" or "/\" is protocol-relative to a browser (it becomes the network
+    # path reference //host/...), so an unqualified Location built from it would redirect
+    # off-site. Collapse before anything else touches the path.
+    raw_path = raw_path.replace("\\", "/")
+    if raw_path.startswith("/"):
+        raw_path = "/" + raw_path.lstrip("/")
     parts = urlsplit(raw_path)
     path = unquote(parts.path) or "/"
     query = f"?{parts.query}" if parts.query else ""

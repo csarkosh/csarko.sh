@@ -87,6 +87,7 @@ EOF
     echo "$OUT/${prefix}mobile.png    $OUT/${prefix}mobile-light.png   (the page is the left 390px; the grey strip is the frame)"
   done
   kill "$SHOT_PID" 2>/dev/null || true
+  wait "$SHOT_PID" 2>/dev/null || true
   trap - EXIT
 fi
 
