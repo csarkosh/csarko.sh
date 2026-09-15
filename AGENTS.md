@@ -23,8 +23,9 @@ him. No framework, no build step, no CI.
 ## Workflows
 
 - **See a change:** `.agents/skills/preview/scripts/preview.sh` (opens Chrome) or
-  `--shots` for desktop + mobile screenshots in `/tmp/csarko-sh-preview/`. After any
-  visual edit, look at both screenshots before calling it done.
+  `--shots` for desktop + mobile screenshots, in both the dark and light themes, in
+  `/tmp/csarko-sh-preview/`. After any visual edit, look at the screenshots in both
+  themes before calling it done.
 - **Ship a change:** `.agents/skills/deploy/scripts/deploy.sh`. It verifies the
   deployed `index.html` byte-for-byte on both the web.app URL and csarko.sh.
   `--preview` gives a 7-day shareable channel instead.
@@ -83,7 +84,10 @@ Three sources, each for a different question. **Pick by the question, not by hab
 - **No email address or phone number anywhere on the page.** He doesn't want
   spam. Contact goes through LinkedIn (the primary button), GitHub and Substack.
   `deploy.sh` enforces this and refuses to publish otherwise.
-- **Dark theme only, no toggle.**
+- **Dark and light themes, chosen by the visitor's system setting, no toggle**
+  *(Cyrus, 2026-09-14; it was dark-only before)*. Dark is the default. The light
+  theme keeps the same scheme: cool slate neutrals and the teal accent. See
+  "Theme tokens".
 - **Facts come from his résumé.** The canonical source is
   `~/Documents/Resume/resume_build.docx`; decisions and confirmed numbers are in
   `~/Documents/Resume/AGENTS.md`. Don't introduce a number or claim that isn't
@@ -144,21 +148,33 @@ Three sources, each for a different question. **Pick by the question, not by hab
 
 ## Theme tokens
 
-Defined as CSS custom properties at the top of `index.html`. Cyrus uses these to
-match his Substack theme, so keep them stable or tell him when they change.
+Defined as CSS custom properties at the top of `index.html`: the dark values on
+`:root`, the light overrides in `@media (prefers-color-scheme: light)`. Cyrus uses
+the dark ones to match his Substack theme, so keep them stable or tell him when
+they change.
 
-| Token | Hex |
-|---|---|
-| `--accent` | `#7dd3c0` (hover `#95e0cf`, text on accent `#06231d`) |
-| `--bg` | `#0a0b0e` |
-| `--surface` / `--surface-2` | `#111318` / `#161922` |
-| `--text` / `--muted` / `--faint` | `#e8eaf0` / `#a0a8b8` / `#7d8597` |
+| Token | Dark (default) | Light |
+|---|---|---|
+| `--accent` | `#7dd3c0` | `#0a735f` |
+| `--accent-hover` / `--on-accent` | `#95e0cf` / `#06231d` | `#075a4a` / `#ffffff` |
+| `--bg` | `#0a0b0e` | `#f6f7f9` |
+| `--surface` / `--surface-2` | `#111318` / `#161922` | `#ffffff` / `#eef0f4` |
+| `--text` / `--muted` / `--faint` | `#e8eaf0` / `#a0a8b8` / `#7d8597` | `#12151c` / `#4a5263` / `#5f677a` |
 
-`--faint` is `#7d8597`, the dimmest text that clears WCAG 4.5:1 on every surface
-(it was `#6e7688`, which failed). Fonts: Inter (text) and JetBrains Mono (labels,
+The light accent is a deep version of the mint (same hue, ~167°), because the
+mint itself is unreadable on white; the mint still shows up in light mode as the
+background glow and the featured card's tint. **Every color on the page is a
+token** (borders, glows, the nav's glass, shadows too), so a new color needs a
+value in both blocks; `check.py` fails on a hardcoded color, a token the light
+block misses, or text under 4.5:1 in either theme. `404.html` carries a subset
+of the same tokens.
+
+`--faint` is the dimmest text that clears WCAG 4.5:1 on every surface in its
+theme (dark was `#6e7688`, which failed). Fonts: Inter (text) and JetBrains Mono (labels,
 tags), **self-hosted** from `public/assets/` — not Google Fonts, whose stylesheet
-blocked the first paint. If a token changes, regenerate the og-image and
-favicons (`.agents/skills/site-quality/scripts/generate-assets.sh`).
+blocked the first paint. The og-image and favicons stay dark in both themes; if a
+dark token changes, regenerate them
+(`.agents/skills/site-quality/scripts/generate-assets.sh`).
 
 ## Infrastructure
 

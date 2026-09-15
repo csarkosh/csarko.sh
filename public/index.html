@@ -23,7 +23,9 @@
   <meta name="twitter:image" content="https://csarko.sh/og-image.jpg" />
   <meta name="twitter:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
 
-  <meta name="theme-color" content="#0a0b0e" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0a0b0e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)" />
   <link rel="icon" href="favicon.ico" sizes="48x48" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="favicon-96x96.png" type="image/png" sizes="96x96" />
@@ -99,20 +101,57 @@
     }
     /* /generated:fonts */
 
+    /* Theme follows the system setting; dark is the default. Every color on the page is a token here. */
     :root {
+      color-scheme: dark;
       --bg: #0a0b0e;
       --surface: #111318;
       --surface-2: #161922;
+      --surface-hover: #13161c;
       --border: rgba(255, 255, 255, 0.08);
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
       --faint: #7d8597;
       --accent: #7dd3c0;
+      --accent-hover: #95e0cf;
+      --on-accent: #06231d;
       --accent-soft: rgba(125, 211, 192, 0.12);
+      --accent-tint: rgba(125, 211, 192, 0.08);
+      --accent-glow: rgba(125, 211, 192, 0.10);
+      --accent-underline: rgba(125, 211, 192, 0.35);
+      --accent-border: rgba(125, 211, 192, 0.45);
+      --portrait-ring: rgba(125, 211, 192, 0.05);
+      --portrait-shadow: rgba(125, 211, 192, 0.25);
+      --nav-bg: rgba(10, 11, 14, 0.72);
       --sans: "Inter", "Inter Fallback", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       --mono: "JetBrains Mono", "JetBrains Mono Fallback", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
       --radius: 14px;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        color-scheme: light;
+        --bg: #f6f7f9;
+        --surface: #ffffff;
+        --surface-2: #eef0f4;
+        --surface-hover: #ffffff;
+        --border: rgba(10, 11, 14, 0.09);
+        --border-strong: rgba(10, 11, 14, 0.16);
+        --text: #12151c;
+        --muted: #4a5263;
+        --faint: #5f677a;
+        --accent: #0a735f;
+        --accent-hover: #075a4a;
+        --on-accent: #ffffff;
+        --accent-soft: rgba(10, 115, 95, 0.10);
+        --accent-tint: rgba(125, 211, 192, 0.20);
+        --accent-glow: rgba(125, 211, 192, 0.30);
+        --accent-underline: rgba(10, 115, 95, 0.35);
+        --accent-border: rgba(10, 115, 95, 0.45);
+        --portrait-ring: rgba(10, 115, 95, 0.06);
+        --portrait-shadow: rgba(10, 115, 95, 0.28);
+        --nav-bg: rgba(246, 247, 249, 0.78);
+      }
     }
 
     *, *::before, *::after { box-sizing: border-box; }
@@ -131,13 +170,13 @@
       position: fixed;
       inset: -20vh -10vw auto;
       height: 70vh;
-      background: radial-gradient(ellipse at 30% 0%, rgba(125, 211, 192, 0.10), transparent 60%);
+      background: radial-gradient(ellipse at 30% 0%, var(--accent-glow), transparent 60%);
       pointer-events: none;
       z-index: -1;
     }
     a { color: inherit; text-decoration: none; }
     a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
-    ::selection { background: var(--accent); color: var(--bg); }
+    ::selection { background: var(--accent); color: var(--on-accent); }
 
     .wrap { max-width: 880px; margin: 0 auto; padding-inline: 24px; }
 
@@ -146,14 +185,14 @@
       position: sticky; top: 0; z-index: 10;
       backdrop-filter: saturate(140%) blur(12px);
       -webkit-backdrop-filter: saturate(140%) blur(12px);
-      background: rgba(10, 11, 14, 0.72);
+      background: var(--nav-bg);
       border-bottom: 1px solid var(--border);
     }
     .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
     .skip-link {
       position: absolute; left: 16px; top: -60px; z-index: 100;
       padding: 8px 14px; border-radius: 8px;
-      background: var(--accent); color: #06231d; font-size: 14px; font-weight: 600;
+      background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 600;
     }
     .skip-link:focus { top: 12px; }
     main:focus { outline: none; }
@@ -169,7 +208,7 @@
     .portrait {
       margin: 0; width: 230px; aspect-ratio: 4 / 5; border-radius: 20px; overflow: hidden; position: relative;
       border: 1px solid var(--border-strong);
-      box-shadow: 0 0 0 6px rgba(125, 211, 192, 0.05), 0 24px 60px -20px rgba(125, 211, 192, 0.25);
+      box-shadow: 0 0 0 6px var(--portrait-ring), 0 24px 60px -20px var(--portrait-shadow);
     }
     .portrait picture { display: block; width: 100%; height: 100%; }
     .portrait img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; display: block; }
@@ -193,8 +232,8 @@
       transition: border-color .15s ease, transform .15s ease, background .15s ease;
     }
     .btn:hover { border-color: var(--accent); transform: translateY(-1px); }
-    .btn.primary { background: var(--accent); border-color: var(--accent); color: #06231d; }
-    .btn.primary:hover { background: #95e0cf; }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+    .btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
     .btn svg { width: 16px; height: 16px; flex: none; }
 
     /* Values */
@@ -207,7 +246,7 @@
     .value .icon svg { width: 18px; height: 18px; }
     .value .label { margin: 0 0 6px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
     .value p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--text); }
-    .inline-link { color: var(--accent); text-decoration: underline; text-decoration-color: rgba(125, 211, 192, 0.35); text-underline-offset: 3px; transition: text-decoration-color .15s ease; }
+    .inline-link { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; transition: text-decoration-color .15s ease; }
     .inline-link:hover { text-decoration-color: var(--accent); }
 
     /* Sections */
@@ -247,8 +286,8 @@
       background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 22px; transition: border-color .18s ease, transform .18s ease, background .18s ease;
     }
-    .card:hover { border-color: rgba(125, 211, 192, 0.45); transform: translateY(-2px); background: #13161c; }
-    .card.featured { grid-column: 1 / -1; background: linear-gradient(135deg, rgba(125, 211, 192, 0.08), transparent 55%), var(--surface); }
+    .card:hover { border-color: var(--accent-border); transform: translateY(-2px); background: var(--surface-hover); }
+    .card.featured { grid-column: 1 / -1; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); }
     .card .card-kicker { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin: 0 0 10px; }
     .card h3 { margin: 0 0 8px; font-size: 1.15rem; letter-spacing: -0.015em; display: flex; align-items: center; gap: 8px; }
     .card .card-desc { margin: 0; color: var(--muted); font-size: 15px; flex: 1; }

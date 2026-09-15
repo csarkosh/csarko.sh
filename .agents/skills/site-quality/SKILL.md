@@ -29,7 +29,7 @@ page, so every one of these is achievable and should stay that way.
 S=.agents/skills/site-quality/scripts
 $S/check.py                    # static: SEO, performance budgets, a11y, headers, 404, layout (~5s)
 $S/check.py --live             # + deployed site: live headers, caching, 404, redirects, third-party JS
-$S/check.py --lighthouse       # + Lighthouse (SEO/A11y/Best Practices 100, Performance ≥ 95)
+$S/check.py --lighthouse       # + Lighthouse, once per theme (SEO/A11y/Best Practices 100, Performance ≥ 95)
 $S/check.py --observatory      # + Mozilla HTTP Observatory (must be A+)
 $S/generate-assets.sh          # rebuild EVERYTHING generated (see below) — deterministic
 ```
@@ -82,6 +82,18 @@ resources** except origins in `THIRD_PARTY` in `check.py`; scripts must be
 target has `tabindex="-1"`; alt on every image; in-page links resolve; new-tab
 links have `rel="noopener"`. Contrast is enforced by Lighthouse = 100:
 `--faint` `#7d8597` is the dimmest text that clears 4.5:1 — don't darken it.
+
+**Theme** — the page follows the system color scheme: dark tokens on `:root`,
+light overrides in `@media (prefers-color-scheme: light) { :root { … } }`, with
+`<meta name="color-scheme" content="dark light">` and a `theme-color` meta per
+scheme. Lighthouse sees one theme per run, and headless Chrome otherwise
+inherits the machine's setting, so `--lighthouse` audits both
+(`--blink-settings=preferredColorScheme=0|1`). The static check covers both on
+every run: no color literal outside the two token blocks, the light block
+overrides every color token, and `--text`/`--muted`/`--faint`/`--accent` clear
+4.5:1 on `--bg`/`--surface`/`--surface-2` (and `--on-accent` on the accent) in
+each theme. In light mode `--faint` is `#5f677a` and the accent is the deep
+`#0a735f`; the mint `#7dd3c0` fails on white.
 
 **Security** (`firebase.json`, source `**`) — `Content-Security-Policy` with
 `default-src 'none'`, `frame-ancestors 'none'`, `base-uri 'none'`,
@@ -138,7 +150,8 @@ This is the change most likely to regress everything above. In order:
 4. New image? `alt`, `width`, `height`; above the fold, never lazy or animated.
 5. New section? Sequential headings, one h1. New nav item? Re-run the layout
    check — it may need a `label-short`.
-6. New text color? ≥ 4.5:1 on its surface.
+6. New color? Make it a token with a value in both the dark and light blocks;
+   text ≥ 4.5:1 on its surface in both. Check both themes' screenshots.
 7. Never add `noindex` to index.html, `Disallow: /`, or remove the canonical.
 
 Content rules in `AGENTS.md` still win (no email/phone, no metrics in Experience).

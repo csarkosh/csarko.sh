@@ -40,7 +40,7 @@ Lighthouse 100 across SEO, accessibility and best practices, performance ≥ 95,
 - **Fast:** a responsive AVIF/WebP portrait, self-hosted fonts, content-hashed assets cached for a year, and byte budgets for HTML, fonts, images and JavaScript.
 - **Findable:** canonical URL, schema.org `Person` data, a 1200×630 link-preview card, real favicons, `robots.txt` and a sitemap.
 - **Locked down:** a strict Content-Security-Policy and the full set of security headers.
-- **Accessible:** skip link, WCAG AA contrast, and a layout checked from 320px to 1440px.
+- **Accessible:** skip link, WCAG AA contrast in both the dark and light themes (the page follows your system setting), and a layout checked from 320px to 1440px.
 - **Private analytics:** [GoatCounter](https://www.goatcounter.com), with its script self-hosted and no cookies, so no consent banner and no third-party code on the page.
 
 `.agents/skills/site-quality/scripts/check.py` verifies all of it. Preview runs it, deploy won't publish without it, and `generate-assets.sh` rebuilds every generated asset deterministically.

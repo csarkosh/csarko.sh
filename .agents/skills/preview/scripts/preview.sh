@@ -6,7 +6,7 @@
 #   preview.sh            open public/index.html in Chrome (file://)
 #   preview.sh --serve    serve public/ on http://localhost:4173 and open it
 #   preview.sh --stop     stop a server started with --serve
-#   preview.sh --shots    write desktop + mobile screenshots to /tmp/csarko-sh-preview/
+#   preview.sh --shots    write desktop + mobile screenshots, dark and light, to /tmp/csarko-sh-preview/
 #
 # Flags combine, e.g. `preview.sh --shots` alone does not open Chrome.
 
@@ -46,8 +46,6 @@ fi
 if (( SHOTS )); then
   [[ -x "$CHROME" ]] || die "Google Chrome not found at $CHROME"
   URL="file://$PUBLIC/index.html"
-  "$CHROME" --headless=new --disable-gpu --hide-scrollbars --virtual-time-budget=4000 \
-    --window-size=1440,4000 --screenshot="$OUT/desktop.png" "$URL" 2>/dev/null
   # Headless Chrome won't size a window below ~500px, so a 390px "phone" is
   # rendered inside an iframe of that width and the frame is screenshotted.
   cat > "$OUT/mobile-frame.html" <<EOF
@@ -55,11 +53,21 @@ if (( SHOTS )); then
 <iframe src="$URL" style="width:390px;height:6000px;border:0;display:block"></iframe>
 </body></html>
 EOF
-  "$CHROME" --headless=new --disable-gpu --hide-scrollbars --allow-file-access-from-files \
-    --virtual-time-budget=4000 --window-size=600,6000 \
-    --screenshot="$OUT/mobile.png" "file://$OUT/mobile-frame.html" 2>/dev/null
-  echo "$OUT/desktop.png"
-  echo "$OUT/mobile.png   (the page is the left 390px; the grey strip is the frame)"
+  # The page follows the system color scheme, so shoot both themes explicitly
+  # (headless Chrome otherwise inherits this Mac's setting). 0 = dark, 1 = light.
+  for theme in dark light; do
+    scheme=$([[ $theme == dark ]] && echo 0 || echo 1)
+    suffix=$([[ $theme == dark ]] && echo "" || echo "-light")
+    "$CHROME" --headless=new --disable-gpu --hide-scrollbars --virtual-time-budget=4000 \
+      --blink-settings=preferredColorScheme=$scheme \
+      --window-size=1440,4000 --screenshot="$OUT/desktop$suffix.png" "$URL" 2>/dev/null
+    "$CHROME" --headless=new --disable-gpu --hide-scrollbars --allow-file-access-from-files \
+      --blink-settings=preferredColorScheme=$scheme \
+      --virtual-time-budget=4000 --window-size=600,6000 \
+      --screenshot="$OUT/mobile$suffix.png" "file://$OUT/mobile-frame.html" 2>/dev/null
+  done
+  echo "$OUT/desktop.png         $OUT/desktop-light.png"
+  echo "$OUT/mobile.png          $OUT/mobile-light.png   (the page is the left 390px; the grey strip is the frame)"
 fi
 
 # Every preview also runs the static site checks (SEO, performance budgets,

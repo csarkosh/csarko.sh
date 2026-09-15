@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Page not found · csarko.sh</title>
   <meta name="robots" content="noindex" />
-  <meta name="theme-color" content="#0a0b0e" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0a0b0e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)" />
   <link rel="icon" href="/favicon.ico" sizes="48x48" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -30,17 +32,26 @@
     }
     /* /generated:fonts */
 
+    /* Same theme tokens as index.html: dark by default, light when the system asks for it. */
     :root {
-      --bg: #0a0b0e; --surface: #111318; --border-strong: rgba(255, 255, 255, 0.14);
-      --text: #e8eaf0; --muted: #a0a8b8; --faint: #7d8597; --accent: #7dd3c0;
+      color-scheme: dark;
+      --bg: #0a0b0e; --text: #e8eaf0; --muted: #a0a8b8; --faint: #7d8597;
+      --accent: #7dd3c0; --accent-hover: #95e0cf; --on-accent: #06231d; --accent-glow: rgba(125, 211, 192, 0.10);
       --sans: "Inter", "Inter Fallback", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       --mono: "JetBrains Mono", "JetBrains Mono Fallback", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        color-scheme: light;
+        --bg: #f6f7f9; --text: #12151c; --muted: #4a5263; --faint: #5f677a;
+        --accent: #0a735f; --accent-hover: #075a4a; --on-accent: #ffffff; --accent-glow: rgba(125, 211, 192, 0.30);
+      }
     }
     *, *::before, *::after { box-sizing: border-box; }
     html, body { height: 100%; }
     body {
       margin: 0; padding-inline: 24px; display: grid; place-items: center;
-      background: radial-gradient(ellipse at 30% 0%, rgba(125, 211, 192, 0.10), transparent 60%), var(--bg);
+      background: radial-gradient(ellipse at 30% 0%, var(--accent-glow), transparent 60%), var(--bg);
       color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased;
     }
     main { max-width: 34rem; }
@@ -49,9 +60,9 @@
     p { color: var(--muted); line-height: 1.6; margin: 0 0 28px; }
     a.home {
       display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 999px;
-      background: var(--accent); color: #06231d; font-weight: 500; font-size: 14px; text-decoration: none;
+      background: var(--accent); color: var(--on-accent); font-weight: 500; font-size: 14px; text-decoration: none;
     }
-    a.home:hover { background: #95e0cf; }
+    a.home:hover { background: var(--accent-hover); }
     a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
     .wordmark { font-family: var(--mono); color: var(--faint); font-size: 13px; margin-top: 40px; }
     .wordmark span { color: var(--accent); }

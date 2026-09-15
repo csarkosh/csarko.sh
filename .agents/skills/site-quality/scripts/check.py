@@ -6,7 +6,7 @@ security headers, or layout.
 Usage:
   check.py                        static checks on public/ and firebase.json (offline, a few seconds)
   check.py --live [URL]           + the deployed site: headers, caching, 404, robots, sitemap, www
-  check.py --lighthouse [URL]     + Lighthouse: SEO, Accessibility, Best Practices 100; Performance >= 95
+  check.py --lighthouse [URL]     + Lighthouse, dark and light themes: SEO, Accessibility, Best Practices 100; Performance >= 95
   check.py --observatory [HOST]   + Mozilla HTTP Observatory: grade must be A+
 
 Exit status is non-zero if any check FAILs. WARNs are printed but don't fail.
@@ -411,6 +411,60 @@ def accessibility_checks(page, name):
             check(page.ids[target].get("tabindex") == "-1", f'skip link → #{target} (tabindex="-1" so focus moves)')
 
 
+# ------------------------------------------------------------------------- theme
+
+THEME_TEXT = ("--text", "--muted", "--faint", "--accent")
+THEME_SURFACES = ("--bg", "--surface", "--surface-2")
+COLOR_LITERAL = re.compile(r"#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(")
+
+
+def luminance(hex_color):
+    h = hex_color.lstrip("#")
+    if len(h) == 3:
+        h = "".join(c * 2 for c in h)
+    chans = [int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+    r, g, b = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in chans]
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def contrast(a, b):
+    hi, lo = sorted((luminance(a), luminance(b)), reverse=True)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def theme_checks(html, name):
+    """The page follows the system theme: dark tokens on :root, light overrides in
+    @media (prefers-color-scheme: light). Every color must be a token, so neither
+    theme can miss one, and each theme's text must clear WCAG AA on its surfaces.
+    Lighthouse only sees one theme per run; this covers both on every check."""
+    print(f"theme ({name})")
+    css = re.sub(r"/\*.*?\*/", "", css_of(html), flags=re.S)
+    light_m = re.search(r"@media\s*\(prefers-color-scheme:\s*light\)\s*\{\s*:root\s*\{(.*?)\}\s*\}", css, re.S)
+    dark_m = re.search(r"(?<![\w-]):root\s*\{(.*?)\}", css, re.S)
+    if not (dark_m and light_m):
+        fail("expected dark tokens on :root and light overrides in @media (prefers-color-scheme: light) { :root { … } }")
+        return
+    tokens = lambda block: dict(re.findall(r"(--[\w-]+)\s*:\s*([^;]+);", block))
+    dark, light = tokens(dark_m.group(1)), tokens(light_m.group(1))
+    dark_colors = {k for k, v in dark.items() if COLOR_LITERAL.search(v)}
+    missing = sorted(dark_colors - set(light))
+    check(not missing, f"light theme overrides every color token {missing or ''}")
+    rest = css.replace(dark_m.group(0), "").replace(light_m.group(0), "")
+    stray = sorted(set(COLOR_LITERAL.findall(rest)))
+    check(not stray, f"no hardcoded colors outside the theme tokens {stray or ''}")
+    for theme, t in (("dark", dark), ("light", {**dark, **light})):
+        hexes = {k: v.strip() for k, v in t.items() if re.fullmatch(r"#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}", v.strip())}
+        pairs = [(fg, bg) for fg in THEME_TEXT for bg in THEME_SURFACES if fg in hexes and bg in hexes]
+        pairs += [("--on-accent", bg) for bg in ("--accent", "--accent-hover") if "--on-accent" in hexes and bg in hexes]
+        low = [f"{fg} on {bg} {contrast(hexes[fg], hexes[bg]):.2f}" for fg, bg in pairs if contrast(hexes[fg], hexes[bg]) < 4.5]
+        worst = min((contrast(hexes[fg], hexes[bg]), f"{fg} on {bg}") for fg, bg in pairs) if pairs else (0, "no pairs")
+        check(pairs and not low, f"{theme}: text tokens ≥ 4.5:1 on every surface "
+                                 f"({'; '.join(low) if low else f'lowest {worst[0]:.2f}, {worst[1]}'})")
+    schemes = set(re.findall(r'<meta name="theme-color"[^>]*media="\(prefers-color-scheme: (dark|light)\)"', html))
+    check(schemes == {"dark", "light"}, f"theme-color meta for both schemes (found {sorted(schemes)})")
+    check(re.search(r'<meta name="color-scheme" content="dark light"', html), '<meta name="color-scheme" content="dark light">')
+
+
 # ---------------------------------------------------------------------- security
 
 def security_checks(pages):
@@ -584,9 +638,16 @@ def live_checks(base):
 
 
 def lighthouse(url):
-    print(f"lighthouse: {url}")
-    out = "/tmp/csarko-sh-lighthouse.json"
-    subprocess.run(["npx", "-y", "lighthouse@12", url, "--quiet", "--chrome-flags=--headless=new",
+    # The page follows the system theme, so audit it once in each (0 = dark, 1 = light).
+    for theme, scheme in (("dark", 0), ("light", 1)):
+        lighthouse_run(url, theme, scheme)
+
+
+def lighthouse_run(url, theme, scheme):
+    print(f"lighthouse ({theme} theme): {url}")
+    out = f"/tmp/csarko-sh-lighthouse-{theme}.json"
+    subprocess.run(["npx", "-y", "lighthouse@12", url, "--quiet",
+                    f"--chrome-flags=--headless=new --blink-settings=preferredColorScheme={scheme}",
                     "--only-categories=seo,accessibility,performance,best-practices",
                     "--output=json", f"--output-path={out}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
@@ -653,11 +714,13 @@ def main(argv):
     seo_checks(page)
     performance_checks(page, html, "index.html")
     accessibility_checks(page, "index.html")
+    theme_checks(html, "index.html")
     nf = not_found_checks()
     if nf:
         pages["404.html"] = nf
         performance_checks(*nf, "404.html")
         accessibility_checks(nf[0], "404.html")
+        theme_checks(nf[1], "404.html")
     security_checks(pages)
     analytics_checks(pages)
     layout_checks()
