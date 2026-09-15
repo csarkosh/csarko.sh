@@ -18,6 +18,7 @@ him. No framework, no build step, no CI.
 | `firebase.json`, `.firebaserc` | Firebase Hosting config: publish `public/`, cache headers. |
 | `_infra/` | Terraform for the hosting and DNS. Same shape as `~/Projects/fps/_infra`. |
 | `.agents/skills/` | Agent skills: `preview`, `deploy` and `site-quality`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
+| `.claude/settings.json` | Imports the shared skill plugins from [`csarkosh/skills-general`](https://github.com/csarkosh/skills-general): `general:doc-preview` (open a markdown doc as a styled page in Chrome; not this repo's `preview`, which previews the site) and `general-claude:doc-artifact` (publish a doc as a claude.ai Artifact). Change those skills in `skills-general`, not here. On a machine that has never installed them, run `claude plugin install general@csarkosh` and `claude plugin install general-claude@csarkosh`. Codex has no per-repository import: run `codex plugin marketplace add csarkosh/skills-general` and `codex plugin add general@csarkosh` once per machine. |
 | `README.md` | Human-facing overview. `LICENSE` is MIT and predates this version of the site. |
 
 ## Workflows
