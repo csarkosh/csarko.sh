@@ -2,9 +2,12 @@
 #
 # generate-assets.sh — rebuild every generated asset in public/, deterministically.
 #
-# 1. build_assets.py: hashed portraits (AVIF/WebP/JPEG × 4 widths), hashed fonts,
-#    public/portrait.jpg, and the <!-- generated:… --> blocks in public/*.html.
-# 2. This script: favicons and the link-preview card, rendered with headless Chrome.
+# 1. build_docs.mjs: content/docs/*.md → public/docs/*.html, public/sitemap.xml, and the
+#    <!-- generated:docs --> block in public/index.html (needs Node 18+).
+# 2. build_assets.py: hashed portraits (AVIF/WebP/JPEG × 4 widths), hashed fonts,
+#    public/portrait.jpg, and the other <!-- generated:… --> blocks in public/*.html
+#    and public/docs/*.html.
+# 3. This script: favicons and the link-preview card, rendered with headless Chrome.
 #
 # Sources live in .agents/skills/site-quality/assets/; outputs land in public/:
 #   favicon.svg            copied as-is (modern browsers)
@@ -13,7 +16,7 @@
 #   apple-touch-icon.png   180×180 (iOS home screen)
 #   og-image.jpg           1200×630 link preview for LinkedIn, Slack, X, iMessage
 #
-# Re-run after changing the name, title, tagline, photo, fonts, or theme colors.
+# Re-run after changing a doc in content/docs/, or the name, title, tagline, photo, fonts, or theme colors.
 # To change the photo, replace assets/portrait-source.jpg first.
 
 set -euo pipefail
@@ -27,6 +30,7 @@ trap 'rm -rf "$TMP"' EXIT
 
 [[ -x "$CHROME" ]] || { echo "error: Google Chrome not found at $CHROME" >&2; exit 1; }
 command -v sips >/dev/null || { echo "error: sips not found (macOS only)" >&2; exit 1; }
+command -v node >/dev/null || { echo "error: node not found (Node 18+ builds the docs pages)" >&2; exit 1; }
 
 shot() { # shot <width> <height> <url> <out.png>   (transparent background, so icon corners stay clear)
   "$CHROME" --headless=new --disable-gpu --hide-scrollbars --allow-file-access-from-files \
@@ -35,6 +39,7 @@ shot() { # shot <width> <height> <url> <out.png>   (transparent background, so i
     --window-size="$1,$2" --screenshot="$4" "$3" 2>/dev/null
 }
 
+node "$ROOT/.agents/skills/site-quality/scripts/build_docs.mjs"
 python3 "$ROOT/.agents/skills/site-quality/scripts/build_assets.py"
 echo
 

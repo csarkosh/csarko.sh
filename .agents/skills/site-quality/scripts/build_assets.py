@@ -14,7 +14,7 @@ Outputs (in public/):
 Every file in public/assets/ is named by the first 8 hex chars of its SHA-256, so
 firebase.json can cache that directory for a year (immutable) without ever
 serving a stale file. The HTML references are rewritten between generated
-markers in every public/*.html that contains them:
+markers in every public/*.html and public/docs/*.html that contains them:
 
   <!-- generated:head -->  …  <!-- /generated:head -->          font preload
   /* generated:fonts */    …  /* /generated:fonts */            @font-face rules
@@ -209,10 +209,11 @@ def main() -> int:
             f.unlink()
 
     # ---- rewrite generated blocks in every page that has them
-    # index.html uses relative paths (so the file:// preview works); 404.html is
-    # served for missing URLs at any depth, so its paths must be root-relative.
-    for page in sorted(PUBLIC.glob("*.html")):
-        prefix = "/" if page.name == "404.html" else ""
+    # index.html uses relative paths (so the file:// preview works). 404.html is
+    # served for missing URLs at any depth and docs pages live under /docs, so
+    # their paths must be root-relative.
+    for page in sorted(PUBLIC.glob("*.html")) + sorted((PUBLIC / "docs").glob("*.html")):
+        prefix = "" if page == PUBLIC / "index.html" else "/"
         blocks = {
             (r"<!-- generated:head -->", r"<!-- /generated:head -->"): "\n" + preloads(prefix) + "\n  ",
             (r"/\* generated:fonts \*/", r"/\* /generated:fonts \*/"): "\n" + font_faces(prefix) + "\n    ",
@@ -225,7 +226,7 @@ def main() -> int:
             html = re.sub(f"({start})(.*?)({end})", lambda m: m.group(1) + body + m.group(3), html, flags=re.S)
         if html != before:
             page.write_text(html, encoding="utf-8")
-            print(f"rewrote generated blocks in public/{page.name}")
+            print(f"rewrote generated blocks in public/{page.relative_to(PUBLIC)}")
 
     for name in sorted(keep):
         size = (OUT / name).stat().st_size
