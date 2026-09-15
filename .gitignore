@@ -13,3 +13,8 @@ _infra/.terraform/
 
 # Python
 __pycache__/
+
+# Credentials. Keys live outside the repo (~/.config/<project>/gsc-sa.json);
+# these patterns are a second line of defence, since this repo is public.
+*-sa.json
+*service-account*.json
