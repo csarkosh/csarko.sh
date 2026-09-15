@@ -20,8 +20,7 @@ description: >-
 # Site quality for csarko.sh
 
 Targets: **Lighthouse SEO / Accessibility / Best Practices 100 and Performance
-≥ 95, Mozilla Observatory A+, no layout breakage from 320px to 1440px.** It's one
-page, so every one of these is achievable and should stay that way.
+≥ 95, Mozilla Observatory A+, no layout breakage from 320px to 1440px.** They apply to the home page and to every docs page.
 
 ## Scripts
 
@@ -32,7 +31,11 @@ $S/check.py --live             # + deployed site: live headers, caching, 404, re
 $S/check.py --lighthouse       # + Lighthouse, once per theme (SEO/A11y/Best Practices 100, Performance ≥ 95)
 $S/check.py --observatory      # + Mozilla HTTP Observatory (must be A+)
 $S/generate-assets.sh          # rebuild EVERYTHING generated (see below) — deterministic
+node $S/build_docs.mjs         # just the docs: content/docs/*.md → public/docs/, sitemap, home section (generate-assets.sh runs it)
 ```
+
+Unit tests: `node --test .agents/skills/site-quality/tests/docs_lib.test.mjs` and
+`python3 -m unittest discover -s .agents/skills/site-quality/tests`.
 
 `preview.sh` runs `check.py` every time. `deploy.sh` refuses to publish if it
 fails, then runs `--live`. After anything that could move scores (images,
@@ -46,6 +49,7 @@ Same inputs, same outputs (two builds produce identical hashes).
 
 | Output | Source | Notes |
 |---|---|---|
+| `public/docs/<slug>.html`, `public/docs/index.html`, `public/sitemap.xml`, `<!-- generated:docs -->` in `index.html` | `content/docs/*.md` via `build_docs.mjs` (logic in `docs_lib.mjs`, `marked` vendored in `scripts/vendor/`) | Doc pages copy `index.html`'s theme token blocks and get fonts and analytics from `build_assets.py`, with root-relative paths. `check.py` rebuilds into a temp dir and fails if `public/` is stale. |
 | `public/assets/portrait-{240,360,480,720}.<hash>.{avif,webp,jpg}` | `assets/portrait-source.jpg` | Responsive LCP image. Desktop 2x loads a ~15 KB AVIF instead of a 100 KB JPEG. |
 | `public/assets/<font>.<hash>.woff2` | `assets/fonts/*.woff2` | Inter + JetBrains Mono variable, latin subset. License: `public/licenses/fonts-OFL.txt`. |
 | `public/portrait.jpg` | same | Stable URL for JSON-LD `Person.image`. |
@@ -65,7 +69,12 @@ file in place.
 serves `csarko-sh.web.app`); `og:url` and JSON-LD `url` match it; Open Graph +
 Twitter tags with a real 1200×630 image; JSON-LD `Person` with `sameAs`
 (LinkedIn, GitHub, Substack); favicon files; one `<h1>`, no skipped heading
-levels; robots.txt allows all and names the sitemap.
+levels; robots.txt allows all and names the sitemap. Every page's canonical must
+match its clean URL (`docs/x.html` → `https://csarko.sh/docs/x`); docs need
+`og:type` `article`, `TechArticle` JSON-LD whose author is `#person`, and a
+`BreadcrumbList`; `/docs` needs `CollectionPage`. The sitemap must list exactly
+the indexable pages, and root-relative links must resolve without a redirect (no
+trailing `/`, no `.html`).
 
 **Performance** — HTML ≤ 50 KB; fonts ≤ 100 KB with `font-display: swap`, each
 with a metric-matched `"<Family> Fallback"` face (`size-adjust` etc. against
@@ -76,7 +85,8 @@ portrait is a `<picture>` with AVIF + WebP, `srcset`/`sizes`/`width`/`height`,
 `fetchpriority="high"`, never lazy; 480w AVIF ≤ 25 KB and no variant > 90 KB;
 **no animation on the hero** (it once delayed LCP by ~0.7s); **no third-party
 resources** except origins in `THIRD_PARTY` in `check.py`; scripts must be
-`async`/`defer`; JavaScript ≤ 10 KB (third-party measured with `--live`).
+`async`/`defer`; JavaScript ≤ 10 KB (third-party measured with `--live`). Doc
+pages get a 120 KB HTML budget.
 
 **Accessibility** — the first element in `<body>` is the skip link, and its
 target has `tabindex="-1"`; alt on every image; in-page links resolve; new-tab
@@ -114,7 +124,8 @@ and uses only root-relative paths.
 line, ≥ 8px from the wordmark, no horizontal scroll, no button off-screen, skip
 link hidden until focused. On phones "Contact" is shown as "Links"
 (`label-short`), with `aria-label="Contact"` so assistive tech is unchanged; at
-≤ 360px the nav gap tightens to 11px.
+≤ 360px the nav gap tightens to 11px. The same checks run on `/docs` and the
+newest doc.
 
 ## Analytics (in place)
 
@@ -153,6 +164,7 @@ This is the change most likely to regress everything above. In order:
 6. New color? Make it a token with a value in both the dark and light blocks;
    text ≥ 4.5:1 on its surface in both. Check both themes' screenshots.
 7. Never add `noindex` to index.html, `Disallow: /`, or remove the canonical.
+8. New or changed doc? Use the `publish-doc` skill; never edit `public/docs/` by hand.
 
 Content rules in `AGENTS.md` still win (no email/phone, no metrics in Experience).
 

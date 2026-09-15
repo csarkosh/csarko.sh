@@ -2,14 +2,15 @@
 
 The source code behind my portfolio site **→ [csarko.sh](https://csarko.sh)**.
 
-It's a single hand-written HTML page: no framework, no build step, fully agent-managed.
+A hand-written home page plus research docs built from Markdown at [csarko.sh/docs](https://csarko.sh/docs): no framework, fully agent-managed.
 
 ## What's here
 
 ```
-public/            the site: index.html and a portrait
+public/            the site: index.html, docs/ (generated) and assets
+content/docs/      the docs, as Markdown with front matter
 _infra/            Terraform for hosting (Firebase, GCP) and DNS (Route53, AWS)
-.agents/skills/    preview, deploy and site-quality skills for AI agents (and humans)
+.agents/skills/    preview, deploy, site-quality and publish-doc skills for AI agents (and humans)
 firebase.json      what gets published, and how it's cached
 AGENTS.md          working context and rules for agents; CLAUDE.md points to it
 ```
@@ -18,11 +19,11 @@ AGENTS.md          working context and rules for agents; CLAUDE.md points to it
 
 ```bash
 .agents/skills/preview/scripts/preview.sh           # open in Chrome
-.agents/skills/preview/scripts/preview.sh --serve   # serve on http://localhost:4173
+.agents/skills/preview/scripts/preview.sh --serve   # serve on http://localhost:4173 with clean URLs (needed for /docs)
 .agents/skills/preview/scripts/preview.sh --shots   # desktop + mobile screenshots in /tmp
 ```
 
-Or just open `public/index.html` in a browser.
+Or just open `public/index.html` in a browser (its /docs links need --serve).
 
 ## Deploy
 
@@ -38,7 +39,7 @@ The script publishes `public/` to Firebase Hosting, then fetches the live page a
 Lighthouse 100 across SEO, accessibility and best practices, performance ≥ 95, and an A+ on Mozilla Observatory — enforced, not aspirational:
 
 - **Fast:** a responsive AVIF/WebP portrait, self-hosted fonts, content-hashed assets cached for a year, and byte budgets for HTML, fonts, images and JavaScript.
-- **Findable:** canonical URL, schema.org `Person` data, a 1200×630 link-preview card, real favicons, `robots.txt` and a sitemap.
+- **Findable:** canonical URLs, schema.org `Person` data on the home page and `TechArticle` + breadcrumbs on every doc, a 1200×630 link-preview card, real favicons, `robots.txt` and a generated sitemap.
 - **Locked down:** a strict Content-Security-Policy and the full set of security headers.
 - **Accessible:** skip link, WCAG AA contrast in both the dark and light themes (the page follows your system setting), and a layout checked from 320px to 1440px.
 - **Private analytics:** [GoatCounter](https://www.goatcounter.com), with its script self-hosted and no cookies, so no consent banner and no third-party code on the page.
