@@ -51,7 +51,7 @@
       "dateModified": "2026-09-15",
       "url": "https://csarko.sh/docs/atmosphere-and-dread-shaders",
       "mainEntityOfPage": "https://csarko.sh/docs/atmosphere-and-dread-shaders",
-      "wordCount": 3598,
+      "wordCount": 3619,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -68,7 +68,10 @@
       },
       "isPartOf": {
         "@id": "https://csarko.sh/#website"
-      }
+      },
+      "sameAs": [
+        "https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-15-atmosphere-and-dread-shaders.md"
+      ]
     },
     {
       "@type": "BreadcrumbList",
@@ -300,6 +303,7 @@
         <h1>Atmosphere and dread: a second shader research pass</h1>
         <ul class="tags">
           <li>16 min read</li>
+          <li><a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-15-atmosphere-and-dread-shaders.md" target="_blank" rel="noopener">Also on GitHub</a></li>
         </ul>
       </header>
       <div class="prose">
@@ -604,7 +608,7 @@ moonlight never makes it glow.</li>
 <td>Height fog with a gradient colour</td>
 <td>PBR plugin regex on the expanded fog line</td>
 <td>cheap</td>
-<td><strong>There is no fog hook in <code>pbr.fragment.js</code></strong>; the include ends in <code>color.rgb=mix(vFogColor,color.rgb,fog);</code> and a <code>!</code>-regex key must replace it. Version-fragile: pin with a compile test</td>
+<td><strong>There is no fog hook in <code>pbr.fragment.js</code></strong>; the PBR shader includes it as <code>fogFragment(color,finalColor)</code>, so the expanded line is <code>finalColor.rgb=mix(vFogColor,finalColor.rgb,fog);</code> and a <code>!</code>-regex key must replace that. Version-fragile: pin with a compile test</td>
 </tr>
 <tr>
 <td>Fog on the sky and particles</td>
@@ -661,8 +665,9 @@ Budget the whole post chain at about 2 ms at 1440p and measure with paired sampl
 <li>Plugin custom code is injected after include expansion and before <code>#ifdef</code> evaluation;
 <code>vAlbedoColor</code> is the material constant; a directive spelled in a comment is parsed as
 real. All three traps are already recorded in the shader files.</li>
-<li><code>MaterialPluginBase.isCompatible</code> accepts GLSL only, so every plugin is silently dropped
-on WebGPU. The restyle stays on WebGL2.</li>
+<li><code>MaterialPluginBase.isCompatible</code> accepts GLSL only, and adding an incompatible plugin
+throws, so on WebGPU a GLSL-only plugin breaks material creation unless the material
+forces GLSL. The restyle stays on WebGL2.</li>
 </ul>
 <div class="section-head"><p class="section-label">05</p><h2 id="candidate-directions"><a class="anchor" href="#candidate-directions">Candidate directions</a></h2></div>
 <p>These are not decisions. They are the shapes the evidence supports.</p>

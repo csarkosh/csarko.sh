@@ -1,6 +1,7 @@
 ---
 description: How atmospheric and horror games use height fog, grading, film grain and dread-driven effects, and what Babylon.js can do at 60 fps in a browser.
 published: 2026-09-15
+source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-15-atmosphere-and-dread-shaders.md
 ---
 # Atmosphere and dread: a second shader research pass
 
@@ -271,7 +272,7 @@ Checked against the installed `@babylonjs/core` 9.18.0 source, not the docs alon
 | AgX tone map, halation, film grain, gate weave | one custom "grade" `PostProcess` | cheap | three.js's AgX GLSL is MIT and ports directly; run it with the pipeline's image processing off, on linear HDR |
 | Bloom | pipeline `bloomEnabled` | moderate | Four passes at `bloomScale` |
 | Depth of field | pipeline DoF | expensive | A depth re-render plus three to seven blur passes; dusk-only at best |
-| Height fog with a gradient colour | PBR plugin regex on the expanded fog line | cheap | **There is no fog hook in `pbr.fragment.js`**; the include ends in `color.rgb=mix(vFogColor,color.rgb,fog);` and a `!`-regex key must replace it. Version-fragile: pin with a compile test |
+| Height fog with a gradient colour | PBR plugin regex on the expanded fog line | cheap | **There is no fog hook in `pbr.fragment.js`**; the PBR shader includes it as `fogFragment(color,finalColor)`, so the expanded line is `finalColor.rgb=mix(vFogColor,finalColor.rgb,fog);` and a `!`-regex key must replace that. Version-fragile: pin with a compile test |
 | Fog on the sky and particles | `SkyMaterial` colour by hand; `applyFog` stays single-colour | cheap | The horizon has to meet the far end of the gradient |
 | God rays from the sun | `VolumetricLightScatteringPostProcess` | expensive | Re-renders every occluder; **useless for an eye-mounted headlamp** (the source is at the camera) |
 | Headlamp volume | an additive cone mesh with depth-map soft intersection | cheap | The "good enough volumetrics for spotlights" technique; `FrameGraphVolumetricLightingTask` is frame-graph and directional-light only |
@@ -292,8 +293,9 @@ Constraints that shape the design:
 - Plugin custom code is injected after include expansion and before `#ifdef` evaluation;
   `vAlbedoColor` is the material constant; a directive spelled in a comment is parsed as
   real. All three traps are already recorded in the shader files.
-- `MaterialPluginBase.isCompatible` accepts GLSL only, so every plugin is silently dropped
-  on WebGPU. The restyle stays on WebGL2.
+- `MaterialPluginBase.isCompatible` accepts GLSL only, and adding an incompatible plugin
+  throws, so on WebGPU a GLSL-only plugin breaks material creation unless the material
+  forces GLSL. The restyle stays on WebGL2.
 
 ## 5. Candidate directions
 

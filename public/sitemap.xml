@@ -14,4 +14,32 @@
     <loc>https://csarko.sh/docs/stylized-shader-looks</loc>
     <lastmod>2026-09-14</lastmod>
   </url>
+  <url>
+    <loc>https://csarko.sh/docs/no-visible-pop-in</loc>
+    <lastmod>2026-09-01</lastmod>
+  </url>
+  <url>
+    <loc>https://csarko.sh/docs/floating-props-on-procedural-terrain</loc>
+    <lastmod>2026-08-29</lastmod>
+  </url>
+  <url>
+    <loc>https://csarko.sh/docs/pointer-lock-escape-cooldown</loc>
+    <lastmod>2026-08-25</lastmod>
+  </url>
+  <url>
+    <loc>https://csarko.sh/docs/babylon-material-plugin-traps</loc>
+    <lastmod>2026-08-17</lastmod>
+  </url>
+  <url>
+    <loc>https://csarko.sh/docs/procedural-world-as-a-pure-function</loc>
+    <lastmod>2026-07-29</lastmod>
+  </url>
+  <url>
+    <loc>https://csarko.sh/docs/webrtc-signaling-on-cloud-run</loc>
+    <lastmod>2026-07-29</lastmod>
+  </url>
+  <url>
+    <loc>https://csarko.sh/docs/browser-coop-netcode</loc>
+    <lastmod>2026-07-25</lastmod>
+  </url>
 </urlset>
