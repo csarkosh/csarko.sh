@@ -687,10 +687,14 @@ for (const {key, width: w, src} of frames) {
   f.onload = () => setTimeout(() => {
     const d = f.contentDocument, links = [...d.querySelectorAll('.nav ul a')];
     const wm = d.querySelector('.wordmark').getBoundingClientRect();
-    const first = links[0] && links[0].getBoundingClientRect();
+    // A link marked data-collapsible may fold away on a narrow screen (the home page's section
+    // jumps do, so its bar matches the docs pages); every other link has to stay visible. The
+    // one-line and gap measurements only make sense for the links actually on screen.
+    const shown = links.filter(a => a.getBoundingClientRect().width > 0);
+    const first = shown[0] && shown[0].getBoundingClientRect();
     out[key] = {
-      hidden: links.filter(a => { const r = a.getBoundingClientRect(); return r.width === 0 || r.right > w; }).map(a => a.getAttribute('aria-label') || a.textContent),
-      navOneLine: new Set(links.map(a => Math.round(a.getBoundingClientRect().top))).size === 1,
+      hidden: links.filter(a => { const r = a.getBoundingClientRect(); return (r.width === 0 && !a.dataset.collapsible) || r.right > w; }).map(a => a.getAttribute('aria-label') || a.textContent),
+      navOneLine: new Set(shown.map(a => Math.round(a.getBoundingClientRect().top))).size === 1,
       gap: first ? Math.round(first.left - wm.right) : null,
       overflowX: d.documentElement.scrollWidth > d.documentElement.clientWidth,
       buttonsOverflow: [...d.querySelectorAll('.btn')].some(b => b.getBoundingClientRect().right > w),

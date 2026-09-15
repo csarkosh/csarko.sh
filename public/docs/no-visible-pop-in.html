@@ -177,8 +177,8 @@
     a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
     ::selection { background: var(--accent); color: var(--on-accent); }
 
-    .wrap { max-width: 880px; margin: 0 auto; padding-inline: 24px; }
-    .doc-page .wrap { max-width: 1120px; }
+    /* One width for the nav, content and footer on every page of the site (see public/index.html). */
+    .wrap { max-width: 1120px; margin: 0 auto; padding-inline: 24px; }
 
     .nav { position: sticky; top: 0; z-index: 10; backdrop-filter: saturate(140%) blur(12px); -webkit-backdrop-filter: saturate(140%) blur(12px); background: var(--nav-bg); border-bottom: 1px solid var(--border); }
     .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
@@ -202,9 +202,12 @@
 
     .shell { display: grid; grid-template-columns: minmax(0, 1fr); gap: 64px; padding-block: 72px 96px; }
     .rail { display: none; }
+    /* The reading measure, not the shell, bounds the text: the rail and the article then start at
+       the same left edge as the nav's wordmark, at every width. */
+    .doc-page main { max-width: 72ch; }
     @media (min-width: 1060px) {
-      .shell { grid-template-columns: 230px minmax(0, 72ch); justify-content: center; }
-      .shell.no-rail { grid-template-columns: minmax(0, 72ch); }
+      .shell { grid-template-columns: 230px minmax(0, 1fr); }
+      .shell.no-rail { grid-template-columns: minmax(0, 1fr); }
       .rail { display: block; position: sticky; top: 108px; align-self: start; max-height: calc(100vh - 140px); overflow-y: auto; }
     }
     .rail ol { list-style: none; margin: 16px 0 0; padding: 0 0 0 16px; border-left: 1px solid var(--border-strong); display: grid; gap: 4px; }
@@ -252,7 +255,7 @@
     .doc-list .doc-title a { transition: color .15s ease; }
     .doc-list .doc-title a:hover { color: var(--accent); }
     .doc-meta { margin: 0 0 6px; font-family: var(--mono); font-size: 12px; color: var(--faint); }
-    .doc-desc { margin: 0; color: var(--muted); }
+    .doc-desc { margin: 0; color: var(--muted); max-width: 78ch; }
 
     footer { border-top: 1px solid var(--border); padding-block: 28px 40px; color: var(--faint); font-size: 13px; }
     footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
