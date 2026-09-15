@@ -375,7 +375,10 @@ def jsonld_checks(page, kind, canonical):
     elif article["url"] != canonical:
         fail("JSON-LD TechArticle.url must equal the canonical URL")
     elif article["author"].get("@id") != f"{CANONICAL}#person":
-        fail(f'JSON-LD TechArticle.author must be {{"@id": "{CANONICAL}#person"}}')
+        fail(f'JSON-LD TechArticle.author must be {{"@id": "{CANONICAL}#person", "name": "…", …}}')
+    elif not article["author"].get("name"):
+        fail("JSON-LD TechArticle.author must have a name (Google reads structured data per page and "
+             "won't follow @id to the home page's Person)")
     else:
         ok(f"JSON-LD TechArticle by #person, published {article['datePublished']}")
 

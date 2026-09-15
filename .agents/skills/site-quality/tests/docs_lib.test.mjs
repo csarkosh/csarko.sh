@@ -165,7 +165,9 @@ test('docPage has the tags, JSON-LD and markers the checks expect', () => {
   assert.ok(!/<script(?! type="application\/ld\+json")/.test(html), 'no scripts besides JSON-LD');
   const graph = jsonLd(html);
   const article = graph.find((n) => n['@type'] === 'TechArticle');
-  assert.deepEqual(article.author, { '@id': 'https://csarko.sh/#person' });
+  const personNode = { '@type': 'Person', '@id': 'https://csarko.sh/#person', name: 'Cyrus Sarkosh', url: 'https://csarko.sh/' };
+  assert.deepEqual(article.author, personNode);
+  assert.deepEqual(article.publisher, personNode);
   assert.deepEqual(article.isPartOf, { '@id': 'https://csarko.sh/#website' });
   assert.equal(article.url, 'https://csarko.sh/docs/shader-looks');
   assert.equal(article.dateModified, '2026-09-15');

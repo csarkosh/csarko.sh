@@ -157,6 +157,9 @@ export function loadDoc(slug, text) {
 
 const PERSON = `${SITE}/#person`;
 const WEBSITE = `${SITE}/#website`;
+// Google reads structured data per page and won't follow @id to the home page's full Person, so
+// each doc embeds this minimal node (still carrying @id, so it links back to that fuller record).
+const PERSON_NODE = { '@type': 'Person', '@id': PERSON, name: 'Cyrus Sarkosh', url: `${SITE}/` };
 const OG_IMAGE = `${SITE}/og-image.jpg`;
 const OG_IMAGE_ALT = 'Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait';
 const LINKEDIN = 'https://www.linkedin.com/in/csarkosh';
@@ -388,8 +391,8 @@ export function docPage(doc, theme) {
       wordCount: doc.words,
       inLanguage: 'en',
       image: OG_IMAGE,
-      author: { '@id': PERSON },
-      publisher: { '@id': PERSON },
+      author: PERSON_NODE,
+      publisher: PERSON_NODE,
       isPartOf: { '@id': WEBSITE },
       ...(doc.source ? { sameAs: [doc.source] } : {}),
     },

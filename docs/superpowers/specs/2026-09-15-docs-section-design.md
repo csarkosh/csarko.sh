@@ -201,9 +201,12 @@ One `application/ld+json` block with an `@graph`:
 - `TechArticle`: `@id` `<url>#article`, `headline` (H1), `description`,
   `datePublished`, `dateModified`, `url`, `mainEntityOfPage` (`url`),
   `wordCount`, `inLanguage` `en`, `image` (`og-image.jpg`),
-  `author` and `publisher` `{"@id": "https://csarko.sh/#person"}`,
-  `isPartOf` `{"@id": "https://csarko.sh/#website"}`, and `sameAs` `[source]`
-  when `source` is set.
+  `author` and `publisher` an embedded minimal `Person` node
+  (`{"@type": "Person", "@id": "https://csarko.sh/#person", "name": "Cyrus Sarkosh",
+  "url": "https://csarko.sh/"}`, built once and reused for both fields), because
+  Google reads structured data per page and does not follow `@id` to the home
+  page's fuller `Person` record, `isPartOf` `{"@id": "https://csarko.sh/#website"}`,
+  and `sameAs` `[source]` when `source` is set.
 - `BreadcrumbList`: Cyrus Sarkosh (`https://csarko.sh/`) › Docs
   (`https://csarko.sh/docs`) › H1 (`url`).
 
