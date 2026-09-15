@@ -20,7 +20,8 @@ description: >-
 # Site quality for csarko.sh
 
 Targets: **Lighthouse SEO / Accessibility / Best Practices 100 and Performance
-≥ 95, Mozilla Observatory A+, no layout breakage from 320px to 1440px.** They apply to the home page and to every docs page.
+≥ 95, Mozilla Observatory A+, no layout breakage from 320px to 1440px.** They
+apply to the home page and to every docs page.
 
 ## Scripts
 
@@ -28,7 +29,7 @@ Targets: **Lighthouse SEO / Accessibility / Best Practices 100 and Performance
 S=.agents/skills/site-quality/scripts
 $S/check.py                    # static: SEO, performance budgets, a11y, headers, 404, layout (~5s)
 $S/check.py --live             # + deployed site: live headers, caching, 404, redirects, third-party JS
-$S/check.py --lighthouse       # + Lighthouse, once per theme (SEO/A11y/Best Practices 100, Performance ≥ 95)
+$S/check.py --lighthouse       # + Lighthouse on the home page and the newest doc, once per theme (SEO/A11y/Best Practices 100, Performance ≥ 95)
 $S/check.py --observatory      # + Mozilla HTTP Observatory (must be A+)
 $S/generate-assets.sh          # rebuild EVERYTHING generated (see below) — deterministic
 node $S/build_docs.mjs         # just the docs: content/docs/*.md → public/docs/, sitemap, home section (generate-assets.sh runs it)

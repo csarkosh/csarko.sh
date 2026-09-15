@@ -136,7 +136,8 @@ Three sources, each for a different question. **Pick by the question, not by hab
   published posts yet; Cyrus will publish once Day Hike is ready to publicize.
 - **Docs** *(added 2026-09-15)*: research notes and specs at `/docs`, copied into
   `content/docs/` (the published copy is the source of truth). The page copy rules
-  apply (no email, phone or em-dashes; the build and deploy enforce them). Docs
+  apply (no email, phone or em-dashes): the build rejects em-dashes,
+  `deploy.sh` rejects email addresses and phone numbers. Docs
   from private repositories such as `magicpixel.ai` need Cyrus's OK per doc, and
   never describe the commercial asset pipeline. Launched with
   `stylized-shader-looks`, from `game-dayhike`.
@@ -165,7 +166,9 @@ Three sources, each for a different question. **Pick by the question, not by hab
 Defined as CSS custom properties at the top of `index.html`: the dark values on
 `:root`, the light overrides in `@media (prefers-color-scheme: light)`. Cyrus uses
 the dark ones to match his Substack theme, so keep them stable or tell him when
-they change.
+they change. Docs pages copy both token blocks out of `index.html` at build time,
+so after changing a token run `generate-assets.sh` (`check.py` fails until you
+do).
 
 | Token | Dark (default) | Light |
 |---|---|---|
