@@ -18,6 +18,7 @@ import hashlib
 import html as htmllib
 import json
 import re
+import shutil
 import struct
 import subprocess
 import sys
@@ -54,6 +55,10 @@ BUDGET_FONTS = 100_000
 BUDGET_PORTRAIT_AVIF_480 = 25_000
 BUDGET_ANY_PORTRAIT = 90_000
 BUDGET_SCRIPTS = 10_000  # all JavaScript the page loads, first- and third-party (third-party measured live)
+
+BUDGET_HTML_DOC = 120_000  # a doc page is mostly prose, so long research docs get more room than BUDGET_HTML
+
+BUILD_DOCS = SKILL / "scripts/build_docs.mjs"
 
 REQUIRED_HEADERS = {
     "Content-Security-Policy": lambda v: bool(v),
@@ -203,6 +208,67 @@ def csp_from_config():
 
 def parse_csp(value):
     return {d.split()[0]: d.split()[1:] for d in (x.strip() for x in (value or "").split(";")) if d}
+
+
+# ------------------------------------------------------------------------ pages
+# Firebase serves public/ with cleanUrls: true and trailingSlash: false, so
+# docs/x.html is https://csarko.sh/docs/x and docs/index.html is /docs.
+
+def page_kind(rel):
+    return {"index.html": "home", "404.html": "404", "docs/index.html": "docs-index"}.get(rel, "doc")
+
+
+def canonical_for(rel):
+    path = rel[:-len(".html")]
+    if path == "index":
+        return CANONICAL
+    if path.endswith("/index"):
+        path = path[:-len("/index")]
+    return f"{SITE}/{path}"
+
+
+def resolve_internal(href, public=PUBLIC):
+    """(file, None) for a root-relative link Firebase serves directly, or (None, problem)."""
+    path = href.split("#")[0].split("?")[0]
+    if path == "/":
+        return public / "index.html", None
+    if path.endswith("/"):
+        return None, "has a trailing slash (Firebase redirects it)"
+    if path.endswith(".html"):
+        return None, "ends in .html (Firebase redirects it to the clean URL)"
+    rel = path.lstrip("/")
+    for candidate in (public / rel, public / f"{rel}.html", public / rel / "index.html"):
+        if candidate.is_file():
+            return candidate, None
+    return None, "does not resolve to a file in public/"
+
+
+_FILLED_BLOCKS = re.compile(
+    r"(<!-- generated:(head|analytics) -->).*?(<!-- /generated:\2 -->)|(/\* generated:fonts \*/).*?(/\* /generated:fonts \*/)", re.S)
+
+
+def blank_generated(text):
+    """Empty the blocks build_assets.py fills, so docs output compares equal before and after it runs."""
+    return _FILLED_BLOCKS.sub(lambda m: m.group(1) + m.group(3) if m.group(1) else m.group(4) + m.group(5), text)
+
+
+def newest_doc(public=PUBLIC):
+    """docs/<slug>.html of the newest doc (latest published, then smallest slug), or None."""
+    found = []
+    for p in (public / "docs").glob("*.html"):
+        if p.name == "index.html":
+            continue
+        m = re.search(r'<meta property="article:published_time" content="([^"]+)"', p.read_text(encoding="utf-8"))
+        if m:
+            found.append((m.group(1), p.stem))
+    if not found:
+        return None
+    latest = max(date for date, _ in found)
+    return f"docs/{min(slug for date, slug in found if date == latest)}.html"
+
+
+def indexable_pages(public=PUBLIC):
+    return ["index.html"] + sorted(f"docs/{p.name}" for p in (public / "docs").glob("*.html"))
 
 
 # --------------------------------------------------------------------------- SEO
