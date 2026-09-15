@@ -155,8 +155,8 @@ export function renderMarkdown(body, file) {
 
   const titleHtml = parseHeadingInline(() => marked.parseInline(h1s[0].text));
   const html = marked.parser(tokens)
-    .replaceAll('<table>', '<div class="scroll"><table>').replaceAll('</table>', '</table></div>')
-    .replaceAll('<pre>', '<div class="scroll"><pre>').replaceAll('</pre>', '</pre></div>');
+    .replaceAll('<table>', '<div class="scroll" tabindex="0" role="region" aria-label="Table"><table>').replaceAll('</table>', '</table></div>')
+    .replaceAll('<pre>', '<div class="scroll" tabindex="0" role="region" aria-label="Code"><pre>').replaceAll('</pre>', '</pre></div>');
   if (problems.length) throw new DocError(problems.join('\n'));
   // Tags become spaces here (not in plainText) so "<p>01</p><h2>Title" counts as two words.
   const words = decodeEntities(html.replace(/<[^>]+>/g, ' ')).split(/\s+/).filter(Boolean).length;
@@ -281,6 +281,7 @@ const DOCS_CSS = `
     a.external::after { content: "↗"; font-size: .72em; margin-left: 2px; vertical-align: .3em; display: inline-block; }
     .prose code { font-family: var(--mono); font-size: .86em; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: .12em .4em; overflow-wrap: anywhere; }
     .scroll { overflow-x: auto; margin: 24px 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
     .prose pre { margin: 0; padding: 18px 20px; font-family: var(--mono); font-size: 13.5px; line-height: 1.6; }
     .prose pre code { background: none; border: 0; padding: 0; overflow-wrap: normal; }
     .prose table { border-collapse: collapse; width: 100%; font-size: 14.5px; font-variant-numeric: tabular-nums; }
@@ -435,7 +436,7 @@ export function docPage(doc, theme) {
     ? `    <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-${doc.rail.map((s) => `        <li><a href="#${s.id}">${s.number ? `<span class="num">${s.number}</span>` : ''}<span>${escapeHtml(s.text)}</span></a></li>`).join('\n')}
+${doc.rail.map((s) => `        <li><a href="#${s.id}">${s.number ? `<span class="num" aria-hidden="true">${s.number}</span>` : ''}<span>${escapeHtml(s.text)}</span></a></li>`).join('\n')}
       </ol>
     </aside>
 `
@@ -459,12 +460,12 @@ ${rail}    <main id="top" tabindex="-1">
       <div class="prose">
 ${doc.html}
       </div>
-      <aside class="author" aria-label="About the author">
+      <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
         <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
         <p>Senior software engineer, founding engineer and lead on several zero-to-one products at DoorDash.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="${LINKEDIN}" target="_blank" rel="noopener">LinkedIn</a></p>
-      </aside>
+      </section>
     </main>
   </div>
 

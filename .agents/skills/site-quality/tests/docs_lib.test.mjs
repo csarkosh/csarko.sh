@@ -85,8 +85,8 @@ test('renderMarkdown marks external links, escapes raw HTML and wraps tables and
   assert.ok(r.html.includes('<a href="#t">up</a>'));
   assert.ok(r.html.includes('&lt;b&gt;bold&lt;/b&gt;'));
   assert.ok(r.html.includes('&lt;div&gt;x&lt;/div&gt;'));
-  assert.match(r.html, /<div class="scroll"><table>[\s\S]*<\/table><\/div>/);
-  assert.ok(r.html.includes('<div class="scroll"><pre><code>code\n</code></pre></div>'));
+  assert.match(r.html, /<div class="scroll" tabindex="0" role="region" aria-label="Table"><table>[\s\S]*<\/table><\/div>/);
+  assert.ok(r.html.includes('<div class="scroll" tabindex="0" role="region" aria-label="Code"><pre><code>code\n</code></pre></div>'));
 });
 
 test('renderMarkdown rejects what the site cannot publish', () => {
@@ -174,7 +174,8 @@ test('docPage has the tags, JSON-LD and markers the checks expect', () => {
   assert.ok(html.includes(`<a class="external" href="${source}" target="_blank" rel="noopener">Also on GitHub</a>`));
   assert.ok(html.includes('<body class="doc-page">\n  <a class="skip-link" href="#top">Skip to content</a>'));
   assert.ok(html.includes('<main id="top" tabindex="-1">'));
-  assert.ok(html.includes('<a href="#one"><span class="num">01</span><span>One</span></a>'));
+  assert.ok(html.includes('<a href="#one"><span class="num" aria-hidden="true">01</span><span>One</span></a>'));
+  assert.ok(html.includes('<section class="author" aria-label="About the author">'));
   for (const marker of ['<!-- generated:head -->\n  <!-- /generated:head -->', '/* generated:fonts */\n    /* /generated:fonts */', '<!-- generated:analytics -->\n  <!-- /generated:analytics -->']) {
     assert.ok(html.includes(marker), marker);
   }

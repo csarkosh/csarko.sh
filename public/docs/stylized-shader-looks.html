@@ -230,6 +230,7 @@
     a.external::after { content: "↗"; font-size: .72em; margin-left: 2px; vertical-align: .3em; display: inline-block; }
     .prose code { font-family: var(--mono); font-size: .86em; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: .12em .4em; overflow-wrap: anywhere; }
     .scroll { overflow-x: auto; margin: 24px 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
     .prose pre { margin: 0; padding: 18px 20px; font-family: var(--mono); font-size: 13.5px; line-height: 1.6; }
     .prose pre code { background: none; border: 0; padding: 0; overflow-wrap: normal; }
     .prose table { border-collapse: collapse; width: 100%; font-size: 14.5px; font-variant-numeric: tabular-nums; }
@@ -288,14 +289,14 @@
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-        <li><a href="#outlines-and-ink"><span class="num">01</span><span>Outlines and ink</span></a></li>
-        <li><a href="#stepped-or-reshaped-lighting"><span class="num">02</span><span>Stepped or reshaped lighting</span></a></li>
-        <li><a href="#limited-colour"><span class="num">03</span><span>Limited colour</span></a></li>
-        <li><a href="#deliberately-low-fidelity"><span class="num">04</span><span>Deliberately low fidelity</span></a></li>
-        <li><a href="#painterly-and-illustrative"><span class="num">05</span><span>Painterly and illustrative</span></a></li>
-        <li><a href="#atmosphere-as-the-style"><span class="num">06</span><span>Atmosphere as the style</span></a></li>
-        <li><a href="#imitating-a-camera-or-recording-medium"><span class="num">07</span><span>Imitating a camera or recording medium</span></a></li>
-        <li><a href="#shaders-tied-to-the-mechanics"><span class="num">08</span><span>Shaders tied to the mechanics</span></a></li>
+        <li><a href="#outlines-and-ink"><span class="num" aria-hidden="true">01</span><span>Outlines and ink</span></a></li>
+        <li><a href="#stepped-or-reshaped-lighting"><span class="num" aria-hidden="true">02</span><span>Stepped or reshaped lighting</span></a></li>
+        <li><a href="#limited-colour"><span class="num" aria-hidden="true">03</span><span>Limited colour</span></a></li>
+        <li><a href="#deliberately-low-fidelity"><span class="num" aria-hidden="true">04</span><span>Deliberately low fidelity</span></a></li>
+        <li><a href="#painterly-and-illustrative"><span class="num" aria-hidden="true">05</span><span>Painterly and illustrative</span></a></li>
+        <li><a href="#atmosphere-as-the-style"><span class="num" aria-hidden="true">06</span><span>Atmosphere as the style</span></a></li>
+        <li><a href="#imitating-a-camera-or-recording-medium"><span class="num" aria-hidden="true">07</span><span>Imitating a camera or recording medium</span></a></li>
+        <li><a href="#shaders-tied-to-the-mechanics"><span class="num" aria-hidden="true">08</span><span>Shaders tied to the mechanics</span></a></li>
         <li><a href="#what-this-suggests-for-day-hike"><span>What this suggests for Day Hike</span></a></li>
         <li><a href="#sources"><span>Sources</span></a></li>
       </ol>
@@ -430,7 +431,7 @@ or a slight VHS bleed on the headlamp cone.</li>
 <p>Babylon.js supports both through the material plugins the ground shaders already use and
 through its <code>PostProcess</code> pipeline.</p>
 <div class="section-head"><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
-<div class="scroll"><table>
+<div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
 <thead>
 <tr>
 <th>Source</th>
@@ -464,12 +465,12 @@ through its <code>PostProcess</code> pipeline.</p>
 </tbody></table></div>
 
       </div>
-      <aside class="author" aria-label="About the author">
+      <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
         <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
         <p>Senior software engineer, founding engineer and lead on several zero-to-one products at DoorDash.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
-      </aside>
+      </section>
     </main>
   </div>
 
