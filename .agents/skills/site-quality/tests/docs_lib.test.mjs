@@ -61,6 +61,20 @@ test('renderMarkdown gives headings unique ids and never reuses "top"', () => {
   assert.deepEqual(r.rail.map((s) => s.id), ['top-1', 'notes', 'notes-1']);
 });
 
+test('renderMarkdown never reuses an id even when the generated candidate collides', () => {
+  const r = renderMarkdown('# T\n\n## Foo\n\n## Foo\n\n## Foo 1\n', FILE);
+  const ids = r.rail.map((s) => s.id);
+  assert.equal(ids[0], 'foo');
+  assert.equal(ids[1], 'foo-1');
+  assert.equal(new Set(ids).size, ids.length);
+});
+
+test('renderMarkdown decodes numeric entities in headings but leaves other named entities alone', () => {
+  const r = renderMarkdown('# A &#169; B\n\n## C &#x2764; &hearts; D\n', FILE);
+  assert.equal(r.title, 'A © B');
+  assert.equal(r.rail[0].text, 'C ❤ &hearts; D');
+});
+
 test('renderMarkdown marks external links, escapes raw HTML and wraps tables and code', () => {
   const fence = '`'.repeat(3); // a literal triple backtick would end this plan's code block
   const r = renderMarkdown(
@@ -83,6 +97,8 @@ test('renderMarkdown rejects what the site cannot publish', () => {
   bad('# T\n\n### Too deep\n', /heading level skips from h1 to h3/);
   bad('# T\n\n![alt](https://example.com/x.png)\n', /images aren't supported/);
   bad('# T\n\n[other](other.md)\n', /link "other\.md" must be/);
+  bad('# T with a [link](/x)\n', /headings can't contain links \(\/x\)/);
+  bad('# T\n\n## Section with a [link](https:\/\/example.com)\n', /headings can't contain links \(https:\/\/example\.com\)/);
 });
 
 const SOURCE = `---\ndescription: ${DESC}\npublished: 2026-09-14\n---\n# Title\n\n## 1. One\n\nText.\n`;

@@ -150,6 +150,9 @@ fit the site (embedded fonts, inline script, repository path labels):
   - Any Markdown image fails the build.
   - Links must be `https://`/`http://`, `#anchor` or root-relative `/path`;
     anything else (such as `other.md`) fails the build.
+  - A link inside any heading (H1 through H6) fails the build, since it would
+    produce a nested `<a>` (the heading's own anchor link, or the title link on
+    `/docs` and the home list).
   - An em-dash anywhere in the file fails the build.
 - Contents rail: the H2 list, visible at ≥ 1060px, static (no highlight).
 - Author box after the body: "Written by Cyrus Sarkosh", the identity line

@@ -5,7 +5,12 @@ import { Marked } from './vendor/marked.esm.mjs';
 
 export const SITE = 'https://csarko.sh';
 
-export class DocError extends Error {}
+export class DocError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'DocError';
+  }
+}
 
 const ENTITIES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 export const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ENTITIES[c]);
@@ -65,7 +70,15 @@ export const readingMinutes = (words) => Math.max(1, Math.round(words / 230));
 
 const stripTags = (html) => html.replace(/<[^>]+>/g, '');
 const DECODE = { amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'" };
-const decodeEntities = (text) => text.replace(/&(amp|lt|gt|quot|#39);/g, (_, name) => DECODE[name]);
+// Named entities: only the 5 marked ever emits itself. Numeric entities (&#169; / &#x2764;) can
+// appear whenever an author types one, so those are decoded generally; other named entities
+// (&hearts; etc.) are left as-is rather than growing a table of HTML5's ~2,000 names.
+const decodeEntities = (text) => text.replace(/&(#\d+|#x[0-9a-f]+|[a-z]+\d*);/gi, (whole, name) => {
+  if (name in DECODE) return DECODE[name];
+  if (/^#\d+$/.test(name)) return String.fromCodePoint(Number(name.slice(1)));
+  if (/^#x[0-9a-f]+$/i.test(name)) return String.fromCodePoint(Number.parseInt(name.slice(2), 16));
+  return whole;
+});
 const plainText = (html) => decodeEntities(stripTags(html));
 
 // The first "# H1" is the title (removed from the body); every "## H2" becomes a section and a
@@ -79,15 +92,26 @@ export function renderMarkdown(body, file) {
 
   const problems = [];
   const rail = [];
-  const slugs = new Map([['top', 1]]); // "top" is the skip link's target
+  const usedIds = new Set(['top']); // "top" is the skip link's target; never reused
   let lastDepth = 1;
+  let insideHeading = false; // set while rendering a heading's inline content, so the link
+  // renderer below can reject a link nested in any heading (H1 through H6) instead of letting
+  // it through and producing a nested <a> on the doc page or in a title link elsewhere.
+  const parseHeadingInline = (fn) => {
+    insideHeading = true;
+    try {
+      return fn();
+    } finally {
+      insideHeading = false;
+    }
+  };
 
   marked.use({
     renderer: {
       heading({ tokens: inline, depth }) {
         if (depth > lastDepth + 1) problems.push(`${file}: heading level skips from h${lastDepth} to h${depth}`);
         lastDepth = depth;
-        let html = this.parser.parseInline(inline);
+        let html = parseHeadingInline(() => this.parser.parseInline(inline));
         let number = '';
         if (depth === 2) {
           const numbered = /^(\d+)\.\s+/.exec(html);
@@ -97,9 +121,9 @@ export function renderMarkdown(body, file) {
           }
         }
         const base = plainText(html).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'section';
-        const count = slugs.get(base) ?? 0;
-        slugs.set(base, count + 1);
-        const id = count ? `${base}-${count}` : base;
+        let id = base;
+        for (let n = 1; usedIds.has(id); n += 1) id = `${base}-${n}`;
+        usedIds.add(id);
         const heading = `<h${depth} id="${id}"><a class="anchor" href="#${id}">${html}</a></h${depth}>`;
         if (depth !== 2) return `${heading}\n`;
         rail.push({ id, number, text: plainText(html) });
@@ -114,6 +138,10 @@ export function renderMarkdown(body, file) {
       },
       link({ href, title, tokens: inline }) {
         const text = this.parser.parseInline(inline);
+        if (insideHeading) {
+          problems.push(`${file}: headings can't contain links (${href})`);
+          return text;
+        }
         const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
         if (/^https?:\/\//.test(href)) {
           return `<a class="external" href="${escapeHtml(href)}"${titleAttr} target="_blank" rel="noopener">${text}</a>`;
@@ -125,7 +153,7 @@ export function renderMarkdown(body, file) {
     },
   });
 
-  const titleHtml = marked.parseInline(h1s[0].text);
+  const titleHtml = parseHeadingInline(() => marked.parseInline(h1s[0].text));
   const html = marked.parser(tokens)
     .replaceAll('<table>', '<div class="scroll"><table>').replaceAll('</table>', '</table></div>')
     .replaceAll('<pre>', '<div class="scroll"><pre>').replaceAll('</pre>', '</pre></div>');
