@@ -13,21 +13,25 @@ description: >-
 
 ```bash
 .agents/skills/preview/scripts/preview.sh           # open public/index.html in Chrome
-.agents/skills/preview/scripts/preview.sh --serve   # serve on http://localhost:4173 and open it
+.agents/skills/preview/scripts/preview.sh --serve   # serve on http://localhost:4173 with Firebase-style clean URLs
 .agents/skills/preview/scripts/preview.sh --stop    # stop that server
-.agents/skills/preview/scripts/preview.sh --shots   # screenshots, dark + light → /tmp/csarko-sh-preview/
+.agents/skills/preview/scripts/preview.sh --shots   # screenshots of home + newest doc, dark + light → /tmp/csarko-sh-preview/
 ```
 
-- **Plain open (default)** is enough for almost every change: the page is one
-  self-contained HTML file plus `me.jpg`.
-- **`--serve`** is closer to production (real HTTP, root-relative paths). Use
-  it if a change depends on how URLs resolve.
+- **Plain open (default)** is enough for home-page changes. Its links to
+  `/docs` are root-relative and only work under `--serve`.
+- **`--serve`** runs `scripts/serve.py`, which routes like Firebase
+  (`/docs/x` → `docs/x.html`, trailing slashes and `.html` redirect). Use it for
+  docs pages and anything that depends on how URLs resolve.
 - **`--shots`** writes `desktop.png` (1440px wide) and `mobile.png` (390px) in
-  the dark theme, plus `desktop-light.png` and `mobile-light.png`. The page
-  follows the visitor's system theme, and the script forces each one, so the
-  result doesn't depend on this Mac's setting. **Read the images in both themes
-  after any visual change** and look for: a color that didn't adapt (something
-  dark-on-dark or a stray dark panel in light mode), text wrapping
+  the dark theme, plus `desktop-light.png` and `mobile-light.png`, and the same
+  four with a `doc-` prefix for the newest doc. Pages load from a temporary
+  `serve.py`. The page follows the visitor's system theme, and the script
+  forces each one, so the result doesn't depend on this Mac's setting. Desktop
+  shots are 1440×4000, so a long doc's bottom is cut off in `doc-desktop*.png`;
+  use `--serve` to check the end of a long doc. **Read the images in both
+  themes after any visual change** and look for: a color that didn't adapt
+  (something dark-on-dark or a stray dark panel in light mode), text wrapping
   onto a lone word, tags or cards stretching full-width, the hero buttons
   wrapping, the photo crop. Headless Chrome can't make a window narrower than
   ~500px, so the mobile shot renders the page inside a 390px iframe — the grey

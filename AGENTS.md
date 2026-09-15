@@ -1,35 +1,41 @@
 # csarko.sh — working context
 
-Cyrus Sarkosh's portfolio site, live at **https://csarko.sh**. One static page:
-who he is, where he's worked, the games he builds, his skills, and how to reach
-him. No framework, no build step, no CI.
+Cyrus Sarkosh's portfolio site, live at **https://csarko.sh**. A home page (who
+he is, where he's worked, the games he builds, his skills, and how to reach him)
+plus research docs at **https://csarko.sh/docs**. No framework and no CI; the
+one build step, `generate-assets.sh`, also turns `content/docs/*.md` into pages.
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `public/index.html` | **The site.** One file: inline CSS, inline SVG icons, JSON-LD. The only JavaScript is the self-hosted GoatCounter counter. |
+| `public/index.html` | **The home page.** One file: inline CSS, inline SVG icons, JSON-LD. The only JavaScript is the self-hosted GoatCounter counter. |
 | `public/me.jpg` | Portrait (640px wide JPEG, from `~/Pictures/Cyrus/me_1.png`). |
 | `public/assets/` | **Generated, content-hashed, cached for a year:** responsive portraits (AVIF/WebP/JPEG) and self-hosted fonts. |
 | `public/og-image.jpg`, `portrait.jpg`, `favicon.*`, `apple-touch-icon.png` | **Generated** too. Everything generated comes from `.agents/skills/site-quality/assets/` via `generate-assets.sh` — never hand-edit, including the `generated:` blocks inside the HTML. |
 | `public/404.html` | Custom not-found page (noindex, root-relative paths). |
 | `public/licenses/fonts-OFL.txt` | Font licenses. |
-| `public/robots.txt`, `public/sitemap.xml` | Crawl rules and the one-URL sitemap. |
+| `public/robots.txt` | Crawl rules. |
+| `content/docs/*.md` | **Published docs, source of truth.** Markdown with front matter, one file per doc. The repo is public, so committing a file here publishes it; use the `publish-doc` skill. |
+| `public/docs/`, `public/sitemap.xml` | **Generated** from `content/docs/` by `build_docs.mjs` (run by `generate-assets.sh`), along with the `generated:docs` block in `index.html`. |
+| `docs/superpowers/` | Internal design specs and implementation plans. Never published. |
 | `firebase.json`, `.firebaserc` | Firebase Hosting config: publish `public/`, cache headers. |
 | `_infra/` | Terraform for the hosting and DNS. Same shape as `~/Projects/fps/_infra`. |
-| `.agents/skills/` | Agent skills: `preview`, `deploy` and `site-quality`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
+| `.agents/skills/` | Agent skills: `preview`, `deploy`, `site-quality` and `publish-doc`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
 | `.claude/settings.json` | Imports the shared skill plugins from [`csarkosh/skills-general`](https://github.com/csarkosh/skills-general): `general:doc-preview` (open a markdown doc as a styled page in Chrome; not this repo's `preview`, which previews the site) and `general-claude:doc-artifact` (publish a doc as a claude.ai Artifact). Change those skills in `skills-general`, not here. On a machine that has never installed them, run `claude plugin install general@csarkosh` and `claude plugin install general-claude@csarkosh`. Codex has no per-repository import: run `codex plugin marketplace add csarkosh/skills-general` and `codex plugin add general@csarkosh` once per machine. |
 | `README.md` | Human-facing overview. `LICENSE` is MIT and predates this version of the site. |
 
 ## Workflows
 
-- **See a change:** `.agents/skills/preview/scripts/preview.sh` (opens Chrome) or
-  `--shots` for desktop + mobile screenshots, in both the dark and light themes, in
-  `/tmp/csarko-sh-preview/`. After any visual edit, look at the screenshots in both
-  themes before calling it done.
+- **See a change:** `.agents/skills/preview/scripts/preview.sh` (opens the home page
+  from disk; use `--serve` for `/docs` and its links) or `--shots` for desktop +
+  mobile screenshots of the home page and the newest doc, in both the dark and
+  light themes, in `/tmp/csarko-sh-preview/`. After any visual edit, look at the
+  screenshots in both themes before calling it done.
+- **Publish a doc:** the `publish-doc` skill.
 - **Ship a change:** `.agents/skills/deploy/scripts/deploy.sh`. It verifies the
-  deployed `index.html` byte-for-byte on both the web.app URL and csarko.sh.
-  `--preview` gives a 7-day shareable channel instead.
+  deployed home page, docs index and newest doc byte-for-byte on both the web.app
+  URL and csarko.sh. `--preview` gives a 7-day shareable channel instead.
 - **Change infrastructure:** `terraform -chdir=_infra plan`, then `apply`. Never
   hand-edit the resources Terraform owns.
 
@@ -77,8 +83,9 @@ Three sources, each for a different question. **Pick by the question, not by hab
   `babylonjs-fps-demo`, `shooter`, `fps`, `webgl` (all `*.csarko.sh`, "remove
   all URLs with this prefix"). They lapse around 2027-03. They shouldn't need
   renewing, since those hosts no longer resolve.
-- After a meaningful content change, use URL Inspection → Request indexing for
-  `https://csarko.sh/`.
+- After a meaningful content change or a new doc, use URL Inspection → Request
+  indexing for the changed URLs (`https://csarko.sh/`, `https://csarko.sh/docs`,
+  `https://csarko.sh/docs/<slug>`).
 
 ## Content rules (Cyrus's standing preferences)
 
@@ -127,6 +134,13 @@ Three sources, each for a different question. **Pick by the question, not by hab
   `html5-fps` was removed on purpose (an early prototype, not a game).
 - **The blog is "csarko.log"** at `https://csarko.substack.com/`. It has no
   published posts yet; Cyrus will publish once Day Hike is ready to publicize.
+- **Docs** *(added 2026-09-15)*: research notes and specs at `/docs`, copied into
+  `content/docs/` (the published copy is the source of truth). The page copy rules
+  apply (no email, phone or em-dashes): the build rejects em-dashes,
+  `deploy.sh` rejects email addresses and phone numbers. Docs
+  from private repositories such as `magicpixel.ai` need Cyrus's OK per doc, and
+  never describe the commercial asset pipeline. Launched with
+  `stylized-shader-looks`, from `game-dayhike`.
 
 ## Analytics: how GoatCounter is wired in
 
@@ -152,7 +166,9 @@ Three sources, each for a different question. **Pick by the question, not by hab
 Defined as CSS custom properties at the top of `index.html`: the dark values on
 `:root`, the light overrides in `@media (prefers-color-scheme: light)`. Cyrus uses
 the dark ones to match his Substack theme, so keep them stable or tell him when
-they change.
+they change. Docs pages copy both token blocks out of `index.html` at build time,
+so after changing a token run `generate-assets.sh` (`check.py` fails until you
+do).
 
 | Token | Dark (default) | Light |
 |---|---|---|

@@ -10,8 +10,8 @@
 #   deploy.sh --preview    deploy to a temporary preview channel (expires in 7d)
 #
 # Exit status is non-zero if a guard fails (privacy, config, site quality), the deploy
-# fails, the site's own web.app URL does not serve the exact index.html that was
-# just deployed, or the live SEO checks fail afterwards.
+# fails, the site's own web.app URL does not serve the exact home page, docs index and
+# newest doc that were just deployed, or the live checks fail afterwards.
 
 set -euo pipefail
 
@@ -33,11 +33,15 @@ command -v npx >/dev/null || die "npx not found — install Node 20 or later"
 
 # Privacy guard. Cyrus does not want his email address or phone number on the
 # public site (spam). Links go to LinkedIn, GitHub and Substack instead.
-if grep -nEio 'mailto:[^"]*|[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}' public/*.html; then
-  die "public/ contains an email address — refusing to deploy"
+# Docs are scanned too, in their Markdown source and as built pages.
+shopt -s nullglob
+SCAN=(public/*.html public/docs/*.html content/docs/*.md)
+shopt -u nullglob
+if grep -nEio 'mailto:[^"]*|[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}' "${SCAN[@]}"; then
+  die "the site or a doc contains an email address — refusing to deploy"
 fi
-if grep -nEo '\+1[ .-]?[0-9]{3}[ .-]?[0-9]{3}[ .-]?[0-9]{4}|\(?[0-9]{3}\)?[ .-][0-9]{3}-[0-9]{4}' public/*.html; then
-  die "public/ contains what looks like a phone number — refusing to deploy"
+if grep -nEo '\+1[ .-]?[0-9]{3}[ .-]?[0-9]{3}[ .-]?[0-9]{4}|\(?[0-9]{3}\)?[ .-][0-9]{3}-[0-9]{4}' "${SCAN[@]}"; then
+  die "the site or a doc contains what looks like a phone number — refusing to deploy"
 fi
 
 # Quality gate: SEO, performance budgets, accessibility, security headers, the
@@ -67,22 +71,30 @@ fi
 
 npx -y firebase-tools deploy --only hosting --project "$PROJECT" --non-interactive
 
-LOCAL_SHA="$(shasum -a 256 public/index.html | cut -d' ' -f1)"
+# Pages to prove live: the home page, the docs index and the newest doc, each against its local file.
+NEWEST="$(.agents/skills/site-quality/scripts/check.py --newest-doc)"
+VERIFY=("/|public/index.html")
+[[ -f public/docs/index.html ]] && VERIFY+=("/docs|public/docs/index.html")
+[[ -n "$NEWEST" ]] && VERIFY+=("/${NEWEST%.html}|public/$NEWEST")
 
-serves_local() {
-  local got
-  got="$(curl -fsSL --compressed -m 20 -H 'Cache-Control: no-cache' "$1/" | shasum -a 256 | cut -d' ' -f1)" || return 1
-  [[ "$got" == "$LOCAL_SHA" ]]
+serves_local() { # serves_local <base url> <path> <local file>
+  local got want
+  want="$(shasum -a 256 "$3" | cut -d' ' -f1)"
+  got="$(curl -fsSL --compressed -m 20 -H 'Cache-Control: no-cache' "$1$2" | shasum -a 256 | cut -d' ' -f1)" || return 1
+  [[ "$got" == "$want" ]]
 }
 
-verify() {
-  local url="$1" i
-  for i in 1 2 3 4 5 6; do
-    if serves_local "$url"; then echo "✓ $url serves this index.html"; return 0; fi
-    sleep 5
+verify() { # verify <base url>: every page in VERIFY serves its local file
+  local url="$1" entry path file i
+  for entry in "${VERIFY[@]}"; do
+    path="${entry%%|*}"; file="${entry#*|}"
+    for i in 1 2 3 4 5 6; do
+      if serves_local "$url" "$path" "$file"; then echo "✓ $url$path serves $file"; continue 2; fi
+      sleep 5
+    done
+    echo "✗ $url$path does not serve $file (yet)"
+    return 1
   done
-  echo "✗ $url does not serve this index.html (yet)"
-  return 1
 }
 
 echo

@@ -10,3 +10,6 @@ _infra/.terraform/
 *.tfstate.backup
 *.tfvars
 !_infra/terraform.tfvars.example
+
+# Python
+__pycache__/

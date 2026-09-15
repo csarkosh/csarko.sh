@@ -300,6 +300,19 @@
     .card.placeholder:hover { transform: none; border-color: var(--border-strong); background: transparent; }
     .card.placeholder .card-link { color: var(--faint); }
 
+    /* Research & docs: the list between the generated:docs markers comes from content/docs/ (build_docs.mjs) */
+    .doc-list { list-style: none; margin: 0; padding: 0; }
+    .doc-list li { padding-block: 18px; border-top: 1px solid var(--border); }
+    .doc-list li:first-child { border-top: 0; padding-top: 0; }
+    .doc-list .doc-title { margin: 0 0 4px; font-size: 1.15rem; line-height: 1.35; letter-spacing: -0.015em; font-weight: 600; }
+    .doc-list .doc-title a { transition: color .15s ease; }
+    .doc-list .doc-title a:hover { color: var(--accent); }
+    .doc-meta { margin: 0 0 6px; font-family: var(--mono); font-size: 12px; color: var(--faint); }
+    .doc-desc { margin: 0; color: var(--muted); font-size: 15px; }
+    .all-docs { margin-top: 22px; font-size: 14px; font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
+    .all-docs svg { width: 14px; height: 14px; transition: transform .18s ease; }
+    .all-docs:hover svg { transform: translateX(2px); }
+
     /* Skills */
     .skills { display: grid; gap: 18px; margin: 0; }
     .skill-row { display: grid; grid-template-columns: 150px 1fr; gap: 16px; align-items: start; }
@@ -342,7 +355,7 @@
 
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
-      .btn, .card, .card-link svg { transition: none; }
+      .btn, .card, .card-link svg, .all-docs svg, .doc-list .doc-title a { transition: none; }
     }
   </style>
 </head>
@@ -540,8 +553,23 @@
       </div>
     </section>
 
+    <!-- generated:docs -->
+    <section id="docs" aria-labelledby="docs-title">
+      <p class="section-label">03 / Research &amp; docs</p>
+      <h2 id="docs-title">Notes from what I'm researching</h2>
+      <ul class="doc-list" role="list">
+        <li>
+          <h3 class="doc-title"><a href="/docs/stylized-shader-looks">Stylized shader looks: how games build a visual identity</a></h3>
+          <p class="doc-meta">Sep 14, 2026 · 5 min read</p>
+          <p class="doc-desc">How games use shaders to build a distinct look, from ink outlines and cel lighting to dithering, gradient fog and VHS effects.</p>
+        </li>
+      </ul>
+      <a class="all-docs" href="/docs">All docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </section>
+    <!-- /generated:docs -->
+
     <section id="skills" aria-labelledby="skills-title">
-      <p class="section-label">03 / Skills</p>
+      <p class="section-label">04 / Skills</p>
       <h2 id="skills-title">What I work with</h2>
       <dl class="skills">
         <div class="skill-row">
@@ -576,7 +604,7 @@
     </section>
 
     <section id="contact" class="contact" aria-labelledby="contact-title">
-      <p class="section-label">04 / Contact</p>
+      <p class="section-label">05 / Contact</p>
       <h2 id="contact-title">Let's talk.</h2>
       <p>I'm always happy to talk about AI products, distributed systems, engineering leadership, or generative media.</p>
       <div class="actions">

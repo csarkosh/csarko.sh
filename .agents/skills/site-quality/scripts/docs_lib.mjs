@@ -1,0 +1,546 @@
+// docs_lib.mjs — the pure half of the docs build: content/docs/*.md in, page text out.
+// build_docs.mjs does the file I/O. Nothing here reads the clock or the disk, so the same
+// sources always produce the same bytes. Tests: ../tests/docs_lib.test.mjs (node --test).
+import { Marked } from './vendor/marked.esm.mjs';
+
+export const SITE = 'https://csarko.sh';
+
+export class DocError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'DocError';
+  }
+}
+
+const ENTITIES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+export const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ENTITIES[c]);
+
+// ---------------------------------------------------------------- front matter
+
+// key -> required?
+const FIELDS = { description: true, published: true, updated: false, source: false };
+
+const isDate = (value) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+};
+
+export function parseFrontMatter(text, file) {
+  const normalized = text.replace(/\r\n/g, '\n');
+  const block = /^---\n([\s\S]*?)\n---\n/.exec(normalized);
+  if (!block) throw new DocError(`${file}: must start with a --- front matter block`);
+  const meta = {};
+  for (const line of block[1].split('\n')) {
+    if (!line.trim()) continue;
+    const kv = /^([a-z]+):\s*(.*)$/.exec(line);
+    if (!kv) throw new DocError(`${file}: front matter line is not "key: value": ${line}`);
+    const [, key, value] = kv;
+    if (!(key in FIELDS)) throw new DocError(`${file}: unknown front matter key "${key}"`);
+    if (key in meta) throw new DocError(`${file}: duplicate front matter key "${key}"`);
+    meta[key] = value.trim();
+  }
+  for (const [key, required] of Object.entries(FIELDS)) {
+    if (required && !meta[key]) throw new DocError(`${file}: front matter needs "${key}"`);
+  }
+  const length = [...meta.description].length;
+  if (length < 70 || length > 160) throw new DocError(`${file}: description is ${length} characters (70–160)`);
+  if (!isDate(meta.published)) throw new DocError(`${file}: published must be a real YYYY-MM-DD date`);
+  if (meta.updated !== undefined) {
+    if (!isDate(meta.updated)) throw new DocError(`${file}: updated must be a real YYYY-MM-DD date`);
+    if (meta.updated < meta.published) throw new DocError(`${file}: updated is before published`);
+  }
+  if (meta.source !== undefined && !/^https:\/\/github\.com\/\S+$/.test(meta.source)) {
+    throw new DocError(`${file}: source must be an https://github.com/ URL`);
+  }
+  return { meta, body: normalized.slice(block[0].length) };
+}
+
+// ---------------------------------------------------------------- small helpers
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export const formatDate = (iso) => {
+  const [year, month, day] = iso.split('-').map(Number);
+  return `${MONTHS[month - 1]} ${day}, ${year}`;
+};
+
+export const readingMinutes = (words) => Math.max(1, Math.round(words / 230));
+
+// ---------------------------------------------------------------- markdown
+
+const stripTags = (html) => html.replace(/<[^>]+>/g, '');
+const DECODE = { amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'" };
+// Named entities: only the 5 marked ever emits itself. Numeric entities (&#169; / &#x2764;) can
+// appear whenever an author types one, so those are decoded generally; other named entities
+// (&hearts; etc.) are left as-is rather than growing a table of HTML5's ~2,000 names.
+const decodeEntities = (text) => text.replace(/&(#\d+|#x[0-9a-f]+|[a-z]+\d*);/gi, (whole, name) => {
+  if (name in DECODE) return DECODE[name];
+  if (/^#\d+$/.test(name)) return String.fromCodePoint(Number(name.slice(1)));
+  if (/^#x[0-9a-f]+$/i.test(name)) return String.fromCodePoint(Number.parseInt(name.slice(2), 16));
+  return whole;
+});
+const plainText = (html) => decodeEntities(stripTags(html));
+
+// The first "# H1" is the title (removed from the body); every "## H2" becomes a section and a
+// stop on the contents rail, and "## 1. Title" shows its number as a mono label ("01").
+export function renderMarkdown(body, file) {
+  const marked = new Marked({ gfm: true });
+  const tokens = marked.lexer(body);
+  const h1s = tokens.filter((t) => t.type === 'heading' && t.depth === 1);
+  if (h1s.length !== 1) throw new DocError(`${file}: needs exactly one "# " title (found ${h1s.length})`);
+  tokens.splice(tokens.indexOf(h1s[0]), 1);
+
+  const problems = [];
+  const rail = [];
+  const usedIds = new Set(['top']); // "top" is the skip link's target; never reused
+  let lastDepth = 1;
+  let insideHeading = false; // set while rendering a heading's inline content, so the link
+  // renderer below can reject a link nested in any heading (H1 through H6) instead of letting
+  // it through and producing a nested <a> on the doc page or in a title link elsewhere.
+  const parseHeadingInline = (fn) => {
+    insideHeading = true;
+    try {
+      return fn();
+    } finally {
+      insideHeading = false;
+    }
+  };
+
+  marked.use({
+    renderer: {
+      heading({ tokens: inline, depth }) {
+        if (depth > lastDepth + 1) problems.push(`${file}: heading level skips from h${lastDepth} to h${depth}`);
+        lastDepth = depth;
+        let html = parseHeadingInline(() => this.parser.parseInline(inline));
+        let number = '';
+        if (depth === 2) {
+          const numbered = /^(\d+)\.\s+/.exec(html);
+          if (numbered) {
+            number = numbered[1].padStart(2, '0');
+            html = html.slice(numbered[0].length);
+          }
+        }
+        const base = plainText(html).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'section';
+        let id = base;
+        for (let n = 1; usedIds.has(id); n += 1) id = `${base}-${n}`;
+        usedIds.add(id);
+        const heading = `<h${depth} id="${id}"><a class="anchor" href="#${id}">${html}</a></h${depth}>`;
+        if (depth !== 2) return `${heading}\n`;
+        rail.push({ id, number, text: plainText(html) });
+        return `<div class="section-head">${number ? `<p class="section-label">${number}</p>` : ''}${heading}</div>\n`;
+      },
+      html({ text }) {
+        return escapeHtml(text);
+      },
+      image({ href }) {
+        problems.push(`${file}: images aren't supported yet (${href})`);
+        return '';
+      },
+      link({ href, title, tokens: inline }) {
+        const text = this.parser.parseInline(inline);
+        if (insideHeading) {
+          problems.push(`${file}: headings can't contain links (${href})`);
+          return text;
+        }
+        const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
+        if (/^https?:\/\//.test(href)) {
+          return `<a class="external" href="${escapeHtml(href)}"${titleAttr} target="_blank" rel="noopener">${text}</a>`;
+        }
+        if (/^#[\w-]+$/.test(href) || /^\/(?!\/)/.test(href)) return `<a href="${escapeHtml(href)}"${titleAttr}>${text}</a>`;
+        problems.push(`${file}: link "${href}" must be https://, #anchor or a root-relative /path`);
+        return text;
+      },
+    },
+  });
+
+  const titleHtml = parseHeadingInline(() => marked.parseInline(h1s[0].text));
+  const html = marked.parser(tokens)
+    .replaceAll('<table>', '<div class="scroll" tabindex="0" role="region" aria-label="Table"><table>').replaceAll('</table>', '</table></div>')
+    .replaceAll('<pre>', '<div class="scroll" tabindex="0" role="region" aria-label="Code"><pre>').replaceAll('</pre>', '</pre></div>');
+  if (problems.length) throw new DocError(problems.join('\n'));
+  // Tags become spaces here (not in plainText) so "<p>01</p><h2>Title" counts as two words.
+  const words = decodeEntities(html.replace(/<[^>]+>/g, ' ')).split(/\s+/).filter(Boolean).length;
+  return { title: plainText(titleHtml), titleHtml, html, rail, words };
+}
+
+// ---------------------------------------------------------------- one doc
+
+export function loadDoc(slug, text) {
+  const file = `content/docs/${slug}.md`;
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new DocError(`${file}: file name must be lowercase letters, digits and hyphens`);
+  if (slug === 'index') throw new DocError(`${file}: "index" is reserved for the docs index page`);
+  if (text.includes('—')) throw new DocError(`${file}: contains an em-dash; use a comma, colon or semicolon`);
+  const { meta, body } = parseFrontMatter(text, file);
+  return {
+    slug,
+    url: `${SITE}/docs/${slug}`,
+    path: `/docs/${slug}`,
+    ...meta,
+    modified: meta.updated ?? meta.published,
+    ...renderMarkdown(body, file),
+  };
+}
+
+// ---------------------------------------------------------------- pages
+
+const PERSON = `${SITE}/#person`;
+const WEBSITE = `${SITE}/#website`;
+// Google reads structured data per page and won't follow @id to the home page's full Person, so
+// each doc embeds this minimal node (still carrying @id, so it links back to that fuller record).
+const PERSON_NODE = { '@type': 'Person', '@id': PERSON, name: 'Cyrus Sarkosh', url: `${SITE}/` };
+const OG_IMAGE = `${SITE}/og-image.jpg`;
+const OG_IMAGE_ALT = 'Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait';
+const LINKEDIN = 'https://www.linkedin.com/in/csarkosh';
+const INDEX_TITLE = 'Research & docs';
+const INDEX_DESCRIPTION = 'Research notes and specs by Cyrus Sarkosh on game development, generative AI for media, and the software behind them.';
+const INDEX_LEAD = 'Research notes and specs from what I build and explore: game development, generative AI for media, and the software behind them.';
+const HOME_LIMIT = 3;
+
+export const sortDocs = (docs) =>
+  [...docs].sort((a, b) => (a.published === b.published ? (a.slug < b.slug ? -1 : 1) : a.published < b.published ? 1 : -1));
+
+// Doc pages reuse the home page's colors exactly: both token blocks are copied out of index.html.
+export function themeBlocks(indexHtml) {
+  const dark = /(?<![\w-]):root\s*\{[^}]*\}/.exec(indexHtml);
+  const light = /@media\s*\(prefers-color-scheme:\s*light\)\s*\{\s*:root\s*\{[^}]*\}\s*\}/.exec(indexHtml);
+  if (!dark || !light) throw new DocError('public/index.html: theme token blocks not found');
+  return `${dark[0]}\n    ${light[0]}`;
+}
+
+export function replaceBlock(html, name, body) {
+  const re = new RegExp(`(<!-- generated:${name} -->)[\\s\\S]*?(<!-- /generated:${name} -->)`);
+  if (!re.test(html)) throw new DocError(`public/index.html has no <!-- generated:${name} --> markers`);
+  return html.replace(re, (_, start, end) => start + body + end);
+}
+
+const jsonLd = (data) => JSON.stringify({ '@context': 'https://schema.org', '@graph': data }, null, 2).replace(/</g, '\\u003c');
+
+const breadcrumbs = (items) => ({
+  '@type': 'BreadcrumbList',
+  itemListElement: items.map(([name, item], i) => ({ '@type': 'ListItem', position: i + 1, name, item })),
+});
+
+const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+
+const DOCS_CSS = `
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 84px; -webkit-text-size-adjust: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+    body::before { content: ""; position: fixed; inset: -20vh -10vw auto; height: 70vh; background: radial-gradient(ellipse at 30% 0%, var(--accent-glow), transparent 60%); pointer-events: none; z-index: -1; }
+    a { color: inherit; text-decoration: none; }
+    a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+    ::selection { background: var(--accent); color: var(--on-accent); }
+
+    .wrap { max-width: 880px; margin: 0 auto; padding-inline: 24px; }
+    .doc-page .wrap { max-width: 1120px; }
+
+    .nav { position: sticky; top: 0; z-index: 10; backdrop-filter: saturate(140%) blur(12px); -webkit-backdrop-filter: saturate(140%) blur(12px); background: var(--nav-bg); border-bottom: 1px solid var(--border); }
+    .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+    .skip-link { position: absolute; left: 16px; top: -60px; z-index: 100; padding: 8px 14px; border-radius: 8px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 600; }
+    .skip-link:focus { top: 12px; }
+    main:focus { outline: none; }
+    .wordmark { font-family: var(--mono); font-weight: 500; font-size: 15px; letter-spacing: -0.01em; }
+    .wordmark span { color: var(--accent); }
+    .nav ul { display: flex; gap: 24px; list-style: none; margin: 0; padding: 0; }
+    .nav ul a { color: var(--muted); font-size: 14px; transition: color .15s ease; }
+    .nav ul a:hover { color: var(--text); }
+
+    .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin: 0 0 20px; display: flex; align-items: center; gap: 10px; }
+    .eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); flex: none; }
+    .section-label { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); margin: 0 0 8px; }
+    .doc-header { padding-bottom: 36px; }
+    h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing: -0.035em; font-weight: 700; margin: 0 0 24px; text-wrap: balance; overflow-wrap: anywhere; }
+    .lead { font-size: clamp(1.05rem, 2.2vw, 1.2rem); color: var(--muted); max-width: 60ch; margin: 0; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+    .tags li { font-family: var(--mono); font-size: 12px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); padding: 3px 9px; border-radius: 999px; line-height: 1.5; }
+
+    .shell { display: grid; grid-template-columns: minmax(0, 1fr); gap: 64px; padding-block: 72px 96px; }
+    .rail { display: none; }
+    @media (min-width: 1060px) {
+      .shell { grid-template-columns: 230px minmax(0, 72ch); justify-content: center; }
+      .shell.no-rail { grid-template-columns: minmax(0, 72ch); }
+      .rail { display: block; position: sticky; top: 108px; align-self: start; max-height: calc(100vh - 140px); overflow-y: auto; }
+    }
+    .rail ol { list-style: none; margin: 16px 0 0; padding: 0 0 0 16px; border-left: 1px solid var(--border-strong); display: grid; gap: 4px; }
+    .rail a { display: flex; gap: 10px; padding: 4px 0; color: var(--muted); font-size: 13.5px; line-height: 1.45; transition: color .15s ease; }
+    .rail a:hover { color: var(--text); }
+    .rail .num { font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--faint); flex: none; }
+
+    .section-head { border-top: 1px solid var(--border); padding-top: 48px; margin-top: 56px; }
+    .prose h2, .prose h3, .prose h4 { color: var(--text); text-wrap: balance; }
+    .prose h2 { font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.025em; font-weight: 600; margin: 0 0 24px; }
+    .prose h3 { font-size: 1.2rem; letter-spacing: -0.015em; font-weight: 600; margin: 36px 0 12px; }
+    .prose p, .prose li { color: var(--muted); text-wrap: pretty; overflow-wrap: anywhere; }
+    .prose > p:first-child { margin-top: 0; }
+    .prose strong { color: var(--text); font-weight: 600; }
+    .prose ul, .prose ol { padding-left: 1.25em; }
+    .prose li { margin: 12px 0; }
+    .prose li::marker { color: var(--accent); }
+    .prose a:not(.anchor), .author a, .tags a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; transition: text-decoration-color .15s ease; }
+    .prose a:not(.anchor):hover, .author a:hover, .tags a:hover { text-decoration-color: var(--accent); }
+    a.external::after { content: "↗"; font-size: .72em; margin-left: 2px; vertical-align: .3em; display: inline-block; }
+    .prose code { font-family: var(--mono); font-size: .86em; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: .12em .4em; overflow-wrap: anywhere; }
+    .scroll { overflow-x: auto; margin: 24px 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .prose pre { margin: 0; padding: 18px 20px; font-family: var(--mono); font-size: 13.5px; line-height: 1.6; }
+    .prose pre code { background: none; border: 0; padding: 0; overflow-wrap: normal; }
+    .prose table { border-collapse: collapse; width: 100%; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+    .prose th { font-family: var(--mono); font-weight: 500; font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); background: var(--surface-2); }
+    .prose th, .prose td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--muted); }
+    .prose tr:last-child td { border-bottom: 0; }
+    .prose blockquote { margin: 28px 0; padding: 18px 22px; border: 1px solid var(--border); border-radius: var(--radius); background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); }
+    .prose blockquote p { margin: 0; }
+    .prose hr { border: 0; border-top: 1px solid var(--border); margin: 48px 0; }
+
+    .author { margin-top: 72px; padding: 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .author p { margin: 0; color: var(--muted); }
+    .author .author-name { color: var(--text); font-weight: 600; font-size: 1.05rem; margin-bottom: 4px; }
+    .author .author-name a { color: var(--text); text-decoration: none; }
+    .author .author-links { margin-top: 12px; font-size: 14px; }
+
+    .docs-index { padding-block: 72px 96px; }
+    .doc-list { list-style: none; margin: 0; padding: 0; }
+    .doc-list li { padding-block: 18px; border-top: 1px solid var(--border); }
+    .doc-list li:first-child { border-top: 0; padding-top: 0; }
+    .doc-list .doc-title { margin: 0 0 4px; font-size: 1.2rem; line-height: 1.35; letter-spacing: -0.015em; font-weight: 600; }
+    .doc-list .doc-title a { transition: color .15s ease; }
+    .doc-list .doc-title a:hover { color: var(--accent); }
+    .doc-meta { margin: 0 0 6px; font-family: var(--mono); font-size: 12px; color: var(--faint); }
+    .doc-desc { margin: 0; color: var(--muted); }
+
+    footer { border-top: 1px solid var(--border); padding-block: 28px 40px; color: var(--faint); font-size: 13px; }
+    footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+    footer .mono { font-family: var(--mono); }
+
+    @media (max-width: 640px) {
+      .nav ul { gap: 14px; }
+      .nav ul a { font-size: 13.5px; }
+      .shell, .docs-index { padding-block: 48px 72px; }
+      .section-head { padding-top: 40px; margin-top: 44px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .nav ul a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a { transition: none; }
+    }`;
+
+function head({ title, ogTitle, description, canonical, ogType, extraMeta = '', graph, theme }) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeHtml(title)}</title>
+  <meta name="description" content="${escapeHtml(description)}" />
+  <link rel="canonical" href="${canonical}" />
+
+  <meta property="og:type" content="${ogType}" />
+  <meta property="og:site_name" content="Cyrus Sarkosh" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:url" content="${canonical}" />
+  <meta property="og:title" content="${escapeHtml(ogTitle)}" />
+  <meta property="og:description" content="${escapeHtml(description)}" />
+  <meta property="og:image" content="${OG_IMAGE}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="${OG_IMAGE_ALT}" />
+${extraMeta}  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${escapeHtml(ogTitle)}" />
+  <meta name="twitter:description" content="${escapeHtml(description)}" />
+  <meta name="twitter:image" content="${OG_IMAGE}" />
+  <meta name="twitter:image:alt" content="${OG_IMAGE_ALT}" />
+
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0a0b0e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)" />
+  <link rel="icon" href="/favicon.ico" sizes="48x48" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicon-96x96.png" type="image/png" sizes="96x96" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+  <!-- generated:head -->
+  <!-- /generated:head -->
+
+  <script type="application/ld+json">
+${jsonLd(graph)}
+  </script>
+  <style>
+    /* Generated by build_docs.mjs from content/docs/. Fonts are filled in by build_assets.py. */
+    /* generated:fonts */
+    /* /generated:fonts */
+
+    ${theme}
+${DOCS_CSS}
+  </style>
+</head>`;
+}
+
+const NAV = `  <a class="skip-link" href="#top">Skip to content</a>
+  <nav class="nav" aria-label="Primary">
+    <div class="wrap">
+      <a class="wordmark" href="/">csarko<span>.sh</span></a>
+      <ul>
+        <li><a href="/docs">Docs</a></li>
+        <li><a href="/">Home</a></li>
+      </ul>
+    </div>
+  </nav>`;
+
+const FOOTER = `  <footer>
+    <div class="wrap">
+      <span>© 2026 Cyrus Sarkosh</span>
+      <span class="mono">csarko.sh</span>
+    </div>
+  </footer>
+  <!-- generated:analytics -->
+  <!-- /generated:analytics -->
+</body>
+</html>
+`;
+
+function docList(docs, level, pad) {
+  const items = docs.map((d) => `${pad}  <li>
+${pad}    <h${level} class="doc-title"><a href="${d.path}">${d.titleHtml}</a></h${level}>
+${pad}    <p class="doc-meta">${formatDate(d.published)} · ${readingMinutes(d.words)} min read</p>
+${pad}    <p class="doc-desc">${escapeHtml(d.description)}</p>
+${pad}  </li>`);
+  return `${pad}<ul class="doc-list" role="list">\n${items.join('\n')}\n${pad}</ul>`;
+}
+
+export function docPage(doc, theme) {
+  const graph = [
+    {
+      '@type': 'TechArticle',
+      '@id': `${doc.url}#article`,
+      headline: doc.title,
+      description: doc.description,
+      datePublished: doc.published,
+      dateModified: doc.modified,
+      url: doc.url,
+      mainEntityOfPage: doc.url,
+      wordCount: doc.words,
+      inLanguage: 'en',
+      image: OG_IMAGE,
+      author: PERSON_NODE,
+      publisher: PERSON_NODE,
+      isPartOf: { '@id': WEBSITE },
+      ...(doc.source ? { sameAs: [doc.source] } : {}),
+    },
+    breadcrumbs([['Cyrus Sarkosh', `${SITE}/`], ['Docs', `${SITE}/docs`], [doc.title, doc.url]]),
+  ];
+  const extraMeta = `  <meta property="article:published_time" content="${doc.published}" />
+  <meta property="article:modified_time" content="${doc.modified}" />
+  <meta property="article:author" content="${SITE}/" />
+`;
+  const eyebrow = `Research · ${formatDate(doc.published)}${doc.updated ? ` · Updated ${formatDate(doc.updated)}` : ''}`;
+  const rail = doc.rail.length
+    ? `    <aside class="rail" aria-label="Contents">
+      <p class="section-label">Contents</p>
+      <ol>
+${doc.rail.map((s) => `        <li><a href="#${s.id}">${s.number ? `<span class="num" aria-hidden="true">${s.number}</span>` : ''}<span>${escapeHtml(s.text)}</span></a></li>`).join('\n')}
+      </ol>
+    </aside>
+`
+    : '';
+  const source = doc.source
+    ? `\n          <li><a class="external" href="${escapeHtml(doc.source)}" target="_blank" rel="noopener">Also on GitHub</a></li>`
+    : '';
+  return `${head({ title: `${doc.title} · Cyrus Sarkosh`, ogTitle: doc.title, description: doc.description, canonical: doc.url, ogType: 'article', extraMeta, graph, theme })}
+<body class="doc-page">
+${NAV}
+
+  <div class="wrap shell${doc.rail.length ? '' : ' no-rail'}">
+${rail}    <main id="top" tabindex="-1">
+      <header class="doc-header">
+        <p class="eyebrow">${eyebrow}</p>
+        <h1>${doc.titleHtml}</h1>
+        <ul class="tags">
+          <li>${readingMinutes(doc.words)} min read</li>${source}
+        </ul>
+      </header>
+      <div class="prose">
+${doc.html}
+      </div>
+      <section class="author" aria-label="About the author">
+        <p class="section-label">Written by</p>
+        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
+        <p>Senior software engineer, founding engineer and lead on several zero-to-one products at DoorDash.</p>
+        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="${LINKEDIN}" target="_blank" rel="noopener">LinkedIn</a></p>
+      </section>
+    </main>
+  </div>
+
+${FOOTER}`;
+}
+
+export function indexPage(docs, theme) {
+  const url = `${SITE}/docs`;
+  const graph = [
+    {
+      '@type': 'CollectionPage',
+      '@id': `${url}#page`,
+      url,
+      name: INDEX_TITLE,
+      description: INDEX_DESCRIPTION,
+      isPartOf: { '@id': WEBSITE },
+      about: { '@id': PERSON },
+      mainEntity: {
+        '@type': 'ItemList',
+        itemListElement: docs.map((d, i) => ({ '@type': 'ListItem', position: i + 1, url: d.url, name: d.title })),
+      },
+    },
+    breadcrumbs([['Cyrus Sarkosh', `${SITE}/`], ['Docs', url]]),
+  ];
+  return `${head({ title: `${INDEX_TITLE} · Cyrus Sarkosh`, ogTitle: INDEX_TITLE, description: INDEX_DESCRIPTION, canonical: url, ogType: 'website', graph, theme })}
+<body>
+${NAV}
+
+  <main id="top" class="wrap docs-index" tabindex="-1">
+    <header class="doc-header">
+      <p class="eyebrow">Docs</p>
+      <h1>${escapeHtml(INDEX_TITLE)}</h1>
+      <p class="lead">${escapeHtml(INDEX_LEAD)}</p>
+    </header>
+${docList(docs, 2, '    ')}
+  </main>
+
+${FOOTER}`;
+}
+
+// The home page's "Research & docs" section. With no docs the block is empty, so nothing renders.
+export function homeSection(docs) {
+  if (!docs.length) return '\n    ';
+  return `
+    <section id="docs" aria-labelledby="docs-title">
+      <p class="section-label">03 / Research &amp; docs</p>
+      <h2 id="docs-title">Notes from what I'm researching</h2>
+${docList(docs.slice(0, HOME_LIMIT), 3, '      ')}
+      <a class="all-docs" href="/docs">All docs ${ARROW}</a>
+    </section>
+    `;
+}
+
+export function sitemap(docs) {
+  // / and /docs get no <lastmod>: a home-page-only edit never moves it, so it was unreliable.
+  // Each doc keeps its own (updated, else published), which is a real content date.
+  const entries = [
+    [`${SITE}/`, null],
+    ...(docs.length ? [[`${SITE}/docs`, null]] : []),
+    ...docs.map((d) => [d.url, d.modified]),
+  ];
+  const urls = entries.map(([loc, lastmod]) =>
+    `  <url>\n    <loc>${loc}</loc>\n${lastmod ? `    <lastmod>${lastmod}</lastmod>\n` : ''}  </url>`);
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`;
+}
+
+// ---------------------------------------------------------------- everything
+
+export function buildSite({ sources, indexHtml }) {
+  const docs = sortDocs(sources.map(({ slug, text }) => loadDoc(slug, text)));
+  const theme = themeBlocks(indexHtml);
+  const files = new Map();
+  for (const doc of docs) files.set(`docs/${doc.slug}.html`, docPage(doc, theme));
+  if (docs.length) files.set('docs/index.html', indexPage(docs, theme));
+  files.set('sitemap.xml', sitemap(docs));
+  files.set('index.html', replaceBlock(indexHtml, 'docs', homeSection(docs)));
+  return files;
+}
