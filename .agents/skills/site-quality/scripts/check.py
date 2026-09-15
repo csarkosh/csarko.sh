@@ -4,7 +4,8 @@ check.py — fail loudly if csarko.sh regresses on SEO, performance, accessibili
 security headers, or layout.
 
 Usage:
-  check.py                        static checks on public/ and firebase.json (offline, a few seconds)
+  check.py                        static checks on every page in public/, the docs build, and firebase.json (offline, a few seconds)
+  check.py --newest-doc           print docs/<slug>.html of the newest doc (or an empty line) and exit
   check.py --live [URL]           + the deployed site: headers, caching, 404, robots, sitemap, www
   check.py --lighthouse [URL]     + Lighthouse, dark and light themes: SEO, Accessibility, Best Practices 100; Performance >= 95
   check.py --observatory [HOST]   + Mozilla HTTP Observatory: grade must be A+
@@ -273,8 +274,9 @@ def indexable_pages(public=PUBLIC):
 
 # --------------------------------------------------------------------------- SEO
 
-def seo_checks(page):
-    print("SEO (index.html)")
+def seo_checks(page, rel):
+    kind, canonical = page_kind(rel), canonical_for(rel)
+    print(f"SEO ({rel})")
     if not page.title:
         fail("missing <title>")
     else:
@@ -285,13 +287,16 @@ def seo_checks(page):
     check(page.lang, f'html lang="{page.lang}"')
 
     canon = [l.get("href") for l in page.links if l.get("rel") == "canonical"]
-    check(canon == [CANONICAL], f"canonical {canon}")
+    check(canon == [canonical], f"canonical {canon}")
 
-    for key in ("og:title", "og:description", "og:type", "og:site_name", "og:image:alt",
+    for key in ("og:title", "og:description", "og:site_name", "og:image:alt",
                 "twitter:title", "twitter:description", "twitter:image:alt"):
         one(page, key)
-    if one(page, "og:url") not in (None, CANONICAL):
-        fail(f"og:url must equal the canonical URL {CANONICAL}")
+    want_type = "article" if kind == "doc" else "website"
+    if one(page, "og:type") not in (None, want_type):
+        fail(f"og:type should be {want_type}")
+    if one(page, "og:url") not in (None, canonical):
+        fail(f"og:url must equal the canonical URL {canonical}")
     if one(page, "twitter:card") not in (None, "summary_large_image"):
         warn("twitter:card is not summary_large_image")
     og_image = one(page, "og:image")
@@ -311,27 +316,7 @@ def seo_checks(page):
         if page.meta.get("twitter:image", [None])[0] != og_image:
             fail("twitter:image should match og:image")
 
-    if len(page.jsonld) != 1:
-        fail(f"expected one application/ld+json block, found {len(page.jsonld)}")
-    else:
-        try:
-            data = json.loads(page.jsonld[0])
-            person = next((n for n in data.get("@graph", [data]) if n.get("@type") == "Person"), None)
-            if not person:
-                fail("JSON-LD has no Person")
-            else:
-                missing = [f for f in ("name", "url", "image", "jobTitle", "sameAs") if not person.get(f)]
-                img = local_path(person.get("image", ""))
-                if missing:
-                    fail(f"JSON-LD Person is missing {missing}")
-                elif person.get("url") != CANONICAL:
-                    fail("JSON-LD Person.url must equal the canonical URL")
-                elif img and not img.exists():
-                    fail(f"JSON-LD Person.image {person.get('image')} does not exist in public/")
-                else:
-                    ok(f"JSON-LD Person ({len(person['sameAs'])} sameAs profiles)")
-        except json.JSONDecodeError as e:
-            fail(f"JSON-LD does not parse: {e}")
+    jsonld_checks(page, kind, canonical)
 
     icons = [l for l in page.links if l.get("rel") in ("icon", "apple-touch-icon")]
     bad = [l.get("href") for l in icons
@@ -345,15 +330,70 @@ def seo_checks(page):
     else:
         ok(f"one h1, {len(page.headings)} headings, no skipped levels")
 
+
+def jsonld_checks(page, kind, canonical):
+    if len(page.jsonld) != 1:
+        fail(f"expected one application/ld+json block, found {len(page.jsonld)}")
+        return
+    try:
+        data = json.loads(page.jsonld[0])
+    except json.JSONDecodeError as e:
+        fail(f"JSON-LD does not parse: {e}")
+        return
+    graph = data.get("@graph", [data])
+    node = lambda t: next((n for n in graph if n.get("@type") == t), None)
+
+    if kind == "home":
+        person = node("Person")
+        if not person:
+            fail("JSON-LD has no Person")
+            return
+        missing = [f for f in ("name", "url", "image", "jobTitle", "sameAs") if not person.get(f)]
+        img = local_path(person.get("image", ""))
+        if missing:
+            fail(f"JSON-LD Person is missing {missing}")
+        elif person.get("url") != CANONICAL:
+            fail("JSON-LD Person.url must equal the canonical URL")
+        elif img and not img.exists():
+            fail(f"JSON-LD Person.image {person.get('image')} does not exist in public/")
+        else:
+            ok(f"JSON-LD Person ({len(person['sameAs'])} sameAs profiles)")
+        return
+
+    items = (node("BreadcrumbList") or {}).get("itemListElement", [])
+    check(items and items[0].get("item") == CANONICAL and items[-1].get("item") == canonical,
+          f"JSON-LD BreadcrumbList runs from {CANONICAL} to {canonical}")
+    if kind == "docs-index":
+        collection = node("CollectionPage") or {}
+        listed = collection.get("mainEntity", {}).get("itemListElement", [])
+        check(collection.get("url") == canonical and listed, f"JSON-LD CollectionPage lists {len(listed)} doc(s)")
+        return
+    article = node("TechArticle")
+    missing = [f for f in ("headline", "description", "datePublished", "dateModified", "url", "author") if not (article or {}).get(f)]
+    if not article or missing:
+        fail(f"JSON-LD TechArticle is missing {missing or 'entirely'}")
+    elif article["url"] != canonical:
+        fail("JSON-LD TechArticle.url must equal the canonical URL")
+    elif article["author"].get("@id") != f"{CANONICAL}#person":
+        fail(f'JSON-LD TechArticle.author must be {{"@id": "{CANONICAL}#person"}}')
+    else:
+        ok(f"JSON-LD TechArticle by #person, published {article['datePublished']}")
+
+
+def sitemap_checks(pages):
+    print("robots.txt and sitemap.xml")
     robots = PUBLIC / "robots.txt"
     text = robots.read_text() if robots.exists() else ""
     check(text and not re.search(r"^Disallow:\s*/\s*$", text, re.M) and f"Sitemap: {SITE}/sitemap.xml" in text,
           "robots.txt allows crawling and names the sitemap")
     try:
         locs = [e.text for e in ET.parse(PUBLIC / "sitemap.xml").getroot().iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc")]
-        check(CANONICAL in locs, f"sitemap.xml lists {locs}")
     except (OSError, ET.ParseError) as e:
         fail(f"sitemap.xml missing or invalid: {e}")
+        return
+    want = sorted(canonical_for(rel) for rel in pages if rel != "404.html")
+    diff = sorted(set(locs) ^ set(want))
+    check(sorted(locs) == want, f"sitemap.xml lists exactly the indexable pages {diff or f'({len(locs)} URLs)'}")
 
 
 # ------------------------------------------------------------------- performance
@@ -378,7 +418,8 @@ def resource_refs(page, html):
 def performance_checks(page, html, name):
     print(f"performance ({name})")
     size = len(html.encode())
-    check(size <= BUDGET_HTML, f"HTML {size:,} B (budget {BUDGET_HTML:,})")
+    budget = BUDGET_HTML_DOC if page_kind(name) == "doc" else BUDGET_HTML
+    check(size <= budget, f"HTML {size:,} B (budget {budget:,})")
 
     refs = resource_refs(page, html)
     missing = [u for _, u in refs if (p := local_path(u)) is not None and not p.exists()]
@@ -448,7 +489,7 @@ def performance_checks(page, html, name):
            or hashlib.sha256(f.read_bytes()).hexdigest()[:8] != m.group(2)]
     check(not bad, f"public/assets/ names match content hashes {bad or ''}")
     referenced = set()
-    for other in PUBLIC.glob("*.html"):
+    for other in [*PUBLIC.glob("*.html"), *(PUBLIC / "docs").glob("*.html")]:
         referenced |= set(re.findall(r"assets/([A-Za-z0-9._-]+)", other.read_text(encoding="utf-8")))
     unused = sorted(f.name for f in (PUBLIC / "assets").glob("*") if f.name not in referenced)
     (warn if unused else ok)(f"unreferenced files in public/assets/: {unused or 'none'}")
@@ -464,7 +505,7 @@ def accessibility_checks(page, name):
     check(not broken, f"in-page links resolve {broken or ''}")
     unsafe = [a.get("href") for a in page.anchors if a.get("target") == "_blank" and "noopener" not in (a.get("rel") or "")]
     check(not unsafe, f'new-tab links have rel="noopener" {unsafe or ""}')
-    if name != "index.html":
+    if name == "404.html":
         return
     tag, attrs = page.first_body_child or (None, {})
     if tag != "a" or "skip-link" not in attrs.get("class", ""):
@@ -583,6 +624,43 @@ def not_found_checks():
     return page, html
 
 
+def internal_link_checks(pages):
+    print("internal links")
+    bad = []
+    for rel, (page, _) in pages.items():
+        for a in page.anchors:
+            href = a.get("href", "")
+            if href.startswith("/") and not href.startswith("//"):
+                _, problem = resolve_internal(href)
+                if problem:
+                    bad.append(f"{rel}: {href} {problem}")
+    check(not bad, f"root-relative links resolve without a redirect {bad or ''}")
+
+
+def docs_build_checks():
+    """Build the docs twice into temp dirs. The builds must match each other (deterministic)
+    and the committed files (fresh), ignoring the blocks build_assets.py fills afterwards."""
+    print("docs build (content/docs → public/)")
+    if not shutil.which("node"):
+        fail("node not found: install Node 18+ (build_docs.mjs builds the docs pages)")
+        return
+    builds = []
+    for _ in range(2):
+        with tempfile.TemporaryDirectory() as out:
+            r = subprocess.run(["node", str(BUILD_DOCS), "--out", out], capture_output=True, text=True, timeout=60)
+            if r.returncode != 0:
+                fail(f"build_docs.mjs failed: {(r.stderr or r.stdout).strip()}")
+                return
+            builds.append({p.relative_to(out).as_posix(): p.read_text(encoding="utf-8")
+                           for p in Path(out).rglob("*") if p.is_file()})
+    check(builds[0] == builds[1], "docs build is deterministic (two builds are byte-identical)")
+    committed = {rel: (PUBLIC / rel).read_text(encoding="utf-8") for rel in ("index.html", "sitemap.xml")}
+    committed |= {f"docs/{p.name}": p.read_text(encoding="utf-8") for p in (PUBLIC / "docs").glob("*.html")}
+    stale = sorted(rel for rel in set(builds[0]) | set(committed)
+                   if blank_generated(builds[0].get(rel, "")) != blank_generated(committed.get(rel, "")))
+    check(not stale, f"public/ matches content/docs/ {stale or ''}" + (" — run generate-assets.sh" if stale else ""))
+
+
 # ------------------------------------------------------------------------ layout
 
 LAYOUT_WIDTHS = (320, 360, 390, 768, 1440)
@@ -593,19 +671,21 @@ def layout_checks():
     if not Path(CHROME).exists():
         warn("Google Chrome not found — layout checks skipped")
         return
+    targets = ["index.html"] + [rel for rel in ("docs/index.html", newest_doc()) if rel and (PUBLIC / rel).exists()]
+    frames = [{"key": f"{rel} {w}px", "width": w, "src": (PUBLIC / rel).as_uri()} for rel in targets for w in LAYOUT_WIDTHS]
     with tempfile.TemporaryDirectory() as tmp:
         harness = Path(tmp) / "layout.html"
         harness.write_text("""<!doctype html><html><body><pre id="result">pending</pre><script>
-const widths = %s, out = {}; let pending = widths.length;
-for (const w of widths) {
+const frames = %s, out = {}; let pending = frames.length;
+for (const {key, width: w, src} of frames) {
   const f = document.createElement('iframe');
   f.style.cssText = `width:${w}px;height:800px;border:0`;
-  f.src = %s;
+  f.src = src;
   f.onload = () => setTimeout(() => {
     const d = f.contentDocument, links = [...d.querySelectorAll('.nav ul a')];
     const wm = d.querySelector('.wordmark').getBoundingClientRect();
     const first = links[0] && links[0].getBoundingClientRect();
-    out[w] = {
+    out[key] = {
       hidden: links.filter(a => { const r = a.getBoundingClientRect(); return r.width === 0 || r.right > w; }).map(a => a.getAttribute('aria-label') || a.textContent),
       navOneLine: new Set(links.map(a => Math.round(a.getBoundingClientRect().top))).size === 1,
       gap: first ? Math.round(first.left - wm.right) : null,
@@ -617,17 +697,21 @@ for (const w of widths) {
   }, 300);
   document.body.appendChild(f);
 }
-</script></body></html>""" % (json.dumps(list(LAYOUT_WIDTHS)), json.dumps((PUBLIC / "index.html").as_uri())))
+</script></body></html>""" % json.dumps(frames))
         dom = subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--allow-file-access-from-files",
-                              "--virtual-time-budget=8000", "--dump-dom", harness.as_uri()],
-                             capture_output=True, text=True, timeout=120).stdout
+                              "--virtual-time-budget=15000", "--dump-dom", harness.as_uri()],
+                             capture_output=True, text=True, timeout=180).stdout
     m = re.search(r'<pre id="result">(.*?)</pre>', dom, re.S)
     try:
         data = json.loads(htmllib.unescape(m.group(1)))
     except (AttributeError, json.JSONDecodeError):
         warn("layout harness produced no result — checks skipped")
         return
-    for w, r in data.items():
+    for frame in frames:
+        r = data.get(frame["key"])
+        if r is None:
+            warn(f"{frame['key']}: no layout result")
+            continue
         problems = []
         if r["hidden"]:
             problems.append(f"nav links hidden or cut off: {r['hidden']}")
@@ -641,7 +725,7 @@ for (const w of widths) {
             problems.append("a button runs off the screen")
         if not r["skipLinkHidden"]:
             problems.append("skip link is visible without keyboard focus")
-        check(not problems, f"{w}px: {'; '.join(problems) or 'all nav links visible on one line, no overflow'}")
+        check(not problems, f"{frame['key']}: {'; '.join(problems) or 'all nav links visible on one line, no overflow'}")
 
 
 # -------------------------------------------------------------------------- live
@@ -775,20 +859,27 @@ def analytics_checks(pages):
 
 
 def main(argv):
-    pages = {"index.html": parse(PUBLIC / "index.html")}
-    page, html = pages["index.html"]
-    seo_checks(page)
-    performance_checks(page, html, "index.html")
-    accessibility_checks(page, "index.html")
-    theme_checks(html, "index.html")
+    if "--newest-doc" in argv:
+        print(newest_doc() or "")
+        return 0
+
+    pages = {rel: parse(PUBLIC / rel) for rel in indexable_pages()}
+    for rel, (page, html) in pages.items():
+        seo_checks(page, rel)
+        performance_checks(page, html, rel)
+        accessibility_checks(page, rel)
+        theme_checks(html, rel)
+    sitemap_checks(pages)
     nf = not_found_checks()
     if nf:
         pages["404.html"] = nf
         performance_checks(*nf, "404.html")
         accessibility_checks(nf[0], "404.html")
         theme_checks(nf[1], "404.html")
+    internal_link_checks(pages)
     security_checks(pages)
     analytics_checks(pages)
+    docs_build_checks()
     layout_checks()
 
     def arg(flag, default):
