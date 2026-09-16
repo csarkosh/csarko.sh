@@ -233,7 +233,9 @@ test('indexPage lists every doc with CollectionPage JSON-LD', () => {
   assert.ok(html.includes('<title>Research &amp; docs · Cyrus Sarkosh</title>'));
   assert.ok(html.includes('<link rel="canonical" href="https://csarko.sh/docs" />'));
   assert.ok(html.includes('<meta property="og:type" content="website" />'));
-  assert.deepEqual([...html.matchAll(/<h2 class="doc-title"><a href="\/docs\/([a-z]+)">/g)].map((m) => m[1]), ['b', 'a']);
+  assert.deepEqual([...html.matchAll(/<h2 class="doc-title"><a class="stretch" href="\/docs\/([a-z]+)">/g)].map((m) => m[1]), ['b', 'a']);
+  // Every entry is a card whose whole surface is the link (see .stretch in DOCS_CSS).
+  assert.equal([...html.matchAll(/<li class="card">/g)].length, 2);
   const page = jsonLd(html).find((n) => n['@type'] === 'CollectionPage');
   assert.deepEqual(page.mainEntity.itemListElement.map((i) => i.url), ['https://csarko.sh/docs/b', 'https://csarko.sh/docs/a']);
 });
@@ -244,7 +246,7 @@ test('homeSection lists the three newest docs and is empty with none', () => {
   assert.ok(html.includes('<section id="docs" aria-labelledby="docs-title">'));
   assert.ok(html.includes('<p class="section-label">03 / Research &amp; docs</p>'));
   assert.ok(html.includes('<h2 id="docs-title">Notes from what I\'m researching</h2>'));
-  assert.ok(html.includes('<h3 class="doc-title"><a href="/docs/b">b title</a></h3>'));
+  assert.ok(html.includes('<h3 class="doc-title"><a class="stretch" href="/docs/b">b title</a></h3>'));
   assert.ok(html.includes('<a class="all-docs" href="/docs">All docs'));
   assert.equal(homeSection([]), '\n    ');
 });
@@ -346,7 +348,9 @@ test('gamesPage lists every game with VideoGame JSON-LD and marks itself current
   assert.ok(html.includes('<li><a href="/docs">Research</a></li>'));
   assert.ok(html.includes('<p class="game-kicker">Playable now · No install</p>'));
   assert.ok(html.includes('<ul class="tags" role="list"><li>TypeScript</li><li>Babylon.js</li></ul>'));
-  assert.ok(html.includes('<a class="external" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener">Play in your browser</a>'));
+  // The first action link is the card's own, stretched over it; the second stays separate.
+  assert.ok(html.includes('<li class="card">'));
+  assert.ok(html.includes('<a class="external stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener">Play in your browser</a>'));
   assert.ok(html.includes('<a class="external" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener">View on GitHub</a>'));
   const page = jsonLd(html).find((n) => n['@type'] === 'CollectionPage');
   assert.equal(page.url, 'https://csarko.sh/games');
@@ -356,6 +360,11 @@ test('gamesPage lists every game with VideoGame JSON-LD and marks itself current
   assert.equal(first.item.gamePlatform, 'Web browser');
   const crumbs = jsonLd(html).find((n) => n['@type'] === 'BreadcrumbList');
   assert.equal(crumbs.itemListElement.at(-1).item, 'https://csarko.sh/games');
+});
+
+test('a game with only a repo stretches that link over the card instead', () => {
+  const html = gamesPage([game('x', ['repo: https://github.com/csarkosh/x'])], themeBlocks(INDEX));
+  assert.ok(html.includes('<a class="external stretch" href="https://github.com/csarkosh/x" target="_blank" rel="noopener">View on GitHub</a>'));
 });
 
 test('a game with no links renders no link row and falls back to the page URL in JSON-LD', () => {

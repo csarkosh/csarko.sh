@@ -136,9 +136,9 @@ front and take `--faint`; page links go to another page, sit after the hairline
 `.nav-divider` and take `--muted`. The home page's is
 `Work · Projects · Skills · Contact │ Games · Research` (`Projects` jumps to
 `#projects`, `Research` goes to `/docs`); every generated page (a doc, `/docs`,
-`/games`) has page links only (`Games · Research · Home`, from `PAGE_LINKS` in
+`/games`) has page links only (`Games · Research`, from `PAGE_LINKS` in
 `docs_lib.mjs`) and no divider, with `aria-current="page"` on the index page you
-are on. Heading links are `li.heading-link` whose anchor
+are on. Nothing links home by name: the wordmark does that on every page. Heading links are `li.heading-link` whose anchor
 carries `data-collapsible="true"`: at ≤ 640px they and the divider hide, leaving
 the page links alone. That attribute is also what lets the layout check accept a
 hidden link (every link without it must stay visible at every width), so a new
