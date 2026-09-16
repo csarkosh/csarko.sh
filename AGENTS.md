@@ -83,21 +83,29 @@ Three sources, each for a different question. **Pick by the question, not by hab
   Its Core Web Vitals report needs real-user traffic volume the site may never
   reach; use the `site-quality` Lighthouse run for performance instead.
 
-**Search Console state as of 2026-09-16** (check these before re-doing any of
+**Search Console state as of 2026-09-15** (check these before re-doing any of
 them; `general:search-console`'s `gsc.py sitemap` and `gsc.py index` answer the first
 three from the command line):
 - Domain property verified through the apex TXT `google-site-verification=…` in
   `_infra/main.tf`. Removing that value un-verifies the property.
 - Sitemap `https://csarko.sh/sitemap.xml` is **fetched**: last downloaded
-  2026-09-16, 0 errors, 0 warnings. The copy Google holds lists 12 URLs; the
+  2026-09-16 UTC (the API reports UTC, so it reads a day ahead of an evening
+  Eastern session), 0 errors, 0 warnings. The copy Google holds lists 12 URLs; the
   live one lists 13 since `/games` shipped. `gsc.py sitemap --resubmit` asks for
   a refetch (the only write the skill makes, and the only way to hurry one);
   Google still refetches on its own schedule, usually within a day or two.
 - **Indexed:** `/`, `/docs`, and every doc but one. Not yet:
-  `/games` ("Discovered, currently not indexed", shipped 2026-09-16) and
+  `/games` ("Discovered, currently not indexed", shipped 2026-09-15) and
   `/docs/browser-coop-netcode` ("Crawled, currently not indexed"). Both are
   Google's own crawl scheduling rather than a fault on the page, and a second
   Request indexing click on the same URL buys nothing.
+- **Outstanding, 2026-09-15:** Cyrus hit the daily Request indexing quota, so
+  `/games` may still be waiting for its click. That is the only URL worth one.
+  The breadcrumbs shipped the same evening rewrote every generated page's
+  `BreadcrumbList` names (`Cyrus Sarkosh › Docs` became `Home › Research`), but
+  those pages are already indexed and the trail only changes how a result is
+  displayed, so **don't spend the quota re-requesting them**; Google picks the
+  new names up on its own recrawl.
 - A Domain property covers **every host** under `csarko.sh`, so search reports
   still carry rows for the retired subdomains and the old React site's
   `/contact` and `/projects`.
