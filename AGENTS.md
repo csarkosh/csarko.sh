@@ -1,15 +1,17 @@
 # csarko.sh — working context
 
 Cyrus Sarkosh's portfolio site, live at **https://csarko.sh**. A home page (who
-he is, where he's worked, the games he builds, his skills, and how to reach him)
-plus research docs at **https://csarko.sh/docs**. No framework and no CI; the
-one build step, `generate-assets.sh`, also turns `docs/published/*.md` into pages.
+he is, where he's worked, the games he builds, his skills, and how to reach him),
+a games list at **https://csarko.sh/games** and research docs at
+**https://csarko.sh/docs**. No framework and no CI; the one build step,
+`generate-assets.sh`, also turns `docs/published/*.md` and `docs/games/*.md`
+into pages.
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `public/index.html` | **The home page.** One file: inline CSS, inline SVG icons, JSON-LD. The only JavaScript is the self-hosted GoatCounter counter. Its nav bar and 1120px `.wrap` must stay in step with the docs pages' copy in `docs_lib.mjs` (see `site-quality`, "One bar, one width, every page"). |
+| `public/index.html` | **The home page.** One file: inline CSS, inline SVG icons, JSON-LD. The only JavaScript is the self-hosted GoatCounter counter. Its nav bar and 1120px `.wrap` must stay in step with the generated pages' copy in `docs_lib.mjs` (see `site-quality`, "One bar, one width, every page"). |
 | `public/me.jpg` | Portrait (640px wide JPEG, from `~/Pictures/Cyrus/me_1.png`). |
 | `public/assets/` | **Generated, content-hashed, cached for a year:** responsive portraits (AVIF/WebP/JPEG) and self-hosted fonts. |
 | `public/og-image.jpg`, `portrait.jpg`, `favicon.*`, `apple-touch-icon.png` | **Generated** too. Everything generated comes from `.agents/skills/site-quality/assets/` via `generate-assets.sh` — never hand-edit, including the `generated:` blocks inside the HTML. |
@@ -17,8 +19,9 @@ one build step, `generate-assets.sh`, also turns `docs/published/*.md` into page
 | `public/licenses/fonts-OFL.txt` | Font licenses. |
 | `public/robots.txt` | Crawl rules. |
 | `docs/published/<YYYY-MM-DD>-<slug>.md` | **Published docs, source of truth.** Markdown with front matter, one file per doc, named for its `published:` date (the build fails if the two disagree). The URL is the slug alone: `/docs/<slug>`, no date. The repo is public, so committing a file here publishes it; use the `publish-doc` skill. |
-| `public/docs/`, `public/sitemap.xml` | **Generated** from `docs/published/` by `build_docs.mjs` (run by `generate-assets.sh`), along with the `generated:docs` block in `index.html`. |
-| `docs/superpowers/` | Internal design specs and implementation plans. **Never published** (unlike its sibling `docs/published/`, which is). |
+| `docs/games/<slug>.md` | **The games, source of truth.** Markdown with front matter, one file per game, named for the slug alone: a game is not a dated log entry, so a date prefix is refused (`released:` in the front matter is the date). The repo is public, so committing a file here publishes it. |
+| `public/docs/`, `public/games/`, `public/sitemap.xml` | **Generated** from `docs/published/` and `docs/games/` by `build_docs.mjs` (run by `generate-assets.sh`), along with the `generated:docs` block in `index.html`. |
+| `docs/superpowers/` | Internal design specs and implementation plans. **Never published** (unlike its siblings `docs/published/` and `docs/games/`, which are). |
 | `firebase.json`, `.firebaserc` | Firebase Hosting config: publish `public/`, cache headers. |
 | `_infra/` | Terraform for the hosting and DNS. Same shape as `~/Projects/fps/_infra`. |
 | `.agents/skills/` | Agent skills: `preview`, `deploy`, `site-quality` and `publish-doc`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
@@ -28,14 +31,15 @@ one build step, `generate-assets.sh`, also turns `docs/published/*.md` into page
 ## Workflows
 
 - **See a change:** `.agents/skills/preview/scripts/preview.sh` (opens the home page
-  from disk; use `--serve` for `/docs` and its links) or `--shots` for desktop +
-  mobile screenshots of the home page and the newest doc, in both the dark and
-  light themes, in `/tmp/csarko-sh-preview/`. After any visual edit, look at the
-  screenshots in both themes before calling it done.
+  from disk; use `--serve` for `/games`, `/docs` and their links) or `--shots` for
+  desktop + mobile screenshots of the home page, `/games` and the newest doc, in
+  both the dark and light themes, in `/tmp/csarko-sh-preview/`. After any visual
+  edit, look at the screenshots in both themes before calling it done.
 - **Publish a doc:** the `publish-doc` skill.
 - **Ship a change:** `.agents/skills/deploy/scripts/deploy.sh`. It verifies the
-  deployed home page, docs index and newest doc byte-for-byte on both the web.app
-  URL and csarko.sh. `--preview` gives a 7-day shareable channel instead.
+  deployed home page, `/games`, docs index and newest doc byte-for-byte on both
+  the web.app URL and csarko.sh. `--preview` gives a 7-day shareable channel
+  instead.
 - **Change infrastructure:** `terraform -chdir=_infra plan`, then `apply`. Never
   hand-edit the resources Terraform owns.
 
@@ -136,7 +140,9 @@ three from the command line):
   Working), deliberately about him rather than DoorDash metrics. An earlier
   "What I care about" version was tried and replaced.
 - **No em-dashes in page copy**; commas, colons, semicolons.
-- **Games section:** Day Hike (playable, links to
+- **Projects section** *(the home page's `#projects`, labelled `02 / Projects`;
+  it was `#games` and `02 / Games & projects` until the `/games` page took that
+  name)*: Day Hike (playable, links to
   `https://games.csarko.sh/dayhike/`), **`game-dayhike`** (linked to
   `github.com/csarkosh/game-dayhike` since it went public, *2026-09-14*), `electron-gamepatch`,
   and a full-width `csarko.sh` card (`.card.wide`, *added 2026-09-13*) linking
@@ -148,13 +154,19 @@ three from the command line):
   future "Coming soon" cards. **The asset pipeline is being
   commercialized** — never describe it as open source or part of that repo.
   `html5-fps` was removed on purpose (an early prototype, not a game).
+  The public list of the games themselves is **`/games`** (nav: `Games`), built
+  from `docs/games/*.md`, one file per game; the home page's four cards stay a
+  short teaser of what he builds for fun, not that list.
 - **The blog is "csarko.log"** at `https://csarko.substack.com/`. It has no
   published posts yet; Cyrus will publish once Day Hike is ready to publicize.
-- **Docs** *(added 2026-09-15)*: research notes and specs at `/docs`, copied into
-  `docs/published/` as `<YYYY-MM-DD>-<slug>.md` (the published copy is the source
-  of truth; the URL is the slug, without the date). The page copy rules
-  apply (no email, phone or em-dashes): the build rejects em-dashes,
-  `deploy.sh` rejects email addresses and phone numbers. Docs
+- **Docs** *(added 2026-09-15)*: research notes and specs at `/docs` (the nav
+  calls the page `Research`; the page's own H1 stays "Research & docs"), copied
+  into `docs/published/` as `<YYYY-MM-DD>-<slug>.md` (the published copy is the
+  source of truth; the URL is the slug, without the date). The page copy rules
+  apply (no email, phone or em-dashes): the build rejects em-dashes in both
+  `docs/published/` and `docs/games/`, and `deploy.sh` rejects email addresses
+  and phone numbers (its scan covers `public/*.html`, `public/docs/*.html` and
+  `docs/published/*.md`, not yet `public/games/` or `docs/games/`). Docs
   from private repositories such as `magicpixel.ai` need Cyrus's OK per doc, and
   never describe the commercial asset pipeline. Launched with
   `stylized-shader-looks`, from `game-dayhike`.

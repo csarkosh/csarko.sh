@@ -17,6 +17,15 @@ page's "Research & docs" section. **The URL is the slug alone**: the date prefix
 belongs to the file name and never appears in a link. The design is in
 `docs/superpowers/specs/2026-09-15-docs-section-design.md`.
 
+**A game is not a doc.** It goes in `docs/games/<slug>.md`, the slug alone with
+no date prefix, with front matter `description` (70–160 characters), `status`
+(`playable` or `in-development`, which becomes the kicker line), `tags` (1 to 5,
+comma-separated), and optional `play`, `repo` and `released` (`YYYY-MM-DD`). The
+H1 is the game's name and the body is its card copy. The same
+`generate-assets.sh` run builds both directories, with the same refusals
+(em-dashes, images, links that aren't `https://`, `#anchor` or root-relative),
+and the games land on `/games`.
+
 **The csarko.sh repository is public on GitHub. Committing a file under
 `docs/published/` publishes it, before any deploy.** Do the review first.
 (`docs/superpowers/` is the other half of `docs/`, and is never published.)
