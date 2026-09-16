@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// build_docs.mjs — build csarko.sh's docs pages from content/docs/*.md.
+// build_docs.mjs — build csarko.sh's docs pages from docs/published/*.md.
 //
 //   node build_docs.mjs              write into public/ (generate-assets.sh runs this first)
 //   node build_docs.mjs --out <dir>  write the same files under <dir> and leave the repo alone (check.py uses this)
@@ -15,7 +15,7 @@ import { buildSite, DocError } from './docs_lib.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
 const PUBLIC = join(ROOT, 'public');
-const CONTENT = join(ROOT, 'content/docs');
+const CONTENT = join(ROOT, 'docs/published');
 
 const args = process.argv.slice(2);
 if (!(args.length === 0 || (args.length === 2 && args[0] === '--out'))) {
@@ -26,7 +26,7 @@ const out = args.length ? resolve(args[1]) : PUBLIC;
 
 const sources = existsSync(CONTENT)
   ? readdirSync(CONTENT).filter((f) => f.endsWith('.md')).sort()
-    .map((f) => ({ slug: f.slice(0, -'.md'.length), text: readFileSync(join(CONTENT, f), 'utf8') }))
+    .map((f) => ({ name: f, text: readFileSync(join(CONTENT, f), 'utf8') }))
   : [];
 
 let files;

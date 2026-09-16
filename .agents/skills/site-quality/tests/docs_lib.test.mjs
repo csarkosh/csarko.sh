@@ -1,9 +1,9 @@
 // Tests for docs_lib.mjs. Run: node --test .agents/skills/site-quality/tests/docs_lib.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSite, DocError, docPage, formatDate, homeSection, indexPage, loadDoc, parseFrontMatter, readingMinutes, renderMarkdown, replaceBlock, sitemap, sortDocs, themeBlocks } from '../scripts/docs_lib.mjs';
+import { buildSite, DocError, docPage, formatDate, homeSection, indexPage, loadDoc, parseDocFileName, parseFrontMatter, readingMinutes, renderMarkdown, replaceBlock, sitemap, sortDocs, themeBlocks } from '../scripts/docs_lib.mjs';
 
-const FILE = 'content/docs/example.md';
+const FILE = 'docs/published/2026-09-14-example.md';
 const DESC = 'A description that is long enough to pass the seventy character minimum for search.';
 const fm = (lines) => `---\n${lines.join('\n')}\n---\n# Title\n\nBody.\n`;
 const rejects = (text, pattern) =>
@@ -103,8 +103,29 @@ test('renderMarkdown rejects what the site cannot publish', () => {
 
 const SOURCE = `---\ndescription: ${DESC}\npublished: 2026-09-14\n---\n# Title\n\n## 1. One\n\nText.\n`;
 
+test('parseDocFileName splits a dated file name into its date and slug', () => {
+  assert.deepEqual(parseDocFileName('2026-09-14-stylized-shader-looks.md'),
+    { date: '2026-09-14', slug: 'stylized-shader-looks' });
+  assert.deepEqual(parseDocFileName('2026-01-05-x9.md'), { date: '2026-01-05', slug: 'x9' });
+});
+
+test('parseDocFileName rejects anything but <YYYY-MM-DD>-<slug>.md', () => {
+  const bad = (name) =>
+    assert.throws(() => parseDocFileName(name),
+      (e) => e instanceof DocError && /file name must be <YYYY-MM-DD>-<slug>\.md/.test(e.message));
+  bad('stylized-shader-looks.md');           // no date prefix
+  bad('2026-9-14-shader-looks.md');          // date not zero-padded
+  bad('2026-02-30-shader-looks.md');         // not a real date
+  bad('2026-13-01-shader-looks.md');         // not a real month
+  bad('2026-09-14-Shader-Looks.md');         // uppercase slug
+  bad('2026-09-14-shader_looks.md');         // underscored slug
+  bad('2026-09-14-shader--looks.md');        // empty slug segment
+  bad('2026-09-14-.md');                     // no slug at all
+  bad('2026-09-14-shader-looks.markdown');   // wrong extension
+});
+
 test('loadDoc combines front matter and rendering', () => {
-  const d = loadDoc('shader-looks', SOURCE);
+  const d = loadDoc('2026-09-14-shader-looks.md', SOURCE);
   assert.equal(d.slug, 'shader-looks');
   assert.equal(d.url, 'https://csarko.sh/docs/shader-looks');
   assert.equal(d.path, '/docs/shader-looks');
@@ -116,10 +137,24 @@ test('loadDoc combines front matter and rendering', () => {
   assert.equal(d.rail.length, 1);
 });
 
-test('loadDoc rejects bad slugs and em-dashes', () => {
-  assert.throws(() => loadDoc('Shader_Looks', SOURCE), /lowercase letters, digits and hyphens/);
-  assert.throws(() => loadDoc('index', SOURCE), /"index" is reserved/);
-  assert.throws(() => loadDoc('x', SOURCE.replace('Text.', 'Text — more.')), /em-dash/);
+test('loadDoc rejects bad file names and em-dashes', () => {
+  assert.throws(() => loadDoc('2026-09-14-Shader_Looks.md', SOURCE), /file name must be <YYYY-MM-DD>-<slug>\.md/);
+  assert.throws(() => loadDoc('shader-looks.md', SOURCE), /file name must be <YYYY-MM-DD>-<slug>\.md/);
+  assert.throws(() => loadDoc('2026-09-15-index.md', SOURCE.replace('2026-09-14', '2026-09-15')), /"index" is reserved/);
+  assert.throws(() => loadDoc('2026-09-14-x.md', SOURCE.replace('Text.', 'Text — more.')), /em-dash/);
+});
+
+test('loadDoc refuses a file name date that disagrees with the front matter', () => {
+  assert.throws(() => loadDoc('2026-09-15-shader-looks.md', SOURCE),
+    (e) => e instanceof DocError
+      && /docs\/published\/2026-09-15-shader-looks\.md: file name says 2026-09-15 but front matter says published: 2026-09-14/.test(e.message));
+});
+
+test('loadDoc names the new path in front matter and markdown errors', () => {
+  assert.throws(() => loadDoc('2026-09-14-shader-looks.md', '# Title\n'),
+    /docs\/published\/2026-09-14-shader-looks\.md: must start with a --- front matter block/);
+  assert.throws(() => loadDoc('2026-09-14-shader-looks.md', SOURCE.replace('# Title', 'Body only')),
+    /docs\/published\/2026-09-14-shader-looks\.md: needs exactly one "# " title/);
 });
 
 const INDEX = `<style>
@@ -139,8 +174,8 @@ const INDEX = `<style>
     <!-- /generated:docs -->
   </main>`;
 const src = (slug, published, extra = '') =>
-  ({ slug, text: `---\ndescription: ${DESC}\npublished: ${published}\n${extra}---\n# ${slug} title\n\n## 1. One\n\nText.\n` });
-const doc = (...args) => { const s = src(...args); return loadDoc(s.slug, s.text); };
+  ({ name: `${published}-${slug}.md`, text: `---\ndescription: ${DESC}\npublished: ${published}\n${extra}---\n# ${slug} title\n\n## 1. One\n\nText.\n` });
+const doc = (...args) => { const s = src(...args); return loadDoc(s.name, s.text); };
 const jsonLd = (html) => JSON.parse(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(html)[1])['@graph'];
 
 test('themeBlocks copies both token blocks verbatim', () => {

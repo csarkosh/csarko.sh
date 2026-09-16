@@ -10,13 +10,16 @@ description: >-
 
 # Publish a doc to csarko.sh/docs
 
-Docs are Markdown files in `content/docs/<slug>.md`. `generate-assets.sh` turns
-them into `https://csarko.sh/docs/<slug>`, the `/docs` index, the sitemap and the
-home page's "Research & docs" section. The design is in
+Docs are Markdown files in `docs/published/<YYYY-MM-DD>-<slug>.md`, dated so the
+directory reads in publication order. `generate-assets.sh` turns them into
+`https://csarko.sh/docs/<slug>`, the `/docs` index, the sitemap and the home
+page's "Research & docs" section. **The URL is the slug alone**: the date prefix
+belongs to the file name and never appears in a link. The design is in
 `docs/superpowers/specs/2026-09-15-docs-section-design.md`.
 
 **The csarko.sh repository is public on GitHub. Committing a file under
-`content/docs/` publishes it, before any deploy.** Do the review first.
+`docs/published/` publishes it, before any deploy.** Do the review first.
+(`docs/superpowers/` is the other half of `docs/`, and is never published.)
 
 ## 1. Review the source before copying anything
 
@@ -31,7 +34,15 @@ Read the whole doc. Stop and ask Cyrus if any of these apply:
 
 ## 2. Copy it in with front matter
 
-`<slug>`: lowercase words joined by hyphens, no date (`stylized-shader-looks`).
+Name the file `docs/published/<YYYY-MM-DD>-<slug>.md`:
+
+- The **date prefix** is the doc's `published:` date. The build fails if the two
+  disagree, so change both or neither. A revision sets `updated:` and leaves the
+  file name's date alone.
+- The **slug** is lowercase letters, digits and hyphens, and carries no date of
+  its own. It alone is the URL: `2026-09-14-stylized-shader-looks.md` is served
+  at `/docs/stylized-shader-looks`. Renaming it moves a live URL, so only do that
+  on purpose.
 
 ```markdown
 ---
@@ -68,6 +79,6 @@ The desktop shots are 1440×4000, so a long doc's bottom is cut off in
 
 ## 4. Ship
 
-Commit `content/docs/` and `public/` together, then use the **deploy** skill.
+Commit `docs/published/` and `public/` together, then use the **deploy** skill.
 After it's live, remind Cyrus to open Search Console → URL Inspection and
 request indexing for the new doc's URL and `https://csarko.sh/docs`.

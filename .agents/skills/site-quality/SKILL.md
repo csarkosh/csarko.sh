@@ -32,7 +32,7 @@ $S/check.py --live             # + deployed site: live headers, caching, 404, re
 $S/check.py --lighthouse       # + Lighthouse on the home page and the newest doc, once per theme (SEO/A11y/Best Practices 100, Performance ≥ 95)
 $S/check.py --observatory      # + Mozilla HTTP Observatory (must be A+)
 $S/generate-assets.sh          # rebuild EVERYTHING generated (see below) — deterministic
-node $S/build_docs.mjs         # just the docs: content/docs/*.md → public/docs/, sitemap, home section (generate-assets.sh runs it)
+node $S/build_docs.mjs         # just the docs: docs/published/*.md → public/docs/, sitemap, home section (generate-assets.sh runs it)
 ```
 
 Unit tests: `node --test .agents/skills/site-quality/tests/docs_lib.test.mjs` and
@@ -50,7 +50,7 @@ Same inputs, same outputs (two builds produce identical hashes).
 
 | Output | Source | Notes |
 |---|---|---|
-| `public/docs/<slug>.html`, `public/docs/index.html`, `public/sitemap.xml`, `<!-- generated:docs -->` in `index.html` | `content/docs/*.md` via `build_docs.mjs` (logic in `docs_lib.mjs`, `marked` vendored in `scripts/vendor/`) | Doc pages copy `index.html`'s theme token blocks and get fonts and analytics from `build_assets.py`, with root-relative paths. `check.py` rebuilds into a temp dir and fails if `public/` is stale. |
+| `public/docs/<slug>.html`, `public/docs/index.html`, `public/sitemap.xml`, `<!-- generated:docs -->` in `index.html` | `docs/published/<YYYY-MM-DD>-<slug>.md` via `build_docs.mjs` (logic in `docs_lib.mjs`, `marked` vendored in `scripts/vendor/`) | Doc pages copy `index.html`'s theme token blocks and get fonts and analytics from `build_assets.py`, with root-relative paths. `check.py` rebuilds into a temp dir and fails if `public/` is stale. |
 | `public/assets/portrait-{240,360,480,720}.<hash>.{avif,webp,jpg}` | `assets/portrait-source.jpg` | Responsive LCP image. Desktop 2x loads a ~15 KB AVIF instead of a 100 KB JPEG. |
 | `public/assets/<font>.<hash>.woff2` | `assets/fonts/*.woff2` | Inter + JetBrains Mono variable, latin subset. License: `public/licenses/fonts-OFL.txt`. |
 | `public/portrait.jpg` | same | Stable URL for JSON-LD `Person.image`. |

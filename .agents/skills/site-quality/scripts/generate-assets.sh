@@ -2,7 +2,7 @@
 #
 # generate-assets.sh — rebuild every generated asset in public/, deterministically.
 #
-# 1. build_docs.mjs: content/docs/*.md → public/docs/*.html, public/sitemap.xml, and the
+# 1. build_docs.mjs: docs/published/*.md → public/docs/*.html, public/sitemap.xml, and the
 #    <!-- generated:docs --> block in public/index.html (needs Node 18+).
 # 2. build_assets.py: hashed portraits (AVIF/WebP/JPEG × 4 widths), hashed fonts,
 #    public/portrait.jpg, and the other <!-- generated:… --> blocks in public/*.html
@@ -16,7 +16,7 @@
 #   apple-touch-icon.png   180×180 (iOS home screen)
 #   og-image.jpg           1200×630 link preview for LinkedIn, Slack, X, iMessage
 #
-# Re-run after changing a doc in content/docs/, or the name, title, tagline, photo, fonts, or theme colors.
+# Re-run after changing a doc in docs/published/, or the name, title, tagline, photo, fonts, or theme colors.
 # To change the photo, replace assets/portrait-source.jpg first.
 
 set -euo pipefail

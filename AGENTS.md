@@ -3,7 +3,7 @@
 Cyrus Sarkosh's portfolio site, live at **https://csarko.sh**. A home page (who
 he is, where he's worked, the games he builds, his skills, and how to reach him)
 plus research docs at **https://csarko.sh/docs**. No framework and no CI; the
-one build step, `generate-assets.sh`, also turns `content/docs/*.md` into pages.
+one build step, `generate-assets.sh`, also turns `docs/published/*.md` into pages.
 
 ## Layout
 
@@ -16,9 +16,9 @@ one build step, `generate-assets.sh`, also turns `content/docs/*.md` into pages.
 | `public/404.html` | Custom not-found page (noindex, root-relative paths). |
 | `public/licenses/fonts-OFL.txt` | Font licenses. |
 | `public/robots.txt` | Crawl rules. |
-| `content/docs/*.md` | **Published docs, source of truth.** Markdown with front matter, one file per doc. The repo is public, so committing a file here publishes it; use the `publish-doc` skill. |
-| `public/docs/`, `public/sitemap.xml` | **Generated** from `content/docs/` by `build_docs.mjs` (run by `generate-assets.sh`), along with the `generated:docs` block in `index.html`. |
-| `docs/superpowers/` | Internal design specs and implementation plans. Never published. |
+| `docs/published/<YYYY-MM-DD>-<slug>.md` | **Published docs, source of truth.** Markdown with front matter, one file per doc, named for its `published:` date (the build fails if the two disagree). The URL is the slug alone: `/docs/<slug>`, no date. The repo is public, so committing a file here publishes it; use the `publish-doc` skill. |
+| `public/docs/`, `public/sitemap.xml` | **Generated** from `docs/published/` by `build_docs.mjs` (run by `generate-assets.sh`), along with the `generated:docs` block in `index.html`. |
+| `docs/superpowers/` | Internal design specs and implementation plans. **Never published** (unlike its sibling `docs/published/`, which is). |
 | `firebase.json`, `.firebaserc` | Firebase Hosting config: publish `public/`, cache headers. |
 | `_infra/` | Terraform for the hosting and DNS. Same shape as `~/Projects/fps/_infra`. |
 | `.agents/skills/` | Agent skills: `preview`, `deploy`, `site-quality` and `publish-doc`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
@@ -152,7 +152,8 @@ three from the command line):
 - **The blog is "csarko.log"** at `https://csarko.substack.com/`. It has no
   published posts yet; Cyrus will publish once Day Hike is ready to publicize.
 - **Docs** *(added 2026-09-15)*: research notes and specs at `/docs`, copied into
-  `content/docs/` (the published copy is the source of truth). The page copy rules
+  `docs/published/` as `<YYYY-MM-DD>-<slug>.md` (the published copy is the source
+  of truth; the URL is the slug, without the date). The page copy rules
   apply (no email, phone or em-dashes): the build rejects em-dashes,
   `deploy.sh` rejects email addresses and phone numbers. Docs
   from private repositories such as `magicpixel.ai` need Cyrus's OK per doc, and

@@ -35,7 +35,7 @@ command -v npx >/dev/null || die "npx not found — install Node 20 or later"
 # public site (spam). Links go to LinkedIn, GitHub and Substack instead.
 # Docs are scanned too, in their Markdown source and as built pages.
 shopt -s nullglob
-SCAN=(public/*.html public/docs/*.html content/docs/*.md)
+SCAN=(public/*.html public/docs/*.html docs/published/*.md)
 shopt -u nullglob
 if grep -nEio 'mailto:[^"]*|[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}' "${SCAN[@]}"; then
   die "the site or a doc contains an email address — refusing to deploy"

@@ -8,7 +8,8 @@ A hand-written home page plus research docs built from Markdown at [csarko.sh/do
 
 ```
 public/            the site: index.html, docs/ (generated) and assets
-content/docs/      the docs, as Markdown with front matter
+docs/published/    the published docs, as dated Markdown with front matter
+docs/superpowers/  internal design specs and plans, never published
 _infra/            Terraform for hosting (Firebase, GCP) and DNS (Route53, AWS)
 .agents/skills/    preview, deploy, site-quality and publish-doc skills for AI agents (and humans)
 firebase.json      what gets published, and how it's cached

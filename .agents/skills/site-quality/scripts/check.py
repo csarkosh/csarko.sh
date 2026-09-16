@@ -643,7 +643,7 @@ def internal_link_checks(pages):
 def docs_build_checks():
     """Build the docs twice into temp dirs. The builds must match each other (deterministic)
     and the committed files (fresh), ignoring the blocks build_assets.py fills afterwards."""
-    print("docs build (content/docs → public/)")
+    print("docs build (docs/published → public/)")
     if not shutil.which("node"):
         fail("node not found: install Node 18+ (build_docs.mjs builds the docs pages)")
         return
@@ -661,7 +661,7 @@ def docs_build_checks():
     committed |= {f"docs/{p.name}": p.read_text(encoding="utf-8") for p in (PUBLIC / "docs").glob("*.html")}
     stale = sorted(rel for rel in set(builds[0]) | set(committed)
                    if blank_generated(builds[0].get(rel, "")) != blank_generated(committed.get(rel, "")))
-    check(not stale, f"public/ matches content/docs/ {stale or ''}" + (" — run generate-assets.sh" if stale else ""))
+    check(not stale, f"public/ matches docs/published/ {stale or ''}" + (" — run generate-assets.sh" if stale else ""))
 
 
 # ------------------------------------------------------------------------ layout

@@ -19,7 +19,7 @@ self-hosted GoatCounter counter.
 | Question | Decision |
 |---|---|
 | Subdomain or path | Path: `/docs` and `/docs/<slug>` |
-| Where the Markdown lives | Copied into this repo at `content/docs/<slug>.md`; the copy is the published source of truth |
+| Where the Markdown lives | Copied into this repo at `docs/published/<YYYY-MM-DD>-<slug>.md`; the copy is the published source of truth |
 | Build approach | Node script `build_docs.mjs` with a vendored `marked`, adapted from `skills-general`'s `doc-preview/render.mjs`; output committed |
 | Entry point from the home page | A new "Research & docs" section after Games; the nav is unchanged |
 | Launch content | One doc: `game-dayhike/docs/rendering/2026-09-14-stylized-shader-looks.md` |
@@ -40,13 +40,21 @@ self-hosted GoatCounter counter.
 
 ### Source files
 
-`content/docs/<slug>.md`, one file per doc. `<slug>` is lowercase letters,
-digits and hyphens, and carries no date (`stylized-shader-looks`, not
-`2026-09-14-stylized-shader-looks`). Top-level `docs/` is not used for published
-docs: it holds internal planning specs like this one, which are never published.
+`docs/published/<YYYY-MM-DD>-<slug>.md`, one file per doc, so the directory
+reads in publication order. The date prefix is the doc's `published:` front
+matter value, and the build fails if the two disagree. `<slug>` is lowercase
+letters, digits and hyphens and carries no date of its own
+(`2026-09-14-stylized-shader-looks.md` has the slug `stylized-shader-looks`).
+
+**The slug alone is the URL.** The date prefix never appears in a link, so
+renaming a file's slug moves a live URL.
+
+`docs/published/` is the only published part of top-level `docs/`; its sibling
+`docs/superpowers/` holds internal planning specs like this one, which are never
+published.
 
 **The csarko.sh repository is public on GitHub.** Committing a file under
-`content/docs/` publishes it, before any deploy. Review happens before the copy.
+`docs/published/` publishes it, before any deploy. Review happens before the copy.
 
 ### URLs
 
@@ -54,7 +62,7 @@ Firebase serves `public/` with `cleanUrls: true` and `trailingSlash: false`.
 
 | Source | Output | Canonical URL |
 |---|---|---|
-| `content/docs/<slug>.md` | `public/docs/<slug>.html` | `https://csarko.sh/docs/<slug>` |
+| `docs/published/<YYYY-MM-DD>-<slug>.md` | `public/docs/<slug>.html` | `https://csarko.sh/docs/<slug>` |
 | (generated) | `public/docs/index.html` | `https://csarko.sh/docs` |
 
 Because `/docs` has no trailing slash, relative links on it would resolve
@@ -301,7 +309,7 @@ New checks:
 
 ### `deploy.sh`
 
-- The privacy guard scans `public/**/*.html` and `content/docs/*.md`.
+- The privacy guard scans `public/**/*.html` and `docs/published/*.md`.
 - After a live deploy, the byte-for-byte check also covers `docs/index.html` and
   the newest doc, on both the web.app URL and csarko.sh.
 
@@ -313,22 +321,22 @@ New checks:
      phone numbers, private product details, commercial asset pipeline
      internals, customer names. From a private repository, get Cyrus's explicit
      OK for that doc.
-  2. Copy it to `content/docs/<slug>.md`, add front matter, and replace any
-     em-dashes.
+  2. Copy it to `docs/published/<YYYY-MM-DD>-<slug>.md`, add front matter whose
+     `published:` matches the file name's date, and replace any em-dashes.
   3. Run `generate-assets.sh`, then `preview.sh --serve --shots`, and look at
      both themes.
   4. Commit, run `deploy.sh`, and remind Cyrus to request indexing in Search
      Console.
 - **`site-quality/SKILL.md`:** docs pages in the generated-assets table, the new
   checks, the doc HTML budget, `build_docs.mjs`.
-- **`AGENTS.md`:** layout table (`content/docs/`, `public/docs/`, the vendored
+- **`AGENTS.md`:** layout table (`docs/published/`, `public/docs/`, the vendored
   `marked`), "one static page" becomes a home page plus docs, the docs content
   rule, and that `docs/superpowers/specs/` holds unpublished planning specs.
 - **`README.md`:** the same structural changes, briefly.
 
 ### Launch content
 
-`content/docs/stylized-shader-looks.md`, copied from
+`docs/published/2026-09-14-stylized-shader-looks.md`, copied from
 `game-dayhike/docs/rendering/2026-09-14-stylized-shader-looks.md`, with front
 matter (`published: 2026-09-14`, a 70–160 character description, and `source`
 pointing at the GitHub original).

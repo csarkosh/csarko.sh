@@ -14,7 +14,7 @@ description: >-
 
 The site is static files in `public/`, served by **Firebase Hosting** (site
 `csarko-sh` in GCP project `csarko-sh`) on the apex domain `csarko.sh`. There
-is no CI: a deploy is one script, run by hand. If a doc in `content/docs/`
+is no CI: a deploy is one script, run by hand. If a doc in `docs/published/`
 changed, run `generate-assets.sh` and commit first; the checks refuse a stale
 `public/`.
 
@@ -25,7 +25,7 @@ changed, run `generate-assets.sh` and commit first; the checks refuse a stale
 
 ## What the script does
 
-1. **Guards** — refuses to deploy if `public/` or `content/docs/` contains an
+1. **Guards** — refuses to deploy if `public/` or `docs/published/` contains an
    email address or a phone number (Cyrus's standing rule: no contact details
    on the public page),
    if the **site checks** fail (`.agents/skills/site-quality/scripts/check.py`:
