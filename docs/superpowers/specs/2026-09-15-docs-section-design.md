@@ -47,7 +47,10 @@ letters, digits and hyphens and carries no date of its own
 (`2026-09-14-stylized-shader-looks.md` has the slug `stylized-shader-looks`).
 
 **The slug alone is the URL.** The date prefix never appears in a link, so
-renaming a file's slug moves a live URL.
+renaming a file's slug moves a live URL. Because the date is what makes two file
+names differ, the directory no longer keeps slugs unique on its own: the build
+refuses two files whose slugs match, rather than let the second page overwrite
+the first.
 
 `docs/published/` is the only published part of top-level `docs/`; its sibling
 `docs/superpowers/` holds internal planning specs like this one, which are never

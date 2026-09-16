@@ -272,3 +272,10 @@ test('buildSite writes every output, deterministically, and nothing extra with n
   assert.deepEqual([...empty.keys()].sort(), ['index.html', 'sitemap.xml']);
   assert.equal(empty.get('index.html'), INDEX);
 });
+
+test('buildSite refuses two dates claiming one slug, instead of overwriting the page', () => {
+  const sources = [src('a', '2026-01-01'), src('a', '2026-04-01')];
+  assert.throws(
+    () => buildSite({ sources, indexHtml: INDEX }),
+    (e) => e instanceof DocError && /2026-04-01-a\.md and 2026-01-01-a\.md both build \/docs\/a/.test(e.message));
+});

@@ -559,6 +559,16 @@ export function sitemap(docs) {
 
 export function buildSite({ sources, indexHtml }) {
   const docs = sortDocs(sources.map(({ name, text }) => loadDoc(name, text)));
+  // The date lives in the file name, so the directory no longer keeps slugs unique: two dates can
+  // claim one URL, and the second page would silently overwrite the first.
+  const bySlug = new Map();
+  for (const doc of docs) {
+    const name = `${doc.published}-${doc.slug}.md`;
+    if (bySlug.has(doc.slug)) {
+      throw new DocError(`docs/published/: ${bySlug.get(doc.slug)} and ${name} both build /docs/${doc.slug}`);
+    }
+    bySlug.set(doc.slug, name);
+  }
   const theme = themeBlocks(indexHtml);
   const files = new Map();
   for (const doc of docs) files.set(`docs/${doc.slug}.html`, docPage(doc, theme));
