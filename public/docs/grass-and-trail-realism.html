@@ -79,13 +79,13 @@
         {
           "@type": "ListItem",
           "position": 1,
-          "name": "Cyrus Sarkosh",
+          "name": "Home",
           "item": "https://csarko.sh/"
         },
         {
           "@type": "ListItem",
           "position": 2,
-          "name": "Docs",
+          "name": "Research",
           "item": "https://csarko.sh/docs"
         },
         {
@@ -198,6 +198,20 @@
     .nav .heading-link a { color: var(--faint); }
     .nav .nav-divider { width: 1px; height: 16px; background: var(--border-strong); }
 
+    /* The trail sits under the nav and scrolls away with the page: only the nav is sticky, so
+       scroll-padding-top above stays the nav's own height. Its .wrap is the site's, so the first
+       crumb starts at the same left edge as the wordmark at every width. */
+    .crumbs { border-bottom: 1px solid var(--border); }
+    .crumbs ol { display: flex; align-items: center; list-style: none; margin: 0; padding: 11px 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; }
+    .crumbs li { display: flex; align-items: center; min-width: 0; flex: none; }
+    .crumbs li + li::before { content: "›"; color: var(--faint); margin: 0 8px; flex: none; }
+    .crumbs a { color: var(--muted); transition: color .15s ease; }
+    .crumbs a:hover { color: var(--text); }
+    /* The page you are on is the one crumb long enough to overflow a phone, so it is the one that
+       shrinks and truncates; the full title stays in the DOM for assistive tech and for search. */
+    .crumbs li:last-child { flex: 0 1 auto; }
+    .crumbs [aria-current] { min-width: 0; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
     .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin: 0 0 20px; display: flex; align-items: center; gap: 10px; }
     .eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); flex: none; }
     .section-label { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); margin: 0 0 8px; }
@@ -295,7 +309,7 @@
     }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
-      .nav ul a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a { transition: none; }
+      .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a { transition: none; }
     }
   </style>
 </head>
@@ -308,6 +322,15 @@
         <li><a href="/games">Games</a></li>
         <li><a href="/docs">Research</a></li>
       </ul>
+    </div>
+  </nav>
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <div class="wrap">
+      <ol>
+        <li><a href="/">Home</a></li>
+        <li><a href="/docs">Research</a></li>
+        <li><span aria-current="page">Grass, wind and trails in a browser meadow</span></li>
+      </ol>
     </div>
   </nav>
 
@@ -329,7 +352,7 @@
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Research · Sep 15, 2026</p>
+        <p class="eyebrow">Sep 15, 2026</p>
         <h1>Grass, wind and trails in a browser meadow</h1>
         <ul class="tags">
           <li>30 min read</li>

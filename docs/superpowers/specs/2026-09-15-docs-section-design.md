@@ -200,8 +200,24 @@ same way: with no file in `docs/games/` there is no `games/index.html` and no
   - **Generated pages** (a doc, `/docs`, `/games`): the page links only, in the
     order `Games · Research` (`PAGE_LINKS` in `docs_lib.mjs`), no heading links
     and no divider, with `aria-current="page"` on the index page you are on. A
-    doc page marks none of them. There is no `Home` link anywhere: the wordmark
-    to the left of the bar links to `/` on every page.
+    doc page marks none of them. There is no `Home` link in the bar: the
+    wordmark to its left links to `/` on every page.
+- **Breadcrumb:** every generated page, and only those (never the home page or
+  `404.html`), carries `<nav class="crumbs" aria-label="Breadcrumb">` directly
+  after `</nav>`, in the site's `.wrap` so its first crumb starts at the
+  wordmark's left edge. It is not sticky, so `scroll-padding-top` stays the
+  nav's own height. The trail is `Home › Research › <doc title>` on a doc,
+  `Home › Research` on `/docs` and `Home › Games` on `/games`, in mono at
+  12.5px: links `--muted`, the current page a `<span aria-current="page">` in
+  `--faint` that is the only crumb allowed to shrink and truncate with an
+  ellipsis, so a long title cannot scroll a 320px screen sideways. The `›`
+  separators are CSS `::before` content, so they reach neither the
+  accessibility tree nor a copied line.
+  **Binding:** the visible trail and the page's `BreadcrumbList` are built from
+  one array per page in `docs_lib.mjs`, and `check.py`'s `breadcrumb_checks`
+  refuses a build where they disagree, where a crumb link does not resolve in
+  `public/`, where the last crumb links back to the page you are on, or where
+  the home page grows a trail.
 - **Footer:** the home page's footer.
 - **JavaScript:** none besides the generated analytics tag.
 
@@ -210,8 +226,8 @@ same way: with no file in `docs/games/` there is no `games/index.html` and no
 The visual style follows `doc-preview`'s renderer, minus the parts that don't
 fit the site (embedded fonts, inline script, repository path labels):
 
-- Header: eyebrow `Research · <Mon D, YYYY>` (plus ` · Updated <date>` when
-  `updated` is set), the H1, and a tag row with `<n> min read` (words ÷ 230,
+- Header: eyebrow `<Mon D, YYYY>` (plus ` · Updated <date>` when `updated` is
+  set; the breadcrumb above it already says Research), the H1, and a tag row with `<n> min read` (words ÷ 230,
   minimum 1) and, when `source` is set, an "Also on GitHub ↗" link.
 - Body: GitHub-flavored Markdown via `marked`.
   - H2 → a section with an `id` slug; a leading `N.` becomes a mono label (`01`)
@@ -301,8 +317,9 @@ One `application/ld+json` block with an `@graph`:
   Google reads structured data per page and does not follow `@id` to the home
   page's fuller `Person` record, `isPartOf` `{"@id": "https://csarko.sh/#website"}`,
   and `sameAs` `[source]` when `source` is set.
-- `BreadcrumbList`: Cyrus Sarkosh (`https://csarko.sh/`) › Docs
-  (`https://csarko.sh/docs`) › H1 (`url`).
+- `BreadcrumbList`: Home (`https://csarko.sh/`) › Research
+  (`https://csarko.sh/docs`) › H1 (`url`), the same names the visible trail
+  shows.
 
 ### Docs index
 
@@ -311,7 +328,7 @@ One `application/ld+json` block with an `@graph`:
   fixed description of 70–160 characters.
 - JSON-LD: `CollectionPage` (`url`, `name`, `description`, `isPartOf` the
   website, `about` the person, `mainEntity` an `ItemList` of the docs in listed
-  order) and a two-item `BreadcrumbList`.
+  order) and a two-item `BreadcrumbList` (Home › Research).
 
 ### Games index
 
@@ -322,7 +339,7 @@ One `application/ld+json` block with an `@graph`:
 - JSON-LD: `CollectionPage` shaped as above, whose `ItemList` holds a `VideoGame`
   per game (`name`, `description`, `url` the `play` URL, else `repo`, else the
   page, `gamePlatform` "Web browser", `author` the minimal `Person` node), and a
-  two-item `BreadcrumbList` (Cyrus Sarkosh › Games).
+  two-item `BreadcrumbList` (Home › Games).
 
 ### Home page
 

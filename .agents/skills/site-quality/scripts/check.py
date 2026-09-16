@@ -277,7 +277,7 @@ def indexable_pages(public=PUBLIC):
 
 # --------------------------------------------------------------------------- SEO
 
-def seo_checks(page, rel):
+def seo_checks(page, html, rel):
     kind, canonical = page_kind(rel), canonical_for(rel)
     print(f"SEO ({rel})")
     if not page.title:
@@ -319,7 +319,9 @@ def seo_checks(page, rel):
         if page.meta.get("twitter:image", [None])[0] != og_image:
             fail("twitter:image should match og:image")
 
-    jsonld_checks(page, kind, canonical)
+    graph = jsonld_checks(page, kind, canonical)
+    if graph is not None:
+        breadcrumb_checks(html, graph, kind, canonical)
 
     icons = [l for l in page.links if l.get("rel") in ("icon", "apple-touch-icon")]
     bad = [l.get("href") for l in icons
@@ -335,14 +337,15 @@ def seo_checks(page, rel):
 
 
 def jsonld_checks(page, kind, canonical):
+    """Check the page's structured data and hand the graph back, or None if there isn't one."""
     if len(page.jsonld) != 1:
         fail(f"expected one application/ld+json block, found {len(page.jsonld)}")
-        return
+        return None
     try:
         data = json.loads(page.jsonld[0])
     except json.JSONDecodeError as e:
         fail(f"JSON-LD does not parse: {e}")
-        return
+        return None
     graph = data.get("@graph", [data])
     node = lambda t: next((n for n in graph if n.get("@type") == t), None)
 
@@ -350,7 +353,7 @@ def jsonld_checks(page, kind, canonical):
         person = node("Person")
         if not person:
             fail("JSON-LD has no Person")
-            return
+            return graph
         missing = [f for f in ("name", "url", "image", "jobTitle", "sameAs") if not person.get(f)]
         img = local_path(person.get("image", ""))
         if missing:
@@ -361,7 +364,7 @@ def jsonld_checks(page, kind, canonical):
             fail(f"JSON-LD Person.image {person.get('image')} does not exist in public/")
         else:
             ok(f"JSON-LD Person ({len(person['sameAs'])} sameAs profiles)")
-        return
+        return graph
 
     items = (node("BreadcrumbList") or {}).get("itemListElement", [])
     check(items and items[0].get("item") == CANONICAL and items[-1].get("item") == canonical,
@@ -371,7 +374,7 @@ def jsonld_checks(page, kind, canonical):
         collection = node("CollectionPage") or {}
         listed = collection.get("mainEntity", {}).get("itemListElement", [])
         check(collection.get("url") == canonical and listed, f"JSON-LD CollectionPage lists {len(listed)} {what}(s)")
-        return
+        return graph
     article = node("TechArticle")
     missing = [f for f in ("headline", "description", "datePublished", "dateModified", "url", "author") if not (article or {}).get(f)]
     if not article or missing:
@@ -385,6 +388,44 @@ def jsonld_checks(page, kind, canonical):
              "won't follow @id to the home page's Person)")
     else:
         ok(f"JSON-LD TechArticle by #person, published {article['datePublished']}")
+    return graph
+
+
+CRUMB_NAV = re.compile(r'<nav class="crumbs" aria-label="Breadcrumb">(.*?)</nav>', re.S)
+CRUMB_ITEM = re.compile(r'<(?:a href="([^"]*)"|span aria-current="page")>(.*?)<')
+
+
+def breadcrumb_checks(html, graph, kind, canonical):
+    """The trail a reader sees and the BreadcrumbList Google may render must say the same thing.
+
+    They are built from one array in docs_lib.mjs, so this guards against a later change that
+    pulls them apart: a renamed section in one place, a crumb linking somewhere that 404s, or a
+    last crumb that links back to the page you are already on.
+    """
+    listed = [(i.get("name"), i.get("item"))
+              for i in (next((n for n in graph if n.get("@type") == "BreadcrumbList"), {})).get("itemListElement", [])]
+    block = CRUMB_NAV.search(html)
+    if kind == "home":
+        check(not block, "the home page shows no breadcrumb (it is the root)")
+        return
+    if not block:
+        fail('no <nav class="crumbs" aria-label="Breadcrumb"> on this page')
+        return
+    shown = [(htmllib.unescape(name), href) for href, name in CRUMB_ITEM.findall(block.group(1))]
+    names = [name for name, _ in shown]
+    if names != [name for name, _ in listed]:
+        fail(f"breadcrumb reads {names} but its BreadcrumbList says {[n for n, _ in listed]}")
+        return
+    if shown[-1][1]:
+        fail("the last crumb is this page, so it must not link back to it")
+        return
+    if listed[-1][1] != canonical:
+        fail(f"BreadcrumbList ends at {listed[-1][1]}, not this page's canonical {canonical}")
+        return
+    bad = [href for (_, href), (_, item) in zip(shown[:-1], listed[:-1])
+           if not href or resolve_internal(href)[1] or (CANONICAL if href == "/" else SITE + href) != item]
+    check(not bad, f"breadcrumb {' › '.join(names)} matches its BreadcrumbList" if not bad
+          else f"breadcrumb links {bad} do not resolve in public/, or disagree with the BreadcrumbList")
 
 
 def sitemap_checks(pages):
@@ -908,7 +949,7 @@ def main(argv):
 
     pages = {rel: parse(PUBLIC / rel) for rel in indexable_pages()}
     for rel, (page, html) in pages.items():
-        seo_checks(page, rel)
+        seo_checks(page, html, rel)
         performance_checks(page, html, rel)
         accessibility_checks(page, rel)
         theme_checks(html, rel)

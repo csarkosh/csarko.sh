@@ -145,6 +145,15 @@ hidden link (every link without it must stay visible at every width), so a new
 nav link needs it only if it is a heading link. Long text is bounded by its own measure, not by the
 shell: `78ch` on role and doc-list copy, `72ch` on a doc's `main`.
 
+**One trail, two places** — every generated page (and only those) carries a
+breadcrumb under the nav: `Home › Research › <title>` on a doc, `Home › Research`
+on `/docs`, `Home › Games` on `/games`. The visible trail and the page's
+`BreadcrumbList` JSON-LD come from one array per page in `docs_lib.mjs`, since
+Google may render the trail under a search result; `check.py` fails the build if
+the two disagree, if a crumb link doesn't resolve in `public/`, if the last crumb
+links back to the page you're on, or if the home page grows a trail. Renaming a
+section means renaming it in `PAGE_LINKS`/`DOCS_NAV` and nowhere else.
+
 ## Analytics (in place)
 
 GoatCounter, configured only in `site.json` (`analytics.code`). The generator
