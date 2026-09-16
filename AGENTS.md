@@ -79,20 +79,19 @@ Three sources, each for a different question. **Pick by the question, not by hab
   Its Core Web Vitals report needs real-user traffic volume the site may never
   reach; use the `site-quality` Lighthouse run for performance instead.
 
-**Search Console state as of 2026-09-15** (check these before re-doing any of
+**Search Console state as of 2026-09-16** (check these before re-doing any of
 them; `general:search-console`'s `gsc.py sitemap` and `gsc.py index` answer the first
 three from the command line):
 - Domain property verified through the apex TXT `google-site-verification=…` in
   `_infra/main.tf`. Removing that value un-verifies the property.
 - Sitemap `https://csarko.sh/sitemap.xml` is **fetched**: last downloaded
-  2026-09-14, 0 errors, 0 warnings. The "Couldn't fetch" state resolved itself,
-  so there is nothing to delete and resubmit.
-- That download predates the docs, so the copy Google holds lists **1 URL**, not
-  11. It refetches on its own schedule; a manual resubmit in Sitemaps is the only
-  way to hurry it, and the read-only key cannot do it.
-- `https://csarko.sh/` is indexed (last crawled 2026-09-15). Every `/docs` URL is
-  still "URL is unknown to Google", which is normal for pages published the same
-  day.
+  2026-09-16, 0 errors, 0 warnings, 11 URLs. `gsc.py sitemap --resubmit` asks for
+  a refetch (the only write the skill makes, and the only way to hurry one);
+  Google still refetches on its own schedule, usually within a day or two.
+- **Indexed:** `/`, `/docs`, and every doc published before 2026-09-16. Not yet:
+  `/docs/grass-and-trail-realism` ("unknown to Google", published 2026-09-16) and
+  `/docs/browser-coop-netcode` ("Discovered, currently not indexed", which is
+  Google's own crawl scheduling, not a fault on the page).
 - A Domain property covers **every host** under `csarko.sh`, so search reports
   still carry rows for the retired subdomains and the old React site's
   `/contact` and `/projects`.
