@@ -13,7 +13,7 @@ description: >-
 Docs are Markdown files in `docs/published/<YYYY-MM-DD>-<slug>.md`, dated so the
 directory reads in publication order. `generate-assets.sh` turns them into
 `https://csarko.sh/docs/<slug>`, the `/docs` index, the sitemap and the home
-page's "Research & docs" section. **The URL is the slug alone**: the date prefix
+page's "Notes" section. **The URL is the slug alone**: the date prefix
 belongs to the file name and never appears in a link. The design is in
 `docs/superpowers/specs/2026-09-15-docs-section-design.md`.
 

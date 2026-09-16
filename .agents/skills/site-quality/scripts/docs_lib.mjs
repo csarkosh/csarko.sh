@@ -263,7 +263,9 @@ const PERSON_NODE = { '@type': 'Person', '@id': PERSON, name: 'Cyrus Sarkosh', u
 const OG_IMAGE = `${SITE}/og-image.jpg`;
 const OG_IMAGE_ALT = 'Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait';
 const LINKEDIN = 'https://www.linkedin.com/in/csarkosh';
-const INDEX_TITLE = 'Research & docs';
+const INDEX_TITLE = 'Research & notes';
+// The eyebrow on /docs and the home page's section and heading link. The URL stays /docs.
+const NOTES = 'Notes';
 const INDEX_DESCRIPTION = 'Research notes and specs by Cyrus Sarkosh on game development, generative AI for media, and the software behind them.';
 const INDEX_LEAD = 'Research notes and specs from what I build and explore: game development, generative AI for media, and the software behind them.';
 const HOME_LIMIT = 3;
@@ -335,6 +337,7 @@ ${items.join('\n')}
   </nav>`;
 }
 
+const EXTERNAL_ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>';
 const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 
 const DOCS_CSS = `
@@ -447,7 +450,7 @@ const DOCS_CSS = `
     .card:hover, .card:focus-within { border-color: var(--accent-border); transform: translateY(-2px); background: var(--surface-hover); }
     /* ::before, not ::after: an external link already uses ::after for its ↗ mark. */
     .card .stretch::before { content: ""; position: absolute; inset: 0; border-radius: var(--radius); }
-    .card .tags, .card .game-links a:not(.stretch), .card .game-desc a { position: relative; z-index: 1; }
+    .card .tags, .card .game-desc a { position: relative; z-index: 1; }
 
     .doc-list, .game-list { display: grid; gap: 14px; list-style: none; margin: 0; padding: 0; }
     .doc-list .doc-title { margin: 0 0 4px; font-size: 1.2rem; line-height: 1.35; letter-spacing: -0.015em; font-weight: 600; }
@@ -461,7 +464,10 @@ const DOCS_CSS = `
     .game-desc p { margin: 0 0 12px; }
     .game-desc p:last-child { margin-bottom: 0; }
     .game-list .tags { margin-top: 16px; }
-    .game-links { margin: 16px 0 0; font-size: 14px; }
+    /* The home page's .card-link ("Play in your browser"), here as the card's own link. */
+    .card-link { align-self: flex-start; margin-top: 18px; font-size: 14px; font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
+    .card-link svg { width: 14px; height: 14px; transition: transform .18s ease; }
+    .card:hover .card-link svg { transform: translate(2px, -2px); }
 
     footer { border-top: 1px solid var(--border); padding-block: 28px 40px; color: var(--faint); font-size: 13px; }
     footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
@@ -475,7 +481,7 @@ const DOCS_CSS = `
     }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
-      .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a { transition: none; }
+      .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }`;
 
 function head({ title, ogTitle, description, canonical, ogType, extraMeta = '', graph, theme }) {
@@ -664,7 +670,7 @@ ${crumbs(trail)}
 
   <main id="top" class="wrap docs-index" tabindex="-1">
     <header class="doc-header">
-      <p class="eyebrow">Docs</p>
+      <p class="eyebrow">${NOTES}</p>
       <h1>${escapeHtml(INDEX_TITLE)}</h1>
       <p class="lead">${escapeHtml(INDEX_LEAD)}</p>
     </header>
@@ -675,23 +681,19 @@ ${FOOTER}`;
 }
 
 function gameList(games, pad) {
-  const link = (href, label, stretch) =>
-    `<a class="external${stretch ? ' stretch' : ''}" href="${escapeHtml(href)}" target="_blank" rel="noopener">${label}</a>`;
   const items = games.map((game) => {
-    // The title is not a link: the ones below say where they go, which a repeated title never
-    // does. The first of them is the card's own link, stretched over it; the second stays a
-    // separate target on top, so one card can offer both without nesting anchors.
-    const links = [
-      ...(game.play ? [link(game.play, 'Play in your browser', true)] : []),
-      ...(game.repo ? [link(game.repo, 'View on GitHub', !game.play)] : []),
-    ];
+    // The title is not a link: "Play in your browser" says where it goes, which a repeated title
+    // never does, and it is stretched over the card, as on the home page's Projects card.
+    const play = game.play
+      ? `${pad}    <a class="card-link stretch" href="${escapeHtml(game.play)}" target="_blank" rel="noopener">Play in your browser ${EXTERNAL_ARROW}</a>\n`
+      : '';
     return `${pad}  <li class="card">
 ${pad}    <p class="game-kicker">${escapeHtml(game.kicker)}</p>
 ${pad}    <h2 class="game-title">${game.titleHtml}</h2>
 ${pad}    <div class="game-desc prose">
 ${game.html}${pad}    </div>
 ${pad}    <ul class="tags" role="list">${game.tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>
-${links.length ? `${pad}    <p class="game-links">${links.join(' · ')}</p>\n` : ''}${pad}  </li>`;
+${play}${pad}  </li>`;
   });
   return `${pad}<ul class="game-list" role="list">\n${items.join('\n')}\n${pad}</ul>`;
 }
@@ -743,15 +745,15 @@ ${gameList(games, '    ')}
 ${FOOTER}`;
 }
 
-// The home page's "Research & docs" section. With no docs the block is empty, so nothing renders.
+// The home page's "Notes" section, which the home nav's Notes heading link jumps to. With no docs the block is empty, so nothing renders.
 export function homeSection(docs) {
   if (!docs.length) return '\n    ';
   return `
-    <section id="docs" aria-labelledby="docs-title">
-      <p class="section-label">03 / Research &amp; docs</p>
-      <h2 id="docs-title">Notes from what I'm researching</h2>
+    <section id="notes" aria-labelledby="notes-title">
+      <p class="section-label">03 / ${NOTES}</p>
+      <h2 id="notes-title">Notes from what I'm researching</h2>
 ${docList(docs.slice(0, HOME_LIMIT), 3, '      ')}
-      <a class="all-docs" href="/docs">All docs ${ARROW}</a>
+      <a class="all-docs" href="/docs">All notes ${ARROW}</a>
     </section>
     `;
 }
