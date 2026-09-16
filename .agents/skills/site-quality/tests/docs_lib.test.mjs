@@ -205,7 +205,8 @@ test('docPage has the tags, JSON-LD and markers the checks expect', () => {
   assert.ok(html.includes('<meta property="og:type" content="article" />'));
   assert.ok(html.includes('<meta property="article:published_time" content="2026-09-14" />'));
   assert.ok(html.includes('<meta property="article:modified_time" content="2026-09-15" />'));
-  assert.ok(html.includes('<p class="eyebrow">Research · Sep 14, 2026 · Updated Sep 15, 2026</p>'));
+  // The trail above the header says Research, so the eyebrow is dates alone.
+  assert.ok(html.includes('<p class="eyebrow">Sep 14, 2026 · Updated Sep 15, 2026</p>'));
   assert.ok(html.includes(`<a class="external" href="${source}" target="_blank" rel="noopener">Also on GitHub</a>`));
   assert.ok(html.includes('<body class="doc-page">\n  <a class="skip-link" href="#top">Skip to content</a>'));
   assert.ok(html.includes('<main id="top" tabindex="-1">'));
@@ -380,6 +381,45 @@ test('sitemap carries /games before /docs, both without a lastmod', () => {
     ['https://csarko.sh/', 'https://csarko.sh/games', 'https://csarko.sh/docs', 'https://csarko.sh/docs/a']);
   assert.ok(!/<loc>https:\/\/csarko\.sh\/games<\/loc>\n\s*<lastmod>/.test(xml));
   assert.ok(!sitemap([doc('a', '2026-01-01')]).includes('/games'));
+});
+
+// Reads the visible trail back out of a page as [name, href], with href undefined on the crumb
+// for the page itself, which is a <span> and not a link back to where you already are.
+const trail = (html) => {
+  const block = /<nav class="crumbs" aria-label="Breadcrumb">([\s\S]*?)<\/nav>/.exec(html);
+  assert.ok(block, 'page has a breadcrumb nav');
+  return [...block[1].matchAll(/<(?:a href="([^"]*)"|span aria-current="page")>(.*?)</g)]
+    .map(([, href, name]) => [name, href]);
+};
+const crumbNames = (html) =>
+  jsonLd(html).find((n) => n['@type'] === 'BreadcrumbList').itemListElement.map((i) => i.name);
+
+test('every generated page carries a trail its BreadcrumbList repeats exactly', () => {
+  const theme = themeBlocks(INDEX);
+  const cases = [
+    [docPage(doc('shader-looks', '2026-09-14'), theme), [['Home', '/'], ['Research', '/docs'], ['shader-looks title', undefined]]],
+    [indexPage([doc('a', '2026-01-01')], theme), [['Home', '/'], ['Research', undefined]]],
+    [gamesPage([game('day-hike')], theme), [['Home', '/'], ['Games', undefined]]],
+  ];
+  for (const [html, expected] of cases) {
+    assert.deepEqual(trail(html), expected);
+    // What a reader sees and what Google may render under a result have to be the same words.
+    assert.deepEqual(crumbNames(html), expected.map(([name]) => name));
+    // The trail belongs between the nav and the content, not inside either.
+    assert.ok(/<\/nav>\n  <nav class="crumbs"[\s\S]*<\/nav>\n\n  <(?:main|div)/.test(html));
+  }
+});
+
+test('a crumb escapes its title and names the same page the nav marks current', () => {
+  const theme = themeBlocks(INDEX);
+  const amp = loadDoc('2026-09-14-grass.md', `---\ndescription: ${DESC}\npublished: 2026-09-14\n---\n# Grass & trails\n\nText.\n`);
+  const html = docPage(amp, theme);
+  assert.ok(html.includes('<li><span aria-current="page">Grass &amp; trails</span></li>'));
+  assert.equal(crumbNames(html).at(-1), 'Grass & trails');
+  // A doc page is under /docs without being it, so the nav marks nothing current while the
+  // trail still links there; the two index pages mark themselves in both places.
+  assert.ok(!docPage(amp, theme).includes('aria-current="page">Research'));
+  assert.ok(indexPage([doc('a', '2026-01-01')], theme).includes('<li><a href="/docs" aria-current="page">Research</a></li>'));
 });
 
 test('buildSite writes the games index only when a game exists', () => {

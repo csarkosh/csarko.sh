@@ -90,5 +90,57 @@ class Pages(unittest.TestCase):
             self.assertEqual(check.indexable_pages(public), ["index.html", "docs/a.html", "docs/index.html"])
 
 
+def crumbs(*items):
+    """A breadcrumb nav from (name, href) pairs; href None makes it the current-page crumb."""
+    li = "".join(f'<li><span aria-current="page">{name}</span></li>' if href is None
+                 else f'<li><a href="{href}">{name}</a></li>' for name, href in items)
+    return f'<nav class="crumbs" aria-label="Breadcrumb"><div class="wrap"><ol>{li}</ol></div></nav>'
+
+
+def crumb_graph(*items):
+    """The BreadcrumbList the same trail should produce, from (name, absolute URL) pairs."""
+    return [{"@type": "BreadcrumbList",
+             "itemListElement": [{"name": n, "item": u} for n, u in items]}]
+
+
+class Breadcrumbs(unittest.TestCase):
+    """The visible trail and the BreadcrumbList are one array in docs_lib.mjs; this is the net
+    for a later change that pulls them apart."""
+
+    URL = "https://csarko.sh/docs/a"
+    SHOWN = (("Home", "/"), ("Research", "/docs"), ("A doc", None))
+    LISTED = (("Home", "https://csarko.sh/"), ("Research", "https://csarko.sh/docs"), ("A doc", URL))
+
+    def failures_for(self, html, listed=LISTED, kind="doc", canonical=URL):
+        check.failures.clear()
+        check.breadcrumb_checks(html, crumb_graph(*listed), kind, canonical)
+        return check.failures
+
+    def test_a_matching_trail_passes(self):
+        self.assertEqual(self.failures_for(crumbs(*self.SHOWN)), [])
+
+    def test_renaming_a_section_in_only_one_place_fails(self):
+        shown = (("Home", "/"), ("Docs", "/docs"), ("A doc", None))
+        self.assertRegex(self.failures_for(crumbs(*shown))[0], r"breadcrumb reads .* but its BreadcrumbList says")
+
+    def test_a_last_crumb_that_links_to_itself_fails(self):
+        shown = (("Home", "/"), ("Research", "/docs"), ("A doc", "/docs/a"))
+        self.assertRegex(self.failures_for(crumbs(*shown))[0], r"must not link back to it")
+
+    def test_a_crumb_pointing_nowhere_fails(self):
+        shown = (("Home", "/"), ("Research", "/research"), ("A doc", None))
+        listed = (("Home", "https://csarko.sh/"), ("Research", "https://csarko.sh/research"), ("A doc", self.URL))
+        self.assertRegex(self.failures_for(crumbs(*shown), listed)[0], r"do not resolve in public/")
+
+    def test_a_trail_ending_somewhere_other_than_this_page_fails(self):
+        listed = (("Home", "https://csarko.sh/"), ("Research", "https://csarko.sh/docs"), ("A doc", "https://csarko.sh/docs/b"))
+        self.assertRegex(self.failures_for(crumbs(*self.SHOWN), listed)[0], r"not this page's canonical")
+
+    def test_a_missing_trail_fails_and_the_home_page_must_not_have_one(self):
+        self.assertRegex(self.failures_for("<body></body>")[0], r"no <nav class=\"crumbs\"")
+        self.assertEqual(self.failures_for("<body></body>", kind="home", canonical="https://csarko.sh/"), [])
+        self.assertTrue(self.failures_for(crumbs(*self.SHOWN), kind="home", canonical="https://csarko.sh/"))
+
+
 if __name__ == "__main__":
     unittest.main()

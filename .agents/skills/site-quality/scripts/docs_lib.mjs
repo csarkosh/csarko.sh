@@ -267,6 +267,9 @@ const INDEX_TITLE = 'Research & docs';
 const INDEX_DESCRIPTION = 'Research notes and specs by Cyrus Sarkosh on game development, generative AI for media, and the software behind them.';
 const INDEX_LEAD = 'Research notes and specs from what I build and explore: game development, generative AI for media, and the software behind them.';
 const HOME_LIMIT = 3;
+// What the nav and the breadcrumb call /docs. The page's own heading is INDEX_TITLE: a trail is
+// read sideways, in one line, so it wants the shorter word.
+const DOCS_NAV = 'Research';
 // GAMES_TITLE names the page in the nav, the breadcrumb and the share card; GAMES_HEADING is the
 // <title> and the h1, which want the words a searcher would type.
 const GAMES_TITLE = 'Games';
@@ -302,10 +305,35 @@ export function replaceBlock(html, name, body) {
 
 const jsonLd = (data) => JSON.stringify({ '@context': 'https://schema.org', '@graph': data }, null, 2).replace(/</g, '\\u003c');
 
+// A page's trail is one array of [name, absolute URL], newest crumb last, and it feeds both the
+// visible breadcrumb and this BreadcrumbList. Google may render the trail under a search result,
+// so the two must never say different things; check.py compares them on every built page.
+const HOME_CRUMB = ['Home', `${SITE}/`];
+
 const breadcrumbs = (items) => ({
   '@type': 'BreadcrumbList',
   itemListElement: items.map(([name, item], i) => ({ '@type': 'ListItem', position: i + 1, name, item })),
 });
+
+// The trail, under the nav on every page but the home page. The last crumb is the page you are
+// already on, so it is a <span> rather than a link back to itself. The separators are CSS, so they
+// reach neither the accessibility tree nor a copied line of text.
+function crumbs(trail) {
+  const items = trail.map(([name, url], i) => {
+    const text = escapeHtml(name);
+    const inner = i === trail.length - 1
+      ? `<span aria-current="page">${text}</span>`
+      : `<a href="${url.slice(SITE.length) || '/'}">${text}</a>`;
+    return `        <li>${inner}</li>`;
+  });
+  return `  <nav class="crumbs" aria-label="Breadcrumb">
+    <div class="wrap">
+      <ol>
+${items.join('\n')}
+      </ol>
+    </div>
+  </nav>`;
+}
 
 const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 
@@ -335,6 +363,20 @@ const DOCS_CSS = `
        Docs pages carry only page links, so these two rules are here to keep the copies in step. */
     .nav .heading-link a { color: var(--faint); }
     .nav .nav-divider { width: 1px; height: 16px; background: var(--border-strong); }
+
+    /* The trail sits under the nav and scrolls away with the page: only the nav is sticky, so
+       scroll-padding-top above stays the nav's own height. Its .wrap is the site's, so the first
+       crumb starts at the same left edge as the wordmark at every width. */
+    .crumbs { border-bottom: 1px solid var(--border); }
+    .crumbs ol { display: flex; align-items: center; list-style: none; margin: 0; padding: 11px 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; }
+    .crumbs li { display: flex; align-items: center; min-width: 0; flex: none; }
+    .crumbs li + li::before { content: "›"; color: var(--faint); margin: 0 8px; flex: none; }
+    .crumbs a { color: var(--muted); transition: color .15s ease; }
+    .crumbs a:hover { color: var(--text); }
+    /* The page you are on is the one crumb long enough to overflow a phone, so it is the one that
+       shrinks and truncates; the full title stays in the DOM for assistive tech and for search. */
+    .crumbs li:last-child { flex: 0 1 auto; }
+    .crumbs [aria-current] { min-width: 0; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin: 0 0 20px; display: flex; align-items: center; gap: 10px; }
     .eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); flex: none; }
@@ -433,7 +475,7 @@ const DOCS_CSS = `
     }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
-      .nav ul a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a { transition: none; }
+      .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a { transition: none; }
     }`;
 
 function head({ title, ogTitle, description, canonical, ogType, extraMeta = '', graph, theme }) {
@@ -490,7 +532,7 @@ ${DOCS_CSS}
 // The page links, in the order the whole site uses them (see public/index.html, which carries the
 // same two after its heading links). `current` marks the page you are already on. There is no
 // Home link: the wordmark to their left is it, on every page.
-const PAGE_LINKS = [['/games', 'Games'], ['/docs', 'Research']];
+const PAGE_LINKS = [['/games', GAMES_TITLE], ['/docs', DOCS_NAV]];
 
 const nav = (current) => `  <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
@@ -528,6 +570,7 @@ ${pad}  </li>`);
 }
 
 export function docPage(doc, theme) {
+  const trail = [HOME_CRUMB, [DOCS_NAV, `${SITE}/docs`], [doc.title, doc.url]];
   const graph = [
     {
       '@type': 'TechArticle',
@@ -546,13 +589,14 @@ export function docPage(doc, theme) {
       isPartOf: { '@id': WEBSITE },
       ...(doc.source ? { sameAs: [doc.source] } : {}),
     },
-    breadcrumbs([['Cyrus Sarkosh', `${SITE}/`], ['Docs', `${SITE}/docs`], [doc.title, doc.url]]),
+    breadcrumbs(trail),
   ];
   const extraMeta = `  <meta property="article:published_time" content="${doc.published}" />
   <meta property="article:modified_time" content="${doc.modified}" />
   <meta property="article:author" content="${SITE}/" />
 `;
-  const eyebrow = `Research · ${formatDate(doc.published)}${doc.updated ? ` · Updated ${formatDate(doc.updated)}` : ''}`;
+  // The trail above already says Research, so the eyebrow carries only the dates.
+  const eyebrow = `${formatDate(doc.published)}${doc.updated ? ` · Updated ${formatDate(doc.updated)}` : ''}`;
   const rail = doc.rail.length
     ? `    <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
@@ -568,6 +612,7 @@ ${doc.rail.map((s) => `        <li><a href="#${s.id}">${s.number ? `<span class=
   return `${head({ title: `${doc.title} · Cyrus Sarkosh`, ogTitle: doc.title, description: doc.description, canonical: doc.url, ogType: 'article', extraMeta, graph, theme })}
 <body class="doc-page">
 ${nav(null)}
+${crumbs(trail)}
 
   <div class="wrap shell${doc.rail.length ? '' : ' no-rail'}">
 ${rail}    <main id="top" tabindex="-1">
@@ -595,6 +640,7 @@ ${FOOTER}`;
 
 export function indexPage(docs, theme) {
   const url = `${SITE}/docs`;
+  const trail = [HOME_CRUMB, [DOCS_NAV, url]];
   const graph = [
     {
       '@type': 'CollectionPage',
@@ -609,11 +655,12 @@ export function indexPage(docs, theme) {
         itemListElement: docs.map((d, i) => ({ '@type': 'ListItem', position: i + 1, url: d.url, name: d.title })),
       },
     },
-    breadcrumbs([['Cyrus Sarkosh', `${SITE}/`], ['Docs', url]]),
+    breadcrumbs(trail),
   ];
   return `${head({ title: `${INDEX_TITLE} · Cyrus Sarkosh`, ogTitle: INDEX_TITLE, description: INDEX_DESCRIPTION, canonical: url, ogType: 'website', graph, theme })}
 <body>
 ${nav('/docs')}
+${crumbs(trail)}
 
   <main id="top" class="wrap docs-index" tabindex="-1">
     <header class="doc-header">
@@ -651,6 +698,7 @@ ${links.length ? `${pad}    <p class="game-links">${links.join(' · ')}</p>\n` :
 
 export function gamesPage(games, theme) {
   const url = `${SITE}/games`;
+  const trail = [HOME_CRUMB, [GAMES_TITLE, url]];
   const graph = [
     {
       '@type': 'CollectionPage',
@@ -676,11 +724,12 @@ export function gamesPage(games, theme) {
         })),
       },
     },
-    breadcrumbs([['Cyrus Sarkosh', `${SITE}/`], [GAMES_TITLE, url]]),
+    breadcrumbs(trail),
   ];
   return `${head({ title: `${GAMES_HEADING} · Cyrus Sarkosh`, ogTitle: GAMES_TITLE, description: GAMES_DESCRIPTION, canonical: url, ogType: 'website', graph, theme })}
 <body>
 ${nav('/games')}
+${crumbs(trail)}
 
   <main id="top" class="wrap docs-index" tabindex="-1">
     <header class="doc-header">

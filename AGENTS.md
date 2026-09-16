@@ -167,11 +167,18 @@ three from the command line):
   source of truth; the URL is the slug, without the date). The page copy rules
   apply (no email, phone or em-dashes): the build rejects em-dashes in both
   `docs/published/` and `docs/games/`, and `deploy.sh` rejects email addresses
-  and phone numbers (its scan covers `public/*.html`, `public/docs/*.html` and
-  `docs/published/*.md`, not yet `public/games/` or `docs/games/`). Docs
+  and phone numbers (its scan covers `public/*.html`, `public/docs/*.html`,
+  `public/games/*.html`, `docs/published/*.md` and `docs/games/*.md`). Docs
   from private repositories such as `magicpixel.ai` need Cyrus's OK per doc, and
   never describe the commercial asset pipeline. Launched with
   `stylized-shader-looks`, from `game-dayhike`.
+- **Breadcrumbs** *(added 2026-09-15)*: every generated page carries a trail
+  under the nav (`Home › Research › <title>` on a doc, `Home › Research` on
+  `/docs`, `Home › Games` on `/games`); the home page and `404.html` carry none.
+  A doc page's eyebrow is therefore the date alone, not `Research · <date>`. The
+  trail and the page's `BreadcrumbList` JSON-LD are one array in `docs_lib.mjs`
+  and `check.py` fails the build if they drift apart; see `site-quality`,
+  "One trail, two places".
 
 ## Analytics: how GoatCounter is wired in
 
