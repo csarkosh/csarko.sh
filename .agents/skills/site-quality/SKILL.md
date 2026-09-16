@@ -51,7 +51,7 @@ Same inputs, same outputs (two builds produce identical hashes).
 | Output | Source | Notes |
 |---|---|---|
 | `public/docs/<slug>.html`, `public/docs/index.html`, `<!-- generated:docs -->` in `index.html` | `docs/published/<YYYY-MM-DD>-<slug>.md` via `build_docs.mjs` (logic in `docs_lib.mjs`, `marked` vendored in `scripts/vendor/`) | Doc pages copy `index.html`'s theme token blocks and get fonts and analytics from `build_assets.py`, with root-relative paths. `check.py` rebuilds into a temp dir and fails if `public/` is stale. |
-| `public/games/index.html` | `docs/games/<slug>.md` via the same `build_docs.mjs` run | The `/games` list, one entry per file: kicker from `status`, the H1 as the name, the body as the copy, `tags` as pills, and `play` / `repo` as outbound links. No per-game pages yet. Same theme, fonts, analytics and staleness rules as a doc page. |
+| `public/games/index.html` | `docs/games/<slug>.md` via the same `build_docs.mjs` run | The `/games` list, one entry per file: kicker from `status`, the H1 as the name, the body as the copy, `tags` as pills, and `play` as the card's "Play in your browser" link, styled like the home page's Projects card (`repo` is not linked from the card; it only feeds the JSON-LD `url` when there is no `play`). No per-game pages yet. Same theme, fonts, analytics and staleness rules as a doc page. |
 | `public/sitemap.xml` | both `docs/published/` and `docs/games/` via `build_docs.mjs` | `/`, `/games`, `/docs` (no `lastmod` on any of the three), then each doc with its own. `/games` appears only while a game exists, `/docs` only while a doc does. |
 | `public/assets/portrait-{240,360,480,720}.<hash>.{avif,webp,jpg}` | `assets/portrait-source.jpg` | Responsive LCP image. Desktop 2x loads a ~15 KB AVIF instead of a 100 KB JPEG. |
 | `public/assets/<font>.<hash>.woff2` | `assets/fonts/*.woff2` | Inter + JetBrains Mono variable, latin subset. License: `public/licenses/fonts-OFL.txt`. |
@@ -134,7 +134,7 @@ the nav jumps width between the home page and a generated page. The bar reads
 `heading links │ page links`: heading links jump inside the current page, sit in
 front and take `--faint`; page links go to another page, sit after the hairline
 `.nav-divider` and take `--muted`. The home page's is
-`Work · Projects · Skills · Contact │ Games · Research` (`Projects` jumps to
+`Work · Projects · Notes · Skills · Contact │ Games · Research` (`Notes` jumps to `#notes`, `Projects` jumps to
 `#projects`, `Research` goes to `/docs`); every generated page (a doc, `/docs`,
 `/games`) has page links only (`Games · Research`, from `PAGE_LINKS` in
 `docs_lib.mjs`) and no divider, with `aria-current="page"` on the index page you

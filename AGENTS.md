@@ -170,7 +170,10 @@ three from the command line):
 - **The blog is "csarko.log"** at `https://csarko.substack.com/`. It has no
   published posts yet; Cyrus will publish once Day Hike is ready to publicize.
 - **Docs** *(added 2026-09-15)*: research notes and specs at `/docs` (the nav
-  calls the page `Research`; the page's own H1 stays "Research & docs"), copied
+  calls the page `Research`; the page's own H1 is "Research & notes" and its eyebrow
+  "Notes", *renamed from "Research & docs" / "Docs", 2026-09-16*; the URL stays
+  `/docs`. The home page's section is `03 / Notes` (`#notes`), with a `Notes`
+  heading link after `Projects` in its nav), copied
   into `docs/published/` as `<YYYY-MM-DD>-<slug>.md` (the published copy is the
   source of truth; the URL is the slug, without the date). The page copy rules
   apply (no email, phone or em-dashes): the build rejects em-dashes in both
