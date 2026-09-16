@@ -198,9 +198,10 @@ same way: with no file in `docs/games/` there is no `games/index.html` and no
     unchanged. `Research` is the page link that used to read `Docs`; it still
     points at `/docs`, whose own H1 stays "Research & docs".
   - **Generated pages** (a doc, `/docs`, `/games`): the page links only, in the
-    order `Games · Research · Home` (`PAGE_LINKS` in `docs_lib.mjs`), no heading
-    links and no divider, with `aria-current="page"` on the index page you are
-    on. A doc page marks none of them.
+    order `Games · Research` (`PAGE_LINKS` in `docs_lib.mjs`), no heading links
+    and no divider, with `aria-current="page"` on the index page you are on. A
+    doc page marks none of them. There is no `Home` link anywhere: the wordmark
+    to the left of the bar links to `/` on every page.
 - **Footer:** the home page's footer.
 - **JavaScript:** none besides the generated analytics tag.
 
