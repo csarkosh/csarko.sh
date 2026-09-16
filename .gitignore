@@ -18,3 +18,7 @@ __pycache__/
 # these patterns are a second line of defence, since this repo is public.
 *-sa.json
 *service-account*.json
+
+# Agent worktrees and scratch
+.worktrees/
+.superpowers/
