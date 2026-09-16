@@ -216,7 +216,8 @@ def parse_csp(value):
 # docs/x.html is https://csarko.sh/docs/x and docs/index.html is /docs.
 
 def page_kind(rel):
-    return {"index.html": "home", "404.html": "404", "docs/index.html": "docs-index"}.get(rel, "doc")
+    return {"index.html": "home", "404.html": "404", "docs/index.html": "docs-index",
+            "games/index.html": "games-index"}.get(rel, "doc")
 
 
 def canonical_for(rel):
@@ -269,7 +270,9 @@ def newest_doc(public=PUBLIC):
 
 
 def indexable_pages(public=PUBLIC):
-    return ["index.html"] + sorted(f"docs/{p.name}" for p in (public / "docs").glob("*.html"))
+    return (["index.html"]
+            + sorted(f"games/{p.name}" for p in (public / "games").glob("*.html"))
+            + sorted(f"docs/{p.name}" for p in (public / "docs").glob("*.html")))
 
 
 # --------------------------------------------------------------------------- SEO
@@ -363,10 +366,11 @@ def jsonld_checks(page, kind, canonical):
     items = (node("BreadcrumbList") or {}).get("itemListElement", [])
     check(items and items[0].get("item") == CANONICAL and items[-1].get("item") == canonical,
           f"JSON-LD BreadcrumbList runs from {CANONICAL} to {canonical}")
-    if kind == "docs-index":
+    if kind in ("docs-index", "games-index"):
+        what = "doc" if kind == "docs-index" else "game"
         collection = node("CollectionPage") or {}
         listed = collection.get("mainEntity", {}).get("itemListElement", [])
-        check(collection.get("url") == canonical and listed, f"JSON-LD CollectionPage lists {len(listed)} doc(s)")
+        check(collection.get("url") == canonical and listed, f"JSON-LD CollectionPage lists {len(listed)} {what}(s)")
         return
     article = node("TechArticle")
     missing = [f for f in ("headline", "description", "datePublished", "dateModified", "url", "author") if not (article or {}).get(f)]
@@ -643,7 +647,7 @@ def internal_link_checks(pages):
 def docs_build_checks():
     """Build the docs twice into temp dirs. The builds must match each other (deterministic)
     and the committed files (fresh), ignoring the blocks build_assets.py fills afterwards."""
-    print("docs build (docs/published → public/)")
+    print("docs build (docs/published + docs/games → public/)")
     if not shutil.which("node"):
         fail("node not found: install Node 18+ (build_docs.mjs builds the docs pages)")
         return
@@ -658,10 +662,12 @@ def docs_build_checks():
                            for p in Path(out).rglob("*") if p.is_file()})
     check(builds[0] == builds[1], "docs build is deterministic (two builds are byte-identical)")
     committed = {rel: (PUBLIC / rel).read_text(encoding="utf-8") for rel in ("index.html", "sitemap.xml")}
-    committed |= {f"docs/{p.name}": p.read_text(encoding="utf-8") for p in (PUBLIC / "docs").glob("*.html")}
+    for d in ("docs", "games"):
+        committed |= {f"{d}/{p.name}": p.read_text(encoding="utf-8") for p in (PUBLIC / d).glob("*.html")}
     stale = sorted(rel for rel in set(builds[0]) | set(committed)
                    if blank_generated(builds[0].get(rel, "")) != blank_generated(committed.get(rel, "")))
-    check(not stale, f"public/ matches docs/published/ {stale or ''}" + (" — run generate-assets.sh" if stale else ""))
+    check(not stale, f"public/ matches docs/published/ and docs/games/ {stale or ''}"
+          + (" — run generate-assets.sh" if stale else ""))
 
 
 # ------------------------------------------------------------------------ layout
@@ -674,7 +680,8 @@ def layout_checks():
     if not Path(CHROME).exists():
         warn("Google Chrome not found — layout checks skipped")
         return
-    targets = ["index.html"] + [rel for rel in ("docs/index.html", newest_doc()) if rel and (PUBLIC / rel).exists()]
+    targets = ["index.html"] + [rel for rel in ("games/index.html", "docs/index.html", newest_doc())
+                                if rel and (PUBLIC / rel).exists()]
     frames = [{"key": f"{rel} {w}px", "width": w, "src": (PUBLIC / rel).as_uri()} for rel in targets for w in LAYOUT_WIDTHS]
     with tempfile.TemporaryDirectory() as tmp:
         harness = Path(tmp) / "layout.html"
@@ -784,15 +791,18 @@ def live_checks(base):
         s, h, _ = fetch(f"{base}/assets/{asset.name}")
         check(s == 200 and "immutable" in h.get("cache-control", ""), f"/assets/{asset.name} -> {s}, {h.get('cache-control')}")
 
-    docs = [rel for rel in indexable_pages() if rel.startswith("docs/")]
-    for rel in docs:
+    built = [rel for rel in indexable_pages() if rel.startswith(("docs/", "games/"))]
+    for rel in built:
         path = canonical_for(rel)[len(SITE):]
         s, h, _ = fetch(base + path)
         same_csp = h.get("content-security-policy") == catch_all.get("Content-Security-Policy")
         check(s == 200 and same_csp, f"{path} -> {s}, CSP {'matches' if same_csp else 'differs from'} firebase.json")
-    if docs:
-        s, h, _ = fetch(base + "/docs/")
-        check(s in (301, 308) and h.get("location", "").endswith("/docs"), f"/docs/ -> {s} {h.get('location', '')}")
+    # cleanUrls redirects the trailing slash; check each directory that has an index page.
+    for d in ("docs", "games"):
+        if any(rel.startswith(f"{d}/") for rel in built):
+            s, h, _ = fetch(f"{base}/{d}/")
+            check(s in (301, 308) and h.get("location", "").endswith(f"/{d}"),
+                  f"/{d}/ -> {s} {h.get('location', '')}")
     newest = newest_doc()
     if newest:
         clean = canonical_for(newest)[len(SITE):]

@@ -6,7 +6,7 @@
 #   preview.sh            open public/index.html in Chrome (file://)
 #   preview.sh --serve    serve public/ on http://localhost:4173 (Firebase-style clean URLs) and open it
 #   preview.sh --stop     stop a server started with --serve
-#   preview.sh --shots    write desktop + mobile screenshots, dark and light, of the home page and
+#   preview.sh --shots    write desktop + mobile screenshots, dark and light, of the home page, /games and
 #                         the newest doc, to /tmp/csarko-sh-preview/
 #
 # Flags combine, e.g. `preview.sh --shots` alone does not open Chrome.
@@ -58,6 +58,7 @@ if (( SHOTS )); then
 
   NEWEST="$("$CHECK" --newest-doc)"
   SHOTS_LIST=("|/")                                   # <file prefix>|<path>
+  [[ -f "$PUBLIC/games/index.html" ]] && SHOTS_LIST+=("games-|/games")
   [[ -n "$NEWEST" ]] && SHOTS_LIST+=("doc-|/${NEWEST%.html}")
 
   for entry in "${SHOTS_LIST[@]}"; do

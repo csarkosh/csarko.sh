@@ -33,9 +33,9 @@ command -v npx >/dev/null || die "npx not found — install Node 20 or later"
 
 # Privacy guard. Cyrus does not want his email address or phone number on the
 # public site (spam). Links go to LinkedIn, GitHub and Substack instead.
-# Docs are scanned too, in their Markdown source and as built pages.
+# Docs and games are scanned too, in their Markdown source and as built pages.
 shopt -s nullglob
-SCAN=(public/*.html public/docs/*.html docs/published/*.md)
+SCAN=(public/*.html public/docs/*.html public/games/*.html docs/published/*.md docs/games/*.md)
 shopt -u nullglob
 if grep -nEio 'mailto:[^"]*|[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}' "${SCAN[@]}"; then
   die "the site or a doc contains an email address — refusing to deploy"
@@ -74,6 +74,7 @@ npx -y firebase-tools deploy --only hosting --project "$PROJECT" --non-interacti
 # Pages to prove live: the home page, the docs index and the newest doc, each against its local file.
 NEWEST="$(.agents/skills/site-quality/scripts/check.py --newest-doc)"
 VERIFY=("/|public/index.html")
+[[ -f public/games/index.html ]] && VERIFY+=("/games|public/games/index.html")
 [[ -f public/docs/index.html ]] && VERIFY+=("/docs|public/docs/index.html")
 [[ -n "$NEWEST" ]] && VERIFY+=("/${NEWEST%.html}|public/$NEWEST")
 

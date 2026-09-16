@@ -19,6 +19,10 @@ export const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ENTI
 
 // key -> required?
 const FIELDS = { description: true, published: true, updated: false, source: false };
+const GAME_FIELDS = { description: true, status: true, tags: true, play: false, repo: false, released: false };
+
+// A game's status is also the kicker line above its title, so the two can never disagree.
+const STATUSES = { playable: 'Playable now · No install', 'in-development': 'In development' };
 
 const isDate = (value) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -26,7 +30,9 @@ const isDate = (value) => {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 };
 
-export function parseFrontMatter(text, file) {
+// Every source file carries the same shape of block, so this reads it and the two functions
+// below say what the values have to mean. `fields` decides which keys are allowed and required.
+function parseBlock(text, file, fields) {
   const normalized = text.replace(/\r\n/g, '\n');
   const block = /^---\n([\s\S]*?)\n---\n/.exec(normalized);
   if (!block) throw new DocError(`${file}: must start with a --- front matter block`);
@@ -36,15 +42,20 @@ export function parseFrontMatter(text, file) {
     const kv = /^([a-z]+):\s*(.*)$/.exec(line);
     if (!kv) throw new DocError(`${file}: front matter line is not "key: value": ${line}`);
     const [, key, value] = kv;
-    if (!(key in FIELDS)) throw new DocError(`${file}: unknown front matter key "${key}"`);
+    if (!(key in fields)) throw new DocError(`${file}: unknown front matter key "${key}"`);
     if (key in meta) throw new DocError(`${file}: duplicate front matter key "${key}"`);
     meta[key] = value.trim();
   }
-  for (const [key, required] of Object.entries(FIELDS)) {
+  for (const [key, required] of Object.entries(fields)) {
     if (required && !meta[key]) throw new DocError(`${file}: front matter needs "${key}"`);
   }
   const length = [...meta.description].length;
   if (length < 70 || length > 160) throw new DocError(`${file}: description is ${length} characters (70–160)`);
+  return { meta, body: normalized.slice(block[0].length) };
+}
+
+export function parseFrontMatter(text, file) {
+  const { meta, body } = parseBlock(text, file, FIELDS);
   if (!isDate(meta.published)) throw new DocError(`${file}: published must be a real YYYY-MM-DD date`);
   if (meta.updated !== undefined) {
     if (!isDate(meta.updated)) throw new DocError(`${file}: updated must be a real YYYY-MM-DD date`);
@@ -53,7 +64,26 @@ export function parseFrontMatter(text, file) {
   if (meta.source !== undefined && !/^https:\/\/github\.com\/\S+$/.test(meta.source)) {
     throw new DocError(`${file}: source must be an https://github.com/ URL`);
   }
-  return { meta, body: normalized.slice(block[0].length) };
+  return { meta, body };
+}
+
+export function parseGameFrontMatter(text, file) {
+  const { meta, body } = parseBlock(text, file, GAME_FIELDS);
+  if (!(meta.status in STATUSES)) {
+    throw new DocError(`${file}: status must be ${Object.keys(STATUSES).join(' or ')}`);
+  }
+  if (meta.play !== undefined && !/^https:\/\/\S+$/.test(meta.play)) {
+    throw new DocError(`${file}: play must be an https:// URL`);
+  }
+  if (meta.repo !== undefined && !/^https:\/\/github\.com\/\S+$/.test(meta.repo)) {
+    throw new DocError(`${file}: repo must be an https://github.com/ URL`);
+  }
+  if (meta.released !== undefined && !isDate(meta.released)) {
+    throw new DocError(`${file}: released must be a real YYYY-MM-DD date`);
+  }
+  const tags = meta.tags.split(',').map((tag) => tag.trim()).filter(Boolean);
+  if (!tags.length || tags.length > 5) throw new DocError(`${file}: tags must be 1 to 5 comma-separated names`);
+  return { meta: { ...meta, tags }, body };
 }
 
 // ---------------------------------------------------------------- small helpers
@@ -178,6 +208,32 @@ export function parseDocFileName(name) {
   return { date: m[1], slug: m[2] };
 }
 
+// A game is not an entry in a dated log the way a research note is, and "released" is a property
+// that can change, so a game's file name is the slug alone.
+const GAME_FILE_NAME = /^([a-z0-9]+(?:-[a-z0-9]+)*)\.md$/;
+
+export function parseGameFileName(name) {
+  const m = GAME_FILE_NAME.exec(name);
+  if (!m) {
+    throw new DocError(`docs/games/${name}: file name must be <slug>.md, the slug lowercase letters, digits and hyphens`);
+  }
+  // A date reads as part of the slug here, since digits are legal in one. Say so, rather than
+  // quietly build a game called "2026-09-16-day-hike" for someone who copied the docs convention.
+  if (/^\d{4}-\d{2}-\d{2}-/.test(m[1])) {
+    throw new DocError(`docs/games/${name}: a game file name carries no date; use "released:" in the front matter`);
+  }
+  return { slug: m[1] };
+}
+
+export function loadGame(name, text) {
+  const file = `docs/games/${name}`;
+  const { slug } = parseGameFileName(name);
+  if (slug === 'index') throw new DocError(`${file}: "index" is reserved for the games index page`);
+  if (text.includes('—')) throw new DocError(`${file}: contains an em-dash; use a comma, colon or semicolon`);
+  const { meta, body } = parseGameFrontMatter(text, file);
+  return { slug, ...meta, kicker: STATUSES[meta.status], ...renderMarkdown(body, file) };
+}
+
 export function loadDoc(name, text) {
   const file = `docs/published/${name}`;
   const { date, slug } = parseDocFileName(name);
@@ -211,9 +267,24 @@ const INDEX_TITLE = 'Research & docs';
 const INDEX_DESCRIPTION = 'Research notes and specs by Cyrus Sarkosh on game development, generative AI for media, and the software behind them.';
 const INDEX_LEAD = 'Research notes and specs from what I build and explore: game development, generative AI for media, and the software behind them.';
 const HOME_LIMIT = 3;
+// GAMES_TITLE names the page in the nav, the breadcrumb and the share card; GAMES_HEADING is the
+// <title> and the h1, which want the words a searcher would type.
+const GAMES_TITLE = 'Games';
+const GAMES_HEADING = 'Games, playable in your browser';
+const GAMES_DESCRIPTION = 'Games by Cyrus Sarkosh that run in a browser with no install: what is playable now, and what is being built.';
+const GAMES_LEAD = 'What I have built and what I am building now. Each one runs in a browser, with no install and no account.';
 
 export const sortDocs = (docs) =>
   [...docs].sort((a, b) => (a.published === b.published ? (a.slug < b.slug ? -1 : 1) : a.published < b.published ? 1 : -1));
+
+// What is still being built leads, since that is the current work; released games follow, newest
+// first. Ties break on slug so the order never depends on the order the directory was read in.
+export const sortGames = (games) =>
+  [...games].sort((a, b) => {
+    if (!a.released !== !b.released) return a.released ? 1 : -1;
+    if (a.released !== b.released) return a.released < b.released ? 1 : -1;
+    return a.slug < b.slug ? -1 : 1;
+  });
 
 // Doc pages reuse the home page's colors exactly: both token blocks are copied out of index.html.
 export function themeBlocks(indexHtml) {
@@ -331,6 +402,18 @@ const DOCS_CSS = `
     .doc-meta { margin: 0 0 6px; font-family: var(--mono); font-size: 12px; color: var(--faint); }
     .doc-desc { margin: 0; color: var(--muted); max-width: 78ch; }
 
+    .game-list { list-style: none; margin: 0; padding: 0; }
+    /* Direct children only: an entry holds a .tags list, whose own li must keep its pill shape. */
+    .game-list > li { padding-block: 28px; border-top: 1px solid var(--border); }
+    .game-list > li:first-child { border-top: 0; padding-top: 0; }
+    .game-kicker { margin: 0 0 6px; font-family: var(--mono); font-size: 12px; color: var(--accent); }
+    .game-title { margin: 0 0 10px; font-size: 1.4rem; line-height: 1.3; letter-spacing: -0.02em; font-weight: 600; }
+    .game-desc { max-width: 78ch; }
+    .game-desc p { margin: 0 0 12px; }
+    .game-desc p:last-child { margin-bottom: 0; }
+    .game-list .tags { margin-top: 16px; }
+    .game-links { margin: 16px 0 0; font-size: 14px; }
+
     footer { border-top: 1px solid var(--border); padding-block: 28px 40px; color: var(--faint); font-size: 13px; }
     footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
     footer .mono { font-family: var(--mono); }
@@ -397,13 +480,17 @@ ${DOCS_CSS}
 </head>`;
 }
 
-const NAV = `  <a class="skip-link" href="#top">Skip to content</a>
+// The page links, in the order the whole site uses them (see public/index.html, which carries the
+// same two after its heading links). `current` marks the page you are already on.
+const PAGE_LINKS = [['/games', 'Games'], ['/docs', 'Research'], ['/', 'Home']];
+
+const nav = (current) => `  <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
       <a class="wordmark" href="/">csarko<span>.sh</span></a>
       <ul>
-        <li><a href="/docs">Docs</a></li>
-        <li><a href="/">Home</a></li>
+${PAGE_LINKS.map(([href, label]) =>
+    `        <li><a href="${href}"${href === current ? ' aria-current="page"' : ''}>${label}</a></li>`).join('\n')}
       </ul>
     </div>
   </nav>`;
@@ -469,7 +556,7 @@ ${doc.rail.map((s) => `        <li><a href="#${s.id}">${s.number ? `<span class=
     : '';
   return `${head({ title: `${doc.title} · Cyrus Sarkosh`, ogTitle: doc.title, description: doc.description, canonical: doc.url, ogType: 'article', extraMeta, graph, theme })}
 <body class="doc-page">
-${NAV}
+${nav(null)}
 
   <div class="wrap shell${doc.rail.length ? '' : ' no-rail'}">
 ${rail}    <main id="top" tabindex="-1">
@@ -515,7 +602,7 @@ export function indexPage(docs, theme) {
   ];
   return `${head({ title: `${INDEX_TITLE} · Cyrus Sarkosh`, ogTitle: INDEX_TITLE, description: INDEX_DESCRIPTION, canonical: url, ogType: 'website', graph, theme })}
 <body>
-${NAV}
+${nav('/docs')}
 
   <main id="top" class="wrap docs-index" tabindex="-1">
     <header class="doc-header">
@@ -524,6 +611,71 @@ ${NAV}
       <p class="lead">${escapeHtml(INDEX_LEAD)}</p>
     </header>
 ${docList(docs, 2, '    ')}
+  </main>
+
+${FOOTER}`;
+}
+
+function gameList(games, pad) {
+  const link = (href, label) =>
+    `<a class="external" href="${escapeHtml(href)}" target="_blank" rel="noopener">${label}</a>`;
+  const items = games.map((game) => {
+    // The title is not a link: the two below say where they go, which a repeated title never does.
+    const links = [
+      ...(game.play ? [link(game.play, 'Play in your browser')] : []),
+      ...(game.repo ? [link(game.repo, 'View on GitHub')] : []),
+    ];
+    return `${pad}  <li>
+${pad}    <p class="game-kicker">${escapeHtml(game.kicker)}</p>
+${pad}    <h2 class="game-title">${game.titleHtml}</h2>
+${pad}    <div class="game-desc prose">
+${game.html}${pad}    </div>
+${pad}    <ul class="tags" role="list">${game.tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>
+${links.length ? `${pad}    <p class="game-links">${links.join(' · ')}</p>\n` : ''}${pad}  </li>`;
+  });
+  return `${pad}<ul class="game-list" role="list">\n${items.join('\n')}\n${pad}</ul>`;
+}
+
+export function gamesPage(games, theme) {
+  const url = `${SITE}/games`;
+  const graph = [
+    {
+      '@type': 'CollectionPage',
+      '@id': `${url}#page`,
+      url,
+      name: GAMES_TITLE,
+      description: GAMES_DESCRIPTION,
+      isPartOf: { '@id': WEBSITE },
+      about: { '@id': PERSON },
+      mainEntity: {
+        '@type': 'ItemList',
+        itemListElement: games.map((game, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          item: {
+            '@type': 'VideoGame',
+            name: game.title,
+            description: game.description,
+            url: game.play ?? game.repo ?? url,
+            gamePlatform: 'Web browser',
+            author: PERSON_NODE,
+          },
+        })),
+      },
+    },
+    breadcrumbs([['Cyrus Sarkosh', `${SITE}/`], [GAMES_TITLE, url]]),
+  ];
+  return `${head({ title: `${GAMES_HEADING} · Cyrus Sarkosh`, ogTitle: GAMES_TITLE, description: GAMES_DESCRIPTION, canonical: url, ogType: 'website', graph, theme })}
+<body>
+${nav('/games')}
+
+  <main id="top" class="wrap docs-index" tabindex="-1">
+    <header class="doc-header">
+      <p class="eyebrow">${GAMES_TITLE}</p>
+      <h1>${escapeHtml(GAMES_HEADING)}</h1>
+      <p class="lead">${escapeHtml(GAMES_LEAD)}</p>
+    </header>
+${gameList(games, '    ')}
   </main>
 
 ${FOOTER}`;
@@ -542,11 +694,12 @@ ${docList(docs.slice(0, HOME_LIMIT), 3, '      ')}
     `;
 }
 
-export function sitemap(docs) {
-  // / and /docs get no <lastmod>: a home-page-only edit never moves it, so it was unreliable.
-  // Each doc keeps its own (updated, else published), which is a real content date.
+export function sitemap(docs, games = []) {
+  // /, /games and /docs get no <lastmod>: a home-page-only edit never moves it, so it was
+  // unreliable. Each doc keeps its own (updated, else published), which is a real content date.
   const entries = [
     [`${SITE}/`, null],
+    ...(games.length ? [[`${SITE}/games`, null]] : []),
     ...(docs.length ? [[`${SITE}/docs`, null]] : []),
     ...docs.map((d) => [d.url, d.modified]),
   ];
@@ -557,8 +710,9 @@ export function sitemap(docs) {
 
 // ---------------------------------------------------------------- everything
 
-export function buildSite({ sources, indexHtml }) {
+export function buildSite({ sources, gameSources = [], indexHtml }) {
   const docs = sortDocs(sources.map(({ name, text }) => loadDoc(name, text)));
+  const games = sortGames(gameSources.map(({ name, text }) => loadGame(name, text)));
   // The date lives in the file name, so the directory no longer keeps slugs unique: two dates can
   // claim one URL, and the second page would silently overwrite the first.
   const bySlug = new Map();
@@ -573,7 +727,8 @@ export function buildSite({ sources, indexHtml }) {
   const files = new Map();
   for (const doc of docs) files.set(`docs/${doc.slug}.html`, docPage(doc, theme));
   if (docs.length) files.set('docs/index.html', indexPage(docs, theme));
-  files.set('sitemap.xml', sitemap(docs));
+  if (games.length) files.set('games/index.html', gamesPage(games, theme));
+  files.set('sitemap.xml', sitemap(docs, games));
   files.set('index.html', replaceBlock(indexHtml, 'docs', homeSection(docs)));
   return files;
 }

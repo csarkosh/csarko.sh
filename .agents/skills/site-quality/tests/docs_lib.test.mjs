@@ -1,7 +1,7 @@
 // Tests for docs_lib.mjs. Run: node --test .agents/skills/site-quality/tests/docs_lib.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSite, DocError, docPage, formatDate, homeSection, indexPage, loadDoc, parseDocFileName, parseFrontMatter, readingMinutes, renderMarkdown, replaceBlock, sitemap, sortDocs, themeBlocks } from '../scripts/docs_lib.mjs';
+import { buildSite, DocError, docPage, formatDate, gamesPage, homeSection, indexPage, loadDoc, loadGame, parseDocFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, replaceBlock, sitemap, sortDocs, sortGames, themeBlocks } from '../scripts/docs_lib.mjs';
 
 const FILE = 'docs/published/2026-09-14-example.md';
 const DESC = 'A description that is long enough to pass the seventy character minimum for search.';
@@ -278,4 +278,105 @@ test('buildSite refuses two dates claiming one slug, instead of overwriting the 
   assert.throws(
     () => buildSite({ sources, indexHtml: INDEX }),
     (e) => e instanceof DocError && /2026-04-01-a\.md and 2026-01-01-a\.md both build \/docs\/a/.test(e.message));
+});
+
+// ---------------------------------------------------------------- games
+
+const gameSrc = (slug, lines = [], body = 'The story.') => {
+  const keys = lines.map((l) => l.split(':')[0]);
+  const base = [['status', 'playable'], ['tags', 'TypeScript, Babylon.js']]
+    .filter(([k]) => !keys.includes(k)).map(([k, v]) => `${k}: ${v}`);
+  return { name: `${slug}.md`, text: `---\ndescription: ${DESC}\n${[...base, ...lines].map((l) => `${l}\n`).join('')}---\n# ${slug} title\n\n${body}\n` };
+};
+const game = (...args) => { const s = gameSrc(...args); return loadGame(s.name, s.text); };
+const rejectsGame = (slug, lines, pattern) =>
+  assert.throws(() => game(slug, lines), (e) => e instanceof DocError && pattern.test(e.message));
+
+test('parseGameFileName takes the slug alone, with no date', () => {
+  assert.deepEqual(parseGameFileName('day-hike.md'), { slug: 'day-hike' });
+  for (const name of ['Day-Hike.md', 'day_hike.md', 'day hike.md', 'day-hike.markdown']) {
+    assert.throws(() => parseGameFileName(name),
+      (e) => e instanceof DocError && /file name must be <slug>\.md/.test(e.message), name);
+  }
+  // A date is legal in a slug, so it has to be refused on purpose.
+  assert.throws(() => parseGameFileName('2026-09-16-day-hike.md'),
+    (e) => e instanceof DocError && /carries no date; use "released:"/.test(e.message));
+});
+
+test('loadGame reads the front matter, splits the tags and turns status into the kicker', () => {
+  const g = game('day-hike', ['play: https://games.csarko.sh/dayhike/', 'repo: https://github.com/csarkosh/game-dayhike']);
+  assert.equal(g.slug, 'day-hike');
+  assert.equal(g.title, 'day-hike title');
+  assert.equal(g.status, 'playable');
+  assert.equal(g.kicker, 'Playable now · No install');
+  assert.deepEqual(g.tags, ['TypeScript', 'Babylon.js']);
+  assert.equal(g.play, 'https://games.csarko.sh/dayhike/');
+  assert.ok(g.html.includes('<p>The story.</p>'));
+  assert.equal(game('in-progress', ['status: in-development']).kicker, 'In development');
+});
+
+test('loadGame refuses front matter it cannot trust', () => {
+  rejectsGame('x', ['status: shipped'], /status must be playable or in-development/);
+  rejectsGame('x', ['play: http://games.csarko.sh/'], /play must be an https:\/\/ URL/);
+  rejectsGame('x', ['repo: https://gitlab.com/csarkosh/x'], /repo must be an https:\/\/github\.com\/ URL/);
+  rejectsGame('x', ['released: 2026-02-30'], /released must be a real YYYY-MM-DD date/);
+  rejectsGame('x', ['published: 2026-09-16'], /unknown front matter key "published"/);
+  rejectsGame('x', ['tags: a, b, c, d, e, f'], /tags must be 1 to 5 comma-separated names/);
+  assert.throws(() => loadGame('index.md', gameSrc('x').text),
+    (e) => e instanceof DocError && /"index" is reserved/.test(e.message));
+  assert.throws(() => loadGame('x.md', gameSrc('x', [], 'A dash — here.').text),
+    (e) => e instanceof DocError && /em-dash/.test(e.message));
+});
+
+test('sortGames leads with what is still being built, then released newest first', () => {
+  const games = [
+    game('old', ['released: 2024-01-01']),
+    game('building'),
+    game('new', ['released: 2026-01-01']),
+    game('also-building'),
+  ];
+  assert.deepEqual(sortGames(games).map((g) => g.slug), ['also-building', 'building', 'new', 'old']);
+});
+
+test('gamesPage lists every game with VideoGame JSON-LD and marks itself current', () => {
+  const html = gamesPage(sortGames([game('day-hike', ['play: https://games.csarko.sh/dayhike/', 'repo: https://github.com/csarkosh/game-dayhike'])]), themeBlocks(INDEX));
+  assert.ok(html.includes('<link rel="canonical" href="https://csarko.sh/games" />'));
+  assert.ok(html.includes('<meta property="og:type" content="website" />'));
+  assert.ok(html.includes('<li><a href="/games" aria-current="page">Games</a></li>'));
+  assert.ok(html.includes('<li><a href="/docs">Research</a></li>'));
+  assert.ok(html.includes('<p class="game-kicker">Playable now · No install</p>'));
+  assert.ok(html.includes('<ul class="tags" role="list"><li>TypeScript</li><li>Babylon.js</li></ul>'));
+  assert.ok(html.includes('<a class="external" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener">Play in your browser</a>'));
+  assert.ok(html.includes('<a class="external" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener">View on GitHub</a>'));
+  const page = jsonLd(html).find((n) => n['@type'] === 'CollectionPage');
+  assert.equal(page.url, 'https://csarko.sh/games');
+  const [first] = page.mainEntity.itemListElement;
+  assert.equal(first.item['@type'], 'VideoGame');
+  assert.equal(first.item.url, 'https://games.csarko.sh/dayhike/');
+  assert.equal(first.item.gamePlatform, 'Web browser');
+  const crumbs = jsonLd(html).find((n) => n['@type'] === 'BreadcrumbList');
+  assert.equal(crumbs.itemListElement.at(-1).item, 'https://csarko.sh/games');
+});
+
+test('a game with no links renders no link row and falls back to the page URL in JSON-LD', () => {
+  const html = gamesPage([game('secret')], themeBlocks(INDEX));
+  assert.ok(!html.includes('class="game-links"'));
+  const page = jsonLd(html).find((n) => n['@type'] === 'CollectionPage');
+  assert.equal(page.mainEntity.itemListElement[0].item.url, 'https://csarko.sh/games');
+});
+
+test('sitemap carries /games before /docs, both without a lastmod', () => {
+  const xml = sitemap([doc('a', '2026-01-01')], [game('day-hike')]);
+  assert.deepEqual([...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]),
+    ['https://csarko.sh/', 'https://csarko.sh/games', 'https://csarko.sh/docs', 'https://csarko.sh/docs/a']);
+  assert.ok(!/<loc>https:\/\/csarko\.sh\/games<\/loc>\n\s*<lastmod>/.test(xml));
+  assert.ok(!sitemap([doc('a', '2026-01-01')]).includes('/games'));
+});
+
+test('buildSite writes the games index only when a game exists', () => {
+  const sources = [src('a', '2026-01-01')];
+  const withGames = buildSite({ sources, gameSources: [gameSrc('day-hike')], indexHtml: INDEX });
+  assert.ok(withGames.has('games/index.html'));
+  assert.ok(withGames.get('sitemap.xml').includes('https://csarko.sh/games'));
+  assert.ok(!buildSite({ sources, indexHtml: INDEX }).has('games/index.html'));
 });

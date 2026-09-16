@@ -3,23 +3,23 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Research &amp; docs · Cyrus Sarkosh</title>
-  <meta name="description" content="Research notes and specs by Cyrus Sarkosh on game development, generative AI for media, and the software behind them." />
-  <link rel="canonical" href="https://csarko.sh/docs" />
+  <title>Games, playable in your browser · Cyrus Sarkosh</title>
+  <meta name="description" content="Games by Cyrus Sarkosh that run in a browser with no install: what is playable now, and what is being built." />
+  <link rel="canonical" href="https://csarko.sh/games" />
 
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Cyrus Sarkosh" />
   <meta property="og:locale" content="en_US" />
-  <meta property="og:url" content="https://csarko.sh/docs" />
-  <meta property="og:title" content="Research &amp; docs" />
-  <meta property="og:description" content="Research notes and specs by Cyrus Sarkosh on game development, generative AI for media, and the software behind them." />
+  <meta property="og:url" content="https://csarko.sh/games" />
+  <meta property="og:title" content="Games" />
+  <meta property="og:description" content="Games by Cyrus Sarkosh that run in a browser with no install: what is playable now, and what is being built." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Research &amp; docs" />
-  <meta name="twitter:description" content="Research notes and specs by Cyrus Sarkosh on game development, generative AI for media, and the software behind them." />
+  <meta name="twitter:title" content="Games" />
+  <meta name="twitter:description" content="Games by Cyrus Sarkosh that run in a browser with no install: what is playable now, and what is being built." />
   <meta name="twitter:image" content="https://csarko.sh/og-image.jpg" />
   <meta name="twitter:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
 
@@ -41,10 +41,10 @@
   "@graph": [
     {
       "@type": "CollectionPage",
-      "@id": "https://csarko.sh/docs#page",
-      "url": "https://csarko.sh/docs",
-      "name": "Research & docs",
-      "description": "Research notes and specs by Cyrus Sarkosh on game development, generative AI for media, and the software behind them.",
+      "@id": "https://csarko.sh/games#page",
+      "url": "https://csarko.sh/games",
+      "name": "Games",
+      "description": "Games by Cyrus Sarkosh that run in a browser with no install: what is playable now, and what is being built.",
       "isPartOf": {
         "@id": "https://csarko.sh/#website"
       },
@@ -57,62 +57,19 @@
           {
             "@type": "ListItem",
             "position": 1,
-            "url": "https://csarko.sh/docs/atmosphere-and-dread-shaders",
-            "name": "Atmosphere and dread: a second shader research pass"
-          },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "url": "https://csarko.sh/docs/grass-and-trail-realism",
-            "name": "Grass, wind and trails in a browser meadow"
-          },
-          {
-            "@type": "ListItem",
-            "position": 3,
-            "url": "https://csarko.sh/docs/stylized-shader-looks",
-            "name": "Stylized shader looks: how games build a visual identity"
-          },
-          {
-            "@type": "ListItem",
-            "position": 4,
-            "url": "https://csarko.sh/docs/no-visible-pop-in",
-            "name": "No visible pop-in: dissolving a streamed forest"
-          },
-          {
-            "@type": "ListItem",
-            "position": 5,
-            "url": "https://csarko.sh/docs/floating-props-on-procedural-terrain",
-            "name": "Why props float on procedural terrain"
-          },
-          {
-            "@type": "ListItem",
-            "position": 6,
-            "url": "https://csarko.sh/docs/pointer-lock-escape-cooldown",
-            "name": "Pointer lock's Esc cooldown and an 8-byte patch"
-          },
-          {
-            "@type": "ListItem",
-            "position": 7,
-            "url": "https://csarko.sh/docs/babylon-material-plugin-traps",
-            "name": "Babylon.js material plugins: hooks and traps"
-          },
-          {
-            "@type": "ListItem",
-            "position": 8,
-            "url": "https://csarko.sh/docs/procedural-world-as-a-pure-function",
-            "name": "An endless world as a pure function"
-          },
-          {
-            "@type": "ListItem",
-            "position": 9,
-            "url": "https://csarko.sh/docs/webrtc-signaling-on-cloud-run",
-            "name": "Hosting WebRTC signaling on Cloud Run"
-          },
-          {
-            "@type": "ListItem",
-            "position": 10,
-            "url": "https://csarko.sh/docs/browser-coop-netcode",
-            "name": "Host-authoritative co-op netcode in the browser"
+            "item": {
+              "@type": "VideoGame",
+              "name": "Day Hike",
+              "description": "A first-person co-op horror game that runs in your browser: lead a search party of up to five into the woods and survive.",
+              "url": "https://games.csarko.sh/dayhike/",
+              "gamePlatform": "Web browser",
+              "author": {
+                "@type": "Person",
+                "@id": "https://csarko.sh/#person",
+                "name": "Cyrus Sarkosh",
+                "url": "https://csarko.sh/"
+              }
+            }
           }
         ]
       }
@@ -129,8 +86,8 @@
         {
           "@type": "ListItem",
           "position": 2,
-          "name": "Docs",
-          "item": "https://csarko.sh/docs"
+          "name": "Games",
+          "item": "https://csarko.sh/games"
         }
       ]
     }
@@ -336,8 +293,8 @@
     <div class="wrap">
       <a class="wordmark" href="/">csarko<span>.sh</span></a>
       <ul>
-        <li><a href="/games">Games</a></li>
-        <li><a href="/docs" aria-current="page">Research</a></li>
+        <li><a href="/games" aria-current="page">Games</a></li>
+        <li><a href="/docs">Research</a></li>
         <li><a href="/">Home</a></li>
       </ul>
     </div>
@@ -345,60 +302,22 @@
 
   <main id="top" class="wrap docs-index" tabindex="-1">
     <header class="doc-header">
-      <p class="eyebrow">Docs</p>
-      <h1>Research &amp; docs</h1>
-      <p class="lead">Research notes and specs from what I build and explore: game development, generative AI for media, and the software behind them.</p>
+      <p class="eyebrow">Games</p>
+      <h1>Games, playable in your browser</h1>
+      <p class="lead">What I have built and what I am building now. Each one runs in a browser, with no install and no account.</p>
     </header>
-    <ul class="doc-list" role="list">
+    <ul class="game-list" role="list">
       <li>
-        <h2 class="doc-title"><a href="/docs/atmosphere-and-dread-shaders">Atmosphere and dread: a second shader research pass</a></h2>
-        <p class="doc-meta">Sep 15, 2026 · 16 min read</p>
-        <p class="doc-desc">How atmospheric and horror games use height fog, grading, film grain and dread-driven effects, and what Babylon.js can do at 60 fps in a browser.</p>
-      </li>
-      <li>
-        <h2 class="doc-title"><a href="/docs/grass-and-trail-realism">Grass, wind and trails in a browser meadow</a></h2>
-        <p class="doc-meta">Sep 15, 2026 · 30 min read</p>
-        <p class="doc-desc">Why game grass reads as flat, what shipped meadows do instead, wind as one shared field, and what Babylon.js on WebGL2 can afford at 60 Hz.</p>
-      </li>
-      <li>
-        <h2 class="doc-title"><a href="/docs/stylized-shader-looks">Stylized shader looks: how games build a visual identity</a></h2>
-        <p class="doc-meta">Sep 14, 2026 · 5 min read</p>
-        <p class="doc-desc">How games use shaders to build a distinct look, from ink outlines and cel lighting to dithering, gradient fog and VHS effects.</p>
-      </li>
-      <li>
-        <h2 class="doc-title"><a href="/docs/no-visible-pop-in">No visible pop-in: dissolving a streamed forest</a></h2>
-        <p class="doc-meta">Sep 1, 2026 · 15 min read</p>
-        <p class="doc-desc">Keeping a streamed browser forest from visibly spawning: pixel-size arithmetic, screen-space dissolve bands, and what discard costs in opaque shaders.</p>
-      </li>
-      <li>
-        <h2 class="doc-title"><a href="/docs/floating-props-on-procedural-terrain">Why props float on procedural terrain</a></h2>
-        <p class="doc-meta">Aug 29, 2026 · 17 min read</p>
-        <p class="doc-desc">Why trees float on slopes and distant ridges in a procedural world, measured, and the shader and clipmap fixes that grounded them in Babylon.js.</p>
-      </li>
-      <li>
-        <h2 class="doc-title"><a href="/docs/pointer-lock-escape-cooldown">Pointer lock&#39;s Esc cooldown and an 8-byte patch</a></h2>
-        <p class="doc-meta">Aug 25, 2026 · 12 min read</p>
-        <p class="doc-desc">Chromium refuses pointer lock for 1.25 s after Esc. What failed in the browser, and how an 8-byte patch to prebuilt Electron removed the cooldown.</p>
-      </li>
-      <li>
-        <h2 class="doc-title"><a href="/docs/babylon-material-plugin-traps">Babylon.js material plugins: hooks and traps</a></h2>
-        <p class="doc-meta">Aug 17, 2026 · 15 min read</p>
-        <p class="doc-desc">Where Babylon.js 9.18 injects material plugin GLSL, what each PBR hook can see, and the silent failures behind preprocessor, comment and bake traps.</p>
-      </li>
-      <li>
-        <h2 class="doc-title"><a href="/docs/procedural-world-as-a-pure-function">An endless world as a pure function</a></h2>
-        <p class="doc-meta">Jul 29, 2026 · 18 min read</p>
-        <p class="doc-desc">Unbounded mountains, a warped coastline, a highway and cliff bands built as pure C² functions with exact derivatives, so every peer builds one world.</p>
-      </li>
-      <li>
-        <h2 class="doc-title"><a href="/docs/webrtc-signaling-on-cloud-run">Hosting WebRTC signaling on Cloud Run</a></h2>
-        <p class="doc-meta">Jul 29, 2026 · 18 min read</p>
-        <p class="doc-desc">Hosting a WebRTC signaling server on Google Cloud Run for a browser co-op game, the platform behaviours that broke it, and what a running match survives.</p>
-      </li>
-      <li>
-        <h2 class="doc-title"><a href="/docs/browser-coop-netcode">Host-authoritative co-op netcode in the browser</a></h2>
-        <p class="doc-meta">Jul 25, 2026 · 15 min read</p>
-        <p class="doc-desc">How Day Hike&#39;s browser co-op stays responsive: a 60 Hz fixed step, redundant inputs, quantized snapshots, prediction, and host-created lobbies.</p>
+        <p class="game-kicker">Playable now · No install</p>
+        <h2 class="game-title">Day Hike</h2>
+        <div class="game-desc prose">
+<p>Four hikers signed the trailhead register and haven&#39;t been seen since. Play as the park ranger
+sent to find them, lead a search party of up to five into the woods, and survive what walks there.</p>
+<p>No install and no account: the game runs in a browser, players connect to each other directly over
+WebRTC, and the forest is generated procedurally, so no two searches cover the same ground.</p>
+        </div>
+        <ul class="tags" role="list"><li>TypeScript</li><li>Babylon.js</li><li>WebRTC</li></ul>
+        <p class="game-links"><a class="external" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener">Play in your browser</a> · <a class="external" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener">View on GitHub</a></p>
       </li>
     </ul>
   </main>

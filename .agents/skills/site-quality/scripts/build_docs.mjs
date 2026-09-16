@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// build_docs.mjs — build csarko.sh's docs pages from docs/published/*.md.
+// build_docs.mjs — build csarko.sh's docs pages from docs/published/*.md and /games from docs/games/*.md.
 //
 //   node build_docs.mjs              write into public/ (generate-assets.sh runs this first)
 //   node build_docs.mjs --out <dir>  write the same files under <dir> and leave the repo alone (check.py uses this)
@@ -16,6 +16,7 @@ import { buildSite, DocError } from './docs_lib.mjs';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
 const PUBLIC = join(ROOT, 'public');
 const CONTENT = join(ROOT, 'docs/published');
+const GAMES = join(ROOT, 'docs/games');
 
 const args = process.argv.slice(2);
 if (!(args.length === 0 || (args.length === 2 && args[0] === '--out'))) {
@@ -24,14 +25,17 @@ if (!(args.length === 0 || (args.length === 2 && args[0] === '--out'))) {
 }
 const out = args.length ? resolve(args[1]) : PUBLIC;
 
-const sources = existsSync(CONTENT)
-  ? readdirSync(CONTENT).filter((f) => f.endsWith('.md')).sort()
-    .map((f) => ({ name: f, text: readFileSync(join(CONTENT, f), 'utf8') }))
-  : [];
+const read = (dir) => (existsSync(dir)
+  ? readdirSync(dir).filter((f) => f.endsWith('.md')).sort()
+    .map((f) => ({ name: f, text: readFileSync(join(dir, f), 'utf8') }))
+  : []);
+
+const sources = read(CONTENT);
+const gameSources = read(GAMES);
 
 let files;
 try {
-  files = buildSite({ sources, indexHtml: readFileSync(join(PUBLIC, 'index.html'), 'utf8') });
+  files = buildSite({ sources, gameSources, indexHtml: readFileSync(join(PUBLIC, 'index.html'), 'utf8') });
 } catch (e) {
   if (!(e instanceof DocError)) throw e;
   console.error(`error: ${e.message}`);
@@ -44,17 +48,19 @@ for (const [rel, content] of files) {
 }
 
 if (out === PUBLIC) {
-  const docsDir = join(PUBLIC, 'docs');
-  if (existsSync(docsDir)) {
-    for (const f of readdirSync(docsDir)) {
-      if (f.endsWith('.html') && !files.has(`docs/${f}`)) {
-        rmSync(join(docsDir, f));
-        console.log(`removed public/docs/${f}`);
+  for (const dir of ['docs', 'games']) {
+    const built = join(PUBLIC, dir);
+    if (!existsSync(built)) continue;
+    for (const f of readdirSync(built)) {
+      if (f.endsWith('.html') && !files.has(`${dir}/${f}`)) {
+        rmSync(join(built, f));
+        console.log(`removed public/${dir}/${f}`);
       }
     }
-    if (!readdirSync(docsDir).length) rmSync(docsDir, { recursive: true });
+    if (!readdirSync(built).length) rmSync(built, { recursive: true });
   }
 }
 
 const pages = [...files.keys()].filter((k) => k.startsWith('docs/') && k !== 'docs/index.html').length;
-console.log(`docs: ${pages} page(s) → ${out === PUBLIC ? 'public/' : out}`);
+const where = out === PUBLIC ? 'public/' : out;
+console.log(`docs: ${pages} page(s)${files.has('games/index.html') ? ` + ${gameSources.length} game(s)` : ''} → ${where}`);
