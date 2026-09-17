@@ -339,12 +339,14 @@ const DOCS_NAV = 'Research';
 // <title> and the h1, which want the words a searcher would type.
 const GAMES_TITLE = 'Games';
 // The films live at /film, built from docs/films/. FILM_TITLE names the page in the nav, the
-// breadcrumb and the home page's section; FILM_HEADING is the <title> and the h1.
+// breadcrumb and the home page's section; FILM_HEADING is the h1. The <title> is its own line,
+// since "Short films" alone is too short to read as a search result.
 export const FILM_DIR = 'film';
 const FILM_TITLE = 'Film';
-const FILM_HEADING = 'Short films on YouTube';
-const FILM_DESCRIPTION = 'Short films by Cyrus Sarkosh, built frame by frame from generated stills. Watch each one on YouTube.';
-const FILM_LEAD = 'Short films I make away from the keyboard, built frame by frame from generated stills. Each one is on YouTube.';
+const FILM_HEADING = 'Short films';
+const FILM_PAGE_TITLE = 'Short films: experiments in stable AI generation';
+const FILM_DESCRIPTION = 'Short films by Cyrus Sarkosh, experiments in getting AI video generation to hold the same actor and the same room from shot to shot.';
+const FILM_LEAD = 'An experiment in how far AI generation can be pushed toward a film that stays stable: the same actor, the same room, shot after shot. Each result is on YouTube.';
 const FILM_HOME_HEADING = 'Short films I make on the side';
 // A film's kicker, with its runtime after it, so the card says what it is before you read the title.
 const FILM_KICKER = 'Short film';
@@ -899,7 +901,7 @@ export function filmsPage(films, theme) {
     },
     breadcrumbs(trail),
   ];
-  return `${head({ title: `${FILM_HEADING} · Cyrus Sarkosh`, ogTitle: FILM_TITLE, description: FILM_DESCRIPTION, canonical: url, ogType: 'website', graph, theme })}
+  return `${head({ title: `${FILM_PAGE_TITLE} · Cyrus Sarkosh`, ogTitle: FILM_TITLE, description: FILM_DESCRIPTION, canonical: url, ogType: 'website', graph, theme })}
 <body>
 ${nav(`/${FILM_DIR}`)}
 ${crumbs(trail)}
