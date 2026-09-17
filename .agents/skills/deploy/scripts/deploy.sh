@@ -32,10 +32,11 @@ command -v npx >/dev/null || die "npx not found — install Node 20 or later"
 [[ -f public/index.html ]] || die "public/index.html is missing"
 
 # Privacy guard. Cyrus does not want his email address or phone number on the
-# public site (spam). Links go to LinkedIn, GitHub and Substack instead.
-# Docs and games are scanned too, in their Markdown source and as built pages.
+# public site (spam). Links go to LinkedIn, GitHub, Substack and YouTube instead.
+# Docs, games and films are scanned too, in their Markdown source and as built pages.
 shopt -s nullglob
-SCAN=(public/*.html public/research/*.html public/games/*.html docs/published/*.md docs/games/*.md)
+SCAN=(public/*.html public/research/*.html public/games/*.html public/film/*.html
+      docs/published/*.md docs/games/*.md docs/films/*.md)
 shopt -u nullglob
 if grep -nEio 'mailto:[^"]*|[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}' "${SCAN[@]}"; then
   die "the site or a doc contains an email address — refusing to deploy"
@@ -71,9 +72,10 @@ fi
 
 npx -y firebase-tools deploy --only hosting --project "$PROJECT" --non-interactive
 
-# Pages to prove live: the home page, /games, the research index and the newest doc, each against its local file.
+# Pages to prove live: the home page, /film, /games, the research index and the newest doc, each against its local file.
 NEWEST="$(.agents/skills/site-quality/scripts/check.py --newest-doc)"
 VERIFY=("/|public/index.html")
+[[ -f public/film/index.html ]] && VERIFY+=("/film|public/film/index.html")
 [[ -f public/games/index.html ]] && VERIFY+=("/games|public/games/index.html")
 [[ -f public/research/index.html ]] && VERIFY+=("/research|public/research/index.html")
 [[ -n "$NEWEST" ]] && VERIFY+=("/${NEWEST%.html}|public/$NEWEST")

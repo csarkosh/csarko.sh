@@ -26,6 +26,17 @@ H1 is the game's name and the body is its card copy. The same
 (em-dashes, images, links that aren't `https://`, `#anchor` or root-relative),
 and the games land on `/games`.
 
+**A film is not a doc either.** It goes in `docs/films/<slug>.md`, the slug alone
+with no date prefix, with front matter `description` (70–160 characters), `watch`
+(the `youtube.com/shorts/<id>` or `youtube.com/watch?v=<id>` URL), `released`
+(`YYYY-MM-DD`), `runtime` (`m:ss`), `alt` (what the poster shows, for screen
+readers) and `tags` (1 to 5, comma-separated). The H1 is the film's title and the
+body is its card copy. Its poster is a portrait (9:16) JPEG committed at
+`.agents/skills/site-quality/assets/films/<slug>.jpg`, which the same
+`generate-assets.sh` run turns into the hashed responsive images; without it the
+card falls back to a plain `<img>`. Films land on `/film` and the newest one also
+shows on the home page.
+
 **The csarko.sh repository is public on GitHub. Committing a file under
 `docs/published/` publishes it, before any deploy.** Do the review first.
 (`docs/superpowers/` is the other half of `docs/`, and is never published.)

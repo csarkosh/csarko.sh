@@ -1,7 +1,7 @@
 // Tests for docs_lib.mjs. Run: node --test .agents/skills/site-quality/tests/docs_lib.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSite, DocError, docPage, formatDate, gamesPage, homeSection, indexPage, loadDoc, loadGame, parseDocFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, replaceBlock, sitemap, sortDocs, sortGames, themeBlocks } from '../scripts/docs_lib.mjs';
+import { buildSite, DocError, docPage, filmsPage, filmSection, formatDate, gamesPage, homeSection, indexPage, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, replaceBlock, sitemap, sortDocs, sortFilms, sortGames, themeBlocks } from '../scripts/docs_lib.mjs';
 
 const FILE = 'docs/published/2026-09-14-example.md';
 const DESC = 'A description that is long enough to pass the seventy character minimum for search.';
@@ -170,6 +170,8 @@ const INDEX = `<style>
     }
   </style>
   <main>
+    <!-- generated:film -->
+    <!-- /generated:film -->
     <!-- generated:docs -->
     <!-- /generated:docs -->
   </main>`;
@@ -246,7 +248,7 @@ test('homeSection lists the three newest docs and is empty with none', () => {
   const html = homeSection(sortDocs([doc('a', '2026-01-01'), doc('b', '2026-03-01'), doc('c', '2026-02-01'), doc('d', '2026-03-01')]));
   assert.deepEqual([...html.matchAll(/href="\/research\/([a-z]+)"/g)].map((m) => m[1]), ['b', 'd', 'c']);
   assert.ok(html.includes('<section id="notes" aria-labelledby="notes-title">'));
-  assert.ok(html.includes('<p class="section-label">03 / Notes</p>'));
+  assert.ok(html.includes('<p class="section-label">04 / Notes</p>'));
   assert.ok(html.includes('<h2 id="notes-title">Notes from what I\'m researching</h2>'));
   assert.ok(html.includes('<h3 class="doc-title"><a class="stretch" href="/research/b">b title</a></h3>'));
   assert.ok(html.includes('<a class="all-docs" href="/research">All notes'));
@@ -431,4 +433,133 @@ test('buildSite writes the games index only when a game exists', () => {
   assert.ok(withGames.has('games/index.html'));
   assert.ok(withGames.get('sitemap.xml').includes('https://csarko.sh/games'));
   assert.ok(!buildSite({ sources, indexHtml: INDEX }).has('games/index.html'));
+});
+
+// ---------------------------------------------------------------- films
+
+const WATCH = 'https://www.youtube.com/shorts/jBh7F1knRAA';
+const filmSrc = (slug, lines = [], body = 'The story.') => {
+  const keys = lines.map((l) => l.split(':')[0]);
+  const base = [['watch', WATCH], ['released', '2026-09-17'], ['runtime', '0:16'],
+    ['alt', 'A woman in a dim hallway.'], ['tags', 'Analog horror, Photo puppetry']]
+    .filter(([k]) => !keys.includes(k)).map(([k, v]) => `${k}: ${v}`);
+  return { name: `${slug}.md`, text: `---\ndescription: ${DESC}\n${[...base, ...lines].map((l) => `${l}\n`).join('')}---\n# ${slug} title\n\n${body}\n` };
+};
+const film = (...args) => { const s = filmSrc(...args); return loadFilm(s.name, s.text); };
+const rejectsFilm = (slug, lines, pattern) =>
+  assert.throws(() => film(slug, lines), (e) => e instanceof DocError && pattern.test(e.message));
+
+test('parseFilmFileName takes the slug alone, with no date', () => {
+  assert.deepEqual(parseFilmFileName('hallway.md'), { slug: 'hallway' });
+  for (const name of ['Hallway.md', 'my_film.md', 'my film.md', 'hallway.markdown']) {
+    assert.throws(() => parseFilmFileName(name),
+      (e) => e instanceof DocError && /file name must be <slug>\.md/.test(e.message), name);
+  }
+  assert.throws(() => parseFilmFileName('2026-09-17-hallway.md'),
+    (e) => e instanceof DocError && /carries no date; use "released:"/.test(e.message));
+});
+
+test('loadFilm reads the front matter, derives the video id, kicker and ISO duration', () => {
+  const f = film('hallway');
+  assert.equal(f.slug, 'hallway');
+  assert.equal(f.title, 'hallway title');
+  assert.equal(f.watch, WATCH);
+  assert.equal(f.videoId, 'jBh7F1knRAA');
+  assert.equal(f.runtime, '0:16');
+  assert.equal(f.duration, 'PT16S');
+  assert.equal(f.kicker, 'Short film · 0:16');
+  assert.equal(f.poster, '/film/hallway.jpg');
+  assert.deepEqual(f.tags, ['Analog horror', 'Photo puppetry']);
+  assert.ok(f.html.includes('<p>The story.</p>'));
+  // A minute or more reads as minutes and seconds in both places.
+  const long = film('long', ['runtime: 12:30']);
+  assert.equal(long.duration, 'PT12M30S');
+  assert.equal(long.kicker, 'Short film · 12:30');
+});
+
+test('loadFilm accepts either YouTube URL shape and keeps the one it was given', () => {
+  assert.equal(film('a', ['watch: https://www.youtube.com/watch?v=jBh7F1knRAA']).videoId, 'jBh7F1knRAA');
+  assert.equal(film('a', ['watch: https://youtube.com/shorts/jBh7F1knRAA']).watch, 'https://youtube.com/shorts/jBh7F1knRAA');
+});
+
+test('loadFilm refuses front matter it cannot trust', () => {
+  rejectsFilm('x', ['watch: https://vimeo.com/12345'], /watch must be a youtube\.com/);
+  rejectsFilm('x', ['watch: https://www.youtube.com/shorts/tooshort'], /watch must be a youtube\.com/);
+  rejectsFilm('x', ['runtime: 16'], /runtime must be m:ss/);
+  rejectsFilm('x', ['runtime: 1:7'], /runtime must be m:ss/);
+  rejectsFilm('x', ['released: 2026-02-30'], /released must be a real YYYY-MM-DD date/);
+  rejectsFilm('x', ['status: playable'], /unknown front matter key "status"/);
+  rejectsFilm('x', ['tags: a, b, c, d, e, f'], /tags must be 1 to 5 comma-separated names/);
+  assert.throws(() => loadFilm('index.md', filmSrc('x').text),
+    (e) => e instanceof DocError && /"index" is reserved/.test(e.message));
+  assert.throws(() => loadFilm('x.md', filmSrc('x', [], 'A dash — here.').text),
+    (e) => e instanceof DocError && /em-dash/.test(e.message));
+  // The poster is what the card is built around, so its alt text is not optional.
+  assert.throws(() => loadFilm('x.md', `---\ndescription: ${DESC}\nwatch: ${WATCH}\nreleased: 2026-09-17\nruntime: 0:16\ntags: Horror\n---\n# T\n\nB.\n`),
+    (e) => e instanceof DocError && /needs "alt"/.test(e.message));
+});
+
+test('sortFilms puts the newest release first, ties broken by slug', () => {
+  const films = [film('b', ['released: 2026-01-01']), film('a', ['released: 2026-01-01']), film('new', ['released: 2026-09-17'])];
+  assert.deepEqual(sortFilms(films).map((f) => f.slug), ['new', 'a', 'b']);
+});
+
+test('filmsPage cards the poster, links out to YouTube and lists VideoObject JSON-LD', () => {
+  const html = filmsPage(sortFilms([film('hallway')]), themeBlocks(INDEX));
+  assert.ok(html.includes('<link rel="canonical" href="https://csarko.sh/film" />'));
+  assert.ok(html.includes('<li><a href="/film" aria-current="page">Film</a></li>'));
+  // Film leads the page links on every page of the site.
+  assert.ok(html.indexOf('href="/film"') < html.indexOf('href="/games"'));
+  assert.ok(html.includes('<p class="film-kicker">Short film · 0:16</p>'));
+  assert.ok(html.includes('<ul class="tags" role="list"><li>Analog horror</li><li>Photo puppetry</li></ul>'));
+  assert.ok(html.includes('<a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener">Watch on YouTube <svg'));
+  // The poster is a marker build_assets.py fills, carrying a usable img and its alt until it does.
+  assert.ok(html.includes('<!-- generated:film-poster:hallway -->'));
+  assert.ok(html.includes('alt="A woman in a dim hallway."'));
+  assert.ok(html.includes('src="/film/hallway.jpg"'));
+  const page = jsonLd(html).find((n) => n['@type'] === 'CollectionPage');
+  assert.equal(page.url, 'https://csarko.sh/film');
+  const [first] = page.mainEntity.itemListElement;
+  assert.equal(first.item['@type'], 'VideoObject');
+  assert.equal(first.item.url, WATCH);
+  assert.equal(first.item.embedUrl, 'https://www.youtube.com/embed/jBh7F1knRAA');
+  assert.equal(first.item.thumbnailUrl, 'https://csarko.sh/film/hallway.jpg');
+  assert.equal(first.item.uploadDate, '2026-09-17');
+  assert.equal(first.item.duration, 'PT16S');
+  const crumbs = jsonLd(html).find((n) => n['@type'] === 'BreadcrumbList');
+  assert.equal(crumbs.itemListElement.at(-1).item, 'https://csarko.sh/film');
+});
+
+test('filmSection teases the newest film on the home page and links to the page', () => {
+  const body = filmSection(sortFilms([film('hallway'), film('older', ['released: 2025-01-01'])]));
+  assert.ok(body.includes('02 / Film'));
+  assert.ok(body.includes('<!-- generated:film-poster:hallway -->'));
+  assert.ok(!body.includes('older'));
+  assert.ok(body.includes('href="/film"'));
+  assert.equal(filmSection([]), '\n    ');
+});
+
+test('sitemap carries /film first, then /games and /research, none with a lastmod', () => {
+  const xml = sitemap([doc('a', '2026-01-01')], [game('day-hike')], [film('hallway')]);
+  assert.deepEqual([...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]),
+    ['https://csarko.sh/', 'https://csarko.sh/film', 'https://csarko.sh/games',
+      'https://csarko.sh/research', 'https://csarko.sh/research/a']);
+  assert.ok(!sitemap([doc('a', '2026-01-01')], [game('day-hike')]).includes('/film'));
+});
+
+test('buildSite writes the film index and the home section only when a film exists', () => {
+  const sources = [src('a', '2026-01-01')];
+  const withFilms = buildSite({ sources, filmSources: [filmSrc('hallway')], indexHtml: INDEX });
+  assert.ok(withFilms.has('film/index.html'));
+  assert.ok(withFilms.get('sitemap.xml').includes('https://csarko.sh/film'));
+  assert.ok(withFilms.get('index.html').includes('02 / Film'));
+  const without = buildSite({ sources, indexHtml: INDEX });
+  assert.ok(!without.has('film/index.html'));
+  assert.ok(!without.get('index.html').includes('02 / Film'));
+});
+
+test('the film page carries a trail its BreadcrumbList repeats exactly', () => {
+  const html = filmsPage([film('hallway')], themeBlocks(INDEX));
+  assert.deepEqual(trail(html), [['Home', '/'], ['Film', undefined]]);
+  assert.deepEqual(crumbNames(html), ['Home', 'Film']);
 });

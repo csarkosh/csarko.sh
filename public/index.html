@@ -65,7 +65,8 @@
       "sameAs": [
         "https://www.linkedin.com/in/csarkosh",
         "https://github.com/csarkosh",
-        "https://csarko.substack.com/"
+        "https://csarko.substack.com/",
+        "https://www.youtube.com/@csarkosh"
       ]
     },
     {
@@ -307,6 +308,21 @@
     .card.placeholder:hover { transform: none; border-color: var(--border-strong); background: transparent; }
     .card.placeholder .card-link { color: var(--faint); }
 
+    /* Film: the card between the generated:film markers comes from docs/films/ (build_docs.mjs).
+       Same rules as .film-* in DOCS_CSS in docs_lib.mjs, which styles /film; keep the two in step. */
+    .film-list { display: grid; gap: 14px; list-style: none; margin: 0; padding: 0; }
+    .film-card { flex-direction: row; align-items: flex-start; gap: 22px; }
+    .film-poster { flex: none; width: 240px; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); line-height: 0; }
+    .film-poster img { width: 100%; height: auto; display: block; }
+    .film-body { display: flex; flex-direction: column; min-width: 0; }
+    .film-kicker { margin: 0 0 10px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .film-title { margin: 0 0 10px; font-size: 1.3rem; line-height: 1.3; letter-spacing: -0.02em; font-weight: 600; }
+    .film-desc { max-width: 78ch; color: var(--muted); font-size: 15px; }
+    .film-desc p { margin: 0 0 12px; }
+    .film-desc p:last-child { margin-bottom: 0; }
+    .film-list .tags { margin-top: 16px; }
+    .card .film-desc a { position: relative; z-index: 1; }
+
     /* Notes: the list between the generated:docs markers comes from docs/published/ (build_docs.mjs) */
     .doc-list { display: grid; gap: 14px; list-style: none; margin: 0; padding: 0; }
     .doc-list .doc-title { margin: 0 0 4px; font-size: 1.15rem; line-height: 1.35; letter-spacing: -0.015em; font-weight: 600; }
@@ -349,6 +365,8 @@
       .value { display: grid; grid-template-columns: 34px 1fr; column-gap: 14px; padding: 16px; }
       .value .icon { margin-bottom: 0; grid-row: span 2; }
       .projects { grid-template-columns: 1fr; }
+      .film-card { flex-direction: column; }
+      .film-poster { width: 200px; align-self: flex-start; }
       .skill-row { grid-template-columns: 1fr; gap: 8px; }
       .skill-row dt { padding-top: 0; }
       section { padding-block: 44px; }
@@ -371,11 +389,13 @@
       <a class="wordmark" href="#top">csarko<span>.sh</span></a>
       <ul>
         <li class="heading-link"><a href="#work" data-collapsible="true">Work</a></li>
+        <li class="heading-link"><a href="#film" data-collapsible="true">Film</a></li>
         <li class="heading-link"><a href="#projects" data-collapsible="true">Projects</a></li>
         <li class="heading-link"><a href="#notes" data-collapsible="true">Notes</a></li>
         <li class="heading-link"><a href="#skills" data-collapsible="true">Skills</a></li>
         <li class="heading-link"><a href="#contact" data-collapsible="true">Contact</a></li>
         <li class="nav-divider" aria-hidden="true"></li>
+        <li><a href="/film">Film</a></li>
         <li><a href="/games">Games</a></li>
         <li><a href="/research">Research</a></li>
       </ul>
@@ -404,6 +424,10 @@
         <a class="btn" href="https://csarko.substack.com/" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.54 8.24H1.46V5.41h21.08v2.83ZM1.46 10.81V24L12 18.11 22.54 24V10.81H1.46ZM22.54 0H1.46v2.84h21.08V0Z"/></svg>
           Substack
+        </a>
+        <a class="btn" href="https://www.youtube.com/@csarkosh" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.5 6.2a3 3 0 0 0-2.11-2.12C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.39.58A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.51 5.8a3 3 0 0 0 2.1 2.12c1.9.58 9.39.58 9.39.58s7.5 0 9.39-.58a3 3 0 0 0 2.11-2.12C24 15.9 24 12 24 12s0-3.9-.5-5.8ZM9.55 15.57V8.43L15.82 12l-6.27 3.57Z"/></svg>
+          YouTube
         </a>
       </div>
       </div>
@@ -513,8 +537,40 @@
       </article>
     </section>
 
+    <!-- generated:film -->
+    <section id="film" aria-labelledby="film-title">
+      <p class="section-label">02 / Film</p>
+      <h2 id="film-title">Short films I make on the side</h2>
+      <ul class="film-list" role="list">
+        <li class="card film-card">
+          <div class="film-poster">
+            <!-- generated:film-poster:who-is-standing-in-my-hallway -->
+            <picture>
+              <source type="image/avif" srcset="assets/film-who-is-standing-in-my-hallway-200.e1744fb0.avif 200w, assets/film-who-is-standing-in-my-hallway-240.88ed3848.avif 240w, assets/film-who-is-standing-in-my-hallway-400.990e0955.avif 400w, assets/film-who-is-standing-in-my-hallway-480.c829bcff.avif 480w" sizes="(max-width: 640px) 200px, 240px" />
+              <source type="image/webp" srcset="assets/film-who-is-standing-in-my-hallway-200.c63a0379.webp 200w, assets/film-who-is-standing-in-my-hallway-240.d39d3ecc.webp 240w, assets/film-who-is-standing-in-my-hallway-400.be670836.webp 400w, assets/film-who-is-standing-in-my-hallway-480.b9c0ba39.webp 480w" sizes="(max-width: 640px) 200px, 240px" />
+              <img src="assets/film-who-is-standing-in-my-hallway-240.efe99a63.jpg" srcset="assets/film-who-is-standing-in-my-hallway-200.058057f1.jpg 200w, assets/film-who-is-standing-in-my-hallway-240.efe99a63.jpg 240w, assets/film-who-is-standing-in-my-hallway-400.02ffbc90.jpg 400w, assets/film-who-is-standing-in-my-hallway-480.2bc1c474.jpg 480w" sizes="(max-width: 640px) 200px, 240px" width="240" height="427" alt="A woman in dark pyjamas, lit from below by her phone, staring past the camera in a dim hallway." loading="lazy" decoding="async" />
+            </picture>
+            <!-- /generated:film-poster:who-is-standing-in-my-hallway -->
+          </div>
+          <div class="film-body">
+            <p class="film-kicker">Short film · 0:16</p>
+            <h3 class="film-title">Who is standing in my hallway?</h3>
+            <div class="film-desc prose">
+<p>I have been finding strangers in my house.</p>
+<p>Made as photo puppetry: generated stills cut apart and moved frame by frame, then finished with a
+VHS pass. Every person in the film is synthetic, and no real individual is depicted.</p>
+            </div>
+            <ul class="tags" role="list"><li>Analog horror</li><li>Found footage</li><li>Photo puppetry</li></ul>
+            <a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener">Watch on YouTube <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+          </div>
+        </li>
+      </ul>
+      <a class="all-docs" href="/film">All films <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </section>
+    <!-- /generated:film -->
+
     <section id="projects" aria-labelledby="projects-title">
-      <p class="section-label">02 / Projects</p>
+      <p class="section-label">03 / Projects</p>
       <h2 id="projects-title">Things I build for fun</h2>
       <div class="projects">
         <a class="card featured" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener">
@@ -564,7 +620,7 @@
 
     <!-- generated:docs -->
     <section id="notes" aria-labelledby="notes-title">
-      <p class="section-label">03 / Notes</p>
+      <p class="section-label">04 / Notes</p>
       <h2 id="notes-title">Notes from what I'm researching</h2>
       <ul class="doc-list" role="list">
         <li class="card">
@@ -588,7 +644,7 @@
     <!-- /generated:docs -->
 
     <section id="skills" aria-labelledby="skills-title">
-      <p class="section-label">04 / Skills</p>
+      <p class="section-label">05 / Skills</p>
       <h2 id="skills-title">What I work with</h2>
       <dl class="skills">
         <div class="skill-row">
@@ -623,13 +679,14 @@
     </section>
 
     <section id="contact" class="contact" aria-labelledby="contact-title">
-      <p class="section-label">05 / Contact</p>
+      <p class="section-label">06 / Contact</p>
       <h2 id="contact-title">Let's talk.</h2>
       <p>I'm always happy to talk about AI products, distributed systems, engineering leadership, or generative media.</p>
       <div class="actions">
         <a class="btn primary" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">Message me on LinkedIn</a>
         <a class="btn" href="https://github.com/csarkosh" target="_blank" rel="noopener">GitHub</a>
         <a class="btn" href="https://csarko.substack.com/" target="_blank" rel="noopener">Substack</a>
+        <a class="btn" href="https://www.youtube.com/@csarkosh" target="_blank" rel="noopener">YouTube</a>
       </div>
     </section>
   </main>
