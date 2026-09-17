@@ -204,8 +204,9 @@ three from the command line):
   among the page links on every page; the page's H1 is "Short films on YouTube",
   its eyebrow "Film"), built from `docs/films/*.md`, one file per film. Each card
   carries the film's poster, a `Short film · <runtime>` kicker, its copy, tags,
-  its content warning if it has one, and a "Watch on YouTube" link out to the
-  video (*the warning was added 2026-09-17: horror is the genre, so a viewer
+  its content warning if it has one (bold, in the `--warning` yellow, so it is
+  read before the link rather than after the film), and a "Watch on YouTube"
+  link out to the video (*the warning was added 2026-09-17: horror is the genre, so a viewer
   should know before clicking; it is per film, not a standing notice on the
   page*); the page's JSON-LD lists each
   film as a `VideoObject`. The home page's section is `02 / Film` (`#film`),
@@ -259,6 +260,7 @@ do).
 | `--bg` | `#0a0b0e` | `#f6f7f9` |
 | `--surface` / `--surface-2` | `#111318` / `#161922` | `#ffffff` / `#eef0f4` |
 | `--text` / `--muted` / `--faint` | `#e8eaf0` / `#a0a8b8` / `#7d8597` | `#12151c` / `#4a5263` / `#5f677a` |
+| `--warning` | `#f5c451` | `#8a6100` | 
 
 The light accent is a deep version of the mint (same hue, ~167°), because the
 mint itself is unreadable on white; the mint still shows up in light mode as the

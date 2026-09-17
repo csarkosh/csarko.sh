@@ -552,9 +552,10 @@ const DOCS_CSS = `
     .film-desc p { margin: 0 0 12px; }
     .film-desc p:last-child { margin-bottom: 0; }
     .film-list .tags { margin-top: 16px; }
-    /* A film's content warning, under its tags. --muted, not --faint: a warning has to be read. */
-    .film-warning { display: flex; align-items: flex-start; gap: 8px; margin: 14px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--muted); }
-    .film-warning svg { width: 15px; height: 15px; flex: none; margin-top: 2px; color: var(--accent); }
+    /* A film's content warning, under its tags: its own yellow token, and bold, so it is read
+       before the watch link rather than after the film. The icon inherits that color. */
+    .film-warning { display: flex; align-items: flex-start; gap: 8px; margin: 14px 0 0; font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--warning); }
+    .film-warning svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
     @media (max-width: 640px) {
       .film-card { flex-direction: column; }
       .film-poster { width: 200px; align-self: flex-start; }

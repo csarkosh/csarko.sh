@@ -126,6 +126,8 @@
       --text: #e8eaf0;
       --muted: #a0a8b8;
       --faint: #7d8597;
+      /* Content warnings only. Yellow to stand apart from the teal accent. */
+      --warning: #f5c451;
       --accent: #7dd3c0;
       --accent-hover: #95e0cf;
       --on-accent: #06231d;
@@ -153,6 +155,7 @@
         --text: #12151c;
         --muted: #4a5263;
         --faint: #5f677a;
+        --warning: #8a6100;
         --accent: #0a735f;
         --accent-hover: #075a4a;
         --on-accent: #ffffff;
@@ -296,9 +299,10 @@
     .film-desc p { margin: 0 0 12px; }
     .film-desc p:last-child { margin-bottom: 0; }
     .film-list .tags { margin-top: 16px; }
-    /* A film's content warning, under its tags. --muted, not --faint: a warning has to be read. */
-    .film-warning { display: flex; align-items: flex-start; gap: 8px; margin: 14px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--muted); }
-    .film-warning svg { width: 15px; height: 15px; flex: none; margin-top: 2px; color: var(--accent); }
+    /* A film's content warning, under its tags: its own yellow token, and bold, so it is read
+       before the watch link rather than after the film. The icon inherits that color. */
+    .film-warning { display: flex; align-items: flex-start; gap: 8px; margin: 14px 0 0; font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--warning); }
+    .film-warning svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
     @media (max-width: 640px) {
       .film-card { flex-direction: column; }
       .film-poster { width: 200px; align-self: flex-start; }
