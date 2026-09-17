@@ -5,7 +5,7 @@ security headers, or layout.
 
 Usage:
   check.py                        static checks on every page in public/, the docs build, and firebase.json (offline, a few seconds)
-  check.py --newest-doc           print docs/<slug>.html of the newest doc (or an empty line) and exit
+  check.py --newest-doc           print research/<slug>.html of the newest doc (or an empty line) and exit
   check.py --live [URL]           + the deployed site: headers, caching, 404, robots, sitemap, www
   check.py --lighthouse [URL]     + Lighthouse, dark and light themes: SEO, Accessibility, Best Practices 100; Performance >= 95
   check.py --observatory [HOST]   + Mozilla HTTP Observatory: grade must be A+
@@ -60,6 +60,10 @@ BUDGET_SCRIPTS = 10_000  # all JavaScript the page loads, first- and third-party
 BUDGET_HTML_DOC = 120_000  # a doc page is mostly prose, so long research docs get more room than BUDGET_HTML
 
 BUILD_DOCS = SKILL / "scripts/build_docs.mjs"
+# Where docs are built and served (DOCS_DIR in docs_lib.mjs), and where they used to be: firebase.json
+# 301s /docs and /docs/<slug> to their /research URLs, and --live checks that it still does.
+DOCS_DIR = "research"
+LEGACY_DOCS_DIR = "docs"
 
 REQUIRED_HEADERS = {
     "Content-Security-Policy": lambda v: bool(v),
@@ -213,10 +217,10 @@ def parse_csp(value):
 
 # ------------------------------------------------------------------------ pages
 # Firebase serves public/ with cleanUrls: true and trailingSlash: false, so
-# docs/x.html is https://csarko.sh/docs/x and docs/index.html is /docs.
+# research/x.html is https://csarko.sh/research/x and research/index.html is /research.
 
 def page_kind(rel):
-    return {"index.html": "home", "404.html": "404", "docs/index.html": "docs-index",
+    return {"index.html": "home", "404.html": "404", f"{DOCS_DIR}/index.html": "docs-index",
             "games/index.html": "games-index"}.get(rel, "doc")
 
 
@@ -255,9 +259,9 @@ def blank_generated(text):
 
 
 def newest_doc(public=PUBLIC):
-    """docs/<slug>.html of the newest doc (latest published, then smallest slug), or None."""
+    """research/<slug>.html of the newest doc (latest published, then smallest slug), or None."""
     found = []
-    for p in (public / "docs").glob("*.html"):
+    for p in (public / DOCS_DIR).glob("*.html"):
         if p.name == "index.html":
             continue
         m = re.search(r'<meta property="article:published_time" content="([^"]+)"', p.read_text(encoding="utf-8"))
@@ -266,13 +270,13 @@ def newest_doc(public=PUBLIC):
     if not found:
         return None
     latest = max(date for date, _ in found)
-    return f"docs/{min(slug for date, slug in found if date == latest)}.html"
+    return f"{DOCS_DIR}/{min(slug for date, slug in found if date == latest)}.html"
 
 
 def indexable_pages(public=PUBLIC):
     return (["index.html"]
             + sorted(f"games/{p.name}" for p in (public / "games").glob("*.html"))
-            + sorted(f"docs/{p.name}" for p in (public / "docs").glob("*.html")))
+            + sorted(f"{DOCS_DIR}/{p.name}" for p in (public / DOCS_DIR).glob("*.html")))
 
 
 # --------------------------------------------------------------------------- SEO
@@ -537,7 +541,7 @@ def performance_checks(page, html, name):
            or hashlib.sha256(f.read_bytes()).hexdigest()[:8] != m.group(2)]
     check(not bad, f"public/assets/ names match content hashes {bad or ''}")
     referenced = set()
-    for other in [*PUBLIC.glob("*.html"), *(PUBLIC / "docs").glob("*.html")]:
+    for other in [*PUBLIC.glob("*.html"), *(PUBLIC / DOCS_DIR).glob("*.html"), *(PUBLIC / "games").glob("*.html")]:
         referenced |= set(re.findall(r"assets/([A-Za-z0-9._-]+)", other.read_text(encoding="utf-8")))
     unused = sorted(f.name for f in (PUBLIC / "assets").glob("*") if f.name not in referenced)
     (warn if unused else ok)(f"unreferenced files in public/assets/: {unused or 'none'}")
@@ -703,7 +707,7 @@ def docs_build_checks():
                            for p in Path(out).rglob("*") if p.is_file()})
     check(builds[0] == builds[1], "docs build is deterministic (two builds are byte-identical)")
     committed = {rel: (PUBLIC / rel).read_text(encoding="utf-8") for rel in ("index.html", "sitemap.xml")}
-    for d in ("docs", "games"):
+    for d in (DOCS_DIR, "games"):
         committed |= {f"{d}/{p.name}": p.read_text(encoding="utf-8") for p in (PUBLIC / d).glob("*.html")}
     stale = sorted(rel for rel in set(builds[0]) | set(committed)
                    if blank_generated(builds[0].get(rel, "")) != blank_generated(committed.get(rel, "")))
@@ -721,7 +725,7 @@ def layout_checks():
     if not Path(CHROME).exists():
         warn("Google Chrome not found — layout checks skipped")
         return
-    targets = ["index.html"] + [rel for rel in ("games/index.html", "docs/index.html", newest_doc())
+    targets = ["index.html"] + [rel for rel in ("games/index.html", f"{DOCS_DIR}/index.html", newest_doc())
                                 if rel and (PUBLIC / rel).exists()]
     frames = [{"key": f"{rel} {w}px", "width": w, "src": (PUBLIC / rel).as_uri()} for rel in targets for w in LAYOUT_WIDTHS]
     with tempfile.TemporaryDirectory() as tmp:
@@ -832,14 +836,14 @@ def live_checks(base):
         s, h, _ = fetch(f"{base}/assets/{asset.name}")
         check(s == 200 and "immutable" in h.get("cache-control", ""), f"/assets/{asset.name} -> {s}, {h.get('cache-control')}")
 
-    built = [rel for rel in indexable_pages() if rel.startswith(("docs/", "games/"))]
+    built = [rel for rel in indexable_pages() if rel.startswith((f"{DOCS_DIR}/", "games/"))]
     for rel in built:
         path = canonical_for(rel)[len(SITE):]
         s, h, _ = fetch(base + path)
         same_csp = h.get("content-security-policy") == catch_all.get("Content-Security-Policy")
         check(s == 200 and same_csp, f"{path} -> {s}, CSP {'matches' if same_csp else 'differs from'} firebase.json")
     # cleanUrls redirects the trailing slash; check each directory that has an index page.
-    for d in ("docs", "games"):
+    for d in (DOCS_DIR, "games"):
         if any(rel.startswith(f"{d}/") for rel in built):
             s, h, _ = fetch(f"{base}/{d}/")
             check(s in (301, 308) and h.get("location", "").endswith(f"/{d}"),
@@ -849,6 +853,13 @@ def live_checks(base):
         clean = canonical_for(newest)[len(SITE):]
         s, h, _ = fetch(base + clean + ".html")
         check(s in (301, 308) and h.get("location", "").endswith(clean), f"{clean}.html -> {s} {h.get('location', '')}")
+    # The docs moved from /docs to /research; links and search results still point at the old URLs.
+    if any(rel.startswith(f"{DOCS_DIR}/") for rel in built):
+        old = [f"/{LEGACY_DOCS_DIR}"] + ([f"/{LEGACY_DOCS_DIR}/{Path(newest).stem}"] if newest else [])
+        for path in old:
+            want = f"/{DOCS_DIR}{path[len(LEGACY_DOCS_DIR) + 1:]}"
+            s, h, _ = fetch(base + path)
+            check(s == 301 and h.get("location", "").split("?")[0].endswith(want), f"{path} -> {s} {h.get('location', '')}")
     # A regex, not an XML parser: this is network input, and <loc> is all we need from it.
     _, _, body = fetch(base + "/sitemap.xml")
     locs = [loc for loc in re.findall(r"<loc>([^<]+)</loc>", body.decode("utf-8", "replace")) if loc.startswith(SITE)]

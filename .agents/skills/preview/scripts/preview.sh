@@ -110,5 +110,5 @@ if (( SERVE )); then
   open -a "Google Chrome" "http://localhost:$PORT/"
 elif (( ! SHOTS )); then
   open -a "Google Chrome" "$PUBLIC/index.html"
-  echo "opened $PUBLIC/index.html in Chrome (links to /docs need --serve)"
+  echo "opened $PUBLIC/index.html in Chrome (links to /games and /research need --serve)"
 fi

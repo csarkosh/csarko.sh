@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>No visible pop-in: dissolving a streamed forest · Cyrus Sarkosh</title>
   <meta name="description" content="Keeping a streamed browser forest from visibly spawning: pixel-size arithmetic, screen-space dissolve bands, and what discard costs in opaque shaders." />
-  <link rel="canonical" href="https://csarko.sh/docs/no-visible-pop-in" />
+  <link rel="canonical" href="https://csarko.sh/research/no-visible-pop-in" />
 
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="Cyrus Sarkosh" />
   <meta property="og:locale" content="en_US" />
-  <meta property="og:url" content="https://csarko.sh/docs/no-visible-pop-in" />
+  <meta property="og:url" content="https://csarko.sh/research/no-visible-pop-in" />
   <meta property="og:title" content="No visible pop-in: dissolving a streamed forest" />
   <meta property="og:description" content="Keeping a streamed browser forest from visibly spawning: pixel-size arithmetic, screen-space dissolve bands, and what discard costs in opaque shaders." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
@@ -44,13 +44,13 @@
   "@graph": [
     {
       "@type": "TechArticle",
-      "@id": "https://csarko.sh/docs/no-visible-pop-in#article",
+      "@id": "https://csarko.sh/research/no-visible-pop-in#article",
       "headline": "No visible pop-in: dissolving a streamed forest",
       "description": "Keeping a streamed browser forest from visibly spawning: pixel-size arithmetic, screen-space dissolve bands, and what discard costs in opaque shaders.",
       "datePublished": "2026-09-01",
       "dateModified": "2026-09-01",
-      "url": "https://csarko.sh/docs/no-visible-pop-in",
-      "mainEntityOfPage": "https://csarko.sh/docs/no-visible-pop-in",
+      "url": "https://csarko.sh/research/no-visible-pop-in",
+      "mainEntityOfPage": "https://csarko.sh/research/no-visible-pop-in",
       "wordCount": 3542,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
@@ -83,13 +83,13 @@
           "@type": "ListItem",
           "position": 2,
           "name": "Research",
-          "item": "https://csarko.sh/docs"
+          "item": "https://csarko.sh/research"
         },
         {
           "@type": "ListItem",
           "position": 3,
           "name": "No visible pop-in: dissolving a streamed forest",
-          "item": "https://csarko.sh/docs/no-visible-pop-in"
+          "item": "https://csarko.sh/research/no-visible-pop-in"
         }
       ]
     }
@@ -320,7 +320,7 @@
       <a class="wordmark" href="/">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/games">Games</a></li>
-        <li><a href="/docs">Research</a></li>
+        <li><a href="/research">Research</a></li>
       </ul>
     </div>
   </nav>
@@ -328,7 +328,7 @@
     <div class="wrap">
       <ol>
         <li><a href="/">Home</a></li>
-        <li><a href="/docs">Research</a></li>
+        <li><a href="/research">Research</a></li>
         <li><span aria-current="page">No visible pop-in: dissolving a streamed forest</span></li>
       </ol>
     </div>
@@ -477,7 +477,7 @@ the whole range, so thresholding it at <em>v</em> keeps close to a fraction <em>
 small patch, evenly scattered rather than in clumps. It needs no texture and costs one line.
 Because it is a fixed function of the pixel position, the pattern is pinned to the screen and
 needs no temporal filtering. Scenery does slide under a screen-fixed pattern as the camera
-moves, the effect <a href="/docs/stylized-shader-looks">Return of the Obra Dinn</a> had to fix for its
+moves, the effect <a href="/research/stylized-shader-looks">Return of the Obra Dinn</a> had to fix for its
 whole image, but a dissolve band covers a few to a few tens of pixels for a moment, so it goes
 unnoticed.</p>
 <p>The bands are <strong>per instance, not per material</strong>. <code>fadeBands</code> is a four-float thin-instance
@@ -786,7 +786,7 @@ deadwood and understory never cast. The one visible artefact is a giant&#39;s sh
 at the full-mesh seam while its mesh dissolves. It existed before this work and the work did
 not change it.</p>
 <p>The route to fix it is <code>ShadowDepthWrapper</code>, covered in
-<a href="/docs/babylon-material-plugin-traps">Babylon.js material plugin traps</a>. It was left out here
+<a href="/research/babylon-material-plugin-traps">Babylon.js material plugin traps</a>. It was left out here
 because it recompiles every wrapped material and would need its own frame-time measurement.</p>
 <div class="section-head"><p class="section-label">10</p><h2 id="what-stills-cannot-show"><a class="anchor" href="#what-stills-cannot-show">What stills cannot show</a></h2></div>
 <p>Every check above is a still image, a count or a frame-time sample. &quot;Nothing spawns&quot; is a

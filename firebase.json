@@ -9,6 +9,18 @@
     ],
     "cleanUrls": true,
     "trailingSlash": false,
+    "redirects": [
+      {
+        "source": "/docs",
+        "destination": "/research",
+        "type": 301
+      },
+      {
+        "source": "/docs/:slug*",
+        "destination": "/research/:slug",
+        "type": 301
+      }
+    ],
     "headers": [
       {
         "source": "**",

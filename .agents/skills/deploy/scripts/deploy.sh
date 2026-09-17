@@ -10,7 +10,7 @@
 #   deploy.sh --preview    deploy to a temporary preview channel (expires in 7d)
 #
 # Exit status is non-zero if a guard fails (privacy, config, site quality), the deploy
-# fails, the site's own web.app URL does not serve the exact home page, docs index and
+# fails, the site's own web.app URL does not serve the exact home page, research index and
 # newest doc that were just deployed, or the live checks fail afterwards.
 
 set -euo pipefail
@@ -35,7 +35,7 @@ command -v npx >/dev/null || die "npx not found — install Node 20 or later"
 # public site (spam). Links go to LinkedIn, GitHub and Substack instead.
 # Docs and games are scanned too, in their Markdown source and as built pages.
 shopt -s nullglob
-SCAN=(public/*.html public/docs/*.html public/games/*.html docs/published/*.md docs/games/*.md)
+SCAN=(public/*.html public/research/*.html public/games/*.html docs/published/*.md docs/games/*.md)
 shopt -u nullglob
 if grep -nEio 'mailto:[^"]*|[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}' "${SCAN[@]}"; then
   die "the site or a doc contains an email address — refusing to deploy"
@@ -71,11 +71,11 @@ fi
 
 npx -y firebase-tools deploy --only hosting --project "$PROJECT" --non-interactive
 
-# Pages to prove live: the home page, the docs index and the newest doc, each against its local file.
+# Pages to prove live: the home page, /games, the research index and the newest doc, each against its local file.
 NEWEST="$(.agents/skills/site-quality/scripts/check.py --newest-doc)"
 VERIFY=("/|public/index.html")
 [[ -f public/games/index.html ]] && VERIFY+=("/games|public/games/index.html")
-[[ -f public/docs/index.html ]] && VERIFY+=("/docs|public/docs/index.html")
+[[ -f public/research/index.html ]] && VERIFY+=("/research|public/research/index.html")
 [[ -n "$NEWEST" ]] && VERIFY+=("/${NEWEST%.html}|public/$NEWEST")
 
 serves_local() { # serves_local <base url> <path> <local file>

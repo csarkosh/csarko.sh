@@ -5,7 +5,7 @@ source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-0
 ---
 # Atmosphere and dread: a second shader research pass
 
-**Question:** the first pass ([Stylized shader looks](/docs/stylized-shader-looks))
+**Question:** the first pass ([Stylized shader looks](/research/stylized-shader-looks))
 surveyed eight ways games build a look out of shaders. The direction chosen from it is
 *closer to photoreal, but artsy and atmospheric*, keeping the game's ominous, eerie theme,
 with the two horror families (imitating a camera or recording medium, and shaders tied to

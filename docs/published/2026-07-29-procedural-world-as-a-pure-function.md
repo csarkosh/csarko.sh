@@ -163,7 +163,7 @@ gives 1.2. Every composed stage runs through the same harness, with sweeps on it
 window boundaries.
 
 The other derivative trap is handedness: Babylon.js is left-handed, so reversed winding lights
-terrain from below and culls it (see [Babylon.js material plugin traps](/docs/babylon-material-plugin-traps)).
+terrain from below and culls it (see [Babylon.js material plugin traps](/research/babylon-material-plugin-traps)).
 
 ## 4. The 16× bug that made mountains read as downland
 
@@ -359,7 +359,7 @@ Nothing about the world crosses the network, so any disagreement is a desync wit
 
 Version skew proved more likely than float differences: a player on a cached pre-deploy bundle
 would build a slightly different world and drift invisibly. The level id makes that a clear
-refusal. The netcode on top is in [browser co-op netcode](/docs/browser-coop-netcode).
+refusal. The netcode on top is in [browser co-op netcode](/research/browser-coop-netcode).
 
 ## 7. Rendering it kilometres out
 
@@ -378,7 +378,7 @@ and 64 m spacing, about 8.2 km across, 7 draw calls and about 90,000 quads at an
 - **Cracks.** Rings meet at a 2:1 mismatch, which leaves gaps unless the finer ring's border
   vertices are pinned to the coarser surface. That pinning is now one end of a blend over an
   upper envelope of the field; why is in
-  [floating props on procedural terrain](/docs/floating-props-on-procedural-terrain).
+  [floating props on procedural terrain](/research/floating-props-on-procedural-terrain).
 - **Incremental scrolling.** Samples depend only on world position, so when a ring moves, vertices
   still inside are copied and only new strips are sampled: about 0.67 ms per frame at a sprint,
   zero at rest. A test requires a scrolled ring to equal a fresh one.

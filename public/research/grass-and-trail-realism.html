@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Grass, wind and trails in a browser meadow · Cyrus Sarkosh</title>
   <meta name="description" content="Why game grass reads as flat, what shipped meadows do instead, wind as one shared field, and what Babylon.js on WebGL2 can afford at 60 Hz." />
-  <link rel="canonical" href="https://csarko.sh/docs/grass-and-trail-realism" />
+  <link rel="canonical" href="https://csarko.sh/research/grass-and-trail-realism" />
 
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="Cyrus Sarkosh" />
   <meta property="og:locale" content="en_US" />
-  <meta property="og:url" content="https://csarko.sh/docs/grass-and-trail-realism" />
+  <meta property="og:url" content="https://csarko.sh/research/grass-and-trail-realism" />
   <meta property="og:title" content="Grass, wind and trails in a browser meadow" />
   <meta property="og:description" content="Why game grass reads as flat, what shipped meadows do instead, wind as one shared field, and what Babylon.js on WebGL2 can afford at 60 Hz." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
@@ -44,13 +44,13 @@
   "@graph": [
     {
       "@type": "TechArticle",
-      "@id": "https://csarko.sh/docs/grass-and-trail-realism#article",
+      "@id": "https://csarko.sh/research/grass-and-trail-realism#article",
       "headline": "Grass, wind and trails in a browser meadow",
       "description": "Why game grass reads as flat, what shipped meadows do instead, wind as one shared field, and what Babylon.js on WebGL2 can afford at 60 Hz.",
       "datePublished": "2026-09-15",
       "dateModified": "2026-09-15",
-      "url": "https://csarko.sh/docs/grass-and-trail-realism",
-      "mainEntityOfPage": "https://csarko.sh/docs/grass-and-trail-realism",
+      "url": "https://csarko.sh/research/grass-and-trail-realism",
+      "mainEntityOfPage": "https://csarko.sh/research/grass-and-trail-realism",
       "wordCount": 6787,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
@@ -86,13 +86,13 @@
           "@type": "ListItem",
           "position": 2,
           "name": "Research",
-          "item": "https://csarko.sh/docs"
+          "item": "https://csarko.sh/research"
         },
         {
           "@type": "ListItem",
           "position": 3,
           "name": "Grass, wind and trails in a browser meadow",
-          "item": "https://csarko.sh/docs/grass-and-trail-realism"
+          "item": "https://csarko.sh/research/grass-and-trail-realism"
         }
       ]
     }
@@ -323,7 +323,7 @@
       <a class="wordmark" href="/">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/games">Games</a></li>
-        <li><a href="/docs">Research</a></li>
+        <li><a href="/research">Research</a></li>
       </ul>
     </div>
   </nav>
@@ -331,7 +331,7 @@
     <div class="wrap">
       <ol>
         <li><a href="/">Home</a></li>
-        <li><a href="/docs">Research</a></li>
+        <li><a href="/research">Research</a></li>
         <li><span aria-current="page">Grass, wind and trails in a browser meadow</span></li>
       </ol>
     </div>
@@ -401,7 +401,7 @@ colour is one texture with no per-instance variation, no tint from the ground an
 translucency. The ground under it is a 2 m tiled grass photo texture with normal and
 roughness/AO/height detail.</p>
 <p>The level-of-detail swap and the disc edge dissolve through a screen-space dither, described in
-<a href="/docs/no-visible-pop-in">No visible pop-in</a>. That plugin is also why every card material runs
+<a href="/research/no-visible-pop-in">No visible pop-in</a>. That plugin is also why every card material runs
 with early depth rejection off: any <code>discard</code> in a fragment shader disables it for the whole
 draw, measured at +10.7 ms roadside and +20 ms meadow when the dither was attached to opaque
 materials too.</p>
@@ -582,7 +582,7 @@ which the motes already rely on, and a texture would need a CPU mirror. And ever
 must remain an exact multiple of 2π/300 or the 300 s wrap snaps. Nothing in the wind may touch
 the simulation: sway is cosmetic, peers need not agree on phase, and a wind constant migrating
 into a tunable would move the
-<a href="/docs/procedural-world-as-a-pure-function">level id</a> that peers check before they connect.</p>
+<a href="/research/procedural-world-as-a-pure-function">level id</a> that peers check before they connect.</p>
 <p>A storm is then a parameter, not a feature: base speed up, gust amplitude up, lean angle up, the
 audio oscillator deeper, all from one record the weather preset owns.</p>
 <div class="section-head"><p class="section-label">05</p><h2 id="trails-through-grass"><a class="anchor" href="#trails-through-grass">Trails through grass</a></h2></div>
@@ -880,7 +880,7 @@ model&#39;s material, so it must stay idempotent.</li>
 frame-time samples.</li>
 </ul>
 <p>More of these are collected in
-<a href="/docs/babylon-material-plugin-traps">Babylon.js material plugin traps</a>.</p>
+<a href="/research/babylon-material-plugin-traps">Babylon.js material plugin traps</a>.</p>
 <div class="section-head"><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
 <thead>

@@ -4,6 +4,10 @@
 import { Marked } from './vendor/marked.esm.mjs';
 
 export const SITE = 'https://csarko.sh';
+// Where the docs are served: /research/<slug> and the /research index, built into public/research/.
+// Their sources stay in docs/published/. They were served at /docs until 2026-09-17, and
+// firebase.json's redirects 301 those old URLs here.
+export const DOCS_DIR = 'research';
 
 export class DocError extends Error {
   constructor(message) {
@@ -197,7 +201,7 @@ export function renderMarkdown(body, file) {
 
 // Published sources are named <YYYY-MM-DD>-<slug>.md, so the directory reads in date order.
 // The date is redundant with the front matter's "published:" (loadDoc checks they agree) and the
-// slug, not the file name, is the URL: /docs/<slug>.
+// slug, not the file name, is the URL: /research/<slug>.
 const DOC_FILE_NAME = /^(\d{4}-\d{2}-\d{2})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$/;
 
 export function parseDocFileName(name) {
@@ -245,8 +249,8 @@ export function loadDoc(name, text) {
   }
   return {
     slug,
-    url: `${SITE}/docs/${slug}`,
-    path: `/docs/${slug}`,
+    url: `${SITE}/${DOCS_DIR}/${slug}`,
+    path: `/${DOCS_DIR}/${slug}`,
     ...meta,
     modified: meta.updated ?? meta.published,
     ...renderMarkdown(body, file),
@@ -264,12 +268,12 @@ const OG_IMAGE = `${SITE}/og-image.jpg`;
 const OG_IMAGE_ALT = 'Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait';
 const LINKEDIN = 'https://www.linkedin.com/in/csarkosh';
 const INDEX_TITLE = 'Research & notes';
-// The home page's section and heading link for the docs. The URL stays /docs.
+// The home page's section and heading link for the docs, which live at /research.
 const NOTES = 'Notes';
 const INDEX_DESCRIPTION = 'Research notes and specs by Cyrus Sarkosh on game development, generative AI for media, and the software behind them.';
 const INDEX_LEAD = 'Research notes and specs from what I build and explore: game development, generative AI for media, and the software behind them.';
 const HOME_LIMIT = 3;
-// What the nav and the breadcrumb call /docs. The page's own heading is INDEX_TITLE: a trail is
+// What the nav and the breadcrumb call /research. The page's own heading is INDEX_TITLE: a trail is
 // read sideways, in one line, so it wants the shorter word.
 const DOCS_NAV = 'Research';
 // GAMES_TITLE names the page in the nav, the breadcrumb and the share card; GAMES_HEADING is the
@@ -538,7 +542,7 @@ ${DOCS_CSS}
 // The page links, in the order the whole site uses them (see public/index.html, which carries the
 // same two after its heading links). `current` marks the page you are already on. There is no
 // Home link: the wordmark to their left is it, on every page.
-const PAGE_LINKS = [['/games', GAMES_TITLE], ['/docs', DOCS_NAV]];
+const PAGE_LINKS = [['/games', GAMES_TITLE], [`/${DOCS_DIR}`, DOCS_NAV]];
 
 const nav = (current) => `  <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
@@ -576,7 +580,7 @@ ${pad}  </li>`);
 }
 
 export function docPage(doc, theme) {
-  const trail = [HOME_CRUMB, [DOCS_NAV, `${SITE}/docs`], [doc.title, doc.url]];
+  const trail = [HOME_CRUMB, [DOCS_NAV, `${SITE}/${DOCS_DIR}`], [doc.title, doc.url]];
   const graph = [
     {
       '@type': 'TechArticle',
@@ -645,7 +649,7 @@ ${FOOTER}`;
 }
 
 export function indexPage(docs, theme) {
-  const url = `${SITE}/docs`;
+  const url = `${SITE}/${DOCS_DIR}`;
   const trail = [HOME_CRUMB, [DOCS_NAV, url]];
   const graph = [
     {
@@ -665,7 +669,7 @@ export function indexPage(docs, theme) {
   ];
   return `${head({ title: `${INDEX_TITLE} · Cyrus Sarkosh`, ogTitle: INDEX_TITLE, description: INDEX_DESCRIPTION, canonical: url, ogType: 'website', graph, theme })}
 <body>
-${nav('/docs')}
+${nav(`/${DOCS_DIR}`)}
 ${crumbs(trail)}
 
   <main id="top" class="wrap docs-index" tabindex="-1">
@@ -753,18 +757,18 @@ export function homeSection(docs) {
       <p class="section-label">03 / ${NOTES}</p>
       <h2 id="notes-title">Notes from what I'm researching</h2>
 ${docList(docs.slice(0, HOME_LIMIT), 3, '      ')}
-      <a class="all-docs" href="/docs">All notes ${ARROW}</a>
+      <a class="all-docs" href="/${DOCS_DIR}">All notes ${ARROW}</a>
     </section>
     `;
 }
 
 export function sitemap(docs, games = []) {
-  // /, /games and /docs get no <lastmod>: a home-page-only edit never moves it, so it was
+  // /, /games and /research get no <lastmod>: a home-page-only edit never moves it, so it was
   // unreliable. Each doc keeps its own (updated, else published), which is a real content date.
   const entries = [
     [`${SITE}/`, null],
     ...(games.length ? [[`${SITE}/games`, null]] : []),
-    ...(docs.length ? [[`${SITE}/docs`, null]] : []),
+    ...(docs.length ? [[`${SITE}/${DOCS_DIR}`, null]] : []),
     ...docs.map((d) => [d.url, d.modified]),
   ];
   const urls = entries.map(([loc, lastmod]) =>
@@ -783,14 +787,14 @@ export function buildSite({ sources, gameSources = [], indexHtml }) {
   for (const doc of docs) {
     const name = `${doc.published}-${doc.slug}.md`;
     if (bySlug.has(doc.slug)) {
-      throw new DocError(`docs/published/: ${bySlug.get(doc.slug)} and ${name} both build /docs/${doc.slug}`);
+      throw new DocError(`docs/published/: ${bySlug.get(doc.slug)} and ${name} both build /${DOCS_DIR}/${doc.slug}`);
     }
     bySlug.set(doc.slug, name);
   }
   const theme = themeBlocks(indexHtml);
   const files = new Map();
-  for (const doc of docs) files.set(`docs/${doc.slug}.html`, docPage(doc, theme));
-  if (docs.length) files.set('docs/index.html', indexPage(docs, theme));
+  for (const doc of docs) files.set(`${DOCS_DIR}/${doc.slug}.html`, docPage(doc, theme));
+  if (docs.length) files.set(`${DOCS_DIR}/index.html`, indexPage(docs, theme));
   if (games.length) files.set('games/index.html', gamesPage(games, theme));
   files.set('sitemap.xml', sitemap(docs, games));
   files.set('index.html', replaceBlock(indexHtml, 'docs', homeSection(docs)));

@@ -48,7 +48,7 @@ translucency. The ground under it is a 2 m tiled grass photo texture with normal
 roughness/AO/height detail.
 
 The level-of-detail swap and the disc edge dissolve through a screen-space dither, described in
-[No visible pop-in](/docs/no-visible-pop-in). That plugin is also why every card material runs
+[No visible pop-in](/research/no-visible-pop-in). That plugin is also why every card material runs
 with early depth rejection off: any `discard` in a fragment shader disables it for the whole
 draw, measured at +10.7 ms roadside and +20 ms meadow when the dither was attached to opaque
 materials too.
@@ -241,7 +241,7 @@ which the motes already rely on, and a texture would need a CPU mirror. And ever
 must remain an exact multiple of 2π/300 or the 300 s wrap snaps. Nothing in the wind may touch
 the simulation: sway is cosmetic, peers need not agree on phase, and a wind constant migrating
 into a tunable would move the
-[level id](/docs/procedural-world-as-a-pure-function) that peers check before they connect.
+[level id](/research/procedural-world-as-a-pure-function) that peers check before they connect.
 
 A storm is then a parameter, not a feature: base speed up, gust amplitude up, lean angle up, the
 audio oscillator deeper, all from one record the weather preset owns.
@@ -528,7 +528,7 @@ game-like" to "grounded and windy"; D is what makes it "full".
   frame-time samples.
 
 More of these are collected in
-[Babylon.js material plugin traps](/docs/babylon-material-plugin-traps).
+[Babylon.js material plugin traps](/research/babylon-material-plugin-traps).
 
 ## Sources
 

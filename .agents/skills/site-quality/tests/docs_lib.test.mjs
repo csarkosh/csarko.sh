@@ -127,8 +127,8 @@ test('parseDocFileName rejects anything but <YYYY-MM-DD>-<slug>.md', () => {
 test('loadDoc combines front matter and rendering', () => {
   const d = loadDoc('2026-09-14-shader-looks.md', SOURCE);
   assert.equal(d.slug, 'shader-looks');
-  assert.equal(d.url, 'https://csarko.sh/docs/shader-looks');
-  assert.equal(d.path, '/docs/shader-looks');
+  assert.equal(d.url, 'https://csarko.sh/research/shader-looks');
+  assert.equal(d.path, '/research/shader-looks');
   assert.equal(d.title, 'Title');
   assert.equal(d.description, DESC);
   assert.equal(d.published, '2026-09-14');
@@ -200,8 +200,8 @@ test('docPage has the tags, JSON-LD and markers the checks expect', () => {
   const html = docPage(doc('shader-looks', '2026-09-14', `updated: 2026-09-15\nsource: ${source}\n`), themeBlocks(INDEX));
   assert.ok(html.startsWith('<!doctype html>\n<html lang="en">'));
   assert.ok(html.includes('<title>shader-looks title · Cyrus Sarkosh</title>'));
-  assert.ok(html.includes('<link rel="canonical" href="https://csarko.sh/docs/shader-looks" />'));
-  assert.ok(html.includes('<meta property="og:url" content="https://csarko.sh/docs/shader-looks" />'));
+  assert.ok(html.includes('<link rel="canonical" href="https://csarko.sh/research/shader-looks" />'));
+  assert.ok(html.includes('<meta property="og:url" content="https://csarko.sh/research/shader-looks" />'));
   assert.ok(html.includes('<meta property="og:type" content="article" />'));
   assert.ok(html.includes('<meta property="article:published_time" content="2026-09-14" />'));
   assert.ok(html.includes('<meta property="article:modified_time" content="2026-09-15" />'));
@@ -222,34 +222,34 @@ test('docPage has the tags, JSON-LD and markers the checks expect', () => {
   assert.deepEqual(article.author, personNode);
   assert.deepEqual(article.publisher, personNode);
   assert.deepEqual(article.isPartOf, { '@id': 'https://csarko.sh/#website' });
-  assert.equal(article.url, 'https://csarko.sh/docs/shader-looks');
+  assert.equal(article.url, 'https://csarko.sh/research/shader-looks');
   assert.equal(article.dateModified, '2026-09-15');
   assert.deepEqual(article.sameAs, [source]);
   const crumbs = graph.find((n) => n['@type'] === 'BreadcrumbList').itemListElement.map((i) => i.item);
-  assert.deepEqual(crumbs, ['https://csarko.sh/', 'https://csarko.sh/docs', 'https://csarko.sh/docs/shader-looks']);
+  assert.deepEqual(crumbs, ['https://csarko.sh/', 'https://csarko.sh/research', 'https://csarko.sh/research/shader-looks']);
 });
 
 test('indexPage lists every doc with CollectionPage JSON-LD', () => {
   const html = indexPage(sortDocs([doc('a', '2026-01-01'), doc('b', '2026-03-01')]), themeBlocks(INDEX));
   assert.ok(html.includes('<title>Research &amp; notes · Cyrus Sarkosh</title>'));
-  assert.ok(html.includes('<p class="eyebrow">Notes</p>'));
-  assert.ok(html.includes('<link rel="canonical" href="https://csarko.sh/docs" />'));
+  assert.ok(html.includes('<p class="eyebrow">Research</p>'));
+  assert.ok(html.includes('<link rel="canonical" href="https://csarko.sh/research" />'));
   assert.ok(html.includes('<meta property="og:type" content="website" />'));
-  assert.deepEqual([...html.matchAll(/<h2 class="doc-title"><a class="stretch" href="\/docs\/([a-z]+)">/g)].map((m) => m[1]), ['b', 'a']);
+  assert.deepEqual([...html.matchAll(/<h2 class="doc-title"><a class="stretch" href="\/research\/([a-z]+)">/g)].map((m) => m[1]), ['b', 'a']);
   // Every entry is a card whose whole surface is the link (see .stretch in DOCS_CSS).
   assert.equal([...html.matchAll(/<li class="card">/g)].length, 2);
   const page = jsonLd(html).find((n) => n['@type'] === 'CollectionPage');
-  assert.deepEqual(page.mainEntity.itemListElement.map((i) => i.url), ['https://csarko.sh/docs/b', 'https://csarko.sh/docs/a']);
+  assert.deepEqual(page.mainEntity.itemListElement.map((i) => i.url), ['https://csarko.sh/research/b', 'https://csarko.sh/research/a']);
 });
 
 test('homeSection lists the three newest docs and is empty with none', () => {
   const html = homeSection(sortDocs([doc('a', '2026-01-01'), doc('b', '2026-03-01'), doc('c', '2026-02-01'), doc('d', '2026-03-01')]));
-  assert.deepEqual([...html.matchAll(/href="\/docs\/([a-z]+)"/g)].map((m) => m[1]), ['b', 'd', 'c']);
+  assert.deepEqual([...html.matchAll(/href="\/research\/([a-z]+)"/g)].map((m) => m[1]), ['b', 'd', 'c']);
   assert.ok(html.includes('<section id="notes" aria-labelledby="notes-title">'));
   assert.ok(html.includes('<p class="section-label">03 / Notes</p>'));
   assert.ok(html.includes('<h2 id="notes-title">Notes from what I\'m researching</h2>'));
-  assert.ok(html.includes('<h3 class="doc-title"><a class="stretch" href="/docs/b">b title</a></h3>'));
-  assert.ok(html.includes('<a class="all-docs" href="/docs">All notes'));
+  assert.ok(html.includes('<h3 class="doc-title"><a class="stretch" href="/research/b">b title</a></h3>'));
+  assert.ok(html.includes('<a class="all-docs" href="/research">All notes'));
   assert.equal(homeSection([]), '\n    ');
 });
 
@@ -258,10 +258,10 @@ test('sitemap lists home, the index and every doc, with lastmod only on docs', (
     '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>https://csarko.sh/</loc>\n  </url>\n</urlset>\n');
   const xml = sitemap(sortDocs([doc('a', '2026-01-01'), doc('b', '2026-03-01', 'updated: 2026-04-01\n')]));
   assert.ok(xml.includes('  <url>\n    <loc>https://csarko.sh/</loc>\n  </url>'), '/ has no lastmod');
-  assert.ok(xml.includes('  <url>\n    <loc>https://csarko.sh/docs</loc>\n  </url>'), '/docs has no lastmod');
+  assert.ok(xml.includes('  <url>\n    <loc>https://csarko.sh/research</loc>\n  </url>'), '/research has no lastmod');
   assert.deepEqual([...xml.matchAll(/<loc>(.*?)<\/loc>\n    <lastmod>(.*?)<\/lastmod>/g)].map((m) => [m[1], m[2]]), [
-    ['https://csarko.sh/docs/b', '2026-04-01'],
-    ['https://csarko.sh/docs/a', '2026-01-01'],
+    ['https://csarko.sh/research/b', '2026-04-01'],
+    ['https://csarko.sh/research/a', '2026-01-01'],
   ]);
 });
 
@@ -269,7 +269,7 @@ test('buildSite writes every output, deterministically, and nothing extra with n
   const sources = [src('b', '2026-03-01'), src('a', '2026-01-01')];
   const one = buildSite({ sources, indexHtml: INDEX });
   const two = buildSite({ sources: [...sources].reverse(), indexHtml: INDEX });
-  assert.deepEqual([...one.keys()].sort(), ['docs/a.html', 'docs/b.html', 'docs/index.html', 'index.html', 'sitemap.xml']);
+  assert.deepEqual([...one.keys()].sort(), ['index.html', 'research/a.html', 'research/b.html', 'research/index.html', 'sitemap.xml']);
   assert.deepEqual(Object.fromEntries(one), Object.fromEntries(two));
   assert.ok(one.get('index.html').includes('<section id="notes"'));
   const empty = buildSite({ sources: [], indexHtml: INDEX });
@@ -281,7 +281,7 @@ test('buildSite refuses two dates claiming one slug, instead of overwriting the 
   const sources = [src('a', '2026-01-01'), src('a', '2026-04-01')];
   assert.throws(
     () => buildSite({ sources, indexHtml: INDEX }),
-    (e) => e instanceof DocError && /2026-04-01-a\.md and 2026-01-01-a\.md both build \/docs\/a/.test(e.message));
+    (e) => e instanceof DocError && /2026-04-01-a\.md and 2026-01-01-a\.md both build \/research\/a/.test(e.message));
 });
 
 // ---------------------------------------------------------------- games
@@ -347,7 +347,7 @@ test('gamesPage lists every game with VideoGame JSON-LD and marks itself current
   assert.ok(html.includes('<link rel="canonical" href="https://csarko.sh/games" />'));
   assert.ok(html.includes('<meta property="og:type" content="website" />'));
   assert.ok(html.includes('<li><a href="/games" aria-current="page">Games</a></li>'));
-  assert.ok(html.includes('<li><a href="/docs">Research</a></li>'));
+  assert.ok(html.includes('<li><a href="/research">Research</a></li>'));
   assert.ok(html.includes('<p class="game-kicker">Playable now · No install</p>'));
   assert.ok(html.includes('<ul class="tags" role="list"><li>TypeScript</li><li>Babylon.js</li></ul>'));
   // The play link is the card's own, stretched over it, styled as the home page's card link; the
@@ -378,10 +378,10 @@ test('a game with no links renders no card link and falls back to the page URL i
   assert.equal(page.mainEntity.itemListElement[0].item.url, 'https://csarko.sh/games');
 });
 
-test('sitemap carries /games before /docs, both without a lastmod', () => {
+test('sitemap carries /games before /research, both without a lastmod', () => {
   const xml = sitemap([doc('a', '2026-01-01')], [game('day-hike')]);
   assert.deepEqual([...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]),
-    ['https://csarko.sh/', 'https://csarko.sh/games', 'https://csarko.sh/docs', 'https://csarko.sh/docs/a']);
+    ['https://csarko.sh/', 'https://csarko.sh/games', 'https://csarko.sh/research', 'https://csarko.sh/research/a']);
   assert.ok(!/<loc>https:\/\/csarko\.sh\/games<\/loc>\n\s*<lastmod>/.test(xml));
   assert.ok(!sitemap([doc('a', '2026-01-01')]).includes('/games'));
 });
@@ -400,7 +400,7 @@ const crumbNames = (html) =>
 test('every generated page carries a trail its BreadcrumbList repeats exactly', () => {
   const theme = themeBlocks(INDEX);
   const cases = [
-    [docPage(doc('shader-looks', '2026-09-14'), theme), [['Home', '/'], ['Research', '/docs'], ['shader-looks title', undefined]]],
+    [docPage(doc('shader-looks', '2026-09-14'), theme), [['Home', '/'], ['Research', '/research'], ['shader-looks title', undefined]]],
     [indexPage([doc('a', '2026-01-01')], theme), [['Home', '/'], ['Research', undefined]]],
     [gamesPage([game('day-hike')], theme), [['Home', '/'], ['Games', undefined]]],
   ];
@@ -419,10 +419,10 @@ test('a crumb escapes its title and names the same page the nav marks current', 
   const html = docPage(amp, theme);
   assert.ok(html.includes('<li><span aria-current="page">Grass &amp; trails</span></li>'));
   assert.equal(crumbNames(html).at(-1), 'Grass & trails');
-  // A doc page is under /docs without being it, so the nav marks nothing current while the
+  // A doc page is under /research without being it, so the nav marks nothing current while the
   // trail still links there; the two index pages mark themselves in both places.
   assert.ok(!docPage(amp, theme).includes('aria-current="page">Research'));
-  assert.ok(indexPage([doc('a', '2026-01-01')], theme).includes('<li><a href="/docs" aria-current="page">Research</a></li>'));
+  assert.ok(indexPage([doc('a', '2026-01-01')], theme).includes('<li><a href="/research" aria-current="page">Research</a></li>'));
 });
 
 test('buildSite writes the games index only when a game exists', () => {

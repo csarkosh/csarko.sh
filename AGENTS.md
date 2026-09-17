@@ -3,7 +3,8 @@
 Cyrus Sarkosh's portfolio site, live at **https://csarko.sh**. A home page (who
 he is, where he's worked, the games he builds, his skills, and how to reach him),
 a games list at **https://csarko.sh/games** and research docs at
-**https://csarko.sh/docs**. No framework and no CI; the one build step,
+**https://csarko.sh/research** (served at `/docs` until 2026-09-17; those URLs
+now 301 there). No framework and no CI; the one build step,
 `generate-assets.sh`, also turns `docs/published/*.md` and `docs/games/*.md`
 into pages.
 
@@ -18,11 +19,11 @@ into pages.
 | `public/404.html` | Custom not-found page (noindex, root-relative paths). |
 | `public/licenses/fonts-OFL.txt` | Font licenses. |
 | `public/robots.txt` | Crawl rules. |
-| `docs/published/<YYYY-MM-DD>-<slug>.md` | **Published docs, source of truth.** Markdown with front matter, one file per doc, named for its `published:` date (the build fails if the two disagree). The URL is the slug alone: `/docs/<slug>`, no date. The repo is public, so committing a file here publishes it; use the `publish-doc` skill. |
+| `docs/published/<YYYY-MM-DD>-<slug>.md` | **Published docs, source of truth.** Markdown with front matter, one file per doc, named for its `published:` date (the build fails if the two disagree). The URL is the slug alone: `/research/<slug>`, no date. The repo is public, so committing a file here publishes it; use the `publish-doc` skill. |
 | `docs/games/<slug>.md` | **The games, source of truth.** Markdown with front matter, one file per game, named for the slug alone: a game is not a dated log entry, so a date prefix is refused (`released:` in the front matter is the date). The repo is public, so committing a file here publishes it. |
-| `public/docs/`, `public/games/`, `public/sitemap.xml` | **Generated** from `docs/published/` and `docs/games/` by `build_docs.mjs` (run by `generate-assets.sh`), along with the `generated:docs` block in `index.html`. |
+| `public/research/`, `public/games/`, `public/sitemap.xml` | **Generated** from `docs/published/` and `docs/games/` by `build_docs.mjs` (run by `generate-assets.sh`), along with the `generated:docs` block in `index.html`. |
 | `docs/superpowers/` | Internal design specs and implementation plans. **Never published** (unlike its siblings `docs/published/` and `docs/games/`, which are). |
-| `firebase.json`, `.firebaserc` | Firebase Hosting config: publish `public/`, cache headers. |
+| `firebase.json`, `.firebaserc` | Firebase Hosting config: publish `public/`, cache headers, and the 301 redirects from the old `/docs` URLs to `/research` (keep them: old links and search results still use them). |
 | `_infra/` | Terraform for the hosting and DNS. Same shape as `~/Projects/fps/_infra`. |
 | `.agents/skills/` | Agent skills: `preview`, `deploy`, `site-quality` and `publish-doc`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
 | `.claude/settings.json` | Imports the shared skill plugins from [`csarkosh/skills-general`](https://github.com/csarkosh/skills-general): `general:doc-preview` (open a markdown doc as a styled page in Chrome; not this repo's `preview`, which previews the site) and `general:search-console` (Google Search Console reports: indexing, sitemap, search performance) and `general-claude:doc-artifact` (publish a doc as a claude.ai Artifact). Change those skills in `skills-general`, not here. On a machine that has never installed them, run `claude plugin install general@csarkosh` and `claude plugin install general-claude@csarkosh`. Codex has no per-repository import: run `codex plugin marketplace add csarkosh/skills-general` and `codex plugin add general@csarkosh` once per machine. |
@@ -31,13 +32,13 @@ into pages.
 ## Workflows
 
 - **See a change:** `.agents/skills/preview/scripts/preview.sh` (opens the home page
-  from disk; use `--serve` for `/games`, `/docs` and their links) or `--shots` for
+  from disk; use `--serve` for `/games`, `/research` and their links) or `--shots` for
   desktop + mobile screenshots of the home page, `/games` and the newest doc, in
   both the dark and light themes, in `/tmp/csarko-sh-preview/`. After any visual
   edit, look at the screenshots in both themes before calling it done.
 - **Publish a doc:** the `publish-doc` skill.
 - **Ship a change:** `.agents/skills/deploy/scripts/deploy.sh`. It verifies the
-  deployed home page, `/games`, docs index and newest doc byte-for-byte on both
+  deployed home page, `/games`, `/research` and newest doc byte-for-byte on both
   the web.app URL and csarko.sh. `--preview` gives a 7-day shareable channel
   instead.
 - **Change infrastructure:** `terraform -chdir=_infra plan`, then `apply`. Never
@@ -94,7 +95,8 @@ three from the command line):
   live one lists 13 since `/games` shipped. `gsc.py sitemap --resubmit` asks for
   a refetch (the only write the skill makes, and the only way to hurry one);
   Google still refetches on its own schedule, usually within a day or two.
-- **Indexed:** `/`, `/docs`, and every doc but one. Not yet:
+- **Indexed** (before the move to `/research`, below): `/`, `/docs`, and every
+  doc but one. Not yet:
   `/games` ("Discovered, currently not indexed", shipped 2026-09-15) and
   `/docs/browser-coop-netcode` ("Crawled, currently not indexed"). Both are
   Google's own crawl scheduling rather than a fault on the page, and a second
@@ -106,6 +108,12 @@ three from the command line):
   those pages are already indexed and the trail only changes how a result is
   displayed, so **don't spend the quota re-requesting them**; Google picks the
   new names up on its own recrawl.
+- **Docs moved to `/research`, 2026-09-17.** `/docs` and every `/docs/<slug>`
+  301 to `/research` and `/research/<slug>` (`firebase.json` `redirects`), and
+  the sitemap lists only the new URLs. Google transfers the old URLs' indexing
+  to the new ones as it recrawls the redirects; expect both to show in reports
+  for a few weeks. Resubmit the sitemap after the deploy, and spend Request
+  indexing on `/research` and new docs only.
 - A Domain property covers **every host** under `csarko.sh`, so search reports
   still carry rows for the retired subdomains and the old React site's
   `/contact` and `/projects`.
@@ -114,8 +122,8 @@ three from the command line):
   all URLs with this prefix"). They lapse around 2027-03. They shouldn't need
   renewing, since those hosts no longer resolve.
 - After a meaningful content change or a new doc, use URL Inspection → Request
-  indexing for the changed URLs (`https://csarko.sh/`, `https://csarko.sh/docs`,
-  `https://csarko.sh/docs/<slug>`).
+  indexing for the changed URLs (`https://csarko.sh/`, `https://csarko.sh/research`,
+  `https://csarko.sh/research/<slug>`).
 
 ## Content rules (Cyrus's standing preferences)
 
@@ -171,24 +179,25 @@ three from the command line):
   short teaser of what he builds for fun, not that list.
 - **The blog is "csarko.log"** at `https://csarko.substack.com/`. It has no
   published posts yet; Cyrus will publish once Day Hike is ready to publicize.
-- **Docs** *(added 2026-09-15)*: research notes and specs at `/docs` (the nav
+- **Docs** *(added 2026-09-15)*: research notes and specs at `/research`
+  (*moved from `/docs`, 2026-09-17; the old URLs 301 to the new ones*; the nav
   calls the page `Research`; the page's own H1 is "Research & notes" and its eyebrow
   "Research", *renamed from "Research & docs" / "Docs", 2026-09-16; the eyebrow
-  was briefly "Notes"*; the URL stays
-  `/docs`. The home page's section is `03 / Notes` (`#notes`), with a `Notes`
+  was briefly "Notes"*. Only the URL moved: the sources stay in `docs/published/`
+  and the code still calls them docs. The home page's section is `03 / Notes` (`#notes`), with a `Notes`
   heading link after `Projects` in its nav), copied
   into `docs/published/` as `<YYYY-MM-DD>-<slug>.md` (the published copy is the
   source of truth; the URL is the slug, without the date). The page copy rules
   apply (no email, phone or em-dashes): the build rejects em-dashes in both
   `docs/published/` and `docs/games/`, and `deploy.sh` rejects email addresses
-  and phone numbers (its scan covers `public/*.html`, `public/docs/*.html`,
+  and phone numbers (its scan covers `public/*.html`, `public/research/*.html`,
   `public/games/*.html`, `docs/published/*.md` and `docs/games/*.md`). Docs
   from private repositories such as `magicpixel.ai` need Cyrus's OK per doc, and
   never describe the commercial asset pipeline. Launched with
   `stylized-shader-looks`, from `game-dayhike`.
 - **Breadcrumbs** *(added 2026-09-15)*: every generated page carries a trail
   under the nav (`Home › Research › <title>` on a doc, `Home › Research` on
-  `/docs`, `Home › Games` on `/games`); the home page and `404.html` carry none.
+  `/research`, `Home › Games` on `/games`); the home page and `404.html` carry none.
   A doc page's eyebrow is therefore the date alone, not `Research · <date>`. The
   trail and the page's `BreadcrumbList` JSON-LD are one array in `docs_lib.mjs`
   and `check.py` fails the build if they drift apart; see `site-quality`,

@@ -35,15 +35,16 @@ refuse a stale `public/`.
 2. **Reads every identifier from Terraform outputs** (`_infra`), never from
    memory.
 3. Runs `npx firebase-tools deploy --only hosting`.
-4. **Verifies** by fetching `/`, `/games`, `/docs` and the newest doc from the
+4. **Verifies** by fetching `/`, `/games`, `/research` and the newest doc from the
    `web.app` URL and from `https://csarko.sh`, comparing SHA-256 against the
    local files.
    The web.app check must pass; the custom-domain check is reported but only
    warns, since CDN propagation can lag a few seconds.
 5. **Checks the live site** (`check.py --live`): security headers match
    `firebase.json`, hashed assets are cached immutably, the custom 404 is served,
-   robots/sitemap/og-image/favicons, `/games`, `/docs` and every doc (200, same
-   CSP, clean-URL redirects), every sitemap URL, http→https, the www redirect,
+   robots/sitemap/og-image/favicons, `/games`, `/research` and every doc (200, same
+   CSP, clean-URL redirects), the 301s from the old `/docs` URLs, every
+   sitemap URL, http→https, the www redirect,
    and the size of any third-party JavaScript.
 
 ## Before deploying

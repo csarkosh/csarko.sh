@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>An endless world as a pure function · Cyrus Sarkosh</title>
   <meta name="description" content="Unbounded mountains, a warped coastline, a highway and cliff bands built as pure C² functions with exact derivatives, so every peer builds one world." />
-  <link rel="canonical" href="https://csarko.sh/docs/procedural-world-as-a-pure-function" />
+  <link rel="canonical" href="https://csarko.sh/research/procedural-world-as-a-pure-function" />
 
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="Cyrus Sarkosh" />
   <meta property="og:locale" content="en_US" />
-  <meta property="og:url" content="https://csarko.sh/docs/procedural-world-as-a-pure-function" />
+  <meta property="og:url" content="https://csarko.sh/research/procedural-world-as-a-pure-function" />
   <meta property="og:title" content="An endless world as a pure function" />
   <meta property="og:description" content="Unbounded mountains, a warped coastline, a highway and cliff bands built as pure C² functions with exact derivatives, so every peer builds one world." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
@@ -44,13 +44,13 @@
   "@graph": [
     {
       "@type": "TechArticle",
-      "@id": "https://csarko.sh/docs/procedural-world-as-a-pure-function#article",
+      "@id": "https://csarko.sh/research/procedural-world-as-a-pure-function#article",
       "headline": "An endless world as a pure function",
       "description": "Unbounded mountains, a warped coastline, a highway and cliff bands built as pure C² functions with exact derivatives, so every peer builds one world.",
       "datePublished": "2026-07-29",
       "dateModified": "2026-07-29",
-      "url": "https://csarko.sh/docs/procedural-world-as-a-pure-function",
-      "mainEntityOfPage": "https://csarko.sh/docs/procedural-world-as-a-pure-function",
+      "url": "https://csarko.sh/research/procedural-world-as-a-pure-function",
+      "mainEntityOfPage": "https://csarko.sh/research/procedural-world-as-a-pure-function",
       "wordCount": 4117,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
@@ -83,13 +83,13 @@
           "@type": "ListItem",
           "position": 2,
           "name": "Research",
-          "item": "https://csarko.sh/docs"
+          "item": "https://csarko.sh/research"
         },
         {
           "@type": "ListItem",
           "position": 3,
           "name": "An endless world as a pure function",
-          "item": "https://csarko.sh/docs/procedural-world-as-a-pure-function"
+          "item": "https://csarko.sh/research/procedural-world-as-a-pure-function"
         }
       ]
     }
@@ -320,7 +320,7 @@
       <a class="wordmark" href="/">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/games">Games</a></li>
-        <li><a href="/docs">Research</a></li>
+        <li><a href="/research">Research</a></li>
       </ul>
     </div>
   </nav>
@@ -328,7 +328,7 @@
     <div class="wrap">
       <ol>
         <li><a href="/">Home</a></li>
-        <li><a href="/docs">Research</a></li>
+        <li><a href="/research">Research</a></li>
         <li><span aria-current="page">An endless world as a pure function</span></li>
       </ol>
     </div>
@@ -574,7 +574,7 @@ steepest slope in the same sweep. Measured worst ratios at the original config w
 gives 1.2. Every composed stage runs through the same harness, with sweeps on its band edges and
 window boundaries.</p>
 <p>The other derivative trap is handedness: Babylon.js is left-handed, so reversed winding lights
-terrain from below and culls it (see <a href="/docs/babylon-material-plugin-traps">Babylon.js material plugin traps</a>).</p>
+terrain from below and culls it (see <a href="/research/babylon-material-plugin-traps">Babylon.js material plugin traps</a>).</p>
 <div class="section-head"><p class="section-label">04</p><h2 id="the-16-bug-that-made-mountains-read-as-downland"><a class="anchor" href="#the-16-bug-that-made-mountains-read-as-downland">The 16× bug that made mountains read as downland</a></h2></div>
 <p>With the pipeline, clipmap and derivative test in place, the browser showed broad ridges and a
 readable valley system, but soft rounded ridgelines, no rock faces, and a nearly flat-topped
@@ -736,7 +736,7 @@ did not help. The version number remains for changes no digest can see, such as 
 </ul>
 <p>Version skew proved more likely than float differences: a player on a cached pre-deploy bundle
 would build a slightly different world and drift invisibly. The level id makes that a clear
-refusal. The netcode on top is in <a href="/docs/browser-coop-netcode">browser co-op netcode</a>.</p>
+refusal. The netcode on top is in <a href="/research/browser-coop-netcode">browser co-op netcode</a>.</p>
 <div class="section-head"><p class="section-label">07</p><h2 id="rendering-it-kilometres-out"><a class="anchor" href="#rendering-it-kilometres-out">Rendering it kilometres out</a></h2></div>
 <p>The forest&#39;s fog sat at 70 m, right for dense trees and useless for mountains, which only exist
 as mountains at distance. Brute force is out: 2 km of view at 32 m chunks is over 16,000 chunks.</p>
@@ -752,7 +752,7 @@ ring&#39;s lattice, keeping that ring&#39;s hole aligned to whole cells at every
 <li><strong>Cracks.</strong> Rings meet at a 2:1 mismatch, which leaves gaps unless the finer ring&#39;s border
 vertices are pinned to the coarser surface. That pinning is now one end of a blend over an
 upper envelope of the field; why is in
-<a href="/docs/floating-props-on-procedural-terrain">floating props on procedural terrain</a>.</li>
+<a href="/research/floating-props-on-procedural-terrain">floating props on procedural terrain</a>.</li>
 <li><strong>Incremental scrolling.</strong> Samples depend only on world position, so when a ring moves, vertices
 still inside are copied and only new strips are sampled: about 0.67 ms per frame at a sprint,
 zero at rest. A test requires a scrolled ring to equal a fresh one.</li>

@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """
 serve.py — serve public/ on localhost the way Firebase Hosting routes it
-(cleanUrls: true, trailingSlash: false), so root-relative links and /docs work locally.
+(cleanUrls: true, trailingSlash: false, and firebase.json's redirects), so root-relative links
+and /research work locally.
 
 Usage:
   serve.py [--port 4173] [--dir public]
 
   /                      index.html
-  /docs                  docs/index.html
-  /docs/x                docs/x.html
-  /docs/  and  /x.html   301 to the clean URL
+  /research              research/index.html
+  /research/x            research/x.html
+  /docs, /docs/x         301 to /research, /research/x (firebase.json "redirects")
+  /research/ and /x.html 301 to the clean URL
   anything else          404.html, status 404
 
 Headers are not Firebase's (no CSP); check.py --live covers those on the real site.
@@ -17,7 +19,9 @@ Headers are not Firebase's (no CSP); check.py --live covers those on the real si
 
 import argparse
 import http.server
+import json
 import mimetypes
+import re
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
@@ -25,8 +29,25 @@ for _type, _ext in (("font/woff2", ".woff2"), ("image/avif", ".avif"), ("image/w
     mimetypes.add_type(_type, _ext)
 
 
-def route(public, raw_path):
-    """(200, file) | (301, location) | (404, public/404.html) for a request path."""
+FIREBASE_JSON = Path(__file__).resolve().parents[4] / "firebase.json"
+
+
+def load_redirects(config=FIREBASE_JSON):
+    """firebase.json's hosting.redirects as (pattern, destination) pairs. Only the source syntax
+    this site uses is supported: literal segments, ":name" for one segment, ":name*" for the rest."""
+    pairs = []
+    for r in json.loads(Path(config).read_text()).get("hosting", {}).get("redirects", []):
+        parts = []
+        for seg in r["source"].split("/"):
+            m = re.fullmatch(r":(\w+)(\*?)", seg)
+            parts.append(re.escape(seg) if not m else f"(?P<{m[1]}>.*)" if m[2] else f"(?P<{m[1]}>[^/]+)")
+        pairs.append((re.compile("/".join(parts)), r["destination"]))
+    return pairs
+
+
+def route(public, raw_path, redirects=()):
+    """(200, file) | (301, location) | (404, public/404.html) for a request path. Configured
+    redirects come first, as on Firebase, then its clean-URL rules."""
     # A path starting "//" or "/\" is protocol-relative to a browser (it becomes the network
     # path reference //host/...), so an unqualified Location built from it would redirect
     # off-site. Collapse before anything else touches the path.
@@ -36,6 +57,9 @@ def route(public, raw_path):
     parts = urlsplit(raw_path)
     path = unquote(parts.path) or "/"
     query = f"?{parts.query}" if parts.query else ""
+    for pattern, destination in redirects:
+        if m := pattern.fullmatch(path):
+            return 301, re.sub(r":(\w+)", lambda g: m[g[1]], destination) + query
     if path != "/" and path.endswith("/"):
         return 301, path.rstrip("/") + query
     if path.endswith(".html"):
@@ -55,6 +79,7 @@ def route(public, raw_path):
 
 class Handler(http.server.BaseHTTPRequestHandler):
     public = Path("public")
+    redirects = ()
 
     def do_GET(self):
         self.respond(send_body=True)
@@ -63,7 +88,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.respond(send_body=False)
 
     def respond(self, send_body):
-        status, target = route(self.public, self.path)
+        status, target = route(self.public, self.path, self.redirects)
         if status == 301:
             self.send_response(301)
             self.send_header("Location", target)
@@ -89,6 +114,7 @@ def main():
     parser.add_argument("--dir", default=str(Path(__file__).resolve().parents[4] / "public"))
     args = parser.parse_args()
     Handler.public = Path(args.dir)
+    Handler.redirects = load_redirects()
     server = http.server.ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     print(f"serving {args.dir} on http://localhost:{args.port}", flush=True)
     server.serve_forever()

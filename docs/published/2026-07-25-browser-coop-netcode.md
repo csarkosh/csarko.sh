@@ -23,7 +23,7 @@ The architecture is summarized in the game's public
 [ARCHITECTURE.md](https://github.com/csarkosh/game-dayhike/blob/main/ARCHITECTURE.md). This
 article covers the protocol and the reasons behind it. The hosting half, the signaling server
 on Cloud Run and what broke there, is in
-[WebRTC signaling on Cloud Run](/docs/webrtc-signaling-on-cloud-run).
+[WebRTC signaling on Cloud Run](/research/webrtc-signaling-on-cloud-run).
 
 The game began as a co-op shooter with a rifle, hitscan and roaming enemies, and several of
 these decisions were made for that game. Where the shipped code has moved on, the text says so.
@@ -43,7 +43,7 @@ Because the match is peer to peer, a signaling outage in the middle of a match l
 own game running; a follower whose signaling socket drops is a different story, since the host
 removes it from the game and the follower's client makes one attempt to reconnect. The trade-off,
 including why it removes every follower about once an hour when their socket reaches its time
-limit, is in [WebRTC signaling on Cloud Run](/docs/webrtc-signaling-on-cloud-run).
+limit, is in [WebRTC signaling on Cloud Run](/research/webrtc-signaling-on-cloud-run).
 
 A restrictive network that STUN cannot get through fails after a 15-second ICE timeout with an
 error that says you or the host may be on a restrictive network, rather than hanging.
@@ -86,7 +86,7 @@ Floating-point maths is the remaining hazard. A sine and a cosine in movement's 
 on both sides and during every replay; they are a known cross-engine risk that a fixed-point angle
 representation would retire, and they have not been retired yet. The rest of the determinism
 guarantees, including how the level id folds in the seed and refuses a mismatched world, are
-covered in [An endless world as a pure function](/docs/procedural-world-as-a-pure-function).
+covered in [An endless world as a pure function](/research/procedural-world-as-a-pure-function).
 
 ## 3. Solo is a host with zero peers
 
@@ -325,7 +325,7 @@ after trimming, or runs past 24 characters becomes `Hiker`.
 The change also removed a race where a follower that reconnected before the host could recreate
 the room with itself as host; that race, why every socket in a room can drop at once, and how
 reconnection now plays out are told in
-[WebRTC signaling on Cloud Run](/docs/webrtc-signaling-on-cloud-run).
+[WebRTC signaling on Cloud Run](/research/webrtc-signaling-on-cloud-run).
 
 Some limits are deliberate. There is no host migration: a host closing the tab or reloading ends
 the lobby for everyone, and a follower who reloads drops out and needs the link again. Once the

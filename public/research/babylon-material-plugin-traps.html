@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Babylon.js material plugins: hooks and traps · Cyrus Sarkosh</title>
   <meta name="description" content="Where Babylon.js 9.18 injects material plugin GLSL, what each PBR hook can see, and the silent failures behind preprocessor, comment and bake traps." />
-  <link rel="canonical" href="https://csarko.sh/docs/babylon-material-plugin-traps" />
+  <link rel="canonical" href="https://csarko.sh/research/babylon-material-plugin-traps" />
 
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="Cyrus Sarkosh" />
   <meta property="og:locale" content="en_US" />
-  <meta property="og:url" content="https://csarko.sh/docs/babylon-material-plugin-traps" />
+  <meta property="og:url" content="https://csarko.sh/research/babylon-material-plugin-traps" />
   <meta property="og:title" content="Babylon.js material plugins: hooks and traps" />
   <meta property="og:description" content="Where Babylon.js 9.18 injects material plugin GLSL, what each PBR hook can see, and the silent failures behind preprocessor, comment and bake traps." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
@@ -44,13 +44,13 @@
   "@graph": [
     {
       "@type": "TechArticle",
-      "@id": "https://csarko.sh/docs/babylon-material-plugin-traps#article",
+      "@id": "https://csarko.sh/research/babylon-material-plugin-traps#article",
       "headline": "Babylon.js material plugins: hooks and traps",
       "description": "Where Babylon.js 9.18 injects material plugin GLSL, what each PBR hook can see, and the silent failures behind preprocessor, comment and bake traps.",
       "datePublished": "2026-08-17",
       "dateModified": "2026-08-17",
-      "url": "https://csarko.sh/docs/babylon-material-plugin-traps",
-      "mainEntityOfPage": "https://csarko.sh/docs/babylon-material-plugin-traps",
+      "url": "https://csarko.sh/research/babylon-material-plugin-traps",
+      "mainEntityOfPage": "https://csarko.sh/research/babylon-material-plugin-traps",
       "wordCount": 3417,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
@@ -83,13 +83,13 @@
           "@type": "ListItem",
           "position": 2,
           "name": "Research",
-          "item": "https://csarko.sh/docs"
+          "item": "https://csarko.sh/research"
         },
         {
           "@type": "ListItem",
           "position": 3,
           "name": "Babylon.js material plugins: hooks and traps",
-          "item": "https://csarko.sh/docs/babylon-material-plugin-traps"
+          "item": "https://csarko.sh/research/babylon-material-plugin-traps"
         }
       ]
     }
@@ -320,7 +320,7 @@
       <a class="wordmark" href="/">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/games">Games</a></li>
-        <li><a href="/docs">Research</a></li>
+        <li><a href="/research">Research</a></li>
       </ul>
     </div>
   </nav>
@@ -328,7 +328,7 @@
     <div class="wrap">
       <ol>
         <li><a href="/">Home</a></li>
-        <li><a href="/docs">Research</a></li>
+        <li><a href="/research">Research</a></li>
         <li><span aria-current="page">Babylon.js material plugins: hooks and traps</span></li>
       </ol>
     </div>
@@ -380,7 +380,7 @@ a unit test, and read the expanded shader rather than the documentation.</p>
 version pinned in <a class="external" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener">game-dayhike</a>. The
 preprocessor traps were also reproduced by running a test plugin through the real PBR
 fragment shader and <code>WebGL2ShaderProcessor</code> in Node. The earlier
-<a href="/docs/atmosphere-and-dread-shaders">atmosphere research</a> names three of these traps in
+<a href="/research/atmosphere-and-dread-shaders">atmosphere research</a> names three of these traps in
 passing; this is the long version.</p>
 <div class="section-head"><p class="section-label">01</p><h2 id="when-plugin-code-is-injected"><a class="anchor" href="#when-plugin-code-is-injected">When plugin code is injected</a></h2></div>
 <p>A <code>PBRMaterial</code> builds its effect in this order:</p>
@@ -594,7 +594,7 @@ detached from the conformed base.</p>
 <p><strong><code>discard</code> and early depth.</strong> A <code>discard</code> anywhere in a fragment shader can stop the GPU
 from rejecting hidden fragments before shading them, so a dither fade belongs on materials
 that already alpha-test, not on every opaque material. The measured cost and the fade
-design are in <a href="/docs/no-visible-pop-in">No visible pop-in</a>.</p>
+design are in <a href="/research/no-visible-pop-in">No visible pop-in</a>.</p>
 <p><strong>One-shot <code>RenderTargetTexture</code> bakes.</strong> Day Hike bakes tree impostors at load by
 rendering a cloned LOD into a 256 by 256 render target once. A render target draws under
 its <strong>own</strong> <code>renderPassId</code>, and each submesh caches its effect per pass. The bake also uses

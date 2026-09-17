@@ -21,7 +21,7 @@ description: >-
 
 Targets: **Lighthouse SEO / Accessibility / Best Practices 100 and Performance
 ≥ 95, Mozilla Observatory A+, no layout breakage from 320px to 1440px.** They
-apply to the home page and to every generated page: `/games`, `/docs` and each doc.
+apply to the home page and to every generated page: `/games`, `/research` and each doc.
 
 ## Scripts
 
@@ -32,7 +32,7 @@ $S/check.py --live             # + deployed site: live headers, caching, 404, re
 $S/check.py --lighthouse       # + Lighthouse on the home page and the newest doc, once per theme (SEO/A11y/Best Practices 100, Performance ≥ 95)
 $S/check.py --observatory      # + Mozilla HTTP Observatory (must be A+)
 $S/generate-assets.sh          # rebuild EVERYTHING generated (see below) — deterministic
-node $S/build_docs.mjs         # just the pages built from Markdown: docs/published/*.md → public/docs/ and docs/games/*.md → public/games/, plus the sitemap and the home section (generate-assets.sh runs it)
+node $S/build_docs.mjs         # just the pages built from Markdown: docs/published/*.md → public/research/ and docs/games/*.md → public/games/, plus the sitemap and the home section (generate-assets.sh runs it)
 ```
 
 Unit tests: `node --test .agents/skills/site-quality/tests/docs_lib.test.mjs` and
@@ -50,9 +50,9 @@ Same inputs, same outputs (two builds produce identical hashes).
 
 | Output | Source | Notes |
 |---|---|---|
-| `public/docs/<slug>.html`, `public/docs/index.html`, `<!-- generated:docs -->` in `index.html` | `docs/published/<YYYY-MM-DD>-<slug>.md` via `build_docs.mjs` (logic in `docs_lib.mjs`, `marked` vendored in `scripts/vendor/`) | Doc pages copy `index.html`'s theme token blocks and get fonts and analytics from `build_assets.py`, with root-relative paths. `check.py` rebuilds into a temp dir and fails if `public/` is stale. |
+| `public/research/<slug>.html`, `public/research/index.html`, `<!-- generated:docs -->` in `index.html` | `docs/published/<YYYY-MM-DD>-<slug>.md` via `build_docs.mjs` (logic in `docs_lib.mjs`, `marked` vendored in `scripts/vendor/`) | Doc pages copy `index.html`'s theme token blocks and get fonts and analytics from `build_assets.py`, with root-relative paths. `check.py` rebuilds into a temp dir and fails if `public/` is stale. |
 | `public/games/index.html` | `docs/games/<slug>.md` via the same `build_docs.mjs` run | The `/games` list, one entry per file: kicker from `status`, the H1 as the name, the body as the copy, `tags` as pills, and `play` as the card's "Play in your browser" link, styled like the home page's Projects card (`repo` is not linked from the card; it only feeds the JSON-LD `url` when there is no `play`). No per-game pages yet. Same theme, fonts, analytics and staleness rules as a doc page. |
-| `public/sitemap.xml` | both `docs/published/` and `docs/games/` via `build_docs.mjs` | `/`, `/games`, `/docs` (no `lastmod` on any of the three), then each doc with its own. `/games` appears only while a game exists, `/docs` only while a doc does. |
+| `public/sitemap.xml` | both `docs/published/` and `docs/games/` via `build_docs.mjs` | `/`, `/games`, `/research` (no `lastmod` on any of the three), then each doc with its own. `/games` appears only while a game exists, `/research` only while a doc does. |
 | `public/assets/portrait-{240,360,480,720}.<hash>.{avif,webp,jpg}` | `assets/portrait-source.jpg` | Responsive LCP image. Desktop 2x loads a ~15 KB AVIF instead of a 100 KB JPEG. |
 | `public/assets/<font>.<hash>.woff2` | `assets/fonts/*.woff2` | Inter + JetBrains Mono variable, latin subset. License: `public/licenses/fonts-OFL.txt`. |
 | `public/portrait.jpg` | same | Stable URL for JSON-LD `Person.image`. |
@@ -73,9 +73,9 @@ serves `csarko-sh.web.app`); `og:url` and JSON-LD `url` match it; Open Graph +
 Twitter tags with a real 1200×630 image; JSON-LD `Person` with `sameAs`
 (LinkedIn, GitHub, Substack); favicon files; one `<h1>`, no skipped heading
 levels; robots.txt allows all and names the sitemap. Every page's canonical must
-match its clean URL (`docs/x.html` → `https://csarko.sh/docs/x`); docs need
+match its clean URL (`research/x.html` → `https://csarko.sh/research/x`); docs need
 `og:type` `article`, `TechArticle` JSON-LD whose author is `#person`, and a
-`BreadcrumbList`; `/docs` and `/games` need `CollectionPage`. The sitemap must list exactly
+`BreadcrumbList`; `/research` and `/games` need `CollectionPage`. The sitemap must list exactly
 the indexable pages, and root-relative links must resolve without a redirect (no
 trailing `/`, no `.html`).
 
@@ -126,7 +126,7 @@ and uses only root-relative paths.
 **Layout** — at 320, 360, 390, 768 and 1440px: every nav link visible on one
 line, ≥ 8px from the wordmark, no horizontal scroll, no button off-screen, skip
 link hidden until focused. At ≤ 360px the nav gap tightens to 11px. The same
-checks run on `/games`, `/docs` and the newest doc.
+checks run on `/games`, `/research` and the newest doc.
 
 **One bar, one width, every page** — `.wrap` is `max-width: 1120px` in both
 `public/index.html` and `DOCS_CSS` in `docs_lib.mjs`; change them together or
@@ -135,7 +135,7 @@ the nav jumps width between the home page and a generated page. The bar reads
 front and take `--faint`; page links go to another page, sit after the hairline
 `.nav-divider` and take `--muted`. The home page's is
 `Work · Projects · Notes · Skills · Contact │ Games · Research` (`Notes` jumps to `#notes`, `Projects` jumps to
-`#projects`, `Research` goes to `/docs`); every generated page (a doc, `/docs`,
+`#projects`, `Research` goes to `/research`); every generated page (a doc, `/research`,
 `/games`) has page links only (`Games · Research`, from `PAGE_LINKS` in
 `docs_lib.mjs`) and no divider, with `aria-current="page"` on the index page you
 are on. Nothing links home by name: the wordmark does that on every page. Heading links are `li.heading-link` whose anchor
@@ -147,7 +147,7 @@ shell: `78ch` on role and doc-list copy, `72ch` on a doc's `main`.
 
 **One trail, two places** — every generated page (and only those) carries a
 breadcrumb under the nav: `Home › Research › <title>` on a doc, `Home › Research`
-on `/docs`, `Home › Games` on `/games`. The visible trail and the page's
+on `/research`, `Home › Games` on `/games`. The visible trail and the page's
 `BreadcrumbList` JSON-LD come from one array per page in `docs_lib.mjs`, since
 Google may render the trail under a search result; `check.py` fails the build if
 the two disagree, if a crumb link doesn't resolve in `public/`, if the last crumb
@@ -196,7 +196,7 @@ This is the change most likely to regress everything above. In order:
 7. Never add `noindex` to index.html, `Disallow: /`, or remove the canonical.
 8. New or changed doc? Use the `publish-doc` skill. A game is a file in
    `docs/games/`. Either way, edit the Markdown and re-run the generator; never
-   edit `public/docs/` or `public/games/` by hand.
+   edit `public/research/` or `public/games/` by hand.
 
 Content rules in `AGENTS.md` still win (no email/phone, no metrics in Experience).
 

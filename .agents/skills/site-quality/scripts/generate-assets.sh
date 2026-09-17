@@ -2,11 +2,11 @@
 #
 # generate-assets.sh — rebuild every generated asset in public/, deterministically.
 #
-# 1. build_docs.mjs: docs/published/*.md → public/docs/*.html, public/sitemap.xml, and the
+# 1. build_docs.mjs: docs/published/*.md → public/research/*.html, public/sitemap.xml, and the
 #    <!-- generated:docs --> block in public/index.html (needs Node 18+).
 # 2. build_assets.py: hashed portraits (AVIF/WebP/JPEG × 4 widths), hashed fonts,
 #    public/portrait.jpg, and the other <!-- generated:… --> blocks in public/*.html
-#    and public/docs/*.html.
+#    and public/research/*.html.
 # 3. This script: favicons and the link-preview card, rendered with headless Chrome.
 #
 # Sources live in .agents/skills/site-quality/assets/; outputs land in public/:
