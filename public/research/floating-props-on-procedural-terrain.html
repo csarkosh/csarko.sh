@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Why props float on procedural terrain · Cyrus Sarkosh</title>
   <meta name="description" content="Why trees float on slopes and distant ridges in a procedural world, measured, and the shader and clipmap fixes that grounded them in Babylon.js." />
-  <link rel="canonical" href="https://csarko.sh/docs/floating-props-on-procedural-terrain" />
+  <link rel="canonical" href="https://csarko.sh/research/floating-props-on-procedural-terrain" />
 
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="Cyrus Sarkosh" />
   <meta property="og:locale" content="en_US" />
-  <meta property="og:url" content="https://csarko.sh/docs/floating-props-on-procedural-terrain" />
+  <meta property="og:url" content="https://csarko.sh/research/floating-props-on-procedural-terrain" />
   <meta property="og:title" content="Why props float on procedural terrain" />
   <meta property="og:description" content="Why trees float on slopes and distant ridges in a procedural world, measured, and the shader and clipmap fixes that grounded them in Babylon.js." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
@@ -44,13 +44,13 @@
   "@graph": [
     {
       "@type": "TechArticle",
-      "@id": "https://csarko.sh/docs/floating-props-on-procedural-terrain#article",
+      "@id": "https://csarko.sh/research/floating-props-on-procedural-terrain#article",
       "headline": "Why props float on procedural terrain",
       "description": "Why trees float on slopes and distant ridges in a procedural world, measured, and the shader and clipmap fixes that grounded them in Babylon.js.",
       "datePublished": "2026-08-29",
       "dateModified": "2026-08-29",
-      "url": "https://csarko.sh/docs/floating-props-on-procedural-terrain",
-      "mainEntityOfPage": "https://csarko.sh/docs/floating-props-on-procedural-terrain",
+      "url": "https://csarko.sh/research/floating-props-on-procedural-terrain",
+      "mainEntityOfPage": "https://csarko.sh/research/floating-props-on-procedural-terrain",
       "wordCount": 4023,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
@@ -83,13 +83,13 @@
           "@type": "ListItem",
           "position": 2,
           "name": "Research",
-          "item": "https://csarko.sh/docs"
+          "item": "https://csarko.sh/research"
         },
         {
           "@type": "ListItem",
           "position": 3,
           "name": "Why props float on procedural terrain",
-          "item": "https://csarko.sh/docs/floating-props-on-procedural-terrain"
+          "item": "https://csarko.sh/research/floating-props-on-procedural-terrain"
         }
       ]
     }
@@ -320,7 +320,7 @@
       <a class="wordmark" href="/">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/games">Games</a></li>
-        <li><a href="/docs">Research</a></li>
+        <li><a href="/research">Research</a></li>
       </ul>
     </div>
   </nav>
@@ -328,7 +328,7 @@
     <div class="wrap">
       <ol>
         <li><a href="/">Home</a></li>
-        <li><a href="/docs">Research</a></li>
+        <li><a href="/research">Research</a></li>
         <li><span aria-current="page">Why props float on procedural terrain</span></li>
       </ol>
     </div>
@@ -385,12 +385,12 @@ world seed. The mechanisms ship in the public
 pure function of world position that returns the height <code>h</code> and its exact gradient
 <code>(dx, dz)</code>, and the simulation places every tree, log and rock at the exact <code>h</code> of its own
 position. The renderer draws the same function at whatever resolution it can afford.
-(<a href="/docs/procedural-world-as-a-pure-function">An endless world as a pure function</a> covers how
+(<a href="/research/procedural-world-as-a-pure-function">An endless world as a pure function</a> covers how
 that field is built.)</p>
 <p><strong>Geometry clipmaps.</strong> The renderer draws that function as a
 <a class="external" href="https://hhoppe.com/proj/geomclipmap/" target="_blank" rel="noopener">geometry clipmap</a>: nested square rings of height
 samples, finer near the camera and coarser with distance, drawn as flat triangles so the
-surface between samples is a straight chord rather than the field itself. (<a href="/docs/procedural-world-as-a-pure-function">An endless world
+surface between samples is a straight chord rather than the field itself. (<a href="/research/procedural-world-as-a-pure-function">An endless world
 as a pure function</a> covers the clipmap&#39;s rings,
 spacing, snapping and draw calls.)</p>
 <p><strong>Thin instances.</strong> Babylon.js
@@ -721,7 +721,7 @@ what the local ground plane says.</p>
 <code>thinInstanceSetBuffer</code> next to the matrix buffer: 8 bytes per instance against the matrix&#39;s
 64. The shader body is guarded so it runs only on thin-instanced draws, because a non-instanced
 clone of the same geometry would otherwise read one arbitrary instance&#39;s gradient.
-(<a href="/docs/babylon-material-plugin-traps">Babylon.js material plugin traps</a> covers the injection
+(<a href="/research/babylon-material-plugin-traps">Babylon.js material plugin traps</a> covers the injection
 pitfalls.)</p>
 <h3 id="the-tilt"><a class="anchor" href="#the-tilt">The tilt</a></h3>
 <p>For props that rest, the fix is in the matrix:
@@ -1086,7 +1086,7 @@ nothing at rest. The design estimate had been half that; the measured figures ar
 the code.</p>
 <p>The same pass added a vertex-shader shrink fade at clutter disc edges so tufts would not
 appear at full size. It read as spawning and was later replaced by a dissolve, described in
-<a href="/docs/no-visible-pop-in">No visible pop-in</a>.</p>
+<a href="/research/no-visible-pop-in">No visible pop-in</a>.</p>
 <div class="section-head"><p class="section-label">11</p><h2 id="what-carries-over"><a class="anchor" href="#what-carries-over">What carries over</a></h2></div>
 <ul>
 <li><strong>Measure the gap before choosing the cause.</strong> &quot;Terrain too low&quot; and &quot;props too wide&quot; produce

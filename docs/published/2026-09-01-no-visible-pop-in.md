@@ -110,7 +110,7 @@ the whole range, so thresholding it at *v* keeps close to a fraction *v* of the 
 small patch, evenly scattered rather than in clumps. It needs no texture and costs one line.
 Because it is a fixed function of the pixel position, the pattern is pinned to the screen and
 needs no temporal filtering. Scenery does slide under a screen-fixed pattern as the camera
-moves, the effect [Return of the Obra Dinn](/docs/stylized-shader-looks) had to fix for its
+moves, the effect [Return of the Obra Dinn](/research/stylized-shader-looks) had to fix for its
 whole image, but a dissolve band covers a few to a few tens of pixels for a moment, so it goes
 unnoticed.
 
@@ -317,7 +317,7 @@ at the full-mesh seam while its mesh dissolves. It existed before this work and 
 not change it.
 
 The route to fix it is `ShadowDepthWrapper`, covered in
-[Babylon.js material plugin traps](/docs/babylon-material-plugin-traps). It was left out here
+[Babylon.js material plugin traps](/research/babylon-material-plugin-traps). It was left out here
 because it recompiles every wrapped material and would need its own frame-time measurement.
 
 ## 10. What stills cannot show

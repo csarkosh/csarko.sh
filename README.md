@@ -2,12 +2,12 @@
 
 The source code behind my portfolio site **→ [csarko.sh](https://csarko.sh)**.
 
-A hand-written home page plus a games list at [csarko.sh/games](https://csarko.sh/games) and research docs at [csarko.sh/docs](https://csarko.sh/docs), both built from Markdown: no framework, fully agent-managed.
+A hand-written home page plus a games list at [csarko.sh/games](https://csarko.sh/games) and research docs at [csarko.sh/research](https://csarko.sh/research), both built from Markdown: no framework, fully agent-managed.
 
 ## What's here
 
 ```
-public/            the site: index.html, games/ and docs/ (generated) and assets
+public/            the site: index.html, games/ and research/ (generated) and assets
 docs/published/    the published docs, as dated Markdown with front matter
 docs/games/        one Markdown file per game, named for its slug
 docs/superpowers/  internal design specs and plans, never published
@@ -21,11 +21,11 @@ AGENTS.md          working context and rules for agents; CLAUDE.md points to it
 
 ```bash
 .agents/skills/preview/scripts/preview.sh           # open in Chrome
-.agents/skills/preview/scripts/preview.sh --serve   # serve on http://localhost:4173 with clean URLs (needed for /games and /docs)
+.agents/skills/preview/scripts/preview.sh --serve   # serve on http://localhost:4173 with clean URLs (needed for /games and /research)
 .agents/skills/preview/scripts/preview.sh --shots   # desktop + mobile screenshots in /tmp
 ```
 
-Or just open `public/index.html` in a browser (its /games and /docs links need --serve).
+Or just open `public/index.html` in a browser (its /games and /research links need --serve).
 
 ## Deploy
 

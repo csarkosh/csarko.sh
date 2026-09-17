@@ -27,7 +27,7 @@ Every claim below was checked against the installed `@babylonjs/core` 9.18.0 sou
 version pinned in [game-dayhike](https://github.com/csarkosh/game-dayhike). The
 preprocessor traps were also reproduced by running a test plugin through the real PBR
 fragment shader and `WebGL2ShaderProcessor` in Node. The earlier
-[atmosphere research](/docs/atmosphere-and-dread-shaders) names three of these traps in
+[atmosphere research](/research/atmosphere-and-dread-shaders) names three of these traps in
 passing; this is the long version.
 
 ## 1. When plugin code is injected
@@ -217,7 +217,7 @@ detached from the conformed base.
 **`discard` and early depth.** A `discard` anywhere in a fragment shader can stop the GPU
 from rejecting hidden fragments before shading them, so a dither fade belongs on materials
 that already alpha-test, not on every opaque material. The measured cost and the fade
-design are in [No visible pop-in](/docs/no-visible-pop-in).
+design are in [No visible pop-in](/research/no-visible-pop-in).
 
 **One-shot `RenderTargetTexture` bakes.** Day Hike bakes tree impostors at load by
 rendering a cloned LOD into a 256 by 256 render target once. A render target draws under

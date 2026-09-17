@@ -32,14 +32,14 @@ world seed. The mechanisms ship in the public
 pure function of world position that returns the height `h` and its exact gradient
 `(dx, dz)`, and the simulation places every tree, log and rock at the exact `h` of its own
 position. The renderer draws the same function at whatever resolution it can afford.
-([An endless world as a pure function](/docs/procedural-world-as-a-pure-function) covers how
+([An endless world as a pure function](/research/procedural-world-as-a-pure-function) covers how
 that field is built.)
 
 **Geometry clipmaps.** The renderer draws that function as a
 [geometry clipmap](https://hhoppe.com/proj/geomclipmap/): nested square rings of height
 samples, finer near the camera and coarser with distance, drawn as flat triangles so the
 surface between samples is a straight chord rather than the field itself. ([An endless world
-as a pure function](/docs/procedural-world-as-a-pure-function) covers the clipmap's rings,
+as a pure function](/research/procedural-world-as-a-pure-function) covers the clipmap's rings,
 spacing, snapping and draw calls.)
 
 **Thin instances.** Babylon.js
@@ -191,7 +191,7 @@ The gradient reaches the shader as a `vec2` per-instance attribute, `groundGrad`
 `thinInstanceSetBuffer` next to the matrix buffer: 8 bytes per instance against the matrix's
 64. The shader body is guarded so it runs only on thin-instanced draws, because a non-instanced
 clone of the same geometry would otherwise read one arbitrary instance's gradient.
-([Babylon.js material plugin traps](/docs/babylon-material-plugin-traps) covers the injection
+([Babylon.js material plugin traps](/research/babylon-material-plugin-traps) covers the injection
 pitfalls.)
 
 ### The tilt
@@ -394,7 +394,7 @@ the code.
 
 The same pass added a vertex-shader shrink fade at clutter disc edges so tufts would not
 appear at full size. It read as spawning and was later replaced by a dissolve, described in
-[No visible pop-in](/docs/no-visible-pop-in).
+[No visible pop-in](/research/no-visible-pop-in).
 
 ## 11. What carries over
 

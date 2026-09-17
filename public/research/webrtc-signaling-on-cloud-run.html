@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Hosting WebRTC signaling on Cloud Run · Cyrus Sarkosh</title>
   <meta name="description" content="Hosting a WebRTC signaling server on Google Cloud Run for a browser co-op game, the platform behaviours that broke it, and what a running match survives." />
-  <link rel="canonical" href="https://csarko.sh/docs/webrtc-signaling-on-cloud-run" />
+  <link rel="canonical" href="https://csarko.sh/research/webrtc-signaling-on-cloud-run" />
 
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="Cyrus Sarkosh" />
   <meta property="og:locale" content="en_US" />
-  <meta property="og:url" content="https://csarko.sh/docs/webrtc-signaling-on-cloud-run" />
+  <meta property="og:url" content="https://csarko.sh/research/webrtc-signaling-on-cloud-run" />
   <meta property="og:title" content="Hosting WebRTC signaling on Cloud Run" />
   <meta property="og:description" content="Hosting a WebRTC signaling server on Google Cloud Run for a browser co-op game, the platform behaviours that broke it, and what a running match survives." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
@@ -44,13 +44,13 @@
   "@graph": [
     {
       "@type": "TechArticle",
-      "@id": "https://csarko.sh/docs/webrtc-signaling-on-cloud-run#article",
+      "@id": "https://csarko.sh/research/webrtc-signaling-on-cloud-run#article",
       "headline": "Hosting WebRTC signaling on Cloud Run",
       "description": "Hosting a WebRTC signaling server on Google Cloud Run for a browser co-op game, the platform behaviours that broke it, and what a running match survives.",
       "datePublished": "2026-07-29",
       "dateModified": "2026-07-29",
-      "url": "https://csarko.sh/docs/webrtc-signaling-on-cloud-run",
-      "mainEntityOfPage": "https://csarko.sh/docs/webrtc-signaling-on-cloud-run",
+      "url": "https://csarko.sh/research/webrtc-signaling-on-cloud-run",
+      "mainEntityOfPage": "https://csarko.sh/research/webrtc-signaling-on-cloud-run",
       "wordCount": 4208,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
@@ -83,13 +83,13 @@
           "@type": "ListItem",
           "position": 2,
           "name": "Research",
-          "item": "https://csarko.sh/docs"
+          "item": "https://csarko.sh/research"
         },
         {
           "@type": "ListItem",
           "position": 3,
           "name": "Hosting WebRTC signaling on Cloud Run",
-          "item": "https://csarko.sh/docs/webrtc-signaling-on-cloud-run"
+          "item": "https://csarko.sh/research/webrtc-signaling-on-cloud-run"
         }
       ]
     }
@@ -320,7 +320,7 @@
       <a class="wordmark" href="/">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/games">Games</a></li>
-        <li><a href="/docs">Research</a></li>
+        <li><a href="/research">Research</a></li>
       </ul>
     </div>
   </nav>
@@ -328,7 +328,7 @@
     <div class="wrap">
       <ol>
         <li><a href="/">Home</a></li>
-        <li><a href="/docs">Research</a></li>
+        <li><a href="/research">Research</a></li>
         <li><span aria-current="page">Hosting WebRTC signaling on Cloud Run</span></li>
       </ol>
     </div>
@@ -375,7 +375,7 @@ removed from the host&#39;s game and has to rejoin. That is a deliberate trade: 
 some outside signal that a player whose phone died is gone, and the signaling server&#39;s view
 of the lobby is the only one it has.</p>
 <p>How the game itself stays in sync between peers (the fixed step, inputs, snapshots and lag
-compensation) is covered in <a href="/docs/browser-coop-netcode">Browser co-op netcode</a>. This
+compensation) is covered in <a href="/research/browser-coop-netcode">Browser co-op netcode</a>. This
 article is only about the server that gets peers connected, and the platform under it.</p>
 <div class="section-head"><p class="section-label">01</p><h2 id="why-a-server-that-only-introduces-peers-still-needs-care"><a class="anchor" href="#why-a-server-that-only-introduces-peers-still-needs-care">Why a server that &quot;only introduces peers&quot; still needs care</a></h2></div>
 <p>Signaling is the part of WebRTC the standard leaves to you: before two browsers can open a
@@ -566,7 +566,7 @@ socket is only noticed when the heartbeat gives up). Departures are keyed on soc
 identity, not peer id, so that late close is ignored instead of stranding a healthy room.</li>
 </ol>
 <p>Signaling errors that only concern joining (the room is full, the host is away) are ignored
-once a player&#39;s data channel is up; <a href="/docs/browser-coop-netcode">Browser co-op netcode</a>
+once a player&#39;s data channel is up; <a href="/research/browser-coop-netcode">Browser co-op netcode</a>
 covers that policy.</p>
 <h3 id="followers-are-removed-when-their-socket-drops"><a class="anchor" href="#followers-are-removed-when-their-socket-drops">Followers are removed when their socket drops</a></h3>
 <p>The grace window is the host&#39;s alone. A follower whose signaling socket closes without a

@@ -19,9 +19,10 @@ description: >-
 ```
 
 - **Plain open (default)** is enough for home-page changes. Its links to
-  `/docs` are root-relative and only work under `--serve`.
+  `/games` and `/research` are root-relative and only work under `--serve`.
 - **`--serve`** runs `scripts/serve.py`, which routes like Firebase
-  (`/docs/x` → `docs/x.html`, trailing slashes and `.html` redirect). Use it for
+  (`/research/x` → `research/x.html`, trailing slashes and `.html` redirect, and the
+  `redirects` in `firebase.json`, such as `/docs/x` → `/research/x`). Use it for
   docs pages and anything that depends on how URLs resolve.
 - **`--shots`** writes `desktop.png` (1440px wide) and `mobile.png` (390px) in
   the dark theme, plus `desktop-light.png` and `mobile-light.png`, and the same

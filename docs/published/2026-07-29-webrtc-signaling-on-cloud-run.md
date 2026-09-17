@@ -24,7 +24,7 @@ some outside signal that a player whose phone died is gone, and the signaling se
 of the lobby is the only one it has.
 
 How the game itself stays in sync between peers (the fixed step, inputs, snapshots and lag
-compensation) is covered in [Browser co-op netcode](/docs/browser-coop-netcode). This
+compensation) is covered in [Browser co-op netcode](/research/browser-coop-netcode). This
 article is only about the server that gets peers connected, and the platform under it.
 
 ## 1. Why a server that "only introduces peers" still needs care
@@ -209,7 +209,7 @@ The fix protects the host, in four parts.
    identity, not peer id, so that late close is ignored instead of stranding a healthy room.
 
 Signaling errors that only concern joining (the room is full, the host is away) are ignored
-once a player's data channel is up; [Browser co-op netcode](/docs/browser-coop-netcode)
+once a player's data channel is up; [Browser co-op netcode](/research/browser-coop-netcode)
 covers that policy.
 
 ### Followers are removed when their socket drops

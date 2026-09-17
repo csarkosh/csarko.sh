@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Host-authoritative co-op netcode in the browser · Cyrus Sarkosh</title>
   <meta name="description" content="How Day Hike&#39;s browser co-op stays responsive: a 60 Hz fixed step, redundant inputs, quantized snapshots, prediction, and host-created lobbies." />
-  <link rel="canonical" href="https://csarko.sh/docs/browser-coop-netcode" />
+  <link rel="canonical" href="https://csarko.sh/research/browser-coop-netcode" />
 
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="Cyrus Sarkosh" />
   <meta property="og:locale" content="en_US" />
-  <meta property="og:url" content="https://csarko.sh/docs/browser-coop-netcode" />
+  <meta property="og:url" content="https://csarko.sh/research/browser-coop-netcode" />
   <meta property="og:title" content="Host-authoritative co-op netcode in the browser" />
   <meta property="og:description" content="How Day Hike&#39;s browser co-op stays responsive: a 60 Hz fixed step, redundant inputs, quantized snapshots, prediction, and host-created lobbies." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
@@ -44,13 +44,13 @@
   "@graph": [
     {
       "@type": "TechArticle",
-      "@id": "https://csarko.sh/docs/browser-coop-netcode#article",
+      "@id": "https://csarko.sh/research/browser-coop-netcode#article",
       "headline": "Host-authoritative co-op netcode in the browser",
       "description": "How Day Hike's browser co-op stays responsive: a 60 Hz fixed step, redundant inputs, quantized snapshots, prediction, and host-created lobbies.",
       "datePublished": "2026-07-25",
       "dateModified": "2026-07-25",
-      "url": "https://csarko.sh/docs/browser-coop-netcode",
-      "mainEntityOfPage": "https://csarko.sh/docs/browser-coop-netcode",
+      "url": "https://csarko.sh/research/browser-coop-netcode",
+      "mainEntityOfPage": "https://csarko.sh/research/browser-coop-netcode",
       "wordCount": 3418,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
@@ -83,13 +83,13 @@
           "@type": "ListItem",
           "position": 2,
           "name": "Research",
-          "item": "https://csarko.sh/docs"
+          "item": "https://csarko.sh/research"
         },
         {
           "@type": "ListItem",
           "position": 3,
           "name": "Host-authoritative co-op netcode in the browser",
-          "item": "https://csarko.sh/docs/browser-coop-netcode"
+          "item": "https://csarko.sh/research/browser-coop-netcode"
         }
       ]
     }
@@ -320,7 +320,7 @@
       <a class="wordmark" href="/">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/games">Games</a></li>
-        <li><a href="/docs">Research</a></li>
+        <li><a href="/research">Research</a></li>
       </ul>
     </div>
   </nav>
@@ -328,7 +328,7 @@
     <div class="wrap">
       <ol>
         <li><a href="/">Home</a></li>
-        <li><a href="/docs">Research</a></li>
+        <li><a href="/research">Research</a></li>
         <li><span aria-current="page">Host-authoritative co-op netcode in the browser</span></li>
       </ol>
     </div>
@@ -375,7 +375,7 @@ and now it is only the player who opened the lobby.</p>
 <a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/ARCHITECTURE.md" target="_blank" rel="noopener">ARCHITECTURE.md</a>. This
 article covers the protocol and the reasons behind it. The hosting half, the signaling server
 on Cloud Run and what broke there, is in
-<a href="/docs/webrtc-signaling-on-cloud-run">WebRTC signaling on Cloud Run</a>.</p>
+<a href="/research/webrtc-signaling-on-cloud-run">WebRTC signaling on Cloud Run</a>.</p>
 <p>The game began as a co-op shooter with a rifle, hitscan and roaming enemies, and several of
 these decisions were made for that game. Where the shipped code has moved on, the text says so.</p>
 <div class="section-head"><p class="section-label">01</p><h2 id="a-host-authoritative-star"><a class="anchor" href="#a-host-authoritative-star">A host-authoritative star</a></h2></div>
@@ -422,7 +422,7 @@ these decisions were made for that game. Where the shipped code has moved on, th
 own game running; a follower whose signaling socket drops is a different story, since the host
 removes it from the game and the follower&#39;s client makes one attempt to reconnect. The trade-off,
 including why it removes every follower about once an hour when their socket reaches its time
-limit, is in <a href="/docs/webrtc-signaling-on-cloud-run">WebRTC signaling on Cloud Run</a>.</p>
+limit, is in <a href="/research/webrtc-signaling-on-cloud-run">WebRTC signaling on Cloud Run</a>.</p>
 <p>A restrictive network that STUN cannot get through fails after a 15-second ICE timeout with an
 error that says you or the host may be on a restrictive network, rather than hanging.</p>
 <p>Each peer connection opens two data channels with different guarantees:</p>
@@ -474,7 +474,7 @@ exactly. A test serializes two runs of the world from identical inputs and asser
 on both sides and during every replay; they are a known cross-engine risk that a fixed-point angle
 representation would retire, and they have not been retired yet. The rest of the determinism
 guarantees, including how the level id folds in the seed and refuses a mismatched world, are
-covered in <a href="/docs/procedural-world-as-a-pure-function">An endless world as a pure function</a>.</p>
+covered in <a href="/research/procedural-world-as-a-pure-function">An endless world as a pure function</a>.</p>
 <div class="section-head"><p class="section-label">03</p><h2 id="solo-is-a-host-with-zero-peers"><a class="anchor" href="#solo-is-a-host-with-zero-peers">Solo is a host with zero peers</a></h2></div>
 <p>The host runs <code>tickWorld</code> directly with its own input, with zero latency and no special-case
 code. Clients wrap the same world in predict-and-reconcile. Playing alone creates the same host
@@ -778,7 +778,7 @@ after trimming, or runs past 24 characters becomes <code>Hiker</code>.</p>
 <p>The change also removed a race where a follower that reconnected before the host could recreate
 the room with itself as host; that race, why every socket in a room can drop at once, and how
 reconnection now plays out are told in
-<a href="/docs/webrtc-signaling-on-cloud-run">WebRTC signaling on Cloud Run</a>.</p>
+<a href="/research/webrtc-signaling-on-cloud-run">WebRTC signaling on Cloud Run</a>.</p>
 <p>Some limits are deliberate. There is no host migration: a host closing the tab or reloading ends
 the lobby for everyone, and a follower who reloads drops out and needs the link again. Once the
 data channels are up, signaling errors such as <code>host_away</code> or <code>room_full</code> are ignored, because

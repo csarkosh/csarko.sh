@@ -1,18 +1,18 @@
 ---
 name: publish-doc
 description: >-
-  Publish a Markdown research doc or spec to csarko.sh/docs. Use whenever the
+  Publish a Markdown research doc or spec to csarko.sh/research. Use whenever the
   user wants to publish, post, add or put a doc, research note, write-up or
   spec on the site ("publish this doc to my site", "add the shader research to
-  csarko.sh/docs"), or update or remove a published doc. Not for previewing a
+  csarko.sh/research"), or update or remove a published doc. Not for previewing a
   doc privately (that's general:doc-preview) or for Substack posts.
 ---
 
-# Publish a doc to csarko.sh/docs
+# Publish a doc to csarko.sh/research
 
 Docs are Markdown files in `docs/published/<YYYY-MM-DD>-<slug>.md`, dated so the
 directory reads in publication order. `generate-assets.sh` turns them into
-`https://csarko.sh/docs/<slug>`, the `/docs` index, the sitemap and the home
+`https://csarko.sh/research/<slug>`, the `/research` index, the sitemap and the home
 page's "Notes" section. **The URL is the slug alone**: the date prefix
 belongs to the file name and never appears in a link. The design is in
 `docs/superpowers/specs/2026-09-15-docs-section-design.md`.
@@ -50,7 +50,7 @@ Name the file `docs/published/<YYYY-MM-DD>-<slug>.md`:
   file name's date alone.
 - The **slug** is lowercase letters, digits and hyphens, and carries no date of
   its own. It alone is the URL: `2026-09-14-stylized-shader-looks.md` is served
-  at `/docs/stylized-shader-looks`. Renaming it moves a live URL, so only do that
+  at `/research/stylized-shader-looks`. Renaming it moves a live URL, so only do that
   on purpose.
 
 ```markdown
@@ -90,4 +90,4 @@ The desktop shots are 1440×4000, so a long doc's bottom is cut off in
 
 Commit `docs/published/` and `public/` together, then use the **deploy** skill.
 After it's live, remind Cyrus to open Search Console → URL Inspection and
-request indexing for the new doc's URL and `https://csarko.sh/docs`.
+request indexing for the new doc's URL and `https://csarko.sh/research`.

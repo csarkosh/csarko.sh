@@ -14,28 +14,34 @@ class Route(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.public = Path(self.tmp.name).resolve()
-        (self.public / "docs").mkdir()
-        for rel in ("index.html", "404.html", "docs/index.html", "docs/a.html", "favicon.svg"):
+        (self.public / "research").mkdir()
+        for rel in ("index.html", "404.html", "research/index.html", "research/a.html", "favicon.svg"):
             (self.public / rel).write_text(rel)
 
     def tearDown(self):
         self.tmp.cleanup()
 
     def route(self, path):
-        return serve.route(self.public, path)
+        return serve.route(self.public, path, serve.load_redirects())
 
     def test_serves_clean_urls_and_files(self):
         self.assertEqual(self.route("/"), (200, self.public / "index.html"))
-        self.assertEqual(self.route("/docs"), (200, self.public / "docs/index.html"))
-        self.assertEqual(self.route("/docs/a?utm=x"), (200, self.public / "docs/a.html"))
+        self.assertEqual(self.route("/research"), (200, self.public / "research/index.html"))
+        self.assertEqual(self.route("/research/a?utm=x"), (200, self.public / "research/a.html"))
         self.assertEqual(self.route("/favicon.svg"), (200, self.public / "favicon.svg"))
 
     def test_redirects_like_firebase(self):
-        self.assertEqual(self.route("/docs/"), (301, "/docs"))
-        self.assertEqual(self.route("/docs/?q=1"), (301, "/docs?q=1"))
-        self.assertEqual(self.route("/docs/a.html"), (301, "/docs/a"))
-        self.assertEqual(self.route("/docs/index.html"), (301, "/docs"))
+        self.assertEqual(self.route("/research/"), (301, "/research"))
+        self.assertEqual(self.route("/research/?q=1"), (301, "/research?q=1"))
+        self.assertEqual(self.route("/research/a.html"), (301, "/research/a"))
+        self.assertEqual(self.route("/research/index.html"), (301, "/research"))
         self.assertEqual(self.route("/index.html"), (301, "/"))
+
+    def test_old_docs_urls_follow_firebase_json_to_research(self):
+        self.assertEqual(self.route("/docs"), (301, "/research"))
+        self.assertEqual(self.route("/docs/a"), (301, "/research/a"))
+        self.assertEqual(self.route("/docs/a?utm=x"), (301, "/research/a?utm=x"))
+        self.assertEqual(self.route("/docsx"), (404, self.public / "404.html"))
 
     def test_missing_and_outside_paths_get_the_404_page(self):
         self.assertEqual(self.route("/nope"), (404, self.public / "404.html"))
