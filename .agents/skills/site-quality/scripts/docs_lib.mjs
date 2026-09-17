@@ -347,7 +347,6 @@ const FILM_HEADING = 'Short films';
 const FILM_PAGE_TITLE = 'Short films: experiments in stable AI generation';
 const FILM_DESCRIPTION = 'Short films by Cyrus Sarkosh, experiments in getting AI video generation to hold the same actor and the same room from shot to shot.';
 const FILM_LEAD = 'An experiment in how far AI generation can be pushed toward a film that stays stable: the same actor, the same room, shot after shot. Each result is on YouTube.';
-const FILM_HOME_HEADING = 'Short films I make on the side';
 // A film's kicker, with its runtime after it, so the card says what it is before you read the title.
 const FILM_KICKER = 'Short film';
 const GAMES_HEADING = 'Games, playable in your browser';
@@ -418,7 +417,7 @@ ${items.join('\n')}
 }
 
 // A content warning's mark. Decorative: the warning's own sentence says what it means.
-const WARNING_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>';
+const WARNING_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>';
 const EXTERNAL_ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>';
 const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 
@@ -858,14 +857,12 @@ ${pad}  <img src="${film.poster}" width="1080" height="1920" alt="${escapeHtml(f
 ${pad}  <!-- /generated:film-poster:${film.slug} -->
 ${pad}</div>`;
 
-// `level` is the card title's heading level: h2 on /film, where the page's h1 is above it, and h3
-// on the home page, where the section's own h2 is.
-function filmCard(film, pad, level = 2) {
+function filmCard(film, pad) {
   return `${pad}<li class="card film-card">
 ${filmPoster(film, `${pad}  `)}
 ${pad}  <div class="film-body">
 ${pad}    <p class="film-kicker">${escapeHtml(film.kicker)}</p>
-${pad}    <h${level} class="film-title">${film.titleHtml}</h${level}>
+${pad}    <h2 class="film-title">${film.titleHtml}</h2>
 ${pad}    <div class="film-desc prose">
 ${film.html}${pad}    </div>
 ${pad}    <ul class="tags" role="list">${film.tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>
@@ -926,28 +923,12 @@ ${films.map((film) => filmCard(film, '      ')).join('\n')}
 ${FOOTER}`;
 }
 
-// The home page's "Film" section: the newest film alone, since the card is a poster and a paragraph
-// and the page below it is the list. With no films the block is empty, so nothing renders.
-export function filmSection(films) {
-  if (!films.length) return '\n    ';
-  return `
-    <section id="${FILM_DIR}" aria-labelledby="film-title">
-      <p class="section-label">02 / ${FILM_TITLE}</p>
-      <h2 id="film-title">${escapeHtml(FILM_HOME_HEADING)}</h2>
-      <ul class="film-list" role="list">
-${filmCard(films[0], '        ', 3)}
-      </ul>
-      <a class="all-docs" href="/${FILM_DIR}">All films ${ARROW}</a>
-    </section>
-    `;
-}
-
 // The home page's "Notes" section, which the home nav's Notes heading link jumps to. With no docs the block is empty, so nothing renders.
 export function homeSection(docs) {
   if (!docs.length) return '\n    ';
   return `
     <section id="notes" aria-labelledby="notes-title">
-      <p class="section-label">04 / ${NOTES}</p>
+      <p class="section-label">03 / ${NOTES}</p>
       <h2 id="notes-title">Notes from what I'm researching</h2>
 ${docList(docs.slice(0, HOME_LIMIT), 3, '      ')}
       <a class="all-docs" href="/${DOCS_DIR}">All notes ${ARROW}</a>
@@ -993,7 +974,6 @@ export function buildSite({ sources, gameSources = [], filmSources = [], indexHt
   if (games.length) files.set('games/index.html', gamesPage(games, theme));
   if (films.length) files.set(`${FILM_DIR}/index.html`, filmsPage(films, theme));
   files.set('sitemap.xml', sitemap(docs, games, films));
-  files.set('index.html', replaceBlock(
-    replaceBlock(indexHtml, 'docs', homeSection(docs)), 'film', filmSection(films)));
+  files.set('index.html', replaceBlock(indexHtml, 'docs', homeSection(docs)));
   return files;
 }

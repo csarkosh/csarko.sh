@@ -1,7 +1,7 @@
 // Tests for docs_lib.mjs. Run: node --test .agents/skills/site-quality/tests/docs_lib.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSite, DocError, docPage, filmsPage, filmSection, formatDate, gamesPage, homeSection, indexPage, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, replaceBlock, sitemap, sortDocs, sortFilms, sortGames, themeBlocks } from '../scripts/docs_lib.mjs';
+import { buildSite, DocError, docPage, filmsPage, formatDate, gamesPage, homeSection, indexPage, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, replaceBlock, sitemap, sortDocs, sortFilms, sortGames, themeBlocks } from '../scripts/docs_lib.mjs';
 
 const FILE = 'docs/published/2026-09-14-example.md';
 const DESC = 'A description that is long enough to pass the seventy character minimum for search.';
@@ -170,8 +170,6 @@ const INDEX = `<style>
     }
   </style>
   <main>
-    <!-- generated:film -->
-    <!-- /generated:film -->
     <!-- generated:docs -->
     <!-- /generated:docs -->
   </main>`;
@@ -248,7 +246,7 @@ test('homeSection lists the three newest docs and is empty with none', () => {
   const html = homeSection(sortDocs([doc('a', '2026-01-01'), doc('b', '2026-03-01'), doc('c', '2026-02-01'), doc('d', '2026-03-01')]));
   assert.deepEqual([...html.matchAll(/href="\/research\/([a-z]+)"/g)].map((m) => m[1]), ['b', 'd', 'c']);
   assert.ok(html.includes('<section id="notes" aria-labelledby="notes-title">'));
-  assert.ok(html.includes('<p class="section-label">04 / Notes</p>'));
+  assert.ok(html.includes('<p class="section-label">03 / Notes</p>'));
   assert.ok(html.includes('<h2 id="notes-title">Notes from what I\'m researching</h2>'));
   assert.ok(html.includes('<h3 class="doc-title"><a class="stretch" href="/research/b">b title</a></h3>'));
   assert.ok(html.includes('<a class="all-docs" href="/research">All notes'));
@@ -530,15 +528,6 @@ test('filmsPage cards the poster, links out to YouTube and lists VideoObject JSO
   assert.equal(crumbs.itemListElement.at(-1).item, 'https://csarko.sh/film');
 });
 
-test('filmSection teases the newest film on the home page and links to the page', () => {
-  const body = filmSection(sortFilms([film('hallway'), film('older', ['released: 2025-01-01'])]));
-  assert.ok(body.includes('02 / Film'));
-  assert.ok(body.includes('<!-- generated:film-poster:hallway -->'));
-  assert.ok(!body.includes('older'));
-  assert.ok(body.includes('href="/film"'));
-  assert.equal(filmSection([]), '\n    ');
-});
-
 test('sitemap carries /film first, then /games and /research, none with a lastmod', () => {
   const xml = sitemap([doc('a', '2026-01-01')], [game('day-hike')], [film('hallway')]);
   assert.deepEqual([...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]),
@@ -547,15 +536,14 @@ test('sitemap carries /film first, then /games and /research, none with a lastmo
   assert.ok(!sitemap([doc('a', '2026-01-01')], [game('day-hike')]).includes('/film'));
 });
 
-test('buildSite writes the film index and the home section only when a film exists', () => {
+test('buildSite writes the film index only when a film exists, and never touches the home page', () => {
   const sources = [src('a', '2026-01-01')];
   const withFilms = buildSite({ sources, filmSources: [filmSrc('hallway')], indexHtml: INDEX });
   assert.ok(withFilms.has('film/index.html'));
   assert.ok(withFilms.get('sitemap.xml').includes('https://csarko.sh/film'));
-  assert.ok(withFilms.get('index.html').includes('02 / Film'));
-  const without = buildSite({ sources, indexHtml: INDEX });
-  assert.ok(!without.has('film/index.html'));
-  assert.ok(!without.get('index.html').includes('02 / Film'));
+  // The films are a page of their own: the home page links to it and carries no film of its own.
+  assert.ok(!withFilms.get('index.html').includes('film-card'));
+  assert.ok(!buildSite({ sources, indexHtml: INDEX }).has('film/index.html'));
 });
 
 test('the film page carries a trail its BreadcrumbList repeats exactly', () => {
@@ -573,7 +561,6 @@ test('a film can carry a content warning, which rides on its card everywhere', (
   assert.ok(html.includes(`${warning}</p>`));
   // The icon is decorative, so the sentence itself has to carry the meaning.
   assert.ok(/<p class="film-warning"><svg[^>]*aria-hidden="true"/.test(html));
-  assert.ok(filmSection([warned]).includes('class="film-warning"'));
   // It is optional: a film without one renders no line at all (the rule in the stylesheet stays).
   assert.ok(!filmsPage([film('hallway')], themeBlocks(INDEX)).includes('<p class="film-warning">'));
 });
