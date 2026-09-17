@@ -563,3 +563,17 @@ test('the film page carries a trail its BreadcrumbList repeats exactly', () => {
   assert.deepEqual(trail(html), [['Home', '/'], ['Film', undefined]]);
   assert.deepEqual(crumbNames(html), ['Home', 'Film']);
 });
+
+test('a film can carry a content warning, which rides on its card everywhere', () => {
+  const warning = 'Contains horror imagery that some viewers may find disturbing.';
+  const warned = film('hallway', [`warning: ${warning}`]);
+  assert.equal(warned.warning, warning);
+  const html = filmsPage([warned], themeBlocks(INDEX));
+  assert.ok(html.includes(`<p class="film-warning"><svg`));
+  assert.ok(html.includes(`${warning}</p>`));
+  // The icon is decorative, so the sentence itself has to carry the meaning.
+  assert.ok(/<p class="film-warning"><svg[^>]*aria-hidden="true"/.test(html));
+  assert.ok(filmSection([warned]).includes('class="film-warning"'));
+  // It is optional: a film without one renders no line at all (the rule in the stylesheet stays).
+  assert.ok(!filmsPage([film('hallway')], themeBlocks(INDEX)).includes('<p class="film-warning">'));
+});

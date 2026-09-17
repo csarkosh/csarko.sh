@@ -5,6 +5,7 @@ released: 2026-09-17
 runtime: 0:16
 alt: A woman in dark pyjamas, lit from below by her phone, staring past the camera in a dim hallway.
 tags: Analog horror, Found footage, Photo puppetry
+warning: Contains horror imagery that some viewers may find disturbing.
 ---
 # Who is standing in my hallway?
 

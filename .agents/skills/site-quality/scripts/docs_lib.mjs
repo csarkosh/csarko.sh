@@ -26,7 +26,7 @@ const FIELDS = { description: true, published: true, updated: false, source: fal
 const GAME_FIELDS = { description: true, status: true, tags: true, play: false, repo: false, released: false };
 // A film is a video hosted on YouTube: the page carries its poster and links out, so every field
 // here is needed to build the card and its VideoObject. "alt" describes the poster.
-const FILM_FIELDS = { description: true, watch: true, released: true, runtime: true, alt: true, tags: true };
+const FILM_FIELDS = { description: true, watch: true, released: true, runtime: true, alt: true, tags: true, warning: false };
 
 // Either shape YouTube serves a video at; the 11-character id is what the embed and poster need.
 const WATCH_URL = /^https:\/\/(?:www\.)?youtube\.com\/(?:shorts\/|watch\?v=)([A-Za-z0-9_-]{11})$/;
@@ -417,6 +417,8 @@ ${items.join('\n')}
   </nav>`;
 }
 
+// A content warning's mark. Decorative: the warning's own sentence says what it means.
+const WARNING_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>';
 const EXTERNAL_ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>';
 const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 
@@ -550,6 +552,9 @@ const DOCS_CSS = `
     .film-desc p { margin: 0 0 12px; }
     .film-desc p:last-child { margin-bottom: 0; }
     .film-list .tags { margin-top: 16px; }
+    /* A film's content warning, under its tags. --muted, not --faint: a warning has to be read. */
+    .film-warning { display: flex; align-items: flex-start; gap: 8px; margin: 14px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--muted); }
+    .film-warning svg { width: 15px; height: 15px; flex: none; margin-top: 2px; color: var(--accent); }
     @media (max-width: 640px) {
       .film-card { flex-direction: column; }
       .film-poster { width: 200px; align-self: flex-start; }
@@ -863,7 +868,7 @@ ${pad}    <h${level} class="film-title">${film.titleHtml}</h${level}>
 ${pad}    <div class="film-desc prose">
 ${film.html}${pad}    </div>
 ${pad}    <ul class="tags" role="list">${film.tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>
-${pad}    <a class="card-link stretch" href="${escapeHtml(film.watch)}" target="_blank" rel="noopener">Watch on YouTube ${EXTERNAL_ARROW}</a>
+${film.warning ? `${pad}    <p class="film-warning">${WARNING_ICON}${escapeHtml(film.warning)}</p>\n` : ''}${pad}    <a class="card-link stretch" href="${escapeHtml(film.watch)}" target="_blank" rel="noopener">Watch on YouTube ${EXTERNAL_ARROW}</a>
 ${pad}  </div>
 ${pad}</li>`;
 }

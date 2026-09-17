@@ -21,7 +21,7 @@ now 301 there). No framework and no CI; the one build step,
 | `public/licenses/fonts-OFL.txt` | Font licenses. |
 | `public/robots.txt` | Crawl rules. |
 | `docs/published/<YYYY-MM-DD>-<slug>.md` | **Published docs, source of truth.** Markdown with front matter, one file per doc, named for its `published:` date (the build fails if the two disagree). The URL is the slug alone: `/research/<slug>`, no date. The repo is public, so committing a file here publishes it; use the `publish-doc` skill. |
-| `docs/films/<slug>.md` | **The films, source of truth.** One file per short film, named for the slug alone (a date prefix is refused; `released:` in the front matter is the date). Front matter also carries `watch` (the YouTube URL), `runtime`, `alt` (the poster's alt text) and `tags`. Its poster is committed at `.agents/skills/site-quality/assets/films/<slug>.jpg`. The repo is public, so committing a file here publishes it. |
+| `docs/films/<slug>.md` | **The films, source of truth.** One file per short film, named for the slug alone (a date prefix is refused; `released:` in the front matter is the date). Front matter also carries `watch` (the YouTube URL), `runtime`, `alt` (the poster's alt text), `tags` and an optional `warning` (a content warning, shown on the card). Its poster is committed at `.agents/skills/site-quality/assets/films/<slug>.jpg`. The repo is public, so committing a file here publishes it. |
 | `docs/games/<slug>.md` | **The games, source of truth.** Markdown with front matter, one file per game, named for the slug alone: a game is not a dated log entry, so a date prefix is refused (`released:` in the front matter is the date). The repo is public, so committing a file here publishes it. |
 | `public/research/`, `public/games/`, `public/film/`, `public/sitemap.xml` | **Generated** from `docs/published/`, `docs/games/` and `docs/films/` by `build_docs.mjs` (run by `generate-assets.sh`), along with the `generated:docs` and `generated:film` blocks in `index.html`. `public/film/<slug>.jpg` is each film's stable poster, written by `build_assets.py`. |
 | `docs/superpowers/` | Internal design specs and implementation plans. **Never published** (unlike its siblings `docs/published/`, `docs/games/` and `docs/films/`, which are). |
@@ -203,8 +203,11 @@ three from the command line):
 - **Film** *(added 2026-09-17)*: short films at **`/film`** (nav: `Film`, first
   among the page links on every page; the page's H1 is "Short films on YouTube",
   its eyebrow "Film"), built from `docs/films/*.md`, one file per film. Each card
-  carries the film's poster, a `Short film · <runtime>` kicker, its copy, tags
-  and a "Watch on YouTube" link out to the video; the page's JSON-LD lists each
+  carries the film's poster, a `Short film · <runtime>` kicker, its copy, tags,
+  its content warning if it has one, and a "Watch on YouTube" link out to the
+  video (*the warning was added 2026-09-17: horror is the genre, so a viewer
+  should know before clicking; it is per film, not a standing notice on the
+  page*); the page's JSON-LD lists each
   film as a `VideoObject`. The home page's section is `02 / Film` (`#film`),
   which carries the newest film alone and pushed Projects, Notes, Skills and
   Contact to `03`-`06`. The films live on his YouTube channel

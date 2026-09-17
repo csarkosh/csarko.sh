@@ -30,7 +30,8 @@ and the games land on `/games`.
 with no date prefix, with front matter `description` (70–160 characters), `watch`
 (the `youtube.com/shorts/<id>` or `youtube.com/watch?v=<id>` URL), `released`
 (`YYYY-MM-DD`), `runtime` (`m:ss`), `alt` (what the poster shows, for screen
-readers) and `tags` (1 to 5, comma-separated). The H1 is the film's title and the
+readers), `tags` (1 to 5, comma-separated) and an optional `warning`, one
+sentence shown on the card above the watch link (horror films get one). The H1 is the film's title and the
 body is its card copy. Its poster is a portrait (9:16) JPEG committed at
 `.agents/skills/site-quality/assets/films/<slug>.jpg`, which the same
 `generate-assets.sh` run turns into the hashed responsive images; without it the
