@@ -139,9 +139,11 @@ three from the command line):
   products at DoorDash**. Don't pair "senior software engineer" with "engineering
   lead" there; it reads as two conflicting titles. "Founding engineer and lead
   on…" is fine: it describes his role on those products, not a second title. The
-  hero's second clause is exploring generative AI for media and entertainment,
-  starting with game development; keep it broad, not games-only (he may move to
-  short films later, but that's not on the page).
+  hero's second clause is exploring generative AI for media, entertainment, and
+  game development *(reworded from "…media and entertainment, starting with game
+  development", 2026-09-16)*; keep it broad, not games-only (he may move to short
+  films later, but that's not on the page). The search description, JSON-LD and
+  share card say "media and entertainment" without the games.
 - **The Experience section stays high-level** *(Cyrus, 2026-09-11)*: for each role, a
   short description of the product and his general role on it, plus tech tags.
   **No metrics, customer names, or accomplishment bullets** (ARR, merchant counts,
