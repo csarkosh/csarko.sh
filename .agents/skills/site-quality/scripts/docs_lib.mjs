@@ -264,7 +264,7 @@ const OG_IMAGE = `${SITE}/og-image.jpg`;
 const OG_IMAGE_ALT = 'Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait';
 const LINKEDIN = 'https://www.linkedin.com/in/csarkosh';
 const INDEX_TITLE = 'Research & notes';
-// The eyebrow on /docs and the home page's section and heading link. The URL stays /docs.
+// The home page's section and heading link for the docs. The URL stays /docs.
 const NOTES = 'Notes';
 const INDEX_DESCRIPTION = 'Research notes and specs by Cyrus Sarkosh on game development, generative AI for media, and the software behind them.';
 const INDEX_LEAD = 'Research notes and specs from what I build and explore: game development, generative AI for media, and the software behind them.';
@@ -670,7 +670,7 @@ ${crumbs(trail)}
 
   <main id="top" class="wrap docs-index" tabindex="-1">
     <header class="doc-header">
-      <p class="eyebrow">${NOTES}</p>
+      <p class="eyebrow">${DOCS_NAV}</p>
       <h1>${escapeHtml(INDEX_TITLE)}</h1>
       <p class="lead">${escapeHtml(INDEX_LEAD)}</p>
     </header>
