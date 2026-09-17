@@ -24,6 +24,13 @@ export const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ENTI
 // key -> required?
 const FIELDS = { description: true, published: true, updated: false, source: false };
 const GAME_FIELDS = { description: true, status: true, tags: true, play: false, repo: false, released: false };
+// A film is a video hosted on YouTube: the page carries its poster and links out, so every field
+// here is needed to build the card and its VideoObject. "alt" describes the poster.
+const FILM_FIELDS = { description: true, watch: true, released: true, runtime: true, alt: true, tags: true, warning: false };
+
+// Either shape YouTube serves a video at; the 11-character id is what the embed and poster need.
+const WATCH_URL = /^https:\/\/(?:www\.)?youtube\.com\/(?:shorts\/|watch\?v=)([A-Za-z0-9_-]{11})$/;
+const RUNTIME = /^(\d{1,2}):([0-5]\d)$/;
 
 // A game's status is also the kicker line above its title, so the two can never disagree.
 const STATUSES = { playable: 'Playable now · No install', 'in-development': 'In development' };
@@ -88,6 +95,30 @@ export function parseGameFrontMatter(text, file) {
   const tags = meta.tags.split(',').map((tag) => tag.trim()).filter(Boolean);
   if (!tags.length || tags.length > 5) throw new DocError(`${file}: tags must be 1 to 5 comma-separated names`);
   return { meta: { ...meta, tags }, body };
+}
+
+export function parseFilmFrontMatter(text, file) {
+  const { meta, body } = parseBlock(text, file, FILM_FIELDS);
+  const watch = WATCH_URL.exec(meta.watch);
+  if (!watch) {
+    throw new DocError(`${file}: watch must be a youtube.com/shorts/<id> or youtube.com/watch?v=<id> URL`);
+  }
+  const runtime = RUNTIME.exec(meta.runtime);
+  if (!runtime) throw new DocError(`${file}: runtime must be m:ss, the seconds zero-padded`);
+  if (!isDate(meta.released)) throw new DocError(`${file}: released must be a real YYYY-MM-DD date`);
+  const tags = meta.tags.split(',').map((tag) => tag.trim()).filter(Boolean);
+  if (!tags.length || tags.length > 5) throw new DocError(`${file}: tags must be 1 to 5 comma-separated names`);
+  const [, minutes, seconds] = runtime;
+  return {
+    meta: {
+      ...meta,
+      tags,
+      videoId: watch[1],
+      // ISO 8601, which is the only duration schema.org reads.
+      duration: `PT${Number(minutes) ? `${Number(minutes)}M` : ''}${Number(seconds)}S`,
+    },
+    body,
+  };
 }
 
 // ---------------------------------------------------------------- small helpers
@@ -238,6 +269,34 @@ export function loadGame(name, text) {
   return { slug, ...meta, kicker: STATUSES[meta.status], ...renderMarkdown(body, file) };
 }
 
+export function parseFilmFileName(name) {
+  const m = GAME_FILE_NAME.exec(name);
+  if (!m) {
+    throw new DocError(`docs/films/${name}: file name must be <slug>.md, the slug lowercase letters, digits and hyphens`);
+  }
+  if (/^\d{4}-\d{2}-\d{2}-/.test(m[1])) {
+    throw new DocError(`docs/films/${name}: a film file name carries no date; use "released:" in the front matter`);
+  }
+  return { slug: m[1] };
+}
+
+export function loadFilm(name, text) {
+  const file = `docs/films/${name}`;
+  const { slug } = parseFilmFileName(name);
+  if (slug === 'index') throw new DocError(`${file}: "index" is reserved for the film index page`);
+  if (text.includes('—')) throw new DocError(`${file}: contains an em-dash; use a comma, colon or semicolon`);
+  const { meta, body } = parseFilmFrontMatter(text, file);
+  return {
+    slug,
+    // The stable poster URL, written by build_assets.py from the source in the site-quality skill's
+    // assets/films/. The hashed variants live in /assets; this one is what JSON-LD and sharing cite.
+    poster: `/${FILM_DIR}/${slug}.jpg`,
+    kicker: `${FILM_KICKER} · ${meta.runtime}`,
+    ...meta,
+    ...renderMarkdown(body, file),
+  };
+}
+
 export function loadDoc(name, text) {
   const file = `docs/published/${name}`;
   const { date, slug } = parseDocFileName(name);
@@ -279,6 +338,17 @@ const DOCS_NAV = 'Research';
 // GAMES_TITLE names the page in the nav, the breadcrumb and the share card; GAMES_HEADING is the
 // <title> and the h1, which want the words a searcher would type.
 const GAMES_TITLE = 'Games';
+// The films live at /film, built from docs/films/. FILM_TITLE names the page in the nav, the
+// breadcrumb and the home page's section; FILM_HEADING is the h1. The <title> is its own line,
+// since "Short films" alone is too short to read as a search result.
+export const FILM_DIR = 'film';
+const FILM_TITLE = 'Film';
+const FILM_HEADING = 'Short films';
+const FILM_PAGE_TITLE = 'Short films: experiments in stable AI generation';
+const FILM_DESCRIPTION = 'Short films by Cyrus Sarkosh, experiments in getting AI video generation to hold the same actor and the same room from shot to shot.';
+const FILM_LEAD = 'An experiment in how far AI generation can be pushed toward a film that stays stable: the same actor, the same room, shot after shot. Each result is on YouTube.';
+// A film's kicker, with its runtime after it, so the card says what it is before you read the title.
+const FILM_KICKER = 'Short film';
 const GAMES_HEADING = 'Games, playable in your browser';
 const GAMES_DESCRIPTION = 'Games by Cyrus Sarkosh that run in a browser with no install: what is playable now, and what is being built.';
 const GAMES_LEAD = 'What I have built and what I am building now. Each one runs in a browser, with no install and no account.';
@@ -294,6 +364,11 @@ export const sortGames = (games) =>
     if (a.released !== b.released) return a.released < b.released ? 1 : -1;
     return a.slug < b.slug ? -1 : 1;
   });
+
+// Newest release first: a film is finished when it ships, so there is no "in development" to lead
+// with as there is for games. Ties break on slug, so the order never depends on the directory read.
+export const sortFilms = (films) =>
+  [...films].sort((a, b) => (a.released === b.released ? (a.slug < b.slug ? -1 : 1) : a.released < b.released ? 1 : -1));
 
 // Doc pages reuse the home page's colors exactly: both token blocks are copied out of index.html.
 export function themeBlocks(indexHtml) {
@@ -341,6 +416,8 @@ ${items.join('\n')}
   </nav>`;
 }
 
+// A content warning's mark. Decorative: the warning's own sentence says what it means.
+const WARNING_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>';
 const EXTERNAL_ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>';
 const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 
@@ -454,14 +531,35 @@ const DOCS_CSS = `
     .card:hover, .card:focus-within { border-color: var(--accent-border); transform: translateY(-2px); background: var(--surface-hover); }
     /* ::before, not ::after: an external link already uses ::after for its ↗ mark. */
     .card .stretch::before { content: ""; position: absolute; inset: 0; border-radius: var(--radius); }
-    .card .tags, .card .game-desc a { position: relative; z-index: 1; }
+    .card .tags, .card .game-desc a, .card .film-desc a { position: relative; z-index: 1; }
 
-    .doc-list, .game-list { display: grid; gap: 14px; list-style: none; margin: 0; padding: 0; }
+    .doc-list, .game-list, .film-list { display: grid; gap: 14px; list-style: none; margin: 0; padding: 0; }
     .doc-list .doc-title { margin: 0 0 4px; font-size: 1.2rem; line-height: 1.35; letter-spacing: -0.015em; font-weight: 600; }
     .doc-list .doc-title a { transition: color .15s ease; }
     .doc-list li:hover .doc-title a, .doc-list .doc-title a:focus-visible { color: var(--accent); }
     .doc-meta { margin: 0 0 6px; font-family: var(--mono); font-size: 12px; color: var(--faint); }
     .doc-desc { margin: 0; color: var(--muted); max-width: 78ch; }
+    /* A film card is the same card turned on its side: the poster leads, the text sits beside it.
+       Keep it in step with the copy in public/index.html, which carries the newest film. */
+    .film-card { flex-direction: row; align-items: flex-start; gap: 22px; }
+    .film-poster { flex: none; width: 240px; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); line-height: 0; }
+    .film-poster img { width: 100%; height: auto; display: block; }
+    .film-body { display: flex; flex-direction: column; min-width: 0; }
+    .film-kicker { margin: 0 0 10px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .film-title { margin: 0 0 10px; font-size: 1.4rem; line-height: 1.3; letter-spacing: -0.02em; font-weight: 600; }
+    .film-desc { max-width: 78ch; }
+    .film-desc p { margin: 0 0 12px; }
+    .film-desc p:last-child { margin-bottom: 0; }
+    .film-list .tags { margin-top: 16px; }
+    /* A film's content warning, under its tags: its own yellow token, and bold, so it is read
+       before the watch link rather than after the film. The icon inherits that color. */
+    .film-warning { display: flex; align-items: flex-start; gap: 8px; margin: 14px 0 0; font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--warning); }
+    .film-warning svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
+    @media (max-width: 640px) {
+      .film-card { flex-direction: column; }
+      .film-poster { width: 200px; align-self: flex-start; }
+    }
+
     .game-kicker { margin: 0 0 10px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
     .game-title { margin: 0 0 10px; font-size: 1.4rem; line-height: 1.3; letter-spacing: -0.02em; font-weight: 600; }
     .game-desc { max-width: 78ch; }
@@ -540,9 +638,9 @@ ${DOCS_CSS}
 }
 
 // The page links, in the order the whole site uses them (see public/index.html, which carries the
-// same two after its heading links). `current` marks the page you are already on. There is no
+// same three after its heading links). `current` marks the page you are already on. There is no
 // Home link: the wordmark to their left is it, on every page.
-const PAGE_LINKS = [['/games', GAMES_TITLE], [`/${DOCS_DIR}`, DOCS_NAV]];
+const PAGE_LINKS = [[`/${FILM_DIR}`, FILM_TITLE], ['/games', GAMES_TITLE], [`/${DOCS_DIR}`, DOCS_NAV]];
 
 const nav = (current) => `  <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
@@ -749,6 +847,82 @@ ${gameList(games, '    ')}
 ${FOOTER}`;
 }
 
+// The poster, as the markers build_assets.py fills with the hashed <picture> (see the portrait on
+// the home page). Until it runs, and in any copy of the page that never goes through it, the plain
+// <img> inside is already the right image at the right shape, and it carries the alt text the
+// Markdown gave: build_assets.py reads that attribute back out rather than parsing the front matter.
+const filmPoster = (film, pad) => `${pad}<div class="film-poster">
+${pad}  <!-- generated:film-poster:${film.slug} -->
+${pad}  <img src="${film.poster}" width="1080" height="1920" alt="${escapeHtml(film.alt)}" loading="lazy" decoding="async" />
+${pad}  <!-- /generated:film-poster:${film.slug} -->
+${pad}</div>`;
+
+function filmCard(film, pad) {
+  return `${pad}<li class="card film-card">
+${filmPoster(film, `${pad}  `)}
+${pad}  <div class="film-body">
+${pad}    <p class="film-kicker">${escapeHtml(film.kicker)}</p>
+${pad}    <h2 class="film-title">${film.titleHtml}</h2>
+${pad}    <div class="film-desc prose">
+${film.html}${pad}    </div>
+${pad}    <ul class="tags" role="list">${film.tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>
+${film.warning ? `${pad}    <p class="film-warning">${WARNING_ICON}${escapeHtml(film.warning)}</p>\n` : ''}${pad}    <a class="card-link stretch" href="${escapeHtml(film.watch)}" target="_blank" rel="noopener">Watch on YouTube ${EXTERNAL_ARROW}</a>
+${pad}  </div>
+${pad}</li>`;
+}
+
+export function filmsPage(films, theme) {
+  const url = `${SITE}/${FILM_DIR}`;
+  const trail = [HOME_CRUMB, [FILM_TITLE, url]];
+  const graph = [
+    {
+      '@type': 'CollectionPage',
+      '@id': `${url}#page`,
+      url,
+      name: FILM_TITLE,
+      description: FILM_DESCRIPTION,
+      isPartOf: { '@id': WEBSITE },
+      about: { '@id': PERSON },
+      mainEntity: {
+        '@type': 'ItemList',
+        itemListElement: films.map((film, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          item: {
+            '@type': 'VideoObject',
+            name: film.title,
+            description: film.description,
+            thumbnailUrl: `${SITE}${film.poster}`,
+            uploadDate: film.released,
+            duration: film.duration,
+            url: film.watch,
+            embedUrl: `https://www.youtube.com/embed/${film.videoId}`,
+            author: PERSON_NODE,
+          },
+        })),
+      },
+    },
+    breadcrumbs(trail),
+  ];
+  return `${head({ title: `${FILM_PAGE_TITLE} · Cyrus Sarkosh`, ogTitle: FILM_TITLE, description: FILM_DESCRIPTION, canonical: url, ogType: 'website', graph, theme })}
+<body>
+${nav(`/${FILM_DIR}`)}
+${crumbs(trail)}
+
+  <main id="top" class="wrap docs-index" tabindex="-1">
+    <header class="doc-header">
+      <p class="eyebrow">${FILM_TITLE}</p>
+      <h1>${escapeHtml(FILM_HEADING)}</h1>
+      <p class="lead">${escapeHtml(FILM_LEAD)}</p>
+    </header>
+    <ul class="film-list" role="list">
+${films.map((film) => filmCard(film, '      ')).join('\n')}
+    </ul>
+  </main>
+
+${FOOTER}`;
+}
+
 // The home page's "Notes" section, which the home nav's Notes heading link jumps to. With no docs the block is empty, so nothing renders.
 export function homeSection(docs) {
   if (!docs.length) return '\n    ';
@@ -762,11 +936,12 @@ ${docList(docs.slice(0, HOME_LIMIT), 3, '      ')}
     `;
 }
 
-export function sitemap(docs, games = []) {
-  // /, /games and /research get no <lastmod>: a home-page-only edit never moves it, so it was
-  // unreliable. Each doc keeps its own (updated, else published), which is a real content date.
+export function sitemap(docs, games = [], films = []) {
+  // /, /film, /games and /research get no <lastmod>: a home-page-only edit never moves it, so it
+  // was unreliable. Each doc keeps its own (updated, else published), which is a real content date.
   const entries = [
     [`${SITE}/`, null],
+    ...(films.length ? [[`${SITE}/${FILM_DIR}`, null]] : []),
     ...(games.length ? [[`${SITE}/games`, null]] : []),
     ...(docs.length ? [[`${SITE}/${DOCS_DIR}`, null]] : []),
     ...docs.map((d) => [d.url, d.modified]),
@@ -778,9 +953,10 @@ export function sitemap(docs, games = []) {
 
 // ---------------------------------------------------------------- everything
 
-export function buildSite({ sources, gameSources = [], indexHtml }) {
+export function buildSite({ sources, gameSources = [], filmSources = [], indexHtml }) {
   const docs = sortDocs(sources.map(({ name, text }) => loadDoc(name, text)));
   const games = sortGames(gameSources.map(({ name, text }) => loadGame(name, text)));
+  const films = sortFilms(filmSources.map(({ name, text }) => loadFilm(name, text)));
   // The date lives in the file name, so the directory no longer keeps slugs unique: two dates can
   // claim one URL, and the second page would silently overwrite the first.
   const bySlug = new Map();
@@ -796,7 +972,8 @@ export function buildSite({ sources, gameSources = [], indexHtml }) {
   for (const doc of docs) files.set(`${DOCS_DIR}/${doc.slug}.html`, docPage(doc, theme));
   if (docs.length) files.set(`${DOCS_DIR}/index.html`, indexPage(docs, theme));
   if (games.length) files.set('games/index.html', gamesPage(games, theme));
-  files.set('sitemap.xml', sitemap(docs, games));
+  if (films.length) files.set(`${FILM_DIR}/index.html`, filmsPage(films, theme));
+  files.set('sitemap.xml', sitemap(docs, games, films));
   files.set('index.html', replaceBlock(indexHtml, 'docs', homeSection(docs)));
   return files;
 }

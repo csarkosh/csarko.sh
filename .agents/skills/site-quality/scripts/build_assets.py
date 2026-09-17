@@ -4,12 +4,15 @@ build_assets.py — deterministically build the site's hashed static assets.
 
 Sources (in .agents/skills/site-quality/assets/):
   portrait-source.jpg     the full-resolution portrait
+  films/<slug>.jpg        one poster per film in docs/films/, portrait (9:16)
   fonts/*.woff2           self-hosted variable fonts (latin subset)
 
 Outputs (in public/):
   assets/portrait-<w>.<hash>.{avif,webp,jpg}   w = 240, 360, 480, 720
+  assets/film-<slug>-<w>.<hash>.{avif,webp,jpg}   w = 200, 240, 400, 480
   assets/<font>.<hash>.woff2
   portrait.jpg                                 stable 720px URL for JSON-LD / sharing
+  film/<slug>.jpg                              stable 720px poster, cited by the film's VideoObject
 
 Every file in public/assets/ is named by the first 8 hex chars of its SHA-256, so
 firebase.json can cache that directory for a year (immutable) without ever
@@ -19,6 +22,7 @@ markers in every public/*.html, public/research/*.html and public/games/*.html t
   <!-- generated:head -->  …  <!-- /generated:head -->          font preload
   /* generated:fonts */    …  /* /generated:fonts */            @font-face rules
   <!-- generated:portrait --> … <!-- /generated:portrait -->    <picture> markup
+  <!-- generated:film-poster:<slug> --> … <!-- /… -->           a film's poster <picture>
   <!-- generated:analytics --> … <!-- /generated:analytics -->  analytics <script>
 
 It also writes the Content-Security-Policy in firebase.json from CSP below plus
@@ -44,6 +48,14 @@ WIDTHS = (240, 360, 480, 720)
 # Rendered size: 230px wide on desktop, a 120px circle at <=640px viewports.
 SIZES = "(max-width: 640px) 120px, 230px"
 FALLBACK_WIDTH = 480
+# A film poster is 240px wide in its card, 200px once the card stacks on a phone, so these are
+# those two sizes and their 2x. FILM_DIR mirrors docs_lib.mjs, which builds the pages.
+FILM_DIR = "film"
+FILM_WIDTHS = (200, 240, 400, 480)
+FILM_SIZES = "(max-width: 640px) 200px, 240px"
+FILM_FALLBACK_WIDTH = 240
+# What the stable poster (and the portrait) are written at: big enough to share, small enough to commit.
+STABLE_WIDTH = 720
 CONFIG = json.loads((ROOT / ".agents/skills/site-quality/site.json").read_text())
 
 # The site's Content-Security-Policy, before analytics. Order is preserved.
@@ -110,6 +122,23 @@ def encode(img, fmt: str) -> bytes:
     return buf.getvalue()
 
 
+# A film poster's block, with the indentation of its opening marker, so the <picture> that replaces
+# its contents lines up with the markup around it.
+FILM_BLOCK = re.compile(
+    r"([ ]*)(<!-- generated:film-poster:([a-z0-9-]+) -->)(.*?)([ ]*)(<!-- /generated:film-poster:\3 -->)", re.S)
+
+
+def film_block(m, prefix, film_srcsets, film_picture):
+    indent, slug, inner = m.group(1), m.group(3), m.group(4)
+    # No source image for this slug: leave the page alone rather than drop the poster it already has.
+    if slug not in film_srcsets:
+        return m.group(0)
+    alt = re.search(r'alt="([^"]*)"', inner)
+    return (indent + m.group(2) + "\n"
+            + film_picture(slug, prefix, alt.group(1) if alt else "", indent)
+            + "\n" + indent + m.group(6))
+
+
 def main() -> int:
     try:
         from PIL import Image, features
@@ -136,8 +165,33 @@ def main() -> int:
             srcsets[fmt].append(f"assets/{name} {w}w")
             if fmt == "jpg" and w == FALLBACK_WIDTH:
                 fallback = (name, w, round(w * ratio))
-    big = source.resize((720, round(720 * ratio)), Image.Resampling.LANCZOS)
+    big = source.resize((STABLE_WIDTH, round(STABLE_WIDTH * ratio)), Image.Resampling.LANCZOS)
     (PUBLIC / "portrait.jpg").write_bytes(encode(big, "jpg"))
+
+    # ---- film posters, one per docs/films/<slug>.md (the page builder writes the markers)
+    film_srcsets: dict = {}
+    film_fallback: dict = {}
+    film_dir = SRC / "films"
+    for src_path in sorted(film_dir.glob("*.jpg")) if film_dir.is_dir() else []:
+        slug = src_path.stem
+        poster = Image.open(src_path).convert("RGB")
+        poster_ratio = poster.height / poster.width
+        film_srcsets[slug] = {"avif": [], "webp": [], "jpg": []}
+        for w in FILM_WIDTHS:
+            resized = poster.resize((w, round(w * poster_ratio)), Image.Resampling.LANCZOS)
+            for fmt in film_srcsets[slug]:
+                name = write_hashed(f"film-{slug}-{w}", fmt, encode(resized, fmt), keep)
+                film_srcsets[slug][fmt].append(f"assets/{name} {w}w")
+                if fmt == "jpg" and w == FILM_FALLBACK_WIDTH:
+                    film_fallback[slug] = (name, w, round(w * poster_ratio))
+        stable = poster.resize((STABLE_WIDTH, round(STABLE_WIDTH * poster_ratio)), Image.Resampling.LANCZOS)
+        (PUBLIC / FILM_DIR).mkdir(parents=True, exist_ok=True)
+        (PUBLIC / FILM_DIR / f"{slug}.jpg").write_bytes(encode(stable, "jpg"))
+    # A film that is gone leaves its stable poster behind, which nothing would ever overwrite.
+    for stale_poster in sorted((PUBLIC / FILM_DIR).glob("*.jpg")) if (PUBLIC / FILM_DIR).is_dir() else []:
+        if stale_poster.stem not in film_srcsets:
+            stale_poster.unlink()
+            print(f"removed public/{FILM_DIR}/{stale_poster.name}")
 
     def picture(prefix):
         ss = {fmt: ", ".join(prefix + s for s in items) for fmt, items in srcsets.items()}
@@ -148,6 +202,20 @@ def main() -> int:
             f'          <img src="{prefix}assets/{fallback[0]}" srcset="{ss["jpg"]}" sizes="{SIZES}" '
             f'width="{fallback[1]}" height="{fallback[2]}" alt="Portrait of Cyrus Sarkosh" fetchpriority="high" />\n'
             "        </picture>"
+        )
+
+    def film_picture(slug, prefix, alt, indent):
+        """A film poster's <picture>. The alt text comes from the markup being replaced, which
+        build_docs.mjs wrote from the film's front matter: one source of truth, carried across."""
+        ss = {fmt: ", ".join(prefix + s for s in items) for fmt, items in film_srcsets[slug].items()}
+        name, w, h = film_fallback[slug]
+        return (
+            f'{indent}<picture>\n'
+            f'{indent}  <source type="image/avif" srcset="{ss["avif"]}" sizes="{FILM_SIZES}" />\n'
+            f'{indent}  <source type="image/webp" srcset="{ss["webp"]}" sizes="{FILM_SIZES}" />\n'
+            f'{indent}  <img src="{prefix}assets/{name}" srcset="{ss["jpg"]}" sizes="{FILM_SIZES}" '
+            f'width="{w}" height="{h}" alt="{alt}" loading="lazy" decoding="async" />\n'
+            f'{indent}</picture>'
         )
 
     # ---- fonts
@@ -211,8 +279,9 @@ def main() -> int:
     # ---- rewrite generated blocks in every page that has them
     # index.html uses relative paths (so the file:// preview works). 404.html is
     # served for missing URLs at any depth, and the built pages live a directory
-    # down under /research and /games, so their paths must be root-relative.
-    built = [q for d in ("research", "games") for q in sorted((PUBLIC / d).glob("*.html"))]
+    # down under /research, /games and /film, so their paths must be root-relative.
+    built = [q for d in ("research", "games", FILM_DIR) if (PUBLIC / d).is_dir()
+             for q in sorted((PUBLIC / d).glob("*.html"))]
     for page in sorted(PUBLIC.glob("*.html")) + built:
         prefix = "" if page == PUBLIC / "index.html" else "/"
         blocks = {
@@ -225,6 +294,7 @@ def main() -> int:
         before = html
         for (start, end), body in blocks.items():
             html = re.sub(f"({start})(.*?)({end})", lambda m: m.group(1) + body + m.group(3), html, flags=re.S)
+        html = FILM_BLOCK.sub(lambda m: film_block(m, prefix, film_srcsets, film_picture), html)
         if html != before:
             page.write_text(html, encoding="utf-8")
             print(f"rewrote generated blocks in public/{page.relative_to(PUBLIC)}")
@@ -233,6 +303,9 @@ def main() -> int:
         size = (OUT / name).stat().st_size
         print(f"  assets/{name:44} {size:>7,} B")
     print(f"  portrait.jpg{'':39} {(PUBLIC / 'portrait.jpg').stat().st_size:>7,} B")
+    for slug in sorted(film_srcsets):
+        f = PUBLIC / FILM_DIR / f"{slug}.jpg"
+        print(f"  {FILM_DIR}/{slug}.jpg{'':{max(1, 44 - len(FILM_DIR) - len(slug) - 5)}} {f.stat().st_size:>7,} B")
     return 0
 
 

@@ -2,11 +2,12 @@
 
 Cyrus Sarkosh's portfolio site, live at **https://csarko.sh**. A home page (who
 he is, where he's worked, the games he builds, his skills, and how to reach him),
-a games list at **https://csarko.sh/games** and research docs at
+a games list at **https://csarko.sh/games**, short films at
+**https://csarko.sh/film** and research docs at
 **https://csarko.sh/research** (served at `/docs` until 2026-09-17; those URLs
 now 301 there). No framework and no CI; the one build step,
-`generate-assets.sh`, also turns `docs/published/*.md` and `docs/games/*.md`
-into pages.
+`generate-assets.sh`, also turns `docs/published/*.md`, `docs/games/*.md` and
+`docs/films/*.md` into pages.
 
 ## Layout
 
@@ -20,9 +21,10 @@ into pages.
 | `public/licenses/fonts-OFL.txt` | Font licenses. |
 | `public/robots.txt` | Crawl rules. |
 | `docs/published/<YYYY-MM-DD>-<slug>.md` | **Published docs, source of truth.** Markdown with front matter, one file per doc, named for its `published:` date (the build fails if the two disagree). The URL is the slug alone: `/research/<slug>`, no date. The repo is public, so committing a file here publishes it; use the `publish-doc` skill. |
+| `docs/films/<slug>.md` | **The films, source of truth.** One file per short film, named for the slug alone (a date prefix is refused; `released:` in the front matter is the date). Front matter also carries `watch` (the YouTube URL), `runtime`, `alt` (the poster's alt text), `tags` and an optional `warning` (a content warning, shown on the card). Its poster is committed at `.agents/skills/site-quality/assets/films/<slug>.jpg`. The repo is public, so committing a file here publishes it. |
 | `docs/games/<slug>.md` | **The games, source of truth.** Markdown with front matter, one file per game, named for the slug alone: a game is not a dated log entry, so a date prefix is refused (`released:` in the front matter is the date). The repo is public, so committing a file here publishes it. |
-| `public/research/`, `public/games/`, `public/sitemap.xml` | **Generated** from `docs/published/` and `docs/games/` by `build_docs.mjs` (run by `generate-assets.sh`), along with the `generated:docs` block in `index.html`. |
-| `docs/superpowers/` | Internal design specs and implementation plans. **Never published** (unlike its siblings `docs/published/` and `docs/games/`, which are). |
+| `public/research/`, `public/games/`, `public/film/`, `public/sitemap.xml` | **Generated** from `docs/published/`, `docs/games/` and `docs/films/` by `build_docs.mjs` (run by `generate-assets.sh`), along with the `generated:docs` block in `index.html`. `public/film/<slug>.jpg` is each film's stable poster, written by `build_assets.py`. |
+| `docs/superpowers/` | Internal design specs and implementation plans. **Never published** (unlike its siblings `docs/published/`, `docs/games/` and `docs/films/`, which are). |
 | `firebase.json`, `.firebaserc` | Firebase Hosting config: publish `public/`, cache headers, and the 301 redirects from the old `/docs` URLs to `/research` (keep them: old links and search results still use them). |
 | `_infra/` | Terraform for the hosting and DNS. Same shape as `~/Projects/fps/_infra`. |
 | `.agents/skills/` | Agent skills: `preview`, `deploy`, `site-quality` and `publish-doc`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
@@ -32,13 +34,13 @@ into pages.
 ## Workflows
 
 - **See a change:** `.agents/skills/preview/scripts/preview.sh` (opens the home page
-  from disk; use `--serve` for `/games`, `/research` and their links) or `--shots` for
-  desktop + mobile screenshots of the home page, `/games` and the newest doc, in
+  from disk; use `--serve` for `/film`, `/games`, `/research` and their links) or `--shots` for
+  desktop + mobile screenshots of the home page, `/film`, `/games` and the newest doc, in
   both the dark and light themes, in `/tmp/csarko-sh-preview/`. After any visual
   edit, look at the screenshots in both themes before calling it done.
 - **Publish a doc:** the `publish-doc` skill.
 - **Ship a change:** `.agents/skills/deploy/scripts/deploy.sh`. It verifies the
-  deployed home page, `/games`, `/research` and newest doc byte-for-byte on both
+  deployed home page, `/film`, `/games`, `/research` and newest doc byte-for-byte on both
   the web.app URL and csarko.sh. `--preview` gives a 7-day shareable channel
   instead.
 - **Change infrastructure:** `terraform -chdir=_infra plan`, then `apply`. Never
@@ -128,7 +130,8 @@ three from the command line):
 ## Content rules (Cyrus's standing preferences)
 
 - **No email address or phone number anywhere on the page.** He doesn't want
-  spam. Contact goes through LinkedIn (the primary button), GitHub and Substack.
+  spam. Contact goes through LinkedIn (the primary button), GitHub, Substack and
+  YouTube (*the YouTube chip was added with the `/film` page, 2026-09-17*).
   `deploy.sh` enforces this and refuses to publish otherwise.
 - **Dark and light themes, chosen by the visitor's system setting, no toggle**
   *(Cyrus, 2026-09-14; it was dark-only before)*. Dark is the default. The light
@@ -160,7 +163,8 @@ three from the command line):
   Working), deliberately about him rather than DoorDash metrics. An earlier
   "What I care about" version was tried and replaced.
 - **No em-dashes in page copy**; commas, colons, semicolons.
-- **Projects section** *(the home page's `#projects`, labelled `02 / Projects`;
+- **Projects section** *(the home page's `#projects`, labelled `03 / Projects`
+  since the Film section took `02`, 2026-09-17;
   it was `#games` and `02 / Games & projects` until the `/games` page took that
   name)*: Day Hike (playable, links to
   `https://games.csarko.sh/dayhike/`), **`game-dayhike`** (linked to
@@ -184,20 +188,40 @@ three from the command line):
   calls the page `Research`; the page's own H1 is "Research & notes" and its eyebrow
   "Research", *renamed from "Research & docs" / "Docs", 2026-09-16; the eyebrow
   was briefly "Notes"*. Only the URL moved: the sources stay in `docs/published/`
-  and the code still calls them docs. The home page's section is `03 / Notes` (`#notes`), with a `Notes`
+  and the code still calls them docs. The home page's section is `04 / Notes` (`#notes`), with a `Notes`
   heading link after `Projects` in its nav), copied
   into `docs/published/` as `<YYYY-MM-DD>-<slug>.md` (the published copy is the
   source of truth; the URL is the slug, without the date). The page copy rules
-  apply (no email, phone or em-dashes): the build rejects em-dashes in both
-  `docs/published/` and `docs/games/`, and `deploy.sh` rejects email addresses
-  and phone numbers (its scan covers `public/*.html`, `public/research/*.html`,
-  `public/games/*.html`, `docs/published/*.md` and `docs/games/*.md`). Docs
+  apply (no email, phone or em-dashes): the build rejects em-dashes in
+  `docs/published/`, `docs/games/` and `docs/films/` alike, and `deploy.sh` rejects email
+  addresses and phone numbers (its scan covers `public/*.html`, `public/research/*.html`,
+  `public/games/*.html`, `public/film/*.html`, `docs/published/*.md`, `docs/games/*.md`
+  and `docs/films/*.md`). Docs
   from private repositories such as `magicpixel.ai` need Cyrus's OK per doc, and
   never describe the commercial asset pipeline. Launched with
   `stylized-shader-looks`, from `game-dayhike`.
+- **Film** *(added 2026-09-17)*: short films at **`/film`** (nav: `Film`, first
+  among the page links on every page, and no heading link, since the home page
+  has no film section; the page's H1 is "Short films on YouTube",
+  its eyebrow "Film"), built from `docs/films/*.md`, one file per film. Each card
+  carries the film's poster, a `Short film · <runtime>` kicker, its copy, tags,
+  its content warning if it has one (bold, in the `--warning` yellow, so it is
+  read before the link rather than after the film), and a "Watch on YouTube"
+  link out to the video (*the warning was added 2026-09-17: horror is the genre, so a viewer
+  should know before clicking; it is per film, not a standing notice on the
+  page*); the page's JSON-LD lists each
+  film as a `VideoObject`. **The home page carries no film section** *(one was
+  tried on 2026-09-17 and removed the same day, at Cyrus's request; the home
+  page's sections stayed `01`-`05` as they were)*: the nav's `Film` link is the
+  only way in, as it is for `/games`. The films live on his YouTube channel
+  **https://www.youtube.com/@csarkosh**, which the home page links from the hero
+  chips, the Contact chips and the JSON-LD `sameAs`. **Posters are self-hosted**:
+  the source frame is committed under the site-quality skill's `assets/films/`
+  and `build_assets.py` emits the hashed AVIF/WebP/JPEG set, so the page still
+  makes no third-party request. Launched with `who-is-standing-in-my-hallway`.
 - **Breadcrumbs** *(added 2026-09-15)*: every generated page carries a trail
   under the nav (`Home › Research › <title>` on a doc, `Home › Research` on
-  `/research`, `Home › Games` on `/games`); the home page and `404.html` carry none.
+  `/research`, `Home › Games` on `/games`, `Home › Film` on `/film`); the home page and `404.html` carry none.
   A doc page's eyebrow is therefore the date alone, not `Research · <date>`. The
   trail and the page's `BreadcrumbList` JSON-LD are one array in `docs_lib.mjs`
   and `check.py` fails the build if they drift apart; see `site-quality`,
@@ -238,6 +262,7 @@ do).
 | `--bg` | `#0a0b0e` | `#f6f7f9` |
 | `--surface` / `--surface-2` | `#111318` / `#161922` | `#ffffff` / `#eef0f4` |
 | `--text` / `--muted` / `--faint` | `#e8eaf0` / `#a0a8b8` / `#7d8597` | `#12151c` / `#4a5263` / `#5f677a` |
+| `--warning` | `#f5c451` | `#8a6100` | 
 
 The light accent is a deep version of the mint (same hue, ~167°), because the
 mint itself is unreadable on white; the mint still shows up in light mode as the

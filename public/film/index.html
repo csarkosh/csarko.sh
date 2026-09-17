@@ -3,26 +3,23 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Stylized shader looks: how games build a visual identity · Cyrus Sarkosh</title>
-  <meta name="description" content="How games use shaders to build a distinct look, from ink outlines and cel lighting to dithering, gradient fog and VHS effects." />
-  <link rel="canonical" href="https://csarko.sh/research/stylized-shader-looks" />
+  <title>Short films: experiments in stable AI generation · Cyrus Sarkosh</title>
+  <meta name="description" content="Short films by Cyrus Sarkosh, experiments in getting AI video generation to hold the same actor and the same room from shot to shot." />
+  <link rel="canonical" href="https://csarko.sh/film" />
 
-  <meta property="og:type" content="article" />
+  <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Cyrus Sarkosh" />
   <meta property="og:locale" content="en_US" />
-  <meta property="og:url" content="https://csarko.sh/research/stylized-shader-looks" />
-  <meta property="og:title" content="Stylized shader looks: how games build a visual identity" />
-  <meta property="og:description" content="How games use shaders to build a distinct look, from ink outlines and cel lighting to dithering, gradient fog and VHS effects." />
+  <meta property="og:url" content="https://csarko.sh/film" />
+  <meta property="og:title" content="Film" />
+  <meta property="og:description" content="Short films by Cyrus Sarkosh, experiments in getting AI video generation to hold the same actor and the same room from shot to shot." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
-  <meta property="article:published_time" content="2026-09-14" />
-  <meta property="article:modified_time" content="2026-09-14" />
-  <meta property="article:author" content="https://csarko.sh/" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Stylized shader looks: how games build a visual identity" />
-  <meta name="twitter:description" content="How games use shaders to build a distinct look, from ink outlines and cel lighting to dithering, gradient fog and VHS effects." />
+  <meta name="twitter:title" content="Film" />
+  <meta name="twitter:description" content="Short films by Cyrus Sarkosh, experiments in getting AI video generation to hold the same actor and the same room from shot to shot." />
   <meta name="twitter:image" content="https://csarko.sh/og-image.jpg" />
   <meta name="twitter:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
 
@@ -43,35 +40,42 @@
   "@context": "https://schema.org",
   "@graph": [
     {
-      "@type": "TechArticle",
-      "@id": "https://csarko.sh/research/stylized-shader-looks#article",
-      "headline": "Stylized shader looks: how games build a visual identity",
-      "description": "How games use shaders to build a distinct look, from ink outlines and cel lighting to dithering, gradient fog and VHS effects.",
-      "datePublished": "2026-09-14",
-      "dateModified": "2026-09-14",
-      "url": "https://csarko.sh/research/stylized-shader-looks",
-      "mainEntityOfPage": "https://csarko.sh/research/stylized-shader-looks",
-      "wordCount": 1074,
-      "inLanguage": "en",
-      "image": "https://csarko.sh/og-image.jpg",
-      "author": {
-        "@type": "Person",
-        "@id": "https://csarko.sh/#person",
-        "name": "Cyrus Sarkosh",
-        "url": "https://csarko.sh/"
-      },
-      "publisher": {
-        "@type": "Person",
-        "@id": "https://csarko.sh/#person",
-        "name": "Cyrus Sarkosh",
-        "url": "https://csarko.sh/"
-      },
+      "@type": "CollectionPage",
+      "@id": "https://csarko.sh/film#page",
+      "url": "https://csarko.sh/film",
+      "name": "Film",
+      "description": "Short films by Cyrus Sarkosh, experiments in getting AI video generation to hold the same actor and the same room from shot to shot.",
       "isPartOf": {
         "@id": "https://csarko.sh/#website"
       },
-      "sameAs": [
-        "https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-14-stylized-shader-looks.md"
-      ]
+      "about": {
+        "@id": "https://csarko.sh/#person"
+      },
+      "mainEntity": {
+        "@type": "ItemList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "item": {
+              "@type": "VideoObject",
+              "name": "Who is standing in my hallway?",
+              "description": "A 16 second analog horror short. A woman alone in a dark apartment calls out to whoever is standing at the end of the hallway, and gets an answer.",
+              "thumbnailUrl": "https://csarko.sh/film/who-is-standing-in-my-hallway.jpg",
+              "uploadDate": "2026-09-17",
+              "duration": "PT16S",
+              "url": "https://www.youtube.com/shorts/jBh7F1knRAA",
+              "embedUrl": "https://www.youtube.com/embed/jBh7F1knRAA",
+              "author": {
+                "@type": "Person",
+                "@id": "https://csarko.sh/#person",
+                "name": "Cyrus Sarkosh",
+                "url": "https://csarko.sh/"
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "@type": "BreadcrumbList",
@@ -85,14 +89,8 @@
         {
           "@type": "ListItem",
           "position": 2,
-          "name": "Research",
-          "item": "https://csarko.sh/research"
-        },
-        {
-          "@type": "ListItem",
-          "position": 3,
-          "name": "Stylized shader looks: how games build a visual identity",
-          "item": "https://csarko.sh/research/stylized-shader-looks"
+          "name": "Film",
+          "item": "https://csarko.sh/film"
         }
       ]
     }
@@ -340,13 +338,13 @@
     }
   </style>
 </head>
-<body class="doc-page">
+<body>
   <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
       <a class="wordmark" href="/">csarko<span>.sh</span></a>
       <ul>
-        <li><a href="/film">Film</a></li>
+        <li><a href="/film" aria-current="page">Film</a></li>
         <li><a href="/games">Games</a></li>
         <li><a href="/research">Research</a></li>
       </ul>
@@ -356,200 +354,43 @@
     <div class="wrap">
       <ol>
         <li><a href="/">Home</a></li>
-        <li><a href="/research">Research</a></li>
-        <li><span aria-current="page">Stylized shader looks: how games build a visual identity</span></li>
+        <li><span aria-current="page">Film</span></li>
       </ol>
     </div>
   </nav>
 
-  <div class="wrap shell">
-    <aside class="rail" aria-label="Contents">
-      <p class="section-label">Contents</p>
-      <ol>
-        <li><a href="#outlines-and-ink"><span class="num" aria-hidden="true">01</span><span>Outlines and ink</span></a></li>
-        <li><a href="#stepped-or-reshaped-lighting"><span class="num" aria-hidden="true">02</span><span>Stepped or reshaped lighting</span></a></li>
-        <li><a href="#limited-colour"><span class="num" aria-hidden="true">03</span><span>Limited colour</span></a></li>
-        <li><a href="#deliberately-low-fidelity"><span class="num" aria-hidden="true">04</span><span>Deliberately low fidelity</span></a></li>
-        <li><a href="#painterly-and-illustrative"><span class="num" aria-hidden="true">05</span><span>Painterly and illustrative</span></a></li>
-        <li><a href="#atmosphere-as-the-style"><span class="num" aria-hidden="true">06</span><span>Atmosphere as the style</span></a></li>
-        <li><a href="#imitating-a-camera-or-recording-medium"><span class="num" aria-hidden="true">07</span><span>Imitating a camera or recording medium</span></a></li>
-        <li><a href="#shaders-tied-to-the-mechanics"><span class="num" aria-hidden="true">08</span><span>Shaders tied to the mechanics</span></a></li>
-        <li><a href="#what-this-suggests-for-day-hike"><span>What this suggests for Day Hike</span></a></li>
-        <li><a href="#sources"><span>Sources</span></a></li>
-      </ol>
-    </aside>
-    <main id="top" tabindex="-1">
-      <header class="doc-header">
-        <p class="eyebrow">Sep 14, 2026</p>
-        <h1>Stylized shader looks: how games build a visual identity</h1>
-        <ul class="tags">
-          <li>5 min read</li>
-          <li><a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-14-stylized-shader-looks.md" target="_blank" rel="noopener">Also on GitHub</a></li>
-        </ul>
-      </header>
-      <div class="prose">
-<p><strong>Question:</strong> what are the different ways games have used shaders to give themselves a distinct
-look, in the way Borderlands&#39; ink outlines make it read as a comic book?</p>
-<p><strong>Short answer:</strong> most memorable looks come from one or two strong rules applied everywhere,
-not from many small effects. Borderlands itself is mostly two things: a post-process pass that
-finds edges in the depth and normal buffers and draws them black, and textures that were
-hand-painted with ink lines already in them. The lighting underneath is fairly conventional.</p>
-<p>Every game below links to its Steam page so you can see the look in the store screenshots and
-trailers. Where a game is not sold on Steam, the link goes to its official site, or to its
-Wikipedia article if it is no longer sold at all.</p>
-<div class="section-head"><p class="section-label">01</p><h2 id="outlines-and-ink"><a class="anchor" href="#outlines-and-ink">Outlines and ink</a></h2></div>
-<ul>
-<li><strong>Post-process edge detection:</strong> <a class="external" href="https://store.steampowered.com/app/729040/" target="_blank" rel="noopener">Borderlands</a>
-and <a class="external" href="https://store.steampowered.com/app/1170760/" target="_blank" rel="noopener">XIII</a> (the 2003 original, sold as
-<em>XIII - Classic</em>). Find sudden jumps in depth or surface angle in screen space and draw a
-line there. It is cheap and catches every object, but line width is the same everywhere and
-cannot be art-directed.</li>
-<li><strong>Inverted hull:</strong> <a class="external" href="https://store.steampowered.com/app/520440/" target="_blank" rel="noopener">Guilty Gear Xrd</a>,
-<a class="external" href="https://store.steampowered.com/app/1817230/" target="_blank" rel="noopener">Hi-Fi Rush</a> and most anime-style games. Draw
-each mesh a second time, pushed out along its normals, with front faces culled. Arc System
-Works&#39; GDC 2015 talk shows how far this goes: vertex colours set line thickness, normals
-were hand-edited to control where shadows fall, and animation runs at a lowered frame rate
-so it reads like hand-drawn keyframes.</li>
-<li><strong>Ink-wash:</strong> <a class="external" href="https://store.steampowered.com/app/587620/" target="_blank" rel="noopener">Okami HD</a>. Brush-stroke outlines,
-a paper-grain overlay and a faded palette imitate sumi-e painting.</li>
-</ul>
-<div class="section-head"><p class="section-label">02</p><h2 id="stepped-or-reshaped-lighting"><a class="anchor" href="#stepped-or-reshaped-lighting">Stepped or reshaped lighting</a></h2></div>
-<ul>
-<li><strong>Cel ramps:</strong> <a class="external" href="https://en.wikipedia.org/wiki/Jet_Set_Radio" target="_blank" rel="noopener">Jet Set Radio</a> (no longer sold
-on Steam) and <a class="external" href="https://en.wikipedia.org/wiki/The_Legend_of_Zelda:_The_Wind_Waker" target="_blank" rel="noopener">The Legend of Zelda: The Wind Waker</a>
-(Nintendo only). Round the light amount into two or three flat bands instead of a smooth
-falloff.</li>
-<li><strong>Warped diffuse:</strong> <a class="external" href="https://store.steampowered.com/app/440/" target="_blank" rel="noopener">Team Fortress 2</a>. Valve&#39;s 2007
-&quot;Illustrative Rendering in Team Fortress 2&quot; paper describes it. Lighting runs through a
-hand-authored 1D ramp and gets a strong rim light, so characters read like early-20th-century
-commercial illustration and their silhouettes stay clear at a distance.</li>
-<li><strong>Authored face shadows:</strong> <a class="external" href="https://genshin.hoyoverse.com/" target="_blank" rel="noopener">Genshin Impact</a> (HoYoverse&#39;s
-own launcher, not Steam). Shadow shapes on faces come from textures, not from the geometry,
-so a nose never casts an ugly shadow.</li>
-</ul>
-<div class="section-head"><p class="section-label">03</p><h2 id="limited-colour"><a class="anchor" href="#limited-colour">Limited colour</a></h2></div>
-<ul>
-<li><strong>1-bit dithering:</strong> <a class="external" href="https://store.steampowered.com/app/653530/" target="_blank" rel="noopener">Return of the Obra Dinn</a>.
-Two colours and a dither pattern. Lucas Pope&#39;s devlog covers the hard part: a dither
-computed fresh each frame swims as the camera moves, so the final version maps the pattern
-onto a sphere around the camera for surfaces facing the viewer, which keeps it pinned while
-the camera turns, and uses blue noise everywhere else.</li>
-<li><strong>A restricted palette as the identity:</strong> <a class="external" href="https://en.wikipedia.org/wiki/MadWorld" target="_blank" rel="noopener">MadWorld</a>
-(Wii only; black, white and red), <a class="external" href="https://store.steampowered.com/app/322500/" target="_blank" rel="noopener">SUPERHOT</a>
-(a white world with red enemies) and <a class="external" href="https://store.steampowered.com/app/48000/" target="_blank" rel="noopener">LIMBO</a>
-(greyscale silhouettes).</li>
-</ul>
-<div class="section-head"><p class="section-label">04</p><h2 id="deliberately-low-fidelity"><a class="anchor" href="#deliberately-low-fidelity">Deliberately low fidelity</a></h2></div>
-<ul>
-<li><strong>The PS1 look:</strong> <a class="external" href="https://store.steampowered.com/app/1262350/" target="_blank" rel="noopener">SIGNALIS</a> and much of the
-indie horror scene. Vertices snapped to a coarse grid so they jitter, textures that warp
-because there is no perspective correction, low resolution and dithering. People&#39;s memories
-of that era make it feel uncanny.</li>
-<li><strong>3D rendered as pixel art:</strong> <a class="external" href="https://store.steampowered.com/app/588650/" target="_blank" rel="noopener">Dead Cells</a>.
-3D models rendered at low resolution with no anti-aliasing, then used as sprites.</li>
-<li><strong>Low-resolution assets under modern lighting:</strong> <a class="external" href="https://store.steampowered.com/app/892970/" target="_blank" rel="noopener">Valheim</a>.
-Pixelated textures under volumetric fog and bloom.</li>
-</ul>
-<div class="section-head"><p class="section-label">05</p><h2 id="painterly-and-illustrative"><a class="anchor" href="#painterly-and-illustrative">Painterly and illustrative</a></h2></div>
-<ul>
-<li><strong>Moebius-style line art:</strong> <a class="external" href="https://store.steampowered.com/app/757310/" target="_blank" rel="noopener">Sable</a>. Heavy
-outlines, flat colour and very little shading.</li>
-<li><strong>Hatching, watercolour and brush filters:</strong> cross-hatch textures chosen by light level,
-paper grain, or a Kuwahara filter that smears the image into brush strokes.</li>
-<li><strong>Hand-painted textures with simple lighting:</strong> early <a class="external" href="https://worldofwarcraft.blizzard.com/" target="_blank" rel="noopener">World of Warcraft</a>
-(Battle.net, not Steam). Most of the look lives in the textures.</li>
-</ul>
-<div class="section-head"><p class="section-label">06</p><h2 id="atmosphere-as-the-style"><a class="anchor" href="#atmosphere-as-the-style">Atmosphere as the style</a></h2></div>
-<ul>
-<li><strong>Gradient fog:</strong> <a class="external" href="https://store.steampowered.com/app/383870/" target="_blank" rel="noopener">Firewatch</a>. This is the
-closest reference for Day Hike. Fog colour comes from a hand-painted gradient chosen by
-distance, so far ridgelines fade into flat poster colours, and each time of day has its own
-gradient. Much of the game&#39;s identity comes from that one shader. Jane Ng&#39;s GDC 2015 talk
-covers the art direction behind it.</li>
-<li><strong>Specular glitter:</strong> <a class="external" href="https://store.steampowered.com/app/638230/" target="_blank" rel="noopener">Journey</a>. John Edwards&#39;
-GDC talk on the sand: glitter from sparkle normal maps plus a broad, ocean-like sheen made
-sand the game&#39;s signature material.</li>
-<li><strong>Tilt-shift diorama:</strong> <a class="external" href="https://store.steampowered.com/app/921570/" target="_blank" rel="noopener">OCTOPATH TRAVELER</a>
-(its &quot;HD-2D&quot; look) and <a class="external" href="https://store.steampowered.com/app/553420/" target="_blank" rel="noopener">TUNIC</a>. Strong depth of
-field, bloom and vignette make the world look like a miniature.</li>
-</ul>
-<div class="section-head"><p class="section-label">07</p><h2 id="imitating-a-camera-or-recording-medium"><a class="anchor" href="#imitating-a-camera-or-recording-medium">Imitating a camera or recording medium</a></h2></div>
-<ul>
-<li><strong>VHS and camcorder:</strong> <a class="external" href="https://store.steampowered.com/app/418370/" target="_blank" rel="noopener">Resident Evil 7 Biohazard</a>
-(its found-footage tapes) and <a class="external" href="https://store.steampowered.com/app/238320/" target="_blank" rel="noopener">Outlast</a> (the
-night-vision camcorder). Scanlines, colour bleed, noise and tracking glitches.</li>
-<li><strong>Film grain, vignette and chromatic aberration:</strong> horror uses these as shorthand for
-found footage.</li>
-<li><strong>Fog and noise as dread:</strong> <a class="external" href="https://en.wikipedia.org/wiki/Silent_Hill_(video_game)" target="_blank" rel="noopener">Silent Hill</a>
-(the 1999 PS1 original, no longer sold). The fog began as a way to hide a short draw distance
-and became the series&#39; identity; the <a class="external" href="https://store.steampowered.com/app/2124490/" target="_blank" rel="noopener">SILENT HILL 2</a>
-remake keeps it.</li>
-</ul>
-<div class="section-head"><p class="section-label">08</p><h2 id="shaders-tied-to-the-mechanics"><a class="anchor" href="#shaders-tied-to-the-mechanics">Shaders tied to the mechanics</a></h2></div>
-<ul>
-<li><strong>Painting the world in:</strong> <a class="external" href="https://store.steampowered.com/app/1206430/" target="_blank" rel="noopener">The Unfinished Swan</a>.
-The world starts pure white, and you reveal it by throwing paint.</li>
-<li><strong>Seeing by scanning:</strong> <a class="external" href="https://store.steampowered.com/app/475190/" target="_blank" rel="noopener">Scanner Sombre</a>. You
-only see the point cloud your LIDAR scanner has painted.</li>
-<li><strong>Sanity effects:</strong> <a class="external" href="https://en.wikipedia.org/wiki/Eternal_Darkness" target="_blank" rel="noopener">Eternal Darkness</a>
-(GameCube only) and <a class="external" href="https://store.steampowered.com/app/57300/" target="_blank" rel="noopener">Amnesia: The Dark Descent</a>.
-The screen warps, colour drains and the image distorts as the character&#39;s mind frays.</li>
-</ul>
-<div class="section-head"><h2 id="what-this-suggests-for-day-hike"><a class="anchor" href="#what-this-suggests-for-day-hike">What this suggests for Day Hike</a></h2></div>
-<ul>
-<li><strong>Firewatch-style gradient fog</strong> fits an outdoor hiking game. It can sit on top of
-photoreal rendering instead of replacing it, so it does not fight the world&#39;s current
-photoreal direction.</li>
-<li><strong>The horror layer</strong> could draw on sections 7 and 8. A post-process that shifts as dread
-builds would set the horror apart from the daytime hike without re-authoring any assets:
-fog colour sliding along a different gradient, grain and chromatic aberration creeping in,
-or a slight VHS bleed on the headlamp cone.</li>
-</ul>
-<p>Babylon.js supports both through the material plugins the ground shaders already use and
-through its <code>PostProcess</code> pipeline.</p>
-<div class="section-head"><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
-<div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
-<thead>
-<tr>
-<th>Source</th>
-<th>Covers</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><a class="external" href="https://www.gdcvault.com/play/1022031/GuiltyGearXrd-s-Art-Style-The" target="_blank" rel="noopener">GuiltyGearXrd&#39;s Art Style: The X Factor Between 2D and 3D</a> (GDC 2015)</td>
-<td>Inverted-hull outlines, edited normals, stepped animation</td>
-</tr>
-<tr>
-<td><a class="external" href="https://steamcdn-a.akamaihd.net/apps/valve/2007/NPAR07_IllustrativeRenderingInTeamFortress2.pdf" target="_blank" rel="noopener">Illustrative Rendering in Team Fortress 2</a> (Mitchell, Francke and Eng, NPAR 2007)</td>
-<td>Warped diffuse ramp and rim lighting</td>
-</tr>
-<tr>
-<td><a class="external" href="https://dukope.com/devlogs/obra-dinn/tig-32/" target="_blank" rel="noopener">Return of the Obra Dinn devlog, November 2017</a> (Lucas Pope)</td>
-<td>Stabilising 1-bit dithering</td>
-</tr>
-<tr>
-<td><a class="external" href="https://gdcvault.com/play/1022295/The-Art-of" target="_blank" rel="noopener">The Art of Firewatch</a> (Jane Ng, GDC 2015)</td>
-<td>Firewatch&#39;s art direction</td>
-</tr>
-<tr>
-<td><a class="external" href="https://www.gdcvault.com/play/1023191/Making-the-World-of" target="_blank" rel="noopener">Making the World of Firewatch</a> (Jane Ng, GDC 2016)</td>
-<td>Firewatch&#39;s world production</td>
-</tr>
-<tr>
-<td><a class="external" href="https://www.gdcvault.com/play/1017742/Sand-Rendering-in" target="_blank" rel="noopener">Sand Rendering in Journey</a> (John Edwards, GDC 2013)</td>
-<td>Sand glitter and sheen</td>
-</tr>
-</tbody></table></div>
-
-      </div>
-      <section class="author" aria-label="About the author">
-        <p class="section-label">Written by</p>
-        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
-        <p>Senior software engineer, founding engineer and lead on several zero-to-one products at DoorDash.</p>
-        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
-      </section>
-    </main>
-  </div>
+  <main id="top" class="wrap docs-index" tabindex="-1">
+    <header class="doc-header">
+      <p class="eyebrow">Film</p>
+      <h1>Short films</h1>
+      <p class="lead">An experiment in how far AI generation can be pushed toward a film that stays stable: the same actor, the same room, shot after shot. Each result is on YouTube.</p>
+    </header>
+    <ul class="film-list" role="list">
+      <li class="card film-card">
+        <div class="film-poster">
+          <!-- generated:film-poster:who-is-standing-in-my-hallway -->
+          <picture>
+            <source type="image/avif" srcset="/assets/film-who-is-standing-in-my-hallway-200.b5e0f11c.avif 200w, /assets/film-who-is-standing-in-my-hallway-240.a25dd71f.avif 240w, /assets/film-who-is-standing-in-my-hallway-400.5e4ecbfa.avif 400w, /assets/film-who-is-standing-in-my-hallway-480.79c4229f.avif 480w" sizes="(max-width: 640px) 200px, 240px" />
+            <source type="image/webp" srcset="/assets/film-who-is-standing-in-my-hallway-200.2f377770.webp 200w, /assets/film-who-is-standing-in-my-hallway-240.06bed0a3.webp 240w, /assets/film-who-is-standing-in-my-hallway-400.f31c03e0.webp 400w, /assets/film-who-is-standing-in-my-hallway-480.59d8199d.webp 480w" sizes="(max-width: 640px) 200px, 240px" />
+            <img src="/assets/film-who-is-standing-in-my-hallway-240.b0a536b6.jpg" srcset="/assets/film-who-is-standing-in-my-hallway-200.df13b2a7.jpg 200w, /assets/film-who-is-standing-in-my-hallway-240.b0a536b6.jpg 240w, /assets/film-who-is-standing-in-my-hallway-400.0b8edb18.jpg 400w, /assets/film-who-is-standing-in-my-hallway-480.ed57257f.jpg 480w" sizes="(max-width: 640px) 200px, 240px" width="240" height="320" alt="A woman in dark pyjamas, lit from below by her phone, staring past the camera in a dim hallway." loading="lazy" decoding="async" />
+          </picture>
+          <!-- /generated:film-poster:who-is-standing-in-my-hallway -->
+        </div>
+        <div class="film-body">
+          <p class="film-kicker">Short film · 0:16</p>
+          <h2 class="film-title">Who is standing in my hallway?</h2>
+          <div class="film-desc prose">
+<p>I have been finding strangers in my house.</p>
+<p>Made as photo puppetry: generated stills cut apart and moved frame by frame, then finished with a
+VHS pass. Every person in the film is synthetic, and no real individual is depicted.</p>
+          </div>
+          <ul class="tags" role="list"><li>Analog horror</li><li>Found footage</li><li>Photo puppetry</li></ul>
+          <p class="film-warning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>Contains horror imagery that some viewers may find disturbing.</p>
+          <a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener">Watch on YouTube <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        </div>
+      </li>
+    </ul>
+  </main>
 
   <footer>
     <div class="wrap">

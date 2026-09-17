@@ -21,7 +21,7 @@ description: >-
 
 Targets: **Lighthouse SEO / Accessibility / Best Practices 100 and Performance
 ≥ 95, Mozilla Observatory A+, no layout breakage from 320px to 1440px.** They
-apply to the home page and to every generated page: `/games`, `/research` and each doc.
+apply to the home page and to every generated page: `/film`, `/games`, `/research` and each doc.
 
 ## Scripts
 
@@ -29,10 +29,10 @@ apply to the home page and to every generated page: `/games`, `/research` and ea
 S=.agents/skills/site-quality/scripts
 $S/check.py                    # static: SEO, performance budgets, a11y, headers, 404, layout (~5s)
 $S/check.py --live             # + deployed site: live headers, caching, 404, redirects, third-party JS
-$S/check.py --lighthouse       # + Lighthouse on the home page and the newest doc, once per theme (SEO/A11y/Best Practices 100, Performance ≥ 95)
+$S/check.py --lighthouse       # + Lighthouse on the home page, /film and the newest doc, once per theme (SEO/A11y/Best Practices 100, Performance ≥ 95)
 $S/check.py --observatory      # + Mozilla HTTP Observatory (must be A+)
 $S/generate-assets.sh          # rebuild EVERYTHING generated (see below) — deterministic
-node $S/build_docs.mjs         # just the pages built from Markdown: docs/published/*.md → public/research/ and docs/games/*.md → public/games/, plus the sitemap and the home section (generate-assets.sh runs it)
+node $S/build_docs.mjs         # just the pages built from Markdown: docs/published/*.md → public/research/, docs/games/*.md → public/games/ and docs/films/*.md → public/film/, plus the sitemap and the home sections (generate-assets.sh runs it)
 ```
 
 Unit tests: `node --test .agents/skills/site-quality/tests/docs_lib.test.mjs` and
@@ -52,7 +52,9 @@ Same inputs, same outputs (two builds produce identical hashes).
 |---|---|---|
 | `public/research/<slug>.html`, `public/research/index.html`, `<!-- generated:docs -->` in `index.html` | `docs/published/<YYYY-MM-DD>-<slug>.md` via `build_docs.mjs` (logic in `docs_lib.mjs`, `marked` vendored in `scripts/vendor/`) | Doc pages copy `index.html`'s theme token blocks and get fonts and analytics from `build_assets.py`, with root-relative paths. `check.py` rebuilds into a temp dir and fails if `public/` is stale. |
 | `public/games/index.html` | `docs/games/<slug>.md` via the same `build_docs.mjs` run | The `/games` list, one entry per file: kicker from `status`, the H1 as the name, the body as the copy, `tags` as pills, and `play` as the card's "Play in your browser" link, styled like the home page's Projects card (`repo` is not linked from the card; it only feeds the JSON-LD `url` when there is no `play`). No per-game pages yet. Same theme, fonts, analytics and staleness rules as a doc page. |
-| `public/sitemap.xml` | both `docs/published/` and `docs/games/` via `build_docs.mjs` | `/`, `/games`, `/research` (no `lastmod` on any of the three), then each doc with its own. `/games` appears only while a game exists, `/research` only while a doc does. |
+| `public/film/index.html` | `docs/films/<slug>.md` via the same `build_docs.mjs` run | The `/film` list, one card per file: the poster, a kicker of `Short film · <runtime>`, the H1 as the title, the body as the copy, `tags` as pills, an optional `warning` line, and `watch` as the card's "Watch on YouTube" link. Each film is a `VideoObject` in the page's `CollectionPage`. The home page carries no film of its own: the nav's `Film` link is how you get here. |
+| `public/assets/film-<slug>-{200,240,400,480}.<hash>.{avif,webp,jpg}`, `public/film/<slug>.jpg` | `assets/films/<slug>.jpg`, one poster per film, portrait (3:4) | `build_docs.mjs` writes a `<!-- generated:film-poster:<slug> -->` marker holding a plain `<img>` with the `alt` from the front matter; `build_assets.py` swaps in the hashed `<picture>` and reads that `alt` back out, so the Markdown stays the one source of truth. The stable `film/<slug>.jpg` is what the `VideoObject` cites. A film with no source image keeps the plain `<img>`. |
+| `public/sitemap.xml` | `docs/published/`, `docs/games/` and `docs/films/` via `build_docs.mjs` | `/`, `/film`, `/games`, `/research` (no `lastmod` on any of the four), then each doc with its own. Each section's URL appears only while it has content. |
 | `public/assets/portrait-{240,360,480,720}.<hash>.{avif,webp,jpg}` | `assets/portrait-source.jpg` | Responsive LCP image. Desktop 2x loads a ~15 KB AVIF instead of a 100 KB JPEG. |
 | `public/assets/<font>.<hash>.woff2` | `assets/fonts/*.woff2` | Inter + JetBrains Mono variable, latin subset. License: `public/licenses/fonts-OFL.txt`. |
 | `public/portrait.jpg` | same | Stable URL for JSON-LD `Person.image`. |
@@ -75,7 +77,7 @@ Twitter tags with a real 1200×630 image; JSON-LD `Person` with `sameAs`
 levels; robots.txt allows all and names the sitemap. Every page's canonical must
 match its clean URL (`research/x.html` → `https://csarko.sh/research/x`); docs need
 `og:type` `article`, `TechArticle` JSON-LD whose author is `#person`, and a
-`BreadcrumbList`; `/research` and `/games` need `CollectionPage`. The sitemap must list exactly
+`BreadcrumbList`; `/research`, `/games` and `/film` need `CollectionPage`. The sitemap must list exactly
 the indexable pages, and root-relative links must resolve without a redirect (no
 trailing `/`, no `.html`).
 
@@ -126,7 +128,7 @@ and uses only root-relative paths.
 **Layout** — at 320, 360, 390, 768 and 1440px: every nav link visible on one
 line, ≥ 8px from the wordmark, no horizontal scroll, no button off-screen, skip
 link hidden until focused. At ≤ 360px the nav gap tightens to 11px. The same
-checks run on `/games`, `/research` and the newest doc.
+checks run on `/film`, `/games`, `/research` and the newest doc.
 
 **One bar, one width, every page** — `.wrap` is `max-width: 1120px` in both
 `public/index.html` and `DOCS_CSS` in `docs_lib.mjs`; change them together or
@@ -134,9 +136,10 @@ the nav jumps width between the home page and a generated page. The bar reads
 `heading links │ page links`: heading links jump inside the current page, sit in
 front and take `--faint`; page links go to another page, sit after the hairline
 `.nav-divider` and take `--muted`. The home page's is
-`Work · Projects · Notes · Skills · Contact │ Games · Research` (`Notes` jumps to `#notes`, `Projects` jumps to
-`#projects`, `Research` goes to `/research`); every generated page (a doc, `/research`,
-`/games`) has page links only (`Games · Research`, from `PAGE_LINKS` in
+`Work · Film · Projects · Notes · Skills · Contact │ Film · Games · Research` (the heading link
+`Film` jumps to `#film`, the page link `Film` goes to `/film`; `Notes` jumps to `#notes`,
+`Research` goes to `/research`); every generated page (a doc, `/research`,
+`/games`, `/film`) has page links only (`Film · Games · Research`, from `PAGE_LINKS` in
 `docs_lib.mjs`) and no divider, with `aria-current="page"` on the index page you
 are on. Nothing links home by name: the wordmark does that on every page. Heading links are `li.heading-link` whose anchor
 carries `data-collapsible="true"`: at ≤ 640px they and the divider hide, leaving
@@ -147,7 +150,7 @@ shell: `78ch` on role and doc-list copy, `72ch` on a doc's `main`.
 
 **One trail, two places** — every generated page (and only those) carries a
 breadcrumb under the nav: `Home › Research › <title>` on a doc, `Home › Research`
-on `/research`, `Home › Games` on `/games`. The visible trail and the page's
+on `/research`, `Home › Games` on `/games`, `Home › Film` on `/film`. The visible trail and the page's
 `BreadcrumbList` JSON-LD come from one array per page in `docs_lib.mjs`, since
 Google may render the trail under a search result; `check.py` fails the build if
 the two disagree, if a crumb link doesn't resolve in `public/`, if the last crumb
@@ -195,8 +198,9 @@ This is the change most likely to regress everything above. In order:
    text ≥ 4.5:1 on its surface in both. Check both themes' screenshots.
 7. Never add `noindex` to index.html, `Disallow: /`, or remove the canonical.
 8. New or changed doc? Use the `publish-doc` skill. A game is a file in
-   `docs/games/`. Either way, edit the Markdown and re-run the generator; never
-   edit `public/research/` or `public/games/` by hand.
+   `docs/games/`; a film is a file in `docs/films/` plus its poster at
+   `assets/films/<slug>.jpg`. Either way, edit the Markdown and re-run the
+   generator; never edit `public/research/`, `public/games/` or `public/film/` by hand.
 
 Content rules in `AGENTS.md` still win (no email/phone, no metrics in Experience).
 

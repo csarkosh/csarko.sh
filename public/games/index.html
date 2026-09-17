@@ -126,6 +126,8 @@
       --text: #e8eaf0;
       --muted: #a0a8b8;
       --faint: #7d8597;
+      /* Content warnings only. Yellow to stand apart from the teal accent. */
+      --warning: #f5c451;
       --accent: #7dd3c0;
       --accent-hover: #95e0cf;
       --on-accent: #06231d;
@@ -153,6 +155,7 @@
         --text: #12151c;
         --muted: #4a5263;
         --faint: #5f677a;
+        --warning: #8a6100;
         --accent: #0a735f;
         --accent-hover: #075a4a;
         --on-accent: #ffffff;
@@ -276,14 +279,35 @@
     .card:hover, .card:focus-within { border-color: var(--accent-border); transform: translateY(-2px); background: var(--surface-hover); }
     /* ::before, not ::after: an external link already uses ::after for its ↗ mark. */
     .card .stretch::before { content: ""; position: absolute; inset: 0; border-radius: var(--radius); }
-    .card .tags, .card .game-desc a { position: relative; z-index: 1; }
+    .card .tags, .card .game-desc a, .card .film-desc a { position: relative; z-index: 1; }
 
-    .doc-list, .game-list { display: grid; gap: 14px; list-style: none; margin: 0; padding: 0; }
+    .doc-list, .game-list, .film-list { display: grid; gap: 14px; list-style: none; margin: 0; padding: 0; }
     .doc-list .doc-title { margin: 0 0 4px; font-size: 1.2rem; line-height: 1.35; letter-spacing: -0.015em; font-weight: 600; }
     .doc-list .doc-title a { transition: color .15s ease; }
     .doc-list li:hover .doc-title a, .doc-list .doc-title a:focus-visible { color: var(--accent); }
     .doc-meta { margin: 0 0 6px; font-family: var(--mono); font-size: 12px; color: var(--faint); }
     .doc-desc { margin: 0; color: var(--muted); max-width: 78ch; }
+    /* A film card is the same card turned on its side: the poster leads, the text sits beside it.
+       Keep it in step with the copy in public/index.html, which carries the newest film. */
+    .film-card { flex-direction: row; align-items: flex-start; gap: 22px; }
+    .film-poster { flex: none; width: 240px; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); line-height: 0; }
+    .film-poster img { width: 100%; height: auto; display: block; }
+    .film-body { display: flex; flex-direction: column; min-width: 0; }
+    .film-kicker { margin: 0 0 10px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .film-title { margin: 0 0 10px; font-size: 1.4rem; line-height: 1.3; letter-spacing: -0.02em; font-weight: 600; }
+    .film-desc { max-width: 78ch; }
+    .film-desc p { margin: 0 0 12px; }
+    .film-desc p:last-child { margin-bottom: 0; }
+    .film-list .tags { margin-top: 16px; }
+    /* A film's content warning, under its tags: its own yellow token, and bold, so it is read
+       before the watch link rather than after the film. The icon inherits that color. */
+    .film-warning { display: flex; align-items: flex-start; gap: 8px; margin: 14px 0 0; font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--warning); }
+    .film-warning svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
+    @media (max-width: 640px) {
+      .film-card { flex-direction: column; }
+      .film-poster { width: 200px; align-self: flex-start; }
+    }
+
     .game-kicker { margin: 0 0 10px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
     .game-title { margin: 0 0 10px; font-size: 1.4rem; line-height: 1.3; letter-spacing: -0.02em; font-weight: 600; }
     .game-desc { max-width: 78ch; }
@@ -317,6 +341,7 @@
     <div class="wrap">
       <a class="wordmark" href="/">csarko<span>.sh</span></a>
       <ul>
+        <li><a href="/film">Film</a></li>
         <li><a href="/games" aria-current="page">Games</a></li>
         <li><a href="/research">Research</a></li>
       </ul>

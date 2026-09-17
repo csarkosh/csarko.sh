@@ -15,11 +15,11 @@ description: >-
 .agents/skills/preview/scripts/preview.sh           # open public/index.html in Chrome
 .agents/skills/preview/scripts/preview.sh --serve   # serve on http://localhost:4173 with Firebase-style clean URLs
 .agents/skills/preview/scripts/preview.sh --stop    # stop that server
-.agents/skills/preview/scripts/preview.sh --shots   # screenshots of home + newest doc, dark + light → /tmp/csarko-sh-preview/
+.agents/skills/preview/scripts/preview.sh --shots   # screenshots of home, /film, /games + newest doc, dark + light → /tmp/csarko-sh-preview/
 ```
 
 - **Plain open (default)** is enough for home-page changes. Its links to
-  `/games` and `/research` are root-relative and only work under `--serve`.
+  `/film`, `/games` and `/research` are root-relative and only work under `--serve`.
 - **`--serve`** runs `scripts/serve.py`, which routes like Firebase
   (`/research/x` → `research/x.html`, trailing slashes and `.html` redirect, and the
   `redirects` in `firebase.json`, such as `/docs/x` → `/research/x`). Use it for
