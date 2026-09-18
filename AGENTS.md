@@ -204,12 +204,14 @@ three from the command line):
   among the page links on every page, and no heading link, since the home page
   has no film section; the page's H1 is "Short films on YouTube",
   its eyebrow "Film"), built from `docs/films/*.md`, one file per film. Each card
-  carries the film's poster, a `Short film · <runtime>` kicker, its copy, tags,
-  its content warning if it has one (bold, in the `--warning` yellow, so it is
-  read before the link rather than after the film), and a "Watch on YouTube"
+  carries the film's poster, a `Short film · <runtime>` kicker, its content
+  warning if it has one, its title, its copy, tags, and a "Watch on YouTube"
   link out to the video (*the warning was added 2026-09-17: horror is the genre, so a viewer
   should know before clicking; it is per film, not a standing notice on the
-  page*); the page's JSON-LD lists each
+  page. It sits directly under the kicker and above the title, bold and in the
+  `--warning` yellow: the whole card is a link, so on a phone a warning further
+  down is easy to tap past without ever reading it (Cyrus, 2026-09-17; it was
+  under the tags until then)*); the page's JSON-LD lists each
   film as a `VideoObject`. **The home page carries no film section** *(one was
   tried on 2026-09-17 and removed the same day, at Cyrus's request; the home
   page's sections stayed `01`-`05` as they were)*: the nav's `Film` link is the

@@ -287,8 +287,7 @@
     .doc-list li:hover .doc-title a, .doc-list .doc-title a:focus-visible { color: var(--accent); }
     .doc-meta { margin: 0 0 6px; font-family: var(--mono); font-size: 12px; color: var(--faint); }
     .doc-desc { margin: 0; color: var(--muted); max-width: 78ch; }
-    /* A film card is the same card turned on its side: the poster leads, the text sits beside it.
-       Keep it in step with the copy in public/index.html, which carries the newest film. */
+    /* A film card is the same card turned on its side: the poster leads, the text sits beside it. */
     .film-card { flex-direction: row; align-items: flex-start; gap: 22px; }
     .film-poster { flex: none; width: 240px; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); line-height: 0; }
     .film-poster img { width: 100%; height: auto; display: block; }
@@ -299,9 +298,10 @@
     .film-desc p { margin: 0 0 12px; }
     .film-desc p:last-child { margin-bottom: 0; }
     .film-list .tags { margin-top: 16px; }
-    /* A film's content warning, under its tags: its own yellow token, and bold, so it is read
-       before the watch link rather than after the film. The icon inherits that color. */
-    .film-warning { display: flex; align-items: flex-start; gap: 8px; margin: 14px 0 0; font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--warning); }
+    /* A film's content warning, directly under the kicker and above the title: the whole card is a
+       link, so the warning has to sit where a thumb reaches the card, not at the bottom of the copy.
+       Its own yellow token, and bold. The icon inherits that color. */
+    .film-warning { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 12px; font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--warning); }
     .film-warning svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
     @media (max-width: 640px) {
       .film-card { flex-direction: column; }
