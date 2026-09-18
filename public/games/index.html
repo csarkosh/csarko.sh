@@ -299,13 +299,10 @@
     .film-desc p:last-child { margin-bottom: 0; }
     .film-list .tags { margin-top: 16px; }
     /* The page's standing notice, under the lead: every card is a link, so a visitor has to meet
-       the genre before any film is one tap away. A rule down the side so it reads as a notice.
-       The yellow token, bold; the icon inherits the color. */
+       the genre before any film is one tap away. It is the only warning on the page. A rule down
+       the side so it reads as a notice. The yellow token, bold; the icon inherits the color. */
     .film-notice { display: flex; align-items: flex-start; gap: 8px; margin: 20px 0 0; padding-left: 14px; border-left: 2px solid var(--warning); color: var(--warning); font-size: 14px; font-weight: 600; line-height: 1.5; }
-    /* A film's own content warning, under its tags: the same yellow and weight, saying what that
-       one film holds, where the page notice only says what the page may hold. */
-    .film-warning { display: flex; align-items: flex-start; gap: 8px; margin: 14px 0 0; font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--warning); }
-    .film-notice svg, .film-warning svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
+    .film-notice svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
     @media (max-width: 640px) {
       .film-card { flex-direction: column; }
       .film-poster { width: 200px; align-self: flex-start; }

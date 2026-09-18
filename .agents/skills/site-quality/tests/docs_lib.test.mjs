@@ -552,27 +552,19 @@ test('the film page carries a trail its BreadcrumbList repeats exactly', () => {
   assert.deepEqual(crumbNames(html), ['Home', 'Film']);
 });
 
-test('a film can carry a content warning, which rides on its card everywhere', () => {
-  const warning = 'Contains horror imagery that some viewers may find disturbing.';
-  const warned = film('hallway', [`warning: ${warning}`]);
-  assert.equal(warned.warning, warning);
-  const html = filmsPage([warned], themeBlocks(INDEX));
-  assert.ok(html.includes(`<p class="film-warning"><svg`));
-  assert.ok(html.includes(`${warning}</p>`));
-  // The icon is decorative, so the sentence itself has to carry the meaning.
-  assert.ok(/<p class="film-warning"><svg[^>]*aria-hidden="true"/.test(html));
-  // It is optional: a film without one renders no line at all (the rule in the stylesheet stays).
-  assert.ok(!filmsPage([film('hallway')], themeBlocks(INDEX)).includes('<p class="film-warning">'));
+test('a film carries no warning of its own; the field is not even accepted', () => {
+  assert.throws(() => film('hallway', ['warning: Contains horror imagery.']), /unknown front matter key "warning"/);
+  assert.ok(!filmsPage([film('hallway')], themeBlocks(INDEX)).includes('film-warning'));
 });
 
-test('the page carries its own standing notice, warned films or not', () => {
-  const notice = 'May contain horror imagery that some viewers may find disturbing.';
-  for (const films of [[film('hallway')], [film('hallway', ['warning: Contains horror imagery.'])]]) {
-    const html = filmsPage(films, themeBlocks(INDEX));
-    assert.ok(html.includes(`<p class="film-notice"><svg`));
-    assert.ok(html.includes(`${notice}</p>`));
-    // It sits under the lead, above the list, so it is read before any card is tapped.
-    assert.ok(html.indexOf('class="film-notice"') > html.indexOf('class="lead"'));
-    assert.ok(html.indexOf('class="film-notice"') < html.indexOf('class="film-list"'));
-  }
+test('the page carries the standing notice, which is the only warning on it', () => {
+  const notice = 'Contains horror imagery that some viewers may find disturbing.';
+  const html = filmsPage([film('hallway')], themeBlocks(INDEX));
+  assert.ok(html.includes(`<p class="film-notice"><svg`));
+  assert.ok(html.includes(`${notice}</p>`));
+  // The icon is decorative, so the sentence itself has to carry the meaning.
+  assert.ok(/<p class="film-notice"><svg[^>]*aria-hidden="true"/.test(html));
+  // It sits under the lead, above the list, so it is read before any card is tapped.
+  assert.ok(html.indexOf('class="film-notice"') > html.indexOf('class="lead"'));
+  assert.ok(html.indexOf('class="film-notice"') < html.indexOf('class="film-list"'));
 });

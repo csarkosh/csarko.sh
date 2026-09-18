@@ -302,13 +302,10 @@
     .film-desc p:last-child { margin-bottom: 0; }
     .film-list .tags { margin-top: 16px; }
     /* The page's standing notice, under the lead: every card is a link, so a visitor has to meet
-       the genre before any film is one tap away. A rule down the side so it reads as a notice.
-       The yellow token, bold; the icon inherits the color. */
+       the genre before any film is one tap away. It is the only warning on the page. A rule down
+       the side so it reads as a notice. The yellow token, bold; the icon inherits the color. */
     .film-notice { display: flex; align-items: flex-start; gap: 8px; margin: 20px 0 0; padding-left: 14px; border-left: 2px solid var(--warning); color: var(--warning); font-size: 14px; font-weight: 600; line-height: 1.5; }
-    /* A film's own content warning, under its tags: the same yellow and weight, saying what that
-       one film holds, where the page notice only says what the page may hold. */
-    .film-warning { display: flex; align-items: flex-start; gap: 8px; margin: 14px 0 0; font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--warning); }
-    .film-notice svg, .film-warning svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
+    .film-notice svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
     @media (max-width: 640px) {
       .film-card { flex-direction: column; }
       .film-poster { width: 200px; align-self: flex-start; }
@@ -367,7 +364,7 @@
       <p class="eyebrow">Film</p>
       <h1>Short films</h1>
       <p class="lead">An experiment in how far AI generation can be pushed toward a film that stays stable: same actor, same room, multi-angle.</p>
-      <p class="film-notice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>May contain horror imagery that some viewers may find disturbing.</p>
+      <p class="film-notice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>Contains horror imagery that some viewers may find disturbing.</p>
     </header>
     <ul class="film-list" role="list">
       <li class="card film-card">
@@ -389,7 +386,6 @@
 VHS pass. Every person in the film is synthetic, and no real individual is depicted.</p>
           </div>
           <ul class="tags" role="list"><li>Analog horror</li><li>Found footage</li><li>Photo puppetry</li></ul>
-          <p class="film-warning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>Contains horror imagery that some viewers may find disturbing.</p>
           <a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener">Watch on YouTube <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
         </div>
       </li>

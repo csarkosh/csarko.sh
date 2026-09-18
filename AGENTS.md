@@ -205,17 +205,17 @@ three from the command line):
   has no film section; the page's H1 is "Short films on YouTube",
   its eyebrow "Film"), built from `docs/films/*.md`, one file per film. Each card
   carries the film's poster, a `Short film · <runtime>` kicker, its title, its
-  copy, tags, its content warning if it has one, and a "Watch on YouTube"
+  copy, tags, and a "Watch on YouTube"
   link out to the video (*the warning was added 2026-09-17: horror is the genre, so a viewer
-  should know before clicking*). **Two warnings, saying different things**
-  *(Cyrus, 2026-09-17)*: the page carries a standing notice, "May contain horror
-  imagery that some viewers may find disturbing.", under the lead and above the
-  list, because every card is a link and a phone reaches one before it reaches
-  the copy; each card then carries that film's own `warning:` from its front
-  matter, under the tags, saying what that film actually holds. Both are bold
-  and in the `--warning` yellow, with the same icon; the page's is `FILM_NOTICE`
-  in `docs_lib.mjs` (fixed copy, hedged with "may", shown whether or not any
-  film declares a warning). The page's JSON-LD lists each
+  should know before clicking*). **One warning, on the page, not on the cards**
+  *(Cyrus, 2026-09-17, revised the same day)*: the page carries a standing notice,
+  "Contains horror imagery that some viewers may find disturbing.", under the lead
+  and above the list, because every card is a link and a phone reaches one before
+  it reaches the copy. It is bold and in the `--warning` yellow with an icon, and
+  it is `FILM_NOTICE` in `docs_lib.mjs`. **A film has no `warning:` field**: the
+  per-card warning was tried first, then dropped because the standing notice
+  already covers the whole list, and the front matter key is now rejected outright
+  rather than silently ignored. The page's JSON-LD lists each
   film as a `VideoObject`. **The home page carries no film section** *(one was
   tried on 2026-09-17 and removed the same day, at Cyrus's request; the home
   page's sections stayed `01`-`05` as they were)*: the nav's `Film` link is the
