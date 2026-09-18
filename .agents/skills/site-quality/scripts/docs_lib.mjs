@@ -346,7 +346,7 @@ const FILM_TITLE = 'Film';
 const FILM_HEADING = 'Short films';
 const FILM_PAGE_TITLE = 'Short films: experiments in stable AI generation';
 const FILM_DESCRIPTION = 'Short films by Cyrus Sarkosh, experiments in getting AI video generation to hold the same actor and the same room from shot to shot.';
-const FILM_LEAD = 'An experiment in how far AI generation can be pushed toward a film that stays stable: the same actor, the same room, shot after shot. Each result is on YouTube.';
+const FILM_LEAD = 'An experiment in how far AI generation can be pushed toward a film that stays stable: same actor, same room, multi-angle.';
 // A film's kicker, with its runtime after it, so the card says what it is before you read the title.
 const FILM_KICKER = 'Short film';
 const GAMES_HEADING = 'Games, playable in your browser';
