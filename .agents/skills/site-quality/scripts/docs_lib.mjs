@@ -347,6 +347,9 @@ const FILM_HEADING = 'Short films';
 const FILM_PAGE_TITLE = 'Short films: experiments in stable AI generation';
 const FILM_DESCRIPTION = 'Short films by Cyrus Sarkosh, experiments in getting AI video generation to hold the same actor and the same room from shot to shot.';
 const FILM_LEAD = 'An experiment in how far AI generation can be pushed toward a film that stays stable: same actor, same room, multi-angle.';
+// The page's standing notice. Hedged ("may"), because it speaks for the whole list: a film's own
+// warning, on its card, is the one that says what that film holds.
+const FILM_NOTICE = 'May contain horror imagery that some viewers may find disturbing.';
 // A film's kicker, with its runtime after it, so the card says what it is before you read the title.
 const FILM_KICKER = 'Short film';
 const GAMES_HEADING = 'Games, playable in your browser';
@@ -550,11 +553,14 @@ const DOCS_CSS = `
     .film-desc p { margin: 0 0 12px; }
     .film-desc p:last-child { margin-bottom: 0; }
     .film-list .tags { margin-top: 16px; }
-    /* A film's content warning, directly under the kicker and above the title: the whole card is a
-       link, so the warning has to sit where a thumb reaches the card, not at the bottom of the copy.
-       Its own yellow token, and bold. The icon inherits that color. */
-    .film-warning { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 12px; font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--warning); }
-    .film-warning svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
+    /* The page's standing notice, under the lead: every card is a link, so a visitor has to meet
+       the genre before any film is one tap away. A rule down the side so it reads as a notice.
+       The yellow token, bold; the icon inherits the color. */
+    .film-notice { display: flex; align-items: flex-start; gap: 8px; margin: 20px 0 0; padding-left: 14px; border-left: 2px solid var(--warning); color: var(--warning); font-size: 14px; font-weight: 600; line-height: 1.5; }
+    /* A film's own content warning, under its tags: the same yellow and weight, saying what that
+       one film holds, where the page notice only says what the page may hold. */
+    .film-warning { display: flex; align-items: flex-start; gap: 8px; margin: 14px 0 0; font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--warning); }
+    .film-notice svg, .film-warning svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
     @media (max-width: 640px) {
       .film-card { flex-direction: column; }
       .film-poster { width: 200px; align-self: flex-start; }
@@ -862,11 +868,11 @@ function filmCard(film, pad) {
 ${filmPoster(film, `${pad}  `)}
 ${pad}  <div class="film-body">
 ${pad}    <p class="film-kicker">${escapeHtml(film.kicker)}</p>
-${film.warning ? `${pad}    <p class="film-warning">${WARNING_ICON}${escapeHtml(film.warning)}</p>\n` : ''}${pad}    <h2 class="film-title">${film.titleHtml}</h2>
+${pad}    <h2 class="film-title">${film.titleHtml}</h2>
 ${pad}    <div class="film-desc prose">
 ${film.html}${pad}    </div>
 ${pad}    <ul class="tags" role="list">${film.tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>
-${pad}    <a class="card-link stretch" href="${escapeHtml(film.watch)}" target="_blank" rel="noopener">Watch on YouTube ${EXTERNAL_ARROW}</a>
+${film.warning ? `${pad}    <p class="film-warning">${WARNING_ICON}${escapeHtml(film.warning)}</p>\n` : ''}${pad}    <a class="card-link stretch" href="${escapeHtml(film.watch)}" target="_blank" rel="noopener">Watch on YouTube ${EXTERNAL_ARROW}</a>
 ${pad}  </div>
 ${pad}</li>`;
 }
@@ -914,6 +920,7 @@ ${crumbs(trail)}
       <p class="eyebrow">${FILM_TITLE}</p>
       <h1>${escapeHtml(FILM_HEADING)}</h1>
       <p class="lead">${escapeHtml(FILM_LEAD)}</p>
+      <p class="film-notice">${WARNING_ICON}${escapeHtml(FILM_NOTICE)}</p>
     </header>
     <ul class="film-list" role="list">
 ${films.map((film) => filmCard(film, '      ')).join('\n')}

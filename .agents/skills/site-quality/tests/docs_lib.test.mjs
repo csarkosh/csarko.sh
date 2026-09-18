@@ -564,3 +564,15 @@ test('a film can carry a content warning, which rides on its card everywhere', (
   // It is optional: a film without one renders no line at all (the rule in the stylesheet stays).
   assert.ok(!filmsPage([film('hallway')], themeBlocks(INDEX)).includes('<p class="film-warning">'));
 });
+
+test('the page carries its own standing notice, warned films or not', () => {
+  const notice = 'May contain horror imagery that some viewers may find disturbing.';
+  for (const films of [[film('hallway')], [film('hallway', ['warning: Contains horror imagery.'])]]) {
+    const html = filmsPage(films, themeBlocks(INDEX));
+    assert.ok(html.includes(`<p class="film-notice"><svg`));
+    assert.ok(html.includes(`${notice}</p>`));
+    // It sits under the lead, above the list, so it is read before any card is tapped.
+    assert.ok(html.indexOf('class="film-notice"') > html.indexOf('class="lead"'));
+    assert.ok(html.indexOf('class="film-notice"') < html.indexOf('class="film-list"'));
+  }
+});
