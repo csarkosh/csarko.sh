@@ -8,4 +8,4 @@ tags: Analog horror, Found footage, AI generated
 ---
 # Who is standing in my hallway?
 
-AI generated still cut apart and animated across frames, then finished with a VHS pass.
+AI generated stills cut apart and animated across frames, then finished with a VHS pass.
