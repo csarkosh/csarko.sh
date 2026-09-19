@@ -8,5 +8,5 @@ tags: Analog horror, Found footage, AI generated
 ---
 # Who is standing in my hallway?
 
-Generated with AI, no real people. Built from stills, then animated and graded by hand so the
-face, the room and the grain hold across cuts.
+Generated with AI, no real people. Stills generated per shot, layered and keyframed by hand, then
+composited and finished with a VHS grade so identity, set and grain stay locked across cuts.
