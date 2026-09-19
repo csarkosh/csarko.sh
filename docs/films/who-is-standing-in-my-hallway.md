@@ -8,7 +8,5 @@ tags: Analog horror, Found footage, AI generated
 ---
 # Who is standing in my hallway?
 
-Generated with AI, shot by shot, then cut together by hand. The hard part is continuity: holding
-one face, one room and one grain across shots that were never rendered together, then a finishing
-pass that covers what generation still gets wrong. The method is my own, and the details stay with
-me for now. Every person in the film is synthetic, and no real individual is depicted.
+Generated with AI, no real people. The hard part is continuity: one face, one room, shots that
+never met.

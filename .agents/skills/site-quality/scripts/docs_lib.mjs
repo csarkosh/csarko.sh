@@ -347,7 +347,7 @@ const FILM_TITLE = 'Film';
 const FILM_HEADING = 'Short films';
 const FILM_PAGE_TITLE = 'Short films: experiments in stable AI generation';
 const FILM_DESCRIPTION = 'Short films by Cyrus Sarkosh, experiments in getting AI video generation to hold the same actor and the same room from shot to shot.';
-const FILM_LEAD = 'An experiment in how far AI generation can be pushed toward a film that stays stable: same actor, same room, multi-angle.';
+const FILM_LEAD = 'An experiment in how far AI generation can be pushed toward a film that stays stable: same actor, same room, multi-shot.';
 // The page's standing notice, and the only content warning on the page: it speaks for the whole
 // list, so a visitor meets the genre before any card, each of which is a link, is one tap away.
 const FILM_NOTICE = 'Contains horror imagery that some viewers may find disturbing.';
