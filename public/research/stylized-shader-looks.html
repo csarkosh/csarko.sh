@@ -308,9 +308,19 @@
        the side so it reads as a notice. The yellow token, bold; the icon inherits the color. */
     .film-notice { display: flex; align-items: flex-start; gap: 8px; margin: 20px 0 0; padding-left: 14px; border-left: 2px solid var(--warning); color: var(--warning); font-size: 14px; font-weight: 600; line-height: 1.5; }
     .film-notice svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
+    /* On a phone the card stacks, and the kicker and title lead: the name of the film should land
+       before the poster, not under it, because a thumbnail alone says nothing about which film it
+       is. display:contents lifts the body's children into the card's own flex flow so they can be
+       ordered around the poster; the card's gap goes with it, so spacing is back on the margins. */
     @media (max-width: 640px) {
-      .film-card { flex-direction: column; }
-      .film-poster { width: 200px; align-self: flex-start; }
+      .film-card { flex-direction: column; gap: 0; }
+      .film-body { display: contents; }
+      .film-kicker { order: 1; }
+      .film-title { order: 2; margin-bottom: 14px; }
+      .film-poster { order: 3; width: 200px; align-self: flex-start; margin-bottom: 18px; }
+      .film-desc { order: 4; }
+      .film-list .tags { order: 5; }
+      .film-card .card-link { order: 6; }
     }
 
     .game-kicker { margin: 0 0 10px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }

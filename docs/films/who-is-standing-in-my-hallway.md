@@ -8,7 +8,5 @@ tags: Analog horror, Found footage, Photo puppetry
 ---
 # Who is standing in my hallway?
 
-I have been finding strangers in my house.
-
 Made as photo puppetry: generated stills cut apart and moved frame by frame, then finished with a
 VHS pass. Every person in the film is synthetic, and no real individual is depicted.

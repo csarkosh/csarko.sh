@@ -207,7 +207,11 @@ three from the command line):
   carries the film's poster, a `Short film · <runtime>` kicker, its title, its
   copy, tags, and a "Watch on YouTube"
   link out to the video (*the warning was added 2026-09-17: horror is the genre, so a viewer
-  should know before clicking*). **One warning, on the page, not on the cards**
+  should know before clicking*). The poster leads on desktop, beside the text; **on a phone
+  the kicker and title come first and the poster sits under them** *(Cyrus, 2026-09-19)*, since
+  a thumbnail alone does not say which film it is. That reorder is CSS only (the body is
+  `display: contents` inside the 640px media query in `docs_lib.mjs`, so the parts can be
+  ordered around the poster), and the markup order stays poster-then-text. **One warning, on the page, not on the cards**
   *(Cyrus, 2026-09-17, revised the same day)*: the page carries a standing notice,
   "Contains horror imagery that some viewers may find disturbing.", under the lead
   and above the list, because every card is a link and a phone reaches one before
