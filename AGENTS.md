@@ -150,18 +150,24 @@ three from the command line):
   products at DoorDash**. Don't pair "senior software engineer" with "engineering
   lead" there; it reads as two conflicting titles. "Founding engineer and lead
   on…" is fine: it describes his role on those products, not a second title. The
-  hero's second clause is exploring generative AI for media, entertainment, and
-  game development *(reworded from "…media and entertainment, starting with game
-  development", 2026-09-16)*; keep it broad, not games-only (he may move to short
-  films later, but that's not on the page). The search description, JSON-LD and
-  share card say "media and entertainment" without the games.
+  hero's second clause is exploring generative AI for film production and game
+  development *(Cyrus, 2026-09-20; it was "…media, entertainment, and game
+  development", itself reworded from "…media and entertainment, starting with game
+  development", 2026-09-16)*: now that `/film` ships his shorts, the clause names
+  film outright instead of the broad "media and entertainment". The search
+  description, JSON-LD and share card still say "media and entertainment" without
+  the games.
 - **The Experience section stays high-level** *(Cyrus, 2026-09-11)*: for each role, a
   short description of the product and his general role on it, plus tech tags.
   **No metrics, customer names, or accomplishment bullets** (ARR, merchant counts,
   call volumes, ~20x, McDonald's, Unilever…). Those details live in the résumé only.
-- **The hero tiles are a "Now" snapshot** (Building / Writing / Based in /
+- **The hero tiles are a "Now" snapshot** (Building / Filming / Based in /
   Working), deliberately about him rather than DoorDash metrics. An earlier
-  "What I care about" version was tried and replaced.
+  "What I care about" version was tried and replaced. The second tile was
+  **Writing** (csarko.log on Substack) until 2026-09-20, when Cyrus asked for it
+  to highlight his YouTube channel instead: it now reads "Filming" and links
+  `@csarkosh` to https://www.youtube.com/@csarkosh. Substack is still a hero and
+  Contact chip.
 - **No em-dashes in page copy**; commas, colons, semicolons.
 - **Projects section** *(the home page's `#projects`, labelled `03 / Projects`
   since the Film section took `02`, 2026-09-17;
