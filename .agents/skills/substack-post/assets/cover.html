@@ -1,0 +1,42 @@
+<!doctype html>
+<!--
+  Template for a Substack post's 1456×1048 cover card. cover.py fills in the title and
+  the fonts' location, renders it with headless Chrome and converts it to JPEG. The look
+  follows site-quality/assets/og-image.html: the dark tokens, the teal glow, Inter and
+  JetBrains Mono. Never served on csarko.sh, so the script below is fine here.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: "Inter"; src: url("{{FONTS}}/inter-latin-var.woff2") format("woff2"); font-weight: 400 700; }
+  @font-face { font-family: "JetBrains Mono"; src: url("{{FONTS}}/jetbrains-mono-latin-var.woff2") format("woff2"); font-weight: 400 500; }
+  html, body { margin: 0; }
+  body {
+    width: 1456px; height: 1048px; overflow: hidden; box-sizing: border-box; position: relative;
+    background: radial-gradient(ellipse at 15% 0%, rgba(125, 211, 192, 0.16), transparent 60%), #0a0b0e;
+    color: #e8eaf0; font-family: "Inter", system-ui, sans-serif;
+    display: flex; flex-direction: column; justify-content: center; padding: 0 128px;
+  }
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #7dd3c0; display: flex; align-items: center; gap: 18px; margin: 0 0 44px;
+  }
+  .eyebrow::before { content: ""; width: 16px; height: 16px; border-radius: 50%; background: #7dd3c0; box-shadow: 0 0 20px #7dd3c0; }
+  h1 { font-size: 104px; line-height: 1.06; letter-spacing: -0.035em; font-weight: 700; margin: 0; max-height: 470px; }
+  .url { position: absolute; left: 128px; bottom: 96px; font-family: "JetBrains Mono", monospace; font-size: 30px; color: #a0a8b8; }
+</style>
+</head>
+<body>
+  <p class="eyebrow">csarko.log</p>
+  <h1 id="t">{{TITLE}}</h1>
+  <p class="url">csarko.sh/research</p>
+  <script>
+    // Step the title down until it fits four lines; a 17-word title lands near 88px.
+    document.fonts.ready.then(() => {
+      const t = document.getElementById("t");
+      for (let px = 104; t.scrollHeight > 470 && px > 48; px -= 4) t.style.fontSize = px + "px";
+    });
+  </script>
+</body>
+</html>

@@ -25,9 +25,10 @@ now 301 there). No framework and no CI; the one build step,
 | `docs/games/<slug>.md` | **The games, source of truth.** Markdown with front matter, one file per game, named for the slug alone: a game is not a dated log entry, so a date prefix is refused (`released:` in the front matter is the date). The repo is public, so committing a file here publishes it. |
 | `public/research/`, `public/games/`, `public/film/`, `public/sitemap.xml` | **Generated** from `docs/published/`, `docs/games/` and `docs/films/` by `build_docs.mjs` (run by `generate-assets.sh`), along with the `generated:docs` block in `index.html`. `public/film/<slug>.jpg` is each film's stable poster, written by `build_assets.py`. |
 | `docs/superpowers/` | Internal design specs and implementation plans. **Never published** (unlike its siblings `docs/published/`, `docs/games/` and `docs/films/`, which are). |
+| `docs/substack/posts.json` | The log of csarko.log posts made with the `substack-post` skill: date, Substack URL, title and the doc slugs each covered. Not a page: the build reads only the three content folders. |
 | `firebase.json`, `.firebaserc` | Firebase Hosting config: publish `public/`, cache headers, and the 301 redirects from the old `/docs` URLs to `/research` (keep them: old links and search results still use them). |
 | `_infra/` | Terraform for the hosting and DNS. Same shape as `~/Projects/fps/_infra`. |
-| `.agents/skills/` | Agent skills: `preview`, `deploy`, `site-quality` and `publish-doc`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
+| `.agents/skills/` | Agent skills: `preview`, `deploy`, `site-quality`, `publish-doc` and `substack-post`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
 | `.claude/settings.json` | Imports the shared skill plugins from [`csarkosh/skills-general`](https://github.com/csarkosh/skills-general): `general:doc-preview` (open a markdown doc as a styled page in Chrome; not this repo's `preview`, which previews the site) and `general:search-console` (Google Search Console reports: indexing, sitemap, search performance) and `general-claude:doc-artifact` (publish a doc as a claude.ai Artifact). Change those skills in `skills-general`, not here. On a machine that has never installed them, run `claude plugin install general@csarkosh` and `claude plugin install general-claude@csarkosh`. Codex has no per-repository import: run `codex plugin marketplace add csarkosh/skills-general` and `codex plugin add general@csarkosh` once per machine. |
 | `README.md` | Human-facing overview. `LICENSE` is MIT and predates this version of the site. |
 
@@ -39,6 +40,9 @@ now 301 there). No framework and no CI; the one build step,
   both the dark and light themes, in `/tmp/csarko-sh-preview/`. After any visual
   edit, look at the screenshots in both themes before calling it done.
 - **Publish a doc:** the `publish-doc` skill.
+- **Write a Substack post:** the `substack-post` skill turns 1 to 4 published docs
+  into a short csarko.log post that links back to them, in Cyrus's voice. Its voice
+  profile is `~/.config/csarko-sh/voice.md`: outside the repo, never committed.
 - **Ship a change:** `.agents/skills/deploy/scripts/deploy.sh`. It verifies the
   deployed home page, `/film`, `/games`, `/research` and newest doc byte-for-byte on both
   the web.app URL and csarko.sh. `--preview` gives a 7-day shareable channel
@@ -189,6 +193,8 @@ three from the command line):
   short teaser of what he builds for fun, not that list.
 - **The blog is "csarko.log"** at `https://csarko.substack.com/`. It has no
   published posts yet; Cyrus will publish once Day Hike is ready to publicize.
+  Posts that introduce the research docs go through the `substack-post` skill
+  *(added 2026-09-23)* and are logged in `docs/substack/posts.json`.
 - **Docs** *(added 2026-09-15)*: research notes and specs at `/research`
   (*moved from `/docs`, 2026-09-17; the old URLs 301 to the new ones*; the nav
   calls the page `Research`; the page's own H1 is "Research & notes" and its eyebrow

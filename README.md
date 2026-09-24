@@ -11,8 +11,9 @@ public/            the site: index.html, games/ and research/ (generated) and as
 docs/published/    the published docs, as dated Markdown with front matter
 docs/games/        one Markdown file per game, named for its slug
 docs/superpowers/  internal design specs and plans, never published
+docs/substack/     the log of Substack posts made from the docs
 _infra/            Terraform for hosting (Firebase, GCP) and DNS (Route53, AWS)
-.agents/skills/    preview, deploy, site-quality and publish-doc skills for AI agents (and humans)
+.agents/skills/    preview, deploy, site-quality, publish-doc and substack-post skills for AI agents (and humans)
 firebase.json      what gets published, and how it's cached
 AGENTS.md          working context and rules for agents; CLAUDE.md points to it
 ```

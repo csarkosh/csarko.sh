@@ -5,7 +5,8 @@ description: >-
   user wants to publish, post, add or put a doc, research note, write-up or
   spec on the site ("publish this doc to my site", "add the shader research to
   csarko.sh/research"), or update or remove a published doc. Not for previewing a
-  doc privately (that's general:doc-preview) or for Substack posts.
+  doc privately (that's general:doc-preview) or for turning docs into a Substack
+  post (that's substack-post).
 ---
 
 # Publish a doc to csarko.sh/research
