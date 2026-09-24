@@ -275,3 +275,12 @@ The cover script is checked by running it once and reading the image. It gets no
 - `README.md`: the skills list.
 - `publish-doc/SKILL.md`: its description says "not … for Substack posts". It will point
   to `substack-post` instead.
+
+## Amendment, 2026-09-23: IEEE sources
+
+The same day, `publish-doc` moved to IEEE citations: bare `[n]` markers in the text and a
+numbered `## Sources` list, enforced by `docs_lib.mjs` for docs published from
+2026-09-23 (`IEEE_SINCE`) and for any doc already converted. The eleven older docs are not
+converted in bulk. Post mode's step 2 converts each chosen doc through `publish-doc`
+(entries, markers, `updated:`, deploy) before drafting, so a post never links to a doc
+whose conversion hasn't shipped.

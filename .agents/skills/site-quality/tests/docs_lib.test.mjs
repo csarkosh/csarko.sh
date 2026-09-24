@@ -1,7 +1,7 @@
 // Tests for docs_lib.mjs. Run: node --test .agents/skills/site-quality/tests/docs_lib.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSite, DocError, docPage, filmsPage, formatDate, gamesPage, homeSection, indexPage, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, replaceBlock, sitemap, sortDocs, sortFilms, sortGames, themeBlocks } from '../scripts/docs_lib.mjs';
+import { buildSite, DocError, docPage, IEEE_SINCE, filmsPage, formatDate, gamesPage, homeSection, indexPage, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, replaceBlock, sitemap, sortDocs, sortFilms, sortGames, themeBlocks } from '../scripts/docs_lib.mjs';
 
 const FILE = 'docs/published/2026-09-14-example.md';
 const DESC = 'A description that is long enough to pass the seventy character minimum for search.';
@@ -99,6 +99,60 @@ test('renderMarkdown rejects what the site cannot publish', () => {
   bad('# T\n\n[other](other.md)\n', /link "other\.md" must be/);
   bad('# T with a [link](/x)\n', /headings can't contain links \(\/x\)/);
   bad('# T\n\n## Section with a [link](https:\/\/example.com)\n', /headings can't contain links \(https:\/\/example\.com\)/);
+});
+
+// IEEE references: [n] in the text, a numbered list under "## Sources".
+const ref = (n) => `${n}. A. Author, "Page ${n}," Site. Accessed: Sep. 23, 2026. [Online]. Available: https://example.com/${n}`;
+const ieeeDoc = (text, refs = [ref(1), ref(2)]) => `# T\n\n${text}\n\n## Sources\n\n${refs.join('\n')}\n`;
+const ieeeBad = (md, pattern, opts) =>
+  assert.throws(() => renderMarkdown(md, FILE, opts), (e) => e instanceof DocError && pattern.test(e.message));
+
+test('renderMarkdown links [n] citations to an IEEE reference list', () => {
+  const fence = '`'.repeat(3);
+  const r = renderMarkdown(ieeeDoc(`Fast [1], and slow [2], [1]. Code \`a[2]\` stays.\n\n${fence}\nb[1]\n${fence}`), FILE);
+  assert.equal(r.references, 2);
+  assert.ok(r.html.includes('Fast <a class="cite" href="#ref-1">[1]</a>, and slow <a class="cite" href="#ref-2">[2]</a>, <a class="cite" href="#ref-1">[1]</a>.'));
+  assert.ok(r.html.includes('<code>a[2]</code>'));
+  assert.ok(r.html.includes('<code>b[1]\n</code>'));
+  assert.ok(r.html.includes('<ol class="references">\n<li id="ref-1"><span class="ref-num">[1]</span><div>A. Author, &quot;Page 1,&quot; Site. Accessed: Sep. 23, 2026. [Online]. Available: <a class="external" href="https://example.com/1" target="_blank" rel="noopener">https://example.com/1</a></div></li>'));
+  assert.ok(r.html.includes('<li id="ref-2">'));
+});
+
+test('renderMarkdown leaves docs without an IEEE list exactly as before', () => {
+  const md = '# T\n\nArrays like x[1] stay text.\n\n## Sources\n\n| Source | Covers |\n| --- | --- |\n| [A](https://example.com) | B |\n';
+  const r = renderMarkdown(md, FILE);
+  assert.equal(r.references, 0);
+  assert.ok(r.html.includes('x[1] stay'));
+  assert.ok(!r.html.includes('class="cite"'));
+});
+
+test('renderMarkdown enforces IEEE rules on a reference list', () => {
+  ieeeBad(ieeeDoc('Only [1].'), /reference \[2\] is never cited/);
+  ieeeBad(ieeeDoc('Both [1], [3].'), /cites \[3\] but Sources has 2 reference\(s\)/);
+  ieeeBad(ieeeDoc('Wrong order [2], then [1].'), /\[2\] is cited before \[1\]/);
+  ieeeBad(ieeeDoc('A [1] B [2].', [ref(1), ref(3)]), /reference 2 is numbered "3\."/);
+  ieeeBad(ieeeDoc('A [1].', ['1. A. Author, "Page," Site. [Online]. Available: https://example.com']), /reference \[1\] needs "Accessed:/);
+  ieeeBad(ieeeDoc('A [1].', ['1. A. Author, "Page," Site. Accessed: Sep. 23, 2026.']), /reference \[1\] needs "\[Online\]\. Available:/);
+});
+
+test('renderMarkdown requires IEEE references once a doc is new enough', () => {
+  const bullets = '# T\n\n## Sources\n\n- [A](https://example.com)\n';
+  assert.doesNotThrow(() => renderMarkdown(bullets, FILE));
+  ieeeBad(bullets, /"## Sources" must be a numbered list of IEEE references/, { ieee: true });
+  assert.doesNotThrow(() => renderMarkdown('# T\n\nNo sources at all.\n', FILE, { ieee: true }));
+  const numbered = renderMarkdown(ieeeDoc('A [1] B [2].').replace('## Sources', '## 8. Sources'), FILE, { ieee: true });
+  assert.equal(numbered.references, 2);
+});
+
+test('loadDoc holds docs published from IEEE_SINCE to IEEE, and only their pages carry its CSS', () => {
+  const doc = (published, body) => `---\ndescription: ${DESC}\npublished: ${published}\n---\n${body}`;
+  const bullets = '# T\n\nText.\n\n## Sources\n\n- [A](https://example.com)\n';
+  assert.doesNotThrow(() => loadDoc('2026-09-22-old.md', doc('2026-09-22', bullets)));
+  assert.throws(() => loadDoc(`${IEEE_SINCE}-new.md`, doc(IEEE_SINCE, bullets)), /must be a numbered list of IEEE references/);
+  const withRefs = docPage(loadDoc(`${IEEE_SINCE}-new.md`, doc(IEEE_SINCE, ieeeDoc('A [1] B [2].'))), '');
+  const without = docPage(loadDoc('2026-09-22-old.md', doc('2026-09-22', bullets)), '');
+  assert.ok(withRefs.includes('.prose .references {'));
+  assert.ok(!without.includes('.prose .references {'));
 });
 
 const SOURCE = `---\ndescription: ${DESC}\npublished: 2026-09-14\n---\n# Title\n\n## 1. One\n\nText.\n`;

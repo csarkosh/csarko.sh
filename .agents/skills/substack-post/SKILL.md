@@ -82,15 +82,30 @@ Refuse a slug unless both hold:
 A post that links to a 404 is the worst outcome. If `voice.md` is missing, stop and
 offer setup mode.
 
-### 2. Read the docs
+### 2. Read the docs, and convert their sources to IEEE
 
-Read each whole doc. The post is written for a reader who isn't an engineer, so look
-for:
+Read each whole doc. A reader who isn't an engineer has to be able to follow the post,
+so look for:
 - the question each doc answers
 - the surprise in it
 - what it cost in time or effort
 
-Leave the mechanism to the doc itself.
+The post can stay technical, as long as the story holds up for someone who doesn't
+follow the mechanics. The voice profile says how far to go.
+
+**Before drafting, every chosen doc must cite its sources in IEEE style.** That's the
+publish-doc skill's "Sources in IEEE style". Docs published before 2026-09-23 are
+converted here, one at a time, only when a post uses them. A doc is already converted if
+its `## Sources` section is a numbered list. Otherwise, with the publish-doc skill:
+1. Rewrite each existing source as an IEEE entry. Open every URL again, and set
+   `Accessed:` to the day you checked it.
+2. Put the `[n]` markers in the body where the doc relies on each source, numbered by
+   first citation.
+3. Set `updated:` to today.
+4. Build, look at the doc page, commit, and deploy with the deploy skill.
+5. Confirm the live page shows the new Sources before drafting.
+
+The post links to the live doc, so it must never go out ahead of the conversion.
 
 ### 3. Take his angle
 

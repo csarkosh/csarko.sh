@@ -23,6 +23,11 @@ export const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ENTI
 
 // key -> required?
 const FIELDS = { description: true, published: true, updated: false, source: false };
+// Docs published from this date cite their sources in IEEE style: numbered [n] markers in the
+// text and a numbered "## Sources" list. Older docs build as they are until they are converted,
+// and a converted one is held to the same rules (renderMarkdown checks any doc whose Sources
+// section is a numbered list).
+export const IEEE_SINCE = '2026-09-23';
 const GAME_FIELDS = { description: true, status: true, tags: true, play: false, repo: false, released: false };
 // A film is a video hosted on YouTube: the page carries its poster and links out, so every field
 // here is needed to build the card and its VideoObject. "alt" describes the poster. There is no
@@ -147,9 +152,58 @@ const decodeEntities = (text) => text.replace(/&(#\d+|#x[0-9a-f]+|[a-z]+\d*);/gi
 });
 const plainText = (html) => decodeEntities(stripTags(html));
 
+// IEEE references: a numbered list under "## Sources" (or "## 8. Sources"). Each entry needs the
+// "Accessed:" date and "Available: https://…" that IEEE's online-source format ends with.
+const SOURCES_HEADING = /^(?:\d+\.\s+)?Sources$/i;
+// Body text that must never gain citation links: code, headings, existing links, and the
+// reference list itself (its [n] labels are not citations).
+const NO_CITES = /(<pre[\s\S]*?<\/pre>|<code[\s\S]*?<\/code>|<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>|<a\b[\s\S]*?<\/a>|<ol class="references">[\s\S]*?<\/ol>)/;
+
+function findReferences(tokens, file, ieee, problems) {
+  const start = tokens.findIndex((t) => t.type === 'heading' && t.depth === 2 && SOURCES_HEADING.test(t.text));
+  if (start < 0) return null;
+  let end = tokens.findIndex((t, i) => i > start && t.type === 'heading' && t.depth <= 2);
+  if (end < 0) end = tokens.length;
+  const list = tokens.slice(start + 1, end).find((t) => t.type === 'list' && t.ordered);
+  if (!list) {
+    if (ieee) problems.push(`${file}: "## Sources" must be a numbered list of IEEE references (see the publish-doc skill)`);
+    return null;
+  }
+  list.items.forEach((item, i) => {
+    const n = i + 1;
+    if (!item.raw.trimStart().startsWith(`${n}.`)) problems.push(`${file}: reference ${n} is numbered "${item.raw.trim().split(/\s/)[0]}"; number them 1, 2, 3… in order`);
+    if (!/\bAccessed: /.test(item.text)) problems.push(`${file}: reference [${n}] needs "Accessed: Mon. D, YYYY."`);
+    if (!/\bAvailable: https:\/\/\S+/.test(item.text)) problems.push(`${file}: reference [${n}] needs "[Online]. Available: https://…"`);
+  });
+  return list;
+}
+
+// Link every bare [n] outside NO_CITES to its reference, and check IEEE's rules: every reference
+// is cited, every citation has a reference, and references are numbered by first citation.
+function linkCitations(html, count, file, problems) {
+  const order = [];
+  const out = html.split(NO_CITES).map((part, i) => (i % 2 ? part : part.replace(/\[(\d+)\]/g, (whole, digits) => {
+    const n = Number(digits);
+    if (n < 1 || n > count) {
+      problems.push(`${file}: cites [${n}] but Sources has ${count} reference(s)`);
+      return whole;
+    }
+    if (!order.includes(n)) order.push(n);
+    return `<a class="cite" href="#ref-${n}">[${n}]</a>`;
+  }))).join('');
+  order.forEach((n, i) => {
+    if (n !== i + 1) problems.push(`${file}: [${n}] is cited before [${i + 1}]; number references in order of first citation`);
+  });
+  for (let n = 1; n <= count; n += 1) {
+    if (!order.includes(n)) problems.push(`${file}: reference [${n}] is never cited in the text`);
+  }
+  return out;
+}
+
 // The first "# H1" is the title (removed from the body); every "## H2" becomes a section and a
 // stop on the contents rail, and "## 1. Title" shows its number as a mono label ("01").
-export function renderMarkdown(body, file) {
+// `ieee` makes IEEE references mandatory for a doc with a Sources section (see IEEE_SINCE).
+export function renderMarkdown(body, file, { ieee = false } = {}) {
   const marked = new Marked({ gfm: true });
   const tokens = marked.lexer(body);
   const h1s = tokens.filter((t) => t.type === 'heading' && t.depth === 1);
@@ -157,6 +211,7 @@ export function renderMarkdown(body, file) {
   tokens.splice(tokens.indexOf(h1s[0]), 1);
 
   const problems = [];
+  const references = findReferences(tokens, file, ieee, problems);
   const rail = [];
   const usedIds = new Set(['top']); // "top" is the skip link's target; never reused
   let lastDepth = 1;
@@ -198,6 +253,11 @@ export function renderMarkdown(body, file) {
       html({ text }) {
         return escapeHtml(text);
       },
+      list(token) {
+        if (token !== references) return false;
+        const items = token.items.map((item, i) => `<li id="ref-${i + 1}"><span class="ref-num">[${i + 1}]</span><div>${this.parser.parse(item.tokens)}</div></li>\n`);
+        return `<ol class="references">\n${items.join('')}</ol>\n`;
+      },
       image({ href }) {
         problems.push(`${file}: images aren't supported yet (${href})`);
         return '';
@@ -220,13 +280,14 @@ export function renderMarkdown(body, file) {
   });
 
   const titleHtml = parseHeadingInline(() => marked.parseInline(h1s[0].text));
-  const html = marked.parser(tokens)
+  let html = marked.parser(tokens)
     .replaceAll('<table>', '<div class="scroll" tabindex="0" role="region" aria-label="Table"><table>').replaceAll('</table>', '</table></div>')
     .replaceAll('<pre>', '<div class="scroll" tabindex="0" role="region" aria-label="Code"><pre>').replaceAll('</pre>', '</pre></div>');
+  if (references) html = linkCitations(html, references.items.length, file, problems);
   if (problems.length) throw new DocError(problems.join('\n'));
   // Tags become spaces here (not in plainText) so "<p>01</p><h2>Title" counts as two words.
   const words = decodeEntities(html.replace(/<[^>]+>/g, ' ')).split(/\s+/).filter(Boolean).length;
-  return { title: plainText(titleHtml), titleHtml, html, rail, words };
+  return { title: plainText(titleHtml), titleHtml, html, rail, words, references: references ? references.items.length : 0 };
 }
 
 // ---------------------------------------------------------------- one doc
@@ -313,7 +374,7 @@ export function loadDoc(name, text) {
     path: `/${DOCS_DIR}/${slug}`,
     ...meta,
     modified: meta.updated ?? meta.published,
-    ...renderMarkdown(body, file),
+    ...renderMarkdown(body, file, { ieee: meta.published >= IEEE_SINCE }),
   };
 }
 
@@ -600,7 +661,16 @@ const DOCS_CSS = `
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }`;
 
-function head({ title, ogTitle, description, canonical, ogType, extraMeta = '', graph, theme }) {
+// Only pages with IEEE references carry these rules, so adding them changed no other page.
+const REFERENCES_CSS = `
+    .prose .references { list-style: none; padding-left: 0; }
+    .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
+    .prose .references li:target { background: var(--surface-2); }
+    .prose .references .ref-num { font-family: var(--mono); font-size: 13px; line-height: 1.9; color: var(--faint); }
+    .prose .references li > div > p { margin: 0; }
+    .prose a.cite { text-decoration: none; white-space: nowrap; }`;
+
+function head({ title, ogTitle, description, canonical, ogType, extraMeta = '', extraCss = '', graph, theme }) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -646,7 +716,7 @@ ${jsonLd(graph)}
     /* /generated:fonts */
 
     ${theme}
-${DOCS_CSS}
+${DOCS_CSS}${extraCss}
   </style>
 </head>`;
 }
@@ -731,7 +801,7 @@ ${doc.rail.map((s) => `        <li><a href="#${s.id}">${s.number ? `<span class=
   const source = doc.source
     ? `\n          <li><a class="external" href="${escapeHtml(doc.source)}" target="_blank" rel="noopener">Also on GitHub</a></li>`
     : '';
-  return `${head({ title: `${doc.title} · Cyrus Sarkosh`, ogTitle: doc.title, description: doc.description, canonical: doc.url, ogType: 'article', extraMeta, graph, theme })}
+  return `${head({ title: `${doc.title} · Cyrus Sarkosh`, ogTitle: doc.title, description: doc.description, canonical: doc.url, ogType: 'article', extraMeta, extraCss: doc.references ? REFERENCES_CSS : '', graph, theme })}
 <body class="doc-page">
 ${nav(null)}
 ${crumbs(trail)}

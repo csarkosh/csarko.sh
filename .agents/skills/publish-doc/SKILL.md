@@ -85,6 +85,56 @@ label.
 To **update** a doc, edit its file and set `updated`. To **remove** one, delete
 its file; the build deletes the page.
 
+### Sources in IEEE style
+
+**Every doc published on or after 2026-09-23 (`IEEE_SINCE` in `docs_lib.mjs`) cites
+its sources in IEEE style.** If the doc has a `## Sources` section, the build refuses
+anything else. Older docs keep their tables and bullet lists until they are converted.
+`substack-post` converts each one before it goes into a post. A converted doc sets
+`updated:` and is held to the same rules.
+
+**In the text,** cite with a bare `[n]`:
+- Put it inside the sentence, before the full stop: "…escapes it [1]."
+- List several separately: `[1], [3]`. Don't use ranges like `[2]–[4]`: the build
+  links each number, so a range would leave the middle ones uncited.
+- A citation can be the subject: "as [2] shows".
+- Never cite in a heading or inside link text; the build won't link one there.
+
+The build turns each marker into a link to its entry. Code is left alone, so
+`finalWorld[3]` in backticks stays text.
+
+**In the list,** `## Sources` (or `## 8. Sources`) is the last section: a numbered
+Markdown list, one entry per source. The build draws the `[n]` labels, so the source
+starts `1. A. Author, …`, not `1. [1] …`.
+
+The build refuses:
+- entries not numbered 1, 2, 3… in order
+- entries not numbered in the order they are first cited
+- a citation with no entry
+- an entry never cited
+- an entry without `Accessed:` and `[Online]. Available: https://…`
+
+Every entry is an online source and ends the same way. The templates:
+
+```markdown
+1. A. Author, "Page or doc title," Site or Publisher. Accessed: Sep. 23, 2026. [Online]. Available: https://…
+2. A. Author, B. Author, and C. Author, "Paper title," *Journal Abbrev.*, vol. 12, no. 3, pp. 45-67, Mar. 2025. Accessed: Sep. 23, 2026. [Online]. Available: https://doi.org/…
+3. A. Author and B. Author, "Paper title," arXiv:2510.14975, Oct. 2025. Accessed: Sep. 23, 2026. [Online]. Available: https://arxiv.org/abs/2510.14975
+4. A. Author, "Talk title," presented at Game Developers Conf., San Francisco, CA, USA, Mar. 2015. Accessed: Sep. 23, 2026. [Online]. Available: https://www.gdcvault.com/…
+5. Channel Name, "Video title," YouTube, Sep. 2, 2025. Accessed: Sep. 23, 2026. [Online]. Available: https://www.youtube.com/watch?v=…
+6. Electron Authors, "electron," GitHub repository, v44.1.1. Accessed: Sep. 23, 2026. [Online]. Available: https://github.com/electron/electron
+```
+
+- **Authors:** initials and surname ("J. Ng"). List up to six, then write "et al." after the
+  first. Use the organisation when there is no person ("Chromium Authors", "Google").
+- **Titles:** in "quotes". Journal names are *italic* and abbreviated where IEEE has an
+  abbreviation.
+- **Dates:** months are abbreviated Jan., Feb., Mar., Apr., May, Jun., Jul., Aug., Sep.,
+  Oct., Nov., Dec. The `Accessed:` date is when you checked the page.
+- **Page ranges** use a hyphen (`pp. 45-67`); the site bans em-dashes.
+- **Source code or files:** use the most specific URL you checked (a tagged file, not the
+  repo root), and name the version in the title or after the site.
+
 ## 3. Build, check and look
 
 ```bash
