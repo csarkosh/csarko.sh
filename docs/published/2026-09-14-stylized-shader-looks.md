@@ -1,6 +1,7 @@
 ---
 description: How games use shaders to build a distinct look, from ink outlines and cel lighting to dithering, gradient fog and VHS effects.
 published: 2026-09-14
+updated: 2026-09-23
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-14-stylized-shader-looks.md
 ---
 # Stylized shader looks: how games build a visual identity
@@ -27,7 +28,7 @@ Wikipedia article if it is no longer sold at all.
 - **Inverted hull:** [Guilty Gear Xrd](https://store.steampowered.com/app/520440/),
   [Hi-Fi Rush](https://store.steampowered.com/app/1817230/) and most anime-style games. Draw
   each mesh a second time, pushed out along its normals, with front faces culled. Arc System
-  Works' GDC 2015 talk shows how far this goes: vertex colours set line thickness, normals
+  Works' GDC 2015 talk [1] shows how far this goes: vertex colours set line thickness, normals
   were hand-edited to control where shadows fall, and animation runs at a lowered frame rate
   so it reads like hand-drawn keyframes.
 - **Ink-wash:** [Okami HD](https://store.steampowered.com/app/587620/). Brush-stroke outlines,
@@ -40,7 +41,7 @@ Wikipedia article if it is no longer sold at all.
   (Nintendo only). Round the light amount into two or three flat bands instead of a smooth
   falloff.
 - **Warped diffuse:** [Team Fortress 2](https://store.steampowered.com/app/440/). Valve's 2007
-  "Illustrative Rendering in Team Fortress 2" paper describes it. Lighting runs through a
+  "Illustrative Rendering in Team Fortress 2" paper describes it [2]. Lighting runs through a
   hand-authored 1D ramp and gets a strong rim light, so characters read like early-20th-century
   commercial illustration and their silhouettes stay clear at a distance.
 - **Authored face shadows:** [Genshin Impact](https://genshin.hoyoverse.com/) (HoYoverse's
@@ -50,7 +51,7 @@ Wikipedia article if it is no longer sold at all.
 ## 3. Limited colour
 
 - **1-bit dithering:** [Return of the Obra Dinn](https://store.steampowered.com/app/653530/).
-  Two colours and a dither pattern. Lucas Pope's devlog covers the hard part: a dither
+  Two colours and a dither pattern. Lucas Pope's devlog [3] covers the hard part: a dither
   computed fresh each frame swims as the camera moves, so the final version maps the pattern
   onto a sphere around the camera for surfaces facing the viewer, which keeps it pinned while
   the camera turns, and uses blue noise everywhere else.
@@ -85,9 +86,9 @@ Wikipedia article if it is no longer sold at all.
   closest reference for Day Hike. Fog colour comes from a hand-painted gradient chosen by
   distance, so far ridgelines fade into flat poster colours, and each time of day has its own
   gradient. Much of the game's identity comes from that one shader. Jane Ng's GDC 2015 talk
-  covers the art direction behind it.
+  covers the art direction behind it [4], and her 2016 talk how the world was built [5].
 - **Specular glitter:** [Journey](https://store.steampowered.com/app/638230/). John Edwards'
-  GDC talk on the sand: glitter from sparkle normal maps plus a broad, ocean-like sheen made
+  GDC talk on the sand [6]: glitter from sparkle normal maps plus a broad, ocean-like sheen made
   sand the game's signature material.
 - **Tilt-shift diorama:** [OCTOPATH TRAVELER](https://store.steampowered.com/app/921570/)
   (its "HD-2D" look) and [TUNIC](https://store.steampowered.com/app/553420/). Strong depth of
@@ -130,11 +131,9 @@ through its `PostProcess` pipeline.
 
 ## Sources
 
-| Source | Covers |
-| --- | --- |
-| [GuiltyGearXrd's Art Style: The X Factor Between 2D and 3D](https://www.gdcvault.com/play/1022031/GuiltyGearXrd-s-Art-Style-The) (GDC 2015) | Inverted-hull outlines, edited normals, stepped animation |
-| [Illustrative Rendering in Team Fortress 2](https://steamcdn-a.akamaihd.net/apps/valve/2007/NPAR07_IllustrativeRenderingInTeamFortress2.pdf) (Mitchell, Francke and Eng, NPAR 2007) | Warped diffuse ramp and rim lighting |
-| [Return of the Obra Dinn devlog, November 2017](https://dukope.com/devlogs/obra-dinn/tig-32/) (Lucas Pope) | Stabilising 1-bit dithering |
-| [The Art of Firewatch](https://gdcvault.com/play/1022295/The-Art-of) (Jane Ng, GDC 2015) | Firewatch's art direction |
-| [Making the World of Firewatch](https://www.gdcvault.com/play/1023191/Making-the-World-of) (Jane Ng, GDC 2016) | Firewatch's world production |
-| [Sand Rendering in Journey](https://www.gdcvault.com/play/1017742/Sand-Rendering-in) (John Edwards, GDC 2013) | Sand glitter and sheen |
+1. J. C. Motomura, "GuiltyGearXrd's Art Style: The X Factor Between 2D and 3D," presented at Game Developers Conf., San Francisco, CA, USA, Mar. 2015. Accessed: Sep. 23, 2026. [Online]. Available: https://www.gdcvault.com/play/1022031/GuiltyGearXrd-s-Art-Style-The
+2. J. Mitchell, M. Francke, and D. Eng, "Illustrative Rendering in Team Fortress 2," in Proc. Int. Symp. Non-Photorealistic Animation and Rendering (NPAR), 2007. Accessed: Sep. 23, 2026. [Online]. Available: https://steamcdn-a.akamaihd.net/apps/valve/2007/NPAR07_IllustrativeRenderingInTeamFortress2.pdf
+3. L. Pope, "Return of the Obra Dinn devlog: November 2017," TIGSource development log, Nov. 2017. Accessed: Sep. 23, 2026. [Online]. Available: https://dukope.com/devlogs/obra-dinn/tig-32/
+4. J. Ng, "The Art of Firewatch," presented at Game Developers Conf., San Francisco, CA, USA, Mar. 2015. Accessed: Sep. 23, 2026. [Online]. Available: https://gdcvault.com/play/1022295/The-Art-of
+5. J. Ng, "Making the World of Firewatch," presented at Game Developers Conf., San Francisco, CA, USA, Mar. 2016. Accessed: Sep. 23, 2026. [Online]. Available: https://www.gdcvault.com/play/1023191/Making-the-World-of
+6. J. Edwards, "Sand Rendering in Journey," presented at Game Developers Conf., San Francisco, CA, USA, Mar. 2013. Accessed: Sep. 23, 2026. [Online]. Available: https://www.gdcvault.com/play/1017742/Sand-Rendering-in

@@ -1,6 +1,7 @@
 ---
 description: How atmospheric and horror games use height fog, grading, film grain and dread-driven effects, and what Babylon.js can do at 60 fps in a browser.
 published: 2026-09-15
+updated: 2026-09-23
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-15-atmosphere-and-dread-shaders.md
 ---
 # Atmosphere and dread: a second shader research pass
@@ -25,7 +26,7 @@ has to be regex-replaced in the PBR fragment), an AgX or filmic tone map (a cust
 and a volumetric headlamp cone (a cone mesh, not the built-in god-ray pass).
 
 Every game links to its Steam page, or to its official site or Wikipedia where it is not
-on Steam. Sources are in the table at the end; anything marked *unverified* was reported
+on Steam. Sources are listed at the end; anything marked *unverified* was reported
 second-hand and the primary source could not be opened.
 
 ## 1. What the shaders did before the restyle
@@ -66,11 +67,11 @@ pass, `/style` and the `ssao` flag.
 - [Death Stranding](https://store.steampowered.com/app/1850570/): the clearest precedent.
   Decima combines a precomputed atmospheric-scattering model (photoreal, hard to art-direct)
   with an analytic height fog (artist-driven), "mixing both photorealism and artistic
-  flexibility in a single model". Timefall rolls in as fog and turns the palette grey-green.
+  flexibility in a single model" [1]. Timefall rolls in as fog and turns the palette grey-green.
 - [Red Dead Redemption 2](https://store.steampowered.com/app/1174180/): sky, clouds and
   fog as one system tied to the time of day, "balancing physical accuracy with artistic
-  control". Dawn mist, noon haze and dusk glow are one continuous curve, not presets.
-- [Ghost of Tsushima](https://store.steampowered.com/app/2215430/): "stylised realism"
+  control" [2]. Dawn mist, noon haze and dusk glow are one continuous curve, not presets.
+- [Ghost of Tsushima](https://store.steampowered.com/app/2215430/): "stylised realism" [3]
   from a 128×64×64 froxel haze (~0.5 ms on async compute), hand-picked Rayleigh
   coefficients to get the right blue, a Bradford white point chosen per time of day, a
   Purkinje night shift (rods pull night scenes to blue-grey without a tint), and tens of
@@ -79,11 +80,11 @@ pass, `/style` and the `ssao` flag.
 - [Alan Wake 2](https://www.alanwake.com/): the most photoreal forest shipped and
   unmistakably graded, with lifted grey shadows, froxel fog with a multiple-scattering
   approximation "giving it a thick and realistic look", film grain as a player setting,
-  HDR grading by professional colourists.
+  HDR grading by professional colourists [4].
 - [Hunt: Showdown 1896](https://store.steampowered.com/app/594650/): "every light affects
   the fog, and fog is also affected by shadows"; the workflow "mimics the workflow used for
   movies": a neutral HDR base image first, then a bold gold grade by day and a grim
-  blue-black by night.
+  blue-black by night [5].
 - [Hellblade: Senua's Sacrifice](https://store.steampowered.com/app/414340/) and
   [Senua's Saga: Hellblade II](https://store.steampowered.com/app/2461850/): photoreal
   scanned Iceland committed to a film presentation, with a 2.39:1 letterbox, soft filmic image,
@@ -92,8 +93,8 @@ pass, `/style` and the `ssao` flag.
   962–1070 rows (*unverified*: reported from Digital Foundry's video, not the video itself).
 - [INSIDE](https://store.steampowered.com/app/304430/): realistic lighting on minimal
   forms, fog in every shot, backlit silhouettes, and an image whose identity lives in the
-  bottom tenth of the tone range. Playdead's GDC 2016 talk pairs it with "Banding in
-  Games": triangular-PDF noise at about half an LSB, applied after the sRGB transform and
+  bottom tenth of the tone range. Playdead's GDC 2016 talk [6] pairs it with "Banding in
+  Games" [7]: triangular-PDF noise at about half an LSB, applied after the sRGB transform and
   before quantisation, animated per frame. That is what lets a dark, foggy, graded image
   hold in 8-bit.
 - [Everybody's Gone to the Rapture](https://store.steampowered.com/app/417880/): a valley
@@ -104,7 +105,7 @@ pass, `/style` and the `ssao` flag.
 - [The Vanishing of Ethan Carter](https://store.steampowered.com/app/258520/): the first
   indie game built from scans of real locations, which "deliberately avoided photorealistic
   presentation" by applying stylised lighting and post on top of the scanned geometry. The
-  team used fog as a culling tool: the far clip plane sits where fog opacity reaches 100%.
+  team used fog as a culling tool: the far clip plane sits where fog opacity reaches 100% [8].
 - [Mundaun](https://store.steampowered.com/app/720350/): realistic lighting and fog acting
   on hand-pencilled textures. Proof that a photoreal pipeline with a non-photographic albedo
   reads as art without any post trickery.
@@ -124,12 +125,12 @@ Long Dark (painterly; belongs to the first pass).
 ### The pattern
 
 1. **Height fog with a sun-direction colour, instead of one fog colour.** Iñigo Quílez's
-   closed-form height fog and a `mix(shadowColour, sunColour, pow(dot(view, sun), k))`
+   closed-form height fog [9] and a `mix(shadowColour, sunColour, pow(dot(view, sun), k))`
    inscatter term give aerial perspective in a few lines: far ridges go blue-grey while
    the near mist stays warm. Bind density, height and both colours to the day-to-dusk
    clock and to the weather so they are curves, as in RDR2, rather than presets.
 2. **Neutral tone map, then a grade.** Hunt's rule. ACES bends hue (the orange-and-teal
-   drift); AgX attenuates chroma toward white as values rise and reads photographic.
+   drift); AgX attenuates chroma toward white as values rise and reads photographic [10].
    Tsushima's per-time-of-day white point and Purkinje matrix are the right way to make
    night blue-grey without tinting, and they flatter a warm headlamp.
 3. **Film treatment.** Halation (threshold, wide blur, red-orange tint, screen blend; not
@@ -150,7 +151,7 @@ Long Dark (painterly; belongs to the first pass).
 - [Alan Wake](https://store.steampowered.com/app/1029880/): enemies wear a shroud of
   darkness that the flashlight's focused beam burns off before they can be hurt; lamp
   posts are safe zones. The shroud is a legibility trick: an enemy is darker than dark
-  until light touches it, and the burn-off is the state readout.
+  until light touches it, and the burn-off is the state readout [11].
 - [Alan Wake 2](https://www.alanwake.com/): the **overlap**, a faded second view of a
   parallel location, is double-exposed over the playable scene as you near a threshold, and
   monochrome smash cuts arrive as the Dark Presence spreads. Enemies "never stop talking",
@@ -158,25 +159,25 @@ Long Dark (painterly; belongs to the first pass).
 - [SILENT HILL 2](https://store.steampowered.com/app/2124490/) (2024): fog as the world's
   draw distance, a muted palette, and the flashlight as the dominant direct light with
   real bounce. The Otherworld flips at authored beats, "just as it seems like players have
-  mastered their understanding of their surroundings", never on a timer.
+  mastered their understanding of their surroundings" [12], never on a timer.
 - [Amnesia: The Dark Descent](https://store.steampowered.com/app/57300/): sanity drains
   in darkness and on sightings; the cue is a screen pulse plus a sound that gets "worse and
   worse", and discrete stings on events. Frictional removed every fail state from the
   meter because it could not be balanced across hours; the deterrence is entirely
-  audio-visual. Low-sanity specifics (blur, warp, insects, delayed input) are *unverified*.
+  audio-visual [13]. Low-sanity specifics (blur, warp, insects, delayed input) are *unverified*.
 - [Amnesia: Rebirth](https://store.steampowered.com/app/999220/): fear accumulates in the
   dark; when it overwhelms, "grotesque images will also pop up in the screen": single-frame
   inserts and whisper layers gated by the scalar.
 - [Amnesia: The Bunker](https://store.steampowered.com/app/1944430/): when the lights
   flicker erratically, the creature is nearby. A light-intensity jitter as a proximity
-  channel: cheap, diegetic, reads through walls.
+  channel: cheap, diegetic, reads through walls [14].
 - [SOMA](https://store.steampowered.com/app/282140/): nearing a creature, the screen
   distorts and glitches until the monster is "impossible to define visually". The warning
   hides the thing it warns about.
 - [Slender: The Arrival](https://store.steampowered.com/app/252330/): camcorder static and
   chromatic aberration rise with proximity. Thomas Grip's verdict: a "great way to
   symbolize the presence of an evil being", but encounters "became increasingly frequent
-  and the effect was lost". A proximity effect that fires often becomes a rule.
+  and the effect was lost" [15]. A proximity effect that fires often becomes a rule.
 - [Fatal Frame II](https://store.steampowered.com/app/3920610/): the camera's filament
   glows blue for a friendly spirit and red for a hostile one; ghosts fade in and out with
   distance. The indicator lives on the device, not the HUD.
@@ -196,7 +197,7 @@ Long Dark (painterly; belongs to the first pass).
   the whole game.
 - [DEATH STRANDING](https://store.steampowered.com/app/1190460/): BTs are invisible until
   a scan sends a flash down the terrain and gives "a faint outline of any BTs on the
-  horizon" for a moment. Two independent recreations show the scan is a post-process:
+  horizon" for a moment. Two independent recreations [16], [17] show the scan is a post-process:
   quantised depth with a Sobel edge for the sweeping contours, converted to world-space
   distance so line spacing does not change with the camera.
 - [Pacific Drive](https://store.steampowered.com/app/1458140/): when enough energy is
@@ -208,7 +209,7 @@ Long Dark (painterly; belongs to the first pass).
 - [Alien: Isolation](https://store.steampowered.com/app/214490/): a menace gauge that
   "backs off and sends the alien elsewhere" at its peak, music remixed from live "stealth"
   and "threat" values, and view-cone scripting so the music never betrays an alien
-  approaching from outside the field of view.
+  approaching from outside the field of view [18], [19].
 - [Darkwood](https://store.steampowered.com/app/274520/): outside the vision cone the
   scene is greyscale and enemies are not drawn at all.
 - [P.T.](https://en.wikipedia.org/wiki/P.T._(video_game)): one lighting change per loop
@@ -223,7 +224,7 @@ Long Dark (painterly; belongs to the first pass).
   (a forced blink as the entity's window), [Lethal Company](https://store.steampowered.com/app/1966720/)
   (deep shadow and fog so "the imagination takes hold").
 
-Retroreflection has a recent primary source: the MRM paper (arXiv 2606.08739) makes any
+Retroreflection has a recent primary source: the MRM paper (arXiv 2606.08739) [20] makes any
 microfacet BSDF retroreflective by evaluating it with the view direction reflected about
 the normal, with no new parameters. It flares only for a small light near the eye, which is
 exactly a headlamp.
@@ -255,27 +256,27 @@ tape and a planned dread stack. The survey maps onto each:
 - **The screen warp is AW2's overlap, at the periphery.** A low-alpha ghost of a wrong view
   of the same trail, growing with the scalar, on the outer part of the frame, with no camera
   roll and a stable horizon, behind a 0–100% "unsettling effects" slider (Xbox Accessibility
-  Guideline 117). The centre of the headlamp beam is always trustworthy.
+  Guideline 117) [21], [22]. The centre of the headlamp beam is always trustworthy.
 - **Retroreflective tape is a one-line material change,** masked to the headlamp so
   moonlight never makes it glow.
 
 ## 4. What Babylon.js 9.18 can do
 
-Checked against the installed `@babylonjs/core` 9.18.0 source, not the docs alone.
+Checked against the installed `@babylonjs/core` 9.18.0 source [23], not the docs alone [24], [25], [26].
 
 | Technique | Mechanism | Cost | Notes |
 | --- | --- | --- | --- |
 | Vignette, exposure, contrast, colour curves, dithering | `ImageProcessingConfiguration` | cheap | Already in use; every scalar is a plain uniform, safe to drive per frame |
 | Grain, chromatic aberration, sharpen, FXAA | `DefaultRenderingPipeline` | cheap | One pass each |
 | Colour-grading 3D LUT | `colorGradingTexture` (`.3dl` or PNG) | cheap | One 3D fetch in the image-processing pass |
-| Tone mapping | `TONEMAPPING_STANDARD` / `ACES` / `KHR_PBR_NEUTRAL` | cheap | **No AgX or filmic mode exists**; flipping the type recompiles, set it per tier |
+| Tone mapping | `TONEMAPPING_STANDARD` / `ACES` / `KHR_PBR_NEUTRAL` [27] | cheap | **No AgX or filmic mode exists**; flipping the type recompiles, set it per tier |
 | AgX tone map, halation, film grain, gate weave | one custom "grade" `PostProcess` | cheap | three.js's AgX GLSL is MIT and ports directly; run it with the pipeline's image processing off, on linear HDR |
 | Bloom | pipeline `bloomEnabled` | moderate | Four passes at `bloomScale` |
 | Depth of field | pipeline DoF | expensive | A depth re-render plus three to seven blur passes; dusk-only at best |
 | Height fog with a gradient colour | PBR plugin regex on the expanded fog line | cheap | **There is no fog hook in `pbr.fragment.js`**; the PBR shader includes it as `fogFragment(color,finalColor)`, so the expanded line is `finalColor.rgb=mix(vFogColor,finalColor.rgb,fog);` and a `!`-regex key must replace that. Version-fragile: pin with a compile test |
 | Fog on the sky and particles | `SkyMaterial` colour by hand; `applyFog` stays single-colour | cheap | The horizon has to meet the far end of the gradient |
 | God rays from the sun | `VolumetricLightScatteringPostProcess` | expensive | Re-renders every occluder; **useless for an eye-mounted headlamp** (the source is at the camera) |
-| Headlamp volume | an additive cone mesh with depth-map soft intersection | cheap | The "good enough volumetrics for spotlights" technique; `FrameGraphVolumetricLightingTask` is frame-graph and directional-light only |
+| Headlamp volume | an additive cone mesh with depth-map soft intersection | cheap | The "good enough volumetrics for spotlights" technique [28]; `FrameGraphVolumetricLightingTask` is frame-graph and directional-light only |
 | UV warp, ripple, heat haze, overlap | custom `PostProcess`, one or two reads | cheap | Fold every distortion into one pass driven by the scalar |
 | Retroreflective tape, rim, fog silhouette | PBR plugin at `CUSTOM_FRAGMENT_BEFORE_FRAGCOLOR` | cheap | `viewDirectionW` is surface-to-camera; pass the lamp explicitly rather than reading light slots |
 | Motion blur | `MotionBlurPostProcess` | moderate to expensive | Needs the g-buffer or depth plus the previous view-projection |
@@ -319,24 +320,31 @@ These are not decisions. They are the shapes the evidence supports.
 
 ## Sources
 
-| Source | Covers |
-| --- | --- |
-| [Decima Engine: Advances in Lighting and AA](https://advances.realtimerendering.com/s2017/index.html) (de Carpentier and Ishiyama, SIGGRAPH 2017) | The scattering-plus-height-fog hybrid |
-| [Creating the Atmospheric World of Red Dead Redemption 2](https://advances.realtimerendering.com/s2019/index.htm) (Bauer, SIGGRAPH 2019; abstract only, slides *unverified*) | Integrated sky, cloud and fog |
-| [Real-Time Samurai Cinema](https://advances.realtimerendering.com/s2021/jpatry_advances2021/index.html) (Patry, SIGGRAPH 2021) | Froxel haze, white point, Purkinje shift, particles lit by fog |
-| [How Northlight makes Alan Wake 2 shine](https://www.remedygames.com/article/how-northlight-makes-alan-wake-2-shine) (Remedy) | Multiple-scattering fog, grading, grain |
-| [The Development of Hunt: Showdown](https://80.lv/articles/the-development-of-hunt-showdown) (80.lv) | Neutral base image, then a grade; lights in fog |
-| [Low Complexity, High Fidelity: The Rendering of INSIDE](https://www.gdcvault.com/play/1023002/Low-Complexity-High-Fidelity-INSIDE) (Gjøl and Svendsen, GDC 2016) and [Banding in Games](https://loopit.dk/banding_in_games.pdf) | Dither after sRGB, silhouettes, authored light |
-| [Visual Revolution of The Vanishing of Ethan Carter](https://www.theastronauts.com/2014/03/visual-revolution-vanishing-ethan-carter/) (The Astronauts) | Stylised post on scanned geometry; fog as culling |
-| [Fog](https://iquilezles.org/articles/fog/) (Quílez) | Closed-form height fog and sun-direction colour |
-| [Khronos PBR Neutral](https://github.com/KhronosGroup/ToneMapping/blob/main/PBR_Neutral/README.md) and [darktable's AgX](https://docs.darktable.org/usermanual/development/en/module-reference/processing-modules/agx/) | Tone-mapping choices |
-| [Alan Wake: Light and Dark](https://gdcvault.com/play/1013666/Alan-Wake-Light-and) (Lehtinen, GDC Europe 2010) | Darkness as a shield the light burns off |
-| [Game Design Deep Dive: Amnesia's Sanity Meter](https://www.gamedeveloper.com/design/game-design-deep-dive-i-amnesia-i-s-sanity-meter-) and [Thoughts on Slender: The Arrival](https://www.gamedeveloper.com/design/thoughts-on-slender-the-arrival) (Grip) | Continuous cue plus stings; why frequent proximity effects wear off |
-| [The Perfect Organism: The AI of Alien: Isolation](https://www.gamedeveloper.com/design/the-perfect-organism-the-ai-of-alien-isolation) and [The sound of Alien: Isolation](https://audiomediainternational.com/the-sound-of-alien-isolation/) | Menace gauge that backs off; view-cone scripting |
-| [How the Beast works in Amnesia: The Bunker](https://www.aiandgames.com/p/how-the-beast-works-in-amnesia-the) (AI and Games) | Light flicker as a proximity channel |
-| [Fog of Woe](https://www.gamedeveloper.com/design/fog-of-woe-what-the-silent-hill-2-remake-gets-right-about-immersing-players-in-its-world) (Game Developer) | Silent Hill 2's fog and authored flips |
-| [Death Stranding Odradek terrain scanner, UE4 case study](https://realtimevfx.com/t/death-stranding-odradek-terrain-scanner-ue4-case-study/11200) and [the Unity recreation](https://80.lv/articles/recreating-death-stranding-odradek-terrain-scanner-in-unity) | The scan as a depth-Sobel post-process |
-| [MRM: microfacet retroreflection](https://arxiv.org/abs/2606.08739) | Retroreflection by reflecting the view direction |
-| [Xbox Accessibility Guideline 117](https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/117) and [Game Accessibility Guidelines](https://gameaccessibilityguidelines.com/) | Sliders for full-screen effects; stable horizon |
-| [Good enough volumetrics for spotlights](https://john-chapman-graphics.blogspot.com/2013/01/good-enough-volumetrics-for-spotlights.html) (Chapman) | The headlamp cone mesh |
-| Babylon.js documentation: [DefaultRenderingPipeline](https://doc.babylonjs.com/features/featuresDeepDive/postProcesses/defaultRenderingPipeline), [Material plugins](https://doc.babylonjs.com/features/featuresDeepDive/materials/using/materialPlugins), [Volumetric light scattering](https://doc.babylonjs.com/features/featuresDeepDive/lights/volumetricLightScattering); installed source `@babylonjs/core` 9.18.0 | Section 4 |
+1. G. de Carpentier and K. Ishiyama, "Decima Engine: Advances in Lighting and AA," presented at SIGGRAPH course Advances in Real-Time Rendering in Games, Los Angeles, CA, USA, Aug. 2017. Accessed: Sep. 23, 2026. [Online]. Available: https://advances.realtimerendering.com/s2017/index.html
+2. F. Bauer, "Creating the Atmospheric World of Red Dead Redemption 2," presented at SIGGRAPH course Advances in Real-Time Rendering in Games, Los Angeles, CA, USA, Jul. 2019 (abstract only; the slides could not be verified). Accessed: Sep. 23, 2026. [Online]. Available: https://advances.realtimerendering.com/s2019/index.htm
+3. J. Patry, "Real-Time Samurai Cinema," presented at SIGGRAPH course Advances in Real-Time Rendering in Games, Aug. 2021. Accessed: Sep. 23, 2026. [Online]. Available: https://advances.realtimerendering.com/s2021/jpatry_advances2021/index.html
+4. Remedy Entertainment, "How Northlight makes Alan Wake 2 shine," Remedy. Accessed: Sep. 23, 2026. [Online]. Available: https://www.remedygames.com/article/how-northlight-makes-alan-wake-2-shine
+5. 80 Level, "The Development of Hunt: Showdown," May 16, 2018. Accessed: Sep. 23, 2026. [Online]. Available: https://80.lv/articles/the-development-of-hunt-showdown
+6. M. Gjøl and M. Svendsen, "Low Complexity, High Fidelity: INSIDE Rendering," presented at Game Developers Conf., San Francisco, CA, USA, Mar. 2016. Accessed: Sep. 23, 2026. [Online]. Available: https://www.gdcvault.com/play/1023002/Low-Complexity-High-Fidelity-INSIDE
+7. M. Gjøl, "Banding in Games: A Noisy Rant," Playdead. Accessed: Sep. 23, 2026. [Online]. Available: https://loopit.dk/banding_in_games.pdf
+8. The Astronauts, "Visual Revolution of The Vanishing of Ethan Carter," The Astronauts blog, Mar. 2014. Accessed: Sep. 23, 2026. [Online]. Available: https://www.theastronauts.com/2014/03/visual-revolution-vanishing-ethan-carter/
+9. I. Quílez, "Fog," iquilezles.org. Accessed: Sep. 23, 2026. [Online]. Available: https://iquilezles.org/articles/fog/
+10. darktable developers, "AgX," darktable user manual (development version). Accessed: Sep. 23, 2026. [Online]. Available: https://docs.darktable.org/usermanual/development/en/module-reference/processing-modules/agx/
+11. S. Lehtinen, "Alan Wake: Light and Dark," presented at GDC Europe, Cologne, Germany, Aug. 2010. Accessed: Sep. 23, 2026. [Online]. Available: https://gdcvault.com/play/1013666/Alan-Wake-Light-and
+12. M. Sabbagh, "Fog of Woe: What the Silent Hill 2 remake gets right about immersing players in its world," Game Developer, Oct. 23, 2024. Accessed: Sep. 23, 2026. [Online]. Available: https://www.gamedeveloper.com/design/fog-of-woe-what-the-silent-hill-2-remake-gets-right-about-immersing-players-in-its-world
+13. T. Grip, "Game Design Deep Dive: Amnesia's 'Sanity Meter'," Game Developer, Aug. 27, 2014. Accessed: Sep. 23, 2026. [Online]. Available: https://www.gamedeveloper.com/design/game-design-deep-dive-i-amnesia-i-s-sanity-meter-
+14. T. Thompson, "How the 'Beast' Works in Amnesia: The Bunker," AI and Games, Dec. 9, 2025. Accessed: Sep. 23, 2026. [Online]. Available: https://www.aiandgames.com/p/how-the-beast-works-in-amnesia-the
+15. T. Grip, "Thoughts on Slender: The Arrival," Game Developer, May 13, 2013. Accessed: Sep. 23, 2026. [Online]. Available: https://www.gamedeveloper.com/design/thoughts-on-slender-the-arrival
+16. MrBrouchet, "Death Stranding - Odradek Terrain Scanner - UE4 case study," Real Time VFX, Nov. 22, 2019. Accessed: Sep. 23, 2026. [Online]. Available: https://realtimevfx.com/t/death-stranding-odradek-terrain-scanner-ue4-case-study/11200
+17. S. Liu, "Recreating Death Stranding Odradek Terrain Scanner in Unity," 80 Level, May 4, 2023. Accessed: Sep. 23, 2026. [Online]. Available: https://80.lv/articles/recreating-death-stranding-odradek-terrain-scanner-in-unity
+18. T. Thompson, "The Perfect Organism: The AI of Alien: Isolation," Game Developer, Oct. 31, 2017. Accessed: Sep. 23, 2026. [Online]. Available: https://www.gamedeveloper.com/design/the-perfect-organism-the-ai-of-alien-isolation
+19. C. Ramsey, "The sound of Alien: Isolation," Audio Media International, Mar. 23, 2015. Accessed: Sep. 23, 2026. [Online]. Available: https://audiomediainternational.com/the-sound-of-alien-isolation/
+20. J. Portsmouth, M. Raab, L. Belcour, and F. Liu, "The Minimal Retroreflective Microfacet Model," arXiv:2606.08739, Jun. 2026. Accessed: Sep. 23, 2026. [Online]. Available: https://arxiv.org/abs/2606.08739
+21. Microsoft, "Xbox Accessibility Guideline 117," Microsoft Learn. Accessed: Sep. 23, 2026. [Online]. Available: https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/117
+22. "Game Accessibility Guidelines," gameaccessibilityguidelines.com. Accessed: Sep. 23, 2026. [Online]. Available: https://gameaccessibilityguidelines.com/
+23. Babylon.js, "@babylonjs/core," npm package, v9.18.0. Accessed: Sep. 23, 2026. [Online]. Available: https://www.npmjs.com/package/@babylonjs/core/v/9.18.0
+24. Babylon.js, "Default Rendering Pipeline," Babylon.js documentation. Accessed: Sep. 23, 2026. [Online]. Available: https://doc.babylonjs.com/features/featuresDeepDive/postProcesses/defaultRenderingPipeline
+25. Babylon.js, "Material Plugins," Babylon.js documentation. Accessed: Sep. 23, 2026. [Online]. Available: https://doc.babylonjs.com/features/featuresDeepDive/materials/using/materialPlugins
+26. Babylon.js, "Volumetric Light Scattering Post Process," Babylon.js documentation. Accessed: Sep. 23, 2026. [Online]. Available: https://doc.babylonjs.com/features/featuresDeepDive/lights/volumetricLightScattering
+27. Khronos Group, "Khronos PBR Neutral Tone Mapper," KhronosGroup/ToneMapping, GitHub. Accessed: Sep. 23, 2026. [Online]. Available: https://github.com/KhronosGroup/ToneMapping/blob/main/PBR_Neutral/README.md
+28. J. Chapman, "'Good Enough' Volumetrics for Spotlights," john-chapman-graphics, Jan. 2013. Accessed: Sep. 23, 2026. [Online]. Available: https://john-chapman-graphics.blogspot.com/2013/01/good-enough-volumetrics-for-spotlights.html

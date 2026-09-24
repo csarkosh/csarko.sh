@@ -18,7 +18,7 @@
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta property="article:published_time" content="2026-09-14" />
-  <meta property="article:modified_time" content="2026-09-14" />
+  <meta property="article:modified_time" content="2026-09-23" />
   <meta property="article:author" content="https://csarko.sh/" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Stylized shader looks: how games build a visual identity" />
@@ -48,10 +48,10 @@
       "headline": "Stylized shader looks: how games build a visual identity",
       "description": "How games use shaders to build a distinct look, from ink outlines and cel lighting to dithering, gradient fog and VHS effects.",
       "datePublished": "2026-09-14",
-      "dateModified": "2026-09-14",
+      "dateModified": "2026-09-23",
       "url": "https://csarko.sh/research/stylized-shader-looks",
       "mainEntityOfPage": "https://csarko.sh/research/stylized-shader-looks",
-      "wordCount": 1074,
+      "wordCount": 1169,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -348,6 +348,12 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .prose .references { list-style: none; padding-left: 0; }
+    .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
+    .prose .references li:target { background: var(--surface-2); }
+    .prose .references .ref-num { font-family: var(--mono); font-size: 13px; line-height: 1.9; color: var(--faint); }
+    .prose .references li > div > p { margin: 0; }
+    .prose a.cite { text-decoration: none; white-space: nowrap; }
   </style>
 </head>
 <body class="doc-page">
@@ -390,7 +396,7 @@
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Sep 14, 2026</p>
+        <p class="eyebrow">Sep 14, 2026 · Updated Sep 23, 2026</p>
         <h1>Stylized shader looks: how games build a visual identity</h1>
         <ul class="tags">
           <li>5 min read</li>
@@ -417,7 +423,7 @@ cannot be art-directed.</li>
 <li><strong>Inverted hull:</strong> <a class="external" href="https://store.steampowered.com/app/520440/" target="_blank" rel="noopener">Guilty Gear Xrd</a>,
 <a class="external" href="https://store.steampowered.com/app/1817230/" target="_blank" rel="noopener">Hi-Fi Rush</a> and most anime-style games. Draw
 each mesh a second time, pushed out along its normals, with front faces culled. Arc System
-Works&#39; GDC 2015 talk shows how far this goes: vertex colours set line thickness, normals
+Works&#39; GDC 2015 talk <a class="cite" href="#ref-1">[1]</a> shows how far this goes: vertex colours set line thickness, normals
 were hand-edited to control where shadows fall, and animation runs at a lowered frame rate
 so it reads like hand-drawn keyframes.</li>
 <li><strong>Ink-wash:</strong> <a class="external" href="https://store.steampowered.com/app/587620/" target="_blank" rel="noopener">Okami HD</a>. Brush-stroke outlines,
@@ -430,7 +436,7 @@ on Steam) and <a class="external" href="https://en.wikipedia.org/wiki/The_Legend
 (Nintendo only). Round the light amount into two or three flat bands instead of a smooth
 falloff.</li>
 <li><strong>Warped diffuse:</strong> <a class="external" href="https://store.steampowered.com/app/440/" target="_blank" rel="noopener">Team Fortress 2</a>. Valve&#39;s 2007
-&quot;Illustrative Rendering in Team Fortress 2&quot; paper describes it. Lighting runs through a
+&quot;Illustrative Rendering in Team Fortress 2&quot; paper describes it <a class="cite" href="#ref-2">[2]</a>. Lighting runs through a
 hand-authored 1D ramp and gets a strong rim light, so characters read like early-20th-century
 commercial illustration and their silhouettes stay clear at a distance.</li>
 <li><strong>Authored face shadows:</strong> <a class="external" href="https://genshin.hoyoverse.com/" target="_blank" rel="noopener">Genshin Impact</a> (HoYoverse&#39;s
@@ -440,7 +446,7 @@ so a nose never casts an ugly shadow.</li>
 <div class="section-head"><p class="section-label">03</p><h2 id="limited-colour"><a class="anchor" href="#limited-colour">Limited colour</a></h2></div>
 <ul>
 <li><strong>1-bit dithering:</strong> <a class="external" href="https://store.steampowered.com/app/653530/" target="_blank" rel="noopener">Return of the Obra Dinn</a>.
-Two colours and a dither pattern. Lucas Pope&#39;s devlog covers the hard part: a dither
+Two colours and a dither pattern. Lucas Pope&#39;s devlog <a class="cite" href="#ref-3">[3]</a> covers the hard part: a dither
 computed fresh each frame swims as the camera moves, so the final version maps the pattern
 onto a sphere around the camera for surfaces facing the viewer, which keeps it pinned while
 the camera turns, and uses blue noise everywhere else.</li>
@@ -475,9 +481,9 @@ paper grain, or a Kuwahara filter that smears the image into brush strokes.</li>
 closest reference for Day Hike. Fog colour comes from a hand-painted gradient chosen by
 distance, so far ridgelines fade into flat poster colours, and each time of day has its own
 gradient. Much of the game&#39;s identity comes from that one shader. Jane Ng&#39;s GDC 2015 talk
-covers the art direction behind it.</li>
+covers the art direction behind it <a class="cite" href="#ref-4">[4]</a>, and her 2016 talk how the world was built <a class="cite" href="#ref-5">[5]</a>.</li>
 <li><strong>Specular glitter:</strong> <a class="external" href="https://store.steampowered.com/app/638230/" target="_blank" rel="noopener">Journey</a>. John Edwards&#39;
-GDC talk on the sand: glitter from sparkle normal maps plus a broad, ocean-like sheen made
+GDC talk on the sand <a class="cite" href="#ref-6">[6]</a>: glitter from sparkle normal maps plus a broad, ocean-like sheen made
 sand the game&#39;s signature material.</li>
 <li><strong>Tilt-shift diorama:</strong> <a class="external" href="https://store.steampowered.com/app/921570/" target="_blank" rel="noopener">OCTOPATH TRAVELER</a>
 (its &quot;HD-2D&quot; look) and <a class="external" href="https://store.steampowered.com/app/553420/" target="_blank" rel="noopener">TUNIC</a>. Strong depth of
@@ -518,38 +524,14 @@ or a slight VHS bleed on the headlamp cone.</li>
 <p>Babylon.js supports both through the material plugins the ground shaders already use and
 through its <code>PostProcess</code> pipeline.</p>
 <div class="section-head"><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
-<div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
-<thead>
-<tr>
-<th>Source</th>
-<th>Covers</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><a class="external" href="https://www.gdcvault.com/play/1022031/GuiltyGearXrd-s-Art-Style-The" target="_blank" rel="noopener">GuiltyGearXrd&#39;s Art Style: The X Factor Between 2D and 3D</a> (GDC 2015)</td>
-<td>Inverted-hull outlines, edited normals, stepped animation</td>
-</tr>
-<tr>
-<td><a class="external" href="https://steamcdn-a.akamaihd.net/apps/valve/2007/NPAR07_IllustrativeRenderingInTeamFortress2.pdf" target="_blank" rel="noopener">Illustrative Rendering in Team Fortress 2</a> (Mitchell, Francke and Eng, NPAR 2007)</td>
-<td>Warped diffuse ramp and rim lighting</td>
-</tr>
-<tr>
-<td><a class="external" href="https://dukope.com/devlogs/obra-dinn/tig-32/" target="_blank" rel="noopener">Return of the Obra Dinn devlog, November 2017</a> (Lucas Pope)</td>
-<td>Stabilising 1-bit dithering</td>
-</tr>
-<tr>
-<td><a class="external" href="https://gdcvault.com/play/1022295/The-Art-of" target="_blank" rel="noopener">The Art of Firewatch</a> (Jane Ng, GDC 2015)</td>
-<td>Firewatch&#39;s art direction</td>
-</tr>
-<tr>
-<td><a class="external" href="https://www.gdcvault.com/play/1023191/Making-the-World-of" target="_blank" rel="noopener">Making the World of Firewatch</a> (Jane Ng, GDC 2016)</td>
-<td>Firewatch&#39;s world production</td>
-</tr>
-<tr>
-<td><a class="external" href="https://www.gdcvault.com/play/1017742/Sand-Rendering-in" target="_blank" rel="noopener">Sand Rendering in Journey</a> (John Edwards, GDC 2013)</td>
-<td>Sand glitter and sheen</td>
-</tr>
-</tbody></table></div>
+<ol class="references">
+<li id="ref-1"><span class="ref-num">[1]</span><div>J. C. Motomura, &quot;GuiltyGearXrd&#39;s Art Style: The X Factor Between 2D and 3D,&quot; presented at Game Developers Conf., San Francisco, CA, USA, Mar. 2015. Accessed: Sep. 23, 2026. [Online]. Available: <a class="external" href="https://www.gdcvault.com/play/1022031/GuiltyGearXrd-s-Art-Style-The" target="_blank" rel="noopener">https://www.gdcvault.com/play/1022031/GuiltyGearXrd-s-Art-Style-The</a></div></li>
+<li id="ref-2"><span class="ref-num">[2]</span><div>J. Mitchell, M. Francke, and D. Eng, &quot;Illustrative Rendering in Team Fortress 2,&quot; in Proc. Int. Symp. Non-Photorealistic Animation and Rendering (NPAR), 2007. Accessed: Sep. 23, 2026. [Online]. Available: <a class="external" href="https://steamcdn-a.akamaihd.net/apps/valve/2007/NPAR07_IllustrativeRenderingInTeamFortress2.pdf" target="_blank" rel="noopener">https://steamcdn-a.akamaihd.net/apps/valve/2007/NPAR07_IllustrativeRenderingInTeamFortress2.pdf</a></div></li>
+<li id="ref-3"><span class="ref-num">[3]</span><div>L. Pope, &quot;Return of the Obra Dinn devlog: November 2017,&quot; TIGSource development log, Nov. 2017. Accessed: Sep. 23, 2026. [Online]. Available: <a class="external" href="https://dukope.com/devlogs/obra-dinn/tig-32/" target="_blank" rel="noopener">https://dukope.com/devlogs/obra-dinn/tig-32/</a></div></li>
+<li id="ref-4"><span class="ref-num">[4]</span><div>J. Ng, &quot;The Art of Firewatch,&quot; presented at Game Developers Conf., San Francisco, CA, USA, Mar. 2015. Accessed: Sep. 23, 2026. [Online]. Available: <a class="external" href="https://gdcvault.com/play/1022295/The-Art-of" target="_blank" rel="noopener">https://gdcvault.com/play/1022295/The-Art-of</a></div></li>
+<li id="ref-5"><span class="ref-num">[5]</span><div>J. Ng, &quot;Making the World of Firewatch,&quot; presented at Game Developers Conf., San Francisco, CA, USA, Mar. 2016. Accessed: Sep. 23, 2026. [Online]. Available: <a class="external" href="https://www.gdcvault.com/play/1023191/Making-the-World-of" target="_blank" rel="noopener">https://www.gdcvault.com/play/1023191/Making-the-World-of</a></div></li>
+<li id="ref-6"><span class="ref-num">[6]</span><div>J. Edwards, &quot;Sand Rendering in Journey,&quot; presented at Game Developers Conf., San Francisco, CA, USA, Mar. 2013. Accessed: Sep. 23, 2026. [Online]. Available: <a class="external" href="https://www.gdcvault.com/play/1017742/Sand-Rendering-in" target="_blank" rel="noopener">https://www.gdcvault.com/play/1017742/Sand-Rendering-in</a></div></li>
+</ol>
 
       </div>
       <section class="author" aria-label="About the author">
