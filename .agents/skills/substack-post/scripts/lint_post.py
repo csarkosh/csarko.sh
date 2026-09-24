@@ -51,6 +51,9 @@ TELLS = [
      "summarising closer"),
 ]
 LANDSCAPE = re.compile(r"\blandscapes?\b", re.I)
+# Titles that are first-person or start with a number do better on Substack (see the spec).
+FIRST_PERSON = re.compile(r"\bI(?:'m|'ve|'d|'ll)?\b|\b(?i:my|me|mine|we|our|us)\b")
+NUMBER_LED = re.compile(r"^(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b", re.I)
 BOLD = re.compile(r"\*\*[^*\n]+\*\*|__[^_\n]+__")
 TRIPLE = re.compile(r"\b[\w'-]+(?: [\w'-]+){0,2}, [\w'-]+(?: [\w'-]+){0,2},? (?:and|or) [\w'-]+", re.I)
 
@@ -115,6 +118,11 @@ def lint(text, notes=None, slugs=(), published=frozenset(), protect=(), author=F
         for m in NOTE_URL.finditer(notes):
             findings.append(Finding("error", _line(notes, m.start()),
                                     f"URL in a Note ({m.group(0)}); name the post instead", "notes"))
+        for i, (off, note) in enumerate(_paragraphs(notes, 0), 1):
+            n = len(note.strip())
+            if not 120 <= n <= 300:
+                findings.append(Finding("warning", _line(notes, off),
+                                        f"Note {i} is {n} characters; 120 to 300 do best", "notes"))
 
     lines = [(m.start(), m.group(0)) for m in re.finditer(r"[^\n]*", text) if m.group(0).strip()]
     if not lines or not lines[0][1].startswith("# "):
@@ -177,6 +185,9 @@ def lint(text, notes=None, slugs=(), published=frozenset(), protect=(), author=F
     tl = len(title.split())
     if not 9 <= tl <= 17:
         findings.append(Finding("warning", _line(text, lines[0][0]), f"title has {tl} words; 9 to 17 do best"))
+    if not FIRST_PERSON.search(title) and not NUMBER_LED.search(title):
+        findings.append(Finding("warning", _line(text, lines[0][0]),
+                                "title is neither first-person nor number-led; both average more reactions"))
     if title.endswith("?"):
         findings.append(Finding("warning", _line(text, lines[0][0]),
                                 "title ends in a question mark; question titles do slightly worse"))
@@ -194,6 +205,9 @@ def lint(text, notes=None, slugs=(), published=frozenset(), protect=(), author=F
     if prose and "?" not in prose[-1][1]:
         findings.append(Finding("warning", _line(text, prose[-1][0]),
                                 "last paragraph asks no question; one closing question draws comments"))
+    if button is None:
+        findings.append(Finding("warning", _line(text, len(text) - 1),
+                                "no button at the end; one Custom button is the post's call to action"))
     if not images:
         findings.append(Finding("warning", _line(text, body_start),
                                 "no image in the post; Substack shows the first one as the social preview"))

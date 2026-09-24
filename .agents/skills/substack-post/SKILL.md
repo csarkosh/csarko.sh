@@ -219,13 +219,39 @@ problem and what kind of fix it needs. Nothing is changed in his text until he s
   don't write the replacement.**
 - **Facts:** anything the docs state differently, or a claim that's in neither the docs
   nor his angle. Quote the doc.
-- **Rules:** every lint error, and the lint warnings that matter (length, a missing
-  closing question, no image). An AI-tell warning on his own writing is information for
-  him, not a required change.
+- **Site rules:** every lint error (dashes, contact details, links, tracking tags, a URL in
+  a Note). An AI-tell warning on his own writing is information for him, not a required
+  change.
 
 Before calling something an error, check it against `voice.md`. His habits are not
 mistakes: "But" and "So" opening sentences without a comma, fragments as follow-ups,
 the colon reveal.
+
+#### Engagement check
+
+End the review with this scorecard, one row per practice, each marked pass or miss with
+a note on any miss. The numbers come from the 94,391-post scrape and Substack's own
+guidance cited in the spec. The lint checks what it can; the rest is read by eye. A miss
+he keeps on purpose stays a miss on the card, marked as his call.
+
+| Practice | Why | Checked by |
+|---|---|---|
+| Title 9 to 17 words | 13 to 17 word titles averaged 26.8 reactions, 1 to 5 words 21.1 | lint |
+| Title first-person or number-led | about 30% and 47% more reactions | lint |
+| No question mark in the title | question titles did slightly worse | lint |
+| Subtitle 6 to 10 words, saying something new | it's the email's preview line; 6 to 10 words did best | lint (length, overlap with the title), review (is it new) |
+| The first two sentences hook | the preview and the opening decide whether a reader stays | review |
+| A doc link in paragraph 1 or 2 | many readers never reach the bottom | lint |
+| One real image, after paragraph 1 | 22.9 reactions with a cover against 12.7 without; it's the social preview | lint (present), review (placement, caption) |
+| Body 300 to 600 words | short posts win on reactions per word | lint |
+| Plain prose: no headers, at most two bold phrases | reads on a phone | lint |
+| One closing question, one a reader can answer | comments are what the feed rewards | lint (present), review (answerable, not rhetorical) |
+| One button at the end | one call to action | lint |
+| Every csarko.sh link tagged | GoatCounter can only count what's tagged | lint |
+| Two Notes, 120 to 300 characters, no URL or domain | a link in a Note halves its reach | lint (length, links), review (two, one naming the post) |
+
+Publishing as email and web, restacking and the next day's Note are timing, so they stay
+in the handover checklist.
 
 ### 7. Humour suggestions
 

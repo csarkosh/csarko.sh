@@ -310,3 +310,10 @@ text while the site and link rules still fail. The voice profile now guides the 
 and the humour suggestions, and each published post becomes a new real sample for it.
 This supersedes "Where the words come from" in Decisions and steps 3 to 6 of "Post mode"
 above.
+
+## Amendment, 2026-09-24: engagement scorecard
+
+The review ends with an engagement scorecard: every practice from "Research this design
+rests on" as a pass or miss, marked as checked by the lint or by reading. The lint gains
+three warnings to cover it: a title that is neither first-person nor number-led, a Note
+outside 120 to 300 characters, and a post with no button.

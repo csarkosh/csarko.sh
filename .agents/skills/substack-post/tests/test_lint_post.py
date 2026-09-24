@@ -16,6 +16,8 @@ def url(slug, query=UTM):
     return f"https://csarko.sh/research/{slug}" + (f"?{query}" if query else "")
 
 
+NOTE = ("New post today about the grass in my game, and why it took a month to stop looking fake. "
+        "The fix was the trail, of all things.")
 IMAGE = "![A foggy stretch of trail in Day Hike](dayhike.jpg)"
 FILLER = "I spent a week on this bug before I found the cause in the shader. " * 6
 
@@ -50,7 +52,7 @@ def has(findings, needle):
 
 class CleanPost(unittest.TestCase):
     def test_clean_post_has_no_findings(self):
-        self.assertEqual(run(post(), notes="New post today about grass."), [])
+        self.assertEqual(run(post(), notes=NOTE), [])
 
 
 class Parsing(unittest.TestCase):
@@ -191,6 +193,25 @@ class Warnings(unittest.TestCase):
     def test_body_length(self):
         self.assertTrue(has(warnings(run(post(paras=["Short. Have you?"]))), "words"))
         self.assertTrue(has(warnings(run(post(paras=[FILLER.strip()] * 9 + ["Have you?"]))), "words"))
+
+    def test_title_first_person_or_number(self):
+        self.assertTrue(has(warnings(run(post(title="How grass got real in a browser game after a month of work"))),
+                            "first-person"))
+        self.assertFalse(has(warnings(run(post(title="5 things that made grass look real in a browser game"))),
+                             "first-person"))
+        self.assertFalse(has(warnings(run(post(title="Why my grass looked fake in a browser game for a month"))),
+                             "first-person"))
+
+    def test_note_length(self):
+        found = warnings(run(post(), notes="Too short.\n\n" + NOTE))
+        self.assertTrue(has(found, "Note 1"))
+        self.assertFalse(has(found, "Note 2"))
+        self.assertTrue(has(warnings(run(post(), notes="x " * 200)), "Note 1"))
+
+    def test_button(self):
+        text = post().rsplit("\n\n", 1)[0] + "\n\nHave you ever fought grass like this?\n"
+        self.assertTrue(has(warnings(run(text)), "button"))
+        self.assertFalse(has(warnings(run(post())), "button"))
 
     def test_image(self):
         self.assertTrue(has(warnings(run(post(image=False))), "image"))
