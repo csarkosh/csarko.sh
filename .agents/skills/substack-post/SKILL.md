@@ -1,13 +1,15 @@
 ---
 name: substack-post
 description: >-
-  Turn 1 to 4 published csarko.sh research docs into one short, non-technical post
-  for Cyrus's Substack (csarko.log) that links back to the full docs, written in his
-  voice rather than a model's. Use whenever the user wants a Substack post, newsletter
-  issue or csarko.log post about his docs ("write a Substack post about the grass
-  doc", "summarise the netcode and signaling docs for Substack", "what hasn't been on
-  Substack yet?"), wants to record a post he just published, or wants to build or
-  refresh his voice profile. Not for publishing a doc on the site (that's publish-doc).
+  Help Cyrus write a short Substack post (csarko.log) about 1 to 4 of his published
+  csarko.sh research docs, linking back to them. Claude outlines the post, Cyrus writes
+  every sentence himself, and Claude reviews it (grammar, spelling, coherence, facts,
+  links) and suggests spots for dry humour. Use whenever the user wants a Substack post,
+  newsletter issue or csarko.log post about his docs ("help me write a Substack post
+  about the grass doc", "outline a post on the netcode docs", "review my Substack
+  draft", "what hasn't been on Substack yet?"), wants to record a post he just
+  published, or wants to build or refresh his voice profile. Not for publishing a doc
+  on the site (that's publish-doc).
 ---
 
 # Substack posts from research docs
@@ -17,14 +19,22 @@ A post is a short, plain-language way into one to four docs already live at
 and the research behind every rule below, is in
 `docs/superpowers/specs/2026-09-23-substack-post-design.md`.
 
-**Two rules outrank everything else in this skill:**
+**Three rules outrank everything else in this skill:**
 
-1. **The post says nothing Cyrus didn't.** Every claim, opinion, anecdote and number
-   comes from the docs or from his angle (step 3). Never invent a feeling, a story, a
-   lesson or a statistic to fill space. If the angle is thin, ask for more.
-2. **It must read as his, not a model's.** Substack scans every post with Pangram and
-   any reader can check one with a tap. The voice profile and the lint are the tools;
-   the checklist ends with Substack's own check.
+1. **Cyrus writes every sentence.** Claude never drafts post text: not the title, the
+   subtitle, a paragraph, a caption or a Note. The first version of this skill wrote the
+   post in his voice, and Substack's Pangram check scored it AI 100%, Human 0%. Pangram is
+   a learned classifier that catches style imitation and humanizer rewrites; the why is
+   in `/research/voice-profile-vs-pangram`. The only approach with consistent evidence is
+   the author writing and the model editing, and one rule from that evidence stands here:
+   he never has to use a word Claude suggests.
+2. **Review, don't rewrite.** A spelling or grammar fix may be given exactly. Anything
+   bigger (an unclear jump, a weak sentence, a missing fact) is described, and he rewrites
+   it. Pangram labels text clause by clause: a clause the model rewrote counts as
+   AI-assisted, and enough of those move a post from Human to Mixed.
+3. **The post says nothing the docs or Cyrus didn't.** When reviewing, flag any claim,
+   number or name that isn't in the docs or his own knowledge, and any fact the docs
+   state differently.
 
 Nothing is posted for him: Substack has no posting API. The skill hands over a package
 and he pastes it in.
@@ -32,8 +42,10 @@ and he pastes it in.
 ## The voice profile
 
 `~/.config/csarko-sh/voice.md`, **outside the repo, never committed** (the repo is
-public). Post mode refuses to run without it. It has fixed headings, because
-`lint_post.py` reads the protect list from it:
+public). It is no longer a style guide for Claude's writing. It tells the review what is
+deliberately his (so a habit isn't "corrected" away) and tells the humour suggestions
+what kind of joke he makes. Post mode refuses to run without it. It has fixed headings,
+because `lint_post.py` reads the protect list from it:
 
 ```markdown
 # Voice: Cyrus Sarkosh
@@ -68,6 +80,8 @@ public). Post mode refuses to run without it. It has fixed headings, because
 6. **Show him the whole profile and write it only when he approves.** Don't keep the
    samples anywhere.
 
+Every post he publishes is a new real sample (step 8).
+
 ## Post mode
 
 ### 1. Pick the docs
@@ -91,9 +105,9 @@ so look for:
 - what it cost in time or effort
 
 The post can stay technical, as long as the story holds up for someone who doesn't
-follow the mechanics. The voice profile says how far to go.
+follow the mechanics.
 
-**Before drafting, every chosen doc must cite its sources in IEEE style.** That's the
+**Before outlining, every chosen doc must cite its sources in IEEE style.** That's the
 publish-doc skill's "Sources in IEEE style". Docs published before 2026-09-23 are
 converted here, one at a time, only when a post uses them. A doc is already converted if
 its `## Sources` section is a numbered list. Otherwise, with the publish-doc skill:
@@ -103,107 +117,182 @@ its `## Sources` section is a numbered list. Otherwise, with the publish-doc ski
    first citation.
 3. Set `updated:` to today.
 4. Build, look at the doc page, commit, and deploy with the deploy skill.
-5. Confirm the live page shows the new Sources before drafting.
+5. Confirm the live page shows the new Sources before outlining.
 
 The post links to the live doc, so it must never go out ahead of the conversion.
 
-### 3. Take his angle
+### 3. Take his angle, and the image
 
-Ask for 2 to 3 minutes of dictation (pasted as text) or about five bullets:
+Ask for about five bullets, or 2 to 3 minutes of dictation pasted as text:
 - why these docs, or this one
 - what he thinks about them
 - one concrete moment: a bug, a surprise, a cost
 
-If it can't carry 300 words without padding, ask a follow-up question instead of filling
-the gap.
+Ask for the post's image in the same message: a screenshot of the game or a still from a
+film, whatever shows what the post is about. Never use another game's screenshots or
+art: they are not his to publish. Substack uses the post's first image as its social
+preview, above the title and subtitle.
 
-### 4. Draft
+### 4. Outline
 
-Load `voice.md` into context first, then write `post.md` in this exact shape (the lint
-parses it):
+Write `outline.md`: the story arc, with **no finished sentences** anywhere in it. Give
+him, in this order:
+
+- **Title and subtitle: the rules and the hook, not the words.**
+  - Title: 9 to 17 words, first-person or number-led, no question mark; it is the email
+    subject line.
+  - Subtitle: 6 to 10 words that add something the title doesn't; it is the email's
+    preview line, so the hook works hardest here.
+  - Name the hook the angle offers (for example, "the surprise that most looks use one or
+    two effects"), and leave the wording to him.
+- **Paragraphs, 4 to 7 of them, about 300 to 600 words in all.** For each one:
+  - its job in the arc (the hook, the stakes, an example, the turn, the payoff)
+  - the facts it can use, as short notes rather than sentences, with the doc section
+    they came from so he can check them. The docs were largely agent-written too, so
+    their sentences mustn't end up pasted into the post. Only a real attributed quote
+    (someone's own words, like a developer's) is given verbatim.
+  - the link it should carry, ready to paste (see "Links" below)
+  - a rough word count
+  - one question for him to answer in his own words, which becomes the paragraph
+- **Placement:** a link to a doc in paragraph 1 or 2, since many readers never reach the
+  bottom; the image right after paragraph 1.
+- **The ending:** the topic for one closing question to readers (comments are what
+  Substack's feed rewards). Suggest what to ask about, not the question itself.
+- **Two Notes,** each 120 to 300 characters, with no URL and no domain name (a link in a
+  Note halves its reach). Give the hook for each: one goes out with the restack on
+  publish day, one is a teaser the next day that names the post. Pangram scans Notes
+  too, so he writes them.
+- **The button:** a Substack "Custom" button at the end, linking the single doc or
+  `https://csarko.sh/research` when the post covers several. Its short label is his to
+  write.
+
+**Links:** every csarko.sh link ends
+`?utm_source=substack&utm_medium=email&utm_campaign=<post-slug>`, where `<post-slug>` is
+the title lowercased with each run of non-letters turned into one hyphen. The title
+isn't written yet at this point, so tag the outline's links with a working slug and retag
+them once his title is final. GoatCounter shows these visits under the referrer
+`substack`.
+
+**Site rules** to tell him about, from `AGENTS.md`'s Content rules: no em-dashes, no email
+address or phone number, no metrics or customer names from his DoorDash work, nothing
+about the commercial asset pipeline.
+
+### 5. He writes
+
+He writes the post and the Notes, in the scratchpad folder or pasted into the chat.
+Put his text into `post.md` in this exact shape, because the lint and `copy_body.py`
+parse it:
 
 ```markdown
 # <title>
 ## <subtitle>
 
-<body paragraphs>
+<paragraph 1>
+
+![<caption>](<image file>)
+
+<more paragraphs>
 
 [<button text>](<url>)
 ```
 
-- **Title:** 9 to 17 words, first-person or number-led, no question mark. It is the
-  email subject line too.
-- **Subtitle:** 6 to 10 words that say something the title doesn't. It is the email's
-  preview line.
-- **Body:** 300 to 600 words of plain prose, no headers, at most two bold phrases.
-  - Link a doc in paragraph 1 or 2, since many readers never reach the bottom.
-  - Link each doc again where the post talks about it.
-  - End on one question to the reader, since comments are what Substack's feed rewards.
-- **Button:** the last line. It links the single doc, or `https://csarko.sh/research`
-  when the post covers several. He makes it a Substack "Custom" button when pasting.
-- **Links:** every csarko.sh link ends
-  `?utm_source=substack&utm_medium=email&utm_campaign=<post-slug>`. `<post-slug>` is
-  the title lowercased, with each run of non-letters turned into one hyphen. GoatCounter
-  shows these visits under the referrer `substack`.
-- **Site rules** (`AGENTS.md`, Content rules):
-  - no em-dashes
-  - no email address or phone number
-  - no metrics or customer names from his DoorDash work
-  - nothing about the commercial asset pipeline
+Changing the shape is allowed; changing his words is not. Turn the phrases he marks as
+links into Markdown links with the tagged URLs, and add the image line and the button
+line. If he didn't mark a link where the outline wanted one, ask which phrase to link
+rather than picking one yourself.
 
-Write `notes.md` too: two Substack Notes, each 120 to 300 characters, with **no URL
-and no domain name**. A link in a Note halves its reach, and an outside link almost
-never gets a like.
-- One goes out with the restack on publish day.
-- One is a teaser for the next day that names the post ("my latest post on…").
+### 6. Review
 
-### 5. Lint
+Run the lint in author mode, where the AI-tell lists only warn (they were built for
+model text; his own words are his) and the site and link rules still fail:
 
 ```bash
-.agents/skills/substack-post/scripts/lint_post.py post.md --notes notes.md --slugs <a,b>
+.agents/skills/substack-post/scripts/lint_post.py post.md --notes notes.md --slugs <a,b> --author
 ```
 
-Fix every error and look at every warning. A warning may stand only when breaking the
-rule is deliberate; list each one that stands when you hand over the package.
+Then read it and give him **a numbered list of findings**, each with its paragraph, the
+problem and what kind of fix it needs. Nothing is changed in his text until he says so.
 
-The lint catches words and shapes, not rhythm. After it passes, read the draft beside
-the profile's examples. Rewrite any sentence he wouldn't say, such as:
-- an evenly balanced sentence
-- a tidy moral
-- a lesson the angle didn't contain
+- **Spelling and grammar:** give the exact correction ("teh" → "the").
+- **Coherence:** unclear references, a jump the reader can't follow, a paragraph that
+  repeats another, a claim that doesn't connect to the one before. **Describe the problem;
+  don't write the replacement.**
+- **Facts:** anything the docs state differently, or a claim that's in neither the docs
+  nor his angle. Quote the doc.
+- **Rules:** every lint error, and the lint warnings that matter (length, a missing
+  closing question, no image). An AI-tell warning on his own writing is information for
+  him, not a required change.
 
-### 6. Hand over the package
+Before calling something an error, check it against `voice.md`. His habits are not
+mistakes: "But" and "So" opening sentences without a comma, fragments as follow-ups,
+the colon reveal.
+
+### 7. Humour suggestions
+
+Suggest 2 to 4 places for dry humour, from `voice.md`'s "Tone" and "Emoji" rules. For each:
+
+- **Where:** the paragraph, and the moment in it.
+- **What kind:** self-mockery (🤡), an understated win (😎), gentle exasperation at a tool
+  or company (🤦‍♂️), or a flat verdict ("That sucked.").
+- **Why it fits:** what in that moment sets it up.
+
+Don't write the joke. He writes the line or skips the spot. Keep the profile's limits:
+at most two emoji in a post, and tools and companies get understanding, never blame.
+
+Once he's applied what he wants, re-run the lint, then hand over the package.
+
+### 8. Hand over the package
 
 Put everything in a folder in the session's scratchpad directory. **Never commit a
 draft:** the repo is public, so a committed draft is published before the post is.
-- `post.md` and `notes.md`
-- `cover.jpg`, the 1456×1048 cover card, from
-  `.agents/skills/substack-post/scripts/cover.py "<title>" <folder>/cover.jpg`. Look at
-  it before handing it over.
-- An optional disclosure line for Substack's "How I make this" field, for example: "I
-  write the angle and the research; Claude helps me shape the post."
+- `post.md` and `notes.md`, his words
+- **The image,** prepared from his file:
+  - Copy it in first. macOS screenshot names put a narrow no-break space (U+202F)
+    before "AM"/"PM", so an `@`-path he pastes won't match as typed; list the
+    folder to find it.
+  - Crop off any browser chrome or UI strip. `sips` ignores `--cropOffset` and crops
+    from the centre, so crop with Pillow.
+  - Resize it to 1456 px wide as a JPEG, quality 85.
+  - Look at the result before handing it over.
+- **`cover.jpg`, only when the post has no image.** It's the 1456×1048 title card, from
+  `.agents/skills/substack-post/scripts/cover.py "<title>" <folder>/cover.jpg`. When
+  the post has an image, skip it: the social preview already shows that image with
+  the title and subtitle, so a card only repeats them. Look at it before handing it
+  over.
+
+**Markdown doesn't paste into Substack:** links come through as literal
+`[text](url)`. Put the body on his clipboard as rich text instead:
+
+```bash
+.agents/skills/substack-post/scripts/copy_body.py <folder>/post.md
+```
+
+That copies the paragraphs between the subtitle and the button, with working links.
+It leaves out the title and subtitle, the image and the button, which he adds in
+Substack.
 
 Then give him this checklist:
-1. New post: paste `post.md` (the title and subtitle go in their own fields; turn the last line into a Custom button).
-2. Upload `cover.jpg` as the cover.
-3. Send a test email and read it on a phone.
-4. Run Substack's AI check on the draft.
-5. Publish as email and web.
-6. Restack it with the first Note.
-7. Post the second Note the next day.
+1. New post: type the title and subtitle into their own fields, then paste the body.
+2. Upload the image after paragraph 1, with its caption.
+3. Add a Custom button at the end, with the button text and URL from `post.md`'s last line.
+4. Only if the post has no image: upload `cover.jpg` as the social preview image (post settings).
+5. Send a test email and read it on a phone.
+6. Run Substack's AI check on the draft.
+7. Publish as email and web.
+8. Restack it with the first Note.
+9. Post the second Note the next day.
 
-### 7. After he publishes
+### 9. After he publishes
 
 He gives you the post's Substack URL. Then:
 
 1. **Log it.** Append the entry to `docs/substack/posts.json` (keep the list sorted by
-   date) and commit on a branch, as with any other change:
+   date) and commit it, as with any other change:
 
    ```json
    {"date": "YYYY-MM-DD", "url": "<substack url>", "title": "<title>", "slugs": ["<slug>", "..."]}
    ```
 
-2. **Learn from his edits.** Fetch the live post and compare it with your draft. What he
-   changed by hand is the best voice data there is. For each pattern in his edits ("you
-   cut every 'so'"), propose a change to `voice.md`, one at a time. Write only the ones
-   he accepts.
+2. **Add it to the voice profile.** The published post is a real sample of his writing.
+   Offer to add a short excerpt to `voice.md`'s Examples, copied exactly, and propose any
+   new habit it shows, one at a time. Write only what he accepts.

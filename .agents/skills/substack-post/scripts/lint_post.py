@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Lint a Substack post drafted by the substack-post skill.
 
-    lint_post.py post.md [--notes notes.md] [--slugs a,b] [--voice ~/.config/csarko-sh/voice.md]
+    lint_post.py post.md [--notes notes.md] [--slugs a,b] [--voice ~/.config/csarko-sh/voice.md] [--author]
 
 Errors (exit 1) are the site's rules (no dashes, no email or phone), the link rules
 (every doc linked, a link up top, UTM tags, no URL in a Note) and the catalogued AI
-tells. Warnings are Substack's engagement findings, which a post may break on purpose.
+tells. Warnings are Substack's engagement findings (an image, lengths, a closing question), which a post may break on purpose.
 A phrase on the voice profile's `## Protect` list is exempt from the AI tells only.
+--author is for text Cyrus wrote himself: the AI-tell and formatting rules only warn
+(the lists were built for model output, and his own words are his to keep), while the
+site and link rules still fail.
 See ../SKILL.md and docs/superpowers/specs/2026-09-23-substack-post-design.md.
 """
 
@@ -27,6 +30,7 @@ DASH = re.compile("[—–]")
 URL = re.compile(r"https?://[^\s)\]>\"]+")
 NOTE_URL = re.compile(r"https?://|www\.|\b[a-z0-9-]+\.(?:com|sh|io|net|org|dev|app|co|me|ai)\b", re.I)
 BUTTON = re.compile(r"^\[[^\]]+\]\([^)\s]+\)$")
+IMAGE = re.compile(r"^!\[[^\]]*\]\([^)\s]+\)$")
 LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
 WORD = re.compile(r"[A-Za-z0-9][\w'’-]*")
 
@@ -103,7 +107,8 @@ def _site_rules(text, file):
     return out
 
 
-def lint(text, notes=None, slugs=(), published=frozenset(), protect=()):
+def lint(text, notes=None, slugs=(), published=frozenset(), protect=(), author=False):
+    tell = "warning" if author else "error"
     findings = _site_rules(text, "post")
     if notes is not None:
         findings += _site_rules(notes, "notes")
@@ -120,6 +125,8 @@ def lint(text, notes=None, slugs=(), published=frozenset(), protect=()):
     paras = _paragraphs(text, lines[1][0] + len(lines[1][1]))
     button = paras.pop() if paras and BUTTON.match(paras[-1][1].strip()) else None
     body_start = paras[0][0] if paras else len(text)
+    images = [(o, p) for o, p in paras if IMAGE.match(p.strip())]
+    prose = [(o, p) for o, p in paras if not IMAGE.match(p.strip())]
     body_end = button[0] if button else len(text)
     body = text[:body_end].replace("’", "'")  # same length, so offsets hold
 
@@ -148,7 +155,7 @@ def lint(text, notes=None, slugs=(), published=frozenset(), protect=()):
         if slug not in linked:
             findings.append(Finding("error", 1, f"doc {slug} is never linked as https://csarko.sh/research/{slug}"))
     if not any(urlsplit(u).hostname in ("csarko.sh", "www.csarko.sh")
-               for _, p in paras[:2] for u in URL.findall(p)):
+               for _, p in prose[:2] for u in URL.findall(p)):
         findings.append(Finding("error", _line(text, body_start),
                                 "no csarko.sh link in body paragraph 1 or 2; many readers never reach the bottom"))
 
@@ -157,14 +164,14 @@ def lint(text, notes=None, slugs=(), published=frozenset(), protect=()):
         for m in pattern.finditer(body, lines[0][0]):
             hit = m.group(0).lower()
             if not any(p in hit for p in protect):
-                findings.append(Finding("error", _line(text, m.start()), f"{label}: \"{m.group(0).strip()}\""))
+                findings.append(Finding(tell, _line(text, m.start()), f"{label}: \"{m.group(0).strip()}\""))
     for n, m in enumerate(BOLD.finditer(body, body_start)):
         if n == 2:
-            findings.append(Finding("error", _line(text, m.start()), "more than two bold spans"))
+            findings.append(Finding(tell, _line(text, m.start()), "more than two bold spans"))
     for off, p in paras:
         for i, l in enumerate(p.splitlines()):
             if l.lstrip().startswith("#"):
-                findings.append(Finding("error", _line(text, off) + i, "header in the body; a short post is prose"))
+                findings.append(Finding(tell, _line(text, off) + i, "header in the body; a short post is prose"))
 
     # Warnings: Substack's engagement findings
     tl = len(title.split())
@@ -181,12 +188,15 @@ def lint(text, notes=None, slugs=(), published=frozenset(), protect=()):
     if sw and len(sw & tw) / len(sw) > 0.5:
         findings.append(Finding("warning", _line(text, lines[1][0]),
                                 "subtitle repeats the title; make it add something"))
-    bw = sum(len(_words(p)) for _, p in paras)
+    bw = sum(len(_words(p)) for _, p in prose)
     if not 300 <= bw <= 600:
         findings.append(Finding("warning", _line(text, body_start), f"body has {bw} words; aim for 300 to 600"))
-    if paras and "?" not in paras[-1][1]:
-        findings.append(Finding("warning", _line(text, paras[-1][0]),
+    if prose and "?" not in prose[-1][1]:
+        findings.append(Finding("warning", _line(text, prose[-1][0]),
                                 "last paragraph asks no question; one closing question draws comments"))
+    if not images:
+        findings.append(Finding("warning", _line(text, body_start),
+                                "no image in the post; Substack shows the first one as the social preview"))
     triples = list(TRIPLE.finditer(LINK.sub(lambda m: m.group(1).ljust(len(m.group(0))), body), body_start))
     if len(triples) > 2:
         findings.append(Finding("warning", _line(text, triples[2].start()),
@@ -205,6 +215,7 @@ def main():
     ap.add_argument("--slugs", default="", help="comma-separated doc slugs the post must link")
     ap.add_argument("--voice", default=str(VOICE))
     ap.add_argument("--published", default=str(ROOT / "docs/published"))
+    ap.add_argument("--author", action="store_true", help="the text is his own: AI tells only warn")
     a = ap.parse_args()
 
     voice = Path(a.voice).expanduser()
@@ -214,7 +225,7 @@ def main():
     notes = Path(a.notes).read_text(encoding="utf-8") if a.notes else None
     findings = lint(Path(a.post).read_text(encoding="utf-8"), notes=notes,
                     slugs=[s for s in a.slugs.split(",") if s], published=published_slugs(a.published),
-                    protect=protect)
+                    protect=protect, author=a.author)
     for f in findings:
         print(f"{a.notes if f.file == 'notes' else a.post}:{f.line}: {f.level}: {f.message}")
     errors = sum(f.level == "error" for f in findings)

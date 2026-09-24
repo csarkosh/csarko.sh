@@ -284,3 +284,29 @@ numbered `## Sources` list, enforced by `docs_lib.mjs` for docs published from
 converted in bulk. Post mode's step 2 converts each chosen doc through `publish-doc`
 (entries, markers, `updated:`, deploy) before drafting, so a post never links to a doc
 whose conversion hasn't shipped.
+
+## Amendment, 2026-09-23: a real image first
+
+The first post showed that Substack uses a post's first image as its social preview,
+with the title and subtitle beneath it, so a generated title card only repeats them.
+Every post now carries one real image (a screenshot or film still from Cyrus) after
+paragraph 1, and the lint warns when it's missing. `cover.py` is the fallback for a
+post with no image. The same post showed that Markdown pastes into Substack as
+literal text, so `copy_body.py` puts the body on the clipboard as rich text instead.
+
+## Amendment, 2026-09-24: Cyrus writes, Claude outlines and reviews
+
+The first post, drafted by Claude in the author's voice and passing every check here,
+scored AI 100%, Human 0% on Substack's Pangram check. Pangram 4's technical report
+explains why: it is a learned classifier trained on AI rewrites of human documents, and
+it catches style imitation and humanizer rewrites (the full account is the research doc
+`/research/voice-profile-vs-pangram`). The skill no longer writes post text. Post mode is
+now: outline (arc, per-paragraph job, facts as notes, links, a question to answer; no
+finished sentences) → Cyrus writes the post and Notes → review (exact fixes for spelling
+and grammar only; coherence and fact problems described, never rewritten) → suggestions
+for places to put dry humour, from the voice profile, without the joke itself. The lint
+gains `--author`, which turns the AI-tell and formatting rules into warnings for his own
+text while the site and link rules still fail. The voice profile now guides the review
+and the humour suggestions, and each published post becomes a new real sample for it.
+This supersedes "Where the words come from" in Decisions and steps 3 to 6 of "Post mode"
+above.

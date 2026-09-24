@@ -16,21 +16,24 @@ def url(slug, query=UTM):
     return f"https://csarko.sh/research/{slug}" + (f"?{query}" if query else "")
 
 
+IMAGE = "![A foggy stretch of trail in Day Hike](dayhike.jpg)"
 FILLER = "I spent a week on this bug before I found the cause in the shader. " * 6
 
 
 def post(title="I spent a month making grass look real in a browser game",
          subtitle="What finally fixed it was the trail",
-         paras=None, button=None, first=None):
+         paras=None, button=None, first=None, image=True):
     first = first if first is not None else (
         f"The full write-up is [on my site]({url('grass-and-trail-realism')}), with the numbers.")
     paras = paras if paras is not None else [FILLER.strip()] * 4 + ["Have you ever fought grass like this?"]
     button = button if button is not None else f"[Read the full write-up]({url('grass-and-trail-realism')})"
-    return "\n\n".join([f"# {title}", f"## {subtitle}", first, *paras, button]) + "\n"
+    image = [IMAGE] if image else []
+    return "\n\n".join([f"# {title}", f"## {subtitle}", first, *image, *paras, button]) + "\n"
 
 
-def run(text, notes=None, slugs=("grass-and-trail-realism",), protect=()):
-    return lint_post.lint(text, notes=notes, slugs=list(slugs), published=PUBLISHED, protect=list(protect))
+def run(text, notes=None, slugs=("grass-and-trail-realism",), protect=(), author=False):
+    return lint_post.lint(text, notes=notes, slugs=list(slugs), published=PUBLISHED, protect=list(protect),
+                          author=author)
 
 
 def errors(findings):
@@ -153,6 +156,28 @@ class AiTells(unittest.TestCase):
         self.assertTrue(errors(run(text, protect=["—"])))
 
 
+class AuthorMode(unittest.TestCase):
+    """His own writing: the AI-tell lists only warn, the site and link rules still fail."""
+
+    def test_tells_become_warnings(self):
+        text = post(paras=[FILLER.strip()] * 4 + ["The code is robust. It's not the grass, it's the light. Have you?"])
+        self.assertTrue(errors(run(text)))
+        found = run(text, author=True)
+        self.assertEqual(errors(found), [])
+        self.assertTrue(has(warnings(found), "robust"))
+        self.assertTrue(has(warnings(found), "negative parallelism"))
+
+    def test_site_and_link_rules_still_fail(self):
+        text = post(subtitle="What fixed it \u2014 the trail at last",
+                    button=f"[Read it]({url('grass-and-trail-realism', query=None)})")
+        found = errors(run(text, author=True))
+        self.assertTrue(has(found, "dash"))
+        self.assertTrue(has(found, "utm"))
+
+    def test_notes_urls_still_fail(self):
+        self.assertTrue(has(errors(run(post(), notes="It's on csarko.sh now.", author=True)), "URL"))
+
+
 class Warnings(unittest.TestCase):
     def test_title_length_and_question(self):
         self.assertTrue(has(warnings(run(post(title="Grass"))), "title"))
@@ -166,6 +191,17 @@ class Warnings(unittest.TestCase):
     def test_body_length(self):
         self.assertTrue(has(warnings(run(post(paras=["Short. Have you?"]))), "words"))
         self.assertTrue(has(warnings(run(post(paras=[FILLER.strip()] * 9 + ["Have you?"]))), "words"))
+
+    def test_image(self):
+        self.assertTrue(has(warnings(run(post(image=False))), "image"))
+        self.assertFalse(has(warnings(run(post())), "image"))
+
+    def test_caption_is_not_body_words(self):
+        # 300 body words exactly, then a long caption: still 300, not more
+        words = ("word " * 300).strip()
+        text = post(first=f"[Link]({url('grass-and-trail-realism')}) {words}", paras=["Have you?"])
+        text = text.replace(IMAGE, "![" + "caption " * 400 + "](x.jpg)")
+        self.assertFalse(has(warnings(run(text)), "words"))
 
     def test_closing_question(self):
         self.assertTrue(has(warnings(run(post(paras=[FILLER.strip()] * 4 + ["That is all."]))), "question"))

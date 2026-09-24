@@ -40,9 +40,12 @@ now 301 there). No framework and no CI; the one build step,
   both the dark and light themes, in `/tmp/csarko-sh-preview/`. After any visual
   edit, look at the screenshots in both themes before calling it done.
 - **Publish a doc:** the `publish-doc` skill.
-- **Write a Substack post:** the `substack-post` skill turns 1 to 4 published docs
-  into a short csarko.log post that links back to them, in Cyrus's voice. Its voice
-  profile is `~/.config/csarko-sh/voice.md`: outside the repo, never committed.
+- **Write a Substack post:** the `substack-post` skill outlines a short csarko.log
+  post on 1 to 4 published docs, Cyrus writes every sentence, and the skill reviews
+  it and suggests spots for humour. Claude never writes the post itself: a Claude
+  draft in his voice scored 100% AI on Substack's check
+  (`/research/voice-profile-vs-pangram`). His voice profile is
+  `~/.config/csarko-sh/voice.md`: outside the repo, never committed.
 - **Ship a change:** `.agents/skills/deploy/scripts/deploy.sh`. It verifies the
   deployed home page, `/film`, `/games`, `/research` and newest doc byte-for-byte on both
   the web.app URL and csarko.sh. `--preview` gives a 7-day shareable channel
