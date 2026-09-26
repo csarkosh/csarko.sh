@@ -1,6 +1,7 @@
 ---
 description: Why near grass reads bare from a first-person eye, what fixing it cost in a Babylon.js game, and the GPU techniques that win the frame back without thinning.
 published: 2026-09-26
+updated: 2026-09-26
 ---
 # Grass fullness without thinning the field
 
@@ -11,12 +12,13 @@ of the frame the player looks at most was the emptiest. We filled the near field
 and paid about 1.3 ms of frame at the heaviest pose. How do we get that frame back without drawing
 fewer grass cards?
 
-**Short answer:** the frame is not going to pixels. It is going to per-card vertex work, much of it
-on cards nobody can see. Each grass bucket is one Babylon thin-instanced mesh with its visibility
+**Short answer:** the frame is not going to pixels. It is going to per-instance vertex work, and about 85 % of
+the instances shaded are outside the view. Each grass bucket is one Babylon thin-instanced mesh with its visibility
 test switched off, and Babylon never culls a thin instance on its own anyway: "either all thin
-instances are drawn (if the mesh is deemed visible) or none are" [1]. So every card in the
-40 m disc runs its vertex shader every frame, including every card behind the camera. The ranked
-follow-up is to split the grass into sector meshes the frustum test can drop, let the terrain
+instances are drawn (if the mesh is deemed visible) or none are" [1]. So every clump in the
+40 m disc runs its vertex shader every frame, including every clump behind the camera; filtering
+three layers to the view saved 0.82 ms of the 1.23 ms at native. The ranked follow-up is to cull
+the blade field and the larger grass cards to the view first, let the terrain
 shader carry the far sward as shipped systems since Ghost of Tsushima do [2], lean the cards
 toward the eye and hug them to the ground as Horizon Zero Dawn did [3], and match the card roots
 to the ground's colour. All of it is WebGL2 work. WebGPU compute culling is the long-term route,
@@ -34,7 +36,8 @@ a clump of tapered strips 2 cm wide at the root and 0.2 to 0.45 m tall, in a nea
 Beyond it are **photo cards**: a meadow clump built from Poly Haven's Grass Medium 01 (CC0), an
 alpha-tested cluster of vertical cards on a 0.7 m lattice out to 40 m, drawn at a near level of
 detail (LOD0, 40 vertices) and a far one (LOD1, five cards, 20 vertices). Where the blade field
-grew, the near cards were filtered out.
+grew, the near cards were filtered out. A third layer, the **grass-class cards**, is larger tufts
+built from Poly Haven's Grass Medium 01 and 02 (CC0), with a few hundred vertices each.
 
 From a 1.6 m eye the near ground is seen from 15 to 60 degrees above the horizontal, and a 2 cm
 strip seen from above covers its own 2 cm of ground and nothing else: the floor shows between the
@@ -65,13 +68,13 @@ work on the same GPU were set aside; the quiet control-against-control rounds ag
 On the unchanged game all of the near crop's cover came from the blades and all of the mid crop's
 from the cards. The fixes went in as four content changes, each measured before the next.
 
-| Step | Cover ratio, canopy / meadow | Frame, canopy / meadow |
+| Step | Cover ratio, canopy / meadow | Frame ms, canopy / meadow |
 |---|---|---|
 | Unchanged game | 0.27 / 0.47 | |
-| 1. Near cards kept under the blades | 0.45 / 1.03 | +1.19 / +1.48 ms |
-| 1b. The same cards on the lighter LOD | 0.39 / 0.90 | +0.60 / +0.49 ms |
-| 2. The floor under the sward darkened | 0.41 / 0.92 | +0.75 / +0.63 ms |
-| 3. The sward under the canopy at 0.75 | 0.62 / 0.94 | +1.35 ms / not measured |
+| 1. Near cards kept under the blades | 0.45 / 1.03 | +1.19 / +1.48 |
+| 1b. The same cards on the lighter LOD | 0.39 / 0.90 | +0.60 / +0.49 |
+| 2. The floor under the sward darkened | 0.41 / 0.92 | +0.75 / +0.63 |
+| 3. The sward under the canopy at 0.75 | 0.62 / 0.94 | +1.35 / not run |
 
 Frame deltas are at four times the pixels against the unchanged game. The meadow met the bar from
 step 1 on. The canopy never met the ratio, for a reason that says more about the measure than the
@@ -96,13 +99,42 @@ pixels and +1.23 ms at native resolution.
 
 The design had expected alpha-tested overdraw to dominate. It does not.
 
-### 2.4 How much of it is behind the camera
+### 2.4 Where the frame goes, measured
 
-Not measured yet. An in-page profile at the canopy pose, splitting GPU from JS time, removing one
-layer at a time, and counting the instances behind the camera, is the direct test of the next
-section's claim, and it had not reported when this was written. The share this doc works with,
-50 to 80 % of the far ring outside the view at a level pose, is derived from published ratios in
-section 3, not measured in the game.
+Measured, with an in-page profiler at the canopy pose on the shipped build against the unchanged
+game, at native and at four times the pixels. Two cautions on the method. The WebGL2 timer
+extension on this driver read about twice the frame interval, so it was used only as a sign that
+GPU time moved, not as a GPU time. And sustained load at four times the pixels drifted the machine
+within a minute or two, so most figures at that scale stayed too noisy to read; the reliable ones
+below toggle each condition on and off every 1.5 s and are marked with their error.
+
+- **The frame is GPU-bound.** JS takes 2.7 to 5 ms of a 22 to 55 ms frame, about 160 draw calls,
+  and no ablation moved it beyond its noise.
+- **It does not scale with pixels.** The shipped step costs +1.23 ms at native and +1.35 ms at four
+  times the pixels; the grass-class cards cost 0.52 ms at native and 0.51 ms at four times.
+- **Per layer**, hiding each on the shipped build at native saves: blades 1.36 ± 0.20 ms,
+  grass-class cards 0.52 ± 0.12, far meadow cards 0.44 ± 0.05, near meadow cards 0.30 to 0.53.
+- **Where the vertex work was added.** The grass-class cards are the largest pool, 1.06 million
+  instance vertices, 480,000 more than the unchanged game. The meadow cards added 53,000 near and
+  82,000 far. The blades' vertex count did not change, but at the new strength about twice as many
+  survive the vertex-stage cut and reach the rasteriser: the blades are the largest single
+  increment.
+
+Each thin instance was then classified against the camera's frustum. The portrait window sees about
+53 degrees horizontally, about a seventh of the ring the fields fill.
+
+| Layer | Outside the view | Behind the camera |
+|---|---|---|
+| Meadow cards | 9,850 of 11,393 (86 %) | 5,447 (48 %) |
+| Blades | 5,068 of 6,131 (83 %) | 2,681 (44 %) |
+| Grass-class cards | 3,872 of 4,559 (85 %) | 2,274 (50 %) |
+
+The direct test: re-uploading all three layers filtered to the frustum saved **0.82 ± 0.14 ms at
+native**, which would take the shipped step from +1.23 to about +0.4 ms. At four times the pixels
+it saved 0.51 ± 0.42 ms, too noisy to call. Filtering the meadow cards alone saved nothing
+measurable at four times the pixels (0.06 ± 0.09 ms). So the lever is the blade clumps and the
+grass-class cards, which carry 28 to 784 and 172 to 410 vertices per instance, not the 20-vertex
+meadow cards.
 
 ## 3. Babylon draws every card behind the camera
 
@@ -110,18 +142,17 @@ Babylon tests a thin-instanced mesh once, against one box around all its instanc
 core maintainer gave the reason: "we do not cull at the single thin instance level (this would
 defeat the purpose of using thin instances)" [5]. Day Hike also sets
 `alwaysSelectAsActiveMesh` on every grass bucket, the usual workaround because the box is not
-recomputed when the instance buffer is updated [6]. So all of the roughly 11,400 meadow
-cards in the 40 m disc at the canopy pose are vertex-shaded every frame, and when the player looks
-at their boots the far ring, entirely off screen, still is.
+recomputed when the instance buffer is updated [6]. So at the canopy pose all of the roughly
+11,400 meadow cards, 6,100 blade clumps and 4,600 grass-class cards are vertex-shaded every frame,
+and when the player looks at their boots the far ring, entirely off screen, still is.
 
 Instanced vertex shading is per instance per vertex, so the share of instances outside the frustum
 is the share of card vertex work wasted. A Unity field of 500,000 instances kept about 89,000 (18 %)
 after frustum culling at a 60 degree field of view and a 100 m far plane [7]. A 2026 WebGL
 terrain system found per-instance frustum culling halved a 12,000-blade visible set, a heightmap
 horizon test cut it to 10 to 20 % in valley views, and the CPU cull took "under a millisecond"
-[8]. A disc centred on the player keeps a larger share than a large field, so our estimate
-for Day Hike is 50 to 80 % of the far ring outside the view at a level pose and nearly all of it
-looking down.
+[8]. A disc centred on the player seen through a tall portrait window is the unfavourable
+case: the game measured about 85 % of each layer's instances outside the view (section 2.4).
 
 The tempting fix is wrong. Collapsing an instance to a point in the vertex shader saves
 rasterisation but still pays the vertex invocation. On an Intel integrated GPU in July 2025, an
@@ -131,13 +162,13 @@ same experiment: it discards most near-card pixels, and the cost still followed 
 
 ## 4. The ranked techniques
 
-Ordered by frame expected back per unit of fullness given up. The savings are estimates from
-published ratios and the game's own proportionality; none has been measured in the game yet.
+Ordered by frame expected back per unit of fullness given up. Only the first has been measured
+in the game; the rest are estimates from published ratios and the game's own proportionality.
 
-1. **Sector meshes, off-view cards not drawn.** Back: 50 to 80 % of card vertex work at a level
-   pose. Kept: all of the fullness.
-2. **Far sward carried by the terrain shader.** Back: perhaps 1.3 to 4 ms at four times the
-   pixels, unverified. Kept: high, if the shader reuses the cards' colour and wind.
+1. **Culling to the view, the blade field and the grass-class cards first.** Back: 0.82 ms at
+   native for all three layers, measured. Kept: all of the fullness.
+2. **Far sward carried by the terrain shader.** Back: at most the far meadow cards' measured 0.44
+   ms at native. Kept: high, if the shader reuses the cards' colour and wind.
 3. **Camera-based tilt and ground hugging.** Back: none. Gained: more cover from above.
 4. **Root-to-ground colour and coverage-preserving mips.** Back: none. Gained: cards stop reading
    as cut-outs.
@@ -148,7 +179,7 @@ published ratios and the game's own proportionality; none has been measured in t
 7. **Shells for the nearest ring.** Moves cost to fill. Best from above only.
 8. **Imposters.** Cheapest per instance; far only.
 
-### 4.1 Sector meshes
+### 4.1 Culling to the view
 
 The documented pattern is to cut the field into cells, each its own instanced mesh, so the
 whole-mesh test does useful work. Godot's Terrain3D uses one MultiMesh per 32 by 32 m cell "so that
@@ -162,9 +193,13 @@ instances, far below what WebGPU guidance calls "perfectly acceptable" for once-
 Sectors fit the game better. The clutter field already rebuilds on a fixed world grid, so a sector
 can keep its instances in a static buffer, and that flag matters: a two-million-quad thin-instance
 mesh went from 15 to 60 fps when its buffer was marked static [14]. The price is draw
-calls. The grass is 34 draws today, and one Babylon user saw "400+ draw calls" start to hurt on a
-2019 MacBook Pro [15]; 8 to 16 sectors for the meadow's two buckets add tens. Each sector
-needs its box computed once at build, since a refresh walks every instance in JS.
+calls. The frame is about 160 draws today, and one Babylon user saw "400+ draw calls" start to hurt
+on a 2019 MacBook Pro [15], so sectors are affordable only for a few buckets. The measured
+target picks them: the blade clumps and the grass-class cards, which carry most of the per-instance
+vertices, while filtering the meadow cards alone saved nothing measurable. The blades are already
+thin instances per clump mesh with their own per-instance buffers, so they can be filtered exactly
+as the cards can. Each sector needs its box computed once at build, since a refresh walks every
+instance in JS.
 
 ### 4.2 The far ring on the terrain
 
@@ -180,9 +215,9 @@ aggregate's coverage rather than thinning it; the voxels do not port, the policy
 ecosystem advice is that simple grass cards stay ordinary instanced foliage [18],
 [19].
 
-For Day Hike that points at the roughly 8,700 far cards between 18 and 40 m. By the game's own
-proportionality they carry about 2.7 times the near cards' vertex work, the largest pool in the
-frame. The game already darkens the floor under the sward inside 18 m; the pattern is to push that
+For Day Hike that points at the roughly 8,700 far meadow cards between 18 and 40 m. The research
+estimated them from proportionality as the largest pool; the profile measured them at 0.44 ms at
+native, smaller than the blades or the grass-class cards, so this is second in line. The game already darkens the floor under the sward inside 18 m; the pattern is to push that
 outward with a sward colour, a stylised blade normal and the same wind noise, and let the far cards
 thin to a constant count per tier. Two cautions. Key the drop to a per-instance hash and the same
 origin the dither uses: Godot has an open bug where visibility range and distance fade computed
@@ -280,8 +315,8 @@ microseconds unless a developer flag is on [46], and Safari's WebGPU reports tha
 
 ## 7. The plan
 
-1. **The ranked follow-up first.** Sector meshes for the meadow's two buckets, the far sward on the
-   terrain, the height-proportional tilt and ground hugging, and root-to-ground colour with
+1. **The ranked follow-up first.** Culling the blade field and the grass-class cards to the view,
+   then the far sward on the terrain, the height-proportional tilt and ground hugging, and root-to-ground colour with
    coverage-preserving mips. All WebGL2, all in APIs the game already uses, each measured at the
    same poses by the same paired method before the next goes in.
 2. **A bounded WebGPU spike.** Compute-culled blades drawn with an indirect draw through the device
@@ -297,10 +332,11 @@ microseconds unless a developer flag is on [46], and Safari's WebGPU reports tha
 - **Any single technique on a card-based field.** Every published figure is whole-system: hexaquo's
   2 ms, Helio's 2.70 ms, and Ghost of Tsushima's often-quoted 83,000 blades in about 2.5 ms, which
   is attributed to the talk video and could not be confirmed from any text source.
-- **The far ring's cost.** The 1.3 to 4 ms range is a proportion taken from two different near-card
-  measurements. It is measured the way the gates were: set the far bucket's instance count to zero
-  at the two poses and read the delta. That differential is the only way to attribute time on the
-  web, since neither WebGL2 nor WebGPU gives per-draw timers on Apple hardware, and Safari exposes
+- **The culling saving at four times the pixels.** At native it is 0.82 ± 0.14 ms; at four times
+  the pixels the machine drifted and the figure (0.51 ± 0.42) does not read. It needs the gates'
+  paired method on a quiet machine, as do the blades' split between vertex and fragment work and
+  the foliage plugin's own vertex cost. Toggling a layer and reading the delta is the only way to
+  attribute time on the web, since neither WebGL2 nor WebGPU gives per-draw timers on Apple hardware, and Safari exposes
   the WebGL2 timer extension to 0.13 % of contexts [48].
 - **Shells.** No source gives a cost per shell count, and no shipped 2023 to 2026 game uses shells
   for a first-person ground ring.
