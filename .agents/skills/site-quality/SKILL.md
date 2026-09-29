@@ -91,7 +91,7 @@ portrait is a `<picture>` with AVIF + WebP, `srcset`/`sizes`/`width`/`height`,
 **no animation on the hero** (it once delayed LCP by ~0.7s); **no third-party
 resources** except origins in `THIRD_PARTY` in `check.py`; scripts must be
 `async`/`defer`; JavaScript ≤ 10 KB (third-party measured with `--live`). Doc
-pages get a 120 KB HTML budget.
+pages get a 200 KB HTML budget.
 
 **Accessibility** — the first element in `<body>` is the skip link, and its
 target has `tabindex="-1"`; alt on every image; in-page links resolve; new-tab

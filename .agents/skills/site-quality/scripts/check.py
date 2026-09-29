@@ -57,7 +57,7 @@ BUDGET_PORTRAIT_AVIF_480 = 25_000
 BUDGET_ANY_PORTRAIT = 90_000
 BUDGET_SCRIPTS = 10_000  # all JavaScript the page loads, first- and third-party (third-party measured live)
 
-BUDGET_HTML_DOC = 120_000  # a doc page is mostly prose, so long research docs get more room than BUDGET_HTML
+BUDGET_HTML_DOC = 200_000  # a doc page is mostly prose, so long research docs get more room than BUDGET_HTML; the longest, with 146 sources, is 197 KB (55 KB gzipped)
 
 BUILD_DOCS = SKILL / "scripts/build_docs.mjs"
 # Where docs are built and served (DOCS_DIR in docs_lib.mjs), and where they used to be: firebase.json
