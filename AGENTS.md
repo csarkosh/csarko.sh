@@ -173,8 +173,9 @@ three from the command line):
 - **The hero tiles are a "Now" snapshot**, deliberately about him rather than
   DoorDash metrics: **Leading / Working / Building / Filming** *(2026-10-08:
   "Leading" added first: "Zero-to-one AI products, hands-on from the first
-  prototype to launch, 100x scale, and beyond" (his wording; the "100x" is his
-  own figure, not one from the résumé). Keep it hands-on: a version listing design
+  prototype to launch, 100x scale, and beyond" (his wording; the "100x" is
+  GEM's growth from prototype in merchants, review volume, AI replies and traffic,
+  confirmed 2026-10-09 and on the résumé). Keep it hands-on: a version listing design
   docs, design reviews and SLOs read as if he did no development work; the "Based in" tile was dropped since the eyebrow already says
   New York)*. An earlier "What I care about" version was tried and replaced. The
   Filming tile was **Writing** (csarko.log on Substack) until 2026-09-20, when Cyrus
