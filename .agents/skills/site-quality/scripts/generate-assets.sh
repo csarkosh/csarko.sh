@@ -2,8 +2,8 @@
 #
 # generate-assets.sh — rebuild every generated asset in public/, deterministically.
 #
-# 1. build_docs.mjs: docs/published/*.md → public/research/*.html, public/sitemap.xml, and the
-#    <!-- generated:docs --> block in public/index.html (needs Node 18+).
+# 1. build_docs.mjs: docs/published/*.md → public/research/*.html, docs/games/ → /games,
+#    docs/films/ → /film, and public/sitemap.xml (needs Node 18+).
 # 2. build_assets.py: hashed portraits (AVIF/WebP/JPEG × 4 widths), hashed fonts,
 #    public/portrait.jpg, and the other <!-- generated:… --> blocks in public/*.html
 #    and public/research/*.html.

@@ -390,10 +390,8 @@ const OG_IMAGE_ALT = 'Cyrus Sarkosh, Senior Software Engineer in New York, with 
 const LINKEDIN = 'https://www.linkedin.com/in/csarkosh';
 const INDEX_TITLE = 'Research & notes';
 // The home page's section and heading link for the docs, which live at /research.
-const NOTES = 'Notes';
 const INDEX_DESCRIPTION = 'Research notes and specs by Cyrus Sarkosh on game development, generative AI for media, and the software behind them.';
 const INDEX_LEAD = 'Research notes and specs from what I build and explore: game development, generative AI for media, and the software behind them.';
-const HOME_LIMIT = 3;
 // What the nav and the breadcrumb call /research. The page's own heading is INDEX_TITLE: a trail is
 // read sideways, in one line, so it wants the shorter word.
 const DOCS_NAV = 'Research';
@@ -443,12 +441,6 @@ export function themeBlocks(indexHtml) {
   return `${dark[0]}\n    ${light[0]}`;
 }
 
-export function replaceBlock(html, name, body) {
-  const re = new RegExp(`(<!-- generated:${name} -->)[\\s\\S]*?(<!-- /generated:${name} -->)`);
-  if (!re.test(html)) throw new DocError(`public/index.html has no <!-- generated:${name} --> markers`);
-  return html.replace(re, (_, start, end) => start + body + end);
-}
-
 const jsonLd = (data) => JSON.stringify({ '@context': 'https://schema.org', '@graph': data }, null, 2).replace(/</g, '\\u003c');
 
 // A page's trail is one array of [name, absolute URL], newest crumb last, and it feeds both the
@@ -484,7 +476,6 @@ ${items.join('\n')}
 // A content warning's mark. Decorative: the warning's own sentence says what it means.
 const WARNING_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>';
 const EXTERNAL_ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>';
-const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 
 const DOCS_CSS = `
     *, *::before, *::after { box-sizing: border-box; }
@@ -585,8 +576,7 @@ const DOCS_CSS = `
 
     .docs-index { padding-block: 72px 96px; }
 
-    /* The same card as the home page's Notes list (see public/index.html); keep the shared rules
-       in step. A .stretch link covers its whole card, so the card is the click target; anything
+    /* A .stretch link covers its whole card, so the card is the click target; anything
        else that has to stay clickable is lifted above that overlay. */
     .card {
       position: relative; display: flex; flex-direction: column;
@@ -1008,19 +998,6 @@ ${films.map((film) => filmCard(film, '      ')).join('\n')}
 ${FOOTER}`;
 }
 
-// The home page's "Notes" section, which the home nav's Notes heading link jumps to. With no docs the block is empty, so nothing renders.
-export function homeSection(docs) {
-  if (!docs.length) return '\n    ';
-  return `
-    <section id="notes" aria-labelledby="notes-title">
-      <p class="section-label">03 / ${NOTES}</p>
-      <h2 id="notes-title">Notes from what I'm researching</h2>
-${docList(docs.slice(0, HOME_LIMIT), 3, '      ')}
-      <a class="all-docs" href="/${DOCS_DIR}">All notes ${ARROW}</a>
-    </section>
-    `;
-}
-
 export function sitemap(docs, games = [], films = []) {
   // /, /film, /games and /research get no <lastmod>: a home-page-only edit never moves it, so it
   // was unreliable. Each doc keeps its own (updated, else published), which is a real content date.
@@ -1059,6 +1036,5 @@ export function buildSite({ sources, gameSources = [], filmSources = [], indexHt
   if (games.length) files.set('games/index.html', gamesPage(games, theme));
   if (films.length) files.set(`${FILM_DIR}/index.html`, filmsPage(films, theme));
   files.set('sitemap.xml', sitemap(docs, games, films));
-  files.set('index.html', replaceBlock(indexHtml, 'docs', homeSection(docs)));
   return files;
 }

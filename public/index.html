@@ -290,27 +290,6 @@
       padding: 3px 9px; border-radius: 999px; line-height: 1.5;
     }
 
-    /* Cards: the Notes list's entries */
-    .card {
-      position: relative; display: flex; flex-direction: column;
-      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 22px; transition: border-color .18s ease, transform .18s ease, background .18s ease;
-    }
-    .card:hover, .card:focus-within { border-color: var(--accent-border); transform: translateY(-2px); background: var(--surface-hover); }
-    /* A card that is not itself an <a> puts the overlay on its one link, so the whole card is the
-       click target. Same rule in DOCS_CSS in docs_lib.mjs; keep the two in step. */
-    .card .stretch::before { content: ""; position: absolute; inset: 0; border-radius: var(--radius); }
-
-    /* Notes: the list between the generated:docs markers comes from docs/published/ (build_docs.mjs) */
-    .doc-list { display: grid; gap: 14px; list-style: none; margin: 0; padding: 0; }
-    .doc-list .doc-title { margin: 0 0 4px; font-size: 1.15rem; line-height: 1.35; letter-spacing: -0.015em; font-weight: 600; }
-    .doc-list .doc-title a { transition: color .15s ease; }
-    .doc-list li:hover .doc-title a, .doc-list .doc-title a:focus-visible { color: var(--accent); }
-    .doc-meta { margin: 0 0 6px; font-family: var(--mono); font-size: 12px; color: var(--faint); }
-    .doc-desc { margin: 0; color: var(--muted); font-size: 15px; max-width: 78ch; }
-    .all-docs { margin-top: 22px; font-size: 14px; font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
-    .all-docs svg { width: 14px; height: 14px; transition: transform .18s ease; }
-    .all-docs:hover svg { transform: translateX(2px); }
 
     /* Education */
     .edu { padding: 18px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; }
@@ -358,7 +337,6 @@
       <ul>
         <li class="heading-link"><a href="#work" data-collapsible="true">Work</a></li>
         <li class="heading-link"><a href="#education" data-collapsible="true">Education</a></li>
-        <li class="heading-link"><a href="#notes" data-collapsible="true">Notes</a></li>
         <li class="heading-link"><a href="#contact" data-collapsible="true">Contact</a></li>
         <li class="nav-divider" aria-hidden="true"></li>
         <li><a href="/film">Film</a></li>
@@ -511,33 +489,9 @@
       </div>
     </section>
 
-    <!-- generated:docs -->
-    <section id="notes" aria-labelledby="notes-title">
-      <p class="section-label">03 / Notes</p>
-      <h2 id="notes-title">Notes from what I'm researching</h2>
-      <ul class="doc-list" role="list">
-        <li class="card">
-          <h3 class="doc-title"><a class="stretch" href="/research/olympic-lakes-for-game-worlds">Olympic Peninsula lakes for game worlds</a></h3>
-          <p class="doc-meta">Oct 8, 2026 · 27 min read</p>
-          <p class="doc-desc">How the lakes of Washington&#39;s Olympic Peninsula formed, their measured shapes and perched cirque basins, and numeric rules for generating them in a game world.</p>
-        </li>
-        <li class="card">
-          <h3 class="doc-title"><a class="stretch" href="/research/ground-fog-without-the-wall">Ground fog without the wall</a></h3>
-          <p class="doc-meta">Oct 7, 2026 · 10 min read</p>
-          <p class="doc-desc">How AAA engines draw ground fog as a frustum-aligned volume instead of sprites, what it costs, where it ghosts, and which of it a browser game can run.</p>
-        </li>
-        <li class="card">
-          <h3 class="doc-title"><a class="stretch" href="/research/how-alan-wake-introduces-its-darkness">How Alan Wake introduces its darkness</a></h3>
-          <p class="doc-meta">Oct 6, 2026 · 8 min read</p>
-          <p class="doc-desc">How Alan Wake and Alan Wake 2 introduce their evil, voice it in whispers and haunt the player with shadows, and what a game can borrow from each.</p>
-        </li>
-      </ul>
-      <a class="all-docs" href="/research">All notes <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-    </section>
-    <!-- /generated:docs -->
 
     <section id="contact" class="contact" aria-labelledby="contact-title">
-      <p class="section-label">04 / Contact</p>
+      <p class="section-label">03 / Contact</p>
       <h2 id="contact-title">Let's talk.</h2>
       <p>I'm always happy to talk about AI products, LLM pipelines and evals, distributed systems, or engineering leadership.</p>
       <div class="actions">

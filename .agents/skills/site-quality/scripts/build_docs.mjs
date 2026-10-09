@@ -6,8 +6,8 @@
 //   node build_docs.mjs --out <dir>  write the same files under <dir> and leave the repo alone (check.py uses this)
 //
 // Writes public/research/<slug>.html, public/research/index.html, public/film/index.html,
-// public/sitemap.xml and the <!-- generated:docs --> and <!-- generated:film --> blocks in
-// public/index.html. Doc pages carry empty generated:head,
+// public/games/index.html and public/sitemap.xml; public/index.html is only read, for its theme
+// tokens. Doc pages carry empty generated:head,
 // generated:fonts and generated:analytics markers, which build_assets.py fills next.
 // The logic lives in docs_lib.mjs; this file only reads and writes.
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

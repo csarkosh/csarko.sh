@@ -13,8 +13,8 @@ description: >-
 
 Docs are Markdown files in `docs/published/<YYYY-MM-DD>-<slug>.md`, dated so the
 directory reads in publication order. `generate-assets.sh` turns them into
-`https://csarko.sh/research/<slug>`, the `/research` index, the sitemap and the home
-page's "Notes" section. **The URL is the slug alone**: the date prefix
+`https://csarko.sh/research/<slug>`, the `/research` index and the sitemap (the home
+page lists no docs; the nav's `Research` link is the way in). **The URL is the slug alone**: the date prefix
 belongs to the file name and never appears in a link. The design is in
 `docs/superpowers/specs/2026-09-15-docs-section-design.md`.
 
@@ -36,8 +36,8 @@ sentence shown on the card above the watch link (horror films get one). The H1 i
 body is its card copy. Its poster is a portrait (9:16) JPEG committed at
 `.agents/skills/site-quality/assets/films/<slug>.jpg`, which the same
 `generate-assets.sh` run turns into the hashed responsive images; without it the
-card falls back to a plain `<img>`. Films land on `/film` and the newest one also
-shows on the home page.
+card falls back to a plain `<img>`. Films land on `/film` only; the home page
+has no film section.
 
 **The csarko.sh repository is public on GitHub. Committing a file under
 `docs/published/` publishes it, before any deploy.** Do the review first.

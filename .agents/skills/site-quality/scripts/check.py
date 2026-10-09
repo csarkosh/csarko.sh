@@ -711,7 +711,7 @@ def docs_build_checks():
             builds.append({p.relative_to(out).as_posix(): p.read_text(encoding="utf-8")
                            for p in Path(out).rglob("*") if p.is_file()})
     check(builds[0] == builds[1], "docs build is deterministic (two builds are byte-identical)")
-    committed = {rel: (PUBLIC / rel).read_text(encoding="utf-8") for rel in ("index.html", "sitemap.xml")}
+    committed = {rel: (PUBLIC / rel).read_text(encoding="utf-8") for rel in ("sitemap.xml",)}
     for d in (DOCS_DIR, "games", FILM_DIR):
         committed |= {f"{d}/{p.name}": p.read_text(encoding="utf-8") for p in (PUBLIC / d).glob("*.html")}
     stale = sorted(rel for rel in set(builds[0]) | set(committed)

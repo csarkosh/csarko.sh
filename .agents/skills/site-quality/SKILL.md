@@ -50,7 +50,7 @@ Same inputs, same outputs (two builds produce identical hashes).
 
 | Output | Source | Notes |
 |---|---|---|
-| `public/research/<slug>.html`, `public/research/index.html`, `<!-- generated:docs -->` in `index.html` | `docs/published/<YYYY-MM-DD>-<slug>.md` via `build_docs.mjs` (logic in `docs_lib.mjs`, `marked` vendored in `scripts/vendor/`) | Doc pages copy `index.html`'s theme token blocks and get fonts and analytics from `build_assets.py`, with root-relative paths. `check.py` rebuilds into a temp dir and fails if `public/` is stale. |
+| `public/research/<slug>.html`, `public/research/index.html` | `docs/published/<YYYY-MM-DD>-<slug>.md` via `build_docs.mjs` (logic in `docs_lib.mjs`, `marked` vendored in `scripts/vendor/`) | Doc pages copy `index.html`'s theme token blocks and get fonts and analytics from `build_assets.py`, with root-relative paths. `check.py` rebuilds into a temp dir and fails if `public/` is stale. |
 | `public/games/index.html` | `docs/games/<slug>.md` via the same `build_docs.mjs` run | The `/games` list, one entry per file: kicker from `status`, the H1 as the name, the body as the copy, `tags` as pills, and `play` as the card's "Play in your browser" link, styled like the old home page Projects card (`repo` is not linked from the card; it only feeds the JSON-LD `url` when there is no `play`). No per-game pages yet. Same theme, fonts, analytics and staleness rules as a doc page. |
 | `public/film/index.html` | `docs/films/<slug>.md` via the same `build_docs.mjs` run | The `/film` list, one card per file: the poster, a kicker of `Short film · <runtime>`, the H1 as the title, the body as the copy, `tags` as pills, an optional `warning` line, and `watch` as the card's "Watch on YouTube" link. Each film is a `VideoObject` in the page's `CollectionPage`. The home page carries no film of its own: the nav's `Film` link is how you get here. |
 | `public/assets/film-<slug>-{200,240,400,480}.<hash>.{avif,webp,jpg}`, `public/film/<slug>.jpg` | `assets/films/<slug>.jpg`, one poster per film, portrait (3:4) | `build_docs.mjs` writes a `<!-- generated:film-poster:<slug> -->` marker holding a plain `<img>` with the `alt` from the front matter; `build_assets.py` swaps in the hashed `<picture>` and reads that `alt` back out, so the Markdown stays the one source of truth. The stable `film/<slug>.jpg` is what the `VideoObject` cites. A film with no source image keeps the plain `<img>`. |
@@ -136,8 +136,7 @@ the nav jumps width between the home page and a generated page. The bar reads
 `heading links │ page links`: heading links jump inside the current page, sit in
 front and take `--faint`; page links go to another page, sit after the hairline
 `.nav-divider` and take `--muted`. The home page's is
-`Work · Education · Notes · Contact │ Film · Games · Research` (`Notes` jumps to `#notes`,
-`Research` goes to `/research`); every generated page (a doc, `/research`,
+`Work · Education · Contact │ Film · Games · Research` (`Research` goes to `/research`); every generated page (a doc, `/research`,
 `/games`, `/film`) has page links only (`Film · Games · Research`, from `PAGE_LINKS` in
 `docs_lib.mjs`) and no divider, with `aria-current="page"` on the index page you
 are on. Nothing links home by name: the wordmark does that on every page. Heading links are `li.heading-link` whose anchor

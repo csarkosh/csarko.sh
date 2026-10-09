@@ -23,7 +23,7 @@ now 301 there). No framework and no CI; the one build step,
 | `docs/published/<YYYY-MM-DD>-<slug>.md` | **Published docs, source of truth.** Markdown with front matter, one file per doc, named for its `published:` date (the build fails if the two disagree). The URL is the slug alone: `/research/<slug>`, no date. The repo is public, so committing a file here publishes it; use the `publish-doc` skill. |
 | `docs/films/<slug>.md` | **The films, source of truth.** One file per short film, named for the slug alone (a date prefix is refused; `released:` in the front matter is the date). Front matter also carries `watch` (the YouTube URL), `runtime`, `alt` (the poster's alt text), `tags` and an optional `warning` (a content warning, shown on the card). Its poster is committed at `.agents/skills/site-quality/assets/films/<slug>.jpg`. The repo is public, so committing a file here publishes it. |
 | `docs/games/<slug>.md` | **The games, source of truth.** Markdown with front matter, one file per game, named for the slug alone: a game is not a dated log entry, so a date prefix is refused (`released:` in the front matter is the date). The repo is public, so committing a file here publishes it. |
-| `public/research/`, `public/games/`, `public/film/`, `public/sitemap.xml` | **Generated** from `docs/published/`, `docs/games/` and `docs/films/` by `build_docs.mjs` (run by `generate-assets.sh`), along with the `generated:docs` block in `index.html`. `public/film/<slug>.jpg` is each film's stable poster, written by `build_assets.py`. |
+| `public/research/`, `public/games/`, `public/film/`, `public/sitemap.xml` | **Generated** from `docs/published/`, `docs/games/` and `docs/films/` by `build_docs.mjs` (run by `generate-assets.sh`). `public/film/<slug>.jpg` is each film's stable poster, written by `build_assets.py`. |
 | `docs/superpowers/` | Internal design specs and implementation plans. **Never published** (unlike its siblings `docs/published/`, `docs/games/` and `docs/films/`, which are). |
 | `docs/substack/posts.json` | The log of csarko.log posts made with the `substack-post` skill: date, Substack URL, title and the doc slugs each covered. Not a page: the build reads only the three content folders. |
 | `firebase.json`, `.firebaserc` | Firebase Hosting config: publish `public/`, cache headers, and the 301 redirects from the old `/docs` URLs to `/research` (keep them: old links and search results still use them). |
@@ -184,13 +184,14 @@ three from the command line):
 - **No em-dashes in page copy**; commas, colons, semicolons.
 - **The home page's sections** *(Cyrus, 2026-10-08)*: `01 / Experience` (`#work`),
   `02 / Education` (`#education`, the University of Washington card, "Where I
-  studied"), `03 / Notes` (`#notes`) and `04 / Contact`; the nav's heading links
-  are `Work · Education · Notes · Contact` *(Education moved above Notes,
-  2026-10-09)*. **The Projects and Skills sections were
-  dropped** that day at his request: Projects (Day Hike, `game-dayhike`,
+  studied") and `03 / Contact`; the nav's heading links are `Work · Education ·
+  Contact`. **The Notes section was dropped too** *(Cyrus, 2026-10-09)*: the
+  research docs are reached through the nav's `Research` link, and the home page
+  no longer lists any (its `generated:docs` block and `homeSection()` are gone).
+  **The Projects and Skills sections were dropped** on 2026-10-08 at his request: Projects (Day Hike, `game-dayhike`,
   `electron-gamepatch` and the `csarko.sh` card) is covered by `/games` and the
   hero's Building tile, and Skills by the Experience section's tech tags. Don't
-  bring either back unasked. If a card about the code ever returns: `game-dayhike`
+  bring any of the three back unasked. If a card about the code ever returns: `game-dayhike`
   has no licence, so it is a "Public repo", not "Open source", and **the asset
   pipeline is being commercialized**: never describe it as open source or part of
   that repo. The public list of the games is **`/games`** (nav: `Games`), built
@@ -204,8 +205,8 @@ three from the command line):
   calls the page `Research`; the page's own H1 is "Research & notes" and its eyebrow
   "Research", *renamed from "Research & docs" / "Docs", 2026-09-16; the eyebrow
   was briefly "Notes"*. Only the URL moved: the sources stay in `docs/published/`
-  and the code still calls them docs. The home page's section is `03 / Notes` (`#notes`), with a `Notes`
-  heading link after `Education` in its nav), copied
+  and the code still calls them docs; the home page has no section for them
+  since 2026-10-09), copied
   into `docs/published/` as `<YYYY-MM-DD>-<slug>.md` (the published copy is the
   source of truth; the URL is the slug, without the date). The page copy rules
   apply (no email, phone or em-dashes): the build rejects em-dashes in
