@@ -93,36 +93,32 @@ Three sources, each for a different question. **Pick by the question, not by hab
   Its Core Web Vitals report needs real-user traffic volume the site may never
   reach; use the `site-quality` Lighthouse run for performance instead.
 
-**Search Console state as of 2026-09-15** (check these before re-doing any of
+**Search Console state as of 2026-09-23** (check these before re-doing any of
 them; `general:search-console`'s `gsc.py sitemap` and `gsc.py index` answer the first
 three from the command line):
 - Domain property verified through the apex TXT `google-site-verification=…` in
   `_infra/main.tf`. Removing that value un-verifies the property.
 - Sitemap `https://csarko.sh/sitemap.xml` is **fetched**: last downloaded
-  2026-09-16 UTC (the API reports UTC, so it reads a day ahead of an evening
-  Eastern session), 0 errors, 0 warnings. The copy Google holds lists 12 URLs; the
-  live one lists 13 since `/games` shipped. `gsc.py sitemap --resubmit` asks for
+  2026-09-22 UTC (the API reports UTC, so it reads a day ahead of an evening
+  Eastern session), 0 errors, 0 warnings, and the copy Google holds lists all 16
+  live URLs, so it needs no resubmit. `gsc.py sitemap --resubmit` asks for
   a refetch (the only write the skill makes, and the only way to hurry one);
   Google still refetches on its own schedule, usually within a day or two.
-- **Indexed** (before the move to `/research`, below): `/`, `/docs`, and every
-  doc but one. Not yet:
-  `/games` ("Discovered, currently not indexed", shipped 2026-09-15) and
-  `/docs/browser-coop-netcode` ("Crawled, currently not indexed"). Both are
-  Google's own crawl scheduling rather than a fault on the page, and a second
-  Request indexing click on the same URL buys nothing.
-- **Outstanding, 2026-09-15:** Cyrus hit the daily Request indexing quota, so
-  `/games` may still be waiting for its click. That is the only URL worth one.
-  The breadcrumbs shipped the same evening rewrote every generated page's
-  `BreadcrumbList` names (`Cyrus Sarkosh › Docs` became `Home › Research`), but
-  those pages are already indexed and the trail only changes how a result is
-  displayed, so **don't spend the quota re-requesting them**; Google picks the
-  new names up on its own recrawl.
+- **Indexed:** `/`, `/film`, `/games`, `/research`,
+  `/research/stylized-shader-looks` and `/research/babylon-material-plugin-traps`.
+  Not yet: the other ten `/research/<slug>` docs. Of those, six still have their
+  old `/docs/<slug>` URL indexed, so they stay findable through the redirect
+  while Google moves them over. `/research/browser-coop-netcode` and
+  `/research/ai-short-film-generation` were crawled and passed over ("Crawled,
+  currently not indexed"): that is Google's call, not a fault on the page.
+- **Request indexing clicked, 2026-09-23, on all ten unindexed docs.** Don't
+  click them again: a second click on the same URL buys nothing. Check back with
+  `gsc.py index` in a few days, and spend future clicks on new docs only.
 - **Docs moved to `/research`, 2026-09-17.** `/docs` and every `/docs/<slug>`
   301 to `/research` and `/research/<slug>` (`firebase.json` `redirects`), and
   the sitemap lists only the new URLs. Google transfers the old URLs' indexing
   to the new ones as it recrawls the redirects; expect both to show in reports
-  for a few weeks. Resubmit the sitemap after the deploy, and spend Request
-  indexing on `/research` and new docs only.
+  for a few weeks.
 - A Domain property covers **every host** under `csarko.sh`, so search reports
   still carry rows for the retired subdomains and the old React site's
   `/contact` and `/projects`.
@@ -151,49 +147,52 @@ three from the command line):
   Engineer" (he was the *de facto* lead — say "engineering lead" in prose, never
   "Tech Lead" as a title); Voice AI was sunset, so never imply it's still running.
 - **Frame him as a lead**, not a supporting engineer.
-- **Headline identity is "senior software engineer"** *(Cyrus, 2026-09-13)*: the
-  search description, hero, share card and JSON-LD say he's a senior software
-  engineer who was the **founding engineer and lead on several zero-to-one
-  products at DoorDash**. Don't pair "senior software engineer" with "engineering
-  lead" there; it reads as two conflicting titles. "Founding engineer and lead
-  on…" is fine: it describes his role on those products, not a second title. The
-  hero's second clause is exploring generative AI for film production and game
-  development *(Cyrus, 2026-09-20; it was "…media, entertainment, and game
-  development", itself reworded from "…media and entertainment, starting with game
-  development", 2026-09-16)*: now that `/film` ships his shorts, the clause names
-  film outright instead of the broad "media and entertainment". The search
-  description, JSON-LD and share card still say "media and entertainment" without
-  the games.
+- **Pitch: an engineering lead on distributed systems and AI products** *(Cyrus,
+  2026-10-08, to match his résumé and interview targets: senior or Staff IC with
+  engineering-lead scope, NYC; see `~/Documents/InterviewPrep/AGENTS.md`)*. The
+  title stays "Senior Software Engineer" (eyebrow, `<title>`, JSON-LD
+  `jobTitle`); the prose opens "Engineering lead with 9+ years…", as the résumé's
+  summary does. The hero names the production LLM pipelines with evals and the AI
+  agents adopted team-wide, and puts generative AI for film and games "on the
+  side". The search description, share card, `og`/`twitter` descriptions, JSON-LD
+  `description` and the doc pages' "Written by" bio all lead with distributed
+  systems and AI products. **None of them names DoorDash** *(Cyrus, 2026-10-08:
+  he doesn't want his name tied so tightly to DoorDash; visitors see it in the
+  Experience list and on LinkedIn)*. Before 2026-10-08 the hero and metadata said
+  he was "the founding engineer and lead on several zero-to-one products at
+  DoorDash", then briefly that he was exploring generative AI for film production
+  and game development; the film-and-games clause is the side note now, not the
+  pitch.
 - **The Experience section stays high-level** *(Cyrus, 2026-09-11)*: for each role, a
   short description of the product and his general role on it, plus tech tags.
   **No metrics, customer names, or accomplishment bullets** (ARR, merchant counts,
   call volumes, ~20x, McDonald's, Unilever…). Those details live in the résumé only.
-- **The hero tiles are a "Now" snapshot** (Building / Filming / Based in /
-  Working), deliberately about him rather than DoorDash metrics. An earlier
-  "What I care about" version was tried and replaced. The second tile was
-  **Writing** (csarko.log on Substack) until 2026-09-20, when Cyrus asked for it
-  to highlight his YouTube channel instead: it now reads "Filming" and links
-  `@csarkosh` to https://www.youtube.com/@csarkosh. Substack is still a hero and
-  Contact chip.
+  GEM's and Voice AI's lines name the work a Staff loop asks about (the LLM
+  pipeline and its evals, the AI agents, the pivot to AI) without numbers
+  *(2026-10-08)*.
+- **The hero tiles are a "Now" snapshot**, deliberately about him rather than
+  DoorDash metrics: **Leading / Working / Building / Filming** *(2026-10-08:
+  "Leading" added first: "Zero-to-one AI products, hands-on from the first
+  prototype to launch, 100x scale, and beyond" (his wording; the "100x" is his
+  own figure, not one from the résumé). Keep it hands-on: a version listing design
+  docs, design reviews and SLOs read as if he did no development work; the "Based in" tile was dropped since the eyebrow already says
+  New York)*. An earlier "What I care about" version was tried and replaced. The
+  Filming tile was **Writing** (csarko.log on Substack) until 2026-09-20, when Cyrus
+  asked for it to highlight his YouTube channel instead: it links `@csarkosh` to
+  https://www.youtube.com/@csarkosh. Substack is still a hero and Contact chip.
 - **No em-dashes in page copy**; commas, colons, semicolons.
-- **Projects section** *(the home page's `#projects`, labelled `03 / Projects`
-  since the Film section took `02`, 2026-09-17;
-  it was `#games` and `02 / Games & projects` until the `/games` page took that
-  name)*: Day Hike (playable, links to
-  `https://games.csarko.sh/dayhike/`), **`game-dayhike`** (linked to
-  `github.com/csarkosh/game-dayhike` since it went public, *2026-09-14*), `electron-gamepatch`,
-  and a full-width `csarko.sh` card (`.card.wide`, *added 2026-09-13*) linking
-  `github.com/csarkosh/csarko.sh` as a demo of a site managed entirely by agents.
-  The Day Hike card carries the game's story (the park ranger and the four missing
-  hikers) and the `game-dayhike` card carries the tech; both follow that repo's
-  README and GitHub description. `game-dayhike` has no licence yet, so its kicker
-  says "Public repo", not "Open source". The `.card.placeholder` style is kept for
-  future "Coming soon" cards. **The asset pipeline is being
-  commercialized** — never describe it as open source or part of that repo.
-  `html5-fps` was removed on purpose (an early prototype, not a game).
-  The public list of the games themselves is **`/games`** (nav: `Games`), built
-  from `docs/games/*.md`, one file per game; the home page's four cards stay a
-  short teaser of what he builds for fun, not that list.
+- **The home page's sections** *(Cyrus, 2026-10-08)*: `01 / Experience` (`#work`),
+  `02 / Notes` (`#notes`), `03 / Education` (`#education`, the University of
+  Washington card, "Where I studied") and `04 / Contact`; the nav's heading links
+  are `Work · Notes · Education · Contact`. **The Projects and Skills sections were
+  dropped** that day at his request: Projects (Day Hike, `game-dayhike`,
+  `electron-gamepatch` and the `csarko.sh` card) is covered by `/games` and the
+  hero's Building tile, and Skills by the Experience section's tech tags. Don't
+  bring either back unasked. If a card about the code ever returns: `game-dayhike`
+  has no licence, so it is a "Public repo", not "Open source", and **the asset
+  pipeline is being commercialized**: never describe it as open source or part of
+  that repo. The public list of the games is **`/games`** (nav: `Games`), built
+  from `docs/games/*.md`, one file per game.
 - **The blog is "csarko.log"** at `https://csarko.substack.com/`. It has no
   published posts yet; Cyrus will publish once Day Hike is ready to publicize.
   Posts that introduce the research docs go through the `substack-post` skill
@@ -203,8 +202,8 @@ three from the command line):
   calls the page `Research`; the page's own H1 is "Research & notes" and its eyebrow
   "Research", *renamed from "Research & docs" / "Docs", 2026-09-16; the eyebrow
   was briefly "Notes"*. Only the URL moved: the sources stay in `docs/published/`
-  and the code still calls them docs. The home page's section is `04 / Notes` (`#notes`), with a `Notes`
-  heading link after `Projects` in its nav), copied
+  and the code still calls them docs. The home page's section is `02 / Notes` (`#notes`), with a `Notes`
+  heading link after `Work` in its nav), copied
   into `docs/published/` as `<YYYY-MM-DD>-<slug>.md` (the published copy is the
   source of truth; the URL is the slug, without the date). The page copy rules
   apply (no email, phone or em-dashes): the build rejects em-dashes in

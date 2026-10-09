@@ -585,8 +585,8 @@ const DOCS_CSS = `
 
     .docs-index { padding-block: 72px 96px; }
 
-    /* The same card as the home page's Projects section (see public/index.html); keep them in
-       step. A .stretch link covers its whole card, so the card is the click target; anything
+    /* The same card as the home page's Notes list (see public/index.html); keep the shared rules
+       in step. A .stretch link covers its whole card, so the card is the click target; anything
        else that has to stay clickable is lifted above that overlay. */
     .card {
       position: relative; display: flex; flex-direction: column;
@@ -821,7 +821,7 @@ ${doc.html}
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
         <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
-        <p>Senior software engineer, founding engineer and lead on several zero-to-one products at DoorDash.</p>
+        <p>Senior software engineer leading distributed systems and AI products.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="${LINKEDIN}" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
     </main>
@@ -869,7 +869,7 @@ ${FOOTER}`;
 function gameList(games, pad) {
   const items = games.map((game) => {
     // The title is not a link: "Play in your browser" says where it goes, which a repeated title
-    // never does, and it is stretched over the card, as on the home page's Projects card.
+    // never does, and it is stretched over the card, as on the old home page Projects card.
     const play = game.play
       ? `${pad}    <a class="card-link stretch" href="${escapeHtml(game.play)}" target="_blank" rel="noopener">Play in your browser ${EXTERNAL_ARROW}</a>\n`
       : '';
@@ -1013,7 +1013,7 @@ export function homeSection(docs) {
   if (!docs.length) return '\n    ';
   return `
     <section id="notes" aria-labelledby="notes-title">
-      <p class="section-label">03 / ${NOTES}</p>
+      <p class="section-label">02 / ${NOTES}</p>
       <h2 id="notes-title">Notes from what I'm researching</h2>
 ${docList(docs.slice(0, HOME_LIMIT), 3, '      ')}
       <a class="all-docs" href="/${DOCS_DIR}">All notes ${ARROW}</a>
