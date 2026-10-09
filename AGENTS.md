@@ -182,9 +182,10 @@ three from the command line):
   https://www.youtube.com/@csarkosh. Substack is still a hero and Contact chip.
 - **No em-dashes in page copy**; commas, colons, semicolons.
 - **The home page's sections** *(Cyrus, 2026-10-08)*: `01 / Experience` (`#work`),
-  `02 / Notes` (`#notes`), `03 / Education` (`#education`, the University of
-  Washington card, "Where I studied") and `04 / Contact`; the nav's heading links
-  are `Work · Notes · Education · Contact`. **The Projects and Skills sections were
+  `02 / Education` (`#education`, the University of Washington card, "Where I
+  studied"), `03 / Notes` (`#notes`) and `04 / Contact`; the nav's heading links
+  are `Work · Education · Notes · Contact` *(Education moved above Notes,
+  2026-10-09)*. **The Projects and Skills sections were
   dropped** that day at his request: Projects (Day Hike, `game-dayhike`,
   `electron-gamepatch` and the `csarko.sh` card) is covered by `/games` and the
   hero's Building tile, and Skills by the Experience section's tech tags. Don't
@@ -202,8 +203,8 @@ three from the command line):
   calls the page `Research`; the page's own H1 is "Research & notes" and its eyebrow
   "Research", *renamed from "Research & docs" / "Docs", 2026-09-16; the eyebrow
   was briefly "Notes"*. Only the URL moved: the sources stay in `docs/published/`
-  and the code still calls them docs. The home page's section is `02 / Notes` (`#notes`), with a `Notes`
-  heading link after `Work` in its nav), copied
+  and the code still calls them docs. The home page's section is `03 / Notes` (`#notes`), with a `Notes`
+  heading link after `Education` in its nav), copied
   into `docs/published/` as `<YYYY-MM-DD>-<slug>.md` (the published copy is the
   source of truth; the URL is the slug, without the date). The page copy rules
   apply (no email, phone or em-dashes): the build rejects em-dashes in

@@ -136,7 +136,7 @@ the nav jumps width between the home page and a generated page. The bar reads
 `heading links │ page links`: heading links jump inside the current page, sit in
 front and take `--faint`; page links go to another page, sit after the hairline
 `.nav-divider` and take `--muted`. The home page's is
-`Work · Notes · Education · Contact │ Film · Games · Research` (`Notes` jumps to `#notes`,
+`Work · Education · Notes · Contact │ Film · Games · Research` (`Notes` jumps to `#notes`,
 `Research` goes to `/research`); every generated page (a doc, `/research`,
 `/games`, `/film`) has page links only (`Film · Games · Research`, from `PAGE_LINKS` in
 `docs_lib.mjs`) and no divider, with `aria-current="page"` on the index page you

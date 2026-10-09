@@ -668,7 +668,7 @@ const REFERENCES_CSS = `
     .prose .references li:target { background: var(--surface-2); }
     .prose .references .ref-num { font-family: var(--mono); font-size: 13px; line-height: 1.9; color: var(--faint); }
     .prose .references li > div > p { margin: 0; }
-    .prose a.cite { text-decoration: none; white-space: nowrap; }`;
+    .prose a.cite { white-space: nowrap; }`;
 
 function head({ title, ogTitle, description, canonical, ogType, extraMeta = '', extraCss = '', graph, theme }) {
   return `<!doctype html>
@@ -1013,7 +1013,7 @@ export function homeSection(docs) {
   if (!docs.length) return '\n    ';
   return `
     <section id="notes" aria-labelledby="notes-title">
-      <p class="section-label">02 / ${NOTES}</p>
+      <p class="section-label">03 / ${NOTES}</p>
       <h2 id="notes-title">Notes from what I'm researching</h2>
 ${docList(docs.slice(0, HOME_LIMIT), 3, '      ')}
       <a class="all-docs" href="/${DOCS_DIR}">All notes ${ARROW}</a>
