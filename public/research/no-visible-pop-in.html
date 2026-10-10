@@ -18,7 +18,7 @@
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta property="article:published_time" content="2026-09-01" />
-  <meta property="article:modified_time" content="2026-09-01" />
+  <meta property="article:modified_time" content="2026-10-10" />
   <meta property="article:author" content="https://csarko.sh/" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="No visible pop-in: dissolving a streamed forest" />
@@ -48,10 +48,10 @@
       "headline": "No visible pop-in: dissolving a streamed forest",
       "description": "Keeping a streamed browser forest from visibly spawning: pixel-size arithmetic, screen-space dissolve bands, and what discard costs in opaque shaders.",
       "datePublished": "2026-09-01",
-      "dateModified": "2026-09-01",
+      "dateModified": "2026-10-10",
       "url": "https://csarko.sh/research/no-visible-pop-in",
       "mainEntityOfPage": "https://csarko.sh/research/no-visible-pop-in",
-      "wordCount": 3542,
+      "wordCount": 3622,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -344,6 +344,12 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .prose .references { list-style: none; padding-left: 0; }
+    .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
+    .prose .references li:target { background: var(--surface-2); }
+    .prose .references .ref-num { font-family: var(--mono); font-size: 13px; line-height: 1.9; color: var(--faint); }
+    .prose .references li > div > p { margin: 0; }
+    .prose a.cite { white-space: nowrap; }
   </style>
 </head>
 <body class="doc-page">
@@ -387,10 +393,10 @@
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Sep 1, 2026</p>
+        <p class="eyebrow">Sep 1, 2026 · Updated Oct 10, 2026</p>
         <h1>No visible pop-in: dissolving a streamed forest</h1>
         <ul class="tags">
-          <li>15 min read</li>
+          <li>16 min read</li>
         </ul>
       </header>
       <div class="prose">
@@ -411,11 +417,11 @@ materials disables early depth rejection and cost 10 to 20 ms at 8× resolution,
 dither is confined to materials that already alpha-test, and opaque props hand off
 geometrically at a size of a few pixels. Shadows are the one place the dither cannot reach.</p>
 <p>The shipped mechanism is
-<a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/distanceFadePlugin.ts" target="_blank" rel="noopener"><code>distanceFadePlugin.ts</code></a>
+<a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/distanceFadePlugin.ts" target="_blank" rel="noopener"><code>distanceFadePlugin.ts</code></a> <a class="cite" href="#ref-1">[1]</a>
 in the public game repository; the band tables are in
-<a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/forestField.ts" target="_blank" rel="noopener"><code>forestField.ts</code></a>
+<a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/forestField.ts" target="_blank" rel="noopener"><code>forestField.ts</code></a> <a class="cite" href="#ref-2">[2]</a>
 and
-<a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/clutterField.ts" target="_blank" rel="noopener"><code>clutterField.ts</code></a>.</p>
+<a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/clutterField.ts" target="_blank" rel="noopener"><code>clutterField.ts</code></a> <a class="cite" href="#ref-3">[3]</a>.</p>
 <div class="section-head"><p class="section-label">01</p><h2 id="the-rule-as-pixels"><a class="anchor" href="#the-rule-as-pixels">The rule, as pixels</a></h2></div>
 <p>Nothing hides in haze close to the player. Before height shaping, the base fog term is
 exponential-squared and is solved for 5% transmittance at 4 km in clear weather, so at 1 km a
@@ -503,7 +509,7 @@ float dfOut = 1.0 - smoothstep(vFadeBands.z, vFadeBands.w, vFadeDist); // 1 befo
 if (dfIn &lt; 1.0 - dfN || dfOut &lt; dfN) discard;
 </code></pre></div>
 <p><code>dfNoise</code> is <strong>interleaved gradient noise</strong> (IGN), from Jorge Jimenez&#39;s 2014 post-processing
-work on <em>Call of Duty: Advanced Warfare</em>:</p>
+work on <em>Call of Duty: Advanced Warfare</em> <a class="cite" href="#ref-4">[4]</a>:</p>
 <div class="scroll" tabindex="0" role="region" aria-label="Code"><pre><code class="language-glsl">fract(52.9829189 * fract(0.06711056 * x + 0.00583715 * y))
 </code></pre></div>
 <p>It maps each pixel coordinate to a value in [0, 1) with neighbouring pixels spread across
@@ -545,7 +551,7 @@ the outgoing bucket and <code>dfIn = s</code> for the incoming one. The outgoing
 <code>n ≤ 1 − s</code>; the incoming bucket keeps <code>n ≥ 1 − s</code>. Those two sets <strong>partition</strong> [0, 1): at
 every pixel and every point in the band, exactly one bucket draws. No hole at mid-band,
 nothing drawn twice, and the tree&#39;s coverage never changes during the handover. A pure
-TypeScript mirror of the predicate (<code>fadeKeeps</code>) sits beside the shader so the partition can
+TypeScript mirror of the predicate (<code>fadeKeeps</code>) sits beside the shader <a class="cite" href="#ref-1">[1]</a> so the partition can
 be tested numerically rather than judged from screenshots.</p>
 <div class="section-head"><p class="section-label">05</p><h2 id="padding-band-membership-by-the-snap-distance"><a class="anchor" href="#padding-band-membership-by-the-snap-distance">Padding band membership by the snap distance</a></h2></div>
 <p>The fade is evaluated per frame from the true eye position. Band <em>membership</em> (which buckets
@@ -558,7 +564,7 @@ bucket. The shader would then fade it out with nothing fading in, or fade it in 
 a pop exactly where the band was meant to hide one.</p>
 <p>The fix decouples the two. The shader&#39;s band keeps its designed width; the field emits a
 tree to both neighbouring buckets whenever its snapped distance is within the band <strong>padded
-by √2 × the cell size on each side</strong>, the most the snap can shift it. A padded duplicate
+by √2 × the cell size on each side</strong>, the most the snap can shift it <a class="cite" href="#ref-2">[2]</a>. A padded duplicate
 that turns out to be outside the true band is at visibility 1 in one bucket and 0 in the
 other, so it costs its vertices but still covers each pixel exactly once. The same
 rule pads the outer edge of every disc, so a tree that joins the list because of the snap is
@@ -566,7 +572,7 @@ already at visibility 0.</p>
 <p>The padding is not free. The near band&#39;s flat list, duplicates included, runs about 47–49%
 over its unique trees at the cameras scanned in September 2026, and padding the understory
 disc raised its instance count 1.48×. Clutter uses the same idea at its own 3 m cell: every
-fade ramp has a floor of √2 × 3 m, about 4.2 m, so a narrow ramp on the low quality tier
+fade ramp has a floor of √2 × 3 m, about 4.2 m <a class="cite" href="#ref-3">[3]</a>, so a narrow ramp on the low quality tier
 (which scales every radius by 0.6) cannot become narrower than the snap jitter it has to
 hide.</p>
 <div class="section-head"><p class="section-label">06</p><h2 id="the-bands"><a class="anchor" href="#the-bands">The bands</a></h2></div>
@@ -626,7 +632,7 @@ giant is 16–27 px and has lost about half its contrast to haze, so the outer b
 finish erasing an already faint shape.</p>
 <p>For clutter, each class dissolves over the last fifth of its disc (the last 30% for meadow),
 and its near-to-far mesh switch at 45% of the radius is also a band, closing a swap pop that
-the shrink fade had left alone. With the shipped radii:</p>
+the shrink fade had left alone. With the shipped radii <a class="cite" href="#ref-3">[3]</a>:</p>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
 <thead>
 <tr>
@@ -710,7 +716,7 @@ the next section.</p>
 went from about 2,700 instances to 10,600, bushes from 445 to 2,500, and the forest draws
 1.68× as many giants as before at a dense test viewpoint (the estimate had been 1.75×). The
 billboard budget is two clamps: 26,000 for the thinned grid and 20,000 for the every-cell fill
-inside 1 km, split so a dense fill cannot starve the outer grid or the reverse.</p>
+inside 1 km <a class="cite" href="#ref-2">[2]</a>, split so a dense fill cannot starve the outer grid or the reverse.</p>
 <div class="section-head"><p class="section-label">07</p><h2 id="the-cost-of-discard-in-opaque-materials"><a class="anchor" href="#the-cost-of-discard-in-opaque-materials">The cost of <code>discard</code> in opaque materials</a></h2></div>
 <p>The first build attached the dither to every material in the scene, and frame time went up
 far more than the added instances could explain.</p>
@@ -786,12 +792,12 @@ first experiment. Clean pairs on fresh pages then measured:</p>
 at the meadow is the widened carpets&#39; own alpha overdraw, plus more billboards and the seam
 duplicates; the later rise of about 2.5 ms at 8× (0.3 ms native) matches the one change that
 adds fragments there, the padded understory. The attach function enforces the rule:
-<code>attachDistanceFade</code> returns early unless <code>material.needAlphaTesting()</code> is true.</p>
+<code>attachDistanceFade</code> returns early unless <code>material.needAlphaTesting()</code> is true <a class="cite" href="#ref-1">[1]</a>.</p>
 <p><strong>Opaque materials hand off geometrically instead.</strong> Mesh to mesh at the LOD rings, and at
 their disc edges at the sizes in the table above: rock 2.8 px, driftwood 3.5 px, boulder
 4 px, fungus 1.7 px. There is one forced exception: the deadwood material, which is opaque,
 dithers anyway, because a snag&#39;s low-mesh-to-billboard handover at 120 m is 40–50 px and
-visibly pops. It covers about 24 instances, and it was judged worth the cost in the browser
+visibly pops <a class="cite" href="#ref-5">[5]</a>. It covers about 24 instances, and it was judged worth the cost in the browser
 rather than by the pixel formula.</p>
 <p>One measurement lesson came out of the bisection. The absolute gap in the bisection runs
 (+11 to +26 ms) was larger than the clean run&#39;s +6.3 ms because it grew each time the new
@@ -811,15 +817,15 @@ taken, and the every-cell radius stays at 1 km.</p>
 <div class="section-head"><p class="section-label">09</p><h2 id="what-shadows-cannot-do"><a class="anchor" href="#what-shadows-cannot-do">What shadows cannot do</a></h2></div>
 <p>The dither never reaches the shadow map. Babylon.js renders shadow depth with its own
 <code>shadowMap</code> shader, and that shader has no hook inside its <code>main</code> function for material
-plugin code (checked against the installed <code>@babylonjs/core</code> 9.18.0 source), so plugin
+plugin code (checked against the installed <code>@babylonjs/core</code> 9.18.0 source <a class="cite" href="#ref-6">[6]</a>), so plugin
 discards do not run there. A shadow caster&#39;s shadow is therefore all or nothing: it follows
 membership in the caster list, not the dissolve.</p>
 <p>In practice this matters little because very few things cast. Only the giants&#39; full meshes
 (inside 42 m) and boulders are shadow casters; mid and low meshes, billboards, saplings,
-deadwood and understory never cast. The one visible artefact is a giant&#39;s shadow that ends
+deadwood and understory never cast <a class="cite" href="#ref-5">[5]</a>. The one visible artefact is a giant&#39;s shadow that ends
 at the full-mesh seam while its mesh dissolves. It existed before this work and the work did
 not change it.</p>
-<p>The route to fix it is <code>ShadowDepthWrapper</code>, covered in
+<p>The route to fix it is <code>ShadowDepthWrapper</code> <a class="cite" href="#ref-7">[7]</a>, covered in
 <a href="/research/babylon-material-plugin-traps">Babylon.js material plugin traps</a>. It was left out here
 because it recompiles every wrapped material and would need its own frame-time measurement.</p>
 <div class="section-head"><p class="section-label">10</p><h2 id="what-stills-cannot-show"><a class="anchor" href="#what-stills-cannot-show">What stills cannot show</a></h2></div>
@@ -831,38 +837,15 @@ grow; the forest edge at 100 to 120 m, where a tree should never appear whole; b
 changing to its billboard at 120 m, a boulder vanishing at 400 m), which are a few pixels by
 the formula.</p>
 <div class="section-head"><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
-<div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
-<thead>
-<tr>
-<th>Source</th>
-<th>Covers</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><a class="external" href="https://advances.realtimerendering.com/s2014/index.html" target="_blank" rel="noopener">Next Generation Post Processing in Call of Duty: Advanced Warfare</a> (Jimenez, SIGGRAPH 2014 Advances in Real-Time Rendering)</td>
-<td>Interleaved gradient noise</td>
-</tr>
-<tr>
-<td><a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/distanceFadePlugin.ts" target="_blank" rel="noopener"><code>distanceFadePlugin.ts</code></a></td>
-<td>The dither, the partition predicate, the alpha-test-only attach rule</td>
-</tr>
-<tr>
-<td><a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/forestField.ts" target="_blank" rel="noopener"><code>forestField.ts</code></a></td>
-<td>Forest seam bands, snap padding, billboard budgets</td>
-</tr>
-<tr>
-<td><a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/clutterField.ts" target="_blank" rel="noopener"><code>clutterField.ts</code></a></td>
-<td>Clutter radii, fade fractions, the ramp floor</td>
-</tr>
-<tr>
-<td><a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/forestMeshes.ts" target="_blank" rel="noopener"><code>forestMeshes.ts</code></a></td>
-<td>Shadow casters, the deadwood exception</td>
-</tr>
-<tr>
-<td>Installed <code>@babylonjs/core</code> 9.18.0 source: <code>Shaders/shadowMap.fragment.js</code>, <code>Materials/shadowDepthWrapper.js</code></td>
-<td>Section 9</td>
-</tr>
-</tbody></table></div>
+<ol class="references">
+<li id="ref-1"><span class="ref-num">[1]</span><div>C. Sarkosh, &quot;distanceFadePlugin.ts,&quot; game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/distanceFadePlugin.ts" target="_blank" rel="noopener">https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/distanceFadePlugin.ts</a></div></li>
+<li id="ref-2"><span class="ref-num">[2]</span><div>C. Sarkosh, &quot;forestField.ts,&quot; game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/forestField.ts" target="_blank" rel="noopener">https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/forestField.ts</a></div></li>
+<li id="ref-3"><span class="ref-num">[3]</span><div>C. Sarkosh, &quot;clutterField.ts,&quot; game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/clutterField.ts" target="_blank" rel="noopener">https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/clutterField.ts</a></div></li>
+<li id="ref-4"><span class="ref-num">[4]</span><div>J. Jimenez, &quot;Next Generation Post Processing in Call of Duty: Advanced Warfare,&quot; presented at SIGGRAPH course Advances in Real-Time Rendering in Games, Vancouver, BC, Canada, Aug. 2014. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://advances.realtimerendering.com/s2014/index.html" target="_blank" rel="noopener">https://advances.realtimerendering.com/s2014/index.html</a></div></li>
+<li id="ref-5"><span class="ref-num">[5]</span><div>C. Sarkosh, &quot;forestMeshes.ts,&quot; game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/forestMeshes.ts" target="_blank" rel="noopener">https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/forestMeshes.ts</a></div></li>
+<li id="ref-6"><span class="ref-num">[6]</span><div>Babylon.js Authors, &quot;shadowMap.fragment.fx,&quot; Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Shaders/shadowMap.fragment.fx" target="_blank" rel="noopener">https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Shaders/shadowMap.fragment.fx</a></div></li>
+<li id="ref-7"><span class="ref-num">[7]</span><div>Babylon.js Authors, &quot;shadowDepthWrapper.ts,&quot; Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Materials/shadowDepthWrapper.ts" target="_blank" rel="noopener">https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Materials/shadowDepthWrapper.ts</a></div></li>
+</ol>
 
       </div>
       <section class="author" aria-label="About the author">

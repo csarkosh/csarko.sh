@@ -1,6 +1,7 @@
 ---
 description: Why trees float on slopes and distant ridges in a procedural world, measured, and the shader and clipmap fixes that grounded them in Babylon.js.
 published: 2026-08-29
+updated: 2026-10-10
 ---
 # Why props float on procedural terrain
 
@@ -36,17 +37,17 @@ position. The renderer draws the same function at whatever resolution it can aff
 that field is built.)
 
 **Geometry clipmaps.** The renderer draws that function as a
-[geometry clipmap](https://hhoppe.com/proj/geomclipmap/): nested square rings of height
+[geometry clipmap](https://hhoppe.com/proj/geomclipmap/) [1]: nested square rings of height
 samples, finer near the camera and coarser with distance, drawn as flat triangles so the
 surface between samples is a straight chord rather than the field itself. ([An endless world
 as a pure function](/research/procedural-world-as-a-pure-function) covers the clipmap's rings,
 spacing, snapping and draw calls.)
 
 **Thin instances.** Babylon.js
-[thin instances](https://doc.babylonjs.com/features/featuresDeepDive/mesh/copies/thinInstances)
+[thin instances](https://doc.babylonjs.com/features/featuresDeepDive/mesh/copies/thinInstances) [2]
 draw many copies of one mesh in a single draw call from a flat buffer of 4 × 4 world matrices,
 64 bytes per copy. `thinInstanceSetBuffer` also accepts buffers under any other attribute
-name, which the vertex shader reads per instance. Every tree LOD, log bucket and clutter class
+name, which the vertex shader reads per instance [2]. Every tree LOD, log bucket and clutter class
 in Day Hike is a thin-instanced mesh, so a per-prop fix has two places to live: the matrix,
 written on the CPU when a band rebuilds, or the vertex shader, which sees each vertex and the
 instance origin (`finalWorld[3]`).
@@ -144,7 +145,7 @@ That split decides the fix per prop:
 ### The base conform
 
 A small Babylon.js material plugin,
-[`groundConformPlugin.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/groundConformPlugin.ts),
+[`groundConformPlugin.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/groundConformPlugin.ts) [3],
 injects three lines at the point in the PBR vertex shader where the instanced world position
 has just been computed:
 
@@ -188,7 +189,7 @@ median 1.26 m. The conform moves only geometry inside the ramp band, only downwa
 what the local ground plane says.
 
 The gradient reaches the shader as a `vec2` per-instance attribute, `groundGrad`, uploaded with
-`thinInstanceSetBuffer` next to the matrix buffer: 8 bytes per instance against the matrix's
+`thinInstanceSetBuffer` next to the matrix buffer [4]: 8 bytes per instance against the matrix's
 64. The shader body is guarded so it runs only on thin-instanced draws, because a non-instanced
 clone of the same geometry would otherwise read one arbitrary instance's gradient.
 ([Babylon.js material plugin traps](/research/babylon-material-plugin-traps) covers the injection
@@ -197,13 +198,13 @@ pitfalls.)
 ### The tilt
 
 For props that rest, the fix is in the matrix:
-[`groundTilt.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/groundTilt.ts)
+[`groundTilt.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/groundTilt.ts) [5]
 composes the random yaw with the rotation that carries world up onto the ground normal
 `(−dx, 1, −dz)/‖·‖`. Yaw is applied first, in the model's own frame, and the result is laid on
 the slope. Scale and position are unchanged.
 
 The tilt is full and uncapped. The steepest measured ground, a gradient of 0.86, is a 41° lean,
-and a boulder on that ground genuinely takes it; a cap would bring daylight back exactly where
+and a boulder on that ground genuinely takes it [6]; a cap would bring daylight back exactly where
 the artifact is worst. The boulder's collider box stays axis-aligned where the simulation put
 it, so the top of a tilted boulder matches its box only to within about 0.15 m on the steepest
 ground.
@@ -326,7 +327,7 @@ exact field at every half-lattice point**; what remains is the field's excursion
 points, which is the residual in the table.
 
 Three details matter in the shipped
-[`liftedHeight`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/clipmap.ts):
+[`liftedHeight`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/clipmap.ts) [7]:
 
 - The two diagonal neighbours depend on the triangle winding. Changing the winding without
   changing those two offsets silently breaks the guarantee at cell centres.
@@ -350,7 +351,7 @@ step at each seam would be visible:
 | Rings 2/3 | 256 m | 22% | 1.9 px | 6.7 px | 9.4 m |
 | Rings 5/6 | 2048 m | 34% | 2.7 px | 8.3 px | 21 m |
 
-So every ring blends across its whole width:
+So every ring blends across its whole width [7]:
 
 ```
 y(P) = mix(own(P), coarse(P), t(P))
@@ -412,9 +413,10 @@ appear at full size. It read as spawning and was later replaced by a dissolve, d
 
 ## Sources
 
-| Source | Covers |
-| --- | --- |
-| [Geometry clipmaps: Terrain rendering using nested regular grids](https://hhoppe.com/proj/geomclipmap/) (Losasso and Hoppe, SIGGRAPH 2004) | The nested-ring terrain technique |
-| [Thin instances](https://doc.babylonjs.com/features/featuresDeepDive/mesh/copies/thinInstances) (Babylon.js documentation) | Per-instance matrix and custom attribute buffers |
-| [`groundConformPlugin.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/groundConformPlugin.ts), [`groundTilt.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/groundTilt.ts), [`forestMeshes.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/forestMeshes.ts), [`clutterMeshes.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/clutterMeshes.ts) | The shipped near-field conform and tilt |
-| [`clipmap.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/clipmap.ts) | The shipped chord-excess lift and ring blend |
+1. F. Losasso and H. Hoppe, "Geometry clipmaps: Terrain rendering using nested regular grids," *ACM Trans. Graph.*, vol. 23, no. 3, pp. 769-776, 2004. Accessed: Oct. 10, 2026. [Online]. Available: https://hhoppe.com/proj/geomclipmap/
+2. Babylon.js Authors, "Thin Instances," Babylon.js Documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://doc.babylonjs.com/features/featuresDeepDive/mesh/copies/thinInstances
+3. C. Sarkosh, "groundConformPlugin.ts," game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/groundConformPlugin.ts
+4. C. Sarkosh, "forestMeshes.ts," game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/forestMeshes.ts
+5. C. Sarkosh, "groundTilt.ts," game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/groundTilt.ts
+6. C. Sarkosh, "clutterMeshes.ts," game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/clutterMeshes.ts
+7. C. Sarkosh, "clipmap.ts," game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/clipmap.ts

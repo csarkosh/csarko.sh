@@ -18,7 +18,7 @@
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta property="article:published_time" content="2026-07-29" />
-  <meta property="article:modified_time" content="2026-07-29" />
+  <meta property="article:modified_time" content="2026-10-10" />
   <meta property="article:author" content="https://csarko.sh/" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="An endless world as a pure function" />
@@ -48,10 +48,10 @@
       "headline": "An endless world as a pure function",
       "description": "Unbounded mountains, a warped coastline, a highway and cliff bands built as pure C² functions with exact derivatives, so every peer builds one world.",
       "datePublished": "2026-07-29",
-      "dateModified": "2026-07-29",
+      "dateModified": "2026-10-10",
       "url": "https://csarko.sh/research/procedural-world-as-a-pure-function",
       "mainEntityOfPage": "https://csarko.sh/research/procedural-world-as-a-pure-function",
-      "wordCount": 4117,
+      "wordCount": 4165,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -344,6 +344,12 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .prose .references { list-style: none; padding-left: 0; }
+    .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
+    .prose .references li:target { background: var(--surface-2); }
+    .prose .references .ref-num { font-family: var(--mono); font-size: 13px; line-height: 1.9; color: var(--faint); }
+    .prose .references li > div > p { margin: 0; }
+    .prose a.cite { white-space: nowrap; }
   </style>
 </head>
 <body class="doc-page">
@@ -384,7 +390,7 @@
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Jul 29, 2026</p>
+        <p class="eyebrow">Jul 29, 2026 · Updated Oct 10, 2026</p>
         <h1>An endless world as a pure function</h1>
         <ul class="tags">
           <li>18 min read</li>
@@ -436,11 +442,11 @@ a sweep over neighbours, a sweep depends on evaluation order, and order dependen
 the property that makes seams impossible.</p>
 <p>The research came down to how octaves are combined more than which noise feeds them. Gradient
 (Perlin) noise replaces value noise. Ridged multifractal, <code>Σ wᵢ · (1 − |noise|)²</code>, gives sharp
-connected ridgelines. Hybrid multifractal keeps low ground smooth while high ground grows rough,
-a montane elevation gradient for free. Two techniques break the &quot;it looks like noise&quot; problem:
+connected ridgelines <a class="cite" href="#ref-1">[1]</a>. Hybrid multifractal keeps low ground smooth while high ground grows rough,
+a montane elevation gradient for free <a class="cite" href="#ref-1">[1]</a>. Two techniques break the &quot;it looks like noise&quot; problem:
 <strong>domain warping</strong> (evaluate at <code>p + k·g(p)</code> where <code>g</code> is itself noise, folding blobs into
-directional forms) and <strong>derivative-aware attenuation</strong> (damp each octave by <code>1 / (1 + k·|∇|²)</code>,
-so detail stops accumulating on steep ground, faces smooth and ridges sharpen).</p>
+directional forms) <a class="cite" href="#ref-2">[2]</a> and <strong>derivative-aware attenuation</strong> (damp each octave by <code>1 / (1 + k·|∇|²)</code>,
+so detail stops accumulating on steep ground, faces smooth and ridges sharpen) <a class="cite" href="#ref-3">[3]</a>.</p>
 <p>The central tension is that <strong>erosion is global and this generator is local.</strong> Water flows for
 kilometres; a chunk must be generatable alone, in any order.</p>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
@@ -774,7 +780,7 @@ refusal. The netcode on top is in <a href="/research/browser-coop-netcode">brows
 <div class="section-head"><p class="section-label">07</p><h2 id="rendering-it-kilometres-out"><a class="anchor" href="#rendering-it-kilometres-out">Rendering it kilometres out</a></h2></div>
 <p>The forest&#39;s fog sat at 70 m, right for dense trees and useless for mountains, which only exist
 as mountains at distance. Brute force is out: 2 km of view at 32 m chunks is over 16,000 chunks.</p>
-<p>Because height is a pure function, distant terrain needs no chunks. A <strong>geometry clipmap</strong>
+<p>Because height is a pure function, distant terrain needs no chunks. A <strong>geometry clipmap</strong> <a class="cite" href="#ref-4">[4]</a>
 (<a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/clipmap.ts" target="_blank" rel="noopener"><code>clipmap.ts</code></a>)
 samples the field directly: 7 camera-centred rings of 128 cells per side, at 1, 2, 4, 8, 16, 32
 and 64 m spacing, about 8.2 km across, 7 draw calls and about 90,000 quads at any view distance.</p>
@@ -796,30 +802,12 @@ cardboard. Shadows stop at 300 m instead of following the fog, which would have 
 shadow resolution about 50× (as designed in August 2026).</li>
 </ul>
 <div class="section-head"><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
-<div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
-<thead>
-<tr>
-<th>Source</th>
-<th>Covers</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><a class="external" href="https://iquilezles.org/articles/morenoise/" target="_blank" rel="noopener">Value noise derivatives</a> (Quílez)</td>
-<td>Analytic noise derivatives; damping fBm octaves by slope for an eroded look</td>
-</tr>
-<tr>
-<td><a class="external" href="https://iquilezles.org/articles/warp/" target="_blank" rel="noopener">Domain warping</a> (Quílez)</td>
-<td>Evaluating <code>f(g(p))</code> with noise-driven <code>g</code></td>
-</tr>
-<tr>
-<td><a class="external" href="https://hhoppe.com/proj/geomclipmap/" target="_blank" rel="noopener">Geometry Clipmaps: Terrain Rendering Using Nested Regular Grids</a> (Losasso and Hoppe, SIGGRAPH 2004)</td>
-<td>Nested camera-centred grids</td>
-</tr>
-<tr>
-<td><em>Texturing and Modeling: A Procedural Approach</em> (Ebert, Musgrave et al.)</td>
-<td>Ridged and hybrid multifractals</td>
-</tr>
-</tbody></table></div>
+<ol class="references">
+<li id="ref-1"><span class="ref-num">[1]</span><div>D. S. Ebert, F. K. Musgrave, D. Peachey, K. Perlin, and S. Worley, <em>Texturing and Modeling: A Procedural Approach</em>, 3rd ed. San Francisco, CA, USA: Morgan Kaufmann, 2003. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://shop.elsevier.com/books/texturing-and-modeling/ebert/978-1-55860-848-1" target="_blank" rel="noopener">https://shop.elsevier.com/books/texturing-and-modeling/ebert/978-1-55860-848-1</a></div></li>
+<li id="ref-2"><span class="ref-num">[2]</span><div>I. Quilez, &quot;Domain warping,&quot; iquilezles.org. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://iquilezles.org/articles/warp/" target="_blank" rel="noopener">https://iquilezles.org/articles/warp/</a></div></li>
+<li id="ref-3"><span class="ref-num">[3]</span><div>I. Quilez, &quot;Value noise derivatives,&quot; iquilezles.org. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://iquilezles.org/articles/morenoise/" target="_blank" rel="noopener">https://iquilezles.org/articles/morenoise/</a></div></li>
+<li id="ref-4"><span class="ref-num">[4]</span><div>F. Losasso and H. Hoppe, &quot;Geometry clipmaps: Terrain rendering using nested regular grids,&quot; <em>ACM Trans. Graph.</em>, vol. 23, no. 3, pp. 769-776, 2004. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://hhoppe.com/proj/geomclipmap/" target="_blank" rel="noopener">https://hhoppe.com/proj/geomclipmap/</a></div></li>
+</ol>
 
       </div>
       <section class="author" aria-label="About the author">

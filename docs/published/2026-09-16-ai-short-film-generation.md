@@ -1,11 +1,12 @@
 ---
 description: Can 2026 AI video models make a multi-scene short film with the same actor and set in every shot? Where they fail, and the one architecture that holds.
 published: 2026-09-16
+updated: 2026-10-10
 ---
 # AI short films: consistent characters and sets
 
 **Question:** how close is AI to generating a multi-scene short film, taking as the benchmark
-Evillica's analog-horror YouTube Shorts (a recurring actress, a recurring apartment, 15 to 23
+Evillica's analog-horror YouTube Shorts [1] (a recurring actress, a recurring apartment, 15 to 23
 cuts in under 40 seconds)? And are there techniques by which characters and scenes can be
 generated *deterministically* and *combined* into a film, so that episode two has the same
 person in the same room as episode one?
@@ -32,7 +33,7 @@ not be verified against a primary source.
    generative video than "make an AI-looking short".
 2. Per-shot generation of a *convincing single short* in this look is possible today with a human
    curating 3 to 6 takes per shot, for roughly $40 to $200 hosted or $10 to $25 self-hosted. Keep
-   rates are about 25 %; character drift shows after about ten shots; no hosted model repeats a
+   rates are about 25 %; character drift shows after about ten shots [2]; no hosted model repeats a
    clip.
 3. **Characters** can be locked "recognisably the same" by reference images (every 2026 model
    has them, about 0.5 face similarity on the one published cross-vendor table) and locked
@@ -46,7 +47,7 @@ not be verified against a primary source.
 5. **Determinism** exists at exactly one place in the whole landscape: a 3D scene rendered with a
    fixed seed. Open-weight diffusion is bit-repeatable under a strict recipe on pinned hardware;
    every hosted API says "seed improves similarity" at best. Hosted models were also *retired*
-   three times in 2026 (Sora, Gen-3, Gen-4 Aleph) with weeks of notice.
+   three times in 2026 (Sora, Gen-3, Gen-4 Aleph) [3], [4] with weeks of notice [5].
 6. The technique that makes a multi-scene film both deterministic and combinable is to **build
    the character and the set as 3D assets, render every shot's structure in a path tracer such
    as Blender's Cycles, let an open-weight model add photographic surface under depth and identity
@@ -57,9 +58,9 @@ not be verified against a primary source.
 
 | Short | ID | Uploaded | Length | Views | Cuts (ffmpeg scene > 0.3) | Held shots |
 |---|---|---|---|---|---|---|
-| Stay quiet | [LuiJh6JldaQ](https://www.youtube.com/shorts/LuiJh6JldaQ) | 2025-09-02 | 37 s | 0.53 M | 15 | 7 s, 11 s |
-| Guess I didn't close the door tight enough | [WgS4mY1Wzks](https://www.youtube.com/shorts/WgS4mY1Wzks) | 2025-09-10 | 27 s | 0.46 M | 14 | none > 3 s |
-| Something's off about Mom | [KzzKsKemFlo](https://www.youtube.com/shorts/KzzKsKemFlo) | 2025-09-15 | 37 s | 1.50 M | 23 | none > 3 s |
+| Stay quiet | [LuiJh6JldaQ](https://www.youtube.com/shorts/LuiJh6JldaQ) [6] | 2025-09-02 | 37 s | 0.53 M | 15 | 7 s, 11 s |
+| Guess I didn't close the door tight enough | [WgS4mY1Wzks](https://www.youtube.com/shorts/WgS4mY1Wzks) [7] | 2025-09-10 | 27 s | 0.46 M | 14 | none > 3 s |
+| Something's off about Mom | [KzzKsKemFlo](https://www.youtube.com/shorts/KzzKsKemFlo) [8] | 2025-09-15 | 37 s | 1.50 M | 23 | none > 3 s |
 
 Downloaded and stepped frame by frame (608×1080, 30 fps, AV1). What is on screen:
 
@@ -80,9 +81,9 @@ Downloaded and stepped frame by frame (608×1080, 30 fps, AV1). What is on scree
   shot of 1.5 to 2.5 s, a reveal beat about two-thirds of the way through.
 
 The creator's side confirms it. Evillica is a videographer (182 K YouTube subscribers, 149
-videos, 83 M views; 328 K on TikTok) whose two published interviews describe notes, then a
+videos, 83 M views; 328 K on TikTok) [1] whose two published interviews [9], [10] describe notes, then a
 storyboard, then *filming*, then Premiere, After Effects and Photoshop; they cite Henson and Krofft
-puppetry and treat AI as "a tool … it should never become the skeleton of the work". No
+puppetry and treat AI as "a tool … it should never become the skeleton of the work" [9]. No
 synthetic-content label appears on any of the three videos; the TikTok "everything is fake"
 caption is a fiction disclaimer. The face warp on Mom is the only element that could plausibly be
 AI-assisted, and nothing public settles it.
@@ -97,7 +98,7 @@ Track B is a known quantity: Angel Engine (58+ parts, generative AI admitted on 
 content-farm clusters like Dead Signal VHS, viral one-offs like "That's not MOM.." (2.2 M views,
 11 s). They change the conventions to dodge the hard parts: no recurring human actor, found-tape
 and emergency-broadcast framings that justify stills and text cards, narration over rotating
-subjects. YouTube's July 2025 and July 2026 "inauthentic content" rules were written against
+subjects. YouTube's July 2025 and July 2026 "inauthentic content" rules [11], [12], [13] were written against
 exactly that population. The rest of this document is about Track A, because that is where the
 engineering problems are.
 
@@ -123,44 +124,44 @@ that makes the character and the room *assets* rather than *prompts* restores th
 
 ## 3. The model landscape, September 2026
 
-A survey of about 25 models against their primary pages and the Artificial Analysis arena found
+A survey of about 25 models against their primary pages and the Artificial Analysis arena [14] found
 the familiar picture of "Veo 3 vs Sora 2 vs Kling 2.x" obsolete. Six shifts:
 
-1. **Sora is dead.** The app closed 2026-04-26; the API closes 2026-09-24. Its $1 B Disney deal
-   never funded; the $30 M Critterz feature lost its renderer mid-production and missed Cannes.
+1. **Sora is dead.** The app closed 2026-04-26; the API closes 2026-09-24 [3]. Its $1 B Disney deal
+   never funded; the $30 M Critterz feature lost its renderer mid-production and missed Cannes [15], [16].
 2. **Chinese models own the top of the arena.** Text-to-video with audio, fetched 2026-09-16:
    Gemini Omni Flash 1233, Wan 3.0 1229, MiniMax H3 Max 1227, MiniMax H3 1220, Seedance 2.0 1210.
    Kling 3.0 is 12th (1095), Veo 3.1 14th (1088). Image-to-video: H3 Max, H3, Omni Flash,
    HiDream-O1-Video, Seedance 2.0.
-3. **The 8-second wall is gone at the top.** Wan 3.0 and Seedance 2.5 do 30 s in one pass;
+3. **The 8-second wall is gone at the top.** Wan 3.0 and Seedance 2.5 do 30 s in one pass [17];
    Kling 3.0, Seedance 2.0, H3, HappyHorse and Grok do 15 s; Veo 3.1 stays at 8 s plus 7 s
-   extensions (720p only, up to 20); Omni Flash does 10 s, extending to 40 s.
-4. **References and native multi-shot are universal.** Veo 3.1 takes 3 images; Kling Omni 7
-   images or 4 plus a video, with voice binding; Seedance 2.0 takes 9 images, 3 videos and 3
-   audio clips, Seedance 2.5 takes 30, 10 and 10; Wan 3.0 takes 20 assets including documents;
-   MiniMax H3 takes 9, 3 and 3. Kling (6 cuts per 15 s, per-shot framing), Seedance ("Shot 1:/Shot
+   extensions (720p only, up to 20) [18]; Omni Flash does 10 s, extending to 40 s [19].
+4. **References and native multi-shot are universal.** Veo 3.1 takes 3 images [18]; Kling Omni 7
+   images or 4 plus a video, with voice binding [20]; Seedance 2.0 takes 9 images, 3 videos and 3
+   audio clips, Seedance 2.5 takes 30, 10 and 10 [17]; Wan 3.0 takes 20 assets including documents;
+   MiniMax H3 takes 9, 3 and 3 [21]. Kling (6 cuts per 15 s, per-shot framing) [20], Seedance ("Shot 1:/Shot
    2:" prose), H3, Wan 3.0, LTX-2.5 and Omni Flash all cut between shots inside one generation.
 5. **Open weights: two real 2026 options plus the Wan 2.2 workhorse.** LTX-2.5 (22B, audio and
-   video, native multi-shot, 2026-08-11, free under $10 M ARR, gated download) and MiniMax H3
+   video, native multi-shot, 2026-08-11, free under $10 M ARR, gated download) [22] and MiniMax H3
    (33B, audio, 9-image references, 2026-08-03; the model card routes US, EU, UK and Korean users
-   through an application, and secondary sources describe a local-deployment exclusion, so read
-   the licence). Wan 2.2 (Apache-2.0, no audio) plus Wan2.2-Animate-2 (2026-08-07) remain
-   Alibaba's open ceiling; Wan 2.5, 2.6, 2.7 and 3.0 are API-only despite SEO claims. HappyHorse's
-   "fully open" claim has produced no weights. MAGI-2 is Apache-2.0 but needs 8 Hopper GPUs.
+   through an application [21], and secondary sources describe a local-deployment exclusion, so read
+   the licence). Wan 2.2 (Apache-2.0, no audio) [23] plus Wan2.2-Animate-2 (2026-08-07) [24] remain
+   Alibaba's open ceiling; Wan 2.5, 2.6, 2.7 and 3.0 are API-only despite SEO claims [25]. HappyHorse's
+   "fully open" claim has produced no weights. MAGI-2 is Apache-2.0 but needs 8 Hopper GPUs [26].
 6. **Nobody hosted guarantees determinism** (section 6.4).
 
 ### 3.1 Condensed table
 
 | Model | Version, date | Clip / extend | Audio | References | Multi-shot in one call | Seed wording | Price | Weights |
 |---|---|---|---|---|---|---|---|---|
-| Gemini Omni Flash | 1.1, I/O 2026-05-19 | 3 to 10 s, to 40 s | yes | ≤3 subject or video refs | yes, by default | **no seed parameter** | ≈$0.10/s 720p | closed |
+| Gemini Omni Flash | 1.1, I/O 2026-05-19 | 3 to 10 s, to 40 s | yes | ≤3 subject or video refs | yes, by default | **no seed parameter** | ≈$0.10/s 720p [27] | closed |
 | Wan 3.0 | GA 2026-08-24 | **30 s** | yes | 20 assets incl. documents | yes | not documented | $0.05 to $0.20/s | closed |
 | MiniMax H3 | 2026-07-31; weights 08-03 | 4 to 15 s | yes, stereo | 9 img + 3 vid + 3 audio | yes | not documented | $0.13/s 2K | **open**, community licence |
 | Seedance 2.0 / 2.5 | 2026-02-10 / 2026-07-31 | 4 to 15 s / **4 to 30 s** | yes | 9/3/3, then 30/10/10 | yes, prose-timed | "minor variation may still occur" | $0.06 to $0.30/s by host | closed |
 | Kling 3.0 / Omni | Feb 2026; Turbo Jun 2026 | 3 to 15 s | yes (not with video input) | Elements ≤7 images, voice binding | yes, ≤6 structured cuts | not documented | $0.11 to $0.20/s | closed |
-| Veo 3.1 (+Fast, Lite) | Jan 2026 Ingredients update | 4/6/8 s + 20×7 s | yes | ≤3 images, first+last frame | no | "doesn't guarantee determinism" | $0.40 / $0.10 / $0.05 per s | closed |
-| Runway Gen-4.5 / Aleph 2 | 2025-12-01 / 2026-06-02 | 2 to 10 s / edits 2 to 30 s | no / preserves | Gen-4 References; Aleph 5 keyframes | no | "similar results" | $0.12 / $0.28 per s | closed |
-| LTX-2.5 | 2026-08-11 | ~10 to 20 s | yes | first frame, keyframes, IC-LoRA refs | **yes, native** | `--seed`, no guarantee | self-host | **open**, free < $10 M ARR |
+| Veo 3.1 (+Fast, Lite) | Jan 2026 Ingredients update | 4/6/8 s + 20×7 s | yes | ≤3 images, first+last frame | no | "doesn't guarantee determinism" | $0.40 / $0.10 / $0.05 per s [27] | closed |
+| Runway Gen-4.5 / Aleph 2 | 2025-12-01 / 2026-06-02 [4] | 2 to 10 s / edits 2 to 30 s | no / preserves | Gen-4 References; Aleph 5 keyframes [28] | no | "similar results" | $0.12 / $0.28 per s [29] | closed |
+| LTX-2.5 | 2026-08-11 | ~10 to 20 s | yes | first frame, keyframes, IC-LoRA refs | **yes, native** | `--seed`, no guarantee [30] | self-host | **open**, free < $10 M ARR |
 | Wan 2.2 (+Animate-2) | 2025; Animate-2 2026-08-07 | ~5 s | no | I2V, VACE control, Animate ref-swap | no | Generator seed | self-host | **Apache-2.0** |
 | HunyuanVideo 1.5 | 2025-11-20 | ~5 s | no | I2V | no | seed | self-host, 14 GB | Apache-2.0 |
 | Luma Ray3.2 | 2026-06-09 | ≤20 s Modify | yes | 16 keyframes, character ref | no | not documented | credits | closed |
@@ -172,7 +173,7 @@ Prices differ by host.
 ### 3.2 Failure modes that persist (vendor-admitted)
 
 Consistency through edits and extensions ("maintaining complete consistency throughout edits …
-remains a challenge", Google's Omni model card); complex motion; garbled text (composite title
+remains a challenge", Google's Omni model card [31]); complex motion; garbled text (composite title
 cards and VHS timestamps in post, never generate them); ignored negative constraints (a hand
 appears when forbidden); hands, faces and physics, still scored dimensions on VBench-2.0 because
 they fail; morphing on held shots (practitioner consensus, not quantified); audio caveats (Kling:
@@ -196,9 +197,9 @@ and non-determinism everywhere hosted.
 
 Every hosted model now has a reference slot: Runway one image; Hailuo one; Luma one plus 10 s of
 video; Veo three; Vidu seven; Kling O1 seven images, or multi-angle Elements of 2 to 4 images plus
-a 3 to 8 s video that also captures voice; Seedance and H3 mixed media. All vendors say
+a 3 to 8 s video that also captures voice [32]; Seedance and H3 mixed media. All vendors say
 "consistent"; none publishes a face-similarity number. The one cross-vendor table (HunyuanCustom,
-2025) puts hosted models at 0.42 to 0.53 face similarity, i.e. the same person, far from
+2025) puts hosted models at 0.42 to 0.53 face similarity [33], i.e. the same person, far from
 copy-paste. Hailuo's launch note admits "environmental morphing"; OpenAI's cookbook warned "small
 changes in phrasing can alter identity". An 8-week, 300-clip Seedance 2.0 production test calls
 multi-shot character consistency "reliable, not 100 % of the time". The 2026 practitioner finding
@@ -208,11 +209,11 @@ after about ten shots.
 
 ### 4.3 Training the character (LoRA)
 
-Tools: ai-toolkit (MIT) and musubi-tuner (Apache) cover FLUX.2, Qwen-Image, Wan 2.2, LTX-2.x and
-MiniMax H3 on a 24 GB card; Lightricks ships `ltx-trainer` for LoRA and IC-LoRA. The recipe
+Tools: ai-toolkit (MIT) [34] and musubi-tuner (Apache) [35] cover FLUX.2, Qwen-Image, Wan 2.2, LTX-2.x and
+MiniMax H3 on a 24 GB card; Lightricks ships `ltx-trainer` for LoRA and IC-LoRA [30]. The recipe
 practitioners converge on for Wan 2.2: 5 to 100 captioned images or ~2 s clips, rank 32 and alpha
 16, learning rate 2e-4, flow shift 2 to 3 for tight identity, latents cached first. Hosted: fal
-charges $4 per 1,000 steps for a Wan 2.2 14B LoRA and $2 per FLUX run with commercial rights.
+charges $4 per 1,000 steps for a Wan 2.2 14B LoRA [36] and $2 per FLUX run with commercial rights [37].
 Roughly 1 to 3 h on one H100 (a recalled figure). Licence-safe bases: Wan 2.2, Qwen-Image-Edit-2511
 and FLUX.2-klein-4B (Apache); FLUX.1 and FLUX.2 dev and klein-9B are non-commercial; HunyuanVideo
 excludes the EU, UK and Korea; Krea Realtime is CC BY-NC-SA. A LoRA also learns the dataset's
@@ -222,28 +223,28 @@ under a dozen HDRIs and focal lengths and train on that.
 ### 4.4 Zero-shot adapters and the "wrong face" problem
 
 For stills: PuLID-FLUX, InfiniteYou (model CC BY-NC), DreamO, OmniGen2, and the older InstantID
-and PhotoMaker line. For video on Wan 2.1 and 2.2 (Apache): Phantom, SkyReels-A2, MAGREF (ICLR
-2026), Stand-In (153 M parameters, composes with VACE and LoRAs, V2 announced 2026-08-10), VACE,
-Wan2.2-Animate and Animate-2, InfiniteTalk, MultiTalk. HunyuanCustom has the best published face
-similarity (0.627) under the territory-limited Tencent licence.
+and PhotoMaker line. For video on Wan 2.1 and 2.2 (Apache): Phantom [38], SkyReels-A2, MAGREF [39] (ICLR
+2026), Stand-In (153 M parameters, composes with VACE and LoRAs, V2 announced 2026-08-10) [40], VACE,
+Wan2.2-Animate and Animate-2, InfiniteTalk [41], MultiTalk. HunyuanCustom has the best published face
+similarity (0.627) [33] under the territory-limited Tencent licence [42].
 
 All of these are supervised by an ArcFace-style embedding and increasingly by human-preference
-rewards (Identity-GRPO, Avatar V). ArcFace encodes *who* and discards *what is off about the
+rewards (Identity-GRPO [43], Avatar V). ArcFace encodes *who* and discards *what is off about the
 face*; the diffusion prior then regresses toward an average, symmetric, attractive face. The
-WithAnyone paper names the complementary failure: adapters "copy-paste" the reference pixels and
+WithAnyone paper [44] names the complementary failure: adapters "copy-paste" the reference pixels and
 fail under new pose, expression and lighting. Large yaw in close-up remains the documented weak
-spot (FaithfulFaces, MoFE). **The consequence for horror:** eye spacing normalises, the asymmetric
+spot (FaithfulFaces [45], MoFE). **The consequence for horror:** eye spacing normalises, the asymmetric
 smile symmetrises, the dead eyes get a catch-light. The only generative object that can *learn* a
 defect as identity is a LoRA trained on images that contain it; the only thing that reproduces it
 exactly is a mesh.
 
 ### 4.5 Character sheets and keyframes
 
-The workflow every vendor recommends, including Google's own Veo 3.1 guide: a canonical sheet,
+The workflow every vendor recommends, including Google's own Veo 3.1 guide [46]: a canonical sheet,
 then a per-shot keyframe made by editing, then image-to-video from the keyframe. Editors: Nano
 Banana Pro (14 references, 5 people, SynthID on every output), FLUX.2 (10 references; dev
 non-commercial, klein-4B Apache), Qwen-Image-Edit-2511 (Apache, seedable), GPT-image-1.5
-(`input_fidelity: high`; the cookbook says to repeat "do not change her face" in every call
+(`input_fidelity: high`; the cookbook [47] says to repeat "do not change her face" in every call
 because drift occurs without repeated constraints), Seedream 4.5, Midjourney `--oref` ("does not
 promise exact copying"). All of them beautify; the defect must be spelled out every time.
 
@@ -256,39 +257,39 @@ and render it in Cycles. The render can then feed a generative model in three wa
   0 is pixel-exact; identity decays at the model's native rate, slowly for a locked-off close-up,
   fast for a head turn (the model invents the unseen side from its prior). Give both ends where the
   model allows (Veo first+last, Luma keyframes, LTX multi-anchor), rendered from the same head.
-- **(b) The render as a control signal.** Wan 2.1 and 2.2 VACE take a reference image plus a
+- **(b) The render as a control signal.** Wan 2.1 and 2.2 VACE [48] take a reference image plus a
   depth, pose or edge control video plus masks (Apache; 1.3B at 480p, 14B at 720p); LTX-2.3 and
-  2.5 IC-LoRA Union does depth, canny and pose in one adapter. Stand-In composes with VACE, so a
+  2.5 IC-LoRA Union does depth, canny and pose in one adapter [49]. Stand-In composes with VACE [40], so a
   frontal reference and a pose track ride together. Blender bridges exist: Pallaidium (GPL-3; a
   depth pass output added 2026-07-10, FLUX.2 klein multi-reference, LTX-2.3 IC-LoRA, ComfyUI and
   fal remote backends), ComfyUI-BlenderAI-node, the older controlnet-render addon. Geometry,
   camera and timing are then exact; the face is whatever the reference plus LoRA make it.
 - **(c) Video-to-video restyle of the render.** Runway Aleph 2 ($0.28/s; its own editing guide now
   steers away from new angles); Luma Ray3 Modify with an "Adhere" strength that retextures and
-  relights while keeping edges (the closest hosted thing to a deterministic render pass); Krea
+  relights while keeping edges [50] (the closest hosted thing to a deterministic render pass); Krea
   Realtime 14B (non-commercial); Wan2.2-Animate-2 replacement mode (put the character into a
   driving video and match its lighting); LTX IC-LoRA. **RealMaster** (arXiv 2603.23462, March
   2026) is the proof of concept: GTA V engine renders lifted to photoreal video "preserving the
-  geometry, dynamics and identity specified by the original 3D control", distilled into an
-  IC-LoRA that needs no anchors at inference. "Goodbye Drift" (arXiv 2605.20476) shows
+  geometry, dynamics and identity specified by the original 3D control" [51], distilled into an
+  IC-LoRA that needs no anchors at inference. "Goodbye Drift" (arXiv 2605.20476) [52] shows
   control-conditioned video-to-video holding for 40+ minutes when generated sparse-to-dense from
   anchors.
 
 What survives: geometry, camera and timing survive (b) and (c)-Adhere almost completely; lighting
 survives Adhere; identity survives only as well as the identity conditioning you add; the
 wrongness survives only if it is in the LoRA or the restyle strength is low enough that the render
-dominates. A licence note: MetaHuman content "cannot be used to train or enhance AI models", which
+dominates. A licence note: MetaHuman content "cannot be used to train or enhance AI models" [53], which
 forbids training a LoRA on renders of a MetaHuman head; MakeHuman/MPFB and ICT FaceKit carry no
 such clause (ICT's exact text unverified). TRELLIS.2 is MIT but has no human-specific path.
 
 ### 4.7 Dialogue on a held close-up, ranked by identity safety
 
-1. Animate the 3D head from audio with **NVIDIA Audio2Face-3D** (open-sourced September 2025; SDK
+1. Animate the 3D head from audio with **NVIDIA Audio2Face-3D** [54] (open-sourced September 2025; SDK
    MIT, models under the NVIDIA Open Model Licence; ARKit-style blendshape output; Maya and Unreal
    plugins but no Blender plugin, so a small importer onto the head's shape keys is needed) or with
    iPhone ARKit capture, then render. Zero drift by construction.
-2. Relip the render: **LatentSync 1.6** (Apache, a 512² mouth region, keeps everything outside the
-   mouth) or **InfiniteTalk** (Apache, Wan 2.1, unlimited length; the FusionX speed LoRA reduces
+2. Relip the render: **LatentSync 1.6** [55] (Apache, a 512² mouth region, keeps everything outside the
+   mouth) or **InfiniteTalk** [41] (Apache, Wan 2.1, unlimited length; the FusionX speed LoRA reduces
    identity). LongCat-Video-Avatar-1.5 (MIT, 2026-05-21) is the newer open option.
 3. Hosted single-image talkers for medium shots: Hedra Character-3 (6.25 ¢/s at 1080p, "character
    angle libraries" recommended), OmniHuman-1.5 (16 ¢/s).
@@ -317,14 +318,14 @@ The genre's convention is captions, not audible lines, which removes most of thi
 1. Author the wrongness in the 3D head and render in Cycles. Deterministic at any angle, light
    and expression; dialogue via Audio2Face-3D or ARKit. The raw render is *already* uncanny in the
    way analog horror wants (perfect skin, too-still eyes), so the AI pass may be optional.
-2. Train a character LoRA on those renders (Wan 2.2 14B via musubi-tuner or fal; Qwen-Image-Edit
+2. Train a character LoRA on those renders (Wan 2.2 14B via musubi-tuner [35] or fal; Qwen-Image-Edit
    or FLUX.2-klein-4B for stills; all Apache) with a caption token naming the defect. Use it for
    photoreal keyframes at low denoise, inside VACE and Stand-In for restyled shots, and inside
    LatentSync or InfiniteTalk for dialogue.
 3. Image-to-video from a rendered first (and last) frame with minimal camera motion; gate with
    ArcFace-to-render plus the landmark check; record every seed and weight hash.
-4. Hosted multi-reference (Kling Elements from four rendered angles plus a voice element; Veo
-   ingredients from Nano Banana keyframes) for establishing and medium shots where the face is
+4. Hosted multi-reference (Kling Elements from four rendered angles plus a voice element [32]; Veo
+   ingredients from Nano Banana keyframes [46]) for establishing and medium shots where the face is
    small and the wrongness is carried by posture and framing.
 
 Routes 1 to 3 give a repeatable wrong face today. Route 4 gives a repeatable *normal* face and
@@ -335,11 +336,11 @@ have it respected without training.
 
 ### 5.1 Nothing in the video-model camp keeps the door where it was
 
-Veo Ingredients, Runway References, Kling Elements (scenes are a first-class element type) and the
+Veo Ingredients, Runway References, Kling Elements (scenes are a first-class element type) [32] and the
 rest condition on an *image of the room*, not on its geometry. They keep the look, palette and
 rough furniture set; they do not carry a floor plan. The cleanest negative evidence is from
 real-estate staging (Inman, April 2026): tools that treat each photo in isolation "place
-different furniture in different locations across the photos … no memory of layout". VideoGPA
+different furniture in different locations across the photos … no memory of layout" [56]. VideoGPA [57]
 (ICML 2026) states the mechanism: denoising objectives "lack explicit incentives for geometric
 coherence". No vendor publishes a rotation budget; the practitioner rule is that the visible half
 of a room holds for pans of about 30° to 45° from one reference, and beyond that each generation
@@ -352,7 +353,7 @@ The strongest video-model-only primitives:
   hold focal length, angle, distance and key-light direction constant, or the model "commits to an
   interpolation path early" and artefacts mid-clip. If the endpoints are renders of one 3D set,
   the middle is usually plausible because it *is* a real camera move.
-- **Kling 3.0 Omni multi-shot**: up to six cuts inside one 15 s generation share one latent, which
+- **Kling 3.0 Omni multi-shot**: up to six cuts inside one 15 s generation share one latent [20], which
   is where the location is most likely to stay coherent; no control over where the cuts land.
 - **Extend** modes condition on the tail of the previous clip and hold the room only while the
   view overlaps; not a way to get a reverse angle.
@@ -362,14 +363,14 @@ The strongest video-model-only primitives:
 
 | Tool | Output | Free camera | Blender | Licence | Notes |
 |---|---|---|---|---|---|
-| World Labs Marble (GA 2025-11-12) | Gaussian splats (.ply/.spz), collider and high-quality GLB meshes | yes | yes | tiers to a $95/mo Max plan with commercial rights; HQ mesh on Pro | **Chisel** lets you block out walls and have the model dress them, the closest generative-3D thing to "the door is where I put it"; weak on thin, transparent and reflective structure |
-| HY-World 2.0 (Tencent, 2026-04-16) | 3DGS, meshes, point clouds; navigation with collision | yes | yes | community licence: **excludes the EU, UK and Korea**, 1 M MAU cap | indoor support not called out explicitly |
+| World Labs Marble (GA 2025-11-12) [58] | Gaussian splats (.ply/.spz), collider and high-quality GLB meshes [59] | yes | yes | tiers to a $95/mo Max plan with commercial rights; HQ mesh on Pro [59] | **Chisel** lets you block out walls and have the model dress them [58], the closest generative-3D thing to "the door is where I put it"; weak on thin, transparent and reflective structure |
+| HY-World 2.0 (Tencent, 2026-04-16) [60] | 3DGS, meshes, point clouds; navigation with collision | yes | yes | community licence: **excludes the EU, UK and Korea**, 1 M MAU cap [61] | indoor support not called out explicitly [60] |
 | HunyuanWorld 1.0 / Voyager | layered textured mesh from a panorama / RGB-D video + point cloud | near origin / trajectory | yes | same licence | Voyager needs 60 to 80 GB |
 | Matrix-3D (Skywork) | panorama to 3DGS | yes | yes | MIT | ~1 h per 720p on an A800; outdoor examples |
 | NVIDIA Lyra 2.0 (2026-04-15) | explorable 3DGS from an image or video | yes | yes | code Apache; per-model weights licences | |
 | Genie 3 / Project Genie | 60-second, non-saveable, non-exportable sessions (US, Ultra) | in-session | **no** | n/a | a video you cannot re-enter; not a set |
-| Infinigen Indoors (Princeton) | whole houses as `.blend` with depth, normal and segmentation passes; constraint-solved layouts | yes | **native** | BSD-3 | procedural, seed-driven, CUDA; a natural fit for a Blender pipeline |
-| Real-room capture (Postshot, Polycam) | splats from ~200 phone photos per room | yes | via the KIRI 3DGS addon (GPL-2) | none | the most photoreal deterministic set; lighting is baked, so night needs a night capture or a relight |
+| Infinigen Indoors (Princeton) [62] | whole houses as `.blend` with depth, normal and segmentation passes; constraint-solved layouts | yes | **native** | BSD-3 | procedural, seed-driven, CUDA; a natural fit for a Blender pipeline |
+| Real-room capture (Postshot, Polycam) | splats from ~200 phone photos per room | yes | via the KIRI 3DGS addon (GPL-2) [63] | none | the most photoreal deterministic set; lighting is baked, so night needs a night capture or a relight |
 
 Generation is not repeatable; the exported file is. Generate once, commit the file with a hash,
 and never regenerate it: the same discipline as a package lock file.
@@ -382,18 +383,18 @@ render beauty, Z, normal and segmentation passes in Cycles, then:
 - **Image-to-video from the rendered first frame**: the layout is exact at frame 0 and decays with
   camera motion; enough for the tripod shots that are most of this genre; first+last frame from
   two renders is the upgrade.
-- **Depth-locked control** (Wan 2.2 VACE; LTX-2.3 and 2.5 IC-LoRA Union): the silhouette and depth
+- **Depth-locked control** (Wan 2.2 VACE [48]; LTX-2.3 and 2.5 IC-LoRA Union [49]): the silhouette and depth
   ordering of every wall, door and prop is pinned per frame, so the door cannot move because its
-  depth edge is in the control video. The RunComfy "Blender → ComfyUI AI Renderer 2.0" workflow is
+  depth edge is in the control video. The RunComfy "Blender → ComfyUI AI Renderer 2.0" workflow [64] is
   exactly this; its rules: identical aspect ratio and fps between Blender and the graph, 4n+1
   frame counts, recheck the first and last 10 frames.
-- **Restyle** (Luma "adhere", Aleph 2, Krea Realtime, Decart Lucy): structure approximately kept;
+- **Restyle** (Luma "adhere" [50], Aleph 2, Krea Realtime, Decart Lucy): structure approximately kept;
   the live restylers drift over long runs.
 - **Per-frame enhancers** (Magnific, Krea) flicker on sequences; use a temporal upscaler (Topaz,
   SeedVR2) for video and per-frame enhancers for keyframes only.
 
-Camera-control re-shoot models (GEN3C with an explicit 3D cache, NVIDIA OML; Uni3C, Apache;
-TrajectoryCrafter; ReCamMaster, MIT but documented to break across occlusions; Stable Virtual
+Camera-control re-shoot models (GEN3C with an explicit 3D cache, NVIDIA OML [65]; Uni3C, Apache [66];
+TrajectoryCrafter; ReCamMaster, MIT but documented to break across occlusions [67]; Stable Virtual
 Camera, non-commercial; CameraAnything, July 2026) re-render a *video* from a new camera and
 hallucinate what the source never saw. They are redundant when you own the set: Blender is the
 camera-control model. They earn their place for re-shooting a hosted clip you like.
@@ -410,7 +411,7 @@ a Relight IC-LoRA in beta.
 ### 5.5 The VHS layer goes last, once, over the whole cut
 
 **ntsc-rs** (open source; an OpenFX, After Effects, Premiere and Resolve plugin plus a standalone
-app) simulates the actual NTSC and VHS signal path. Apply it after generation and any upscale, as
+app) simulates the actual NTSC and VHS signal path [68]. Apply it after generation and any upscale, as
 one parametric operator over the finished cut, because it (a) collapses the different "film
 stocks" that different generators, seeds and even clips of one generator produce below the tape's
 noise floor; (b) low-passes exactly the high-frequency texture shimmer where AI video flickers
@@ -431,7 +432,7 @@ degrades with the picture.
 | Generated 3D world (Marble, HY-World, Matrix-3D, Lyra) | **yes** | file frozen; regeneration not repeatable | baked or Blender-lit | Marble Max; Tencent territory |
 | Real-room splat | **yes** | file | baked | none |
 | Procedural or hand-built Blender set | **yes, by construction** | **bit-exact, fixed Cycles seed** | **by construction** | BSD-3 / none |
-| Blender set + depth-locked AI pass | **yes** (depth edges pinned) | seed-locked, with PyTorch caveats | render-lit, model-mooded | Apache / LTX |
+| Blender set + depth-locked AI pass | **yes** (depth edges pinned) | seed-locked, with PyTorch caveats [69] | render-lit, model-mooded | Apache / LTX |
 | Camera-control re-shoot | moderate moves; hallucinates the unseen | seed-locked open | inherited | Apache / OML / MIT |
 
 ## 6. Combining them into a multi-scene film
@@ -444,13 +445,13 @@ Kling, Veo or Seedance with the sheet as an ingredient, motion-only prompts, the
 off, two variations per shot, 10 to 15 frames trimmed from each end; then ElevenLabs or captions;
 then CapCut with a VHS overlay stack. Consistency is probabilistic and non-reproducible; drift
 shows after about ten shots; the practitioners' fix is a *frozen* reference kit ("the moment you
-'improve' the hero shot in week two, every earlier shot becomes inconsistent") plus a per-shot
+'improve' the hero shot in week two, every earlier shot becomes inconsistent") [2] plus a per-shot
 checklist and last-frame chaining.
 
 **B. Native multi-shot in one call.** Kling Omni (six structured cuts), Seedance 2.5 (30 s, 50
-references, scene-level prose), Wan 3.0 (30 s), LTX-2.5 (native multi-shot, open), Omni Flash
+references, scene-level prose), Wan 3.0 (30 s), LTX-2.5 (native multi-shot, open) [70], Omni Flash
 (conversational edits). For a 30 to 60 s Short this is 2 to 4 calls instead of 8 to 12, and
-continuity only has to survive across those seams. Timing control is prose on Seedance and
+continuity only has to survive across those seams. Timing control is prose on Seedance [71] and
 structured on Kling; no public benchmark isolates cross-shot identity.
 
 **C. The 3D-first film build.** Character and set are assets; every shot's blocking, camera,
@@ -459,7 +460,7 @@ open-weight pass adds photographic surface under depth and identity lock; the ed
 VHS grade are deterministic post. Only the surface is stochastic, and with pinned open weights
 and a seed even that repeats. This is also what Autodesk Flow Studio's 3D Editor and Canvas
 (August 2026) productise: 3D for "performance, staging, composition and camera movement",
-generative models for "lighting integration, atmosphere … and cinematic finishing".
+generative models for "lighting integration, atmosphere … and cinematic finishing" [72].
 
 ### 6.2 Where each architecture breaks
 
@@ -484,32 +485,32 @@ screen must be composited, never generated.
 
 | Stage | Options | Seed / determinism |
 |---|---|---|
-| Narration | ElevenLabs v3 (`seed`, "best effort … not guaranteed"); Chatterbox (MIT, local, ~10 s clone, watermarked); Kokoro (Apache, no cloning); OpenAI and Gemini TTS | ElevenLabs best-effort; OpenAI and Gemini expose no seed; local voices are cheap enough to pin by cached WAV |
-| Sound effects | ElevenLabs SFX v2 ($0.0194 per effect, loops); HunyuanVideo-Foley (open, ComfyUI nodes); MMAudio (MIT code, CC-BY-NC weights) | none documented; pin by hash |
-| Music | Eleven Music (commercially cleared); Lyria 3.5 ($0.08 per song, SynthID, no seed); Suno and Udio have no official API; **ACE-Step v1.5** (Apache, seeded, ComfyUI node, 1 min in under 2 s on a 4090) | ACE-Step is the only seedable music |
+| Narration | ElevenLabs v3 (`seed`, "best effort … not guaranteed" [73]); Chatterbox (MIT, local, ~10 s clone, watermarked) [74]; Kokoro (Apache, no cloning); OpenAI and Gemini TTS [75], [76] | ElevenLabs best-effort; OpenAI and Gemini expose no seed [75], [76]; local voices are cheap enough to pin by cached WAV |
+| Sound effects | ElevenLabs SFX v2 ($0.0194 per effect, loops); HunyuanVideo-Foley (open, ComfyUI nodes) [77]; MMAudio (MIT code, CC-BY-NC weights) [78] | none documented; pin by hash |
+| Music | Eleven Music (commercially cleared) [79]; Lyria 3.5 ($0.08 per song, SynthID, no seed) [80]; Suno and Udio have no official API; **ACE-Step v1.5** (Apache, seeded, ComfyUI node, 1 min in under 2 s on a 4090) [81] | ACE-Step is the only seedable music |
 | Lip-sync on camera | sync lipsync-2 via fal; LatentSync, MuseTalk, InfiniteTalk open; Wan2.2-Animate-2 is motion-driven, not audio-driven | the cheap answer: narrator off camera, mouths degraded by the VHS pass |
-| Captions | force-align the *known script* with WhisperX (BSD-2) rather than transcribe; burn in via Remotion caption components or an ffmpeg ASS file | deterministic given pinned models |
-| Timeline | ffmpeg with `-fflags +bitexact -flags +bitexact` ("file and data checksums are reproducible and match between platforms"); Remotion (frames are required to be pure functions of frame number); Blender VSE (the `swimlane` project compiles a JSON timeline into VSE); OpenTimelineIO as the interchange artefact for a human NLE | deterministic with a pinned build |
+| Captions | force-align the *known script* with WhisperX (BSD-2) [82] rather than transcribe; burn in via Remotion caption components [83] or an ffmpeg ASS file | deterministic given pinned models |
+| Timeline | ffmpeg with `-fflags +bitexact -flags +bitexact` ("file and data checksums are reproducible and match between platforms") [84], [85]; Remotion (frames are required to be pure functions of frame number) [86]; Blender VSE (the `swimlane` project compiles a JSON timeline into VSE) [87]; OpenTimelineIO as the interchange artefact for a human NLE [88] | deterministic with a pinned build |
 | Loudness, delivery | two-pass `loudnorm` with measured values and `linear=true`; 9:16 1080×1920 | deterministic |
 
 No commercial product accepts a JSON shot list end to end. Descript's API takes only a
-natural-language prompt and publishes to a web link; Eddie for Agents offers CLI, SDK and MCP
-operations over real footage; Runway's agent runs Workflows from chat over MCP; CapCut is
-driveable only through an unofficial draft-file MCP; LTX Studio, Flow, Higgsfield, Hailuo Agent
-and Vidu Agent are UI-first. Google Flow deletes generated videos from the server after two days;
+natural-language prompt and publishes to a web link [89]; Eddie for Agents offers CLI, SDK and MCP
+operations over real footage [90]; Runway's agent runs Workflows from chat over MCP; CapCut is
+driveable only through an unofficial draft-file MCP [91]; LTX Studio, Flow, Higgsfield, Hailuo Agent
+and Vidu Agent are UI-first. Google Flow deletes generated videos from the server after two days [92];
 Sora had an export deadline. **The assembly layer must be self-built, and hosted output archived
 on receipt.** The VHS pass goes last (section 5.5).
 
 ### 6.4 Determinism end to end
 
-Bit-repeatability exists only self-hosted: `torch.Generator(device="cpu")` even on GPU,
+Bit-repeatability exists only self-hosted: `torch.Generator(device="cpu")` even on GPU [93],
 `CUBLAS_WORKSPACE_CONFIG=":16:8"`, `cudnn.benchmark=False`,
-`torch.use_deterministic_algorithms(True)`, a pinned GPU SKU, driver, CUDA, PyTorch and attention
+`torch.use_deterministic_algorithms(True)` [69], a pinned GPU SKU, driver, CUDA, PyTorch and attention
 kernel (an H100 run will not bit-match a B200), and a fixed scheduler and step count; MAGI-2 ships
-a `--deterministic` flag. Diffusers' own guide: results are not guaranteed "across PyTorch
-releases, individual commits, or different platforms". Hosted: Veo's seed "doesn't guarantee
-determinism, but slightly improves it"; Runway's gives "similar results"; Seedance's "minor
-variation may still occur"; Omni Flash and Sora expose no seed; fxguide (August 2026) documents
+a `--deterministic` flag [26]. Diffusers' own guide: results are not guaranteed "across PyTorch
+releases, individual commits, or different platforms" [93]. Hosted: Veo's seed "doesn't guarantee
+determinism, but slightly improves it" [18]; Runway's gives "similar results" [28]; Seedance's "minor
+variation may still occur"; Omni Flash and Sora expose no seed [19]; fxguide (August 2026) [94] documents
 cloud models changing output under identical input and seed without changelogs.
 
 A reproducible episode borrows the shape of a package manager: a manifest, a lock file and a
@@ -531,21 +532,21 @@ Rules that make it reproducible in practice, each grounded in a published half-e
 1. **Every stage is keyed by a hash of its inputs** (prompt, params, seed, upstream artefact
    hashes, model ID and version string). A rebuild reuses the cached artefact when the key
    matches; this is the only way a hosted, non-deterministic stage becomes "reproducible".
-   ftl-studio (MIT; Veo 3.1, Gemini and Claude) frames its `plan.json` as "a reproducible recipe"
+   ftl-studio (MIT; Veo 3.1, Gemini and Claude) [95] frames its `plan.json` as "a reproducible recipe"
    while admitting the APIs expose no seed.
 2. **Human acceptance is recorded in the lock**, not in chat: which candidate was chosen, and the
    QC scores of the rejected siblings. ftl-studio's `qc.json` scores identity, wardrobe, set match
    and manifest compliance from 0 to 100 with a vision model before any video spend; ViStoryBench
-   and MSVBench publish open scorers for character consistency, style, prompt alignment and
+   and MSVBench [96] publish open scorers for character consistency, style, prompt alignment and
    copy-paste artefacts.
-3. **Generate the establishing shot first** and reference it everywhere: GroundShot (2026) finds
+3. **Generate the establishing shot first** and reference it everywhere: GroundShot (2026) [97] finds
    "the visual quality of this initial appearance sets the consistency ceiling for all that
    follows".
 4. **Prefer local, seeded models for anything iterated on** (sheets, plates, degrade, music) and
-   pin hosted hero shots by hash. The published Krea-2 multi-shot node uses `seed + N - 1` per
+   pin hosted hero shots by hash. The published Krea-2 multi-shot node [98] uses `seed + N - 1` per
    shot, the cleanest example of per-shot seed discipline.
 5. **Emit the edit as `.otio` plus a Remotion or ffmpeg render script**, both derived from
-   `film.json`; render under `bitexact` with a pinned ffmpeg.
+   `film.json`; render under `bitexact` with a pinned ffmpeg [84], [85].
 
 No public project implements the lock-file half; the "video as code" repositories are declarative
 timelines without generation provenance.
@@ -556,14 +557,14 @@ timelines without generation provenance.
 
 | Model | Shots per call | Length | Per-shot control | Open? |
 |---|---|---|---|---|
-| Kling 3.0 / Omni | ≤6 cuts | 3 to 15 s | `multi_prompt` list, `shot_type` customize or intelligent, Elements; **no seed field** on the fal schema | no |
-| Seedance 2.0 / 2.5 | `Shot N:` labels | 15 s / 30 s + extensions | text per shot; seed "not a hard lock"; live studio cease-and-desists | no |
-| MiniMax H3 | `[Shot 1]` with `at 00:04.500` timing | 4 to 15 s | text with timestamps; ≤9 image refs | **yes** (community licence) |
-| LTX-2.5 | "several consecutive shots in a single generation" | 6 to 20 s | prompt-described; exact syntax unverified | **yes** (< $10 M ARR) |
-| HoloCine (CVPR 2026) | 5 to 6 shots | 5 to 15 s | one caption per shot, a global caption, seed | weights yes, **CC BY-NC-SA** |
+| Kling 3.0 / Omni | ≤6 cuts | 3 to 15 s | `multi_prompt` list, `shot_type` customize or intelligent, Elements; **no seed field** on the fal schema [99] | no |
+| Seedance 2.0 / 2.5 | `Shot N:` labels | 15 s / 30 s + extensions | text per shot; seed "not a hard lock"; live studio cease-and-desists [71] | no |
+| MiniMax H3 | `[Shot 1]` with `at 00:04.500` timing [100] | 4 to 15 s | text with timestamps; ≤9 image refs | **yes** (community licence) [100] |
+| LTX-2.5 | "several consecutive shots in a single generation" [70] | 6 to 20 s | prompt-described; exact syntax unverified | **yes** (< $10 M ARR) |
+| HoloCine (CVPR 2026) [101] | 5 to 6 shots | 5 to 15 s | one caption per shot, a global caption, seed | weights yes, **CC BY-NC-SA** |
 | Vidu Q3 | multi-shot with camera control | ≤16 s | stated | no |
 | Veo 3.1 | none; extend 20× to 148 s at 720p | 4/6/8 s | per-generation prompt | no |
-| MAGI-1.1 (Apache) | chunk-wise prompts, continuous take | long | per 24-frame chunk | yes; 24B needs 4 to 8 H100s |
+| MAGI-1.1 (Apache) [102] | chunk-wise prompts, continuous take | long | per 24-frame chunk | yes; 24B needs 4 to 8 H100s |
 
 A 45 s Short is 3 to 4 multi-shot calls or 6 to 12 single-shot calls. Multi-shot buys consistency
 inside each call and pushes the problem to the seams, where a locked sheet, a locked plate and the
@@ -572,34 +573,34 @@ use it only where the shot list says "montage".
 
 **Agentic and open frameworks**, by how usable they are today:
 
-- **Runnable and relevant:** Wan2.2-Animate-2 (Apache, driving video plus reference character),
+- **Runnable and relevant:** Wan2.2-Animate-2 (Apache, driving video plus reference character) [24],
   the bridge from a Blender playblast to a photoreal shot without regenerating identity; the
   RunComfy Qwen-Image-Edit + Wan 2.2 "cinematic coherence" graph; ComfyUI-Wan-VACE-Prep for
   transitions and extensions; MoneyPrinterTurbo (124 k stars, MIT: LLM script, TTS, clips, burned
-  subtitles, ffmpeg, 9:16, API, CLI and agent modes) as the Shorts half minus the locks; Vanta (MIT:
+  subtitles, ffmpeg, 9:16, API, CLI and agent modes) [103] as the Shorts half minus the locks; Vanta (MIT:
   a JSON timeline rendered by Remotion, WhisperX captions, Wan 2.2 and LTX, ACE-Step, LatentSync,
-  licence-audited); OpenCut (MIT, a TypeScript timeline to MP4); Nomi (AGPL, 514 stars: storyboard,
+  licence-audited) [104]; OpenCut (MIT, a TypeScript timeline to MP4) [105]; Nomi (AGPL, 514 stars: storyboard,
   references, generation, then an "editable first cut on a real timeline"; 23 MCP tools so a coding
   agent can drive it; local ComfyUI as one of about 12 providers; no seeds, no audio stages, no
-  documented project format).
+  documented project format) [106].
 - **Closest to the 3D-first build:** FilmAgent (a Unity sandbox with 15 locations, 272 camera
   shots and 21 Mixamo actions; LLM director, screenwriter, actor and cinematographer roles; a
-  deterministic 3D render) and Cutscene Agent (arXiv 2604.25318, MCP-driven engine agents producing
-  editable engine-native cinematic assets). These are the "shot list, then 3D scene, then render"
+  deterministic 3D render) [107] and Cutscene Agent (arXiv 2604.25318, MCP-driven engine agents producing
+  editable engine-native cinematic assets) [108]. These are the "shot list, then 3D scene, then render"
   pattern in a game engine.
 - **Research, not yet runnable:** STAGE (a structural storyboard of start and end frame pairs per
-  shot plus a multi-shot memory pack), GroundShot (training-free, model-agnostic entity memory;
-  its method is usable by hand), ViMax, Captain Cinema (keyframe planning plus interleaved
-  synthesis, 1,000 s films, no code), and MSVBench's finding that current systems are "visual
-  interpolators rather than true world models".
-- **Historical:** MovieAgent (a stale SVD stack), StoryAgent, Anim-Director, VideoGen-of-Thought,
+  shot plus a multi-shot memory pack) [109], GroundShot (training-free, model-agnostic entity memory;
+  its method is usable by hand) [97], ViMax, Captain Cinema (keyframe planning plus interleaved
+  synthesis, 1,000 s films, no code) [110], and MSVBench's finding that current systems are "visual
+  interpolators rather than true world models" [96].
+- **Historical:** MovieAgent (a stale SVD stack) [111], StoryAgent, Anim-Director, VideoGen-of-Thought,
   DreamFactory and Mora, superseded by native multi-shot models.
 
 **Reference pipelines published in 2026** with code: ftl-studio (one sentence to a directed
 multi-shot film on Veo 3.1; canon stills approved once, every frame composited from them and
 chained to the previous frame; vision-judge QC before video spend; an ffmpeg finish with a
-unified grade, grain, crossfades and loudness; no narration; about $6 per 64 s pass on Veo Fast);
-Krea-2 multi-shot stills with an identity LoRA into LTX Director (seeded stills, hosted video);
+unified grade, grain, crossfades and loudness; no narration; about $6 per 64 s pass on Veo Fast) [95];
+Krea-2 multi-shot stills with an identity LoRA into LTX Director (seeded stills, hosted video) [98];
 MoneyPrinterTurbo plus Vanta (fully local possible, the highest determinism, the lowest craft). No
 verifiable write-up of an AI analog-horror pipeline specifically could be found.
 
@@ -607,46 +608,46 @@ verifiable write-up of an AI analog-horror pipeline specifically could be found.
 
 ### 7.1 What has been made
 
-Festival tier: the Runway AIFF 2026 Grand Prix winner "A Face Only A Mother Could Love" is 7:50;
-winners run 3.5 to 11.6 min; the festival requires generative video but no minimum AI percentage;
+Festival tier: the Runway AIFF 2026 Grand Prix winner "A Face Only A Mother Could Love" is 7:50 [112];
+winners run 3.5 to 11.6 min; the festival requires generative video but no minimum AI percentage [112];
 process is rarely disclosed. Studio tier: Netflix's one generative AI shot in *El Eternauta*;
 Amazon's *House of David* with 72 of 850 VFX shots AI in season 1 and 350 to 400 in season 2,
 plates and inserts, never a recurring AI character. The only place AI narrative is mass-produced
-is China: 470 AI dramas per day, RMB 500 to 1,000 per finished minute (about $30), 10-person teams
-doing 30 episodes in 20 days, a 0.117 % breakout rate, the lowest willingness to pay of any AI
-format, and the top revenue still with human-acted titles. Creator tier: production logs from a
+is China: 470 AI dramas per day [113], [114], RMB 500 to 1,000 per finished minute (about $30), 10-person teams
+doing 30 episodes in 20 days, a 0.117 % breakout rate [113], the lowest willingness to pay of any AI
+format, and the top revenue still with human-acted titles [113]. Creator tier: production logs from a
 vendor's own agent show a 3-minute episode at 164 generations, 41 kept (25 %), 17 of the 41 final
-shots stitched from two or more takes, 2 people, 2 days, about $950; a 90 s horror short at about
-400 generations, 2 days, $870.
+shots stitched from two or more takes, 2 people, 2 days, about $950 [115]; a 90 s horror short at about
+400 generations, 2 days, $870 [116].
 
 ### 7.2 Residual gaps
 
-A keep rate of about 25 % (3 generations per usable shot, some 8+); identity drift perceptible
-after about ten shots, mostly in costume, hairline, props, gait and palette rather than the face;
+A keep rate of about 25 % (3 generations per usable shot, some 8+) [115]; identity drift perceptible
+after about ten shots, mostly in costume, hairline, props, gait and palette rather than the face [2];
 dialogue realism that degrades after about 8 s per clip, and poor "quiet, layered" emotion;
 extension chains that accumulate colour and identity walk; references that bias but do not
 constrain; blocking and camera direction that obey prompts loosely (the reason 3D-first hybrids
-appeared); and nothing repeatable. In one line: **faces are mostly solved, everything around the
+appeared [117]); and nothing repeatable. In one line: **faces are mostly solved, everything around the
 face is not, and nothing hosted is repeatable.**
 
 ### 7.3 Cost for a 45-second, 8 to 18 shot vertical short
 
 | Route | Cash per episode | Human hours (first / later) | Repeatable? | Platform risk |
 |---|---|---|---|---|
-| (a) hosted with a reference kit | $40 to $200 (Seedance or Omni at 3× rerolls to Veo Standard at 6×; plus $50 to $80/mo of subscriptions) | 6 to 10 / 3 to 5 | no | high: Sora, Gen-3 and Gen-4 Aleph retired in 2026 |
-| (b) open weights on a rented H100 ($2 to $3.5/h) | $10 to $25 including a character LoRA | 8 to 16 / 3 to 6 | yes, with pinned weights, seed and GPU | low; licence caveats (Hunyuan territory, LTX $10 M, H3 application) |
+| (a) hosted with a reference kit | $40 to $200 (Seedance or Omni at 3× rerolls to Veo Standard at 6×; plus $50 to $80/mo of subscriptions [118]) | 6 to 10 / 3 to 5 | no | high: Sora, Gen-3 and Gen-4 Aleph retired in 2026 [5] |
+| (b) open weights on a rented H100 ($2 to $3.5/h) [119] | $10 to $25 including a character LoRA | 8 to 16 / 3 to 6 | yes, with pinned weights, seed and GPU | low; licence caveats (Hunyuan territory, LTX $10 M, H3 application) |
 | (c) 3D render, then open-weight restyle | $5 to $40 after the build | 8 to 24 / 2 to 4, once a character rig and set exist | structure yes; surface yes if (b) | low |
 
 An independent estimate for an Evillica-shaped short (18 shots, 4 rerolls each, about 400
-generated seconds) agrees: about $37 to $46 on Kling 3.0 at 1080p, $48 on Veo 3.1 Fast, $20 on
+generated seconds) agrees: about $37 to $46 on Kling 3.0 at 1080p [120], $48 on Veo 3.1 Fast, $20 on
 Veo Lite, $160 on Veo Standard, and half a day to a day of solo work.
 
 ### 7.4 Trend line and forecast
 
 In twelve months: native clips went from 8 s to 15 s to 30 s, with a 3-minute beta; native audio
 everywhere; references from 3 to 50; multi-shot storyboards; conversational editing; prices down
-3 to 5× per second at equal or better quality (while Sora ran at about $1 M a day against $2.1 M
-of lifetime revenue); MiniMax H3 the only open model in the arena's top 15. No Veo 4, Sora 3,
+3 to 5× per second at equal or better quality (while Sora ran at about $1 M a day [121] against $2.1 M
+of lifetime revenue); MiniMax H3 the only open model in the arena's top 15 [14]. No Veo 4, Sora 3,
 Gen-5 or Seedance 3 has been announced. The frontier moved from "better clips" to
 *directability*, which is the right direction for a series.
 
@@ -689,15 +690,15 @@ For anyone who does take architecture C, these are the stages it needs.
 |---|---|
 | character | a rigged photoreal head and body, hair, and ARKit-compatible blendshapes |
 | defect | any authored wrongness as shape keys or a mesh edit, with a landmark-ratio signature to check it survives |
-| set | a `.blend` house (an Infinigen Indoors seed, hand-dressed, a Marble or Chisel export, or a captured splat via the KIRI addon) with a light rig keyed per time of night |
+| set | a `.blend` house (an Infinigen Indoors seed, hand-dressed, a Marble or Chisel export, or a captured splat via the KIRI addon [63]) with a light rig keyed per time of night |
 | perform | audio to Audio2Face-3D blendshapes (or ARKit capture) for the head; body clips retargeted onto the rig |
 | shots | a shot list as data: camera, lens, hold time, light state and character pose per shot |
 | render | Cycles beauty, Z, normal and segmentation per shot, with a fixed seed, at VHS-era resolution (≤ 720×480 before degradation) |
 | surface | a depth-locked open-weight pass (Wan 2.2 VACE + Stand-In + character LoRA, or LTX-2.5 IC-LoRA Union) with the beauty pass as the first frame, under the deterministic PyTorch recipe |
 | gate | ArcFace-to-render ≥ a calibrated threshold; DINO frame-to-frame ≥ the playblast; the landmark-ratio defect check; depth-edge IoU against the render's Z pass |
-| audio | narration (ElevenLabs v3 with a fixed voice and seed, or local Chatterbox, pinned by WAV hash); Foley (Eleven SFX v2 or HunyuanVideo-Foley); a seeded ACE-Step drone; captions force-aligned from the script with WhisperX |
+| audio | narration (ElevenLabs v3 with a fixed voice and seed [73], or local Chatterbox [74], pinned by WAV hash); Foley (Eleven SFX v2 or HunyuanVideo-Foley [77]); a seeded ACE-Step drone [81]; captions force-aligned from the script with WhisperX [82] |
 | cut | `.otio` plus a Remotion or ffmpeg render from the shot list under `bitexact`; captions burned in; timecode overlay before degrade; two-pass loudnorm |
-| degrade | an ntsc-rs preset over the whole cut, once |
+| degrade | an ntsc-rs preset over the whole cut, once [68] |
 | lock | `film.lock.json`: every input and output hash, model IDs, seeds, presets, accepted takes and QC scores |
 
 The raw Cycles render with the VHS pass and *no* surface stage is a legitimate product on its own:
@@ -708,13 +709,13 @@ assumed.
 ### 8.2 Licences
 
 Keep to Apache, MIT and BSD wherever a model touches shipped pixels: the Wan 2.2 family (VACE,
-Stand-In, Animate-2, InfiniteTalk), LatentSync, Qwen-Image-Edit-2511 or FLUX.2-klein-4B for
-stills, Infinigen (BSD-3), ntsc-rs, and Audio2Face-3D (SDK MIT; models under the NVIDIA Open Model
+Stand-In, Animate-2, InfiniteTalk), LatentSync [55], Qwen-Image-Edit-2511 or FLUX.2-klein-4B for
+stills, Infinigen (BSD-3) [62], ntsc-rs, and Audio2Face-3D [54] (SDK MIT; models under the NVIDIA Open Model
 Licence, which needs a read). LTX-2.5 is usable under $10 M ARR and must not present machine
-output as human-made. Avoid without reading the licence: HunyuanVideo, HunyuanCustom and HY-World
+output as human-made [22]. Avoid without reading the licence: HunyuanVideo, HunyuanCustom [42] and HY-World [61]
 (EU, UK and Korea exclusion), MiniMax H3 (territory application), FLUX dev and klein-9B
 (non-commercial), Krea Realtime, Stable Virtual Camera and InfiniteYou's model (non-commercial),
-and MetaHuman (no AI training on its output). Marble needs the Max plan for commercial rights.
+and MetaHuman (no AI training on its output) [53]. Marble needs the Max plan for commercial rights.
 
 ### 8.3 Experiments that would settle the open questions
 
@@ -741,14 +742,14 @@ credit pack (about $40) for the fourth.
 
 ## 9. Legal and policy, briefly
 
-US Copyright Office, Part 2 (2025-01-29): prompts alone are not authorship; a human's creative
+US Copyright Office, Part 2 (2025-01-29) [122]: prompts alone are not authorship; a human's creative
 selection, arrangement and modification of AI output is registrable with the AI portions
 disclaimed, so the *edit* of a short is protectable and the raw clips are not. YouTube: since
-2025-07-15, "inauthentic content" (templated, mass-produced AI) is demonetised, while a series with
-recurring characters and distinct storylines is explicitly allowed; the July 2026 clarification
+2025-07-15, "inauthentic content" (templated, mass-produced AI) is demonetised [13], while a series with
+recurring characters and distinct storylines is explicitly allowed [13]; the July 2026 clarification [11], [12]
 adds an "unsatisfying or off-putting … designed to shock" bucket that an AI horror channel must
-avoid; realistic synthetic scenes need the disclosure label (which does not affect monetisation);
-C2PA metadata auto-labels; and from 2027-02-01 the Shorts Creator Pool requires 10 M Shorts views
+avoid; realistic synthetic scenes need the disclosure label (which does not affect monetisation) [123];
+C2PA metadata auto-labels [123]; and from 2027-02-01 the Shorts Creator Pool requires 10 M Shorts views
 per trailing 90 days. Practical-plus-post work like Evillica's needs no label. Veo and Omni carry
 SynthID. Seedance carries live US legal exposure (studio complaints, a Senate letter).
 
@@ -764,49 +765,128 @@ AI-assisted is unknown.
 
 ## Sources
 
-The primary pages relied on most, by topic. Every claim above was checked against these or marked
-as recalled or unverified.
+Every claim above was checked against these or marked as recalled or unverified.
 
-- **Reference shorts and creator:** youtube.com/@Evillica; the horrortoculture.com interview
-  (2025-12-28); the houseofscream.com BUFF piece (2026-04-13); the three watch pages' metadata and
-  comment threads.
-- **Models:** ai.google.dev Gemini API docs for Veo, Omni and pricing; the deepmind.google Omni
-  model card; kling.ai Omni and Element Library guides; Runway's API docs (api.md, pricing.md,
-  changelog); seed.bytedance.com Seedance 2.5; huggingface.co MiniMaxAI/MiniMax-H3;
-  huggingface.co Lightricks/LTX-2.5 and github.com Lightricks/LTX-2; github.com Wan-Video/Wan2.2
-  and Wan-Animate-2; huggingface.co Wan-AI; huggingface.co sand-ai/MAGI-2-preview; the
-  artificialanalysis.ai video leaderboard; the-decoder.com on the Sora shutdown; the Hugging Face
-  diffusers reproducibility guide.
-- **Characters:** github.com WeChatCV/Stand-In, Phantom-video/Phantom, MAGREF-Video/MAGREF,
-  Tencent-Hunyuan/HunyuanCustom (face-similarity table and LICENSE), ostris/ai-toolkit,
-  kohya-ss/musubi-tuner, bytedance/LatentSync, MeiGen-AI/InfiniteTalk, NVIDIA/Audio2Face-3D; arXiv
-  2510.14975 (WithAnyone), 2510.14256 (Identity-GRPO), 2605.04702 (FaithfulFaces), 2603.23462
-  (RealMaster), 2605.20476 (Goodbye Drift); Google's Veo 3.1 prompting guide; OpenAI's
-  GPT-image-1.5 cookbook; cgchannel on the MetaHuman licence.
-- **Scenes:** the worldlabs.ai Marble blog and mesh-export docs; github.com
-  Tencent-Hunyuan/HY-World-2.0 and its LICENSE; github.com princeton-vl/infinigen; github.com
-  Kiri-Innovation/3dgs-render-blender-addon; the Wan2GP VACE doc; docs.ltx.io IC-LoRA adapters; the
-  runcomfy.com Blender to VACE workflow; the flick.art Blender AI filmmaking guide;
-  docs.lumalabs.ai Modify Video; github.com nv-tlabs/GEN3C, alibaba-damo-academy/Uni3C,
-  KlingAIResearch/ReCamMaster; ntsc.rs; inman.com on multi-angle staging (2026-04-27); arXiv
-  2601.23286 (VideoGPA); the PyTorch randomness note.
-- **Assembly:** the fal.ai Kling v3 pro API schema (`multi_prompt`, no seed); the
-  Emily2040/seedance-2.0 api-status notes; huggingface.co MiniMaxAI/MiniMax-H3 and
-  Comfy-Org/MiniMax-H3; docs.comfy.org LTX-2.5; github.com yihao-meng/HoloCine, SandAI-org/MAGI-1,
-  showlab/MovieAgent; arXiv 2512.12372 (STAGE), 2606.20799 (GroundShot), 2602.23969 (MSVBench),
-  2604.25318 (Cutscene Agent); huggingface.co papers 2501.12909 (FilmAgent); thecinema.ai (Captain
-  Cinema); github.com uby174/ftl-studio, CodingWithShahzaib/ComfyUI-Krea-MultiShot-Stills,
-  harry0703/MoneyPrinterTurbo, itsjwill/vanta, floomhq/opencut, aqm857886159/Nomi,
-  idreesaziz/swimlane; the elevenlabs.io TTS API reference (seed) and Music docs; the OpenAI TTS
-  guide; ai.google.dev speech and music generation; github.com resemble-ai/chatterbox,
-  ace-step/ACE-Step, Tencent-Hunyuan/HunyuanVideo-Foley, hkchengrex/MMAudio, m-bain/whisperX,
-  AcademySoftwareFoundation/OpenTimelineIO; the ffmpeg formats and codecs docs (`bitexact`); the
-  remotion.dev flickering and openai-whisper docs; docs.descriptapi.com; heyeddie.ai/devs; github.com
-  atx-guy/capcut-mcp-server; the blog.google Flow tips (2-day retention).
-- **Readiness and policy:** cartoonbrew.com and thenextweb.com on Critterz; techcrunch.com on the
-  Sora shutdown; hellochinatech.com and techtimes.com on China's AI dramas; invideo.io
-  generation-count FAQs; screenweaver.ai on character drift (2026-08-24); fxguide.com on
-  on-premises open weights (2026-08-28) and Autodesk Flow Studio (2026-08-24); hackernoon.com on
-  retired models (2026-09-10); aif.runwayml.com; copyright.gov/ai; YouTube Help answers 1311392 and
-  14328491; tubefilter.com and techcrunch.com on the July 2026 YouTube clarification;
-  runpod.io/pricing; fal.ai model pages; eesel.ai on Kling pricing; elevenlabs.io/pricing.
+1. Evillica, "Evillica," YouTube channel. Accessed: Oct. 10, 2026. [Online]. Available: https://www.youtube.com/@Evillica
+2. ScreenWeaver, "Character Drift in AI Video: How to Keep Your Character Consistent Past 10 Shots," ScreenWeaver blog. Accessed: Oct. 10, 2026. [Online]. Available: https://www.screenweaver.ai/blog/character-drift-ai-video-consistency
+3. "OpenAI sets two-stage Sora shutdown with app closing April 2026 and API following in September," The Decoder. Accessed: Oct. 10, 2026. [Online]. Available: https://the-decoder.com/openai-sets-two-stage-sora-shutdown-with-app-closing-april-2026-and-api-following-in-september/
+4. Runway, "API changelog & updates," Runway API Documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://docs.dev.runwayml.com/api-details/api_changelog/
+5. "Your AI Video Model Just Got Retired. Here's How to Keep Your Pipeline From Breaking Next Time," HackerNoon. Accessed: Oct. 10, 2026. [Online]. Available: https://hackernoon.com/your-ai-video-model-just-got-retired-heres-how-to-keep-your-pipeline-from-breaking-next-time
+6. Evillica, "Stay quiet," YouTube, Sep. 2, 2025. Accessed: Sep. 16, 2026. [Online]. Available: https://www.youtube.com/shorts/LuiJh6JldaQ
+7. Evillica, "Guess I didn't close the door tight enough," YouTube, Sep. 10, 2025. Accessed: Sep. 16, 2026. [Online]. Available: https://www.youtube.com/shorts/WgS4mY1Wzks
+8. Evillica, "Something's off about Mom," YouTube, Sep. 15, 2025. Accessed: Sep. 16, 2026. [Online]. Available: https://www.youtube.com/shorts/KzzKsKemFlo
+9. Horror to Culture, "An Interview W/ Evillica," Dec. 28, 2025. Accessed: Oct. 10, 2026. [Online]. Available: https://www.horrortoculture.com/blog/aninterviewwithevillica/
+10. Mad Mike Mandrake, "Behind the Scenes w/ Evillica," House of Scream, Apr. 13, 2026. Accessed: Oct. 10, 2026. [Online]. Available: https://www.houseofscream.com/post/behind-the-scenes-w-evillica
+11. "YouTube clarifies policies around AI slop and upsetting videos," TechCrunch, Jul. 20, 2026. Accessed: Oct. 10, 2026. [Online]. Available: https://techcrunch.com/2026/07/20/youtube-clarifies-policies-around-ai-slop-and-upsetting-videos/
+12. "YouTube clarifies that creators can't monetize 'generic or repetitive content,' content that's 'unsatisfying or off-putting,' or content with fake AI 'experts'," Tubefilter, Jul. 13, 2026. Accessed: Oct. 10, 2026. [Online]. Available: https://www.tubefilter.com/2026/07/13/youtube-inauthentic-content-monetization-policy-update/
+13. YouTube, "YouTube channel monetization policies," YouTube Help. Accessed: Oct. 10, 2026. [Online]. Available: https://support.google.com/youtube/answer/1311392
+14. Artificial Analysis, "AA-Video-T2V v2.0 leaderboard," Artificial Analysis. Accessed: Oct. 10, 2026. [Online]. Available: https://artificialanalysis.ai/video/leaderboard/text-to-video
+15. "OpenAI-Backed Animated Film 'Critterz' Aims For Cannes," Cartoon Brew. Accessed: Oct. 10, 2026. [Online]. Available: https://www.cartoonbrew.com/feature-film/critterz-ai-feature-openai-cannes-254237.html
+16. "Sora shutdown leaves Critterz at the Cannes market without its model," The Next Web, May 22, 2026. Accessed: Oct. 10, 2026. [Online]. Available: https://thenextweb.com/news/critterz-misses-cannes-openai-sora-shutdown
+17. ByteDance Seed, "Seedance 2.5," ByteDance Seed. Accessed: Oct. 10, 2026. [Online]. Available: https://seed.bytedance.com/en/seedance2_5
+18. Google, "Generate videos with Veo 3.1 in Gemini API," Google AI for Developers. Accessed: Oct. 10, 2026. [Online]. Available: https://ai.google.dev/gemini-api/docs/veo
+19. Google, "Generate and edit videos with Gemini Omni Flash," Google AI for Developers. Accessed: Oct. 10, 2026. [Online]. Available: https://ai.google.dev/gemini-api/docs/omni
+20. Kuaishou, "Kling VIDEO 3.0 Omni model user guide," Kling AI. Accessed: Oct. 10, 2026. [Online]. Available: https://kling.ai/quickstart/klingai-video-3-omni-model-user-guide
+21. MiniMax, "MiniMax-H3," Hugging Face model card. Accessed: Oct. 10, 2026. [Online]. Available: https://huggingface.co/MiniMaxAI/MiniMax-H3
+22. Lightricks, "LTX-2.5," Hugging Face model card. Accessed: Oct. 10, 2026. [Online]. Available: https://huggingface.co/Lightricks/LTX-2.5
+23. Team Wan, "Wan2.2," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/Wan-Video/Wan2.2
+24. Wan-Video, "Wan-Animate-2," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/Wan-Video/Wan-Animate-2
+25. Wan-AI, "Wan-AI," Hugging Face organization page. Accessed: Oct. 10, 2026. [Online]. Available: https://huggingface.co/Wan-AI
+26. Sand AI, "MAGI-2-preview," Hugging Face model card. Accessed: Oct. 10, 2026. [Online]. Available: https://huggingface.co/sand-ai/MAGI-2-preview
+27. Google, "Gemini Developer API pricing," Google AI for Developers. Accessed: Oct. 10, 2026. [Online]. Available: https://ai.google.dev/gemini-api/docs/pricing
+28. Runway, "API reference," Runway API Documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://docs.dev.runwayml.com/api/
+29. Runway, "API pricing & costs," Runway API Documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://docs.dev.runwayml.com/guides/pricing/
+30. Lightricks, "LTX-2," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/Lightricks/LTX-2
+31. Google DeepMind, "Gemini Omni Flash model card," Google DeepMind, Aug. 27, 2026. Accessed: Oct. 10, 2026. [Online]. Available: https://deepmind.google/models/model-cards/gemini-omni-flash/
+32. Kuaishou, "Kling Element Library user guide," Kling AI. Accessed: Oct. 10, 2026. [Online]. Available: https://kling.ai/quickstart/klingai-element-library-3-user-guide
+33. T. Hu et al., "HunyuanCustom: A Multimodal-Driven Architecture for Customized Video Generation," Tencent-Hunyuan/HunyuanCustom, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/Tencent-Hunyuan/HunyuanCustom
+34. Ostris, "AI Toolkit," ostris/ai-toolkit, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/ostris/ai-toolkit
+35. kohya-ss, "Musubi Tuner," kohya-ss/musubi-tuner, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/kohya-ss/musubi-tuner
+36. fal, "Wan-2.2 LoRA Trainer (Training) API on fal," fal.ai. Accessed: Oct. 10, 2026. [Online]. Available: https://fal.ai/models/fal-ai/wan-22-trainer/t2v-a14b
+37. fal, "Train FLUX LoRA Fast," fal.ai. Accessed: Oct. 10, 2026. [Online]. Available: https://fal.ai/models/fal-ai/flux-lora-fast-training
+38. L. Liu et al., "Phantom: Subject-Consistent Video Generation via Cross-Modal Alignment," Phantom-video/Phantom, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/Phantom-video/Phantom
+39. Y. Deng et al., "MAGREF: Masked Guidance for Any-Reference Video Generation with Subject Disentanglement," MAGREF-Video/MAGREF, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/MAGREF-Video/MAGREF
+40. B. Xue et al., "Stand-In: A Lightweight and Plug-and-Play Identity Control for Video Generation," WeChatCV/Stand-In, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/WeChatCV/Stand-In
+41. S. Yang et al., "InfiniteTalk: Audio-driven Video Generation for Sparse-Frame Video Dubbing," MeiGen-AI/InfiniteTalk, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/MeiGen-AI/InfiniteTalk
+42. Tencent, "Tencent Hunyuan Community License Agreement," HunyuanCustom, GitHub repository, May 9, 2025. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/Tencent-Hunyuan/HunyuanCustom/blob/main/LICENSE
+43. X. Meng, Z. Zhang, Z. Zhang, J. Liao, L. Qin, and W. Wang, "Identity-GRPO: Optimizing Multi-Human Identity-preserving Video Generation via Reinforcement Learning," arXiv:2510.14256, Oct. 2025. Accessed: Oct. 10, 2026. [Online]. Available: https://arxiv.org/abs/2510.14256
+44. H. Xu et al., "WithAnyone: Towards Controllable and ID Consistent Image Generation," arXiv:2510.14975, Oct. 2025. Accessed: Oct. 10, 2026. [Online]. Available: https://arxiv.org/abs/2510.14975
+45. Y. Wang et al., "FaithfulFaces: Pose-Faithful Facial Identity Preservation for Text-to-Video Generation," arXiv:2605.04702, May 2026. Accessed: Oct. 10, 2026. [Online]. Available: https://arxiv.org/abs/2605.04702
+46. K. Davaajav and H. Chinoy, "The ultimate prompting guide for Veo 3.1," Google Cloud Blog, Oct. 16, 2025. Accessed: Oct. 10, 2026. [Online]. Available: https://cloud.google.com/blog/products/ai-machine-learning/ultimate-prompting-guide-for-veo-3-1
+47. A. Brundyn, M. Singh, and E. Okcular, "Gpt-image-1.5 Prompting Guide," OpenAI Cookbook, Dec. 16, 2025. Accessed: Oct. 10, 2026. [Online]. Available: https://developers.openai.com/cookbook/examples/multimodal/image-gen-1.5-prompting_guide
+48. Wan2GP Authors, "VACE ControlNet Guide," Wan2GP, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/deepbeepmeep/Wan2GP/blob/main/docs/VACE.md
+49. Lightricks, "IC-LoRA Adapters," LTX documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://docs.ltx.io/open-source-model/integration-tools/ic-lo-ra-adapters
+50. Luma AI, "Modify Video," Luma AI API documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://docs.lumalabs.ai/docs/modify-video
+51. D. Cohen-Bar et al., "RealMaster: Lifting Rendered Scenes into Photorealistic Video," arXiv:2603.23462, Mar. 2026. Accessed: Oct. 10, 2026. [Online]. Available: https://arxiv.org/abs/2603.23462
+52. M. Bendel, S. W. Bailey, M. Vaidya, S. Badam, and X. He, "Goodbye Drift: Anchored Tree Sampling for Long-Horizon Video-to-Video Generation," arXiv:2605.20476, May 2026. Accessed: Oct. 10, 2026. [Online]. Available: https://arxiv.org/abs/2605.20476
+53. J. Thacker, "You can now sell MetaHumans, or use them in Unity or Godot," CG Channel, Jun. 4, 2025. Accessed: Oct. 10, 2026. [Online]. Available: https://www.cgchannel.com/2025/06/you-can-now-sell-metahumans-or-use-them-in-unity-or-godot/
+54. NVIDIA, "NVIDIA Audio2Face-3D," NVIDIA/Audio2Face-3D, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/NVIDIA/Audio2Face-3D
+55. C. Li et al., "LatentSync: Taming Audio-Conditioned Latent Diffusion Models for Lip Sync with SyncNet Supervision," bytedance/LatentSync, GitHub repository, LatentSync 1.6. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/bytedance/LatentSync
+56. "Why your AI-staged listing photos don't match and how multi-angle AI staging fixes it," Inman, Apr. 27, 2026. Accessed: Oct. 10, 2026. [Online]. Available: https://www.inman.com/2026/04/27/why-your-ai-staged-listing-photos-dont-match-and-how-multi-angle-ai-staging-fixes-it/
+57. H. Du et al., "VideoGPA: Distilling Geometry Priors for 3D-Consistent Video Generation," arXiv:2601.23286, Jan. 2026. Accessed: Oct. 10, 2026. [Online]. Available: https://arxiv.org/abs/2601.23286
+58. World Labs, "Marble: A Multimodal World Model," World Labs blog, Nov. 12, 2025. Accessed: Oct. 10, 2026. [Online]. Available: https://www.worldlabs.ai/blog/marble-world-model
+59. World Labs, "Mesh export," Marble documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://docs.worldlabs.ai/marble/export/mesh
+60. Tencent Hunyuan, "HY-World 2.0: A Multi-Modal World Model for Reconstructing, Generating, and Simulating 3D Worlds," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/Tencent-Hunyuan/HY-World-2.0
+61. Tencent, "Tencent HY-World 2.0 Community License Agreement," HY-World-2.0, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/Tencent-Hunyuan/HY-World-2.0/blob/main/License.txt
+62. Infinigen Authors, "Infinigen: Infinite Photorealistic Worlds using Procedural Generation," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/princeton-vl/infinigen
+63. KIRI Engine, "3DGS Render for Blender," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/Kiri-Innovation/3dgs-render-blender-addon
+64. RunComfy, "Blender to ComfyUI AI Renderer 2.0," RunComfy ComfyUI workflows. Accessed: Oct. 10, 2026. [Online]. Available: https://www.runcomfy.com/comfyui-workflows/blender-to-comfyui-ai-renderer-2-0-workflow-cinematic-video-output
+65. X. Ren et al., "GEN3C: 3D-Informed World-Consistent Video Generation with Precise Camera Control," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/nv-tlabs/GEN3C
+66. C. Cao et al., "Uni3C: Unifying Precisely 3D-Enhanced Camera and Human Motion Controls for Video Generation," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/alibaba-damo-academy/Uni3C
+67. J. Bai et al., "ReCamMaster: Camera-Controlled Generative Rendering from A Single Video," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/KlingAIResearch/ReCamMaster
+68. ntsc-rs Authors, "ntsc-rs," ntsc.rs. Accessed: Oct. 10, 2026. [Online]. Available: https://ntsc.rs/
+69. PyTorch Contributors, "Reproducibility," PyTorch documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://docs.pytorch.org/docs/stable/notes/randomness.html
+70. ComfyUI, "LTX-2.5: ComfyUI Workflow Examples," ComfyUI Documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://docs.comfy.org/tutorials/video/ltx/ltx-2-5
+71. Emily2040, "Seedance 2.0 API and Platform Status," seedance-2.0, GitHub repository, main. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/Emily2040/seedance-2.0/blob/main/references/api-status.md
+72. "Nikola Todorovic on Autodesk Flow Studio's new 3D Editor + Canvas," fxguide, Aug. 24, 2026. Accessed: Oct. 10, 2026. [Online]. Available: https://www.fxguide.com/fxpodcasts/nikola-todorovic-on-autodesk-flow-studios-new-3d-editor-canvas/
+73. ElevenLabs, "Create speech," ElevenLabs Documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://elevenlabs.io/docs/api-reference/text-to-speech/convert
+74. Resemble AI, "Chatterbox," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/resemble-ai/chatterbox
+75. Google, "Text-to-speech generation (TTS)," Gemini API documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://ai.google.dev/gemini-api/docs/speech-generation
+76. OpenAI, "Text to speech," OpenAI API documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://developers.openai.com/api/docs/guides/text-to-speech
+77. Tencent Hunyuan, "HunyuanVideo-Foley," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/Tencent-Hunyuan/HunyuanVideo-Foley
+78. H. K. Cheng, M. Ishii, A. Hayakawa, T. Shibuya, A. Schwing, and Y. Mitsufuji, "MMAudio," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/hkchengrex/MMAudio
+79. ElevenLabs, "Eleven Music," ElevenLabs Documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://elevenlabs.io/docs/overview/capabilities/music
+80. Google, "Generate music with Lyria 3.5," Gemini API documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://ai.google.dev/gemini-api/docs/music-generation
+81. ACE Studio and StepFun, "ACE-Step," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/ace-step/ACE-Step
+82. M. Bain, "WhisperX," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/m-bain/whisperX
+83. Remotion, "@remotion/openai-whisper," Remotion Documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://www.remotion.dev/docs/openai-whisper/
+84. FFmpeg Developers, "FFmpeg codecs documentation," FFmpeg. Accessed: Oct. 10, 2026. [Online]. Available: https://ffmpeg.org/ffmpeg-codecs.html
+85. FFmpeg Developers, "FFmpeg formats documentation," FFmpeg. Accessed: Oct. 10, 2026. [Online]. Available: https://ffmpeg.org/ffmpeg-formats.html
+86. Remotion, "Flickering," Remotion Documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://www.remotion.dev/docs/flickering
+87. idreesaziz, "Swimlane: A Declarative Video Composition Engine Powered by Python and Blender VSE," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/idreesaziz/swimlane
+88. Academy Software Foundation, "OpenTimelineIO," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/AcademySoftwareFoundation/OpenTimelineIO
+89. Descript, "Descript API," Descript API documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://docs.descriptapi.com/openapi-experimental.html
+90. Eddie AI, "Eddie for Agents: the programmatic video editor," Eddie AI. Accessed: Oct. 10, 2026. [Online]. Available: https://www.heyeddie.ai/devs
+91. Atx-Guy, "CapCut MCP Server," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/Atx-Guy/capcut-mcp-server
+92. Google, "5 tips for using Flow, Google's AI filmmaking tool," Google Blog. Accessed: Oct. 10, 2026. [Online]. Available: https://blog.google/innovation-and-ai/products/flow-video-tips/
+93. Hugging Face, "Create reproducible pipelines," Diffusers Documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://huggingface.co/docs/diffusers/main/en/using-diffusers/reproducibility
+94. M. Seymour, "The power of on-premises open-weight models for generative media," fxguide, Aug. 28, 2026. Accessed: Oct. 10, 2026. [Online]. Available: https://www.fxguide.com/quicktakes/the-power-of-on-premises-open-weight-models-for-generative-media/
+95. uby174, "ftl-studio," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/uby174/ftl-studio
+96. H. Shi et al., "MSVBench: Towards Human-Level Evaluation of Multi-Shot Video Generation," arXiv:2602.23969, Feb. 2026. Accessed: Oct. 10, 2026. [Online]. Available: https://arxiv.org/abs/2602.23969
+97. Y. Lai, T. Shao, W. Dou, S. Zhu, and J. Wang, "GroundShot: Visually Consistent Multi-Shot Long Video Generation via Entity-Grounded Shot Scheduling," arXiv:2606.20799, Jun. 2026. Accessed: Oct. 10, 2026. [Online]. Available: https://arxiv.org/abs/2606.20799
+98. CodingWithShahzaib, "ComfyUI-MultiShot-Plan (formerly ComfyUI-Krea-MultiShot-Stills)," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/CodingWithShahzaib/ComfyUI-MultiShot-Plan
+99. fal, "Kling Video V3 Pro API," fal Documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://fal.ai/docs/model-api-reference/video-generation-api/kling-video-v3-pro
+100. Comfy-Org, "MiniMax-H3," Hugging Face model repository. Accessed: Oct. 10, 2026. [Online]. Available: https://huggingface.co/Comfy-Org/MiniMax-H3
+101. Y. Meng et al., "HoloCine: Holistic Generation of Cinematic Multi-Shot Long Video Narratives," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/yihao-meng/HoloCine
+102. Sand AI, "MAGI-1: Autoregressive Video Generation at Scale," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/SandAI-org/MAGI-1
+103. harry0703, "MoneyPrinterTurbo," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/harry0703/MoneyPrinterTurbo
+104. itsjwill, "VANTA: Open Source AI Video Engine," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/itsjwill/vanta
+105. floomhq, "OpenCut: AI Video Production Engine," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/floomhq/opencut
+106. aqm857886159, "Nomi," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/aqm857886159/Nomi
+107. Z. Xu et al., "FilmAgent: A Multi-Agent Framework for End-to-End Film Automation in Virtual 3D Spaces," arXiv:2501.12909, Jan. 2025. Accessed: Oct. 10, 2026. [Online]. Available: https://arxiv.org/abs/2501.12909
+108. L. He et al., "Cutscene Agent: An LLM Agent Framework for Automated 3D Cutscene Generation," arXiv:2604.25318, Apr. 2026. Accessed: Oct. 10, 2026. [Online]. Available: https://arxiv.org/abs/2604.25318
+109. P. Zhang, Z. Jia, K. Liu, S. Weng, S. Li, and B. Shi, "STAGE: Storyboard-Anchored Generation for Cinematic Multi-shot Narrative," arXiv:2512.12372, Dec. 2025. Accessed: Oct. 10, 2026. [Online]. Available: https://arxiv.org/abs/2512.12372
+110. Captain Cinema Team, "Captain Cinema: Towards Short Movie Generation," project page. Accessed: Oct. 10, 2026. [Online]. Available: https://thecinema.ai/
+111. W. Wu, Z. Zhu, and M. Z. Shou, "MovieAgent: Automated Movie Generation via Multi-Agent CoT Planning," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/showlab/MovieAgent
+112. Runway, "AIF 2026," Runway AI Festival. Accessed: Oct. 10, 2026. [Online]. Available: https://aif.runwayml.com/
+113. "China's AI Drama Boom Is Already Producing the Costs of Industrial-Scale Entertainment," Hello China Tech. Accessed: Oct. 10, 2026. [Online]. Available: https://hellochinatech.com/p/china-470-ai-dramas-a-day
+114. "China's AI Short Drama Boom Hit Industrial Scale: 470 Titles a Day, Faces Stolen, Jobs Gone," Tech Times, May 22, 2026. Accessed: Oct. 10, 2026. [Online]. Available: https://www.techtimes.com/articles/317008/20260522/chinas-ai-short-drama-boom-hit-industrial-scale-470-titles-day-faces-stolen-jobs-gone.htm
+115. invideo, "AI Video Generations Needed for a 3-Minute Episode," invideo FAQ. Accessed: Oct. 10, 2026. [Online]. Available: https://invideo.io/faq/how-many-ai-video-generations-does-it-take-to-produce-a/
+116. invideo, "AI Video Generations Needed for a Short Film," invideo FAQ. Accessed: Oct. 10, 2026. [Online]. Available: https://invideo.io/faq/how-many-ai-video-generations-do-you-need-to-budget-for/
+117. J. Yao, "How to Use Blender for AI Filmmaking in 2026: The Complete Guide," Flick blog, Jun. 2026. Accessed: Oct. 10, 2026. [Online]. Available: https://flick.art/blog/blender-ai-filmmaking
+118. ElevenLabs, "ElevenLabs Pricing for Creators & Businesses of All Sizes," ElevenLabs. Accessed: Oct. 10, 2026. [Online]. Available: https://elevenlabs.io/pricing
+119. Runpod, "GPU cloud pricing," Runpod. Accessed: Oct. 10, 2026. [Online]. Available: https://www.runpod.io/gpu-cloud/pricing
+120. "Kling AI pricing (2026): A complete guide to all plans, credits, and real costs," eesel AI blog. Accessed: Oct. 10, 2026. [Online]. Available: https://www.eesel.ai/blog/kling-ai-pricing
+121. "Why OpenAI really shut down Sora," TechCrunch, Mar. 29, 2026. Accessed: Oct. 10, 2026. [Online]. Available: https://techcrunch.com/2026/03/29/why-openai-really-shut-down-sora/
+122. U.S. Copyright Office, "Copyright and Artificial Intelligence, Part 2: Copyrightability," Jan. 29, 2025. Accessed: Oct. 10, 2026. [Online]. Available: https://www.copyright.gov/ai/Copyright-and-Artificial-Intelligence-Part-2-Copyrightability-Report.pdf
+123. YouTube, "Disclosing use of GenAI content," YouTube Help. Accessed: Oct. 10, 2026. [Online]. Available: https://support.google.com/youtube/answer/14328491

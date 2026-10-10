@@ -1,6 +1,7 @@
 ---
 description: Git LFS is not tied to GitHub. How its endpoint is discovered, three ways to put a cloud bucket behind it, and when to skip LFS entirely.
 published: 2026-09-17
+updated: 2026-10-10
 ---
 # Keeping large files out of git history
 
@@ -77,9 +78,9 @@ This is the part that answers the question, and it is not widely known.
 Git LFS has no hardcoded notion of GitHub. By default the client takes the git remote's URL and
 appends `.git/info/lfs` to it, so a GitHub remote resolves to a GitHub LFS endpoint by construction
 rather than by decree. For SSH remotes it runs a helper called `git-lfs-authenticate`, which lets
-the server hand back a different endpoint entirely.
+the server hand back a different endpoint entirely [1].
 
-Every layer of that is overridable:
+Every layer of that is overridable [1]:
 
 | Setting | Effect |
 |---|---|
@@ -88,7 +89,7 @@ Every layer of that is overridable:
 | `.lfsconfig` | A file committed at the repository root, so every clone inherits the settings above |
 | `lfs.standalonetransferagent` | Bypasses the server protocol completely; see section 4 |
 
-`git lfs env` prints the endpoint the client has actually resolved, which is the first thing to run
+`git lfs env` prints the endpoint the client has actually resolved [1], which is the first thing to run
 when objects are not going where you expected.
 
 ### 2.3 Transfer adapters
@@ -103,10 +104,10 @@ Section 4 is about replacing it.
 
 ## 3. Mechanism 1: your own LFS server, with a bucket behind it
 
-[Giftless](https://giftless.datopian.com), from Datopian, is an open-source LFS server built for
+[Giftless](https://giftless.datopian.com) [2], from Datopian, is an open-source LFS server built for
 exactly this. It supports four storage backends: Google Cloud Storage, Amazon S3, Azure Blob
-Storage, and local disk. The Google Cloud Storage backend needs a bucket and a service-account key,
-supplied either as a path to the JSON key file or base64-encoded in the configuration.
+Storage, and local disk [3]. The Google Cloud Storage backend needs a bucket and a service-account key,
+supplied either as a path to the JSON key file or base64-encoded in the configuration [3].
 
 One detail matters more than the rest, and it is easy to miss. Bytes can move two ways:
 
@@ -115,7 +116,7 @@ One detail matters more than the rest, and it is easy to miss. Bytes can move tw
 - **External**, where the server only hands the client a signed URL and the client talks to the
   bucket directly. The server stays small and cheap.
 
-The published Google Cloud Storage example uses the streaming mode. The external interface exists in
+The published Google Cloud Storage example uses the streaming mode [3]. The external interface exists in
 the storage layer, but confirm it for that backend specifically before sizing anything around it.
 
 Point a repository at the result with `lfs.url`, or commit a `.lfsconfig` so everyone inherits it.
@@ -135,12 +136,12 @@ as a backup job that happens to use git plumbing, not as a feature.
 This is the lightest mechanism, and it removes the server from the picture entirely.
 
 A **custom transfer agent** is an ordinary executable. Git LFS launches it and talks to it over
-standard input and output in newline-delimited JSON. The agent does the actual moving, so it can
+standard input and output in newline-delimited JSON [4]. The agent does the actual moving, so it can
 talk to a bucket, an NFS share, or anything else, using whatever library or command-line tool it
 likes.
 
 Adding `lfs.standalonetransferagent` goes one step further: the client stops contacting any LFS API
-server at all. There is nothing to deploy, secure, monitor or pay for. The agent works out by itself
+server at all [4]. There is nothing to deploy, secure, monitor or pay for. The agent works out by itself
 where each object lives.
 
 ### 4.1 One word, two meanings
@@ -155,7 +156,7 @@ want: no server, and no temporary duplicate of a large file.
 
 ### 4.2 The protocol
 
-The exchange has three stages. Git LFS sends the first message of each pair; the agent replies.
+The exchange has three stages [4]. Git LFS sends the first message of each pair; the agent replies.
 
 **Initialisation**, once per process:
 
@@ -304,13 +305,10 @@ no scheme at all. That is the cheapest answer whenever it is available.
 
 ## 8. Sources
 
-- [Git LFS server discovery](https://github.com/git-lfs/git-lfs/blob/main/docs/api/server-discovery.md),
-  for endpoint resolution, `lfs.url`, `remote.<name>.lfsurl`, `.lfsconfig` and `git lfs env`.
-- [Git LFS custom transfer agents](https://github.com/git-lfs/git-lfs/blob/main/docs/custom-transfers.md),
-  for the JSON event protocol and every configuration key in section 4.3.
-- [Giftless documentation](https://giftless.datopian.com/en/latest/) and its
-  [storage backends](https://giftless.datopian.com/en/latest/storage-backends.html), for the four
-  backends, the Google Cloud Storage configuration, and the streaming versus external distinction.
+Nothing described here has been built and run; it is a map of the options, not a report on a
+deployment.
 
-Accessed September 2026. Nothing described here has been built and run; it is a map of the options,
-not a report on a deployment.
+1. Git LFS Authors, "Server Discovery," git-lfs, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/git-lfs/git-lfs/blob/main/docs/api/server-discovery.md
+2. Datopian, "giftless: a pluggable Git LFS server written in Python," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/datopian/giftless
+3. Datopian, "Storage Backends," Giftless Documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://giftless.readthedocs.io/en/latest/storage-backends.html
+4. Git LFS Authors, "Adding Custom Transfer Agents to LFS," git-lfs, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/git-lfs/git-lfs/blob/main/docs/custom-transfers.md

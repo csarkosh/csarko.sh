@@ -1,6 +1,7 @@
 ---
 description: Unbounded mountains, a warped coastline, a highway and cliff bands built as pure C² functions with exact derivatives, so every peer builds one world.
 published: 2026-07-29
+updated: 2026-10-10
 ---
 # An endless world as a pure function
 
@@ -54,11 +55,11 @@ the property that makes seams impossible.
 
 The research came down to how octaves are combined more than which noise feeds them. Gradient
 (Perlin) noise replaces value noise. Ridged multifractal, `Σ wᵢ · (1 − |noise|)²`, gives sharp
-connected ridgelines. Hybrid multifractal keeps low ground smooth while high ground grows rough,
-a montane elevation gradient for free. Two techniques break the "it looks like noise" problem:
+connected ridgelines [1]. Hybrid multifractal keeps low ground smooth while high ground grows rough,
+a montane elevation gradient for free [1]. Two techniques break the "it looks like noise" problem:
 **domain warping** (evaluate at `p + k·g(p)` where `g` is itself noise, folding blobs into
-directional forms) and **derivative-aware attenuation** (damp each octave by `1 / (1 + k·|∇|²)`,
-so detail stops accumulating on steep ground, faces smooth and ridges sharpen).
+directional forms) [2] and **derivative-aware attenuation** (damp each octave by `1 / (1 + k·|∇|²)`,
+so detail stops accumulating on steep ground, faces smooth and ridges sharpen) [3].
 
 The central tension is that **erosion is global and this generator is local.** Water flows for
 kilometres; a chunk must be generatable alone, in any order.
@@ -366,7 +367,7 @@ refusal. The netcode on top is in [browser co-op netcode](/research/browser-coop
 The forest's fog sat at 70 m, right for dense trees and useless for mountains, which only exist
 as mountains at distance. Brute force is out: 2 km of view at 32 m chunks is over 16,000 chunks.
 
-Because height is a pure function, distant terrain needs no chunks. A **geometry clipmap**
+Because height is a pure function, distant terrain needs no chunks. A **geometry clipmap** [4]
 ([`clipmap.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/clipmap.ts))
 samples the field directly: 7 camera-centred rings of 128 cells per side, at 1, 2, 4, 8, 16, 32
 and 64 m spacing, about 8.2 km across, 7 draw calls and about 90,000 quads at any view distance.
@@ -389,9 +390,7 @@ and 64 m spacing, about 8.2 km across, 7 draw calls and about 90,000 quads at an
 
 ## Sources
 
-| Source | Covers |
-| --- | --- |
-| [Value noise derivatives](https://iquilezles.org/articles/morenoise/) (Quílez) | Analytic noise derivatives; damping fBm octaves by slope for an eroded look |
-| [Domain warping](https://iquilezles.org/articles/warp/) (Quílez) | Evaluating `f(g(p))` with noise-driven `g` |
-| [Geometry Clipmaps: Terrain Rendering Using Nested Regular Grids](https://hhoppe.com/proj/geomclipmap/) (Losasso and Hoppe, SIGGRAPH 2004) | Nested camera-centred grids |
-| *Texturing and Modeling: A Procedural Approach* (Ebert, Musgrave et al.) | Ridged and hybrid multifractals |
+1. D. S. Ebert, F. K. Musgrave, D. Peachey, K. Perlin, and S. Worley, *Texturing and Modeling: A Procedural Approach*, 3rd ed. San Francisco, CA, USA: Morgan Kaufmann, 2003. Accessed: Oct. 10, 2026. [Online]. Available: https://shop.elsevier.com/books/texturing-and-modeling/ebert/978-1-55860-848-1
+2. I. Quilez, "Domain warping," iquilezles.org. Accessed: Oct. 10, 2026. [Online]. Available: https://iquilezles.org/articles/warp/
+3. I. Quilez, "Value noise derivatives," iquilezles.org. Accessed: Oct. 10, 2026. [Online]. Available: https://iquilezles.org/articles/morenoise/
+4. F. Losasso and H. Hoppe, "Geometry clipmaps: Terrain rendering using nested regular grids," *ACM Trans. Graph.*, vol. 23, no. 3, pp. 769-776, 2004. Accessed: Oct. 10, 2026. [Online]. Available: https://hhoppe.com/proj/geomclipmap/
