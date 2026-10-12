@@ -1,6 +1,7 @@
 ---
 description: Hosting a WebRTC signaling server on Google Cloud Run for a browser co-op game, the platform behaviours that broke it, and what a running match survives.
 published: 2026-07-29
+updated: 2026-10-10
 ---
 # Hosting WebRTC signaling on Cloud Run
 
@@ -44,7 +45,7 @@ for three reasons:
   a single instance, and that one process has to protect itself: every lobby lives in it.
 - **The socket is long-lived.** Each lobby member holds one signaling socket for the whole
   visit, not just for the handshake. Lobby traffic (player names, the roster, the page the
-  host is on) rides the same relay, and a host needs its socket to hear about late joiners.
+  host is on) rides the same relay [1], and a host needs its socket to hear about late joiners.
 - **Hosting makes socket loss routine.** On `localhost` a signaling socket never drops. On
   Cloud Run it drops at the 60-minute request cap, on every scale-down and on every deploy
   (once old revisions are deleted, section 5).
@@ -70,7 +71,7 @@ opened its socket on the page's own host. It was rejected on cost and maturity:
   is comparable.
 - **Cloud Run domain mapping** would give one origin for free, but Google documents it as a
   preview feature that is not production-ready because of latency issues, and it is only
-  available in some regions.
+  available in some regions [2].
 
 The cost picture as designed in July 2026:
 
@@ -90,7 +91,7 @@ tidiness rather than the bill.
 Two origins cost one client change: the signaling URL has to be configurable. It is a
 build-time variable with a fallback to the page's own origin for development, where Vite's
 dev server proxies `/ws`. An empty value counts as unset, so a variable that failed to
-substitute falls back rather than calling `new WebSocket("")`. Section 6 shows how that
+substitute falls back rather than calling `new WebSocket("")` [3]. Section 6 shows how that
 fallback still shipped a broken site.
 
 ## 3. Cloud Run behaviours that broke it
@@ -99,7 +100,7 @@ The server as written for `localhost` could not ship. `new WebSocketServer({ por
 creates its own HTTP server that answers every ordinary request with 400, so there was
 nothing for a health check to read. It became an explicit Node HTTP server with a health
 route, a `ws` server with no listener of its own, and an `upgrade` handler that accepts
-`/ws` only. Binding one path for development and production means a misrouted upgrade is
+`/ws` only [4]. Binding one path for development and production means a misrouted upgrade is
 refused instead of silently accepted.
 
 ### The health path Google answers for you
@@ -107,7 +108,7 @@ refused instead of silently accepted.
 The health route was first `/healthz`, a common convention. On the default `run.app`
 domain, Google's frontend intercepts that exact literal path and answers it itself; the
 request never reaches the container. Cloud Run's documentation lists "some paths ending
-with `z`" as reserved and recommends avoiding all of them.
+with `z`" as reserved and recommends avoiding all of them [5].
 
 What made it expensive is that nothing looked wrong. The Cloud Run **startup probe still
 passed**, because it reaches the container directly and never crosses the public edge. The
@@ -126,7 +127,7 @@ the room was stranded for the life of the process and everyone holding the invit
 told the host was away, forever.
 
 The server now pings every socket every 30 seconds and terminates any socket that has not
-answered the previous ping by the next tick, which puts detection inside a minute. Browsers
+answered the previous ping by the next tick, which puts detection inside a minute [4]. Browsers
 answer pings at the protocol level, so this needed no client code. Terminating raises the
 same `close` event as a real disconnect, which routes the dead socket into the normal
 departure path.
@@ -136,19 +137,19 @@ departure path.
 `ws` accepts very large frames by default. That never mattered on `localhost`, but a public
 endpoint served by one small instance cannot afford it, so the server caps frame size far
 above the largest legitimate message (an SDP offer of a few kilobytes), and `ws` closes just
-the offending socket.
+the offending socket [4].
 
 The rest of the defences follow well-known patterns, applied at the cheapest point:
 
 - **Refuse before upgrading.** The `upgrade` handler checks an origin allowlist and
   per-address connection limits, and answers a refusal with a real HTTP status before `ws`
-  ever creates a socket. The allowlist can be overridden from the environment, so a new
+  ever creates a socket [4]. The allowlist can be overridden from the environment, so a new
   domain is a configuration change, not a code change.
 - **A token bucket per socket, checked before parsing.** A flood is refused before it buys
-  the JSON parse it was trying to spend. The socket is closed rather than answered with an
+  the JSON parse it was trying to spend [4]. The socket is closed rather than answered with an
   error per frame, which would reply to a flood with a flood.
 - **An outbound backlog ceiling.** `ws` queues whatever a socket cannot flush, in this
-  process's memory. A peer that is not reading gets closed instead of buffered for. Closing
+  process's memory. A peer that is not reading gets closed instead of buffered for [4]. Closing
   beats silently dropping: a lost offer leaves a peer waiting on a handshake that can never
   finish, while a closed socket reconnects and retries. This one needs no attacker; a phone
   on failing mobile data is a slow consumer.
@@ -170,12 +171,12 @@ worst case of about 2 seconds, the better trade for the one person waiting.
 
 Cloud Run sends `SIGTERM` on scale-down and on deploy. The server terminates every socket
 rather than closing it politely, because a half-open socket would otherwise hold the HTTP
-listener open until its own timeout. Peers therefore see an abnormal close (code 1006),
+listener open until its own timeout [6]. Peers therefore see an abnormal close (code 1006),
 and section 4 covers what that costs a running match.
 
 ## 4. What a dropped signaling socket costs a match
 
-Cloud Run caps any request, a WebSocket included, at 60 minutes. That is a limit on request
+Cloud Run caps any request, a WebSocket included, at 60 minutes [7]. That is a limit on request
 duration, not an idle timeout, so keeping a minimum of one instance warm does not avoid it;
 only an always-on VM would, at real cost and real operations work. The host's socket *will*
 close during a long session, and so will every follower's.
@@ -191,22 +192,22 @@ The fix protects the host, in four parts.
    explicit `leave` message. A deliberate leave (including one sent on `pagehide` when a tab
    closes) ends a host's lobby at once. A host whose socket dies gets a **60-second grace
    window**: the room is kept, nothing is broadcast, and a host that reconnects with the
-   same peer id reclaims the role. Only when the window lapses does `host_gone` go out. The
+   same peer id reclaims the role. Only when the window lapses does `host_gone` go out [8]. The
    peer id is minted once per page load, so a reconnect can reclaim but a reload cannot.
 2. **Something has to notice a lapse.** The room registry holds no timer, which keeps it
    deterministic under an injected clock in tests. It was first designed to sweep lapsed
    rooms whenever it was accessed, but a room whose players are mid-game over peer-to-peer
    never touches the registry again, so its lapse would never be noticed. The server process
-   drives the sweep on a 10-second interval instead.
+   drives the sweep on a 10-second interval instead [4].
 3. **The client reconnects on its own.** The signaling client retries with jittered
    exponential backoff (0.5, 1, 2, 4, then 8 seconds, repeating) and resends the same verb,
-   room and peer id each time. Handlers are reinstalled on every new socket. A host needs
+   room and peer id each time [9]. Handlers are reinstalled on every new socket. A host needs
    nothing more: it only ever answers offers that arrive, so reconnecting restores the path a
    later joiner's offer takes.
 4. **A stale close must not evict its replacement.** A reconnected host has a new socket
    under the same peer id, and the old socket's close can arrive much later (a half-open
    socket is only noticed when the heartbeat gives up). Departures are keyed on socket
-   identity, not peer id, so that late close is ignored instead of stranding a healthy room.
+   identity, not peer id, so that late close is ignored instead of stranding a healthy room [8].
 
 Signaling errors that only concern joining (the room is full, the host is away) are ignored
 once a player's data channel is up; [Browser co-op netcode](/research/browser-coop-netcode)
@@ -216,8 +217,8 @@ covers that policy.
 
 The grace window is the host's alone. A follower whose signaling socket closes without a
 `leave` is treated exactly as if it had left: the server sends `peer-left` to the rest of
-the room at once, the host's lobby roster drops that player, and the host removes from its
-game every peer no longer on the roster, closing their data channels.
+the room at once, the host's lobby roster drops that player [1], and the host removes from its
+game every peer no longer on the roster, closing their data channels [10].
 
 This reverses an earlier decision. An early version had the host remove a player whenever
 the server reported them gone, which would have torn down every healthy data channel on each
@@ -245,7 +246,7 @@ takes that path, or sometimes closes a follower's socket before the host's, was 
 (*unverified*).
 
 A removed follower's client makes one attempt to reconnect to the host, then gives up rather
-than hide a dead connection behind a retry loop. The attempt starts as soon as the host
+than hide a dead connection behind a retry loop [11]. The attempt starts as soon as the host
 closes the channel, but its offer travels over signaling, and the follower's own socket is
 still waiting out its reconnect delay of about two seconds. Reading the shipped code, that
 attempt then fails at the 15-second handshake timeout and the player is sent back to the
@@ -267,14 +268,14 @@ offers, so a later joiner's offer was relayed to a peer that discarded it, and t
 failed with a misleading ICE error.
 
 The fix was to bias the delay by role. Clients add 1.5 seconds to every reconnect, well
-beyond the jitter spread, and the host adds nothing. A peer that does not yet know its role
+beyond the jitter spread, and the host adds nothing [9]. A peer that does not yet know its role
 takes the client delay, because guessing "host" is the guess that loses rooms. It is a
 strong bias rather than a guarantee: if the server stays unreachable past the first attempt,
 the host's second try and a client's first can overlap.
 
 Lobbies removed the race entirely. A room is now opened only by a `create` message, and
 only the player who created the lobby ever sends it; a `join` to a room that does not exist
-is refused and the socket closed, and that client simply retries on its next backoff step.
+is refused and the socket closed, and that client simply retries on its next backoff step [8].
 Nobody becomes host by arriving first, so after a full outage the host's `create`
 re-registers the lobby and followers find it on their next attempt. The role offset stays,
 and now only saves those wasted round trips.
@@ -300,7 +301,7 @@ Two remedies were considered and rejected:
 - **Shared room state.** It sounds like the real fix and is not one on its own. Even if the
   new revision could see that the room exists with host A, relaying a joiner's offer to A
   means reaching A's socket in another process. That needs shared *messaging* (Google's own
-  WebSocket guide points at Redis Pub/Sub or Firestore listeners for multi-instance
+  WebSocket guide [7] points at Redis Pub/Sub or Firestore listeners for multi-instance
   services), a far larger and more expensive change than a shared document.
 - **The old revision noticing it is stale.** A superseded revision would poll the service's
   public URL, compare the revision that answered with its own, and hang up its sockets when
@@ -309,7 +310,7 @@ Two remedies were considered and rejected:
   own tests, and it would still converge more slowly than the simpler fix.
 
 The shipped fix is to delete superseded revisions. After a deploy's new revision is healthy
-and serving, the deploy script deletes every revision that carries no traffic. That ends
+and serving, the deploy script deletes every revision that carries no traffic [12]. That ends
 their instances, closes their sockets, and every peer reconnects onto the one live revision,
 where the host recreates the lobby (section 4 covers what that means for followers). The split now lasts as long as the client's reconnect
 backoff instead of up to an hour. The clean-up never fails a deploy that already succeeded,
@@ -335,8 +336,8 @@ that never fetched them, each file is a text pointer of about 130 bytes, and `vi
 hashes and emits those pointers into the bundle like any other asset and reports success.
 The game then falls back to placeholder capsules exactly as designed, and nothing anywhere
 reports an error. The deploy looks clean and every model is a capsule. The build now checks
-that the LFS files are materialized *before* building, and the production verifier fetches
-the shipped models and checks their binary glTF magic bytes.
+that the LFS files are materialized *before* building [13], and the production verifier fetches
+the shipped models and checks their binary glTF magic bytes [14].
 
 **A bundle built without the signaling URL.** Build the client by hand instead of through
 the deploy script and the signaling variable is unset. The client falls back to
@@ -344,7 +345,7 @@ the deploy script and the signaling variable is unset. The client falls back to
 `index.html`, and the game is completely unplayable while the page, the assets and the
 health check all pass. The verifier now reads the deployed bundle's source and asserts that the real `wss:`
 URL appears in it, derived from the same infrastructure output the build reads rather than
-typed into the check.
+typed into the check [14].
 
 The verifier exists because "the deploy command exited 0" is not evidence that players can
 play. It works only against the live site over the network, and a few of its details were
@@ -377,15 +378,17 @@ against a signaling URL that already answers.
 
 ## Sources
 
-| Source | Covers |
-| --- | --- |
-| [Cloud Run known issues](https://cloud.google.com/run/docs/known-issues) (Google Cloud) | Reserved URL paths, including paths ending in `z` |
-| [Using WebSockets](https://cloud.google.com/run/docs/triggering/websockets) (Cloud Run) | WebSockets are subject to the request timeout of up to 60 minutes; clients should reconnect; shared messaging across instances |
-| [Mapping custom domains](https://cloud.google.com/run/docs/mapping-custom-domains) (Cloud Run) | Domain mapping is in preview, not production-ready, and region-limited |
-| [`server/src/server.ts`](https://github.com/csarkosh/game-dayhike/blob/main/server/src/server.ts) and [`server/src/index.ts`](https://github.com/csarkosh/game-dayhike/blob/main/server/src/index.ts) | Health route, upgrade handler, heartbeat, flow control, shutdown |
-| [`server/src/rooms.ts`](https://github.com/csarkosh/game-dayhike/blob/main/server/src/rooms.ts) | Lobbies, host grace window, identity-keyed departures |
-| [`client/src/net/signaling.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/net/signaling.ts) and [`client/src/net/signalingUrl.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/net/signalingUrl.ts) | Backoff, role-biased reconnect, the signaling URL fallback |
-| [`client/src/app.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/app.ts) and [`client/src/net/hostSession.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/net/hostSession.ts) | Host-side peer retention from the lobby roster, the follower's single reconnect attempt |
-| [`client/src/net/lobby.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/net/lobby.ts) | Lobby messages over the signaling relay |
-| [`tools/deploy/lib/revisions.mjs`](https://github.com/csarkosh/game-dayhike/blob/main/tools/deploy/lib/revisions.mjs) | Deleting superseded revisions |
-| [`tools/deploy/verify.mjs`](https://github.com/csarkosh/game-dayhike/blob/main/tools/deploy/verify.mjs) and [`tools/deploy/lib/buildClient.mjs`](https://github.com/csarkosh/game-dayhike/blob/main/tools/deploy/lib/buildClient.mjs) | The production verifier and the LFS precondition |
+1. C. Sarkosh, "lobby.ts," game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/game-dayhike/blob/main/client/src/net/lobby.ts
+2. Google, "Mapping custom domains," Google Cloud Documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://docs.cloud.google.com/run/docs/mapping-custom-domains
+3. C. Sarkosh, "signalingUrl.ts," game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/game-dayhike/blob/main/client/src/net/signalingUrl.ts
+4. C. Sarkosh, "server.ts," game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/game-dayhike/blob/main/server/src/server.ts
+5. Google, "Known issues in Cloud Run," Google Cloud Documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://docs.cloud.google.com/run/docs/known-issues
+6. C. Sarkosh, "index.ts," game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/game-dayhike/blob/main/server/src/index.ts
+7. Google, "Using WebSockets," Google Cloud Documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://docs.cloud.google.com/run/docs/triggering/websockets
+8. C. Sarkosh, "rooms.ts," game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/game-dayhike/blob/main/server/src/rooms.ts
+9. C. Sarkosh, "signaling.ts," game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/game-dayhike/blob/main/client/src/net/signaling.ts
+10. C. Sarkosh, "hostSession.ts," game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/game-dayhike/blob/main/client/src/net/hostSession.ts
+11. C. Sarkosh, "app.ts," game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/game-dayhike/blob/main/client/src/app.ts
+12. C. Sarkosh, "revisions.mjs," game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/game-dayhike/blob/main/tools/deploy/lib/revisions.mjs
+13. C. Sarkosh, "buildClient.mjs," game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/game-dayhike/blob/main/tools/deploy/lib/buildClient.mjs
+14. C. Sarkosh, "verify.mjs," game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/game-dayhike/blob/main/tools/deploy/verify.mjs

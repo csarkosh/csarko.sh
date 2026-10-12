@@ -1,6 +1,7 @@
 ---
 description: Chromium refuses pointer lock for 1.25 s after Esc. What failed in the browser, and how an 8-byte patch to prebuilt Electron removed the cooldown.
 published: 2026-08-25
+updated: 2026-10-10
 ---
 # Pointer lock's Esc cooldown and an 8-byte patch
 
@@ -30,7 +31,7 @@ from the current `main` branch; its constant and gate agree with the disassembly
 ## 1. The cooldown
 
 The constant and the gate live in
-`chrome/browser/ui/exclusive_access/pointer_lock_controller.cc`:
+`chrome/browser/ui/exclusive_access/pointer_lock_controller.cc` [1]:
 
 ```cpp
 constexpr base::TimeDelta kEffectiveUserEscapeDuration =
@@ -50,7 +51,7 @@ Only `HandleUserPressedEscape()` sets `last_user_escape_time_`, and it does so i
 call that ejects the lock. Two exemptions follow from the gate:
 
 - **A page-initiated release never arms the timer.** If the page called
-  `document.exitPointerLock()`, `last_unlocked_by_target` is true and the next request is
+  `document.exitPointerLock()` [2], `last_unlocked_by_target` is true and the next request is
   granted at once.
 - **A fullscreen tab skips the gate entirely**, cooldown and user-gesture check included.
 
@@ -65,7 +66,7 @@ web. For a first-person game it turns every Esc into a dead zone: click, nothing
    are exempt. This works and is kept. It cannot help with Esc itself, because Chromium
    ejects the lock before the page sees the key.
 2. **Fullscreen on play, plus Keyboard Lock.** Entering fullscreen when play starts and
-   calling `navigator.keyboard.lock(["Escape"])` voids the cooldown (fullscreen exemption) and
+   calling `navigator.keyboard.lock(["Escape"])` [3] voids the cooldown (fullscreen exemption) and
    makes a tap of Esc reach the page instead of ejecting the lock; the player holds Esc to
    leave fullscreen. It worked perfectly until a player left fullscreen with the **macOS green
    window button**. Instrumentation showed Chrome fires **no `fullscreenchange`** on that
@@ -99,7 +100,7 @@ no need for HTML fullscreen. The question was whether Electron behaves different
   fullscreen controller, not pointer lock.
 - **The eject happens before the main process can see the key.** In Electron 44.1.1,
   `WebContents::PreHandleKeyboardEvent` asks the exclusive-access manager first and emits
-  `before-input-event` only if it did not handle the key:
+  `before-input-event` only if it did not handle the key [4]:
 
   ```cpp
   if (exclusive_access_manager_.HandleUserKeyEvent(event))
@@ -112,7 +113,7 @@ no need for HTML fullscreen. The question was whether Electron behaves different
   only the harmless keyup reached `before-input-event`. There is no main-process hook that can
   intercept it.
 - **Injected keys do not test this path.** Keys sent through the DevTools protocol or
-  `webContents.sendInputEvent` bypass `PreHandleKeyboardEvent`: an injected Esc neither
+  `webContents.sendInputEvent` [5] bypass `PreHandleKeyboardEvent`: an injected Esc neither
   ejects the lock nor fires `before-input-event`, so an automated test built on them passes
   on stock Electron and proves nothing. Only a key press delivered through the operating
   system exercises the path. On macOS that is
@@ -122,7 +123,7 @@ no need for HTML fullscreen. The question was whether Electron behaves different
   Electron produced `SecurityError: Pointer lock cannot be acquired immediately after the
   user has exited the lock` for roughly the first 300 ms, then `NotAllowedError: Too many
   pointer lock requests in a short window of time`. That one comes from Blink's own pointer
-  lock controller, which keeps a sliding window of recent request timestamps and rejects
+  lock controller [6], which keeps a sliding window of recent request timestamps and rejects
   requests while the window is full. It is why the measured stock gap overshoots 1250 ms, and
   it means a "retry until granted" Resume button must poll slower than that window or it makes
   the wait longer. Such a retry loop was scoped as a stopgap for stock Electron; the shipped
@@ -160,7 +161,7 @@ function.
 
 No pattern scanning and no guessing. Electron publishes Breakpad symbols with every release
 (`electron-v44.0.0-darwin-arm64-symbols.zip`, 128 MB). The `Electron Framework.sym` file lists
-every function's address and size, plus a per-instruction source-line table, and its `MODULE`
+every function's address and size, plus a per-instruction source-line table [7], and its `MODULE`
 line carries the binary's UUID, which is checked against the framework before trusting any
 address. The 1.4 GB dSYM is not needed. In the framework, the `__TEXT` segment has virtual
 address 0 at file offset 0, so a symbol address is also a file offset.
@@ -199,7 +200,7 @@ cover it).
 
 ## 6. Measuring it
 
-The test app is small: synthetic clicks lock the pointer (clicks are fine; only keys take the
+The test app [8] is small: synthetic clicks lock the pointer (clicks are fine; only keys take the
 bypass in section 3), a real Esc goes through the operating system, then the main process
 clicks every 100 ms until `pointerlockchange` reports locked, and records the gap. Three
 rounds per build on Electron 44.0.0, macOS arm64:
@@ -263,7 +264,7 @@ The patch README summarises the arm64 numbers and the page-side contract
 official Electron releases with the `noeject` patch on darwin-arm64 and win32-x64 and
 everything else byte-identical. A project adds two lines to `.npmrc` and installs Electron as
 usual; packagers see a normal Electron. The
-[README](https://github.com/csarkosh/electron-gamepatch/blob/main/README.md) has the setup,
+[README](https://github.com/csarkosh/electron-gamepatch/blob/main/README.md) [9] has the setup,
 the platform table and how to verify a release with `cmp`, and the patch itself is a small
 declarative file,
 [`patch.json`](https://github.com/csarkosh/electron-gamepatch/blob/main/patches/pointerlock-noeject/patch.json),
@@ -308,13 +309,12 @@ changes. Offline start was given up knowingly.
 
 ## Sources
 
-| Source | Covers |
-| --- | --- |
-| [`pointer_lock_controller.cc`](https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/ui/exclusive_access/pointer_lock_controller.cc) (Chromium) | The 1.25 s constant, the gate and its exemptions, `HandleUserPressedEscape()` |
-| [Blink `pointer_lock_controller.cc`](https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/core/page/pointer_lock_controller.cc) (Chromium) | The renderer-side sliding-window rate limit and both error messages |
-| [`electron_api_web_contents.cc` at v44.1.1](https://github.com/electron/electron/blob/v44.1.1/shell/browser/api/electron_api_web_contents.cc) (Electron) | `PreHandleKeyboardEvent` handling exclusive access before `before-input-event` |
-| [`webContents` API](https://www.electronjs.org/docs/latest/api/web-contents) (Electron) | `before-input-event` and `sendInputEvent` |
-| [Keyboard: lock()](https://developer.mozilla.org/en-US/docs/Web/API/Keyboard/lock) (MDN) | Keyboard Lock and press-and-hold Esc in fullscreen |
-| [Pointer Lock 2.0](https://w3c.github.io/pointerlock/) (W3C) | `requestPointerLock`, `exitPointerLock`, `pointerlockchange` |
-| [Breakpad symbol files](https://chromium.googlesource.com/breakpad/breakpad/+/master/docs/symbol_files.md) (Breakpad) | `MODULE` and `FUNC` records used to locate the functions |
-| [electron-gamepatch](https://github.com/csarkosh/electron-gamepatch/blob/main/README.md) and its [probe](https://github.com/csarkosh/electron-gamepatch/blob/main/test/probe/main.js) | The shipped patch, its verification and the relock probe |
+1. Chromium Authors, "pointer_lock_controller.cc," Chromium source. Accessed: Aug. 25, 2026. [Online]. Available: https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/ui/exclusive_access/pointer_lock_controller.cc
+2. M. Ahmed and V. Scheib, Eds., "Pointer Lock 2.0," W3C Editor's Draft. Accessed: Oct. 10, 2026. [Online]. Available: https://w3c.github.io/pointerlock/
+3. MDN contributors, "Keyboard: lock() method," MDN Web Docs, Mozilla. Accessed: Oct. 10, 2026. [Online]. Available: https://developer.mozilla.org/en-US/docs/Web/API/Keyboard/lock
+4. Electron Authors, "electron_api_web_contents.cc," Electron, GitHub repository, v44.1.1. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/electron/electron/blob/v44.1.1/shell/browser/api/electron_api_web_contents.cc
+5. Electron Authors, "webContents," Electron Documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://www.electronjs.org/docs/latest/api/web-contents
+6. Chromium Authors, "Blink pointer_lock_controller.cc," Chromium source. Accessed: Oct. 10, 2026. [Online]. Available: https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/core/page/pointer_lock_controller.cc
+7. Google, "symbol_files.md," Breakpad documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://chromium.googlesource.com/breakpad/breakpad/+/master/docs/symbol_files.md
+8. C. Sarkosh, "main.js," electron-gamepatch relock probe, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/electron-gamepatch/blob/main/test/probe/main.js
+9. C. Sarkosh, "electron-gamepatch," README, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/electron-gamepatch/blob/main/README.md

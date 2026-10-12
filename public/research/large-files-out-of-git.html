@@ -18,7 +18,7 @@
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta property="article:published_time" content="2026-09-17" />
-  <meta property="article:modified_time" content="2026-09-17" />
+  <meta property="article:modified_time" content="2026-10-10" />
   <meta property="article:author" content="https://csarko.sh/" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Keeping large files out of git history" />
@@ -48,10 +48,10 @@
       "headline": "Keeping large files out of git history",
       "description": "Git LFS is not tied to GitHub. How its endpoint is discovered, three ways to put a cloud bucket behind it, and when to skip LFS entirely.",
       "datePublished": "2026-09-17",
-      "dateModified": "2026-09-17",
+      "dateModified": "2026-10-10",
       "url": "https://csarko.sh/research/large-files-out-of-git",
       "mainEntityOfPage": "https://csarko.sh/research/large-files-out-of-git",
-      "wordCount": 2563,
+      "wordCount": 2590,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -344,6 +344,12 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .prose .references { list-style: none; padding-left: 0; }
+    .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
+    .prose .references li:target { background: var(--surface-2); }
+    .prose .references .ref-num { font-family: var(--mono); font-size: 13px; line-height: 1.9; color: var(--faint); }
+    .prose .references li > div > p { margin: 0; }
+    .prose a.cite { white-space: nowrap; }
   </style>
 </head>
 <body class="doc-page">
@@ -385,7 +391,7 @@
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Sep 17, 2026</p>
+        <p class="eyebrow">Sep 17, 2026 · Updated Oct 10, 2026</p>
         <h1>Keeping large files out of git history</h1>
         <ul class="tags">
           <li>11 min read</li>
@@ -450,8 +456,8 @@ normal.</p>
 <p>Git LFS has no hardcoded notion of GitHub. By default the client takes the git remote&#39;s URL and
 appends <code>.git/info/lfs</code> to it, so a GitHub remote resolves to a GitHub LFS endpoint by construction
 rather than by decree. For SSH remotes it runs a helper called <code>git-lfs-authenticate</code>, which lets
-the server hand back a different endpoint entirely.</p>
-<p>Every layer of that is overridable:</p>
+the server hand back a different endpoint entirely <a class="cite" href="#ref-1">[1]</a>.</p>
+<p>Every layer of that is overridable <a class="cite" href="#ref-1">[1]</a>:</p>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
 <thead>
 <tr>
@@ -476,7 +482,7 @@ the server hand back a different endpoint entirely.</p>
 <td>Bypasses the server protocol completely; see section 4</td>
 </tr>
 </tbody></table></div>
-<p><code>git lfs env</code> prints the endpoint the client has actually resolved, which is the first thing to run
+<p><code>git lfs env</code> prints the endpoint the client has actually resolved <a class="cite" href="#ref-1">[1]</a>, which is the first thing to run
 when objects are not going where you expected.</p>
 <h3 id="2-3-transfer-adapters"><a class="anchor" href="#2-3-transfer-adapters">2.3 Transfer adapters</a></h3>
 <p>Fetching an object is normally two steps. The client asks the LFS server&#39;s batch API where the
@@ -486,10 +492,10 @@ client talk straight to the bucket while holding no credentials of its own.</p>
 <p>The component that performs the move is a <strong>transfer adapter</strong>. The built-in one speaks HTTP.
 Section 4 is about replacing it.</p>
 <div class="section-head"><p class="section-label">03</p><h2 id="mechanism-1-your-own-lfs-server-with-a-bucket-behind-it"><a class="anchor" href="#mechanism-1-your-own-lfs-server-with-a-bucket-behind-it">Mechanism 1: your own LFS server, with a bucket behind it</a></h2></div>
-<p><a class="external" href="https://giftless.datopian.com" target="_blank" rel="noopener">Giftless</a>, from Datopian, is an open-source LFS server built for
+<p><a class="external" href="https://giftless.datopian.com" target="_blank" rel="noopener">Giftless</a> <a class="cite" href="#ref-2">[2]</a>, from Datopian, is an open-source LFS server built for
 exactly this. It supports four storage backends: Google Cloud Storage, Amazon S3, Azure Blob
-Storage, and local disk. The Google Cloud Storage backend needs a bucket and a service-account key,
-supplied either as a path to the JSON key file or base64-encoded in the configuration.</p>
+Storage, and local disk <a class="cite" href="#ref-3">[3]</a>. The Google Cloud Storage backend needs a bucket and a service-account key,
+supplied either as a path to the JSON key file or base64-encoded in the configuration <a class="cite" href="#ref-3">[3]</a>.</p>
 <p>One detail matters more than the rest, and it is easy to miss. Bytes can move two ways:</p>
 <ul>
 <li><strong>Streaming</strong>, where every byte passes through the server process on its way to the bucket. The
@@ -497,7 +503,7 @@ server becomes a bandwidth bottleneck and a running cost.</li>
 <li><strong>External</strong>, where the server only hands the client a signed URL and the client talks to the
 bucket directly. The server stays small and cheap.</li>
 </ul>
-<p>The published Google Cloud Storage example uses the streaming mode. The external interface exists in
+<p>The published Google Cloud Storage example uses the streaming mode <a class="cite" href="#ref-3">[3]</a>. The external interface exists in
 the storage layer, but confirm it for that backend specifically before sizing anything around it.</p>
 <p>Point a repository at the result with <code>lfs.url</code>, or commit a <code>.lfsconfig</code> so everyone inherits it.</p>
 <h3 id="3-1-a-different-endpoint-per-remote"><a class="anchor" href="#3-1-a-different-endpoint-per-remote">3.1 A different endpoint per remote</a></h3>
@@ -510,11 +516,11 @@ as a backup job that happens to use git plumbing, not as a feature.</p>
 <div class="section-head"><p class="section-label">04</p><h2 id="mechanism-2-a-standalone-custom-transfer-agent"><a class="anchor" href="#mechanism-2-a-standalone-custom-transfer-agent">Mechanism 2: a standalone custom transfer agent</a></h2></div>
 <p>This is the lightest mechanism, and it removes the server from the picture entirely.</p>
 <p>A <strong>custom transfer agent</strong> is an ordinary executable. Git LFS launches it and talks to it over
-standard input and output in newline-delimited JSON. The agent does the actual moving, so it can
+standard input and output in newline-delimited JSON <a class="cite" href="#ref-4">[4]</a>. The agent does the actual moving, so it can
 talk to a bucket, an NFS share, or anything else, using whatever library or command-line tool it
 likes.</p>
 <p>Adding <code>lfs.standalonetransferagent</code> goes one step further: the client stops contacting any LFS API
-server at all. There is nothing to deploy, secure, monitor or pay for. The agent works out by itself
+server at all <a class="cite" href="#ref-4">[4]</a>. There is nothing to deploy, secure, monitor or pay for. The agent works out by itself
 where each object lives.</p>
 <h3 id="4-1-one-word-two-meanings"><a class="anchor" href="#4-1-one-word-two-meanings">4.1 One word, two meanings</a></h3>
 <p>&quot;Streaming&quot; names two different things, and conflating them produces a design that contradicts
@@ -524,7 +530,7 @@ mechanism exists to avoid. Here it means the agent piping bytes straight between
 and the bucket, rather than staging a whole second copy on local disk first. The second is what you
 want: no server, and no temporary duplicate of a large file.</p>
 <h3 id="4-2-the-protocol"><a class="anchor" href="#4-2-the-protocol">4.2 The protocol</a></h3>
-<p>The exchange has three stages. Git LFS sends the first message of each pair; the agent replies.</p>
+<p>The exchange has three stages <a class="cite" href="#ref-4">[4]</a>. Git LFS sends the first message of each pair; the agent replies.</p>
 <p><strong>Initialisation</strong>, once per process:</p>
 <div class="scroll" tabindex="0" role="region" aria-label="Code"><pre><code class="language-json">{ &quot;event&quot;: &quot;init&quot;, &quot;operation&quot;: &quot;download&quot;, &quot;remote&quot;: &quot;origin&quot;, &quot;concurrent&quot;: true, &quot;concurrenttransfers&quot;: 3 }
 </code></pre></div>
@@ -672,17 +678,14 @@ service. It is the least infrastructure that still gives a working <code>git clo
 only one of the four where storage behaves like storage, meaning you can delete things.</li>
 </ul>
 <div class="section-head"><p class="section-label">08</p><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
-<ul>
-<li><a class="external" href="https://github.com/git-lfs/git-lfs/blob/main/docs/api/server-discovery.md" target="_blank" rel="noopener">Git LFS server discovery</a>,
-for endpoint resolution, <code>lfs.url</code>, <code>remote.&lt;name&gt;.lfsurl</code>, <code>.lfsconfig</code> and <code>git lfs env</code>.</li>
-<li><a class="external" href="https://github.com/git-lfs/git-lfs/blob/main/docs/custom-transfers.md" target="_blank" rel="noopener">Git LFS custom transfer agents</a>,
-for the JSON event protocol and every configuration key in section 4.3.</li>
-<li><a class="external" href="https://giftless.datopian.com/en/latest/" target="_blank" rel="noopener">Giftless documentation</a> and its
-<a class="external" href="https://giftless.datopian.com/en/latest/storage-backends.html" target="_blank" rel="noopener">storage backends</a>, for the four
-backends, the Google Cloud Storage configuration, and the streaming versus external distinction.</li>
-</ul>
-<p>Accessed September 2026. Nothing described here has been built and run; it is a map of the options,
-not a report on a deployment.</p>
+<p>Nothing described here has been built and run; it is a map of the options, not a report on a
+deployment.</p>
+<ol class="references">
+<li id="ref-1"><span class="ref-num">[1]</span><div>Git LFS Authors, &quot;Server Discovery,&quot; git-lfs, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://github.com/git-lfs/git-lfs/blob/main/docs/api/server-discovery.md" target="_blank" rel="noopener">https://github.com/git-lfs/git-lfs/blob/main/docs/api/server-discovery.md</a></div></li>
+<li id="ref-2"><span class="ref-num">[2]</span><div>Datopian, &quot;giftless: a pluggable Git LFS server written in Python,&quot; GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://github.com/datopian/giftless" target="_blank" rel="noopener">https://github.com/datopian/giftless</a></div></li>
+<li id="ref-3"><span class="ref-num">[3]</span><div>Datopian, &quot;Storage Backends,&quot; Giftless Documentation. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://giftless.readthedocs.io/en/latest/storage-backends.html" target="_blank" rel="noopener">https://giftless.readthedocs.io/en/latest/storage-backends.html</a></div></li>
+<li id="ref-4"><span class="ref-num">[4]</span><div>Git LFS Authors, &quot;Adding Custom Transfer Agents to LFS,&quot; git-lfs, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://github.com/git-lfs/git-lfs/blob/main/docs/custom-transfers.md" target="_blank" rel="noopener">https://github.com/git-lfs/git-lfs/blob/main/docs/custom-transfers.md</a></div></li>
+</ol>
 
       </div>
       <section class="author" aria-label="About the author">

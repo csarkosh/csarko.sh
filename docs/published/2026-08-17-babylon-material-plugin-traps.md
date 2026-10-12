@@ -1,10 +1,11 @@
 ---
 description: Where Babylon.js 9.18 injects material plugin GLSL, what each PBR hook can see, and the silent failures behind preprocessor, comment and bake traps.
 published: 2026-08-17
+updated: 2026-10-10
 ---
 # Babylon.js material plugins: hooks and traps
 
-**Question:** Day Hike extends Babylon.js's `PBRMaterial` with material plugins instead of
+**Question:** Day Hike extends Babylon.js's `PBRMaterial` with material plugins [1] instead of
 forking its shaders: wind sway, a base conform that seats trees on slopes, a distance
 dither, wing beats for birds, and a terrain plugin that blends CC0 texture maps with
 per-layer normals, roughness and Fresnel. Most of the failures met along the way produced
@@ -24,7 +25,7 @@ most of them is the same: run your injected strings through Babylon's real prepr
 a unit test, and read the expanded shader rather than the documentation.
 
 Every claim below was checked against the installed `@babylonjs/core` 9.18.0 source, the
-version pinned in [game-dayhike](https://github.com/csarkosh/game-dayhike). The
+version pinned in [game-dayhike](https://github.com/csarkosh/game-dayhike) [2]. The
 preprocessor traps were also reproduced by running a test plugin through the real PBR
 fragment shader and `WebGL2ShaderProcessor` in Node. The earlier
 [atmosphere research](/research/atmosphere-and-dread-shaders) names three of these traps in
@@ -35,18 +36,18 @@ passing; this is the long version.
 A `PBRMaterial` builds its effect in this order:
 
 1. The shader source is loaded from the shader store.
-2. `ProcessIncludes` expands every `#include<...>`, substituting include parameters.
-3. **Plugin code is injected.** The plugin manager's `_injectCustomCode` is passed to the
-   effect as `processCodeAfterIncludes`, which `Process` calls on the expanded text.
+2. `ProcessIncludes` expands every `#include<...>`, substituting include parameters [3].
+3. **Plugin code is injected.** The plugin manager's `_injectCustomCode` [4] is passed to the
+   effect as `processCodeAfterIncludes` [5], which `Process` calls on the expanded text.
 4. `ProcessShaderConversion` evaluates `#ifdef`, `#if`, `#else` and `#endif` against the
-   material's defines, then the WebGL2 processor migrates GLSL ES 1.00 (`attribute`,
+   material's defines [3], then the WebGL2 processor migrates GLSL ES 1.00 (`attribute`,
    `varying`, `texture2D`) to GLSL ES 3.00.
 5. The result goes to the driver.
 
-Named injection points are `#define CUSTOM_...` marker lines in the base shader; the
+Named injection points are `#define CUSTOM_...` marker lines in the base shader [6], [7]; the
 manager inserts your code on the line before the marker (the first occurrence only). A key
 that starts with `!` is a regular expression run against the whole expanded shader, and
-its replacement string supports `$1`-style groups.
+its replacement string supports `$1`-style groups [4].
 
 Because injection happens before step 4, injected code is ordinary shader source: it can
 use `#ifdef` on the material's defines, it gets migrated, and it is exposed to every quirk
@@ -83,7 +84,7 @@ differently should assign `vPositionW = vec3(worldPos);` itself.
 the way it does for a bump map, and the geometry-info block still reads it. That is usually
 what you want.
 
-**`vAlbedoColor`.** It is a uniform built from `albedoColor` and `alpha`. Texture, vertex
+**`vAlbedoColor`.** It is a uniform built from `albedoColor` and `alpha` [5]. Texture, vertex
 colour, detail map and base weight are all multiplied in inside `albedoOpacityBlock()`, so
 a regex that edits `vAlbedoColor` edits the material constant before any of them. Edit
 `surfaceAlbedo` at `BEFORE_LIGHTS` instead.
@@ -95,15 +96,15 @@ preprocessor. Each was reproduced in Node with a marker line per case.
 
 - **A gate on an undeclared define silently compiles out.** `#ifdef WIND` works because
   the plugin passes `{ WIND: false }` to the base constructor and sets it in
-  `prepareDefines`. An `#ifdef` on a name no plugin declares evaluates false, and the code
+  `prepareDefines` [8]. An `#ifdef` on a name no plugin declares evaluates false, and the code
   inside vanishes with no warning.
 - **`#include` lines do not exist at injection time.** A regex key aimed at
   `#include<pbrBlockFinalLitComponents>` matches nothing and injects nothing. Target the
   first statement of the expanded include instead: the banding experiment used
-  `aggShadow=aggShadow/numLights;`, which starts `pbrBlockFinalLitComponents`.
+  `aggShadow=aggShadow/numLights;`, which starts `pbrBlockFinalLitComponents` [9].
 - **Include parameters are already substituted.** The PBR fragment includes the fog block
-  as `#include<fogFragment>(color,finalColor)`, so the line a regex sees is
-  `finalColor.rgb=mix(vFogColor,finalColor.rgb,fog);`, not the include's own `color.rgb=...`.
+  as `#include<fogFragment>(color,finalColor)` [7], so the line a regex sees is
+  `finalColor.rgb=mix(vFogColor,finalColor.rgb,fog);`, not the include's own `color.rgb=...` [10].
   Day Hike's shipped fog rewrite anchors on exactly that expanded line
   ([`atmosphere.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/atmosphere.ts)).
 - **A regex match can sit inside a conditional block.** `#if` has not been evaluated yet,
@@ -113,15 +114,15 @@ preprocessor. Each was reproduced in Node with a marker line per case.
   declared unconditionally. Day Hike's terrain declares `terrainRough` and `terrainF0` at
   `MAIN_BEGIN` outside any `#ifdef` for exactly this reason.
 - **Regex keys replace every match.** The manager forces the `g` flag even when the key
-  asks for none. `reflectivityBlock\(` alone would also match the function's definition;
+  asks for none [4]. `reflectivityBlock\(` alone would also match the function's definition;
   the terrain key is `reflectivityBlock\(\s*vReflectivityColor`, which only the call site
   contains.
 - **Injection points are collected once.** `_addPlugin` calls `getCustomCode` while the
   base constructor is still running, before your subclass has assigned any fields, and
-  records the keys it returns. A key that only appears later is never injected. Return
+  records the keys it returns [4]. A key that only appears later is never injected. Return
   every key from the start and gate the code inside it on defines.
 - **A plugin that is not enabled injects nothing.** `MaterialPluginBase` defaults
-  `enable` to `false`; only active plugins contribute code. Call `this._enable(true)` (or
+  `enable` to `false` [8]; only active plugins contribute code. Call `this._enable(true)` (or
   pass `enable`) and pin it in a test.
 - **`getUniforms().fragment` is dropped on WebGL2.** That string replaces
   `#define ADDITIONAL_FRAGMENT_DECLARATION`, which exists only in the non-uniform-buffer
@@ -136,15 +137,15 @@ preprocessor. Each was reproduced in Node with a marker line per case.
 Babylon's preprocessor is line-based, and it does not know what a comment is.
 
 `MoveCursorRegex` is `/(#ifdef)|(#else)|(#elif)|(#endif)|(#ifndef)|(#if)/`, unanchored, and
-it is tested against every line containing a `#`. `ShaderCodeCursor` passes `//` lines
-through untouched. So a comment such as `// see the #ifdef note below` opens a real
+it is tested against every line containing a `#` [3]. `ShaderCodeCursor` passes `//` lines
+through untouched [11]. So a comment such as `// see the #ifdef note below` opens a real
 conditional block, whose "test" is whatever text surrounds the keyword and evaluated false
 in the reproduction. It swallows every following line up to the next real `#endif`, and the block that `#endif` was meant to close now ends somewhere else. In
 the Node reproduction the line after such a comment was simply gone from the output. In
 Day Hike this deleted the terrain's triplanar rock branch in every browser, and an outline
 shader before that; neither produced an error.
 
-The second hazard is semicolons. The cursor splits any code line with a `;` in the middle,
+The second hazard is semicolons. The cursor splits any code line with a `;` in the middle [11],
 so `float x = 1.0; // one; two` becomes three lines, and `two` is emitted as a bare
 statement. That one does fail to compile, but only on a real GPU; a NullEngine test never
 sees it.
@@ -164,11 +165,11 @@ sees it.
 ## 5. Registration and headless traps
 
 **`.pure` modules register nothing.** Babylon 9 splits most features into a `.pure.js`
-module that defines behaviour and a wrapper that registers it. Methods patched onto a
+module that defines behaviour and a wrapper that registers it [12]. Methods patched onto a
 prototype by a wrapper start life as stubs: without
 `import "@babylonjs/core/Meshes/thinInstanceMesh.js"`, `mesh.thinInstanceSetBuffer` exists,
 is callable, returns `undefined`, and adds nothing. The stub does not warn by default,
-because the engine itself calls such methods as feature checks. The same split applies to
+because the engine itself calls such methods as feature checks [13]. The same split applies to
 `CascadedShadowGenerator` and `ReflectionProbe`, whose wrappers call their register
 functions. The rule is simply to import the non-`.pure` path, as
 [`lighting.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/lighting.ts)
@@ -176,12 +177,12 @@ and [`clutterMeshes.ts`](https://github.com/csarkosh/game-dayhike/blob/main/clie
 do.
 
 **`RegisterMaterialPlugin` only reaches materials created after it.** It subscribes to
-`Material.OnEventObservable`'s creation event, so it does reach materials the glTF loader
+`Material.OnEventObservable`'s creation event [4], so it does reach materials the glTF loader
 creates later, but nothing that already exists. Register right after constructing the
 scene. The factory may return `null` to decline a material (a sky, a particle material).
 
 **`CascadedShadowGenerator` throws under `NullEngine`.** Its constructor checks
-`IsSupported`, which reads the engine's `supportCSM` feature: false on `NullEngine` and on
+`IsSupported`, which reads the engine's `supportCSM` feature [14]: false on `NullEngine` and on
 WebGL1, true on WebGL2 and WebGPU. When unsupported it logs an error and returns before
 calling `super()`, which JavaScript turns into a `ReferenceError` about the derived-class
 constructor. Every headless test that builds the lighting fails at construction, with an
@@ -189,9 +190,9 @@ error that does not mention shadows. Guard with `CascadedShadowGenerator.IsSuppo
 which a low quality tier needs anyway.
 
 **Plugins are GLSL-only unless you say otherwise.** The base `isCompatible` returns true
-for GLSL alone, and `_addPlugin` **throws** when it returns false. On a WebGPU engine a
+for GLSL alone [8], and `_addPlugin` **throws** when it returns false [4]. On a WebGPU engine a
 material uses WGSL unless it was created with `forceGLSL` (or `PBRMaterial.ForceGLSL` is
-set), so a GLSL plugin registered through a factory makes material creation throw. The
+set) [5], so a GLSL plugin registered through a factory makes material creation throw. The
 alternatives are to override `isCompatible` and return WGSL from `getCustomCode` when
 asked for it, or to force GLSL on the materials that carry plugins. Day Hike creates no
 WebGPU engine, so neither has been exercised there.
@@ -221,12 +222,12 @@ design are in [No visible pop-in](/research/no-visible-pop-in).
 
 **One-shot `RenderTargetTexture` bakes.** Day Hike bakes tree impostors at load by
 rendering a cloned LOD into a 256 by 256 render target once. A render target draws under
-its **own** `renderPassId`, and each submesh caches its effect per pass. The bake also uses
+its **own** `renderPassId` [15], and each submesh caches its effect per pass. The bake also uses
 its own camera, and at least one define differs between that camera's pass and the player
 camera's. So `forceCompilationAsync`, which compiles under the default pass, is a cache
 miss at bake time: `isReadyForSubMesh` is false mid-render, every submesh is skipped, and
 the impostor comes out fully transparent. Measured in the browser: 0 of 65,536 pixels,
-with the whole automated suite green, because `NullEngine` render targets hold no pixels.
+with the whole automated suite green, because `NullEngine` render targets hold no pixels [2].
 **The fix** in
 [`forestMeshes.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/forestMeshes.ts)
 polls `rtt.isReadyForRendering()`, which swaps in the target's camera and render pass and
@@ -254,7 +255,7 @@ on the CPU first, while a `Texture` gets loading and orientation from the browse
 data maps
 [`groundMaps.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/groundMaps.ts)
 decodes each layer with
-`createImageBitmap(blob, { colorSpaceConversion: "none", premultiplyAlpha: "none" })`,
+`createImageBitmap(blob, { colorSpaceConversion: "none", premultiplyAlpha: "none" })` [16],
 draws it to an `OffscreenCanvas` and reads the bytes back. Both options matter: these are
 vectors and scalars, not colours, and colour management or premultiplication would bend
 them. One more surprise: Chromium refuses the flip-on-upload flag for 3D and array textures
@@ -265,8 +266,8 @@ running the same way as the albedo `Texture`s over the same UVs.
 **Per-layer roughness and F0 through `reflectivityBlock`.** The terrain's sheen at grazing
 angles is Fresnel, not roughness, so each ground layer needs its own F0 as well as its own
 roughness. Neither has a hook in `main`. In the metallic workflow `vReflectivityColor` is
-`(metallic, roughness, ior, f0)`: the material computes `f0` from the index of refraction,
-and `reflectivityBlock` reads roughness from `.g` and the dielectric F0 from `.a`. The
+`(metallic, roughness, ior, f0)`: the material computes `f0` from the index of refraction [5],
+and `reflectivityBlock` reads roughness from `.g` and the dielectric F0 from `.a` [17]. The
 terrain plugin's regex key rewrites the call's first argument:
 
 ```glsl
@@ -287,7 +288,7 @@ nature; a test that runs it against the real shader source catches a Babylon ren
 `CUSTOM_FRAGMENT_BEFORE_LIGHTS`, check what runs between the normal blocks and the hook.
 In 9.18 the fragment runs `pbrBlockNormalGeometric`, `bumpFragment` and
 `pbrBlockNormalFinal`, then only the albedo/opacity block, `UPDATE_ALPHA` and
-`depthPrePass`, then the hook. Nothing in between caches a normal-derived value, so a write
+`depthPrePass`, then the hook [7]. Nothing in between caches a normal-derived value, so a write
 there reaches every lighting and IBL term. The same reading answers a plugin's other
 questions faster than the documentation does; `effect.fragmentSourceCode` and a
 `processCodeAfterIncludes` wrapper both expose it.
@@ -301,7 +302,7 @@ and the bound uniform before tuning it.
 **Planar layers need no TBN.** Grass, forest floor, sand and pebble are projected on world
 XZ, so their UV axes *are* world X and Z. A tangent-space texel's `x` maps to world X and
 its `y` to world Z, and the terrain adds that perturbation to the interpolated normal
-(UDN-style) and renormalizes, with no tangent basis to build or store and no new vertex
+(UDN-style) [18] and renormalizes, with no tangent basis to build or store and no new vertex
 data. Rock is triplanar, so each of its three projections gets the matching axis frame,
 blended by the same weights as its albedo. The perturbed normal fades back to the
 interpolated one with the same distance term as the albedo detail, so the far field keeps
@@ -330,11 +331,21 @@ snap, and the largest `sin()` argument stays under about 3,800.
 
 ## Sources
 
-| Source | Covers |
-| --- | --- |
-| Installed `@babylonjs/core` 9.18.0: `Engines/Processors/shaderProcessor.js`, `shaderCodeCursor.js`, `Materials/materialPluginManager.pure.js`, `materialPluginBase.pure.js`, `PBR/pbrBaseMaterial.pure.js`, `Shaders/pbr.vertex.js`, `pbr.fragment.js` and their includes, `Lights/Shadows/cascadedShadowGenerator.pure.js`, `Materials/Textures/renderTargetTexture.pure.js`, `Misc/devTools.js` | Every hook, order and behaviour claim |
-| [Babylon.js material plugins](https://doc.babylonjs.com/features/featuresDeepDive/materials/using/materialPlugins) | The plugin API |
-| [Babylon.js tree shaking](https://doc.babylonjs.com/setup/treeshaking) | `.pure` modules and side-effect imports |
-| [Blending in Detail](https://blog.selfshadow.com/publications/blending-in-detail/) (Barré-Brisebois and Hill) | UDN-style normal blending |
-| [createImageBitmap](https://developer.mozilla.org/en-US/docs/Web/API/Window/createImageBitmap) (MDN) | `colorSpaceConversion` and `premultiplyAlpha` |
-| [game-dayhike](https://github.com/csarkosh/game-dayhike) client source and tests | The shipped plugins and the measured bake failure |
+1. Babylon.js Authors, "Material Plugins," Babylon.js Documentation. Accessed: Oct. 10, 2026. [Online]. Available: https://doc.babylonjs.com/features/featuresDeepDive/materials/using/materialPlugins
+2. C. Sarkosh, "game-dayhike," GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/csarkosh/game-dayhike
+3. Babylon.js Authors, "shaderProcessor.ts," Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Engines/Processors/shaderProcessor.ts
+4. Babylon.js Authors, "materialPluginManager.pure.ts," Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Materials/materialPluginManager.pure.ts
+5. Babylon.js Authors, "pbrBaseMaterial.pure.ts," Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Materials/PBR/pbrBaseMaterial.pure.ts
+6. Babylon.js Authors, "pbr.vertex.fx," Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Shaders/pbr.vertex.fx
+7. Babylon.js Authors, "pbr.fragment.fx," Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Shaders/pbr.fragment.fx
+8. Babylon.js Authors, "materialPluginBase.pure.ts," Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Materials/materialPluginBase.pure.ts
+9. Babylon.js Authors, "pbrBlockFinalLitComponents.fx," Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Shaders/ShadersInclude/pbrBlockFinalLitComponents.fx
+10. Babylon.js Authors, "fogFragment.fx," Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Shaders/ShadersInclude/fogFragment.fx
+11. Babylon.js Authors, "shaderCodeCursor.ts," Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Engines/Processors/shaderCodeCursor.ts
+12. Babylon.js Authors, "Tree-Shaking with Pure Imports," Babylon.js Documentation, GitHub. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/BabylonJS/Documentation/blob/master/content/setup/frameworkPackages/es6Support/treeShaking.md
+13. Babylon.js Authors, "devTools.ts," Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Misc/devTools.ts
+14. Babylon.js Authors, "cascadedShadowGenerator.pure.ts," Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Lights/Shadows/cascadedShadowGenerator.pure.ts
+15. Babylon.js Authors, "renderTargetTexture.pure.ts," Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Materials/Textures/renderTargetTexture.pure.ts
+16. MDN contributors, "Window: createImageBitmap() method," MDN Web Docs, Mozilla. Accessed: Oct. 10, 2026. [Online]. Available: https://developer.mozilla.org/en-US/docs/Web/API/Window/createImageBitmap
+17. Babylon.js Authors, "pbrBlockReflectivity.fx," Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Shaders/ShadersInclude/pbrBlockReflectivity.fx
+18. C. Barré-Brisebois and S. Hill, "Blending in Detail," Self Shadow, 2012. Accessed: Aug. 17, 2026. [Online]. Available: https://blog.selfshadow.com/publications/blending-in-detail/
