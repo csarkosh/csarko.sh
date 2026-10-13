@@ -10,19 +10,28 @@
 const METADATA_TOKEN = "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token";
 const API = "https://firebasehosting.googleapis.com/v1beta1";
 
-export function createHosting({ site, fetch, cache, ttlMs = 300_000, tokenTtlMs = 50 * 60_000 }) {
+export function createHosting({ site, fetch, cache, ttlMs = 300_000, tokenTtlMs = 50 * 60_000, now = Date.now }) {
+  // The token is kept for as long as the metadata server says it is good, less a
+  // minute, and never longer than tokenTtlMs. It was kept a flat 50 minutes before,
+  // but the metadata server hands out the same token until it is nearly spent, so a
+  // token fetched late in its hour was kept past its end and every call answered
+  // 401 for a while (the Health card, 2026-10-13). A fetch that fails is not kept.
+  let held = { token: null, until: 0 };
   async function accessToken() {
-    return cache.get("hosting:adc-token", tokenTtlMs, async () => {
-      try {
-        const res = await fetch(METADATA_TOKEN, { headers: { "metadata-flavor": "Google" }, signal: AbortSignal.timeout(2000) });
-        if (!res.ok) return null;
-        const body = await res.json();
-        return typeof body.access_token === "string" ? body.access_token : null;
-      } catch {
-        // No metadata server: not on Cloud Run.
-        return null;
-      }
-    });
+    if (held.token !== null && now() < held.until) return held.token;
+    try {
+      const res = await fetch(METADATA_TOKEN, { headers: { "metadata-flavor": "Google" }, signal: AbortSignal.timeout(2000) });
+      if (!res.ok) return null;
+      const body = await res.json();
+      if (typeof body.access_token !== "string") return null;
+      const seconds = Number(body.expires_in);
+      const life = Number.isFinite(seconds) && seconds > 0 ? Math.min(tokenTtlMs, (seconds - 60) * 1000) : tokenTtlMs;
+      held = { token: body.access_token, until: now() + Math.max(0, life) };
+      return held.token;
+    } catch {
+      // No metadata server: not on Cloud Run.
+      return null;
+    }
   }
 
   return {
