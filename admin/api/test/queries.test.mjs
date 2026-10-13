@@ -200,13 +200,26 @@ test("health reads Lighthouse from the latest snapshot, or runs it once when the
   assert.deepEqual(first.notFound, [{ path: "/docs/old-slug", visitors: 7 }, { path: "/wp-login.php", visitors: 2 }]);
   assert.equal(first.sitemapFetchedAt, "2026-10-11T03:00:00Z");
   assert.deepEqual(first.indexed, { indexed: 2, total: 3 });
+  assert.equal(first.indexedAt, "2026-10-12T15:30:00.000Z", "no snapshot yet: inspected live, now");
   assert.equal(first.overall.status, "warning");
 
-  await deps.store.writeSnapshot("2026-10-12", { at: "2026-10-12T10:00:00.000Z", lighthousePerformance: 91 });
+  await deps.store.writeSnapshot("2026-10-12", {
+    at: "2026-10-12T10:00:00.000Z",
+    lighthousePerformance: 91,
+    indexed: { indexed: 1, total: 3, missing: ["https://csarko.sh/games", "https://csarko.sh/research/stylized-shader-looks"] },
+  });
   deps.psi.performance = async () => { throw new Error("must not run"); };
+  deps.gsc.indexedOf = async () => { throw new Error("must not inspect on a request once a snapshot holds the result"); };
   const second = await q.health(7);
   assert.equal(second.lighthousePerformance, 91);
   assert.equal(second.lighthouseAt, "2026-10-12T10:00:00.000Z");
+  assert.deepEqual(second.indexed, { indexed: 1, total: 3 }, "the snapshot's inspection, not a live one");
+  assert.equal(second.indexedAt, "2026-10-12T10:00:00.000Z");
+  assert.match(second.overall.note, /2 of 3 pages not indexed/);
+
+  const search = await q.search(28);
+  assert.deepEqual(search.indexed, { indexed: 1, total: 3, missing: ["https://csarko.sh/games", "https://csarko.sh/research/stylized-shader-looks"] }, "search reads the same stored result");
+  assert.equal(search.indexedAt, "2026-10-12T10:00:00.000Z");
 });
 
 test("snapshot writes today's document with every counter and is idempotent for the day", async () => {
@@ -224,6 +237,7 @@ test("snapshot writes today's document with every counter and is idempotent for 
   assert.deepEqual(doc.youtube, { subscribers: 40, views: 1200 });
   assert.deepEqual(doc.github, { "csarkosh/game-dayhike": { stars: 3, views14: 20, uniques14: 9, clones14: 2 } });
   assert.equal(doc.lighthousePerformance, 97);
+  assert.deepEqual(doc.indexed, { indexed: 2, total: 3, missing: ["https://csarko.sh/research/stylized-shader-looks"] }, "the sitemap is inspected here, once a day");
   assert.equal(doc.up, true);
   assert.equal(doc.ttfbMs, 120);
   assert.equal(doc.notConfigured, undefined);

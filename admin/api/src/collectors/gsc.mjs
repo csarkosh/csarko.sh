@@ -11,8 +11,10 @@
  * token, which is cached until a minute before it expires.
  *
  * Quotas (Google, 2026-10): searchAnalytics 1,200 queries a minute a site;
- * URL inspection 2,000 a day a property. The site has 29 URLs and the
- * inspection result is cached six hours, so a day costs about 120.
+ * URL inspection 2,000 a day a property and 600 a minute. An inspection
+ * takes 5 to 7 s (measured 2026-10-13), so the daily snapshot inspects the
+ * sitemap's 33 URLs, twelve at a time, and the pages read its result; a
+ * request inspects live only before the first snapshot. A day costs 33.
  */
 
 import { createSign } from "node:crypto";
@@ -43,7 +45,7 @@ export function isIndexed(status) {
   return INDEXED_VERDICTS.has(status?.verdict);
 }
 
-export function createGsc({ key, property, fetch, cache, now = Date.now, ttlMs = 300_000, inspectTtlMs = 6 * HOUR, inspectConcurrency = 4 }) {
+export function createGsc({ key, property, fetch, cache, now = Date.now, ttlMs = 300_000, inspectTtlMs = 6 * HOUR, inspectConcurrency = 12 }) {
   const configured = key !== null && key !== undefined;
   const siteSegment = encodeURIComponent(property);
 

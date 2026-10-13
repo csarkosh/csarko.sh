@@ -228,7 +228,7 @@ Console's quotas: `goatcounter.mjs`, `gsc.mjs` (ports `gsc.py`'s three calls), `
 | `audience` | countries, sizes, browsers, systems, languages | GoatCounter |
 | `search` | per-day clicks, impressions, CTR, position; top queries; top pages; indexed vs sitemap; sitemap state | Search Console (card says "2 to 3 days behind") |
 | `reach` | YouTube channel and per-film stats, GitHub stars and traffic for **public repos only** (`game-dayhike`, `electron-gamepatch`; never a private one, *Cyrus 2026-10-12*), HN mentions, Substack manual series | YouTube, GitHub, HN, Firestore |
-| `health` | up, TTFB, cert days, Lighthouse performance, last deploy, 404s | uptime, PSI (from the last snapshot), Hosting, GoatCounter |
+| `health` | up, TTFB, cert days, Lighthouse performance, pages indexed, last deploy, 404s | uptime, PSI and URL inspection (both from the last snapshot: an inspection takes 5 to 7 s a URL, so the 33 run once a day, never on a request), Hosting, GoatCounter |
 
 `/admin/snapshot` runs every collector once a day and writes `snapshots/<YYYY-MM-DD>` to
 Firestore (one document, a few KB: well inside 20,000 writes and 1 GiB). `/admin/kpis`

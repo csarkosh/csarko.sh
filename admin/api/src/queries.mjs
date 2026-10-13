@@ -155,17 +155,20 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
       if (!gsc.configured) return { ...base, perDay: null, totals: null, previous: null, queries: null, pages: null, indexed: null, sitemap: null, notConfigured: { search: "GSC_SA_KEY" } };
       const r = dailyRange(days, now());
       const h = hints();
-      const [dateRows, prevRows, queryRows, pageRows, urls] = await Promise.all([
+      const [dateRows, prevRows, queryRows, pageRows, urls, latest] = await Promise.all([
         gsc.query({ startDate: r.startDate, endDate: r.endDate, dimensions: ["date"] }),
         gsc.query({ startDate: r.prevStartDate, endDate: r.prevEndDate, dimensions: ["date"] }),
         gsc.query({ startDate: r.startDate, endDate: r.endDate, dimensions: ["query"], rowLimit: 100 }),
         gsc.query({ startDate: r.startDate, endDate: r.endDate, dimensions: ["page"], rowLimit: 100 }),
         part(h, "sitemap", "SITEMAP_URL", true, () => sitemap.urls()),
+        store.latestSnapshot(),
       ]);
       const perDay = gscMap.perDayOf(dateRows, r.startDate, r.endDate);
       const prevTotals = gscMap.totalsOf(gscMap.perDayOf(prevRows, r.prevStartDate, r.prevEndDate));
+      // The indexing result is the daily snapshot's (see health()); live only before the first snapshot.
+      const stored = latest?.indexed ?? null;
       const [indexed, sitemapState] = await Promise.all([
-        urls === null ? null : part(h, "indexed", "GSC_SA_KEY", true, () => gsc.indexedOf(urls)),
+        stored ?? (urls === null ? null : part(h, "indexed", "GSC_SA_KEY", true, () => gsc.indexedOf(urls))),
         part(h, "sitemapState", "GSC_SA_KEY", true, () => gsc.sitemap(config.sitemapUrl)),
       ]);
       return withHints({
@@ -178,6 +181,7 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
         queries: gscMap.topRowsOf(queryRows, "query"),
         pages: gscMap.topRowsOf(pageRows, "page").map(({ page, clicks, impressions }) => ({ page, clicks, impressions })),
         indexed,
+        indexedAt: indexed === null ? null : stored === null ? new Date(now()).toISOString() : latest.at ?? null,
         sitemap: sitemapState,
       }, h);
     },
@@ -218,8 +222,15 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
         lighthouseAt = score?.at ?? null;
       }
       const notFound = hits === null ? null : await notFoundOf(hits, h);
-      const indexedFull = urls === null ? null : await part(h, "indexed", "GSC_SA_KEY", gsc.configured, () => gsc.indexedOf(urls));
+      // Indexing comes from the snapshot as well: a URL inspection takes 5 to
+      // 7 s, so the sitemap's 33 cost a cold instance a minute when they ran
+      // on the request (seen 2026-10-13: 60 s and a 504). The daily job
+      // inspects them once; a request inspects live only while no snapshot
+      // holds a result, as on day one.
+      const stored = latest?.indexed ?? null;
+      const indexedFull = stored ?? (urls === null ? null : await part(h, "indexed", "GSC_SA_KEY", gsc.configured, () => gsc.indexedOf(urls)));
       const indexed = indexedFull === null ? null : { indexed: indexedFull.indexed, total: indexedFull.total };
+      const indexedAt = indexedFull === null ? null : stored === null ? new Date(now()).toISOString() : latest.at ?? null;
       const sitemapFetchedAt = sitemapState?.lastDownloaded ?? null;
       const overall = assessHealth({ ...live, lighthousePerformance, indexed, notFound, sitemapFetchedAt, now: now() });
       return withHints({
@@ -233,6 +244,7 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
         notFound,
         sitemapFetchedAt,
         indexed,
+        indexedAt,
         overall,
       }, h);
     },
@@ -284,7 +296,7 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
       const d28 = dailyRange(28, t);
       const d7 = dailyRange(7, t);
       const gscTotals = (r) => gsc.query({ startDate: r.startDate, endDate: r.endDate, dimensions: ["date"] }).then((rows) => gscMap.totalsOf(gscMap.perDayOf(rows, r.startDate, r.endDate)));
-      const [total, hits, s28, s7, channel, repos, score, live] = await Promise.all([
+      const [total, hits, s28, s7, channel, repos, score, live, urls] = await Promise.all([
         part(h, "visits", "GOATCOUNTER_TOKEN", gc.configured, () => gc.total(range.start, range.end)),
         part(h, "events", "GOATCOUNTER_TOKEN", gc.configured, () => gc.hits(range.start, range.end)),
         part(h, "search28", "GSC_SA_KEY", gsc.configured, () => gscTotals(d28)),
@@ -293,7 +305,11 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
         part(h, "github", "GITHUB_REPOS", github.repos.length > 0, () => github.all()),
         part(h, "lighthouse", "PSI_KEY", psi.configured, () => psi.performance()),
         uptime.check(),
+        part(h, "sitemap", "SITEMAP_URL", true, () => sitemap.urls()),
       ]);
+      // The one place the sitemap's URLs are inspected (5 to 7 s each, in
+      // parallel): once a day here, read by health() and search() after.
+      const indexed = urls === null ? null : await part(h, "indexed", "GSC_SA_KEY", gsc.configured, () => gsc.indexedOf(urls));
       const githubDoc = {};
       for (const r of repos ?? []) {
         githubDoc[r.repo] = { stars: r.stars, views14: r.traffic?.views ?? null, uniques14: r.traffic?.uniques ?? null, clones14: r.traffic?.clones ?? null };
@@ -310,6 +326,7 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
         youtube: channel === null ? null : { subscribers: channel.subscribers, views: channel.views },
         github: githubDoc,
         lighthousePerformance: score?.performance ?? null,
+        indexed: indexed === null ? null : { indexed: indexed.indexed, total: indexed.total, missing: indexed.missing },
         up: live.up,
         ttfbMs: live.ttfbMs,
         ...(Object.keys(h.notConfigured).length > 0 ? { notConfigured: h.notConfigured } : {}),
