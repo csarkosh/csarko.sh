@@ -193,9 +193,10 @@ three from the command line):
   `electron-gamepatch` and the `csarko.sh` card) is covered by `/games` and the
   hero's Building tile, and Skills by the Experience section's tech tags. Don't
   bring any of the three back unasked. If a card about the code ever returns: `game-dayhike`
-  has no licence, so it is a "Public repo", not "Open source", and **the asset
-  pipeline is being commercialized**: never describe it as open source or part of
-  that repo. The public list of the games is **`/games`** (nav: `Games`), built
+  is **GPL-3.0** *(licence added 2026-10-13 at Cyrus's request; it had none before, and was
+  a "Public repo" rather than "Open source" until then)*, and **the asset pipeline is being
+  commercialized**: it is not in that repo and is never described as open source or as part
+  of it. The public list of the games is **`/games`** (nav: `Games`), built
   from `docs/games/*.md`, one file per game.
 - **The blog is "csarko.log"** at `https://csarko.substack.com/`. It has no
   published posts yet; Cyrus will publish once Day Hike is ready to publicize.
