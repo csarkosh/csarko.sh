@@ -117,6 +117,16 @@ const make = (tag, attrs, ...children) => {
 /** Where the nav's account menu was rendered, so signing out clears it along with the page. */
 let menuHost = null;
 
+/** "CS" for Cyrus Sarkosh: the first letters of the name's first and last words, else the email's first letter; '' with no account. */
+export function initialsOf(account) {
+  if (!account) return '';
+  const words = String(account.name ?? '').trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 2) return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  const local = String(account.email ?? '').split('@')[0];
+  return local ? local[0].toUpperCase() : '';
+}
+
 /**
  * The nav's account (Cyrus, 2026-10-13: in place of the app links): a round profile button
  * that toggles a small menu with the Live or Sample badge, the signed-in email and Sign out.
@@ -126,16 +136,25 @@ let menuHost = null;
  */
 export function accountMenu(host, { account = null, preview = false } = {}) {
   menuHost = host;
-  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  for (const [k, v] of Object.entries({ viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' })) icon.setAttribute(k, v);
-  for (const d of ['M20 21a8 8 0 0 0-16 0', 'M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z']) {
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', d);
-    icon.append(path);
+  // Signed in, the button is the account's initials in the accent circle (Cyrus,
+  // 2026-10-13); with nobody signed in, the generic profile mark.
+  const initials = initialsOf(account);
+  let face;
+  if (initials) {
+    face = make('span', { 'aria-hidden': 'true' }, initials);
+  } else {
+    face = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    for (const [k, v] of Object.entries({ viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' })) face.setAttribute(k, v);
+    for (const d of ['M20 21a8 8 0 0 0-16 0', 'M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z']) {
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', d);
+      face.append(path);
+    }
   }
-  const button = make('button', { class: 'avatar', type: 'button', 'aria-label': 'Account', 'aria-haspopup': 'true', 'aria-expanded': 'false', 'aria-controls': 'account-menu' }, icon);
+  const button = make('button', { class: `avatar${initials ? ' me' : ''}`, type: 'button', 'aria-label': account ? `Account, ${account.name ?? account.email}` : 'Account', 'aria-haspopup': 'true', 'aria-expanded': 'false', 'aria-controls': 'account-menu' }, face);
   const menu = make('div', { class: 'menu', id: 'account-menu', hidden: true },
     make('span', { class: `badge ${preview ? 'sample' : 'live'}` }, preview ? 'Sample data' : 'Live'),
+    ...(account?.name ? [make('p', { class: 'name' }, account.name)] : []),
     account ? make('p', { class: 'email' }, account.email) : make('p', { class: 'note' }, 'Nobody is signed in: the page shows the sample data set.'));
   const close = () => { menu.hidden = true; button.setAttribute('aria-expanded', 'false'); };
   const open = () => { menu.hidden = false; button.setAttribute('aria-expanded', 'true'); };
@@ -190,7 +209,7 @@ export function requireSession(root, onReady) {
   };
   const ready = (account) => {
     active = account.uid;
-    current = { email: account.email ?? '' };
+    current = { email: account.email ?? '', name: account.displayName || null };
     hide();
     onReady(current);
   };

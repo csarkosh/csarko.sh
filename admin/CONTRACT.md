@@ -213,7 +213,8 @@ export function requireSession(root, onReady)
 // ?preview to the address to see the page with sample data."
 
 export function user()
-// { email } | null: the signed-in account.
+// { email, name } | null: the signed-in account; `name` is the Google account's display
+// name, or null.
 
 export async function fetchWithAuth(url, init)
 // fetch() with `Authorization: Bearer <fresh ID token from getIdToken()>`, credentials
@@ -226,8 +227,9 @@ export async function signOut()
 
 export function accountMenu(host, { account, preview })
 // The nav's account, rendered into `host` (the nav's `<div class="account" id="account">`
-// that every page's chrome carries): a round profile button (aria-expanded, aria-controls)
-// that toggles a menu with the Live or Sample badge, the signed-in email and a Sign out
+// that every page's chrome carries): a round button (aria-expanded, aria-controls), the
+// account's initials on the accent when someone is signed in and a profile mark otherwise,
+// that toggles a menu with the Live or Sample badge, the name, the email and a Sign out
 // button. A page calls it from onReady with the account, or once with { preview: true }
 // under ?preview, where the menu says nobody is signed in and has no Sign out. Closes on
 // Escape, on a click elsewhere, and on Sign out.
