@@ -58,6 +58,7 @@ Same inputs, same outputs (two builds produce identical hashes).
 | `public/assets/portrait-{240,360,480,720}.<hash>.{avif,webp,jpg}` | `assets/portrait-source.jpg` | Responsive LCP image. Desktop 2x loads a ~15 KB AVIF instead of a 100 KB JPEG. |
 | `public/assets/<font>.<hash>.woff2` | `assets/fonts/*.woff2` | Inter + JetBrains Mono variable, latin subset. License: `public/licenses/fonts-OFL.txt`. |
 | `public/portrait.jpg` | same | Stable URL for JSON-LD `Person.image`. |
+| `public/assets/goatcounter-count.<hash>.js`, `public/assets/engage.<hash>.js` | `assets/vendor/goatcounter-count.js` (unmodified), `assets/engage.js` (comment lines stripped) | The analytics scripts, only while `site.json` has a `code`. count.js goes on every page, engage.js on doc pages only; see "Analytics (in place)". |
 | `<!-- generated:head -->`, `/* generated:fonts */`, `<!-- generated:portrait -->` blocks in `public/*.html` | the above | `index.html` gets relative paths (the file:// preview works); `404.html` gets root-relative paths (it's served at any depth). |
 | `favicon.{ico,svg}`, `favicon-96x96.png`, `apple-touch-icon.png` | `assets/favicon.svg` | Real files, so Google Search shows them. |
 | `og-image.jpg` (1200×630) | `assets/og-image.html` | Link-preview card. |
@@ -158,25 +159,72 @@ section means renaming it in `PAGE_LINKS`/`DOCS_NAV` and nowhere else.
 ## Analytics (in place)
 
 GoatCounter, configured only in `site.json` (`analytics.code`). The generator
-writes the async `<script data-goatcounter>` tag into both pages, the hashed
+writes the async `<script data-goatcounter>` tag into every page, the hashed
 self-hosted `count.js`, and the CSP; `check.py` derives its allowlist from the
 same file and verifies all three agree. Source script:
-`assets/vendor/goatcounter-count.js` (unmodified, ISC). It fits the 10 KB script
-budget (9.4 KB raw, 3 KB transferred).
+`assets/vendor/goatcounter-count.js` (unmodified, ISC; 9.4 KB raw, 3 KB
+transferred).
+
+**Events** *(added 2026-10-12 for the admin dashboard; spec
+`docs/superpowers/specs/2026-10-12-admin-dashboard-design.md`, Part 1.2)*.
+GoatCounter stores an event as a path flagged `event`, so the same
+`stats/hits` call returns them. Every name is a stable identifier that
+outlives a change of label or URL; never rename one without a reason the
+dashboard can absorb. Click events are `data-goatcounter-click` attributes,
+which `count.js` binds on load:
+
+| Event | On |
+|---|---|
+| `out-linkedin`, `out-github`, `out-substack`, `out-youtube` | the home page's hero chips, its Contact buttons, and the Filming tile's `@csarkosh` link (`public/index.html`) |
+| `nav-film`, `nav-games`, `nav-research` | the page links of every nav: the home page's by hand, the generated pages' from `PAGE_LINKS` in `docs_lib.mjs`; the link to the page you are on carries none, since a reload is not a navigation |
+| `play-<slug>` | a game card's "Play in your browser" (`gameList`) |
+| `watch-<slug>` | a film card's "Watch on YouTube" (`filmCard`) |
+| `read-<slug>` | a doc page, once, when its end scrolls into view (below) |
+
+`read-<slug>` is the one event with a script: `assets/engage.js` (ours, not
+vendored). `docs_lib.mjs` marks one element per doc `data-read-end`, the
+Sources heading when the doc has one (a reader who finished the prose has read
+the doc, and a long reference list would otherwise hide them) and otherwise
+the "Written by" box; the script watches it with an IntersectionObserver and
+calls `goatcounter.count({ path: 'read-<slug>', event: true })` once, waiting
+for `load` if `count.js` (async) has not run yet. It is a no-op without
+`window.goatcounter` (blocked), without IntersectionObserver, and on localhost
+and `file://`, where `count.js` drops the beacon. `build_assets.py` writes it
+to `public/assets/engage.<hash>.js` with its whole-line `//` comments stripped
+(`strip_comments`; 549 B), and emits
+`<script defer src="/assets/engage.<hash>.js" data-slug="<slug>">` after
+`count.js` inside the `generated:analytics` block of doc pages only. The
+budget is now 9,922 B of 10,000 on a doc page, 9,373 B elsewhere. `check.py`
+(`analytics_checks`) fails a doc page without the tag, any other page with
+it, a tag that is not `defer`, a hash that is not the stripped source, a
+`data-slug` that is not the page's, a page with no or more than one
+`data-read-end`, and any `<script src>` that is not `count.js` or
+`engage.js`.
 
 ## Adding a script or third-party service
 
 This is the change most likely to regress everything above. In order:
 
-1. Prefer a first-party script file under `public/`, loaded with `defer`. If the
-   vendor's host is required, load it `async`/`defer` — never render-blocking.
+1. Prefer a first-party script file, loaded with `defer`: ours under
+   `assets/` (whole-line `//` comments are stripped at build, so write them
+   freely), a vendor's under `assets/vendor/` unmodified with a provenance
+   comment. `build_assets.py` hashes it into `public/assets/` with
+   `write_hashed` and writes the tag into the `generated:analytics` block
+   (`engage.js` is the pattern, including how a tag reaches only some pages).
+   Never a hand-written tag in `public/`. If the vendor's host is required,
+   load it `async`/`defer`, never render-blocking.
 2. Add the vendor's origins to `THIRD_PARTY` in `check.py` (`script-src`, plus
    `connect-src` for where it sends beacons) **and** to the same CSP directives
    in `firebase.json`. No inline `<script>` unless its hash is in `script-src`.
-3. Stay within `BUDGET_SCRIPTS`.
-4. Run `check.py`, deploy, then `check.py --live --lighthouse --observatory`.
+3. Teach `check.py` about it: `analytics_checks` fails any `<script src>` it
+   does not know, so a new script needs its own hash check and page rule
+   there, next to `engage.js`'s.
+4. Stay within `BUDGET_SCRIPTS` (10,000 B). `count.js` and `engage.js` already
+   take 9,922 B of it on a doc page, so anything new displaces something or
+   comes with a deliberate budget change, agreed with Cyrus.
+5. Run `check.py`, deploy, then `check.py --live --lighthouse --observatory`.
    Performance must stay ≥ 95 and Observatory A+.
-5. Update README.md and AGENTS.md wherever they say the page has no JavaScript.
+6. Update README.md and AGENTS.md wherever they say the page has no JavaScript.
 
 ## Checklist for any change to public/
 

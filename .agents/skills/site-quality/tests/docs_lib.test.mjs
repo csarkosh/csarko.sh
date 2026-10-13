@@ -1,7 +1,7 @@
 // Tests for docs_lib.mjs. Run: node --test .agents/skills/site-quality/tests/docs_lib.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSite, DocError, docPage, IEEE_SINCE, filmsPage, formatDate, gamesPage, homeSection, indexPage, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, replaceBlock, sitemap, sortDocs, sortFilms, sortGames, themeBlocks } from '../scripts/docs_lib.mjs';
+import { buildSite, DocError, docPage, IEEE_SINCE, filmsPage, formatDate, gamesPage, indexPage, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, sitemap, sortDocs, sortFilms, sortGames, themeBlocks } from '../scripts/docs_lib.mjs';
 
 const FILE = 'docs/published/2026-09-14-example.md';
 const DESC = 'A description that is long enough to pass the seventy character minimum for search.';
@@ -223,10 +223,7 @@ const INDEX = `<style>
       }
     }
   </style>
-  <main>
-    <!-- generated:docs -->
-    <!-- /generated:docs -->
-  </main>`;
+  <main></main>`;
 const src = (slug, published, extra = '') =>
   ({ name: `${published}-${slug}.md`, text: `---\ndescription: ${DESC}\npublished: ${published}\n${extra}---\n# ${slug} title\n\n## 1. One\n\nText.\n` });
 const doc = (...args) => { const s = src(...args); return loadDoc(s.name, s.text); };
@@ -238,10 +235,15 @@ test('themeBlocks copies both token blocks verbatim', () => {
   assert.throws(() => themeBlocks('<style></style>'), /theme token blocks not found/);
 });
 
-test('replaceBlock swaps what is between markers and requires them', () => {
-  assert.equal(replaceBlock('a<!-- generated:docs -->old<!-- /generated:docs -->b', 'docs', 'new'),
-    'a<!-- generated:docs -->new<!-- /generated:docs -->b');
-  assert.throws(() => replaceBlock('nothing', 'docs', 'x'), /no <!-- generated:docs --> markers/);
+test('a doc with a Sources section marks that heading, not the author box, as its read end', () => {
+  const r = renderMarkdown(ieeeDoc('Text [1], [2].').replace('## Sources', '## 2. Sources'), FILE);
+  assert.equal(r.hasSources, true);
+  assert.ok(r.html.includes('<div class="section-head" data-read-end><p class="section-label">02</p><h2 id="sources">'));
+  assert.equal(r.html.split(' data-read-end').length, 2, 'exactly one end marker');
+  const s = src('cited', '2026-09-14');
+  const html = docPage(loadDoc(s.name, s.text.replace('Text.\n', 'Text [1].\n\n## Sources\n\n' + ref(1) + '\n')), themeBlocks(INDEX));
+  assert.ok(html.includes('<section class="author" aria-label="About the author">'));
+  assert.equal(html.split(' data-read-end').length, 2, 'exactly one end marker on the page');
 });
 
 test('sortDocs orders newest first, then by slug', () => {
@@ -265,7 +267,8 @@ test('docPage has the tags, JSON-LD and markers the checks expect', () => {
   assert.ok(html.includes('<body class="doc-page">\n  <a class="skip-link" href="#top">Skip to content</a>'));
   assert.ok(html.includes('<main id="top" tabindex="-1">'));
   assert.ok(html.includes('<a href="#one"><span class="num" aria-hidden="true">01</span><span>One</span></a>'));
-  assert.ok(html.includes('<section class="author" aria-label="About the author">'));
+  // No Sources section, so the author box is the end engage.js watches for the read event.
+  assert.ok(html.includes('<section class="author" aria-label="About the author" data-read-end>'));
   for (const marker of ['<!-- generated:head -->\n  <!-- /generated:head -->', '/* generated:fonts */\n    /* /generated:fonts */', '<!-- generated:analytics -->\n  <!-- /generated:analytics -->']) {
     assert.ok(html.includes(marker), marker);
   }
@@ -296,17 +299,6 @@ test('indexPage lists every doc with CollectionPage JSON-LD', () => {
   assert.deepEqual(page.mainEntity.itemListElement.map((i) => i.url), ['https://csarko.sh/research/b', 'https://csarko.sh/research/a']);
 });
 
-test('homeSection lists the three newest docs and is empty with none', () => {
-  const html = homeSection(sortDocs([doc('a', '2026-01-01'), doc('b', '2026-03-01'), doc('c', '2026-02-01'), doc('d', '2026-03-01')]));
-  assert.deepEqual([...html.matchAll(/href="\/research\/([a-z]+)"/g)].map((m) => m[1]), ['b', 'd', 'c']);
-  assert.ok(html.includes('<section id="notes" aria-labelledby="notes-title">'));
-  assert.ok(html.includes('<p class="section-label">03 / Notes</p>'));
-  assert.ok(html.includes('<h2 id="notes-title">Notes from what I\'m researching</h2>'));
-  assert.ok(html.includes('<h3 class="doc-title"><a class="stretch" href="/research/b">b title</a></h3>'));
-  assert.ok(html.includes('<a class="all-docs" href="/research">All notes'));
-  assert.equal(homeSection([]), '\n    ');
-});
-
 test('sitemap lists home, the index and every doc, with lastmod only on docs', () => {
   assert.equal(sitemap([]),
     '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>https://csarko.sh/</loc>\n  </url>\n</urlset>\n');
@@ -323,12 +315,11 @@ test('buildSite writes every output, deterministically, and nothing extra with n
   const sources = [src('b', '2026-03-01'), src('a', '2026-01-01')];
   const one = buildSite({ sources, indexHtml: INDEX });
   const two = buildSite({ sources: [...sources].reverse(), indexHtml: INDEX });
-  assert.deepEqual([...one.keys()].sort(), ['index.html', 'research/a.html', 'research/b.html', 'research/index.html', 'sitemap.xml']);
+  // The home page is read only for its theme tokens; since the Notes section went, nothing is written to it.
+  assert.deepEqual([...one.keys()].sort(), ['research/a.html', 'research/b.html', 'research/index.html', 'sitemap.xml']);
   assert.deepEqual(Object.fromEntries(one), Object.fromEntries(two));
-  assert.ok(one.get('index.html').includes('<section id="notes"'));
   const empty = buildSite({ sources: [], indexHtml: INDEX });
-  assert.deepEqual([...empty.keys()].sort(), ['index.html', 'sitemap.xml']);
-  assert.equal(empty.get('index.html'), INDEX);
+  assert.deepEqual([...empty.keys()].sort(), ['sitemap.xml']);
 });
 
 test('buildSite refuses two dates claiming one slug, instead of overwriting the page', () => {
@@ -401,13 +392,15 @@ test('gamesPage lists every game with VideoGame JSON-LD and marks itself current
   assert.ok(html.includes('<link rel="canonical" href="https://csarko.sh/games" />'));
   assert.ok(html.includes('<meta property="og:type" content="website" />'));
   assert.ok(html.includes('<li><a href="/games" aria-current="page">Games</a></li>'));
-  assert.ok(html.includes('<li><a href="/research">Research</a></li>'));
+  // Every other page link counts a nav-<page> click; the one you are on reloads, so it does not.
+  assert.ok(html.includes('<li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>'));
+  assert.ok(html.includes('<li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>'));
   assert.ok(html.includes('<p class="game-kicker">Playable now · No install</p>'));
   assert.ok(html.includes('<ul class="tags" role="list"><li>TypeScript</li><li>Babylon.js</li></ul>'));
   // The play link is the card's own, stretched over it, styled as the home page's card link; the
   // repo is not linked from the card.
   assert.ok(html.includes('<li class="card">'));
-  assert.ok(html.includes('<a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener">Play in your browser <svg'));
+  assert.ok(html.includes('<a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-goatcounter-click="play-day-hike">Play in your browser <svg'));
   assert.ok(!html.includes('github.com/csarkosh/game-dayhike'));
   const page = jsonLd(html).find((n) => n['@type'] === 'CollectionPage');
   assert.equal(page.url, 'https://csarko.sh/games');
@@ -564,7 +557,7 @@ test('filmsPage cards the poster, links out to YouTube and lists VideoObject JSO
   assert.ok(html.indexOf('href="/film"') < html.indexOf('href="/games"'));
   assert.ok(html.includes('<p class="film-kicker">Short film · 0:16</p>'));
   assert.ok(html.includes('<ul class="tags" role="list"><li>Analog horror</li><li>Photo puppetry</li></ul>'));
-  assert.ok(html.includes('<a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener">Watch on YouTube <svg'));
+  assert.ok(html.includes('<a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener" data-goatcounter-click="watch-hallway">Watch on YouTube <svg'));
   // The poster is a marker build_assets.py fills, carrying a usable img and its alt until it does.
   assert.ok(html.includes('<!-- generated:film-poster:hallway -->'));
   assert.ok(html.includes('alt="A woman in a dim hallway."'));
@@ -595,8 +588,8 @@ test('buildSite writes the film index only when a film exists, and never touches
   const withFilms = buildSite({ sources, filmSources: [filmSrc('hallway')], indexHtml: INDEX });
   assert.ok(withFilms.has('film/index.html'));
   assert.ok(withFilms.get('sitemap.xml').includes('https://csarko.sh/film'));
-  // The films are a page of their own: the home page links to it and carries no film of its own.
-  assert.ok(!withFilms.get('index.html').includes('film-card'));
+  // The films are a page of their own: the home page links to it and is not written at all.
+  assert.ok(!withFilms.has('index.html'));
   assert.ok(!buildSite({ sources, indexHtml: INDEX }).has('film/index.html'));
 });
 

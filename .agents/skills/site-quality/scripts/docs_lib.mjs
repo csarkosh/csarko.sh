@@ -214,6 +214,10 @@ export function renderMarkdown(body, file, { ieee = false } = {}) {
   const references = findReferences(tokens, file, ieee, problems);
   const rail = [];
   const usedIds = new Set(['top']); // "top" is the skip link's target; never reused
+  // engage.js counts a "read-<slug>" event when the element marked data-read-end scrolls into view.
+  // With a Sources section that is its heading: a reader who finished the prose has read the doc,
+  // and a long reference list would otherwise hide them. Without one, docPage marks its author box.
+  let hasSources = false;
   let lastDepth = 1;
   let insideHeading = false; // set while rendering a heading's inline content, so the link
   // renderer below can reject a link nested in any heading (H1 through H6) instead of letting
@@ -229,7 +233,7 @@ export function renderMarkdown(body, file, { ieee = false } = {}) {
 
   marked.use({
     renderer: {
-      heading({ tokens: inline, depth }) {
+      heading({ tokens: inline, depth, text }) {
         if (depth > lastDepth + 1) problems.push(`${file}: heading level skips from h${lastDepth} to h${depth}`);
         lastDepth = depth;
         let html = parseHeadingInline(() => this.parser.parseInline(inline));
@@ -248,7 +252,9 @@ export function renderMarkdown(body, file, { ieee = false } = {}) {
         const heading = `<h${depth} id="${id}"><a class="anchor" href="#${id}">${html}</a></h${depth}>`;
         if (depth !== 2) return `${heading}\n`;
         rail.push({ id, number, text: plainText(html) });
-        return `<div class="section-head">${number ? `<p class="section-label">${number}</p>` : ''}${heading}</div>\n`;
+        const isSources = SOURCES_HEADING.test(text) && !hasSources;
+        if (isSources) hasSources = true;
+        return `<div class="section-head"${isSources ? ' data-read-end' : ''}>${number ? `<p class="section-label">${number}</p>` : ''}${heading}</div>\n`;
       },
       html({ text }) {
         return escapeHtml(text);
@@ -287,7 +293,7 @@ export function renderMarkdown(body, file, { ieee = false } = {}) {
   if (problems.length) throw new DocError(problems.join('\n'));
   // Tags become spaces here (not in plainText) so "<p>01</p><h2>Title" counts as two words.
   const words = decodeEntities(html.replace(/<[^>]+>/g, ' ')).split(/\s+/).filter(Boolean).length;
-  return { title: plainText(titleHtml), titleHtml, html, rail, words, references: references ? references.items.length : 0 };
+  return { title: plainText(titleHtml), titleHtml, html, rail, words, references: references ? references.items.length : 0, hasSources };
 }
 
 // ---------------------------------------------------------------- one doc
@@ -713,16 +719,19 @@ ${DOCS_CSS}${extraCss}
 
 // The page links, in the order the whole site uses them (see public/index.html, which carries the
 // same three after its heading links). `current` marks the page you are already on. There is no
-// Home link: the wordmark to their left is it, on every page.
-const PAGE_LINKS = [[`/${FILM_DIR}`, FILM_TITLE], ['/games', GAMES_TITLE], [`/${DOCS_DIR}`, DOCS_NAV]];
+// Home link: the wordmark to their left is it, on every page. The third value is the GoatCounter
+// click event (count.js binds every data-goatcounter-click), a stable identifier that outlives a
+// rename of the label or the URL; the home page's nav carries the same three names.
+const PAGE_LINKS = [[`/${FILM_DIR}`, FILM_TITLE, 'nav-film'], ['/games', GAMES_TITLE, 'nav-games'], [`/${DOCS_DIR}`, DOCS_NAV, 'nav-research']];
 
+// The link to the page you are on reloads it, which is not a navigation, so it counts nothing.
 const nav = (current) => `  <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
       <a class="wordmark" href="/">csarko<span>.sh</span></a>
       <ul>
-${PAGE_LINKS.map(([href, label]) =>
-    `        <li><a href="${href}"${href === current ? ' aria-current="page"' : ''}>${label}</a></li>`).join('\n')}
+${PAGE_LINKS.map(([href, label, event]) =>
+    `        <li><a href="${href}"${href === current ? ' aria-current="page"' : ` data-goatcounter-click="${event}"`}>${label}</a></li>`).join('\n')}
       </ul>
     </div>
   </nav>`;
@@ -808,7 +817,7 @@ ${rail}    <main id="top" tabindex="-1">
       <div class="prose">
 ${doc.html}
       </div>
-      <section class="author" aria-label="About the author">
+      <section class="author" aria-label="About the author"${doc.hasSources ? '' : ' data-read-end'}>
         <p class="section-label">Written by</p>
         <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
@@ -859,9 +868,10 @@ ${FOOTER}`;
 function gameList(games, pad) {
   const items = games.map((game) => {
     // The title is not a link: "Play in your browser" says where it goes, which a repeated title
-    // never does, and it is stretched over the card, as on the old home page Projects card.
+    // never does, and it is stretched over the card, as on the old home page Projects card. The
+    // click counts as "play-<slug>" in GoatCounter: a visitor who went on to play.
     const play = game.play
-      ? `${pad}    <a class="card-link stretch" href="${escapeHtml(game.play)}" target="_blank" rel="noopener">Play in your browser ${EXTERNAL_ARROW}</a>\n`
+      ? `${pad}    <a class="card-link stretch" href="${escapeHtml(game.play)}" target="_blank" rel="noopener" data-goatcounter-click="play-${game.slug}">Play in your browser ${EXTERNAL_ARROW}</a>\n`
       : '';
     return `${pad}  <li class="card">
 ${pad}    <p class="game-kicker">${escapeHtml(game.kicker)}</p>
@@ -940,7 +950,7 @@ ${pad}    <h2 class="film-title">${film.titleHtml}</h2>
 ${pad}    <div class="film-desc prose">
 ${film.html}${pad}    </div>
 ${pad}    <ul class="tags" role="list">${film.tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>
-${pad}    <a class="card-link stretch" href="${escapeHtml(film.watch)}" target="_blank" rel="noopener">Watch on YouTube ${EXTERNAL_ARROW}</a>
+${pad}    <a class="card-link stretch" href="${escapeHtml(film.watch)}" target="_blank" rel="noopener" data-goatcounter-click="watch-${film.slug}">Watch on YouTube ${EXTERNAL_ARROW}</a>
 ${pad}  </div>
 ${pad}</li>`;
 }

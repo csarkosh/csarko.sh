@@ -6,11 +6,13 @@ Sources (in .agents/skills/site-quality/assets/):
   portrait-source.jpg     the full-resolution portrait
   films/<slug>.jpg        one poster per film in docs/films/, portrait (9:16)
   fonts/*.woff2           self-hosted variable fonts (latin subset)
+  vendor/goatcounter-count.js, engage.js   the analytics scripts (see site.json)
 
 Outputs (in public/):
   assets/portrait-<w>.<hash>.{avif,webp,jpg}   w = 240, 360, 480, 720
   assets/film-<slug>-<w>.<hash>.{avif,webp,jpg}   w = 200, 240, 400, 480
   assets/<font>.<hash>.woff2
+  assets/goatcounter-count.<hash>.js, assets/engage.<hash>.js   (engage.js without its comment lines)
   portrait.jpg                                 stable 720px URL for JSON-LD / sharing
   film/<slug>.jpg                              stable 720px poster, cited by the film's VideoObject
 
@@ -23,7 +25,7 @@ markers in every public/*.html, public/research/*.html and public/games/*.html t
   /* generated:fonts */    …  /* /generated:fonts */            @font-face rules
   <!-- generated:portrait --> … <!-- /generated:portrait -->    <picture> markup
   <!-- generated:film-poster:<slug> --> … <!-- /… -->           a film's poster <picture>
-  <!-- generated:analytics --> … <!-- /generated:analytics -->  analytics <script>
+  <!-- generated:analytics --> … <!-- /generated:analytics -->  analytics <script>s (count.js; plus engage.js on a doc page)
 
 It also writes the Content-Security-Policy in firebase.json from CSP below plus
 whatever analytics needs, so the page, the policy and check.py's allowlist all
@@ -107,6 +109,13 @@ def write_hashed(stem: str, ext: str, data: bytes, keep: set) -> str:
     (OUT / name).write_bytes(data)
     keep.add(name)
     return name
+
+
+def strip_comments(js: bytes) -> bytes:
+    """Drop whole-line // comments from our own scripts before hashing. count.js takes 9.4 KB of
+    the 10 KB script budget, so engage.js ships only its code; its reasons stay in the source.
+    check.py applies the same rule when it verifies the hash."""
+    return b"".join(line for line in js.splitlines(keepends=True) if not line.lstrip().startswith(b"//"))
 
 
 def encode(img, fmt: str) -> bytes:
@@ -243,16 +252,23 @@ def main() -> int:
         return "\n".join(f'  <link rel="preload" href="{prefix}assets/{name}" as="font" type="font/woff2" crossorigin />'
                           for name, _, _, preload in fonts if preload)
 
-    # ---- analytics: GoatCounter's count.js, self-hosted so no third-party script loads
+    # ---- analytics: GoatCounter's count.js, self-hosted so no third-party script loads, and on
+    # doc pages our engage.js, which counts a "read-<slug>" event when the reader reaches the end.
     origin = analytics_origin()
-    counter = None
+    counter = engage = None
     if origin:
         counter = write_hashed("goatcounter-count", "js", (SRC / "vendor/goatcounter-count.js").read_bytes(), keep)
+        engage = write_hashed("engage", "js", strip_comments((SRC / "engage.js").read_bytes()), keep)
 
-    def analytics(prefix):
+    def analytics(prefix, slug):
         if not counter:
             return ""
-        return f'\n  <script data-goatcounter="{origin}/count" async src="{prefix}assets/{counter}"></script>\n  '
+        tags = f'\n  <script data-goatcounter="{origin}/count" async src="{prefix}assets/{counter}"></script>'
+        # The slug rides on the tag so the script needs no knowledge of the URL scheme. count.js is
+        # async and engage.js defer, so neither blocks rendering; engage.js waits for load if needed.
+        if slug:
+            tags += f'\n  <script defer src="{prefix}assets/{engage}" data-slug="{slug}"></script>'
+        return tags + "\n  "
 
     # ---- Content-Security-Policy in firebase.json
     directives = {k: list(v) for k, v in CSP}
@@ -263,7 +279,10 @@ def main() -> int:
     csp = "; ".join(k if k in VALUELESS else f"{k} {' '.join(v)}" for k, v in directives.items() if v or k in VALUELESS)
     fb_path = ROOT / "firebase.json"
     fb = json.loads(fb_path.read_text())
-    for block in fb["hosting"]["headers"]:
+    # The public site's entry: firebase.json lists two sites since admin.csarko.sh.
+    hosting = fb["hosting"]
+    site = next(h for h in hosting if h.get("public") == "public") if isinstance(hosting, list) else hosting
+    for block in site["headers"]:
         if block.get("source") == "**":
             for h in block["headers"]:
                 if h["key"] == "Content-Security-Policy" and h["value"] != csp:
@@ -284,11 +303,13 @@ def main() -> int:
              for q in sorted((PUBLIC / d).glob("*.html"))]
     for page in sorted(PUBLIC.glob("*.html")) + built:
         prefix = "" if page == PUBLIC / "index.html" else "/"
+        # A doc page is public/research/<slug>.html; the research index and the other lists are not docs.
+        slug = page.stem if page.parent == PUBLIC / "research" and page.name != "index.html" else None
         blocks = {
             (r"<!-- generated:head -->", r"<!-- /generated:head -->"): "\n" + preloads(prefix) + "\n  ",
             (r"/\* generated:fonts \*/", r"/\* /generated:fonts \*/"): "\n" + font_faces(prefix) + "\n    ",
             (r"<!-- generated:portrait -->", r"<!-- /generated:portrait -->"): "\n        " + picture(prefix) + "\n        ",
-            (r"<!-- generated:analytics -->", r"<!-- /generated:analytics -->"): analytics(prefix),
+            (r"<!-- generated:analytics -->", r"<!-- /generated:analytics -->"): analytics(prefix, slug),
         }
         html = page.read_text(encoding="utf-8")
         before = html
