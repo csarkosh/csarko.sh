@@ -267,6 +267,19 @@ anything related to the admin pages in this repo:
   shape, dark and light by system setting with no toggle. A new colour is a token in
   both blocks, 4.5:1 on its surface in both themes. No em-dashes, no email address or
   phone number.
+- **One chrome, every page** *(Cyrus, 2026-10-13)*. The nav holds the wordmark and, at
+  the right, the account: a round profile button whose menu is the Live or Sample badge,
+  the signed-in email and Sign out (`auth.js`, `accountMenu`; the shell renders it, every
+  page calls it). It carries no app links: the trail under the nav, `Admin › <app>` in the
+  research page's style (`.crumbs`), is the way back to the index, which carries none. An
+  app's page (Day Hike's, built in its own repo) wears the same markup, nav, trail and page
+  head included, with a `generated:head` block that `admin/build.mjs` fills after
+  `admin/deploy.sh` has pulled the bundle. The old aside under the page head is gone.
+- **Never blank** *(Cyrus, 2026-10-13)*. Every card is on the page at once as a skeleton
+  the shape of what it waits for (`charts.js`, `skeleton()` and `loading()`: tiles, a
+  chart, lines, in the surface's greys with a slow sweep, still under reduced motion),
+  fills on its own as its queries answer, and shows its own error line in place; no page
+  waits for its slowest card, and no error replaces the whole page.
 - **Same bar.** Lighthouse 100 on Accessibility and Best Practices, Performance ≥ 95,
   a layout that holds from 320px to 1440px, a strict CSP and the same security
   headers. No third-party script, with one documented exception: Google's sign-in
@@ -287,7 +300,16 @@ anything related to the admin pages in this repo:
   Google's Identity Toolkit, and the CSP allows exactly that. An app is tracked by one
   entry in `apps.json` and two routes on its API, `GET /admin/kpis` and
   `GET /admin/query/<name>?days=N` (the contract is `admin/CONTRACT.md`). GitHub metrics
-  cover **public repos only**, never a private one.
+  cover **every public, non-fork repository of the account** (`GITHUB_OWNER`, found by
+  listing it, which can only name public ones; *all of them rather than a fixed list,
+  Cyrus 2026-10-13*), never a private one.
+- **The slow sources run once a day, never on a request** *(2026-10-13, after the index
+  card took 29 to 60 s)*: a Search Console URL inspection is 5 to 7 s a URL and a
+  PageSpeed run longer, so the daily snapshot inspects the sitemap and runs Lighthouse
+  and stores both; `health` and `search` read the snapshot and inspect live only before
+  the first one exists. Every other collector answers in under a second and is cached
+  five minutes. Day Hike's BigQuery queries cost about a second each of fixed job
+  overhead, in parallel.
 - **No cookies anywhere**: Firebase Auth keeps its session in IndexedDB.
   Screenshots in both themes (`admin/preview.sh --shots`) are looked at before a visual
   change is called done.

@@ -2,20 +2,36 @@
 
 The source code behind my portfolio site **→ [csarko.sh](https://csarko.sh)**.
 
-A hand-written home page plus a games list at [csarko.sh/games](https://csarko.sh/games) and research docs at [csarko.sh/research](https://csarko.sh/research), both built from Markdown: no framework, fully agent-managed.
+A hand-written home page plus a games list at [csarko.sh/games](https://csarko.sh/games), short films at [csarko.sh/film](https://csarko.sh/film) and research docs at [csarko.sh/research](https://csarko.sh/research), all built from Markdown: no framework, fully agent-managed. Beside it, a private analytics dashboard at admin.csarko.sh that costs nothing to run and sets no cookies; the design is written up in [A zero-cost analytics dashboard without cookies](https://csarko.sh/research/a-zero-cost-analytics-dashboard-without-cookies).
 
 ## What's here
 
 ```
-public/            the site: index.html, games/ and research/ (generated) and assets
+public/            the site: index.html, film/, games/ and research/ (generated) and assets
 docs/published/    the published docs, as dated Markdown with front matter
 docs/games/        one Markdown file per game, named for its slug
+docs/films/        one Markdown file per short film, with its poster beside the site-quality skill
 docs/superpowers/  internal design specs and plans, never published
 docs/substack/     the log of Substack posts made from the docs
-_infra/            Terraform for hosting (Firebase, GCP) and DNS (Route53, AWS)
+admin/             the private dashboard: admin/public is the site admin.csarko.sh, admin/api its Cloud Run service
+_infra/            Terraform for hosting (Firebase, GCP), the admin site and API, and DNS (Route53, AWS)
 .agents/skills/    preview, deploy, site-quality, publish-doc and substack-post skills for AI agents (and humans)
-firebase.json      what gets published, and how it's cached
+firebase.json      what gets published (two Hosting sites), and how it's cached
 AGENTS.md          working context and rules for agents; CLAUDE.md points to it
+```
+
+## The admin dashboard
+
+[admin.csarko.sh](https://admin.csarko.sh) is one private page per app, behind a Google sign-in with an allowlist, with the look and the quality bar of the site itself. An index card per app shows its KPIs against the period before, twelve weeks of trend and a health reading; each app's own page goes deeper. For the site that is visits, referrers, pages, outbound clicks, search queries and impressions, reach (YouTube, every public GitHub repo, Hacker News, Substack), health (uptime, certificate, Lighthouse, pages indexed, 404s) and audience; for [Day Hike](https://games.csarko.sh/dayhike) it is the game's own telemetry.
+
+- **No cookies, no vendor on the page:** GoatCounter (self-hosted script) counts visits; Search Console, YouTube, GitHub and PageSpeed Insights are read server-side by a Cloud Run service that scales to zero.
+- **$0 a month:** every source is a free API, the daily snapshot of every KPI is a few KB a day in Firestore, and Cloud Scheduler writes it.
+- **Scales by contract:** an app is one entry in `admin/public/apps.json` and two routes on its API (`admin/CONTRACT.md`); the Day Hike page is built in its own repo and pulled in at deploy.
+- **Fast to read:** every card is a skeleton the moment the page opens and fills on its own; the slow sources (URL inspection, Lighthouse) run once a day in the snapshot, never on a page load.
+
+```bash
+admin/preview.sh            # the pages with sample data, on http://localhost:8788
+admin/deploy.sh             # publish the admin site (the API deploys with gcloud run deploy, see admin/api/README.md)
 ```
 
 ## Preview locally
