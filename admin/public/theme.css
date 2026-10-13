@@ -116,12 +116,34 @@ main:focus { outline: none; }
 .wordmark { font-family: var(--mono); font-weight: 500; font-size: 15px; letter-spacing: -0.01em; white-space: nowrap; }
 .wordmark span { color: var(--accent); }
 .wordmark small { font-size: 15px; font-weight: 400; color: var(--muted); margin-left: 8px; }
-.nav ul { display: flex; align-items: center; gap: 20px; list-style: none; margin: 0; padding: 0; }
-.nav ul a { color: var(--muted); font-size: 14px; transition: color .15s ease; white-space: nowrap; }
-.nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--text); }
+/* The account, at the nav's right (Cyrus, 2026-10-13: in place of the app links, which the
+   trail covers): a round profile button that opens a small menu with the signed-in email,
+   the Live or Sample badge, and Sign out. The menu is a plain element toggled by the
+   button (aria-expanded), closed by Escape or a click elsewhere (`auth.js`, accountMenu). */
+.account { position: relative; display: flex; align-items: center; }
+.avatar { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border-strong); transition: color .15s ease, border-color .15s ease; }
+.avatar svg { width: 20px; height: 20px; }
+.avatar:hover, .avatar[aria-expanded="true"] { color: var(--text); border-color: var(--accent); }
+.menu { position: absolute; right: 0; top: calc(100% + 10px); min-width: 240px; max-width: min(320px, calc(100vw - 32px)); padding: 14px; display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 14px; box-shadow: var(--shadow); z-index: 20; }
+.menu[hidden] { display: none; }
+.menu .email { font-family: var(--mono); font-size: 12.5px; color: var(--text); overflow-wrap: anywhere; margin: 0; }
+.menu .note { font-size: 13px; }
+.menu .btn { justify-self: start; }
 
 /* Page head: the site's eyebrow, title and lead. */
 main { min-height: calc(100vh - 60px); padding-block: 56px 96px; }
+/* The trail under the nav on every page but the index (the site's own, from docs_lib.mjs):
+   Admin › <app>. It scrolls away with the page; only the nav is sticky. Its .wrap is the
+   site's, so the first crumb starts at the wordmark's left edge at every width. */
+.crumbs { border-bottom: 1px solid var(--border); }
+.crumbs ol { display: flex; align-items: center; list-style: none; margin: 0; padding: 11px 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; }
+.crumbs li { display: flex; align-items: center; min-width: 0; flex: none; }
+.crumbs li + li::before { content: "›"; color: var(--faint); margin: 0 8px; flex: none; }
+.crumbs a { color: var(--muted); transition: color .15s ease; }
+.crumbs a:hover { color: var(--text); }
+.crumbs li:last-child { flex: 0 1 auto; }
+.crumbs [aria-current] { min-width: 0; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .page-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 24px; margin-bottom: 36px; }
 .page-head > div { min-width: 0; }
 .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin: 0 0 20px; display: flex; align-items: center; gap: 10px; }
@@ -183,6 +205,21 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .card-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 4px; }
 .card-foot { margin: 18px 0 0; font-family: var(--mono); font-size: 12px; color: var(--faint); }
 .empty, .note { color: var(--faint); font-size: 14px; margin: 0; }
+
+/* Skeletons: the shape of what a card is waiting for (tiles, a chart, the lines of a
+   table), in the surface's own greys with a slow sweep, so a card is never blank while
+   its query runs. The body is aria-busy and says "Loading" to a screen reader; the
+   shapes are aria-hidden. A card that fails replaces its skeleton with its error line. */
+.skeleton { display: grid; gap: 10px; }
+.skel-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.skel { position: relative; overflow: hidden; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; }
+.skel::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, var(--surface-hover), transparent); transform: translateX(-100%); animation: skel-sweep 1.8s ease-in-out infinite; }
+.skel.tile { height: 96px; }
+.skel.line { height: 14px; border: 0; border-radius: 6px; }
+.skel.line.short { width: 60%; }
+.skel.chart { height: 180px; }
+@keyframes skel-sweep { to { transform: translateX(100%); } }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .error { color: var(--warning); font-size: 14px; font-weight: 600; margin: 0; display: flex; gap: 8px; align-items: flex-start; }
 .error svg { width: 16px; height: 16px; flex: none; margin-top: 3px; }
 .error .detail { font-weight: 400; color: var(--muted); font-family: var(--mono); font-size: 12.5px; overflow-wrap: anywhere; }
@@ -330,4 +367,5 @@ footer .mono { font-family: var(--mono); }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .nav ul a, .btn, .range button, .card .card-title a, details.folded summary::before { transition: none; }
+  .skel::after { animation: none; }
 }

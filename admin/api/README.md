@@ -45,7 +45,7 @@ variables from Secret Manager. A credential whose value is empty or the placehol
 | `GOATCOUNTER_TOKEN`, `GOATCOUNTER_SITE` | `csarko` | GoatCounter API token (read permission) and site code |
 | `GSC_SA_KEY`, `GSC_PROPERTY` | `sc-domain:csarko.sh` | the service account key's JSON content (not a path) and the Search Console property |
 | `YOUTUBE_KEY`, `YOUTUBE_HANDLE` | `csarkosh` | YouTube Data API key and the channel handle |
-| `GITHUB_TOKEN`, `GITHUB_REPOS` | `csarkosh/game-dayhike,csarkosh/electron-gamepatch` | fine-grained token for the traffic endpoints; public repos only, a private one is refused and logged |
+| `GITHUB_TOKEN`, `GITHUB_OWNER` | `csarkosh` | fine-grained token for the traffic endpoints, and the account whose public repositories are reported: every one of them, forks left out, found by listing the account (the public listing can never name a private one) |
 | `PSI_KEY` | | PageSpeed Insights API key (Lighthouse performance, run by the snapshot) |
 | `SITE_URL`, `SITEMAP_URL` | `https://csarko.sh`, `<SITE_URL>/sitemap.xml` | the public site and its sitemap |
 | `HOSTING_SITE` | `csarko-sh` | Firebase Hosting site for the last-deploy time (read with the metadata server's token; null off Cloud Run) |

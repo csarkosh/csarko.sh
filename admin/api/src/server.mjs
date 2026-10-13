@@ -38,7 +38,7 @@ const queries = createQueries({
   gc: createGoatCounter({ site: config.goatcounter.site, token: config.goatcounter.token, fetch, cache, log }),
   gsc: createGsc({ key: config.gsc.key, property: config.gsc.property, fetch, cache }),
   youtube: createYouTube({ key: config.youtube.key, handle: config.youtube.handle, fetch, cache }),
-  github: createGitHub({ token: config.github.token, repos: config.github.repos, fetch, cache, log }),
+  github: createGitHub({ token: config.github.token, owner: config.github.owner, fetch, cache, log }),
   hn: createHackerNews({ query: new URL(config.siteUrl).hostname, fetch, cache }),
   psi: createPsi({ key: config.psiKey, siteUrl: config.siteUrl, fetch, cache }),
   uptime: createUptime({ siteUrl: config.siteUrl, fetch, cache }),

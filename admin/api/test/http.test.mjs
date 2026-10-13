@@ -58,10 +58,10 @@ test("defaults and lists", () => {
   assert.equal(config.gsc.property, "sc-domain:csarko.sh");
   assert.equal(config.sitemapUrl, "https://csarko.sh/sitemap.xml");
   assert.deepEqual(config.allowedOrigins, ["https://admin.csarko.sh", "http://localhost:8788"]);
-  assert.deepEqual(config.github.repos, ["csarkosh/game-dayhike", "csarkosh/electron-gamepatch"]);
+  assert.equal(config.github.owner, "csarkosh", "every public repo of the account, not a fixed list");
   assert.equal(config.port, 8080);
-  const custom = readConfig({ GITHUB_REPOS: "a/b, c/d ,", ALLOWED_ORIGINS: "http://localhost:5173", SITE_URL: "https://example.test/" }, quiet);
-  assert.deepEqual(custom.github.repos, ["a/b", "c/d"]);
+  const custom = readConfig({ GITHUB_OWNER: " someone ", ALLOWED_ORIGINS: "http://localhost:5173", SITE_URL: "https://example.test/" }, quiet);
+  assert.equal(custom.github.owner, "someone");
   assert.deepEqual(custom.allowedOrigins, ["http://localhost:5173"]);
   assert.equal(custom.sitemapUrl, "https://example.test/sitemap.xml");
 });

@@ -76,13 +76,15 @@ variable "youtube_handle" {
   default     = "csarkosh"
 }
 
-variable "github_repos" {
+variable "github_owner" {
   description = <<-EOT
-    GitHub repositories the dashboard reports stars and traffic for, as
-    owner/name. Public repos only (Cyrus, 2026-10-12): never a private one.
+    The GitHub account whose public repositories the dashboard reports stars
+    and traffic for: every one of them, forks left out, found by listing the
+    account (Cyrus, 2026-10-13; the listing can only ever name public ones,
+    so never a private one, as he asked on 2026-10-12).
   EOT
-  type        = list(string)
-  default     = ["csarkosh/game-dayhike", "csarkosh/electron-gamepatch"]
+  type        = string
+  default     = "csarkosh"
 }
 
 variable "billing_account_id" {

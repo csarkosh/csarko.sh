@@ -13,7 +13,7 @@ dns_zone_name = "csarko.sh"
 # admin_hosting_site_id = "csarko-sh-admin"
 # goatcounter_site      = "csarko"
 # youtube_handle        = "csarkosh"
-# github_repos          = ["csarkosh/game-dayhike", "csarkosh/electron-gamepatch"]
+# github_owner          = "csarkosh"
 
 # Optional: a monthly budget alert for the whole project. Empty creates none.
 # billing_account_id = "XXXXXX-XXXXXX-XXXXXX"

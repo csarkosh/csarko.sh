@@ -12,7 +12,8 @@ import { parseAllowlist } from "./auth.mjs";
  */
 
 export const DEFAULT_ALLOWED_ORIGINS = ["https://admin.csarko.sh", "http://localhost:8788"];
-export const DEFAULT_GITHUB_REPOS = ["csarkosh/game-dayhike", "csarkosh/electron-gamepatch"];
+/** The GitHub account whose public repositories are reported, every one of them (`GITHUB_OWNER`). */
+export const DEFAULT_GITHUB_OWNER = "csarkosh";
 
 function list(raw, fallback) {
   if (raw === undefined || raw === null || raw.trim() === "") return [...fallback];
@@ -66,7 +67,7 @@ export function readConfig(env = process.env, log = console) {
     goatcounter: { token: secret(env.GOATCOUNTER_TOKEN), site: text(env.GOATCOUNTER_SITE, "csarko") },
     gsc: { key: parseServiceAccountKey(env.GSC_SA_KEY, log), property: text(env.GSC_PROPERTY, "sc-domain:csarko.sh") },
     youtube: { key: secret(env.YOUTUBE_KEY), handle: text(env.YOUTUBE_HANDLE, "csarkosh") },
-    github: { token: secret(env.GITHUB_TOKEN), repos: list(env.GITHUB_REPOS, DEFAULT_GITHUB_REPOS) },
+    github: { token: secret(env.GITHUB_TOKEN), owner: text(env.GITHUB_OWNER, DEFAULT_GITHUB_OWNER) },
     psiKey: secret(env.PSI_KEY),
     siteUrl,
     sitemapUrl: text(env.SITEMAP_URL, `${siteUrl}/sitemap.xml`),

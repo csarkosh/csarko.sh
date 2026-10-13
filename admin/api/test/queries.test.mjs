@@ -45,7 +45,8 @@ function fakes({ gcOn = true, gscOn = true, youtubeOn = false, githubToken = fal
     youtube: { configured: youtubeOn, async channel() { return { subscribers: 40, views: 1200, videos: 2, videosList: [] }; } },
     github: {
       configured: githubToken,
-      repos: ["csarkosh/game-dayhike"],
+      enabled: true,
+      owner: "csarkosh",
       async all() {
         return [{ repo: "csarkosh/game-dayhike", stars: 3, forks: 0, watchers: 1, traffic: githubToken ? { views: 20, uniques: 9, clones: 2, referrers: [] } : null }];
       },

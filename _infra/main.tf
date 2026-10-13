@@ -139,7 +139,7 @@ module "gcp_admin_api" {
   goatcounter_site = var.goatcounter_site
   gsc_property     = "sc-domain:${var.domain_name}"
   youtube_handle   = var.youtube_handle
-  github_repos     = var.github_repos
+  github_owner     = var.github_owner
   admin_emails     = var.admin_emails
   allowed_origins = [
     "https://${var.admin_domain_name}",

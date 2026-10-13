@@ -44,9 +44,9 @@ variable "youtube_handle" {
   type        = string
 }
 
-variable "github_repos" {
-  description = "GitHub repositories to report stars and traffic for, as owner/name. Public repos only."
-  type        = list(string)
+variable "github_owner" {
+  description = "The GitHub account whose public repositories are reported (every one, forks left out; listing an account can only name public ones)."
+  type        = string
 }
 
 variable "allowed_origins" {

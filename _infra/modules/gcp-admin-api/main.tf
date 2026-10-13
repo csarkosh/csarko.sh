@@ -277,11 +277,12 @@ resource "google_cloud_run_v2_service" "admin" {
         value = var.youtube_handle
       }
 
-      # Public repositories only (Cyrus, 2026-10-12): a private repo's traffic
-      # is nobody's business, and the dashboard is a page about public work.
+      # Every public repository of the account, found by listing it (Cyrus,
+      # 2026-10-13); the public listing can only name public ones, so a
+      # private repo's traffic stays nobody's business (2026-10-12).
       env {
-        name  = "GITHUB_REPOS"
-        value = join(",", var.github_repos)
+        name  = "GITHUB_OWNER"
+        value = var.github_owner
       }
 
       env {

@@ -1,24 +1,27 @@
 /**
  * The index: one card per app in apps.json, with its health, three or four KPIs against
  * the previous period and twelve weeks of trend, read from each app's /admin/kpis in
- * parallel. An app whose API fails still gets its card, marked Unreachable. A KPI whose
- * value is null (its source is not configured) shows a dash and names the secret to add.
+ * parallel. Every card is on the page at once, a skeleton of four tiles until its API
+ * answers, and each fills on its own: a slow app never holds the others. An app whose
+ * API fails still gets its card, marked Unreachable with the error in place of the tiles.
+ * A KPI whose value is null (its source is not configured) shows a dash and names the
+ * secret to add.
  */
 
-import { requireSession, signOut } from '/auth.js';
-import { ago, delta, el, errorLine, status, tile } from '/charts.js';
+import { accountMenu, requireSession } from '/auth.js';
+import { ago, delta, el, errorLine, loading, status, tile } from '/charts.js';
 import { loadApps, preview, source } from '/data.js';
 
 const root = document.getElementById('top');
 const grid = document.getElementById('apps');
-const aside = document.getElementById('page-aside');
+const account = document.getElementById('account');
 
 function appCard(app) {
   const card = el('section', { class: 'card app-card', 'aria-labelledby': `app-${app.slug}` });
   const head = el('div', { class: 'card-head' },
     el('h2', { class: 'card-title', id: `app-${app.slug}` }, el('a', { href: app.page }, app.name)),
     el('a', { class: 'home', href: app.home, target: '_blank', rel: 'noopener' }, app.home.replace(/^https?:\/\//, '')));
-  card.append(head, el('p', { class: 'sub' }, el('a', { href: app.page }, 'Open the dashboard')), el('div', { class: 'tiles' }));
+  card.append(head, el('p', { class: 'sub' }, el('a', { href: app.page }, 'Open the dashboard')), loading({ tiles: 4 }));
   return card;
 }
 
@@ -41,17 +44,20 @@ function fill(card, app, data) {
       trendLabel: `${k.label}, the last ${k.trend?.length ?? 0} weeks`,
     });
   });
-  card.querySelector('.tiles').replaceChildren(...tiles);
-  for (const [part, message] of Object.entries(data.errors ?? {})) card.append(errorLine(`${part} failed.`, String(message)));
+  const body = card.querySelector('.body');
+  body.replaceChildren(el('div', { class: 'tiles' }, ...tiles),
+    ...Object.entries(data.errors ?? {}).map(([part, message]) => errorLine(`${part} failed.`, String(message))));
+  body.removeAttribute('aria-busy');
 }
 
 function unreachable(card, app, error) {
   card.querySelector('.card-head').append(status('critical', 'Unreachable'));
-  card.querySelector('.tiles').remove();
-  card.append(errorLine(`Unreachable: ${app.api}`, error.message));
+  const body = card.querySelector('.body');
+  body.replaceChildren(errorLine(`Unreachable: ${app.api}`, error.message));
+  body.removeAttribute('aria-busy');
 }
 
-/** All the cards are rendered together once every API has answered, so nothing shifts as they fill. */
+/** The cards go up at once as skeletons; each fills, or reports, as its API answers. */
 async function load() {
   const data = source();
   let apps;
@@ -62,6 +68,7 @@ async function load() {
     return;
   }
   const cards = apps.map((app) => appCard(app));
+  grid.replaceChildren(...cards);
   await Promise.all(apps.map(async (app, i) => {
     try {
       fill(cards[i], app, await data.kpis(app));
@@ -69,25 +76,15 @@ async function load() {
       unreachable(cards[i], app, error);
     }
   }));
-  grid.replaceChildren(...cards);
 }
 
-/** The badge, and for a live page the signed-in account with its Sign out (the gate returns on its own). */
-function asideControls(account) {
-  aside.replaceChildren(el('span', { class: `badge ${preview ? 'sample' : 'live'}` }, preview ? 'Sample data' : 'Live'));
-  if (account) {
-    const out = el('button', { class: 'btn ghost small', type: 'button' }, 'Sign out');
-    out.addEventListener('click', () => { signOut(); });
-    aside.append(el('span', { class: 'who' }, account.email), out);
-  }
-}
-
+// The nav's account menu (the badge, the email, Sign out) is the shell's: auth.js renders it.
 if (preview) {
-  asideControls(null);
+  accountMenu(account, { preview: true });
   load();
 } else {
-  requireSession(root, (account) => {
-    asideControls(account);
+  requireSession(root, (user) => {
+    accountMenu(account, { account: user });
     load();
   });
 }

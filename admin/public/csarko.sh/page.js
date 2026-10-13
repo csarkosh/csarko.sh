@@ -11,15 +11,15 @@
  * shows one.
  */
 
-import { requireSession, signOut } from '/auth.js';
-import { ago, bars, columns, compact, delta, el, errorLine, folded, pct, shortDay, status, table, tile } from '/charts.js';
+import { accountMenu, requireSession } from '/auth.js';
+import { ago, bars, columns, compact, delta, el, errorLine, folded, loading, pct, shortDay, status, table, tile } from '/charts.js';
 import { RANGES, loadApps, preview, source } from '/data.js';
 
 const SLUG = 'csarko.sh';
 const root = document.getElementById('top');
 const grid = document.getElementById('cards');
 const rangeRow = document.getElementById('range');
-const aside = document.getElementById('page-aside');
+const account = document.getElementById('account');
 
 const data = source();
 let app = null;
@@ -301,15 +301,16 @@ function audienceCard([audience]) {
   return [...errorLines(audience), el('p', { class: 'sub' }, summary || 'Who the visitors are'), folded('Countries, screen sizes, browsers, systems, languages', cols)];
 }
 
+/** Each card: its queries, its copy, how it renders, and the skeleton that stands in for it while the queries run. */
 const CARDS = [
-  { id: 'visitors', title: 'Visitors', queries: ['visits'], sub: (d) => `Visits ${rangeText(d)}, against ${previousText(d)}. GoatCounter counts visits, not pageviews.`, render: visitorsCard },
-  { id: 'referrers', title: 'Where they come from', half: true, queries: ['referrers'], sub: () => 'Visitors by where the visit started; the raw referrers and the tagged links folded below.', render: referrersCard },
-  { id: 'pages', title: 'What they read', half: true, queries: ['pages'], sub: () => 'Pages by visitors; the paths that hit the 404 page folded below.', render: pagesCard },
-  { id: 'events', title: 'Where they go next', queries: ['events', 'visits'], sub: () => 'Clicks out to a profile, to play, to watch, and docs read to the end.', render: eventsCard },
-  { id: 'search', title: 'Search', queries: ['search'], sub: (d, s) => s?.lag ?? 'Google Search Console runs 2 to 3 days behind.', render: searchCard },
-  { id: 'reach', title: 'Reach', queries: ['reach'], sub: () => 'YouTube, GitHub, Hacker News and Substack: exposure beyond the site. A section reads Not configured until its credential is in Secret Manager.', render: reachCard },
-  { id: 'health', title: 'Health', half: true, queries: ['health'], sub: () => '', render: healthCard },
-  { id: 'audience', title: 'Audience', half: true, queries: ['audience'], sub: () => '', render: audienceCard },
+  { id: 'visitors', title: 'Visitors', queries: ['visits'], sub: (d) => `Visits ${rangeText(d)}, against ${previousText(d)}. GoatCounter counts visits, not pageviews.`, render: visitorsCard, skeleton: { tiles: 2, chart: true } },
+  { id: 'referrers', title: 'Where they come from', half: true, queries: ['referrers'], sub: () => 'Visitors by where the visit started; the raw referrers and the tagged links folded below.', render: referrersCard, skeleton: { lines: 6 } },
+  { id: 'pages', title: 'What they read', half: true, queries: ['pages'], sub: () => 'Pages by visitors; the paths that hit the 404 page folded below.', render: pagesCard, skeleton: { lines: 6 } },
+  { id: 'events', title: 'Where they go next', queries: ['events', 'visits'], sub: () => 'Clicks out to a profile, to play, to watch, and docs read to the end.', render: eventsCard, skeleton: { tiles: 3, lines: 4 } },
+  { id: 'search', title: 'Search', queries: ['search'], sub: (d, s) => s?.lag ?? 'Google Search Console runs 2 to 3 days behind.', render: searchCard, skeleton: { tiles: 4, chart: true } },
+  { id: 'reach', title: 'Reach', queries: ['reach'], sub: () => 'YouTube, GitHub, Hacker News and Substack: exposure beyond the site. A section reads Not configured until its credential is in Secret Manager.', render: reachCard, skeleton: { tiles: 3, lines: 4 } },
+  { id: 'health', title: 'Health', half: true, queries: ['health'], sub: () => '', render: healthCard, skeleton: { tiles: 4, lines: 1 } },
+  { id: 'audience', title: 'Audience', half: true, queries: ['audience'], sub: () => '', render: audienceCard, skeleton: { lines: 5 } },
 ];
 
 // ---------------------------------------------------------------- the page
@@ -318,12 +319,13 @@ function cardShell(def) {
   return el('section', { class: `card${def.half ? ' half' : ''}`, id: `card-${def.id}`, 'aria-labelledby': `title-${def.id}` },
     el('h2', { id: `title-${def.id}` }, def.title),
     el('p', { class: 'sub' }, def.sub(range)),
-    el('div', { class: 'body', 'aria-busy': 'true' }, el('p', { class: 'empty' }, 'Loading')));
+    loading(def.skeleton));
 }
 
 async function loadCard(def, gen, card) {
   const body = card.querySelector('.body');
-  card.classList.add('loading');
+  // A skeleton is already the loading state; a rendered card dims while it reloads.
+  if (!body.querySelector('.skeleton')) card.classList.add('loading');
   body.setAttribute('aria-busy', 'true');
   try {
     const results = await Promise.all(def.queries.map((name) => data.query(app, name, range)));
@@ -344,21 +346,16 @@ async function loadCard(def, gen, card) {
 }
 
 /**
- * Every card loads on its own and shows its own error line. On the first load the cards
- * are rendered together once all of them have answered, so the page does not shift as
- * each one grows (CLS); after that a range change updates each card in place, the old
- * render held at reduced opacity meanwhile.
+ * Every card loads on its own and shows its own error line. On the first load every
+ * card is on the page at once as a skeleton the shape of what it waits for, and fills as
+ * its queries answer, so the page is never blank and a slow source holds only its own
+ * card; a range change updates each card in place, the old render dimmed meanwhile.
  */
 async function load() {
   generation += 1;
   const gen = generation;
-  if (grid.querySelector('.card')) {
-    for (const def of CARDS) loadCard(def, gen, document.getElementById(`card-${def.id}`));
-    return;
-  }
-  const cards = CARDS.map(cardShell);
-  await Promise.allSettled(CARDS.map((def, i) => loadCard(def, gen, cards[i])));
-  if (gen === generation) grid.replaceChildren(...cards);
+  if (!grid.querySelector('.card')) grid.replaceChildren(...CARDS.map(cardShell));
+  await Promise.allSettled(CARDS.map((def) => loadCard(def, gen, document.getElementById(`card-${def.id}`))));
 }
 
 function rangeButtons() {
@@ -375,16 +372,6 @@ function rangeButtons() {
   rangeRow.append(...buttons);
 }
 
-/** The badge, and for a live page the signed-in account with its Sign out (the gate returns on its own). */
-function asideControls(account) {
-  const badge = el('span', { class: `badge ${preview ? 'sample' : 'live'}` }, preview ? 'Sample data' : 'Live');
-  aside.replaceChildren(badge);
-  if (account) {
-    const out = el('button', { class: 'btn ghost small', type: 'button' }, 'Sign out');
-    out.addEventListener('click', () => { signOut(); });
-    aside.append(el('span', { class: 'who' }, account.email), out);
-  }
-}
 
 async function start() {
   try {
@@ -399,12 +386,13 @@ async function start() {
 }
 
 rangeButtons();
+// The nav's account menu (the badge, the email, Sign out) is the shell's: auth.js renders it.
 if (preview) {
-  asideControls(null);
+  accountMenu(account, { preview: true });
   start();
 } else {
-  requireSession(root, (account) => {
-    asideControls(account);
+  requireSession(root, (user) => {
+    accountMenu(account, { account: user });
     start();
   });
 }

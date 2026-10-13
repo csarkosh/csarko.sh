@@ -321,6 +321,24 @@ export function errorLine(text, detail) {
   return el('p', { class: 'error', role: 'status' }, warning, el('span', {}, text, detail ? el('span', { class: 'detail' }, ` ${detail}`) : null));
 }
 
+/**
+ * The shape of what a card is waiting for, shown while its queries run: `tiles` stat
+ * tiles, a `chart`, then `lines` of a table (every third one short). Hidden from screen
+ * readers; the card's body says "Loading" to them (see `loading()`).
+ */
+export function skeleton({ tiles = 0, chart = false, lines = 0 } = {}) {
+  const parts = [];
+  if (tiles > 0) parts.push(el('div', { class: 'skel-tiles' }, ...Array.from({ length: tiles }, () => el('div', { class: 'skel tile' }))));
+  if (chart) parts.push(el('div', { class: 'skel chart' }));
+  for (let i = 0; i < lines; i += 1) parts.push(el('div', { class: `skel line${i % 3 === 2 ? ' short' : ''}` }));
+  return el('div', { class: 'skeleton', 'aria-hidden': 'true' }, ...parts);
+}
+
+/** A card body that is loading: busy for assistive tech, a skeleton for everyone else. */
+export function loading(shape) {
+  return el('div', { class: 'body', 'aria-busy': 'true' }, el('p', { class: 'sr-only' }, 'Loading'), skeleton(shape));
+}
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 /** "5 Oct" from "2026-10-05". */
 export function shortDay(iso) {

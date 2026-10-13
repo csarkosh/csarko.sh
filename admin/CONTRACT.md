@@ -158,8 +158,9 @@ fetched the feed.
 
 - `youtube` is `null` with `notConfigured.youtube = "YOUTUBE_KEY"`; `youtube.prev` is
   the snapshot a week back, `null` until there is one.
-- `github` lists public repos only (a private one is dropped and logged); it is `null`
-  with `notConfigured.github = "GITHUB_REPOS"`. Stars come without a token;
+- `github` lists every public, non-fork repository of the account (`GITHUB_OWNER`,
+  found by listing it, so a private one can never appear); it is `null` with
+  `notConfigured.github = "GITHUB_OWNER"`. Stars come without a token;
   `traffic` is `null` on every repo with `notConfigured.githubTraffic = "GITHUB_TOKEN"`
   while the stars are still present. Traffic is GitHub's last 14 days.
 - `hn` needs no credential; `items[].kind` is `story` or `comment`.
@@ -220,7 +221,16 @@ export async function fetchWithAuth(url, init)
 // { detail: { email, url } } and still returns the Response.
 
 export async function signOut()
-// Firebase signOut; the gate returns through the auth state change.
+// Firebase signOut; the gate returns through the auth state change, and the nav's account
+// menu is cleared.
+
+export function accountMenu(host, { account, preview })
+// The nav's account, rendered into `host` (the nav's `<div class="account" id="account">`
+// that every page's chrome carries): a round profile button (aria-expanded, aria-controls)
+// that toggles a menu with the Live or Sample badge, the signed-in email and a Sign out
+// button. A page calls it from onReady with the account, or once with { preview: true }
+// under ?preview, where the menu says nobody is signed in and has no Sign out. Closes on
+// Escape, on a click elsewhere, and on Sign out.
 ```
 
 Persistence is `browserLocalPersistence` (localStorage, no cookie); the provider is

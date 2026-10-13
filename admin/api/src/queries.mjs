@@ -192,7 +192,7 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
       const [snapshots, channel, repos, mentions, series] = await Promise.all([
         store.listSnapshots(addDays(today, -14), today),
         part(h, "youtube", "YOUTUBE_KEY", youtube.configured, () => youtube.channel()),
-        part(h, "github", "GITHUB_REPOS", github.repos.length > 0, () => github.all()),
+        part(h, "github", "GITHUB_OWNER", github.enabled, () => github.all()),
         part(h, "hn", "HN", true, () => hn.mentions()),
         store.getManual("substack"),
       ]);
@@ -302,7 +302,7 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
         part(h, "search28", "GSC_SA_KEY", gsc.configured, () => gscTotals(d28)),
         part(h, "search7", "GSC_SA_KEY", gsc.configured, () => gscTotals(d7)),
         part(h, "youtube", "YOUTUBE_KEY", youtube.configured, () => youtube.channel()),
-        part(h, "github", "GITHUB_REPOS", github.repos.length > 0, () => github.all()),
+        part(h, "github", "GITHUB_OWNER", github.enabled, () => github.all()),
         part(h, "lighthouse", "PSI_KEY", psi.configured, () => psi.performance()),
         uptime.check(),
         part(h, "sitemap", "SITEMAP_URL", true, () => sitemap.urls()),

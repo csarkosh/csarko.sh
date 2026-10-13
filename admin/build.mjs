@@ -46,7 +46,11 @@ const ADMIN = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(ADMIN, '..');
 const SITE_PUBLIC = path.join(ROOT, 'public');
 const PUBLIC = path.join(ADMIN, 'public');
-const PAGES = ['index.html', path.join('csarko.sh', 'index.html')];
+// The host's own pages, and each app's page when its bundle has been pulled
+// (admin/deploy.sh pulls Day Hike's before building): an app's page carries
+// the same chrome with the same generated blocks, filled here.
+const PAGES = ['index.html', path.join('csarko.sh', 'index.html'), path.join('game-dayhike', 'index.html')]
+  .filter((page) => page !== path.join('game-dayhike', 'index.html') || existsSync(path.join(ADMIN, 'public', page)));
 
 const argv = process.argv.slice(2);
 const apiFlag = argv.indexOf('--api');
@@ -129,16 +133,19 @@ if (apiUrl) {
   write(appsFile, `[\n${apps.map((a) => `  ${JSON.stringify(a).replace(/","/g, '", "').replace(/":"/g, '": "').replace(/\{"/, '{ "').replace(/"\}/, '" }')}`).join(',\n')}\n]\n`);
 }
 
-// 5. The pages: the Inter preload and the nav.
+// 5. The pages: the Inter preload. (The nav carried one link per app until 2026-10-13;
+//    now it holds the account menu, and the trail under it is the way back to the index.)
 const inter = fontFiles.find((f) => f.startsWith('inter-'));
 const preload = inter ? `  <link rel="preload" href="/assets/${inter}" as="font" type="font/woff2" crossorigin />` : '';
 for (const page of PAGES) {
   const file = path.join(PUBLIC, page);
-  const route = page === 'index.html' ? '/' : `/${path.dirname(page)}/`;
   let html = readFileSync(file, 'utf8');
+  if (page.startsWith('game-dayhike') && !html.includes('<!-- generated:head -->')) {
+    // A bundle published before the page carried the host's chrome: served as it is.
+    console.warn(`admin: ${page} has no generated blocks (an older bundle); publish the game's admin page again to give it the host's chrome`);
+    continue;
+  }
   html = fillBlock(html, '<!-- generated:head -->', '<!-- /generated:head -->', preload, page).replace('<!-- /generated:head -->', '  <!-- /generated:head -->');
-  const nav = apps.map((a) => `        <li><a href="${a.page}"${a.page === route ? ' aria-current="page"' : ''}>${a.name.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])}</a></li>`).join('\n');
-  html = fillBlock(html, '<!-- generated:nav -->', '<!-- /generated:nav -->', nav, page).replace('<!-- /generated:nav -->', '        <!-- /generated:nav -->');
   write(file, html);
 }
 

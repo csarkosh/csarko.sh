@@ -49,17 +49,18 @@ grep -q "\"site\": \"$SITE\"" firebase.json || die "firebase.json has no hosting
 echo "→ project  $PROJECT"
 echo "→ site     $SITE"
 
-# The shell's generated blocks (tokens, fonts, nav, the self-hosted Firebase Auth
-# bundle), the csarko.sh API URL and the web API key the sign-in uses (public by design).
-ADMIN_API_URL="$API_URL" ADMIN_FIREBASE_API_KEY="$(tf admin_web_api_key)" node admin/build.mjs
-
-# The Day Hike bundle, as the game's repo last published it.
+# The Day Hike bundle, as the game's repo last published it. Pulled before the build,
+# since the build fills its page's generated blocks (the nav, the font preload) too.
 if (( PULL )); then
   mkdir -p admin/public/game-dayhike
   gcloud storage rsync "$BUNDLE" admin/public/game-dayhike --recursive --delete-unmatched-destination-objects --project "$PROJECT" \
     || die "could not pull $BUNDLE (run \`npm run deploy:admin\` in ~/Projects/game-dayhike first)"
 fi
 [[ -f admin/public/game-dayhike/index.html ]] || echo "  (no Day Hike bundle in admin/public/game-dayhike; its page will 404 until one is published)"
+
+# The shell's generated blocks (tokens, fonts, nav, the self-hosted Firebase Auth
+# bundle), the csarko.sh API URL and the web API key the sign-in uses (public by design).
+ADMIN_API_URL="$API_URL" ADMIN_FIREBASE_API_KEY="$(tf admin_web_api_key)" node admin/build.mjs
 
 # Privacy guard, the same as the site's: no email address or phone number.
 shopt -s nullglob

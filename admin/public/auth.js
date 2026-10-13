@@ -104,6 +104,50 @@ export async function signOut() {
   const s = await session();
   if (s) await s.sdk.signOut(s.auth);
   current = null;
+  menuHost?.replaceChildren();
+}
+
+const make = (tag, attrs, ...children) => {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) if (v !== null && v !== undefined && v !== false) node.setAttribute(k, v === true ? '' : v);
+  node.append(...children);
+  return node;
+};
+
+/** Where the nav's account menu was rendered, so signing out clears it along with the page. */
+let menuHost = null;
+
+/**
+ * The nav's account (Cyrus, 2026-10-13: in place of the app links): a round profile button
+ * that toggles a small menu with the Live or Sample badge, the signed-in email and Sign out.
+ * Rendered into `host`, the nav's `#account`, by each page once it is ready. Under
+ * `?preview` there is no account: the menu says so and has no Sign out. The menu closes on
+ * Escape, on a click elsewhere, and when Sign out is pressed; the gate then returns.
+ */
+export function accountMenu(host, { account = null, preview = false } = {}) {
+  menuHost = host;
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  for (const [k, v] of Object.entries({ viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' })) icon.setAttribute(k, v);
+  for (const d of ['M20 21a8 8 0 0 0-16 0', 'M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z']) {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    icon.append(path);
+  }
+  const button = make('button', { class: 'avatar', type: 'button', 'aria-label': 'Account', 'aria-haspopup': 'true', 'aria-expanded': 'false', 'aria-controls': 'account-menu' }, icon);
+  const menu = make('div', { class: 'menu', id: 'account-menu', hidden: true },
+    make('span', { class: `badge ${preview ? 'sample' : 'live'}` }, preview ? 'Sample data' : 'Live'),
+    account ? make('p', { class: 'email' }, account.email) : make('p', { class: 'note' }, 'Nobody is signed in: the page shows the sample data set.'));
+  const close = () => { menu.hidden = true; button.setAttribute('aria-expanded', 'false'); };
+  const open = () => { menu.hidden = false; button.setAttribute('aria-expanded', 'true'); };
+  if (account) {
+    const out = make('button', { class: 'btn ghost small', type: 'button' }, 'Sign out');
+    out.addEventListener('click', () => { close(); signOut(); });
+    menu.append(out);
+  }
+  button.addEventListener('click', () => { if (menu.hidden) open(); else close(); });
+  document.addEventListener('click', (event) => { if (!menu.hidden && !host.contains(event.target)) close(); });
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !menu.hidden) { close(); button.focus(); } });
+  host.replaceChildren(button, menu);
 }
 
 const NO_SIGN_IN = 'This build has no sign-in. Add ?preview to the address to see the page with sample data.';
@@ -114,12 +158,6 @@ const NO_SIGN_IN = 'This build has no sign-in. Add ?preview to the address to se
  * build with no sign-in.
  */
 function gateMarkup({ note, refused, disabled }) {
-  const make = (tag, attrs, ...children) => {
-    const node = document.createElement(tag);
-    for (const [k, v] of Object.entries(attrs)) if (v !== null && v !== undefined && v !== false) node.setAttribute(k, v === true ? '' : v);
-    node.append(...children);
-    return node;
-  };
   const signIn = make('button', { class: 'btn primary', type: 'button', disabled }, 'Sign in with Google');
   const signOutButton = refused ? make('button', { class: 'btn ghost', type: 'button' }, 'Sign out') : null;
   const line = make('p', { class: 'note', role: 'status' }, note ?? (disabled ? NO_SIGN_IN : ''));
