@@ -75,8 +75,16 @@ export async function createFirestoreStore({ projectId, log = console } = {}) {
     },
     latestSnapshot() {
       return soft("latestSnapshot", async () => {
-        const snap = await db.collection(SNAPSHOTS).orderBy(FieldPath.documentId(), "desc").limit(1).get();
-        const d = snap.docs[0];
+        // Ordering by the document id descending also asks for a composite
+        // index (it failed on every read until 2026-10-13, and the health
+        // card then ran Lighthouse live, 30 s a request, as if there were no
+        // snapshot yet). Ascending with a cursor needs none: read the last
+        // month's worth, newest last, and take the last. The job writes one
+        // a day, so a month with none means the scheduler is broken, and the
+        // card then falls back as it would on day one.
+        const from = new Date(Date.now() - 31 * 86_400_000).toISOString().slice(0, 10);
+        const snap = await db.collection(SNAPSHOTS).orderBy(FieldPath.documentId()).startAt(from).get();
+        const d = snap.docs.at(-1);
         return d === undefined ? null : { date: d.id, ...d.data() };
       }, null);
     },
