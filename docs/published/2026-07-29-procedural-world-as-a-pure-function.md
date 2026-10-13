@@ -1,6 +1,7 @@
 ---
 description: Unbounded mountains, a warped coastline, a highway and cliff bands built as pure C² functions with exact derivatives, so every peer builds one world.
 published: 2026-07-29
+categories: Worlds and terrain
 updated: 2026-10-10
 ---
 # An endless world as a pure function

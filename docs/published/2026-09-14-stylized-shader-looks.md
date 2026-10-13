@@ -1,6 +1,7 @@
 ---
 description: How games use shaders to build a distinct look, from ink outlines and cel lighting to dithering, gradient fog and VHS effects.
 published: 2026-09-14
+categories: Rendering
 updated: 2026-09-23
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-14-stylized-shader-looks.md
 ---

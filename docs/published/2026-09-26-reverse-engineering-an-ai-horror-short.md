@@ -1,6 +1,7 @@
 ---
 description: How a viral AI horror short was made, worked out from the pixels alone, then confirmed against the studio's own posts. With a recipe and a cost table.
 published: 2026-09-26
+categories: AI, Film
 ---
 # Reverse engineering an AI horror short
 

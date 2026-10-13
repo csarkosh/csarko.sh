@@ -1,6 +1,7 @@
 ---
 description: Why trees float on slopes and distant ridges in a procedural world, measured, and the shader and clipmap fixes that grounded them in Babylon.js.
 published: 2026-08-29
+categories: Rendering, Worlds and terrain
 updated: 2026-10-10
 ---
 # Why props float on procedural terrain

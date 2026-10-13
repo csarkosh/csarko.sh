@@ -1,6 +1,7 @@
 ---
 description: Hosting a WebRTC signaling server on Google Cloud Run for a browser co-op game, the platform behaviours that broke it, and what a running match survives.
 published: 2026-07-29
+categories: Distributed systems
 updated: 2026-10-10
 ---
 # Hosting WebRTC signaling on Cloud Run

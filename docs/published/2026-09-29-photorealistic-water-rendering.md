@@ -1,6 +1,7 @@
 ---
 description: Real-time water rendering from the physics up: how lakes, ocean waves, breaking surf and foam look, how games draw them, and what it costs on WebGPU and WebGL2.
 published: 2026-09-29
+categories: Rendering
 ---
 # Photorealistic water rendering: lakes and oceans
 

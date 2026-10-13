@@ -1,6 +1,7 @@
 ---
 description: Can 2026 AI video models make a multi-scene short film with the same actor and set in every shot? Where they fail, and the one architecture that holds.
 published: 2026-09-16
+categories: AI, Film
 updated: 2026-10-10
 ---
 # AI short films: consistent characters and sets

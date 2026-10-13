@@ -1,6 +1,7 @@
 ---
 description: Where Babylon.js 9.18 injects material plugin GLSL, what each PBR hook can see, and the silent failures behind preprocessor, comment and bake traps.
 published: 2026-08-17
+categories: Rendering, Tooling
 updated: 2026-10-10
 ---
 # Babylon.js material plugins: hooks and traps

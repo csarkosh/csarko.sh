@@ -1,6 +1,7 @@
 ---
 description: How WebGPU differs from WebGL2, what it can and cannot make faster, and the porting gotchas, with measurements from a Babylon.js game.
 published: 2026-09-27
+categories: Rendering
 ---
 # WebGPU and WebGL2: what changes and what does not
 

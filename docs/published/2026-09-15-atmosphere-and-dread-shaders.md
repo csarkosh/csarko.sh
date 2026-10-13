@@ -1,6 +1,7 @@
 ---
 description: How atmospheric and horror games use height fog, grading, film grain and dread-driven effects, and what Babylon.js can do at 60 fps in a browser.
 published: 2026-09-15
+categories: Rendering, Game design
 updated: 2026-09-23
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-15-atmosphere-and-dread-shaders.md
 ---

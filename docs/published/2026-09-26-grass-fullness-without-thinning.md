@@ -1,6 +1,7 @@
 ---
 description: Why near grass reads bare from a first-person eye, what fixing it cost in a Babylon.js game, and the GPU techniques that win the frame back without thinning.
 published: 2026-09-26
+categories: Rendering
 updated: 2026-09-26
 ---
 # Grass fullness without thinning the field

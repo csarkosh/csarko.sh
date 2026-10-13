@@ -70,6 +70,7 @@ Name the file `docs/published/<YYYY-MM-DD>-<slug>.md`:
 ---
 description: <70–160 characters: what a searcher learns from this doc>
 published: <YYYY-MM-DD, the doc's original date>
+categories: <one to three of the list below, comma-separated, spelled exactly>
 updated: <YYYY-MM-DD, only when revising a published doc>
 source: <https://github.com/… URL of the original, only if that repo is public>
 ---
@@ -81,6 +82,28 @@ that aren't `https://`, `#anchor` or `/root-relative`, skipped heading levels,
 and more than one `# ` title. Fix the copy, not the build. Number `## ` sections
 (`## 1. Outlines`) when the doc is a list of approaches; the number shows as a
 label.
+
+### Categories
+
+**Every doc carries one to three categories** *(Cyrus, 2026-10-13)*: they are the
+filter chips on `/research` and the tags on the doc's card, so a reader can narrow
+the list. The set is fixed, `CATEGORIES` in `docs_lib.mjs`, and the build refuses a
+name outside it, an empty list, a repeat, or more than three. Pick by what the doc
+is *about*, not what it was built with:
+
+| Category | Give it to a doc about |
+|---|---|
+| `Distributed systems` | netcode, signalling, cloud services, data pipelines, anything about machines talking to each other |
+| `AI` | generative models, LLM workflows, synthetic media; not a doc that merely used an agent to get written |
+| `Rendering` | shaders, materials, GPU budgets, WebGPU and WebGL2, how something is drawn |
+| `Worlds and terrain` | procedural generation, and the geology and ecology of the setting |
+| `Game design` | pacing, dread, openings, how other games do a thing |
+| `Film` | short films, cinematic technique, voice |
+| `Tooling` | the engineering notes that are neither game nor film: Git, Electron, analytics, the writing workflow |
+
+A doc that measures a rendering technique in a procedural world is `Rendering,
+Worlds and terrain`; an AI film experiment is `AI, Film`. Adding a category is a
+change to `CATEGORIES` (its chip and its filter rule follow) and a note here.
 
 To **update** a doc, edit its file and set `updated`. To **remove** one, delete
 its file; the build deletes the page.

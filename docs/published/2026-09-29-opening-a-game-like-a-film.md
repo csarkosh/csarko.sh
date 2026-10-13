@@ -1,6 +1,7 @@
 ---
 description: How films open on a drive, a call and a wrong note; what makes sixty rendered seconds read as cinema; and what a game must load behind its first minute.
 published: 2026-09-29
+categories: Film, Game design
 ---
 # Opening a game like a film: sixty seconds of drive, radio and dread
 

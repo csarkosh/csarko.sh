@@ -1,6 +1,7 @@
 ---
 description: How Alan Wake and Alan Wake 2 introduce their evil, voice it in whispers and haunt the player with shadows, and what a game can borrow from each.
 published: 2026-10-06
+categories: Game design
 ---
 # How Alan Wake introduces its darkness
 

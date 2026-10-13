@@ -1,6 +1,7 @@
 ---
 description: How AAA engines draw ground fog as a frustum-aligned volume instead of sprites, what it costs, where it ghosts, and which of it a browser game can run.
 published: 2026-10-07
+categories: Rendering
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-07-ground-fog-in-aaa-games.md
 ---
 # Ground fog without the wall

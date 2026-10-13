@@ -1,6 +1,7 @@
 ---
 description: Why game grass reads as flat, what shipped meadows do instead, wind as one shared field, and what Babylon.js on WebGL2 can afford at 60 Hz.
 published: 2026-09-15
+categories: Rendering
 updated: 2026-10-10
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-15-grass-and-trail-realism.md
 ---

@@ -1,6 +1,7 @@
 ---
 description: How Day Hike's browser co-op stays responsive: a 60 Hz fixed step, redundant inputs, quantized snapshots, prediction, and host-created lobbies.
 published: 2026-07-25
+categories: Distributed systems
 ---
 # Host-authoritative co-op netcode in the browser
 

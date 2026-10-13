@@ -22,7 +22,15 @@ export const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ENTI
 // ---------------------------------------------------------------- front matter
 
 // key -> required?
-const FIELDS = { description: true, published: true, updated: false, source: false };
+const FIELDS = { description: true, published: true, categories: true, updated: false, source: false };
+// The categories a doc may carry (Cyrus, 2026-10-13), in the order the /research filter
+// chips show them. One to three per doc, written in front matter as
+// `categories: Rendering, Worlds and terrain`, spelled exactly as here; the build refuses
+// anything else, so no doc is published uncategorised. Adding one here adds its chip.
+export const CATEGORIES = ['Distributed systems', 'AI', 'Rendering', 'Worlds and terrain', 'Game design', 'Film', 'Tooling'];
+const MAX_CATEGORIES = 3;
+/** "worlds-and-terrain" from "Worlds and terrain": the token the chips and the cards share. */
+export const categorySlug = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 // Docs published from this date cite their sources in IEEE style: numbered [n] markers in the
 // text and a numbered "## Sources" list. Older docs build as they are until they are converted,
 // and a converted one is held to the same rules (renderMarkdown checks any doc whose Sources
@@ -81,6 +89,14 @@ export function parseFrontMatter(text, file) {
   if (meta.source !== undefined && !/^https:\/\/github\.com\/\S+$/.test(meta.source)) {
     throw new DocError(`${file}: source must be an https://github.com/ URL`);
   }
+  const names = meta.categories.split(',').map((s) => s.trim()).filter(Boolean);
+  for (const name of names) {
+    if (!CATEGORIES.includes(name)) throw new DocError(`${file}: unknown category "${name}" (one of: ${CATEGORIES.join(', ')})`);
+  }
+  if (names.length === 0) throw new DocError(`${file}: categories needs at least one of: ${CATEGORIES.join(', ')}`);
+  if (new Set(names).size !== names.length) throw new DocError(`${file}: a category is listed twice`);
+  if (names.length > MAX_CATEGORIES) throw new DocError(`${file}: ${names.length} categories; at most ${MAX_CATEGORIES}`);
+  meta.categories = CATEGORIES.filter((c) => names.includes(c));
   return { meta, body };
 }
 
@@ -600,6 +616,7 @@ const DOCS_CSS = `
     .doc-list li:hover .doc-title a, .doc-list .doc-title a:focus-visible { color: var(--accent); }
     .doc-meta { margin: 0 0 6px; font-family: var(--mono); font-size: 12px; color: var(--faint); }
     .doc-desc { margin: 0; color: var(--muted); max-width: 78ch; }
+    .doc-list .tags { margin-top: 14px; }
     /* A film card is the same card turned on its side: the poster leads, the text sits beside it. */
     .film-card { flex-direction: row; align-items: flex-start; gap: 22px; }
     .film-poster { flex: none; width: 240px; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); line-height: 0; }
@@ -656,6 +673,23 @@ const DOCS_CSS = `
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }`;
+
+// Only the research index carries the filter's rules (it is the one page with the chips, and
+// the longest doc page sits close to its HTML budget). Chips that are checkboxes, "All" a reset
+// button, and no script: a doc shows while it carries any checked category; with nothing
+// checked every doc shows and All is lit. One rule per category, built from CATEGORIES, so a
+// new category gets its chip and its rule together.
+const FILTER_CSS = `
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
+    .chip { position: relative; display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; padding: 5px 12px; border-radius: 999px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); cursor: pointer; transition: border-color .15s ease, color .15s ease, background .15s ease; }
+    .chip small { font-size: 11px; color: var(--faint); }
+    .chip:hover { color: var(--text); border-color: var(--border-strong); }
+    .chip input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+    .chip:has(input:checked), .filters:not(:has(input:checked)) .chip.all { color: var(--text); background: var(--accent-soft); border-color: var(--accent-border); font-weight: 500; }
+    .chip:has(input:focus-visible), .chip.all:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .docs-index:has(.filters input:checked) .doc-list > li { display: none; }
+    ${CATEGORIES.map((c) => `.docs-index:has(#cat-${categorySlug(c)}:checked) .doc-list > li[data-categories~="${categorySlug(c)}"] { display: flex; }`).join('\n    ')}
+    @media (prefers-reduced-motion: reduce) { .chip { transition: none; } }`;
 
 // Only pages with IEEE references carry these rules, so adding them changed no other page.
 const REFERENCES_CSS = `
@@ -751,13 +785,31 @@ const FOOTER = `  <footer>
 // The whole card is the click target, through the title link's ::after overlay rather than an
 // <a> around everything: that keeps the link's accessible name the title alone, and leaves room
 // for a second link inside a card (see gameList).
+// Each card names its categories (the same words as the chips) and carries them as tokens
+// in data-categories, which the filter's CSS matches on.
 function docList(docs, level, pad) {
-  const items = docs.map((d) => `${pad}  <li class="card">
+  const items = docs.map((d) => `${pad}  <li class="card" data-categories="${d.categories.map(categorySlug).join(' ')}">
 ${pad}    <h${level} class="doc-title"><a class="stretch" href="${d.path}">${d.titleHtml}</a></h${level}>
 ${pad}    <p class="doc-meta">${formatDate(d.published)} · ${readingMinutes(d.words)} min read</p>
 ${pad}    <p class="doc-desc">${escapeHtml(d.description)}</p>
+${pad}    <ul class="tags" aria-label="Categories">${d.categories.map((c) => `<li>${escapeHtml(c)}</li>`).join('')}</ul>
 ${pad}  </li>`);
   return `${pad}<ul class="doc-list" role="list">\n${items.join('\n')}\n${pad}</ul>`;
+}
+
+/**
+ * The category filters above the list (Cyrus, 2026-10-13): one chip a category, a checkbox
+ * each, and "All", a reset button, lit while nothing is checked. No script: the list is
+ * filtered by the :has() rules in DOCS_CSS, and a checked chip shows every doc that carries
+ * its category (OR across chips). Each chip says how many docs it would show.
+ */
+function filters(docs, pad) {
+  const count = (c) => docs.filter((d) => d.categories.includes(c)).length;
+  const chips = CATEGORIES.map((c) => `${pad}  <label class="chip"><input type="checkbox" name="category" value="${categorySlug(c)}" id="cat-${categorySlug(c)}" />${escapeHtml(c)} <small>${count(c)}</small></label>`);
+  return `${pad}<form class="filters" aria-label="Filter by category">
+${pad}  <button type="reset" class="chip all">All <small>${docs.length}</small></button>
+${chips.join('\n')}
+${pad}</form>`;
 }
 
 export function docPage(doc, theme) {
@@ -848,7 +900,7 @@ export function indexPage(docs, theme) {
     },
     breadcrumbs(trail),
   ];
-  return `${head({ title: `${INDEX_TITLE} · Cyrus Sarkosh`, ogTitle: INDEX_TITLE, description: INDEX_DESCRIPTION, canonical: url, ogType: 'website', graph, theme })}
+  return `${head({ title: `${INDEX_TITLE} · Cyrus Sarkosh`, ogTitle: INDEX_TITLE, description: INDEX_DESCRIPTION, canonical: url, ogType: 'website', extraCss: FILTER_CSS, graph, theme })}
 <body>
 ${nav(`/${DOCS_DIR}`)}
 ${crumbs(trail)}
@@ -859,6 +911,7 @@ ${crumbs(trail)}
       <h1>${escapeHtml(INDEX_TITLE)}</h1>
       <p class="lead">${escapeHtml(INDEX_LEAD)}</p>
     </header>
+${filters(docs, '    ')}
 ${docList(docs, 2, '    ')}
   </main>
 

@@ -1,11 +1,12 @@
 // Tests for docs_lib.mjs. Run: node --test .agents/skills/site-quality/tests/docs_lib.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSite, DocError, docPage, IEEE_SINCE, filmsPage, formatDate, gamesPage, indexPage, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, sitemap, sortDocs, sortFilms, sortGames, themeBlocks } from '../scripts/docs_lib.mjs';
+import { buildSite, CATEGORIES, categorySlug, DocError, docPage, IEEE_SINCE, filmsPage, formatDate, gamesPage, indexPage, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, sitemap, sortDocs, sortFilms, sortGames, themeBlocks } from '../scripts/docs_lib.mjs';
 
 const FILE = 'docs/published/2026-09-14-example.md';
 const DESC = 'A description that is long enough to pass the seventy character minimum for search.';
-const fm = (lines) => `---\n${lines.join('\n')}\n---\n# Title\n\nBody.\n`;
+// Every doc needs categories; the tests that are not about them get one by default.
+const fm = (lines) => `---\n${lines.join('\n')}${lines.some((l) => l.startsWith('categories:')) ? '' : '\ncategories: Tooling'}\n---\n# Title\n\nBody.\n`;
 const rejects = (text, pattern) =>
   assert.throws(() => parseFrontMatter(text, FILE), (e) => e instanceof DocError && pattern.test(e.message));
 
@@ -13,8 +14,22 @@ test('parseFrontMatter reads required and optional keys and returns the body', (
   const source = 'https://github.com/csarkosh/game-dayhike/blob/main/docs/x.md';
   const { meta, body } = parseFrontMatter(
     fm([`description: ${DESC}`, 'published: 2026-09-14', 'updated: 2026-09-15', `source: ${source}`]), FILE);
-  assert.deepEqual(meta, { description: DESC, published: '2026-09-14', updated: '2026-09-15', source });
+  assert.deepEqual(meta, { description: DESC, published: '2026-09-14', updated: '2026-09-15', source, categories: ['Tooling'] });
   assert.equal(body, '# Title\n\nBody.\n');
+});
+
+test('parseFrontMatter reads categories in the fixed order and refuses anything outside the set', () => {
+  const base = [`description: ${DESC}`, 'published: 2026-09-14'];
+  const { meta } = parseFrontMatter(fm([...base, 'categories: Worlds and terrain,  Rendering ']), FILE);
+  assert.deepEqual(meta.categories, ['Rendering', 'Worlds and terrain'], 'the set\'s order, not the doc\'s');
+  assert.deepEqual(parseFrontMatter(fm([...base, 'categories: AI, Film, Game design']), FILE).meta.categories, ['AI', 'Game design', 'Film']);
+  assert.deepEqual(CATEGORIES, ['Distributed systems', 'AI', 'Rendering', 'Worlds and terrain', 'Game design', 'Film', 'Tooling']);
+  assert.equal(categorySlug('Worlds and terrain'), 'worlds-and-terrain');
+  rejects(`---\ndescription: ${DESC}\npublished: 2026-09-14\n---\n# T\n`, /needs "categories"/);
+  rejects(fm([...base, 'categories: Graphics']), /unknown category "Graphics" \(one of: Distributed systems, AI/);
+  rejects(fm([...base, 'categories: rendering']), /unknown category "rendering"/);
+  rejects(fm([...base, 'categories: Rendering, Rendering']), /listed twice/);
+  rejects(fm([...base, 'categories: AI, Film, Game design, Tooling']), /4 categories; at most 3/);
 });
 
 test('parseFrontMatter accepts CRLF line endings', () => {
@@ -145,7 +160,7 @@ test('renderMarkdown requires IEEE references once a doc is new enough', () => {
 });
 
 test('loadDoc holds docs published from IEEE_SINCE to IEEE, and only their pages carry its CSS', () => {
-  const doc = (published, body) => `---\ndescription: ${DESC}\npublished: ${published}\n---\n${body}`;
+  const doc = (published, body) => `---\ndescription: ${DESC}\npublished: ${published}\ncategories: Tooling\n---\n${body}`;
   const bullets = '# T\n\nText.\n\n## Sources\n\n- [A](https://example.com)\n';
   assert.doesNotThrow(() => loadDoc('2026-09-22-old.md', doc('2026-09-22', bullets)));
   assert.throws(() => loadDoc(`${IEEE_SINCE}-new.md`, doc(IEEE_SINCE, bullets)), /must be a numbered list of IEEE references/);
@@ -155,7 +170,7 @@ test('loadDoc holds docs published from IEEE_SINCE to IEEE, and only their pages
   assert.ok(!without.includes('.prose .references {'));
 });
 
-const SOURCE = `---\ndescription: ${DESC}\npublished: 2026-09-14\n---\n# Title\n\n## 1. One\n\nText.\n`;
+const SOURCE = `---\ndescription: ${DESC}\npublished: 2026-09-14\ncategories: Rendering, Tooling\n---\n# Title\n\n## 1. One\n\nText.\n`;
 
 test('parseDocFileName splits a dated file name into its date and slug', () => {
   assert.deepEqual(parseDocFileName('2026-09-14-stylized-shader-looks.md'),
@@ -225,7 +240,7 @@ const INDEX = `<style>
   </style>
   <main></main>`;
 const src = (slug, published, extra = '') =>
-  ({ name: `${published}-${slug}.md`, text: `---\ndescription: ${DESC}\npublished: ${published}\n${extra}---\n# ${slug} title\n\n## 1. One\n\nText.\n` });
+  ({ name: `${published}-${slug}.md`, text: `---\ndescription: ${DESC}\npublished: ${published}\n${extra.includes('categories:') ? '' : 'categories: Tooling\n'}${extra}---\n# ${slug} title\n\n## 1. One\n\nText.\n` });
 const doc = (...args) => { const s = src(...args); return loadDoc(s.name, s.text); };
 const jsonLd = (html) => JSON.parse(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(html)[1])['@graph'];
 
@@ -293,10 +308,26 @@ test('indexPage lists every doc with CollectionPage JSON-LD', () => {
   assert.ok(html.includes('<link rel="canonical" href="https://csarko.sh/research" />'));
   assert.ok(html.includes('<meta property="og:type" content="website" />'));
   assert.deepEqual([...html.matchAll(/<h2 class="doc-title"><a class="stretch" href="\/research\/([a-z]+)">/g)].map((m) => m[1]), ['b', 'a']);
-  // Every entry is a card whose whole surface is the link (see .stretch in DOCS_CSS).
-  assert.equal([...html.matchAll(/<li class="card">/g)].length, 2);
+  // Every entry is a card whose whole surface is the link (see .stretch in DOCS_CSS), and
+  // carries its categories as tokens for the filter and as tags for the reader.
+  assert.equal([...html.matchAll(/<li class="card" data-categories="tooling">/g)].length, 2);
+  assert.equal([...html.matchAll(/<ul class="tags" aria-label="Categories"><li>Tooling<\/li><\/ul>/g)].length, 2);
   const page = jsonLd(html).find((n) => n['@type'] === 'CollectionPage');
   assert.deepEqual(page.mainEntity.itemListElement.map((i) => i.url), ['https://csarko.sh/research/b', 'https://csarko.sh/research/a']);
+});
+
+test('indexPage carries one filter chip a category with its count, All as a reset, and a CSS rule a chip, no script', () => {
+  const html = indexPage(sortDocs([doc('a', '2026-01-01'), doc('b', '2026-03-01')]), themeBlocks(INDEX));
+  assert.ok(html.includes('<form class="filters" aria-label="Filter by category">'));
+  assert.ok(html.includes('<button type="reset" class="chip all">All <small>2</small></button>'));
+  for (const c of CATEGORIES) {
+    const slug = categorySlug(c);
+    const count = c === 'Tooling' ? 2 : 0;
+    assert.ok(html.includes(`<label class="chip"><input type="checkbox" name="category" value="${slug}" id="cat-${slug}" />${c} <small>${count}</small></label>`), c);
+    assert.ok(html.includes(`.docs-index:has(#cat-${slug}:checked) .doc-list > li[data-categories~="${slug}"] { display: flex; }`), `${c} rule`);
+  }
+  assert.ok(html.includes('.docs-index:has(.filters input:checked) .doc-list > li { display: none; }'));
+  assert.ok(!/<script(?![^>]*\b(src=|type="application\/ld\+json"))/.test(html), 'no inline script does the filtering');
 });
 
 test('sitemap lists home, the index and every doc, with lastmod only on docs', () => {
@@ -462,7 +493,7 @@ test('every generated page carries a trail its BreadcrumbList repeats exactly', 
 
 test('a crumb escapes its title and names the same page the nav marks current', () => {
   const theme = themeBlocks(INDEX);
-  const amp = loadDoc('2026-09-14-grass.md', `---\ndescription: ${DESC}\npublished: 2026-09-14\n---\n# Grass & trails\n\nText.\n`);
+  const amp = loadDoc('2026-09-14-grass.md', `---\ndescription: ${DESC}\npublished: 2026-09-14\ncategories: Rendering\n---\n# Grass & trails\n\nText.\n`);
   const html = docPage(amp, theme);
   assert.ok(html.includes('<li><span aria-current="page">Grass &amp; trails</span></li>'));
   assert.equal(crumbNames(html).at(-1), 'Grass & trails');

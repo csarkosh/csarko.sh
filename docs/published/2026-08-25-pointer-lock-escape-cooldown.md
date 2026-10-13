@@ -1,6 +1,7 @@
 ---
 description: Chromium refuses pointer lock for 1.25 s after Esc. What failed in the browser, and how an 8-byte patch to prebuilt Electron removed the cooldown.
 published: 2026-08-25
+categories: Tooling
 updated: 2026-10-10
 ---
 # Pointer lock's Esc cooldown and an 8-byte patch

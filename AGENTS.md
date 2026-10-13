@@ -218,7 +218,13 @@ three from the command line):
   and `docs/films/*.md`). Docs
   from private repositories such as `magicpixel.ai` need Cyrus's OK per doc, and
   never describe the commercial asset pipeline. Launched with
-  `stylized-shader-looks`, from `game-dayhike`.
+  `stylized-shader-looks`, from `game-dayhike`. **Every doc carries `categories:`**
+  *(Cyrus, 2026-10-13)*: one to three of the fixed set in `docs_lib.mjs`
+  (`CATEGORIES`: Distributed systems, AI, Rendering, Worlds and terrain, Game design,
+  Film, Tooling), which are the filter chips above the list on `/research` (multi-select,
+  OR across chips, "All" a reset button, no script: the list filters through CSS
+  `:has()`) and the tags on each card. The build refuses a doc without them or with a
+  name outside the set; the `publish-doc` skill says which to give a doc.
 - **Film** *(added 2026-09-17)*: short films at **`/film`** (nav: `Film`, first
   among the page links on every page, and no heading link, since the home page
   has no film section; the page's H1 is "Short films on YouTube",

@@ -1,6 +1,7 @@
 ---
 description: Keeping a streamed browser forest from visibly spawning: pixel-size arithmetic, screen-space dissolve bands, and what discard costs in opaque shaders.
 published: 2026-09-01
+categories: Rendering
 updated: 2026-10-10
 ---
 # No visible pop-in: dissolving a streamed forest
