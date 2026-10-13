@@ -1,6 +1,6 @@
 # admin.csarko.sh: one dashboard for every app's traction
 
-Date: 2026-10-12 · Status: approved by Cyrus 2026-10-12 (token auth, not Google sign-in; public repos only; admin pages inherit the site's style and quality bar) · Not published (docs/superpowers is internal)
+Date: 2026-10-12 · Status: approved by Cyrus 2026-10-12 (token auth, not Google sign-in; public repos only; admin pages inherit the site's style and quality bar); **built and live 2026-10-13**, see "As built" · Not published (docs/superpowers is internal)
 
 ## Goal
 
@@ -351,6 +351,32 @@ existing procedure.
 3. The `read-<slug>` script ships (Part 1.2), through `site-quality`'s script procedure.
 4. Substack subscribers are entered by hand.
 5. The admin pages follow csarko.sh's style and quality bar except SEO and indexing (2.8).
+
+## As built (2026-10-13)
+
+Live: `https://admin.csarko.sh` (`/`, `/csarko.sh/`, `/game-dayhike/`), the Cloud Run
+service `csarko-admin`, the first daily snapshot, the 06:00 New York scheduler, and the
+events on the public site. What the build taught, beyond the spec:
+
+- **GoatCounter's API reports visits, not pageviews.** `HitList.count` and
+  `HitListStat.daily` are visitors; there is no pageview figure. The Visitors card has
+  one tile, and `pageviews` is `null` everywhere in the contract.
+- **Cloud Run refuses under 512Mi with CPU always allocated.** The service runs with
+  CPU only during requests (`cpu_idle = true`), which is the free-tier shape anyway.
+- **Google's frontend answers `/healthz` itself** on Cloud Run with its own 404 page,
+  so the liveness route is `/health`.
+- **A Firestore range filter on the document id wants a composite index**; a cursor
+  (`orderBy(documentId).startAt().endAt()`) does not. The snapshot listing uses the cursor.
+- **A revision cannot reference a secret with no version**, so each project's first apply
+  is two steps, and the API treats the literal placeholder `unset` (or an empty value) as
+  "not configured" for every credential but the admin token.
+- **GitHub traffic needs the token's Administration: read**; without it the collector keeps
+  stars and records the refusal per repo rather than dropping the section.
+- `firebase.json` is a list of two sites; `check.py`, `build_assets.py` and `serve.py`
+  pick the public site's entry by its `public` folder. `deploy.sh` deploys
+  `hosting:csarko-sh` only; `admin/deploy.sh` deploys `hosting:csarko-sh-admin` only.
+- The Day Hike API's switch to the token and the 301 from its old admin URL ship with
+  the game's next `deploy:server` and `deploy:client` (branch `claude/admin-host` there).
 
 ## Research this design rests on
 
