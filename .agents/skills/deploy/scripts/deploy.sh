@@ -57,20 +57,23 @@ SITE="$(tf hosting_site_id)"
 DEFAULT_URL="$(tf hosting_default_url)"
 SITE_URL="$(tf site_url)"
 
-grep -q "\"site\": \"$SITE\"" firebase.json || die "firebase.json hosting.site is not \"$SITE\" (Terraform's hosting_site_id)"
+# firebase.json lists two sites (the public site and admin.csarko.sh); every
+# command below names this one, so an admin deploy and a site deploy can never
+# touch each other's files.
+grep -q "\"site\": \"$SITE\"" firebase.json || die "firebase.json has no hosting entry for site \"$SITE\" (Terraform's hosting_site_id)"
 grep -q "\"default\": \"$PROJECT\"" .firebaserc || die ".firebaserc default is not \"$PROJECT\" (Terraform's gcp_project_id)"
 
 echo "→ project  $PROJECT"
 echo "→ site     $SITE"
 
 if [[ "$MODE" == "preview" ]]; then
-  npx -y firebase-tools hosting:channel:deploy preview --expires 7d --project "$PROJECT" --non-interactive
+  npx -y firebase-tools hosting:channel:deploy preview --only "$SITE" --expires 7d --project "$PROJECT" --non-interactive
   echo
   echo "✓ preview channel deployed (the URL is printed above; it expires in 7 days)"
   exit 0
 fi
 
-npx -y firebase-tools deploy --only hosting --project "$PROJECT" --non-interactive
+npx -y firebase-tools deploy --only "hosting:$SITE" --project "$PROJECT" --non-interactive
 
 # Pages to prove live: the home page, /film, /games, the research index and the newest doc, each against its local file.
 NEWEST="$(.agents/skills/site-quality/scripts/check.py --newest-doc)"

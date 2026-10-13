@@ -27,7 +27,8 @@ now 301 there). No framework and no CI; the one build step,
 | `docs/superpowers/` | Internal design specs and implementation plans. **Never published** (unlike its siblings `docs/published/`, `docs/games/` and `docs/films/`, which are). |
 | `docs/substack/posts.json` | The log of csarko.log posts made with the `substack-post` skill: date, Substack URL, title and the doc slugs each covered. Not a page: the build reads only the three content folders. |
 | `firebase.json`, `.firebaserc` | Firebase Hosting config: publish `public/`, cache headers, and the 301 redirects from the old `/docs` URLs to `/research` (keep them: old links and search results still use them). |
-| `_infra/` | Terraform for the hosting and DNS. Same shape as `~/Projects/fps/_infra`. |
+| `admin/` | **The private dashboard, `https://admin.csarko.sh`** *(designed and approved 2026-10-12; spec: `docs/superpowers/specs/2026-10-12-admin-dashboard-design.md`)*. `admin/public/` is the shell (the index of tracked apps, `/csarko.sh/` the site's own dashboard, `theme.css`, `auth.js`, `charts.js`), a second Firebase Hosting site `csarko-sh-admin`; `admin/api/` is the Cloud Run service `csarko-admin` that reads GoatCounter, Search Console, YouTube, GitHub and the daily Firestore snapshots; `admin/public/game-dayhike/` is **pulled at deploy** from the game's repo (git-ignored). See "Admin pages" below for the standing rule. |
+| `_infra/` | Terraform for the hosting, DNS, and the admin site and API. Same shape as `~/Projects/game-dayhike/_infra` (project `fps-csarko`). |
 | `.agents/skills/` | Agent skills: `preview`, `deploy`, `site-quality`, `publish-doc` and `substack-post`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
 | `.claude/settings.json` | Imports the shared skill plugins from [`csarkosh/skills-general`](https://github.com/csarkosh/skills-general): `general:doc-preview` (open a markdown doc as a styled page in Chrome; not this repo's `preview`, which previews the site) and `general:search-console` (Google Search Console reports: indexing, sitemap, search performance) and `general-claude:doc-artifact` (publish a doc as a claude.ai Artifact). Change those skills in `skills-general`, not here. On a machine that has never installed them, run `claude plugin install general@csarkosh` and `claude plugin install general-claude@csarkosh`. Codex has no per-repository import: run `codex plugin marketplace add csarkosh/skills-general` and `codex plugin add general@csarkosh` once per machine. |
 | `README.md` | Human-facing overview. `LICENSE` is MIT and predates this version of the site. |
@@ -254,6 +255,34 @@ three from the command line):
   and `check.py` fails the build if they drift apart; see `site-quality`,
   "One trail, two places".
 
+## Admin pages (standing rule, Cyrus 2026-10-12)
+
+**Everything under `admin/` is a csarko.sh page: styled like https://csarko.sh and
+held to the same requirements, except SEO and search indexing.** When you touch
+anything related to the admin pages in this repo:
+
+- **Same look.** The site's theme tokens (both blocks, copied at build time from
+  `public/index.html` by `admin/build.mjs`, never retyped), Inter and JetBrains Mono
+  self-hosted from the same hashed font files, the 1120px `.wrap` and the nav bar
+  shape, dark and light by system setting with no toggle. A new colour is a token in
+  both blocks, 4.5:1 on its surface in both themes. No em-dashes, no email address or
+  phone number.
+- **Same bar.** Lighthouse 100 on Accessibility and Best Practices, Performance ≥ 95,
+  a layout that holds from 320px to 1440px, a strict CSP with `script-src 'self'` and
+  no third-party script, the same security headers. The only cross-origin requests
+  are to the app APIs listed in `admin/public/apps.json`. No cookies anywhere: the
+  admin token lives in `localStorage`. Screenshots in both themes
+  (`admin/preview.sh --shots`) are looked at before a visual change is called done.
+- **Not a target.** Indexing: the pages carry `noindex, nofollow`, `admin/public/robots.txt`
+  disallows everything, there is no sitemap entry, JSON-LD, Open Graph card or canonical,
+  and the Lighthouse SEO score is ignored. `check.py --admin` runs the checks that
+  apply; `admin/deploy.sh` refuses to publish if they fail.
+- **Access** is one admin token (Secret Manager `admin-token` in each project that runs
+  an app API, env `ADMIN_TOKEN`), pasted into the browser once; no sign-in. Never commit
+  it. An app is tracked by one entry in `apps.json` and two routes on its API,
+  `GET /admin/kpis` and `GET /admin/query/<name>?days=N` (the contract is
+  `admin/CONTRACT.md`). GitHub metrics cover **public repos only**, never a private one.
+
 ## Analytics: how GoatCounter is wired in
 
 - **GoatCounter**, dashboard at **https://csarko.goatcounter.com** (Cyrus's account,
@@ -270,6 +299,22 @@ three from the command line):
   provenance comment accurate) and re-run the generator.
 - The 404 page counts too (the path shows the broken link). `localhost` and
   `file://` previews are never counted.
+- **Events** *(added 2026-10-12 for the admin dashboard, spec Part 1.2)*: clicks out to
+  LinkedIn, GitHub, Substack and YouTube count as `out-linkedin`, `out-github`,
+  `out-substack`, `out-youtube` (hero chips, Contact buttons and the Filming tile's link
+  in `index.html`); the nav's page links count `nav-film`, `nav-games`, `nav-research` in
+  both navs (never on the page you are on); a game card's "Play in your browser" counts
+  `play-<slug>` and a film card's "Watch on YouTube" counts `watch-<slug>`
+  (`docs_lib.mjs`). All are `data-goatcounter-click` attributes that count.js binds. The
+  one event with a script is `read-<slug>`: `.agents/skills/site-quality/assets/engage.js`
+  (ours, 549 B shipped as `public/assets/engage.<hash>.js`, comment lines stripped at
+  build) fires it once when a doc's end (the Sources heading, else the "Written by" box,
+  marked `data-read-end` by the build) scrolls into view. Doc pages only; a doc page now
+  carries 9,922 B of the 10,000 B script budget, so the next script needs a deliberate
+  budget decision. **Event names are stable identifiers, not copy:** renaming a button or
+  a URL must not rename its series. Set `code` to `null` in `site.json` and both scripts
+  and every event go away together. Campaign tags on links Cyrus posts (`?ref=substack`,
+  `?ref=linkedin`) show up as GoatCounter campaigns; the site does nothing for them.
 - Verified on first deploy: Lighthouse still 100/100/100/100 (LCP 1.2s, CLS 0),
   Observatory A+ 120, beacon returns 200, zero console errors.
 
@@ -318,7 +363,7 @@ dark token changes, regenerate them
   **`www` CNAME** → `csarko-sh.web.app`, which Firebase serves as a 301 to
   `https://csarko.sh` (`redirect_domain_names` in `_infra/variables.tf`). Everything
   else there belongs to someone else — the apex **MX records are Google Workspace
-  mail** (never touch them) and `games`/`game` belong to `~/Projects/fps/_infra`.
+  mail** (never touch them) and `games`/`game` belong to `~/Projects/game-dayhike/_infra`.
   As of 2026-09-11 that is the whole zone — every older project subdomain was
   taken down (see History).
 - **Apex TXT is one record set.** If another apex TXT value is ever needed (SPF,

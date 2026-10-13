@@ -206,9 +206,19 @@ def one(page, key):
     return vals[0]
 
 
+def hosting_entry(cfg, public="public"):
+    """firebase.json's hosting entry for one site. The file became a list when
+    admin.csarko.sh joined (a second site, `admin/public`); the public site is
+    the entry whose `public` folder is `public`."""
+    hosting = cfg["hosting"]
+    if isinstance(hosting, list):
+        return next(h for h in hosting if h.get("public") == public)
+    return hosting
+
+
 def csp_from_config():
     cfg = json.load(open(ROOT / "firebase.json"))
-    blocks = cfg["hosting"].get("headers", [])
+    blocks = hosting_entry(cfg).get("headers", [])
     catch_all = {h["key"]: h["value"] for b in blocks if b.get("source") == "**" for h in b["headers"]}
     return blocks, catch_all
 
@@ -935,12 +945,23 @@ def observatory(host):
     check(result.get("grade") == "A+", f"grade {result.get('grade')} (score {result.get('score')}) {result.get('details_url', '')}")
 
 
+def strip_comments(js: bytes) -> bytes:
+    """What build_assets.py ships of our own scripts: the code without its whole-line // comments
+    (the same rule as its strip_comments, so the hash below can be verified; a drift fails loudly)."""
+    return b"".join(line for line in js.splitlines(keepends=True) if not line.lstrip().startswith(b"//"))
+
+
 def analytics_checks(pages):
     print("analytics")
+    vendored = SKILL / "assets/vendor/goatcounter-count.js"
+    want_counter = f"goatcounter-count.{hashlib.sha256(vendored.read_bytes()).hexdigest()[:8]}.js"
+    want_engage = f"engage.{hashlib.sha256(strip_comments((SKILL / 'assets/engage.js').read_bytes())).hexdigest()[:8]}.js"
     for name, (page, html) in pages.items():
         tags = [a for a, _ in page.scripts if "data-goatcounter" in a]
+        # engage.js counts "read-<slug>" when a doc's end scrolls into view: doc pages only.
+        engage = [a for a, _ in page.scripts if re.search(r"assets/engage\.[0-9a-f]{8}\.js$", a.get("src", ""))]
         if not ANALYTICS_ORIGIN:
-            check(not tags, f"{name}: no analytics tag (analytics is off in site.json)")
+            check(not tags and not engage, f"{name}: no analytics tag (analytics is off in site.json)")
             continue
         if len(tags) != 1:
             fail(f"{name}: expected one GoatCounter <script>, found {len(tags)} — run generate-assets.sh")
@@ -951,9 +972,22 @@ def analytics_checks(pages):
         check("async" in t or "defer" in t, f"{name}: analytics script is async")
         check(local_path(src) is not None and re.search(r"assets/goatcounter-count\.[0-9a-f]{8}\.js$", src),
               f"{name}: count.js is self-hosted and content-hashed ({src})")
-        vendored = SKILL / "assets/vendor/goatcounter-count.js"
-        want = f"goatcounter-count.{hashlib.sha256(vendored.read_bytes()).hexdigest()[:8]}.js"
-        check(src.endswith(want), f"{name}: count.js matches the vendored copy")
+        check(src.endswith(want_counter), f"{name}: count.js matches the vendored copy")
+        if page_kind(name) == "doc":
+            if len(engage) != 1:
+                fail(f"{name}: expected one engage.js <script> on a doc page, found {len(engage)}; run generate-assets.sh")
+                continue
+            e = engage[0]
+            check("defer" in e, f"{name}: engage.js is deferred")
+            check(e.get("src", "").endswith(want_engage), f"{name}: engage.js matches assets/engage.js without its comments")
+            check(e.get("data-slug") == Path(name).stem, f"{name}: engage.js is told this doc's slug ({e.get('data-slug')})")
+            scripts = [a for a, _ in page.scripts]
+            check(scripts.index(t) < scripts.index(e), f"{name}: engage.js comes after count.js")
+            check(html.count(" data-read-end") == 1, f"{name}: marks one end of the doc with data-read-end")
+        else:
+            check(not engage, f"{name}: no engage.js (it belongs on doc pages only)")
+        strays = [a["src"] for a, _ in page.scripts if a.get("src") and a is not t and a not in engage]
+        check(not strays, f"{name}: no scripts besides count.js and engage.js {strays or ''}")
     _, catch_all = csp_from_config()
     csp = parse_csp(catch_all.get("Content-Security-Policy"))
     if ANALYTICS_ORIGIN:
@@ -961,9 +995,75 @@ def analytics_checks(pages):
               "CSP script-src is exactly 'self' (no third-party or inline scripts)")
 
 
+# ---- admin.csarko.sh: a csarko.sh page in everything but indexing (AGENTS.md "Admin pages")
+
+ADMIN = ROOT / "admin" / "public"
+
+
+def admin_checks():
+    """The admin pages inherit the site's look and bar, not its SEO. The tokens
+    must be the home page's own (copied, never retyped), no colour may live
+    outside them, no script or font may come from elsewhere, nothing may invite
+    a crawler, and the CSP must name every app API the pages talk to."""
+    print("admin pages")
+    index_css = css_of(parse(PUBLIC / "index.html")[1])
+    theme = (ADMIN / "theme.css").read_text()
+    gen = re.search(r"/\* generated:theme \*/(.*?)/\* /generated:theme \*/", theme, re.S)
+    check(gen is not None, "theme.css carries the generated:theme block")
+    if gen:
+        squash = lambda t: re.sub(r"\s+", " ", t)
+        for block in re.findall(r"(?<![\w-]):root\s*\{.*?\}", gen.group(1), re.S):
+            check(squash(block) in squash(index_css), f"theme.css token block is the home page's own, re-indented only ({block[:24]!r}…)")
+        rest = re.sub(r"/\*.*?\*/", "", theme.replace(gen.group(0), ""), flags=re.S)
+        stray = sorted(set(COLOR_LITERAL.findall(rest)))
+        check(not stray, f"theme.css: no colours outside the token block {stray or ''}")
+    for ref in re.findall(r"url\(([^)]+)\)", theme):
+        ref = ref.strip("'\"")
+        check(ref.startswith("/") and (ADMIN / ref.lstrip("/")).exists(), f"theme.css asset is self-hosted and present: {ref}")
+
+    apps = json.loads((ADMIN / "apps.json").read_text())
+    cfg = json.load(open(ROOT / "firebase.json"))
+    admin_cfg = hosting_entry(cfg, "admin/public")
+    headers = {h["key"]: h["value"] for b in admin_cfg.get("headers", []) if b.get("source") == "**" for h in b["headers"]}
+    csp = parse_csp(headers.get("Content-Security-Policy", ""))
+    check(csp.get("script-src") == ["'self'"], f"admin CSP script-src is 'self' alone ({csp.get('script-src')})")
+    for app in apps:
+        check(origin(app["api"]) in csp.get("connect-src", []), f"admin CSP connect-src names {app['name']}'s API")
+    check("'none'" in csp.get("frame-ancestors", []), "admin CSP frame-ancestors 'none'")
+    check(headers.get("X-Robots-Tag", "").startswith("noindex"), "admin site sends X-Robots-Tag: noindex")
+    robots = (ADMIN / "robots.txt").read_text()
+    check(re.search(r"^Disallow:\s*/\s*$", robots, re.M) is not None, "admin robots.txt disallows everything")
+
+    pages = sorted(p for p in ADMIN.rglob("*.html") if "game-dayhike" not in p.parts) + sorted(ADMIN.glob("game-dayhike/index.html"))
+    for path in pages:
+        rel = str(path.relative_to(ADMIN))
+        html = path.read_text()
+        check(re.search(r'<meta name="robots" content="noindex', html), f"{rel}: noindex")
+        for tag in ("canonical", 'property="og:', "application/ld+json"):
+            check(tag not in html, f"{rel}: no {tag} (not for crawlers)")
+        check(not re.search(r"<script(?![^>]*\bsrc=)[^>]*>", html), f"{rel}: no inline script")
+        check(not re.search(r"\son[a-z]+=", html), f"{rel}: no inline event handler")
+        for src in re.findall(r'<(?:script|link)[^>]+(?:src|href)="([^"]+)"', html):
+            check(not src.startswith(("http:", "https:", "//")), f"{rel}: no third-party script, style or font ({src})")
+        check("—" not in html, f"{rel}: no em-dash")
+        check(not re.search(r"[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}", html, re.I), f"{rel}: no email address")
+        if "game-dayhike" not in rel:
+            for src in re.findall(r'<(?:script|link)[^>]+(?:src|href)="(/[^"]+)"', html):
+                check((ADMIN / src.lstrip("/")).exists(), f"{rel}: {src} exists")
+
+
 def main(argv):
     if "--newest-doc" in argv:
         print(newest_doc() or "")
+        return 0
+
+    if "--admin" in argv:
+        admin_checks()
+        print()
+        if failures:
+            print(f"✗ {len(failures)} admin check(s) failed")
+            return 1
+        print("✓ admin checks passed")
         return 0
 
     pages = {rel: parse(PUBLIC / rel) for rel in indexable_pages()}

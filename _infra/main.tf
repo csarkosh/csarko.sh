@@ -49,6 +49,18 @@ provider "google-beta" {
   region  = var.gcp_region
 }
 
+# The billing budget API refuses a user's own credentials unless the call names
+# a project to bill it to. Scoped to its own alias so that header is sent for
+# the budget only, not for every other call the modules make (the game-dayhike
+# repo found this first).
+provider "google" {
+  alias                 = "billing"
+  project               = var.gcp_project_id
+  region                = var.gcp_region
+  billing_project       = var.gcp_project_id
+  user_project_override = true
+}
+
 module "gcp_hosting" {
   source = "./modules/gcp-hosting"
 
@@ -63,11 +75,64 @@ module "gcp_hosting" {
   }
 }
 
-# The site's own hostname, e.g. "csarko-sh.web.app". default_url stays populated
+# The admin dashboard, https://admin.csarko.sh: a second Hosting site in the
+# same project, so it shares the public site's quota and Firebase project but
+# deploys on its own (`firebase deploy --only hosting:admin`), and a site
+# deploy never touches it. No redirect domains: nothing else should land here.
+# The first module instance owns the project-level Firebase resources, so this
+# one only adds the site and its domain, and waits for the first.
+module "gcp_hosting_admin" {
+  source = "./modules/gcp-hosting"
+
+  project_id            = var.gcp_project_id
+  site_id               = var.admin_hosting_site_id
+  domain_name           = var.admin_domain_name
+  redirect_domain_names = []
+  manage_project        = false
+
+  providers = {
+    google      = google
+    google-beta = google-beta
+  }
+
+  depends_on = [module.gcp_hosting]
+}
+
+# The API behind the dashboard: Cloud Run, its secrets, Firestore for the
+# daily snapshots, the Scheduler job that takes them, and the project budget.
+module "gcp_admin_api" {
+  source = "./modules/gcp-admin-api"
+
+  project_id       = var.gcp_project_id
+  region           = var.gcp_region
+  site_url         = "https://${var.domain_name}"
+  sitemap_url      = "https://${var.domain_name}/sitemap.xml"
+  hosting_site_id  = module.gcp_hosting.site_id
+  goatcounter_site = var.goatcounter_site
+  gsc_property     = "sc-domain:${var.domain_name}"
+  youtube_handle   = var.youtube_handle
+  github_repos     = var.github_repos
+  allowed_origins = [
+    "https://${var.admin_domain_name}",
+    # The local preview of admin/public, served by its preview script.
+    "http://localhost:8788",
+  ]
+  billing_account_id = var.billing_account_id
+  monthly_budget_usd = var.monthly_budget_usd
+
+  providers = {
+    google         = google
+    google.billing = google.billing
+    google-beta    = google-beta
+  }
+}
+
+# Each site's own hostname, e.g. "csarko-sh.web.app". default_url stays populated
 # for the life of the site, unlike required_dns_updates, which empties once a
 # domain reconciles (the fps repo learned this the hard way).
 locals {
-  hosting_cname_target = trimprefix(module.gcp_hosting.default_url, "https://")
+  hosting_cname_target       = trimprefix(module.gcp_hosting.default_url, "https://")
+  admin_hosting_cname_target = trimprefix(module.gcp_hosting_admin.default_url, "https://")
 }
 
 # csarko.sh is a zone apex, so it cannot be a CNAME the way games.csarko.sh is
@@ -89,7 +154,12 @@ module "aws_dns" {
     "google-site-verification=r8DHgyFqGEsfamOeyKlLZecMwnv54ysXg91ZFGylr_4",
   ]
 
-  cname_records = { for d in var.redirect_domain_names : d => local.hosting_cname_target }
+  # Non-apex hostnames CNAME straight to their site's own web.app host: the
+  # redirect domains (www) to the public site, admin to the admin site.
+  cname_records = merge(
+    { for d in var.redirect_domain_names : d => local.hosting_cname_target },
+    { (var.admin_domain_name) = local.admin_hosting_cname_target },
+  )
 
   providers = {
     aws = aws

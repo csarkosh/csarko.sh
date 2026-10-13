@@ -1,0 +1,17 @@
+{
+  "more": false,
+  "stats": [
+    { "id": "", "name": "", "count": 80, "ref_scheme": "o" },
+    { "id": "g1", "name": "Google", "count": 40, "ref_scheme": "g" },
+    { "id": "r2", "name": "www.linkedin.com", "count": 22, "ref_scheme": "h" },
+    { "id": "r3", "name": "lnkd.in", "count": 5, "ref_scheme": "h" },
+    { "id": "r4", "name": "csarko.substack.com/p/first-post", "count": 14, "ref_scheme": "h" },
+    { "id": "r5", "name": "github.com/csarkosh/game-dayhike", "count": 11, "ref_scheme": "h" },
+    { "id": "r6", "name": "www.youtube.com", "count": 6, "ref_scheme": "h" },
+    { "id": "r7", "name": "news.ycombinator.com", "count": 3, "ref_scheme": "h" },
+    { "id": "r8", "name": "t.co", "count": 2, "ref_scheme": "h" },
+    { "id": "r9", "name": "duckduckgo.com", "count": 4, "ref_scheme": "h" },
+    { "id": "r10", "name": "example.org/blog", "count": 1, "ref_scheme": "h" },
+    { "id": "c1", "name": "substack-oct", "count": 9, "ref_scheme": "c" }
+  ]
+}

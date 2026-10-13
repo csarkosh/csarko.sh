@@ -51,3 +51,56 @@ variable "firebase_hosting_ips" {
   type        = list(string)
   default     = ["199.36.158.100"]
 }
+
+variable "admin_domain_name" {
+  description = "Hostname of the admin dashboard. A subdomain of domain_name, so it CNAMEs to its site's web.app host."
+  type        = string
+  default     = "admin.csarko.sh"
+}
+
+variable "admin_hosting_site_id" {
+  description = "Firebase Hosting site id of the admin dashboard. Globally unique across all of Firebase."
+  type        = string
+  default     = "csarko-sh-admin"
+}
+
+variable "goatcounter_site" {
+  description = "GoatCounter site code; the same value as `code` in .agents/skills/site-quality/site.json."
+  type        = string
+  default     = "csarko"
+}
+
+variable "youtube_handle" {
+  description = "YouTube channel handle the dashboard reports on, without the @."
+  type        = string
+  default     = "csarkosh"
+}
+
+variable "github_repos" {
+  description = <<-EOT
+    GitHub repositories the dashboard reports stars and traffic for, as
+    owner/name. Public repos only (Cyrus, 2026-10-12): never a private one.
+  EOT
+  type        = list(string)
+  default     = ["csarkosh/game-dayhike", "csarkosh/electron-gamepatch"]
+}
+
+variable "billing_account_id" {
+  description = <<-EOT
+    Billing account to create the project's monthly budget alert under, as
+    XXXXXX-XXXXXX-XXXXXX. Empty (the default) creates no budget. Set it only
+    in the git-ignored terraform.tfvars.
+  EOT
+  type        = string
+  default     = ""
+}
+
+variable "monthly_budget_usd" {
+  description = <<-EOT
+    Monthly amount the project budget alerts against, in whole US dollars. An
+    ordinary month of both Hosting sites and the admin API is within every
+    free tier, so the first alert, at half of this, means a spike or a leak.
+  EOT
+  type        = number
+  default     = 5
+}

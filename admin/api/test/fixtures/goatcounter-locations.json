@@ -1,0 +1,8 @@
+{
+  "more": false,
+  "stats": [
+    { "id": "US", "name": "United States", "count": 130 },
+    { "id": "DE", "name": "Germany", "count": 20 },
+    { "id": "", "name": "(unknown)", "count": 5 }
+  ]
+}

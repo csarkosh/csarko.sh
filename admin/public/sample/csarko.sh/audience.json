@@ -1,0 +1,37 @@
+{
+  "countries": [
+    { "name": "United States", "visitors": 121 },
+    { "name": "Germany", "visitors": 18 },
+    { "name": "United Kingdom", "visitors": 16 },
+    { "name": "Canada", "visitors": 12 },
+    { "name": "India", "visitors": 11 },
+    { "name": "Other", "visitors": 34 }
+  ],
+  "sizes": [
+    { "name": "Phones", "visitors": 97 },
+    { "name": "Computer monitors", "visitors": 71 },
+    { "name": "Tablets and small laptops", "visitors": 17 },
+    { "name": "Monitors larger than HD", "visitors": 9 },
+    { "name": "Unknown", "visitors": 18 }
+  ],
+  "browsers": [
+    { "name": "Chrome", "visitors": 112 },
+    { "name": "Safari", "visitors": 58 },
+    { "name": "Firefox", "visitors": 24 },
+    { "name": "Edge", "visitors": 12 },
+    { "name": "Other", "visitors": 6 }
+  ],
+  "systems": [
+    { "name": "iOS", "visitors": 61 },
+    { "name": "macOS", "visitors": 54 },
+    { "name": "Windows", "visitors": 48 },
+    { "name": "Android", "visitors": 36 },
+    { "name": "Linux", "visitors": 13 }
+  ],
+  "languages": [
+    { "name": "English", "visitors": 183 },
+    { "name": "German", "visitors": 11 },
+    { "name": "French", "visitors": 5 },
+    { "name": "Other", "visitors": 13 }
+  ]
+}

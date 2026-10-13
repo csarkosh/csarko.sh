@@ -1,0 +1,19 @@
+{
+  "name": "csarko-admin-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The csarko.sh admin API: proxies GoatCounter, Search Console, YouTube, GitHub and a few public endpoints for admin.csarko.sh, and keeps a daily snapshot in Firestore.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.9"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "dev": "PORT=8787 node --env-file-if-exists=.env.local --watch src/server.mjs",
+    "test": "node --test \"test/**/*.test.mjs\""
+  },
+  "dependencies": {
+    "@google-cloud/firestore": "9.3.1",
+    "jose": "6.2.12"
+  }
+}

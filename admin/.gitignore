@@ -1,0 +1,3 @@
+# The Day Hike admin bundle is built in game-dayhike and pulled in by admin/deploy.sh
+# from gs://fps-csarko-downloads/admin/latest/ right before `firebase deploy`.
+public/game-dayhike/

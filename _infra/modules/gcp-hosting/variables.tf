@@ -18,3 +18,13 @@ variable "redirect_domain_names" {
   type        = list(string)
   default     = []
 }
+
+variable "manage_project" {
+  description = <<-EOT
+    Whether this instance enables the Firebase APIs and adds Firebase to the
+    project. True for the first site in a project; false for every further
+    site, which then depends on the first instance for them.
+  EOT
+  type        = bool
+  default     = true
+}

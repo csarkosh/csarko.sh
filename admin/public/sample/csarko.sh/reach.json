@@ -1,0 +1,65 @@
+{
+  "youtube": {
+    "subscribers": 41,
+    "views": 2184,
+    "videos": 1,
+    "videosList": [
+      { "id": "dQw4w9WgXcQ", "title": "Who Is Standing in My Hallway", "views": 2184, "likes": 37 }
+    ],
+    "prev": { "subscribers": 38, "views": 2051 }
+  },
+  "github": [
+    {
+      "repo": "csarkosh/game-dayhike",
+      "stars": 12,
+      "forks": 1,
+      "watchers": 12,
+      "traffic": {
+        "views": 184,
+        "uniques": 61,
+        "clones": 7,
+        "referrers": [
+          { "referrer": "csarko.sh", "count": 44, "uniques": 19 },
+          { "referrer": "github.com", "count": 38, "uniques": 22 },
+          { "referrer": "Google", "count": 17, "uniques": 11 }
+        ]
+      }
+    },
+    {
+      "repo": "csarkosh/electron-gamepatch",
+      "stars": 3,
+      "forks": 0,
+      "watchers": 3,
+      "traffic": {
+        "views": 23,
+        "uniques": 9,
+        "clones": 2,
+        "referrers": [
+          { "referrer": "github.com", "count": 14, "uniques": 6 }
+        ]
+      }
+    }
+  ],
+  "hn": {
+    "mentions": 1,
+    "items": [
+      { "title": "Rock on steep terrain: shape it, cover it, or skin it", "url": "https://news.ycombinator.com/item?id=45000001", "points": 6, "at": "2026-10-09T15:42:00Z", "kind": "story" }
+    ]
+  },
+  "substack": {
+    "series": [
+      { "at": "2026-07-20T10:00:00Z", "value": 18 },
+      { "at": "2026-07-27T10:00:00Z", "value": 19 },
+      { "at": "2026-08-03T10:00:00Z", "value": 21 },
+      { "at": "2026-08-10T10:00:00Z", "value": 24 },
+      { "at": "2026-08-17T10:00:00Z", "value": 26 },
+      { "at": "2026-08-24T10:00:00Z", "value": 29 },
+      { "at": "2026-08-31T10:00:00Z", "value": 31 },
+      { "at": "2026-09-07T10:00:00Z", "value": 35 },
+      { "at": "2026-09-14T10:00:00Z", "value": 38 },
+      { "at": "2026-09-21T10:00:00Z", "value": 41 },
+      { "at": "2026-09-28T10:00:00Z", "value": 44 },
+      { "at": "2026-10-05T10:00:00Z", "value": 47 }
+    ]
+  }
+}

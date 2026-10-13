@@ -1,0 +1,17 @@
+{
+  "up": true,
+  "status": 200,
+  "ttfbMs": 212,
+  "certDaysLeft": 61,
+  "lighthousePerformance": 99,
+  "lighthouseAt": "2026-10-12T10:00:00Z",
+  "lastDeployAt": "2026-10-11T22:14:00Z",
+  "notFound": [
+    { "path": "/projects", "visitors": 4 },
+    { "path": "/contact", "visitors": 3 },
+    { "path": "/wp-login.php", "visitors": 2 }
+  ],
+  "sitemapFetchedAt": "2026-10-10T07:12:00Z",
+  "indexed": { "indexed": 6, "total": 16 },
+  "overall": { "status": "warning", "note": "10 of 16 pages not yet indexed" }
+}

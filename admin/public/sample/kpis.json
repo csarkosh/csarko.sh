@@ -1,0 +1,80 @@
+{
+  "csarko.sh": {
+    "app": "csarko.sh",
+    "at": "2026-10-12T13:05:00Z",
+    "kpis": [
+      {
+        "key": "visits",
+        "label": "Visits, 7 days",
+        "value": 212,
+        "prev": 180,
+        "unit": "",
+        "trend": [96, 104, 121, 118, 133, 150, 142, 161, 174, 169, 180, 212]
+      },
+      {
+        "key": "search",
+        "label": "Search clicks, 28 days",
+        "value": 118,
+        "prev": 96,
+        "unit": "",
+        "trend": [41, 48, 52, 60, 66, 71, 79, 84, 90, 96, 103, 118]
+      },
+      {
+        "key": "impressions",
+        "label": "Impressions, 28 days",
+        "value": 3804,
+        "prev": 3110,
+        "unit": "",
+        "trend": [1210, 1340, 1480, 1620, 1790, 1950, 2160, 2410, 2680, 2900, 3110, 3804]
+      },
+      {
+        "key": "outbound",
+        "label": "Outbound clicks, 7 days",
+        "value": 34,
+        "prev": 27,
+        "unit": "",
+        "trend": [11, 14, 12, 17, 19, 18, 22, 24, 21, 26, 27, 34]
+      }
+    ],
+    "health": { "status": "warning", "note": "10 of 16 pages not yet indexed" }
+  },
+  "game-dayhike": {
+    "app": "game-dayhike",
+    "at": "2026-10-12T13:04:40Z",
+    "kpis": [
+      {
+        "key": "sessions",
+        "label": "Sessions, 7 days",
+        "value": 191,
+        "prev": 140,
+        "unit": "",
+        "trend": [0, 0, 12, 38, 54, 61, 77, 92, 110, 128, 140, 191]
+      },
+      {
+        "key": "matches",
+        "label": "Matches started, 7 days",
+        "value": 69,
+        "prev": 51,
+        "unit": "",
+        "trend": [0, 0, 4, 13, 19, 22, 28, 33, 40, 47, 51, 69]
+      },
+      {
+        "key": "clean",
+        "label": "Clean sessions, 7 days",
+        "value": 94,
+        "prev": 91,
+        "unit": "%",
+        "trend": [0, 0, 82, 85, 88, 87, 90, 89, 92, 91, 91, 94]
+      },
+      {
+        "key": "lobbies",
+        "label": "Lobbies open now",
+        "value": 2,
+        "prev": 0,
+        "unit": "",
+        "trend": [0, 0, 0, 1, 0, 2, 1, 0, 3, 1, 0, 2]
+      }
+    ],
+    "health": { "status": "good", "note": "error rate 1.2%, down from 2.0%" }
+  }
+}

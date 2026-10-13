@@ -1,0 +1,17 @@
+{
+  "rows": [
+    { "name": "out-linkedin", "kind": "out", "visitors": 14 },
+    { "name": "out-github", "kind": "out", "visitors": 9 },
+    { "name": "out-substack", "kind": "out", "visitors": 6 },
+    { "name": "out-youtube", "kind": "out", "visitors": 5 },
+    { "name": "play-dayhike", "kind": "play", "visitors": 11 },
+    { "name": "watch-who-is-standing-in-my-hallway", "kind": "watch", "visitors": 8 },
+    { "name": "read-stylized-shader-looks", "kind": "read", "visitors": 12 },
+    { "name": "read-rock-on-steep-terrain", "kind": "read", "visitors": 7 },
+    { "name": "read-babylon-material-plugin-traps", "kind": "read", "visitors": 6 },
+    { "name": "nav-research", "kind": "nav", "visitors": 23 },
+    { "name": "nav-games", "kind": "nav", "visitors": 15 },
+    { "name": "nav-film", "kind": "nav", "visitors": 10 }
+  ],
+  "outboundRate": 0.16
+}

@@ -1,0 +1,35 @@
+{
+  "lag": "Search Console runs 2 to 3 days behind",
+  "perDay": [
+    { "day": "2026-10-03", "clicks": 3, "impressions": 112, "ctr": 0.027, "position": 19.2 },
+    { "day": "2026-10-04", "clicks": 5, "impressions": 140, "ctr": 0.036, "position": 18.1 },
+    { "day": "2026-10-05", "clicks": 4, "impressions": 131, "ctr": 0.031, "position": 18.6 },
+    { "day": "2026-10-06", "clicks": 7, "impressions": 188, "ctr": 0.037, "position": 17.4 },
+    { "day": "2026-10-07", "clicks": 6, "impressions": 164, "ctr": 0.037, "position": 17.9 },
+    { "day": "2026-10-08", "clicks": 2, "impressions": 96, "ctr": 0.021, "position": 20.3 },
+    { "day": "2026-10-09", "clicks": 4, "impressions": 118, "ctr": 0.034, "position": 18.8 }
+  ],
+  "totals": { "clicks": 31, "impressions": 949, "ctr": 0.033, "position": 18.4 },
+  "previous": { "clicks": 24, "impressions": 812 },
+  "queries": [
+    { "query": "babylon material plugin", "clicks": 6, "impressions": 41, "ctr": 0.146, "position": 4.2 },
+    { "query": "stylized shader toon look", "clicks": 5, "impressions": 88, "ctr": 0.057, "position": 9.1 },
+    { "query": "cyrus sarkosh", "clicks": 4, "impressions": 19, "ctr": 0.211, "position": 1.3 },
+    { "query": "webrtc coop netcode browser", "clicks": 3, "impressions": 52, "ctr": 0.058, "position": 12.4 },
+    { "query": "ai short film generation", "clicks": 2, "impressions": 97, "ctr": 0.021, "position": 21.5 },
+    { "query": "olympic peninsula rock formations", "clicks": 2, "impressions": 38, "ctr": 0.053, "position": 14.8 }
+  ],
+  "pages": [
+    { "page": "https://csarko.sh/", "clicks": 9, "impressions": 210 },
+    { "page": "https://csarko.sh/research/babylon-material-plugin-traps", "clicks": 8, "impressions": 160 },
+    { "page": "https://csarko.sh/research/stylized-shader-looks", "clicks": 7, "impressions": 228 },
+    { "page": "https://csarko.sh/research/browser-coop-netcode", "clicks": 3, "impressions": 121 },
+    { "page": "https://csarko.sh/film", "clicks": 2, "impressions": 88 }
+  ],
+  "indexed": {
+    "indexed": 6,
+    "total": 16,
+    "missing": ["https://csarko.sh/research/ai-short-film-generation", "https://csarko.sh/research/browser-coop-netcode", "https://csarko.sh/research/olympic-peninsula-rock-formations", "https://csarko.sh/research/rock-on-steep-terrain", "https://csarko.sh/research/far-ground-without-drawing-it", "https://csarko.sh/research/voice-profile-vs-pangram", "https://csarko.sh/research/grass-that-holds-up", "https://csarko.sh/research/day-hike-netcode-notes", "https://csarko.sh/research/terrain-streaming", "https://csarko.sh/research/stable-ai-video"]
+  },
+  "sitemap": { "lastDownloaded": "2026-10-10T07:12:00Z", "errors": 0, "warnings": 0 }
+}

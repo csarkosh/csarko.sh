@@ -36,7 +36,11 @@ def load_redirects(config=FIREBASE_JSON):
     """firebase.json's hosting.redirects as (pattern, destination) pairs. Only the source syntax
     this site uses is supported: literal segments, ":name" for one segment, ":name*" for the rest."""
     pairs = []
-    for r in json.loads(Path(config).read_text()).get("hosting", {}).get("redirects", []):
+    hosting = json.loads(Path(config).read_text()).get("hosting", {})
+    # Two sites since admin.csarko.sh: the public site is the entry publishing `public`.
+    if isinstance(hosting, list):
+        hosting = next((h for h in hosting if h.get("public") == "public"), {})
+    for r in hosting.get("redirects", []):
         parts = []
         for seg in r["source"].split("/"):
             m = re.fullmatch(r":(\w+)(\*?)", seg)
