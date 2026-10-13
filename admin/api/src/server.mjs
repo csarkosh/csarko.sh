@@ -13,7 +13,7 @@ import http from "node:http";
 import { readConfig } from "./config.mjs";
 import { createCache } from "./cache.mjs";
 import { IpLimiter } from "./limiter.mjs";
-import { createOidcVerifier } from "./auth.mjs";
+import { createAdminAuth, createOidcVerifier } from "./auth.mjs";
 import { createApp } from "./app.mjs";
 import { createQueries } from "./queries.mjs";
 import { createMemoryStore, createFirestoreStore } from "./store.mjs";
@@ -57,11 +57,13 @@ const app = createApp({
   config,
   queries,
   limiter,
+  adminAuth: createAdminAuth({ projectId: config.firebaseProject, allowed: config.adminEmails }),
   oidc: createOidcVerifier({ invoker: config.snapshotInvoker }),
   log,
 });
 
-if (config.adminToken === null) log.error("admin: ADMIN_TOKEN is unset; /admin/* will answer 503 until the admin-token secret has a value");
+if (config.adminEmails.length === 0) log.error("admin: ADMIN_EMAILS is empty; /admin/* will answer 503 until the allowlist names an account");
+else log.log(`admin: ${config.adminEmails.length} account(s) may sign in, through Firebase project ${config.firebaseProject}`);
 const unconfigured = [
   config.goatcounter.token === null && "GOATCOUNTER_TOKEN",
   config.gsc.key === null && "GSC_SA_KEY",

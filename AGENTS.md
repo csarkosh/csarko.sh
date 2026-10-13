@@ -268,20 +268,29 @@ anything related to the admin pages in this repo:
   both blocks, 4.5:1 on its surface in both themes. No em-dashes, no email address or
   phone number.
 - **Same bar.** Lighthouse 100 on Accessibility and Best Practices, Performance ≥ 95,
-  a layout that holds from 320px to 1440px, a strict CSP with `script-src 'self'` and
-  no third-party script, the same security headers. The only cross-origin requests
-  are to the app APIs listed in `admin/public/apps.json`. No cookies anywhere: the
-  admin token lives in `localStorage`. Screenshots in both themes
-  (`admin/preview.sh --shots`) are looked at before a visual change is called done.
+  a layout that holds from 320px to 1440px, a strict CSP and the same security
+  headers. No third-party script, with one documented exception: Google's sign-in
+  (`https://apis.google.com` in `script-src`, Identity Toolkit and Secure Token in
+  `connect-src`, `frame-src 'self'` for the auth iframe); the Firebase Auth SDK itself
+  is bundled and self-hosted (`admin/public/vendor/`). The only other cross-origin
+  requests are to the app APIs listed in `admin/public/apps.json`.
 - **Not a target.** Indexing: the pages carry `noindex, nofollow`, `admin/public/robots.txt`
   disallows everything, there is no sitemap entry, JSON-LD, Open Graph card or canonical,
   and the Lighthouse SEO score is ignored. `check.py --admin` runs the checks that
   apply; `admin/deploy.sh` refuses to publish if they fail.
-- **Access** is one admin token (Secret Manager `admin-token` in each project that runs
-  an app API, env `ADMIN_TOKEN`), pasted into the browser once; no sign-in. Never commit
-  it. An app is tracked by one entry in `apps.json` and two routes on its API,
-  `GET /admin/kpis` and `GET /admin/query/<name>?days=N` (the contract is
-  `admin/CONTRACT.md`). GitHub metrics cover **public repos only**, never a private one.
+- **Access** is Google sign-in through Firebase Auth on project `csarko-sh`, served from
+  `admin.csarko.sh` itself, with an email allowlist (`admin_emails` in the git-ignored
+  `_infra/terraform.tfvars`, the `ADMIN_EMAILS` env on every app API). Every app API
+  verifies the ID token (issuer `https://securetoken.google.com/csarko-sh`, audience
+  `csarko-sh`, `email_verified`) and the allowlist; no list, no admin routes. The sign-in
+  is the one documented exception to "no third-party request": the popup flow talks to
+  Google's Identity Toolkit, and the CSP allows exactly that. An app is tracked by one
+  entry in `apps.json` and two routes on its API, `GET /admin/kpis` and
+  `GET /admin/query/<name>?days=N` (the contract is `admin/CONTRACT.md`). GitHub metrics
+  cover **public repos only**, never a private one.
+- **No cookies anywhere**: Firebase Auth keeps its session in IndexedDB.
+  Screenshots in both themes (`admin/preview.sh --shots`) are looked at before a visual
+  change is called done.
 
 ## Analytics: how GoatCounter is wired in
 

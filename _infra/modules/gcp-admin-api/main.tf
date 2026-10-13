@@ -237,7 +237,7 @@ resource "google_cloud_run_v2_service" "admin" {
       # redeploy. Cloud Run refuses a revision whose secret has no version,
       # so on the very first apply the versions are added between the
       # secrets' creation and the service's: a targeted apply of the secrets,
-      # the six `gcloud secrets versions add` commands, then the full apply
+      # the five `gcloud secrets versions add` commands, then the full apply
       # (AGENTS.md, "Infrastructure").
       dynamic "env" {
         for_each = var.secret_ids
@@ -298,6 +298,18 @@ resource "google_cloud_run_v2_service" "admin" {
       env {
         name  = "SNAPSHOT_INVOKER"
         value = google_service_account.scheduler.email
+      }
+
+      # The admin routes' readers, and the Firebase project whose ID tokens
+      # prove them (admin/api/src/auth.mjs). No readers, no admin routes.
+      env {
+        name  = "ADMIN_EMAILS"
+        value = join(",", var.admin_emails)
+      }
+
+      env {
+        name  = "FIREBASE_PROJECT"
+        value = var.project_id
       }
 
       env {

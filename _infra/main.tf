@@ -61,6 +61,16 @@ provider "google" {
   user_project_override = true
 }
 
+# The same, on the beta provider, for the Firebase web app's configuration:
+# read through the Identity Toolkit API, which makes the same demand.
+provider "google-beta" {
+  alias                 = "quota"
+  project               = var.gcp_project_id
+  region                = var.gcp_region
+  billing_project       = var.gcp_project_id
+  user_project_override = true
+}
+
 module "gcp_hosting" {
   source = "./modules/gcp-hosting"
 
@@ -100,6 +110,24 @@ module "gcp_hosting_admin" {
 
 # The API behind the dashboard: Cloud Run, its secrets, Firestore for the
 # daily snapshots, the Scheduler job that takes them, and the project budget.
+# Google sign-in for admin.csarko.sh: every app's admin API trusts the ID
+# tokens this project's Firebase Auth issues, plus its own email allowlist.
+module "gcp_auth" {
+  source = "./modules/gcp-auth"
+
+  project_id         = var.gcp_project_id
+  authorized_domains = [var.admin_domain_name, trimprefix(module.gcp_hosting_admin.default_url, "https://")]
+
+  providers = {
+    google            = google
+    google.quota      = google.billing
+    google-beta       = google-beta
+    google-beta.quota = google-beta.quota
+  }
+
+  depends_on = [module.gcp_hosting_admin]
+}
+
 module "gcp_admin_api" {
   source = "./modules/gcp-admin-api"
 
@@ -112,6 +140,7 @@ module "gcp_admin_api" {
   gsc_property     = "sc-domain:${var.domain_name}"
   youtube_handle   = var.youtube_handle
   github_repos     = var.github_repos
+  admin_emails     = var.admin_emails
   allowed_origins = [
     "https://${var.admin_domain_name}",
     # The local preview of admin/public, served by its preview script.

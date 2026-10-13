@@ -25,20 +25,24 @@ there is no sitemap, JSON-LD, Open Graph card or canonical.
 
 | Path | What |
 |---|---|
-| `build.mjs` | Fills the generated blocks (below). Node 22, no dependencies, deterministic. Run it after `generate-assets.sh` changes a token or a font. |
+| `build.mjs` | Fills the generated blocks (below), bundles the Firebase Auth SDK when the tooling is installed, and writes `auth-config.json`. Node 22, deterministic; the one dependency is the bundle step (`package.json`). Run it after `generate-assets.sh` changes a token or a font. |
+| `package.json`, `package-lock.json` | Build tooling only, private: `firebase` and `esbuild` as devDependencies for the vendor bundle. `npm install` here once; `node_modules/` is git-ignored. The pages themselves have no dependencies. |
+| `vendor/firebase-auth.js` | The bundle's entry: the eight Firebase exports `auth.js` needs (`initializeApp`, `getAuth`, `GoogleAuthProvider`, `onAuthStateChanged`, `signInWithPopup`, `signOut`, `browserLocalPersistence`, `setPersistence`), tree-shaken from `firebase/app` and `firebase/auth`. |
 | `preview.sh` | Build, serve `public/` on `http://localhost:8788` and open both pages with sample data; `--shots` for screenshots, `--lighthouse` for the scores, `--stop`. |
 | `public/index.html` | The index. Static shell; `app.js` fills one card per app from `apps.json` and each app's `/admin/kpis`. |
 | `public/csarko.sh/index.html`, `page.js` | The csarko.sh dashboard: range row (Today, 7, 30, 90 days), then the eight cards, each loading its own query and showing its own error line. |
 | `public/apps.json` | The tracked apps: `slug`, `name`, `home`, `api`, `page`. Adding an app is adding a line here (and its page and API). |
 | `public/theme.css` | Tokens and fonts (generated blocks), then the site's base, `.wrap`, nav, card, tile, grid, table, button, badge and note primitives. |
-| `public/auth.js` | The token gate: `token()`, `setToken()`, `clearToken()`, `fetchWithAuth()`, `requireToken()`. The Day Hike bundle imports it as `/auth.js`, so its exports are a contract. |
+| `public/auth.js` | Sign-in: `requireSession()`, `user()`, `fetchWithAuth()`, `signOut()`, on Firebase Auth (Google sign-in, project `csarko-sh`). The Day Hike bundle imports it as `/auth.js`, so its exports are a contract (`CONTRACT.md`, "Auth"); the old names `requireToken`, `clearToken` and `token` stay as aliases for one release. |
+| `public/auth-config.json` | **Generated:** `{ apiKey, authDomain: "admin.csarko.sh", projectId: "csarko-sh" }`, the key from `ADMIN_FIREBASE_API_KEY` or `--api-key`. A Firebase web API key is public by design (it names the project; the allowlist and Firebase's authorized domains do the guarding), so the file is committed. `apiKey: null` means a build with no sign-in. |
+| `public/vendor/firebase-auth.<hash>.js` | **Generated:** the Firebase Auth SDK, one minified ES module (about 113 KB, 34 KB over the wire), self-hosted because the CSP allows no third-party script. Committed, as the site commits its generated assets, so a checkout deploys as is; rebuilt by `build.mjs` when `node_modules` is present and the bundle is older than `package-lock.json`. |
 | `public/charts.js` | Chart primitives, hand-written SVG and DOM: `el`, `tile`, `delta`, `columns`, `bars`, `sparkline`, `table`, `folded`, `status`, `errorLine`, `compact`, `ago`, `pct`, `shortDay`. |
 | `public/data.js` | The source: each app's API through `fetchWithAuth`, or the sample under `?preview`. |
 | `public/sample/` | Fixed sample data for `?preview`: `kpis.json` (keyed by app slug) and `csarko.sh/<query>.json`. Mirrors the examples in `CONTRACT.md`. |
 | `public/assets/` | **Generated:** the hashed font files, copied from `public/assets/`. Committed, as the site commits its generated assets, so a checkout deploys as is. |
 | `public/favicon.ico`, `favicon.svg` | **Generated:** the site's icons, copied. |
 | `public/robots.txt` | `Disallow: /`. |
-| `.gitignore` | `public/game-dayhike/`, the Day Hike bundle, pulled from `gs://fps-csarko-downloads/admin/latest/` by the deploy step. |
+| `.gitignore` | `public/game-dayhike/`, the Day Hike bundle, pulled from `gs://fps-csarko-downloads/admin/latest/` by the deploy step; and `node_modules/`. |
 
 ### Generated blocks: never hand-edit
 
@@ -51,6 +55,9 @@ there is no sitemap, JSON-LD, Open Graph card or canonical.
 | `public/index.html`, `public/csarko.sh/index.html` | `<!-- generated:head -->` | the Inter preload with the current hash |
 | same | `<!-- generated:nav -->` | one link per app in `apps.json`, `aria-current="page"` on the page's own |
 | `public/assets/*.woff2`, `favicon.*` | | copied; stale font files are removed |
+| `public/auth.js` | `// generated:vendor` | the hashed path of the vendor bundle, which `auth.js` imports lazily |
+| `public/vendor/firebase-auth.<hash>.js` | | esbuild over `vendor/firebase-auth.js`, when `node_modules` is present and the bundle is missing, older than `package-lock.json` or the entry, or `--vendor` is given; stale hashed copies are removed. Without `node_modules` the committed bundle is used as it is. |
+| `public/auth-config.json` | | from `--api-key <key>` or `ADMIN_FIREBASE_API_KEY`; with neither, an existing file is left alone (a local build does not blank it) |
 
 `node admin/build.mjs --api <url>` (or `ADMIN_API_URL=<url>`) also rewrites the
 csarko.sh entry's `api` in `apps.json`. The Cloud Run URL
@@ -66,9 +73,10 @@ admin/preview.sh --lighthouse # Performance, Accessibility, Best Practices per p
 admin/preview.sh --stop
 ```
 
-`?preview` renders the sample with no token and never calls an API; a "Sample data" badge
-says so. Without it the page shows the token gate, then reads the live APIs (the APIs
-allow `http://localhost:8788` in CORS). Each theme is forced for screenshots and
+`?preview` renders the sample with no sign-in and never calls an API or loads the SDK; a
+"Sample data" badge says so. Without it the page shows the sign-in gate, then reads the
+live APIs (the APIs allow `http://localhost:8788` in CORS; Firebase Auth allows `localhost`
+as an authorized domain by default, so the popup works locally too). Each theme is forced for screenshots and
 Lighthouse with Chrome's `--blink-settings=preferredColorScheme=0|1`, as the site's
 preview does; there is no `?theme` override, so the stylesheet stays exactly the site's
 two token blocks with no duplicated values. Look at every screenshot in both themes
@@ -76,10 +84,20 @@ before calling a visual change done.
 
 ## How the pages behave
 
-- **Token.** One admin token, pasted once per browser, kept in `localStorage` under
-  `admin.token` (no cookie) and sent as `Authorization: Bearer` to every app's API. No
-  token, or a 401 from any API, shows the gate ("Admin token", Continue) and nothing
-  else; "Forget token" in the page head clears it.
+- **Sign-in.** Google sign-in through Firebase Auth on project `csarko-sh`, with
+  `authDomain` `admin.csarko.sh` so the popup stays on our host. The session persists in
+  `localStorage` (`browserLocalPersistence`, no cookie); every API request carries a fresh
+  ID token as `Authorization: Bearer`, and the API checks it against its `ADMIN_EMAILS`
+  allowlist. Nobody signed in shows the gate ("Sign in with Google") and nothing else; a 401
+  from any API means the account is not on the list, and the gate returns with
+  "<email> is not on the list." and a Sign out so another account can be tried. The page
+  head shows the signed-in email and a Sign out. A build whose `auth-config.json` has no
+  key says "This build has no sign-in" and points at `?preview`.
+- **The SDK is self-hosted, the flow is not.** The bundle is served from our host, but the
+  popup flow still loads Google's gapi loader (`https://apis.google.com/js/api.js`), embeds
+  `/__/auth/iframe` from our host, and talks to `https://identitytoolkit.googleapis.com` and
+  `https://securetoken.googleapis.com`. The CSP in `firebase.json` allows exactly that and
+  nothing more.
 - **Not configured.** A part the API answers `null` for, with a `notConfigured` hint,
   reads "Not configured (ENV NAME)" in `--faint`; a KPI tile shows a dash. An `errors`
   entry becomes the card's error line. See `CONTRACT.md`.
@@ -102,13 +120,13 @@ step). What the deploy must provide:
 
 - Firebase Hosting target `admin` serving `admin/public` with `cleanUrls` and
   `trailingSlash: true` (the app links are `/csarko.sh/` and `/game-dayhike/`).
-- The site's security headers, with a CSP of `default-src 'none'; script-src 'self';
-  connect-src 'self' https://csarko-admin-lwkslxdnnq-uw.a.run.app
-  https://fps-telemetry-5pogqa5sqq-uw.a.run.app; img-src 'self'; font-src 'self';
-  style-src 'self' 'unsafe-inline'; base-uri 'none'; form-action 'none';
-  frame-ancestors 'none'`. The pages have no inline script and no inline event handler;
-  `style-src 'unsafe-inline'` covers the inline `style` widths on the bars and tooltip.
-  `form-action 'none'` is fine: both forms (the gate, the Substack count) are handled in
-  script and never submit.
+- The site's security headers, with a CSP whose `script-src` is `'self'` plus Google's
+  gapi loader for the sign-in popup, `connect-src` the app APIs plus Identity Toolkit and
+  Secure Token, `frame-src 'self'` for the auth iframe, and `default-src 'none'`,
+  `base-uri 'none'`, `form-action 'none'`, `frame-ancestors 'none'` as the site has. The
+  pages have no inline script and no inline event handler; `style-src 'unsafe-inline'`
+  covers the inline `style` widths on the bars and tooltip. `form-action 'none'` is fine:
+  the one form (the Substack count) is handled in script and never submits.
 - Run `node admin/build.mjs` before `firebase deploy` so the tokens and fonts match the
-  site that was just built.
+  site that was just built, with `ADMIN_FIREBASE_API_KEY` set the first time (or whenever
+  the key changes) so `auth-config.json` carries the project's web API key.

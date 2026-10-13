@@ -1,11 +1,18 @@
 /**
  * Who may call the admin routes.
  *
- * Two proofs are accepted. The admin page sends the one admin token as a
- * bearer value, and it is compared against `ADMIN_TOKEN` in constant time
- * after a length check, so a mismatch leaks nothing about where it differs.
- * Cloud Scheduler, which cannot hold the admin token, sends a Google OIDC ID
- * token for the snapshot route instead: Google signs it, its `aud` is this
+ * Two proofs are accepted. The admin shell signs an account in with Google
+ * through Firebase Auth (project csarko-sh, served from admin.csarko.sh) and
+ * sends the ID token it gets as a bearer value. The token is a JWT signed by
+ * Google's `securetoken` keys, with the project as issuer and audience and
+ * the account's verified email as a claim; verifying it needs the public keys
+ * and nothing else, so no Firebase library runs here. The allowlist is the
+ * service's environment (`ADMIN_EMAILS`, comma-separated), so a collaborator
+ * is an environment change, not a deploy of new code. The game's telemetry
+ * service makes the same check against the same issuer: one sign-in, every app.
+ *
+ * Cloud Scheduler, which has no account to sign in with, sends a Google OIDC
+ * ID token for the snapshot route instead: Google signs it, its `aud` is this
  * service's URL and its `email` is the scheduler's service account, so the
  * check is "Google says this is our scheduler" and nothing more.
  *
@@ -13,28 +20,54 @@
  * so they are tested with keys made in the test.
  */
 
-import { timingSafeEqual } from "node:crypto";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 
-/** Where Google publishes the keys it signs ID tokens with. */
+/** Where Google publishes the keys it signs OIDC ID tokens with. */
 export const GOOGLE_CERTS = "https://www.googleapis.com/oauth2/v3/certs";
 export const GOOGLE_ISSUER = "https://accounts.google.com";
+/** Where Google publishes the keys Firebase Auth signs ID tokens with. */
+export const SECURETOKEN_JWKS = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
+
+/** The allowlist as the environment spells it: addresses, lower-cased, nothing else. */
+export function parseAllowlist(raw) {
+  return (raw ?? "").split(",").map((email) => email.trim().toLowerCase()).filter((email) => email.includes("@"));
+}
+
+/**
+ * A verifier for the shell's Firebase ID token: signed by Google for
+ * `projectId`, a verified email, and that email on the allowlist. Returns
+ * `{ email }` or null; never throws.
+ */
+export function createAdminAuth({ projectId, allowed, keys = createRemoteJWKSet(new URL(SECURETOKEN_JWKS)), now } = {}) {
+  const list = new Set((allowed ?? []).map((email) => email.toLowerCase()));
+  return {
+    get enabled() {
+      return typeof projectId === "string" && projectId !== "" && list.size > 0;
+    },
+    async verify(token) {
+      if (!this.enabled || typeof token !== "string" || token === "") return null;
+      try {
+        const { payload } = await jwtVerify(token, keys, {
+          issuer: `https://securetoken.google.com/${projectId}`,
+          audience: projectId,
+          algorithms: ["RS256"],
+          ...(now === undefined ? {} : { currentDate: new Date(now()) }),
+        });
+        const email = typeof payload.email === "string" ? payload.email.toLowerCase() : "";
+        if (email === "" || payload.email_verified !== true || !list.has(email)) return null;
+        return { email };
+      } catch {
+        return null;
+      }
+    },
+  };
+}
 
 /** The bearer value of an Authorization header, or null when there is none. */
 export function bearerOf(authorization) {
   if (typeof authorization !== "string" || !authorization.startsWith("Bearer ")) return null;
   const token = authorization.slice("Bearer ".length).trim();
   return token === "" ? null : token;
-}
-
-/** Whether `presented` is `expected`, without a timing side channel on the comparison. */
-export function tokenMatches(presented, expected) {
-  if (typeof presented !== "string" || typeof expected !== "string" || expected === "") return false;
-  const a = Buffer.from(presented, "utf8");
-  const b = Buffer.from(expected, "utf8");
-  // timingSafeEqual throws on unequal lengths; the length itself is not a secret here.
-  if (a.length !== b.length) return false;
-  return timingSafeEqual(a, b);
 }
 
 /**

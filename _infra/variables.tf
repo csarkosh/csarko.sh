@@ -104,3 +104,13 @@ variable "monthly_budget_usd" {
   type        = number
   default     = 5
 }
+
+variable "admin_emails" {
+  description = <<-EOT
+    The Google accounts that may read admin.csarko.sh, as addresses. Every
+    app's admin API checks the signed-in account against this list. Set in
+    the git-ignored terraform.tfvars; an empty list serves no admin routes.
+  EOT
+  type        = list(string)
+  default     = []
+}

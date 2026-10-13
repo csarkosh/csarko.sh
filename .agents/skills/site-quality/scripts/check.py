@@ -1026,13 +1026,25 @@ def admin_checks():
     admin_cfg = hosting_entry(cfg, "admin/public")
     headers = {h["key"]: h["value"] for b in admin_cfg.get("headers", []) if b.get("source") == "**" for h in b["headers"]}
     csp = parse_csp(headers.get("Content-Security-Policy", ""))
-    check(csp.get("script-src") == ["'self'"], f"admin CSP script-src is 'self' alone ({csp.get('script-src')})")
+    # The sign-in is the one third-party exception (AGENTS.md "Admin pages"): Firebase
+    # Auth's popup flow loads Google's gapi loader and talks to Identity Toolkit.
+    SIGN_IN_SCRIPTS = ["'self'", "https://apis.google.com"]
+    SIGN_IN_CONNECT = ["https://identitytoolkit.googleapis.com", "https://securetoken.googleapis.com"]
+    check(sorted(csp.get("script-src", [])) == sorted(SIGN_IN_SCRIPTS), f"admin CSP script-src is 'self' plus Google's sign-in loader only ({csp.get('script-src')})")
+    for host in SIGN_IN_CONNECT:
+        check(host in csp.get("connect-src", []), f"admin CSP connect-src names {host} (sign-in)")
+    check(csp.get("frame-src") == ["'self'"], f"admin CSP frame-src 'self' (the same-origin auth iframe; {csp.get('frame-src')})")
     for app in apps:
         check(origin(app["api"]) in csp.get("connect-src", []), f"admin CSP connect-src names {app['name']}'s API")
     check("'none'" in csp.get("frame-ancestors", []), "admin CSP frame-ancestors 'none'")
     check(headers.get("X-Robots-Tag", "").startswith("noindex"), "admin site sends X-Robots-Tag: noindex")
     robots = (ADMIN / "robots.txt").read_text()
     check(re.search(r"^Disallow:\s*/\s*$", robots, re.M) is not None, "admin robots.txt disallows everything")
+    auth_cfg = json.loads((ADMIN / "auth-config.json").read_text())
+    check(isinstance(auth_cfg.get("apiKey"), str) and auth_cfg["apiKey"].startswith("AIza"), "auth-config.json carries the Firebase web API key (build with ADMIN_FIREBASE_API_KEY)")
+    check(auth_cfg.get("authDomain") == "admin.csarko.sh" and auth_cfg.get("projectId") == "csarko-sh", "auth-config.json names admin.csarko.sh on project csarko-sh")
+    vendor = sorted((ADMIN / "vendor").glob("firebase-auth.*.js"))
+    check(len(vendor) == 1, f"one self-hosted Firebase Auth bundle ({[v.name for v in vendor]})")
 
     pages = sorted(p for p in ADMIN.rglob("*.html") if "game-dayhike" not in p.parts) + sorted(ADMIN.glob("game-dayhike/index.html"))
     for path in pages:

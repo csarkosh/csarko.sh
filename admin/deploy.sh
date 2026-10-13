@@ -49,8 +49,9 @@ grep -q "\"site\": \"$SITE\"" firebase.json || die "firebase.json has no hosting
 echo "→ project  $PROJECT"
 echo "→ site     $SITE"
 
-# The shell's generated blocks (tokens, fonts, nav) and the csarko.sh API URL.
-ADMIN_API_URL="$API_URL" node admin/build.mjs
+# The shell's generated blocks (tokens, fonts, nav, the self-hosted Firebase Auth
+# bundle), the csarko.sh API URL and the web API key the sign-in uses (public by design).
+ADMIN_API_URL="$API_URL" ADMIN_FIREBASE_API_KEY="$(tf admin_web_api_key)" node admin/build.mjs
 
 # The Day Hike bundle, as the game's repo last published it.
 if (( PULL )); then

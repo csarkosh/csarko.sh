@@ -5,7 +5,7 @@
  * value is null (its source is not configured) shows a dash and names the secret to add.
  */
 
-import { clearToken, requireToken } from '/auth.js';
+import { requireSession, signOut } from '/auth.js';
 import { ago, delta, el, errorLine, status, tile } from '/charts.js';
 import { loadApps, preview, source } from '/data.js';
 
@@ -72,15 +72,22 @@ async function load() {
   grid.replaceChildren(...cards);
 }
 
-function asideControls() {
+/** The badge, and for a live page the signed-in account with its Sign out (the gate returns on its own). */
+function asideControls(account) {
   aside.replaceChildren(el('span', { class: `badge ${preview ? 'sample' : 'live'}` }, preview ? 'Sample data' : 'Live'));
-  if (!preview) {
-    const forget = el('button', { class: 'btn small', type: 'button' }, 'Forget token');
-    forget.addEventListener('click', () => { clearToken(); location.reload(); });
-    aside.append(forget);
+  if (account) {
+    const out = el('button', { class: 'btn ghost small', type: 'button' }, 'Sign out');
+    out.addEventListener('click', () => { signOut(); });
+    aside.append(el('span', { class: 'who' }, account.email), out);
   }
 }
 
-asideControls();
-if (preview) load();
-else requireToken(root, load);
+if (preview) {
+  asideControls(null);
+  load();
+} else {
+  requireSession(root, (account) => {
+    asideControls(account);
+    load();
+  });
+}

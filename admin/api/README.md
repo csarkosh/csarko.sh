@@ -22,7 +22,7 @@ Node 22, ES modules, `node:http`, no framework. Runtime dependencies are
 Every answer is JSON with `cache-control: no-store`. Errors are `{ "error": "..." }`:
 401 without the token, 403 for an origin that is not allowed, 404 for an unknown route
 or query, 405 for the wrong method, 429 past 60 requests in a burst and one a second
-per address, 503 on every `/admin/*` route while `ADMIN_TOKEN` is unset.
+per address, 503 on every `/admin/*` route while `ADMIN_EMAILS` is empty.
 
 A source whose credential is missing answers `null` for its part and a
 `notConfigured: { <part>: "<ENV NAME>" }` hint, never a 500. A source that is configured
@@ -40,7 +40,8 @@ variables from Secret Manager. A credential whose value is empty or the placehol
 
 | Variable | Default | What |
 |---|---|---|
-| `ADMIN_TOKEN` | required | the one admin token; unset means 503 on `/admin/*`, logged at startup and on the first request |
+| `ADMIN_EMAILS` | required | comma-separated Google accounts that may read the admin routes; empty means 503 on `/admin/*`, logged at startup |
+| `FIREBASE_PROJECT` | `GOOGLE_CLOUD_PROJECT` | the Firebase project whose Auth issues the shell's ID tokens (issuer `https://securetoken.google.com/<project>`, audience `<project>`) |
 | `GOATCOUNTER_TOKEN`, `GOATCOUNTER_SITE` | `csarko` | GoatCounter API token (read permission) and site code |
 | `GSC_SA_KEY`, `GSC_PROPERTY` | `sc-domain:csarko.sh` | the service account key's JSON content (not a path) and the Search Console property |
 | `YOUTUBE_KEY`, `YOUTUBE_HANDLE` | `csarkosh` | YouTube Data API key and the channel handle |
@@ -61,9 +62,11 @@ variables from Secret Manager. A credential whose value is empty or the placehol
 cd admin/api
 npm install
 npm test                      # node:test, no network
-cp .env.local.example .env.local   # or write one by hand: ADMIN_TOKEN=... ADMIN_STORE=memory
+cp .env.local.example .env.local   # or write one by hand: ADMIN_EMAILS=you@example.com ADMIN_STORE=memory
 npm run dev                   # http://localhost:8787, reads .env.local if present, restarts on change
-curl -H "authorization: Bearer $ADMIN_TOKEN" 'http://localhost:8787/admin/query/health'
+# A request needs a Firebase ID token for an allowed account: sign in on the shell's
+# preview (admin/preview.sh) and copy it from the Authorization header it sends.
+curl -H "authorization: Bearer $ID_TOKEN" 'http://localhost:8787/admin/query/health'
 ```
 
 `.env.local` is git-ignored. Without any vendor credential the service still starts:

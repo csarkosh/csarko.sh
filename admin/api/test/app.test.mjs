@@ -4,7 +4,8 @@ import http from "node:http";
 import { createApp } from "../src/app.mjs";
 import { IpLimiter } from "../src/limiter.mjs";
 
-const TOKEN = "a-long-random-admin-token";
+const TOKEN = "a-signed-id-token-for-an-allowed-account";
+const adminAuth = { enabled: true, async verify(token) { return token === TOKEN ? { email: "cyrus@example.com" } : null; } };
 const calls = [];
 const queries = {
   async kpis() { return { app: "csarko.sh", kpis: [] }; },
@@ -23,7 +24,7 @@ const oidc = { async verify(token, audiences) { return token === "oidc-ok" && au
 const log = { error() {}, warn() {}, log() {} };
 
 function serve(config, capacity = 100) {
-  const app = createApp({ config: { allowedOrigins: ["https://admin.csarko.sh"], adminToken: TOKEN, serviceUrl: null, ...config }, queries, limiter: new IpLimiter({ capacity, refillPerSecond: 0 }), oidc, log });
+  const app = createApp({ config: { allowedOrigins: ["https://admin.csarko.sh"], serviceUrl: null, ...config }, queries, limiter: new IpLimiter({ capacity, refillPerSecond: 0 }), adminAuth: config.adminAuth === undefined ? adminAuth : config.adminAuth, oidc, log });
   const server = http.createServer(app);
   return new Promise((resolve) => server.listen(0, "127.0.0.1", () => resolve(server)));
 }
@@ -120,12 +121,12 @@ test("the rate limit answers 429 past the burst, per address", async () => {
   assert.equal((await call(server, "GET", "/admin/kpis", auth("9.9.9.9"))).status, 200, "another address is unaffected");
 });
 
-test("without ADMIN_TOKEN every admin route answers 503 and /health still works", async () => {
-  const server = await serve({ adminToken: null });
+test("with an empty allowlist every admin route answers 503 and /health still works", async () => {
+  const server = await serve({ adminAuth: { enabled: false, async verify() { return null; } } });
   servers.push(server);
   assert.equal((await call(server, "GET", "/health")).status, 200);
   const r = await call(server, "GET", "/admin/kpis", auth());
   assert.equal(r.status, 503);
-  assert.deepEqual(r.body, { error: "admin token not configured" });
+  assert.deepEqual(r.body, { error: "admin readers not configured" });
   assert.equal((await call(server, "POST", "/admin/snapshot", { headers: { authorization: "Bearer oidc-ok" } })).status, 503);
 });

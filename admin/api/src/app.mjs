@@ -12,21 +12,21 @@
  *
  * Order of the checks, and why: the origin first, so somebody else's page
  * gets a 403 and no CORS headers; the preflight next, since it carries no
- * token; then 503 when `ADMIN_TOKEN` is unset, because without it nothing
+ * token; then 503 while the allowlist is empty, because then nothing
  * can be compared; the rate limit before the token compare, so a flood
  * costs a map lookup rather than a constant-time compare each; then auth,
  * then the route. Every answer is JSON with `cache-control: no-store`.
  */
 
-import { bearerOf, tokenMatches, audiencesFor } from "./auth.mjs";
+import { bearerOf, audiencesFor } from "./auth.mjs";
 import { answer, fail, readBody, parseDays, isAllowedOrigin, corsHeaders, preflightHeaders } from "./http.mjs";
 import { clientIpOf } from "./limiter.mjs";
 import { isQueryName, isManualKey } from "./queries.mjs";
 
 const MAX_BODY_BYTES = 1024;
 
-export function createApp({ config, queries, limiter, oidc, now = Date.now, log = console }) {
-  const tokenMissingLogged = { done: false };
+export function createApp({ config, queries, limiter, adminAuth, oidc, now = Date.now, log = console }) {
+  const readersMissingLogged = { done: false };
 
   return function handle(req, res) {
     const url = new URL(req.url ?? "/", "http://localhost");
@@ -46,12 +46,12 @@ export function createApp({ config, queries, limiter, oidc, now = Date.now, log 
       return res.end();
     }
 
-    if (config.adminToken === null) {
-      if (!tokenMissingLogged.done) {
-        tokenMissingLogged.done = true;
-        log.error("admin: ADMIN_TOKEN is unset (or the placeholder `unset`), so every /admin route answers 503; set the admin-token secret and redeploy");
+    if (!adminAuth || !adminAuth.enabled) {
+      if (!readersMissingLogged.done) {
+        readersMissingLogged.done = true;
+        log.error("admin: ADMIN_EMAILS is empty (or FIREBASE_PROJECT unset), so nobody may read /admin/* and every route answers 503");
       }
-      return fail(res, 503, "admin token not configured", cors);
+      return fail(res, 503, "admin readers not configured", cors);
     }
 
     if (!limiter.allow(clientIpOf(req.headers["x-forwarded-for"], req.socket?.remoteAddress))) {
@@ -61,7 +61,7 @@ export function createApp({ config, queries, limiter, oidc, now = Date.now, log 
     void (async () => {
       try {
         const token = bearerOf(req.headers.authorization);
-        let authorized = tokenMatches(token, config.adminToken);
+        let authorized = (await adminAuth.verify(token)) !== null;
         if (!authorized && path === "/admin/snapshot" && req.method === "POST" && oidc) {
           authorized = (await oidc.verify(token, audiencesFor(req, config.serviceUrl))) !== null;
         }

@@ -1,3 +1,4 @@
+import { parseAllowlist } from "./auth.mjs";
 /**
  * The service's configuration, read once from the environment.
  *
@@ -5,8 +6,8 @@
  * Secret Manager versions that way), so a missing one is a plain `null` here
  * and the collector that needs it answers "not configured" rather than
  * failing the page. A credential that is empty or the placeholder `unset`
- * (see `secret`) is missing. Only `ADMIN_TOKEN` is required: without it
- * there is nothing to compare a caller against, so the admin routes answer
+ * (see `secret`) is missing. Only the allowlist is required: without `ADMIN_EMAILS`
+ * nothing may read the admin routes, so they answer 503.
  * 503 instead.
  */
 
@@ -27,7 +28,7 @@ function text(raw, fallback = null) {
  * The placeholder a secret holds before Cyrus has created it. Cloud Run
  * refuses a revision whose referenced secret has no version, so Terraform
  * seeds each one with the literal `unset`; to the collectors that is the same
- * as no credential at all, and for `ADMIN_TOKEN` it still means "serve 503".
+ * as no credential at all.
  */
 export const UNSET = "unset";
 
@@ -60,7 +61,8 @@ export function parseServiceAccountKey(raw, log = console) {
 export function readConfig(env = process.env, log = console) {
   const siteUrl = text(env.SITE_URL, "https://csarko.sh").replace(/\/+$/, "");
   return {
-    adminToken: secret(env.ADMIN_TOKEN),
+    adminEmails: parseAllowlist(env.ADMIN_EMAILS),
+    firebaseProject: text(env.FIREBASE_PROJECT, text(env.GOOGLE_CLOUD_PROJECT)),
     goatcounter: { token: secret(env.GOATCOUNTER_TOKEN), site: text(env.GOATCOUNTER_SITE, "csarko") },
     gsc: { key: parseServiceAccountKey(env.GSC_SA_KEY, log), property: text(env.GSC_PROPERTY, "sc-domain:csarko.sh") },
     youtube: { key: secret(env.YOUTUBE_KEY), handle: text(env.YOUTUBE_HANDLE, "csarkosh") },

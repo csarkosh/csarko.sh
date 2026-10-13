@@ -11,7 +11,7 @@
  * shows one.
  */
 
-import { clearToken, requireToken } from '/auth.js';
+import { requireSession, signOut } from '/auth.js';
 import { ago, bars, columns, compact, delta, el, errorLine, folded, pct, shortDay, status, table, tile } from '/charts.js';
 import { RANGES, loadApps, preview, source } from '/data.js';
 
@@ -375,13 +375,14 @@ function rangeButtons() {
   rangeRow.append(...buttons);
 }
 
-function asideControls() {
+/** The badge, and for a live page the signed-in account with its Sign out (the gate returns on its own). */
+function asideControls(account) {
   const badge = el('span', { class: `badge ${preview ? 'sample' : 'live'}` }, preview ? 'Sample data' : 'Live');
   aside.replaceChildren(badge);
-  if (!preview) {
-    const forget = el('button', { class: 'btn small', type: 'button' }, 'Forget token');
-    forget.addEventListener('click', () => { clearToken(); location.reload(); });
-    aside.append(forget);
+  if (account) {
+    const out = el('button', { class: 'btn ghost small', type: 'button' }, 'Sign out');
+    out.addEventListener('click', () => { signOut(); });
+    aside.append(el('span', { class: 'who' }, account.email), out);
   }
 }
 
@@ -397,7 +398,13 @@ async function start() {
   load();
 }
 
-asideControls();
 rangeButtons();
-if (preview) start();
-else requireToken(root, start);
+if (preview) {
+  asideControls(null);
+  start();
+} else {
+  requireSession(root, (account) => {
+    asideControls(account);
+    start();
+  });
+}

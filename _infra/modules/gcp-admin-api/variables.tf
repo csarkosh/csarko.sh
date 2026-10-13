@@ -62,7 +62,6 @@ variable "secret_ids" {
   EOT
   type        = map(string)
   default = {
-    admin-token       = "ADMIN_TOKEN"
     goatcounter-token = "GOATCOUNTER_TOKEN"
     gsc-sa-key        = "GSC_SA_KEY"
     youtube-key       = "YOUTUBE_KEY"
@@ -93,4 +92,10 @@ variable "monthly_budget_usd" {
   description = "Monthly amount the project budget alerts against, in whole US dollars."
   type        = number
   default     = 5
+}
+
+variable "admin_emails" {
+  description = "The accounts that may read the admin routes, as addresses. Empty serves no admin routes."
+  type        = list(string)
+  default     = []
 }

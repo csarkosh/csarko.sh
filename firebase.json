@@ -105,7 +105,7 @@
             },
             {
               "key": "Content-Security-Policy",
-              "value": "default-src 'none'; script-src 'self'; connect-src 'self' https://csarko-admin-lwkslxdnnq-uw.a.run.app https://fps-telemetry-5pogqa5sqq-uw.a.run.app; img-src 'self'; font-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests"
+              "value": "default-src 'none'; script-src 'self' https://apis.google.com; connect-src 'self' https://csarko-admin-lwkslxdnnq-uw.a.run.app https://fps-telemetry-5pogqa5sqq-uw.a.run.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; img-src 'self'; font-src 'self'; frame-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests"
             },
             {
               "key": "X-Content-Type-Options",

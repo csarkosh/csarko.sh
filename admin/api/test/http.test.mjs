@@ -31,22 +31,23 @@ test("a manual value is a finite non-negative number and nothing else", () => {
   assert.equal(parseManualValue(null), null);
 });
 
-test("an empty or placeholder credential is not configured; ADMIN_TOKEN included", () => {
+test("an empty or placeholder credential is not configured; the allowlist is parsed", () => {
   const quiet = { error() {} };
   assert.equal(secret("unset"), null);
   assert.equal(secret("  unset  "), null);
   assert.equal(secret(""), null);
   assert.equal(secret(undefined), null);
   assert.equal(secret("unset-but-real"), "unset-but-real");
-  const config = readConfig({ ADMIN_TOKEN: "unset", GOATCOUNTER_TOKEN: "unset", YOUTUBE_KEY: "", GITHUB_TOKEN: " unset ", PSI_KEY: "unset", GSC_SA_KEY: "unset" }, quiet);
-  assert.equal(config.adminToken, null, "the placeholder admin token means 503, not a token of `unset`");
+  const config = readConfig({ ADMIN_EMAILS: "", GOATCOUNTER_TOKEN: "unset", YOUTUBE_KEY: "", GITHUB_TOKEN: " unset ", PSI_KEY: "unset", GSC_SA_KEY: "unset" }, quiet);
+  assert.deepEqual(config.adminEmails, [], "no readers");
   assert.equal(config.goatcounter.token, null);
   assert.equal(config.youtube.key, null);
   assert.equal(config.github.token, null);
   assert.equal(config.psiKey, null);
   assert.equal(config.gsc.key, null);
-  const real = readConfig({ ADMIN_TOKEN: "abc", GOATCOUNTER_TOKEN: "tok" }, quiet);
-  assert.equal(real.adminToken, "abc");
+  const real = readConfig({ ADMIN_EMAILS: "A@b.c, d@e.f", FIREBASE_PROJECT: "csarko-sh", GOATCOUNTER_TOKEN: "tok" }, quiet);
+  assert.deepEqual(real.adminEmails, ["a@b.c", "d@e.f"]);
+  assert.equal(real.firebaseProject, "csarko-sh");
   assert.equal(real.goatcounter.token, "tok");
 });
 

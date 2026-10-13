@@ -1,6 +1,6 @@
 # admin.csarko.sh: one dashboard for every app's traction
 
-Date: 2026-10-12 · Status: approved by Cyrus 2026-10-12 (token auth, not Google sign-in; public repos only; admin pages inherit the site's style and quality bar); **built and live 2026-10-13**, see "As built" · Not published (docs/superpowers is internal)
+Date: 2026-10-12 · Status: approved by Cyrus 2026-10-12 (Google sign-in with an allowlist, as Day Hike had; public repos only; admin pages inherit the site's style and quality bar); **built and live 2026-10-13**, see "As built" · Not published (docs/superpowers is internal)
 
 ## Goal
 
@@ -22,7 +22,7 @@ without a redesign.
 
 | Question | Decision |
 |---|---|
-| How Cyrus gets in | **One admin token, no sign-in** *(Cyrus, 2026-10-12: he prefers a token to signing in)*. A long random secret he pastes into the admin page once per browser; the page keeps it in localStorage (not a cookie) and sends it as `Authorization: Bearer` to every app's API. Each API holds the same token in Secret Manager and compares it in constant time. No Firebase Auth, no Identity Platform, no OAuth console steps. |
+| How Cyrus gets in | **One Google sign-in for every app** *(Cyrus, 2026-10-13: the same sign-in Day Hike had)*. Firebase Auth (Google provider) in the `csarko-sh` project, served from `admin.csarko.sh` itself, so no third-party storage is involved. Every app's API trusts that one issuer plus an email allowlist. |
 | Where csarko.sh's data is read from | A small Cloud Run service `csarko-admin` in `csarko-sh` that holds the vendor credentials and proxies GoatCounter, Search Console, YouTube, GitHub and a few free public endpoints. The browser never sees a vendor token. Scales to zero; free tier covers it. |
 | Why not call GoatCounter from the browser | Its API does allow it (`Access-Control-Allow-Origin: *`, checked 2026-10-12), but the token would sit in a public static bundle, and the Search Console key cannot go to a browser at all. One pattern for every source is simpler than two. |
 | History | A daily snapshot of every KPI into Firestore, written by one Cloud Scheduler job (3 jobs per billing account are free). GitHub traffic only lasts 14 days at GitHub, YouTube counts are cumulative, and GoatCounter is a third party: the ledger makes the trend ours. |
@@ -39,7 +39,7 @@ without a redesign.
   without cookies and we do not want it. (Day Hike's `vid` in localStorage is the game's
   own call and is not changed by this design.)
 - Real-time anything for csarko.sh. A five-minute cache is fine for a portfolio.
-- Public dashboards. Everything behind `admin.csarko.sh` is for whoever holds the token: Cyrus.
+- Public dashboards. Everything behind `admin.csarko.sh` is for Cyrus and the allowlist.
 - Cross-site visitor stitching (csarko.sh visitor → Day Hike player). The two apps are
   read side by side; the Play click on csarko.sh and the game's landing count are the
   join, by eye.
@@ -132,7 +132,7 @@ a 12-week sparkline, and a health dot. The same contract for every app (see 2.3)
 ```
 admin.csarko.sh  (Firebase Hosting site csarko-sh-admin, project csarko-sh, static)
 ├── /                 index: apps.json → one card per app, KPIs from each app's API
-├── /auth.js          the token gate: localStorage token, fetchWithAuth()
+├── /auth.js          the one sign-in: Firebase Auth, Google, authDomain admin.csarko.sh
 ├── /charts.js, /admin.css, /sample/*.json
 ├── /csarko.sh/       the portfolio dashboard (this repo)
 └── /game-dayhike/    the Day Hike admin bundle (built in game-dayhike, pulled at deploy)
@@ -145,31 +145,27 @@ csarko-admin  (Cloud Run, project csarko-sh, min 0, max 2)      fps-telemetry (e
   → GoatCounter · Search Console · YouTube · GitHub · HN · PSI · Firestore (snapshots, manual)
 ```
 
-### 2.1 Access: one token, no sign-in, no cookies
+### 2.1 Sign-in, no cookies
 
-A single admin token: 32 random bytes, base64url, generated once (`openssl rand -base64 32`),
-stored in Secret Manager in each project that runs an app API (`csarko-sh` for
-`csarko-admin`, `fps-csarko` for `fps-telemetry`) and injected as the `ADMIN_TOKEN` env
-var. It is never committed. Rotation is: new secret version, redeploy both services,
-paste the new value into the browser.
+Firebase Auth with the Google provider, `signInWithPopup`, `prompt: select_account`,
+exactly as the game admin did (`client/src/admin/auth.ts` before 2026-10-13). The auth
+domain is `admin.csarko.sh`, where Firebase Hosting serves `/__/auth/handler` from the same
+origin, so Safari's storage partitioning is not in play. The SDK keeps the session in
+IndexedDB, not a cookie; the public site is untouched. The SDK is bundled and self-hosted
+with the shell (no third-party script tag); the popup flow's calls to Google's Identity
+Toolkit and gapi loader are the one documented exception in the admin CSP.
 
-`/auth.js` is the only auth surface on the client: `token()` (from localStorage key
-`admin.token`), `setToken(t)`, `clearToken()`, and `fetchWithAuth(url, init)` which adds
-`Authorization: Bearer <token>`. When no token is stored, or any API answers 401, the shell
-shows one field, "Admin token", and nothing else. The csarko.sh page and the Day Hike
-bundle both import it, so the Day Hike client drops its `firebase` dependency.
+`/auth.js` is the only auth surface: `requireSession(root, onReady)`, `user()`,
+`signOut()`, and `fetchWithAuth(url, init)` which adds `Authorization: Bearer <idToken>`.
+The csarko.sh page and the Day Hike bundle both import it, so the Day Hike client has no
+`firebase` dependency of its own and the SDK loads once.
 
-Every app API compares the bearer value against `ADMIN_TOKEN` with
-`crypto.timingSafeEqual` (lengths checked first) and answers 401 on a mismatch. If
-`ADMIN_TOKEN` is unset the admin routes are not served at all, the same rule the game
-applies to an empty allowlist today. The existing per-IP token bucket makes guessing a
-256-bit value pointless. CORS allows `https://admin.csarko.sh` (and `http://localhost:<port>`
-for preview) and the `authorization` header. The token lives only in Cyrus's own browsers;
-the public site is untouched.
-
-Why not Google sign-in: Cyrus preferred not to sign in (2026-10-12). The sign-in version
-(Firebase Auth in `csarko-sh`, the game's API trusting that issuer) is recorded in this
-spec's first draft in git history, should it ever be wanted.
+Every app API verifies the token the way the game's `server/src/adminAuth.ts` did
+(`jose`, JWKS from `securetoken.google.com`), with the issuer and audience set to
+**`csarko-sh`**, and requires `email_verified` and membership in an `ADMIN_EMAILS`
+allowlist that Terraform sets from a git-ignored tfvars. If the list is empty the admin
+routes are not served. CORS allows `https://admin.csarko.sh` (and `http://localhost:8788`
+for preview) and the `authorization` header.
 
 ### 2.2 Infrastructure (Terraform, `_infra/`, project `csarko-sh`)
 
@@ -183,8 +179,8 @@ New, all free at this scale:
 - `gcp-admin-api`: Artifact Registry repo, Cloud Run service `csarko-admin` (1 CPU, 256Mi,
   min 0, max 2, concurrency 80, `allUsers` invoker because the handler does the auth),
   a service account with `secretmanager.secretAccessor` and `datastore.user`, Secret
-  Manager secrets `admin-token`, `goatcounter-token`, `gsc-sa-key`, `youtube-key`,
-  `github-token`, `psi-key` (6 active versions are free; `gsc-sa.json` is the same key the
+  Manager secrets `goatcounter-token`, `gsc-sa-key`, `youtube-key`, `github-token`,
+  `psi-key` (6 active versions are free; `gsc-sa.json` is the same key the
   CLI skill uses, uploaded once; a collector whose secret is missing reports "not
   configured" instead of failing the page), Firestore database (native), one Cloud Scheduler job
   (`0 6 * * *` America/New_York → `POST /admin/snapshot` with an OIDC token for the
@@ -270,9 +266,9 @@ In `game-dayhike`:
 
 - The admin Vite entry builds with `base: "/game-dayhike/"` (a second config or a mode),
   imports `/auth.js` from the shell as an external, and drops the `firebase` dependency.
-- `server/src/adminAuth.ts` compares the bearer token against `ADMIN_TOKEN` (constant
-  time) instead of verifying a Firebase ID token; `ADMIN_EMAILS` goes away;
-  `DEFAULT_ALLOWED_ORIGINS` gains `https://admin.csarko.sh`. `/admin/kpis` is added.
+- `server/src/adminAuth.ts` takes the issuer/audience project from `ADMIN_AUTH_PROJECT`
+  (default: its own project), set to `csarko-sh`; `DEFAULT_ALLOWED_ORIGINS` gains
+  `https://admin.csarko.sh`. `/admin/kpis` is added. Its own `gcp-auth` module goes.
 - `deploy:client` uploads `dist-admin/` to `gs://fps-csarko-downloads/admin/latest/` (the
   bucket already holds its source maps) and, when `~/Projects/csarko.sh` is present, runs
   that repo's `admin/deploy.sh`.
@@ -313,7 +309,7 @@ also in `AGENTS.md`.
 | Step | What | Needs from Cyrus | Value |
 |---|---|---|---|
 | **0. Events on the public site** *(done 2026-10-12)* | `data-goatcounter-click` on the outbound, nav, Play and Watch links; the `read-<slug>` script; campaign tags on the links he posts (`?ref=substack`, `?ref=linkedin`, GitHub README) are Cyrus's to add when he posts | nothing; the GoatCounter dashboard shows events at once | the behaviour metrics start accumulating now, before the dashboard exists |
-| 1. Infra | Terraform for the admin site, DNS, Cloud Run, Firestore, Scheduler, secrets | a GoatCounter API token (Settings → API, read permission), a fine-grained GitHub token (public repos, traffic read); YouTube and PSI keys can be made with `gcloud` | the host exists, the token gate works |
+| 1. Infra | Terraform for the admin site, DNS, Identity Platform, Cloud Run, Firestore, Scheduler, secrets; the two manual OAuth steps | a GoatCounter API token (Settings → API, read permission), a fine-grained GitHub token (public repos, traffic read); YouTube and PSI keys can be made with `gcloud` | the host exists, sign-in works |
 | 2. Shell and csarko.sh page | `auth.js`, `charts.js`, index, the eight cards, `?preview` sample data | review of the screenshots | the portfolio dashboard |
 | 3. The csarko.sh API | collectors, `/admin/kpis`, snapshot job, manual entry | the credentials above, into Secret Manager | live numbers, history begins |
 | 4. Move Day Hike | the four changes of 2.6, the redirect | approve the change in `game-dayhike` | one place for both apps |
@@ -339,14 +335,15 @@ already self-hosted, so pointing `site.json` at a self-hosted instance is the on
 
 ## Privacy
 
-No cookies anywhere: GoatCounter stores nothing in the browser; the admin token lives in
-localStorage on Cyrus's own machines; the Scheduler and APIs are server-to-server. The public site's CSP, script budget and third-party rules are
+No cookies anywhere: GoatCounter stores nothing in the browser; the admin's sign-in
+session lives in IndexedDB on Cyrus's own machines; the Scheduler and APIs are
+server-to-server. The public site's CSP, script budget and third-party rules are
 unchanged by anything except the optional `read-<slug>` script, which follows the
 existing procedure.
 
 ## Decisions taken on review (Cyrus, 2026-10-12)
 
-1. Access is an **admin token**, not Google sign-in (2.1).
+1. Access is **one Google sign-in with an allowlist**, shared by every app (2.1).
 2. GitHub: **public repos only**, `game-dayhike` and `electron-gamepatch`; never a private repo.
 3. The `read-<slug>` script ships (Part 1.2), through `site-quality`'s script procedure.
 4. Substack subscribers are entered by hand.
@@ -367,16 +364,16 @@ events on the public site. What the build taught, beyond the spec:
   so the liveness route is `/health`.
 - **A Firestore range filter on the document id wants a composite index**; a cursor
   (`orderBy(documentId).startAt().endAt()`) does not. The snapshot listing uses the cursor.
-- **A revision cannot reference a secret with no version**, so each project's first apply
-  is two steps, and the API treats the literal placeholder `unset` (or an empty value) as
-  "not configured" for every credential but the admin token.
+- **A revision cannot reference a secret with no version**, so the first apply is two
+  steps, and the API treats the literal placeholder `unset` (or an empty value) as "not
+  configured" for every credential.
 - **GitHub traffic needs the token's Administration: read**; without it the collector keeps
   stars and records the refusal per repo rather than dropping the section.
 - `firebase.json` is a list of two sites; `check.py`, `build_assets.py` and `serve.py`
   pick the public site's entry by its `public` folder. `deploy.sh` deploys
   `hosting:csarko-sh` only; `admin/deploy.sh` deploys `hosting:csarko-sh-admin` only.
-- The Day Hike API's switch to the token and the 301 from its old admin URL ship with
-  the game's next `deploy:server` and `deploy:client` (branch `claude/admin-host` there).
+- The Day Hike API's switch to the shared issuer and the 301 from its old admin URL ship
+  with the game's next `deploy:server` and `deploy:client` (branch `claude/admin-host` there).
 
 ## Research this design rests on
 

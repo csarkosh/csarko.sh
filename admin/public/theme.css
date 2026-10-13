@@ -145,7 +145,10 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .btn.small { padding: 6px 14px; font-size: 13.5px; }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+.btn.ghost:hover { color: var(--text); border-color: var(--border-strong); }
 .btn:disabled { opacity: .6; cursor: default; }
+.btn.primary:disabled:hover { background: var(--accent); border-color: var(--accent); }
 
 /* The range row: one row above everything it scopes. */
 .range { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 24px; }
@@ -159,7 +162,6 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .field label { display: grid; gap: 6px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
 .field input { font-family: var(--sans); font-size: 15px; letter-spacing: 0; text-transform: none; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 10px; padding: 9px 12px; min-width: 0; width: 100%; }
 .field input::placeholder { color: var(--faint); }
-.field.token input { width: min(100%, 420px); font-family: var(--mono); font-size: 14px; }
 
 /* Cards: the site's card, as a section rather than a link. */
 .grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; }
@@ -291,12 +293,16 @@ details.folded .scroll { border: 1px solid var(--border); border-radius: 10px; }
 .app-card .tiles { margin: 18px 0 0; }
 .app-card .card-head .status { margin-left: auto; }
 
-/* The token gate. */
+/* The sign-in gate: a heading, one sentence, the Google button, a note line for what went wrong. */
 .gate { max-width: 480px; padding: 48px 0; }
 .gate h1 { margin-bottom: 14px; }
 .gate p { color: var(--muted); margin: 0 0 24px; }
-.gate form { display: grid; gap: 14px; }
-.gate .note { margin: 14px 0 0; font-size: 14px; color: var(--warning); font-weight: 600; }
+.gate .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.gate .note { margin: 14px 0 0; font-size: 14px; color: var(--warning); font-weight: 600; overflow-wrap: anywhere; }
+.gate .note:empty { display: none; }
+
+/* The signed-in account beside the Live badge. */
+.page-aside .who { font-family: var(--mono); font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
 
 footer { border-top: 1px solid var(--border); padding-block: 28px 40px; color: var(--faint); font-size: 13px; }
 footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }

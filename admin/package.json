@@ -1,0 +1,13 @@
+{
+  "name": "csarko-sh-admin",
+  "private": true,
+  "description": "Build tooling for admin.csarko.sh: bundles the Firebase Auth SDK into one self-hosted ES module (admin/public/vendor/). The pages themselves have no dependencies.",
+  "type": "module",
+  "scripts": {
+    "build:vendor": "node build.mjs --vendor"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "firebase": "13.0.0"
+  }
+}

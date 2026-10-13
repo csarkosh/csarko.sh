@@ -8,8 +8,12 @@ sample under `admin/public/sample/` mirrors the examples here one for one, so
 
 Conventions, for every route:
 
-- **Auth.** `Authorization: Bearer <admin token>` on every request (`/auth.js` adds it).
-  401 on a missing or wrong token, and the shell shows its gate again.
+- **Auth.** Google sign-in through Firebase Auth on project `csarko-sh`. Every request
+  carries `Authorization: Bearer <Firebase ID token>` (`/auth.js` adds a fresh one); the
+  API verifies the token's issuer `https://securetoken.google.com/csarko-sh`, audience
+  `csarko-sh` and `email_verified`, then the email against its `ADMIN_EMAILS` allowlist,
+  and answers 401 otherwise. The shell then shows its gate again with
+  "<email> is not on the list." See "Auth: what `/auth.js` exports" below.
 - **Times** are ISO 8601 UTC strings (`2026-10-12T13:05:00Z`). A `day` is `YYYY-MM-DD`.
   `visits.from`/`to` are UTC hour stamps because GoatCounter ranges are hourly.
 - **Numbers are numbers**, never strings. A value the source does not have is `null`,
@@ -190,6 +194,45 @@ says what is unknown).
 Body `{ "value": 47 }` (a non-negative integer). Answer `{ "ok": true, "at": "2026-10-12T13:05:00Z" }`.
 Appends `{ at, value }` to the `substack` series that `reach` returns; the page then
 reloads the Reach card. `substack` is the only key.
+
+## Auth: what `/auth.js` exports
+
+The shell's `public/auth.js` is the one auth surface on the admin host; every app page
+imports it as `/auth.js` (the Day Hike bundle included), so these names are a contract.
+
+```js
+export function requireSession(root, onReady)
+// Renders the gate into `root` while nobody is signed in: the page's own children (its
+// h1 included) are hidden behind it, as before; the gate is a heading, one sentence, a
+// "Sign in with Google" button and a note line for errors such as "<email> is not on the
+// list." Calls onReady({ email }) once someone is signed in, again after a re-sign-in, and
+// re-renders the gate on sign-out or on the window event 'admin:unauthorized' (with a
+// "Sign out" so another account can be tried). A build whose auth-config.json has no
+// apiKey shows the gate with the button disabled and "This build has no sign-in. Add
+// ?preview to the address to see the page with sample data."
+
+export function user()
+// { email } | null: the signed-in account.
+
+export async function fetchWithAuth(url, init)
+// fetch() with `Authorization: Bearer <fresh ID token from getIdToken()>`, credentials
+// 'omit', mode 'cors'. On 401 it dispatches 'admin:unauthorized' on window with
+// { detail: { email, url } } and still returns the Response.
+
+export async function signOut()
+// Firebase signOut; the gate returns through the auth state change.
+```
+
+Persistence is `browserLocalPersistence` (localStorage, no cookie); the provider is
+`GoogleAuthProvider` with `prompt: select_account`. The config is read once from
+`/auth-config.json` (`{ apiKey, authDomain: "admin.csarko.sh", projectId: "csarko-sh" }`),
+and the SDK is the self-hosted bundle `/vendor/firebase-auth.<hash>.js`, imported only when
+a page asks for a session (never under `?preview`).
+
+For one release the old names stay as aliases, so a Day Hike bundle built against the
+token gate still loads: `requireToken` is `requireSession`, `clearToken` is `signOut`, and
+`token()` returns `null` (the ID token is fetched inside `fetchWithAuth`). `setToken` is
+gone.
 
 ## Shapes the shell itself serves
 

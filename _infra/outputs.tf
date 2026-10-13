@@ -87,3 +87,8 @@ output "admin_scheduler_service_account" {
   description = "The identity the daily snapshot job calls the API as"
   value       = module.gcp_admin_api.scheduler_service_account_email
 }
+
+output "admin_web_api_key" {
+  description = "The Firebase web API key the admin shell signs in with (admin/build.mjs bakes it into auth-config.json). Public by design."
+  value       = module.gcp_auth.web_api_key
+}
