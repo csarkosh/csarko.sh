@@ -19,8 +19,8 @@ Console for search, the YouTube Data and GitHub APIs for exposure elsewhere, and
 performance score for health. What is not available is anything that needs to recognise a
 visitor across days; the honest answer is to say so and use proxies. The shape that scales is a
 static admin page, one small API per app that holds the credentials and proxies the vendors, a
-daily snapshot into a document store so the trend is yours rather than the vendor's, and a
-single token in localStorage instead of a sign-in. The worked example is csarko.sh, whose
+daily snapshot into a document store so the trend is yours rather than the vendor's, and one
+Google sign-in with an allowlist, shared by every app. The worked example is csarko.sh, whose
 dashboard first deployed to `admin.csarko.sh` on 2026-10-13; a browser game, Day Hike, joins
 as the second app on the same contract.
 
@@ -130,11 +130,11 @@ the site is down or performance drops under 90. It is a dot beside each app on t
 
 ```
 browser (owner's machine)                 admin.csarko.sh (static hosting, noindex)
-  localStorage: admin token  ───────────▶   /            index: one card per app, from apps.json
-                                            /auth.js     token gate, fetchWithAuth()
+  signed in with Google      ───────────▶   /            index: one card per app, from apps.json
+  (Firebase Auth, no cookie)                /auth.js     the sign-in gate, fetchWithAuth()
                                             /<app>/      that app's own page
                                                  │
-                 Authorization: Bearer <token>   │  one small API per app, scales to zero
+              Authorization: Bearer <ID token>   │  one small API per app, scales to zero
                                                  ▼
           ┌────────────────────────────┐    ┌────────────────────────────┐
           │ app A API                  │    │ app B API                  │
@@ -153,18 +153,20 @@ Four decisions make the shape, and each generalises.
 
 **Why not call the vendors from the browser.** GoatCounter's API allows it; a live preflight
 against the hosted service answered `Access-Control-Allow-Origin: *`. But an admin page is a
-static bundle, and a token in a static bundle is public; the search console key is a service
-account and cannot go to a browser at all. One pattern for every source is also simpler than
+static bundle, and a credential in a static bundle is public; the search console key is a
+service account and cannot go to a browser at all. One pattern for every source is also simpler than
 two.
 
-**Why one token instead of sign-in.** The reader of this page is its owner, on their own
-machines, and a sign-in flow (an identity provider, a console project, redirect URIs, a
-session) is a lot of surface for one user. A long random token, 32 bytes from `openssl rand`,
-kept in localStorage and sent as `Authorization: Bearer` to every API, needs none of it and
-sets no cookie. Each API compares it in constant time, answers 401 on a mismatch, and refuses
-to serve the admin routes at all while the token is not configured; a per-address rate limit
-makes guessing a 256-bit value pointless. Rotation is a new secret version, a redeploy and a
-paste.
+**Why one Google sign-in for every app.** The reader is the owner, with a Google account
+already, so the gate is "Sign in with Google" through Firebase Auth, which is free at any
+number of accounts and keeps its session in the browser's own storage rather than a cookie.
+The sign-in is served from the admin host itself (Firebase Hosting answers `/__/auth/` there),
+so no third-party cookie is involved either. What the browser then sends every API is the
+signed ID token, and each API verifies it with nothing but Google's public keys: the issuer
+and audience must be the admin project, the email must be verified, and the address must be
+on the API's own allowlist, set in its environment; 401 otherwise, and no admin routes at all
+while the list is empty. Adding a collaborator is one environment change, not a deploy; one
+sign-in covers every app because every API trusts the same issuer.
 
 **Why one API per app.** An app is tracked by adding one entry to `apps.json` and serving two
 routes: `/admin/kpis` for the index card (three or four numbers, each with the previous period
@@ -172,7 +174,7 @@ and a 12-week trend, plus the health dot) and `/admin/query/<name>?days=N` for w
 page wants. A new app therefore never touches another app's code, and a vendor change (say,
 moving the counter to a self-hosted instance) changes one collector in one API. The game
 already had an admin page with a telemetry API and dependency-free SVG charts [6]; it gains the
-`kpis` route and the shared token, and its charts were ported to plain JavaScript for the shell.
+`kpis` route and trusts the shared sign-in, and its charts were ported to plain JavaScript for the shell.
 
 **Why the ledger.** The snapshot route runs every collector once a day, called by a scheduler
 with an OIDC token, and merges one document per UTC date into the store. GitHub keeps 14 days;
@@ -212,15 +214,15 @@ which is the point of a budget.
 | The API (Cloud Run, CPU only during requests) | 2 million requests and 180,000 vCPU-seconds a month; scales to zero | a few hundred requests a day |
 | Document store (Firestore) | 1 GiB, 50,000 reads and 20,000 writes a day [8] | about 100 reads and 1 write a day |
 | Scheduler (Cloud Scheduler) | 3 jobs at no charge [9] | 1 job |
-| Secret storage (Secret Manager) | 6 active secret versions, 10,000 accesses a month | 6 secrets, read at cold start |
+| Secret storage (Secret Manager) | 6 active secret versions, 10,000 accesses a month | 5 secrets, read at cold start |
 | Container registry | 0.5 GB | one small image |
 | GoatCounter, hosted | free for personal, non-commercial use [1] | $0 |
 | Search Console, YouTube Data, PageSpeed Insights, GitHub and Hacker News APIs | free within quotas far above this use [3], [4], [5] | $0 |
 
 Expected monthly cost: **$0**. Two caveats. A serverless runtime needs a billing account on
 the project even for its free tier, so the project has one, and a budget alert at $5 a month
-emails if anything changes; an alarm, not a cap. And six secret versions is exactly the free
-allowance, so a seventh credential would be the first line item.
+emails if anything changes; an alarm, not a cap. And five of the six free secret versions
+are in use, so the second new credential would be the first line item.
 
 ## 6. Lessons and gotchas
 

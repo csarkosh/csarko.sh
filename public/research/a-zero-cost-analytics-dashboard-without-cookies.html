@@ -51,7 +51,7 @@
       "dateModified": "2026-10-13",
       "url": "https://csarko.sh/research/a-zero-cost-analytics-dashboard-without-cookies",
       "mainEntityOfPage": "https://csarko.sh/research/a-zero-cost-analytics-dashboard-without-cookies",
-      "wordCount": 3045,
+      "wordCount": 3096,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -411,8 +411,8 @@ Console for search, the YouTube Data and GitHub APIs for exposure elsewhere, and
 performance score for health. What is not available is anything that needs to recognise a
 visitor across days; the honest answer is to say so and use proxies. The shape that scales is a
 static admin page, one small API per app that holds the credentials and proxies the vendors, a
-daily snapshot into a document store so the trend is yours rather than the vendor&#39;s, and a
-single token in localStorage instead of a sign-in. The worked example is csarko.sh, whose
+daily snapshot into a document store so the trend is yours rather than the vendor&#39;s, and one
+Google sign-in with an allowlist, shared by every app. The worked example is csarko.sh, whose
 dashboard first deployed to <code>admin.csarko.sh</code> on 2026-10-13; a browser game, Day Hike, joins
 as the second app on the same contract.</p>
 <div class="section-head"><p class="section-label">01</p><h2 id="what-traction-means-for-a-portfolio"><a class="anchor" href="#what-traction-means-for-a-portfolio">What traction means for a portfolio</a></h2></div>
@@ -606,11 +606,11 @@ and no 404 path has more than a handful of hits; <strong>warning</strong> when o
 the site is down or performance drops under 90. It is a dot beside each app on the index.</p>
 <div class="section-head"><p class="section-label">03</p><h2 id="the-architecture"><a class="anchor" href="#the-architecture">The architecture</a></h2></div>
 <div class="scroll" tabindex="0" role="region" aria-label="Code"><pre><code>browser (owner&#39;s machine)                 admin.csarko.sh (static hosting, noindex)
-  localStorage: admin token  ───────────▶   /            index: one card per app, from apps.json
-                                            /auth.js     token gate, fetchWithAuth()
+  signed in with Google      ───────────▶   /            index: one card per app, from apps.json
+  (Firebase Auth, no cookie)                /auth.js     the sign-in gate, fetchWithAuth()
                                             /&lt;app&gt;/      that app&#39;s own page
                                                  │
-                 Authorization: Bearer &lt;token&gt;   │  one small API per app, scales to zero
+              Authorization: Bearer &lt;ID token&gt;   │  one small API per app, scales to zero
                                                  ▼
           ┌────────────────────────────┐    ┌────────────────────────────┐
           │ app A API                  │    │ app B API                  │
@@ -627,24 +627,26 @@ the site is down or performance drops under 90. It is a dot beside each app on t
 <p>Four decisions make the shape, and each generalises.</p>
 <p><strong>Why not call the vendors from the browser.</strong> GoatCounter&#39;s API allows it; a live preflight
 against the hosted service answered <code>Access-Control-Allow-Origin: *</code>. But an admin page is a
-static bundle, and a token in a static bundle is public; the search console key is a service
-account and cannot go to a browser at all. One pattern for every source is also simpler than
+static bundle, and a credential in a static bundle is public; the search console key is a
+service account and cannot go to a browser at all. One pattern for every source is also simpler than
 two.</p>
-<p><strong>Why one token instead of sign-in.</strong> The reader of this page is its owner, on their own
-machines, and a sign-in flow (an identity provider, a console project, redirect URIs, a
-session) is a lot of surface for one user. A long random token, 32 bytes from <code>openssl rand</code>,
-kept in localStorage and sent as <code>Authorization: Bearer</code> to every API, needs none of it and
-sets no cookie. Each API compares it in constant time, answers 401 on a mismatch, and refuses
-to serve the admin routes at all while the token is not configured; a per-address rate limit
-makes guessing a 256-bit value pointless. Rotation is a new secret version, a redeploy and a
-paste.</p>
+<p><strong>Why one Google sign-in for every app.</strong> The reader is the owner, with a Google account
+already, so the gate is &quot;Sign in with Google&quot; through Firebase Auth, which is free at any
+number of accounts and keeps its session in the browser&#39;s own storage rather than a cookie.
+The sign-in is served from the admin host itself (Firebase Hosting answers <code>/__/auth/</code> there),
+so no third-party cookie is involved either. What the browser then sends every API is the
+signed ID token, and each API verifies it with nothing but Google&#39;s public keys: the issuer
+and audience must be the admin project, the email must be verified, and the address must be
+on the API&#39;s own allowlist, set in its environment; 401 otherwise, and no admin routes at all
+while the list is empty. Adding a collaborator is one environment change, not a deploy; one
+sign-in covers every app because every API trusts the same issuer.</p>
 <p><strong>Why one API per app.</strong> An app is tracked by adding one entry to <code>apps.json</code> and serving two
 routes: <code>/admin/kpis</code> for the index card (three or four numbers, each with the previous period
 and a 12-week trend, plus the health dot) and <code>/admin/query/&lt;name&gt;?days=N</code> for whatever its own
 page wants. A new app therefore never touches another app&#39;s code, and a vendor change (say,
 moving the counter to a self-hosted instance) changes one collector in one API. The game
 already had an admin page with a telemetry API and dependency-free SVG charts <a class="cite" href="#ref-6">[6]</a>; it gains the
-<code>kpis</code> route and the shared token, and its charts were ported to plain JavaScript for the shell.</p>
+<code>kpis</code> route and trusts the shared sign-in, and its charts were ported to plain JavaScript for the shell.</p>
 <p><strong>Why the ledger.</strong> The snapshot route runs every collector once a day, called by a scheduler
 with an OIDC token, and merges one document per UTC date into the store. GitHub keeps 14 days;
 YouTube&#39;s counts are cumulative, so the change since last week exists only if last week was
@@ -702,7 +704,7 @@ which is the point of a budget.</p>
 <tr>
 <td>Secret storage (Secret Manager)</td>
 <td>6 active secret versions, 10,000 accesses a month</td>
-<td>6 secrets, read at cold start</td>
+<td>5 secrets, read at cold start</td>
 </tr>
 <tr>
 <td>Container registry</td>
@@ -722,8 +724,8 @@ which is the point of a budget.</p>
 </tbody></table></div>
 <p>Expected monthly cost: <strong>$0</strong>. Two caveats. A serverless runtime needs a billing account on
 the project even for its free tier, so the project has one, and a budget alert at $5 a month
-emails if anything changes; an alarm, not a cap. And six secret versions is exactly the free
-allowance, so a seventh credential would be the first line item.</p>
+emails if anything changes; an alarm, not a cap. And five of the six free secret versions
+are in use, so the second new credential would be the first line item.</p>
 <div class="section-head"><p class="section-label">06</p><h2 id="lessons-and-gotchas"><a class="anchor" href="#lessons-and-gotchas">Lessons and gotchas</a></h2></div>
 <p>In the order they were met on the first deploy:</p>
 <ul>
