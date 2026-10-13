@@ -197,6 +197,10 @@ function reachCard([reach], days, reload) {
   if (!gh) parts.push(notConfigured(missing(reach, 'github')));
   else {
     const dash = (v) => (isNum(v) ? v.toLocaleString('en-US') : '–');
+    // Most viewed first (Cyrus, 2026-10-13); a repo whose traffic could not be read sorts
+    // after every one whose could, then by stars, then by name.
+    const views = (r) => (isNum(r.traffic?.views) ? r.traffic.views : -1);
+    const sorted = [...gh].sort((a, b) => views(b) - views(a) || num(b.stars) - num(a.stars) || str(a.repo).localeCompare(str(b.repo)));
     parts.push(table([
       { key: 'repo', label: 'Repo', render: (v) => el('a', { href: `https://github.com/${str(v)}`, target: '_blank', rel: 'noopener' }, mono(v)) },
       { key: 'stars', label: 'Stars', num: true },
@@ -205,11 +209,11 @@ function reachCard([reach], days, reload) {
       { key: 'traffic', label: 'Views, 14 d', num: true, render: (v) => dash(v?.views) },
       { key: 'traffic', label: 'Uniques', num: true, render: (v) => dash(v?.uniques) },
       { key: 'traffic', label: 'Clones', num: true, render: (v) => dash(v?.clones) },
-    ], gh, 'No public repos listed.'));
+    ], sorted, 'No public repos listed.'));
     const trafficEnv = missing(reach, 'githubTraffic');
     if (trafficEnv) parts.push(notConfigured(trafficEnv, 'Traffic'));
     else {
-      const refRows = gh.flatMap((r) => (r.traffic?.referrers ?? []).map((ref) => ({ repo: r.repo, ...ref })));
+      const refRows = sorted.flatMap((r) => (r.traffic?.referrers ?? []).map((ref) => ({ repo: r.repo, ...ref }))).sort((a, b) => num(b.count) - num(a.count));
       parts.push(folded(`Traffic referrers · ${refRows.length}`, table([
         { key: 'repo', label: 'Repo', render: mono },
         { key: 'referrer', label: 'Referrer', render: mono },
