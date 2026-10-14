@@ -82,7 +82,7 @@ match its clean URL (`research/x.html` → `https://csarko.sh/research/x`); docs
 the indexable pages, and root-relative links must resolve without a redirect (no
 trailing `/`, no `.html`).
 
-**Performance** — HTML ≤ 50 KB; fonts ≤ 100 KB with `font-display: swap`, each
+**Performance** — HTML ≤ 50 KB (the research index ≤ 80 KB, since it lists every doc; a doc page ≤ 200 KB); fonts ≤ 100 KB with `font-display: swap`, each
 with a metric-matched `"<Family> Fallback"` face (`size-adjust` etc. against
 Arial / Courier New, values in `build_assets.py` `FALLBACKS`) listed right after
 it in the font stack — without them the font swap re-wrapped the hero and

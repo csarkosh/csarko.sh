@@ -57,6 +57,7 @@ BUDGET_PORTRAIT_AVIF_480 = 25_000
 BUDGET_ANY_PORTRAIT = 90_000
 BUDGET_SCRIPTS = 10_000  # all JavaScript the page loads, first- and third-party (third-party measured live)
 
+BUDGET_HTML_DOCS_INDEX = 80_000  # the research index lists every doc with its card, about 1.7 KB each; 29 docs crossed BUDGET_HTML on 2026-10-14
 BUDGET_HTML_DOC = 200_000  # a doc page is mostly prose, so long research docs get more room than BUDGET_HTML; the longest, with 146 sources, is 197 KB (55 KB gzipped)
 
 BUILD_DOCS = SKILL / "scripts/build_docs.mjs"
@@ -484,7 +485,7 @@ def resource_refs(page, html):
 def performance_checks(page, html, name):
     print(f"performance ({name})")
     size = len(html.encode())
-    budget = BUDGET_HTML_DOC if page_kind(name) == "doc" else BUDGET_HTML
+    budget = {"doc": BUDGET_HTML_DOC, "docs-index": BUDGET_HTML_DOCS_INDEX}.get(page_kind(name), BUDGET_HTML)
     check(size <= budget, f"HTML {size:,} B (budget {budget:,})")
 
     refs = resource_refs(page, html)
