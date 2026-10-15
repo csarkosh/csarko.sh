@@ -156,6 +156,20 @@ module "gcp_admin_api" {
   }
 }
 
+module "gcp_visits" {
+  source = "./modules/gcp-visits"
+
+  project_id                   = var.gcp_project_id
+  region                       = var.gcp_region
+  origins                      = ["https://${var.domain_name}"]
+  reader_service_account_email = module.gcp_admin_api.service_account_email
+
+  providers = {
+    google      = google
+    google-beta = google-beta
+  }
+}
+
 # Each site's own hostname, e.g. "csarko-sh.web.app". default_url stays populated
 # for the life of the site, unlike required_dns_updates, which empties once a
 # domain reconciles (the fps repo learned this the hard way).

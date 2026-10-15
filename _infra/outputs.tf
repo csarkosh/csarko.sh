@@ -92,3 +92,9 @@ output "admin_web_api_key" {
   description = "The Firebase web API key the admin shell signs in with (admin/build.mjs bakes it into auth-config.json). Public by design."
   value       = module.gcp_auth.web_api_key
 }
+
+output "visits_service_name" { value = module.gcp_visits.service_name }
+output "visits_service_url" { value = module.gcp_visits.service_url }
+output "visits_secret_id" { value = module.gcp_visits.secret_id }
+output "visits_dataset" { value = module.gcp_visits.dataset }
+output "visits_history_dataset" { value = module.gcp_visits.history_dataset }
