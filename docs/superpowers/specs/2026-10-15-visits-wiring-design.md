@@ -158,3 +158,11 @@ check B would have bought with a budget exception.
 
 Day Hike's pages (the game has its own telemetry), a field-vitals chart, the access-log
 mode, anything in `lib-visits` itself.
+
+## As built
+
+- 2026-10-15: `csarko-visits` is live at `v0.1.0` (revision `00004-dzc`, `serve
+  --trusted-proxies 1`). The first row, `/deploy-check` at 13:37:51 UTC, carries a visit
+  hash. `--trusted-proxies` is 1 on the `run.app` URL, confirmed with `--log-ip`: the
+  logged address equalled this machine's public IPv6 address. The depth through Hosting
+  is confirmed at the cutover.
