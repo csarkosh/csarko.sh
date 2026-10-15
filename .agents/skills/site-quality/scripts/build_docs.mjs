@@ -37,7 +37,8 @@ const read = (dir) => (existsSync(dir)
 const sources = read(CONTENT);
 const gameSources = read(GAMES);
 const filmSources = read(FILMS);
-const appSources = read(APPS);
+// An app's optional `<slug>.install.md` is its page's install block (apps/build.mjs), not an app.
+const appSources = read(APPS).filter((s) => !s.name.endsWith('.install.md'));
 
 let files;
 try {

@@ -73,7 +73,8 @@ for (const icon of ['favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'apple-to
   copyFileSync(path.join(SITE_PUBLIC, icon), path.join(OUT, icon));
 }
 
-const sources = readdirSync(path.join(ROOT, 'docs', APPS_DIR)).filter((f) => f.endsWith('.md')).sort();
+// An app's `<slug>.install.md` is its page's install block, read beside it below, not an app.
+const sources = readdirSync(path.join(ROOT, 'docs', APPS_DIR)).filter((f) => f.endsWith('.md') && !f.endsWith('.install.md')).sort();
 const pages = [];
 for (const name of sources) {
   const app = loadApp(name, readFileSync(path.join(ROOT, 'docs', APPS_DIR, name), 'utf8'));
@@ -95,7 +96,11 @@ for (const name of sources) {
     assets: latest.assets.map((a) => ({ name: a.name, size: a.size, url: a.browser_download_url })),
   };
 
-  const prepared = prepareReadme(readme, { blob: `https://github.com/${repo}/blob/${branch}/` });
+  // The app's own install block (docs/apps/<slug>.install.md) for a README without one, and the
+  // sections its page keeps when the whole README is not the page (its front matter).
+  const installFile = path.join(ROOT, 'docs', APPS_DIR, `${app.slug}.install.md`);
+  const install = existsSync(installFile) ? readFileSync(installFile, 'utf8') : null;
+  const prepared = prepareReadme(readme, { blob: `https://github.com/${repo}/blob/${branch}/`, sections: app.sections ?? null, install });
   const dir = path.join(OUT, app.slug);
   mkdirSync(dir, { recursive: true });
   // Every README image the page shows, as a WebP beside the page.

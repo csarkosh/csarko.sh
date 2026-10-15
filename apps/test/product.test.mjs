@@ -85,7 +85,7 @@ test('prepareReadme lifts the picture caption and refuses a README without the d
   assert.ok(!text.includes('<picture>') && !text.includes('<sub>'));
   assert.equal(flows.length, 1);
   assert.throws(() => prepareReadme(README.replace('**[Download `visits`](https://github.com/o/r/releases/latest)**', 'Download'), { blob: BLOB }), /Install/);
-  assert.throws(() => prepareReadme(README.replace(/<picture>[\s\S]*?<\/picture>/, ''), { blob: BLOB }), /picture/);
+  assert.equal(prepareReadme(README.replace(/<picture>[\s\S]*?<\/picture>/, ''), { blob: BLOB }).hero, null, 'a README without a picture has no hero');
 });
 
 test('productPage puts the buttons in Setup, the flow in its place and everything back to csarko.sh absolute', () => {
@@ -178,4 +178,43 @@ test('HTML the page cannot draw fails the build by name', () => {
   const images = Object.fromEntries(imagesOf(prepared).map((p) => [p, { url: '/x.webp', width: 1, height: 1 }]));
   assert.throws(() => productPage({ app: { slug: 'x', title: 'x', description: 'd: e', kicker: 'k', platforms: 'macOS' }, prepared, release: { ...RELEASE, assets: [] }, images, theme: THEME }),
     /HTML this page cannot draw: <div>/);
+});
+
+test('a README with no picture, no install and a sections list becomes a page with our install block and only those sections', () => {
+  const readme = `# Arkos IDE
+
+A terminal layout manager.
+
+## Status
+
+A checklist nobody but a tester reads.
+
+## Keyboard
+
+Cmd+B opens the sidebar.
+
+## Releasing
+
+How a release is made.
+
+## License
+
+GPL-3.0.
+`;
+  const install = 'Install the cask:\n\n```sh\nbrew install --cask csarkosh/tap/arkos-ide\n```\n';
+  const prepared = prepareReadme(readme, { blob: BLOB, sections: ['Keyboard', 'License'], install });
+  assert.equal(prepared.hero, null);
+  assert.deepEqual(imagesOf(prepared), []);
+  assert.ok(!prepared.text.includes('## Status') && !prepared.text.includes('## Releasing'));
+  assert.ok(prepared.text.indexOf('## Install') < prepared.text.indexOf('## Keyboard'), 'install leads');
+  assert.throws(() => prepareReadme(readme, { blob: BLOB, sections: ['Keyboard', 'Nope'] }), /no "## Nope" section/);
+  const app = { slug: 'ide-arkos', title: 'Arkos IDE', description: 'A terminal layout manager: panes with tabs for many Claude Code sessions at once.', kicker: 'Released · Open source, GPL-3.0', license: 'GPL-3.0', repo: 'https://github.com/o/r', platforms: 'macOS' };
+  const release = { tag: 'v0.2.18', url: 'https://github.com/o/r/releases/tag/v0.2.18', published: '2026-10-15T21:02:39Z', assets: [{ name: 'Arkos-IDE-0.2.18-arm64.zip', size: 6278695, url: 'https://github.com/o/r/releases/download/v0.2.18/Arkos-IDE-0.2.18-arm64.zip' }, { name: 'manifest.json', size: 300, url: 'https://x/m' }] };
+  const html = productPage({ app, prepared, release, images: {}, theme: THEME });
+  assert.ok(!html.includes('<figure class="hero-figure">'), 'no hero without a picture');
+  assert.ok(html.includes('<div class="downloads"><div class="buttons"><a class="btn" href="https://github.com/o/r/releases/download/v0.2.18/Arkos-IDE-0.2.18-arm64.zip" download>macOS, Apple silicon<small>6.3 MB</small></a></div>'), 'the one asset the release has, as a button');
+  assert.ok(html.includes('v0.2.18, released Oct 15, 2026'));
+  assert.ok(html.includes('brew install --cask csarkosh/tap/arkos-ide'));
+  assert.ok(html.includes('<li><a href="#install">Install</a></li>'), 'the bar links to Install');
+  assert.ok(!html.includes('## Status') && !html.includes('How a release is made'));
 });

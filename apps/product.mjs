@@ -8,7 +8,11 @@
  * HTML is turned into what the page draws itself:
  *   - the title, as `# Title` or `<h1>`;
  *   - the hero: the first <picture> or image before the first `## ` section, with the <sub>
- *     caption under it if there is one;
+ *     caption under it if there is one (a README without one has no hero);
+ *   - with `sections`, only the named `## ` sections of the README, in its order; a name the
+ *     README lacks fails the build;
+ *   - with `install` and no Setup download step or `## Install` of its own, an `## Install`
+ *     section made of that text, ahead of the first section;
  *   - `<p align=…>` paragraphs, as Markdown paragraphs (<b>, <i>, <code> and <a> kept);
  *   - other `<sub>…</sub>` lines, as muted paragraphs;
  *   - a <table> of rows that each pair a <picture> with Markdown, as image-and-text panels;
@@ -34,7 +38,7 @@ const PANEL_END = '@@PANELEND@@';
 const PLATFORMS = [
   { label: 'Linux x86-64', match: /-linux-amd64\.tar\.gz$/ },
   { label: 'Linux ARM64', match: /-linux-arm64\.tar\.gz$/ },
-  { label: 'macOS, Apple silicon', match: /-macos-arm64\.tar\.gz$/ },
+  { label: 'macOS, Apple silicon', match: /-(macos-arm64\.tar\.gz|arm64\.zip)$/ },
 ];
 
 export const formatSize = (bytes) => (bytes >= 1_000_000 ? `${(bytes / 1_000_000).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1000))} KB`);
@@ -83,15 +87,23 @@ export function flowHtml({ steps, branches }) {
 
 const releaseLine = (release, extra = '') => `<p class="release">${escapeHtml(release.tag)}, released ${formatDay(release.published)}${extra} · <a class="external" href="${escapeHtml(release.url)}" target="_blank" rel="noopener">release notes${release.assets.length ? ' and checksums' : ''}</a></p>`;
 
-export function downloadsHtml(release) {
+/**
+ * The release's download buttons, one a platform. A README that promises downloads (the Setup
+ * step) gets every platform or the build fails (`strict`); an install block takes whatever the
+ * release has, the button row left out when it has none.
+ */
+export function downloadsHtml(release, { strict = true } = {}) {
   const buttons = PLATFORMS.map((p) => {
     const asset = release.assets.find((a) => p.match.test(a.name));
-    if (!asset) throw new ProductError(`release ${release.tag} has no asset for ${p.label}`);
+    if (!asset) {
+      if (strict) throw new ProductError(`release ${release.tag} has no asset for ${p.label}`);
+      return '';
+    }
     return `<a class="btn" href="${escapeHtml(asset.url)}" download>${escapeHtml(p.label)}<small>${formatSize(asset.size)}</small></a>`;
   }).join('');
   const scripts = release.assets.filter((a) => a.name.endsWith('.js'))
     .map((a) => `<a href="${escapeHtml(a.url)}" download>${escapeHtml(a.name)}</a> (${a.size.toLocaleString('en-US')} B)`).join(' · ');
-  return `<div class="downloads"><div class="buttons">${buttons}</div>${releaseLine(release, scripts ? ` · ${scripts}` : '')}</div>`;
+  return `<div class="downloads">${buttons ? `<div class="buttons">${buttons}</div>` : ''}${releaseLine(release, scripts ? ` · ${scripts}` : '')}</div>`;
 }
 
 // A picture (or a lone image) as { light, dark, alt }: the img's src is the light one, a
@@ -123,21 +135,42 @@ const dedent = (text) => {
  * The README's Markdown with its HTML turned into markers the page fills in (see the top).
  * `blob` is the GitHub URL relative links resolve against ("https://github.com/o/r/blob/main/").
  */
-export function prepareReadme(readme, { blob }) {
+export function prepareReadme(readme, { blob, sections = null, install = null }) {
   let text = readme.replace(/\r\n/g, '\n');
   const htmlTitle = /^<h1\b[^>]*>([\s\S]*?)<\/h1>[ \t]*$/m.exec(text);
   if (htmlTitle) text = text.replace(htmlTitle[0], `# ${htmlTitle[1].trim()}`);
 
-  // The hero: the first picture or lone image before the first section.
+  // The hero: the first picture or lone image before the first section, when there is one.
   const firstSection = text.search(/^## /m);
   const head = firstSection < 0 ? text : text.slice(0, firstSection);
   const heroMatch = /<picture>[\s\S]*?<\/picture>|<p\b[^>]*>\s*<img\b[^>]*>\s*<\/p>/.exec(head);
-  if (!heroMatch) throw new ProductError('README: no picture or image under the title');
-  const hero = pictureOf(heroMatch[0]);
+  let hero = null;
   let caption = '';
-  const after = /^\s*<sub>([\s\S]*?)<\/sub>[ \t]*\n/.exec(text.slice(heroMatch.index + heroMatch[0].length));
-  if (after) caption = after[1].replace(/<[^>]+>/g, '').trim();
-  text = text.slice(0, heroMatch.index) + text.slice(heroMatch.index + heroMatch[0].length + (after ? after[0].length : 0));
+  if (heroMatch) {
+    hero = pictureOf(heroMatch[0]);
+    const after = /^\s*<sub>([\s\S]*?)<\/sub>[ \t]*\n/.exec(text.slice(heroMatch.index + heroMatch[0].length));
+    if (after) caption = after[1].replace(/<[^>]+>/g, '').trim();
+    text = text.slice(0, heroMatch.index) + text.slice(heroMatch.index + heroMatch[0].length + (after ? after[0].length : 0));
+  }
+
+  // Only the named sections, when the page is not the whole README. Fenced code is left alone:
+  // a `## ` inside a block is a comment, not a heading.
+  if (sections) {
+    const parts = text.split(/^(?=## )/m);
+    const intro = parts[0];
+    const blocks = parts.slice(1).map((b) => ({ title: b.split('\n')[0].replace(/^## /, '').trim(), text: b }));
+    for (const name of sections) {
+      if (!blocks.some((b) => b.title.toLowerCase() === name.toLowerCase())) throw new ProductError(`README: no "## ${name}" section to keep`);
+    }
+    text = intro + blocks.filter((b) => sections.some((n) => n.toLowerCase() === b.title.toLowerCase())).map((b) => b.text).join('');
+  }
+
+  // An install block of our own, for a README that has none of its own: ahead of the first section.
+  if (install && !/^1\. \*\*\[Download `[^`]+`\]/m.test(text) && !/^## Install[ \t]*$/m.test(text)) {
+    const at = text.search(/^## /m);
+    const block = `## Install\n\n${install.trim()}\n\n`;
+    text = at < 0 ? `${text.trimEnd()}\n\n${block}` : text.slice(0, at) + block + text.slice(at);
+  }
 
   text = text.replace(/^<p\b[^>]*>([\s\S]*?)<\/p>[ \t]*$/gm, (_, inner) => inlineMarkdown(inner));
   text = text.replace(/^<sub>(.*?)<\/sub>[ \t]*$/gm, (_, inner) => `${MUTED} ${inlineMarkdown(inner)}`);
@@ -177,7 +210,7 @@ function pictureHtml({ light, dark, alt }, images, { lazy = true } = {}) {
 }
 
 /** Every README image the page shows, for build.mjs to copy. */
-export const imagesOf = ({ hero, panels }) => [...new Set([hero, ...panels].flatMap((p) => [p.light, p.dark]))];
+export const imagesOf = ({ hero, panels }) => [...new Set([hero, ...panels].filter(Boolean).flatMap((p) => [p.light, p.dark]))];
 
 /**
  * app: the docs/apps entry (loadApp: title, description, kicker, license, repo, slug); prepared:
@@ -193,7 +226,7 @@ export function productPage({ app, prepared, release, images, theme }) {
     html = html.replace(from, to);
   };
   if (prepared.downloads) swap(DOWNLOADS, downloadsHtml(release));
-  else swap(`<p>${RELEASE}</p>`, `<div class="downloads">${releaseLine(release)}</div>`);
+  else swap(`<p>${RELEASE}</p>`, downloadsHtml(release, { strict: false }));
   flows.forEach((flow, i) => swap(`<p>${FLOW(i)}</p>`, flowHtml(flow)));
   panels.forEach((panel, i) => {
     swap(`<p>${PANEL(i)}</p>`, `<div class="panel"><div class="panel-image">${pictureHtml(panel, images)}</div><div class="panel-body">`);
@@ -245,10 +278,10 @@ ${rail}
           <li>${escapeHtml(release.tag)}</li>${app.repo ? `\n          <li><a class="external" href="${escapeHtml(app.repo)}" target="_blank" rel="noopener">Source on GitHub</a></li>` : ''}
         </ul>
       </header>
-      <figure class="hero-figure">
+${hero ? `      <figure class="hero-figure">
         ${pictureHtml(hero, images, { lazy: false })}${caption ? `\n        <figcaption>${escapeHtml(caption)}</figcaption>` : ''}
       </figure>
-      <div class="prose">
+` : ''}      <div class="prose">
 ${html}
       </div>
     </main>

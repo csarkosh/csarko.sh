@@ -42,7 +42,9 @@ const GAME_FIELDS = { description: true, status: true, tags: true, play: false, 
 // and "alt" describes its card's preview image (assets/apps/<slug>.png, and <slug>-dark.png for
 // the dark theme if it has one), which the card shows only when alt is given. "link" names the
 // card's link to the page ("Download and docs" unless it says otherwise, e.g. "Install and docs").
-const APP_FIELDS = { description: true, status: true, page: true, platforms: true, tags: true, license: false, repo: false, released: false, alt: false, link: false };
+// "order" puts an app ahead of the others (1 first); "sections" names the README's H2 sections
+// its page keeps, in the README's words, when the whole README is not the page.
+const APP_FIELDS = { description: true, status: true, page: true, platforms: true, tags: true, license: false, repo: false, released: false, alt: false, link: false, order: false, sections: false };
 // A film is a video hosted on YouTube: the page carries its poster and links out, so every field
 // here is needed to build the card and its VideoObject. "alt" describes the poster. There is no
 // per-film warning: the page's standing notice speaks for the whole list.
@@ -140,7 +142,14 @@ export function parseAppFrontMatter(text, file) {
   }
   const tags = meta.tags.split(',').map((tag) => tag.trim()).filter(Boolean);
   if (!tags.length || tags.length > 5) throw new DocError(`${file}: tags must be 1 to 5 comma-separated names`);
-  return { meta: { ...meta, tags }, body };
+  let order;
+  if (meta.order !== undefined) {
+    order = Number(meta.order);
+    if (!Number.isInteger(order) || order < 1) throw new DocError(`${file}: order must be a whole number from 1`);
+  }
+  const sections = meta.sections === undefined ? undefined : meta.sections.split(',').map((s) => s.trim()).filter(Boolean);
+  if (sections !== undefined && !sections.length) throw new DocError(`${file}: sections names at least one heading`);
+  return { meta: { ...meta, tags, order, sections }, body };
 }
 
 export function parseFilmFrontMatter(text, file) {
@@ -503,9 +512,13 @@ export const sortGames = (games) =>
     return a.slug < b.slug ? -1 : 1;
   });
 
-// Released apps first, newest first, then what is still being built; ties break on slug.
+// An app with an order comes first, lowest first; then released apps, newest first, then what
+// is still being built; ties break on slug.
 export const sortApps = (apps) =>
   [...apps].sort((a, b) => {
+    const oa = a.order ?? Infinity;
+    const ob = b.order ?? Infinity;
+    if (oa !== ob) return oa - ob;
     if (!a.released !== !b.released) return a.released ? -1 : 1;
     if (a.released !== b.released) return a.released < b.released ? 1 : -1;
     return a.slug < b.slug ? -1 : 1;

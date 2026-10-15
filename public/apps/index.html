@@ -59,6 +59,25 @@
             "position": 1,
             "item": {
               "@type": "SoftwareApplication",
+              "name": "Arkos IDE",
+              "description": "A terminal layout manager for many Claude Code sessions at once: panes with tabs, a docked Chrome pane, a file tree, and a daemon that keeps them alive.",
+              "url": "https://apps.csarko.sh/ide-arkos",
+              "applicationCategory": "DeveloperApplication",
+              "operatingSystem": "macOS",
+              "license": "GPL-3.0",
+              "author": {
+                "@type": "Person",
+                "@id": "https://csarko.sh/#person",
+                "name": "Cyrus Sarkosh",
+                "url": "https://csarko.sh/"
+              }
+            }
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "item": {
+              "@type": "SoftwareApplication",
               "name": "lib-visits",
               "description": "Cookieless web analytics: a 3 KB script and a 1 MB static collector that counts visits and the path each one took, written as JSON lines.",
               "url": "https://apps.csarko.sh/lib-visits",
@@ -75,7 +94,7 @@
           },
           {
             "@type": "ListItem",
-            "position": 2,
+            "position": 3,
             "item": {
               "@type": "SoftwareApplication",
               "name": "MacStats",
@@ -411,6 +430,21 @@
       <p class="lead">Software I have released for anyone to run: what each one does, with its downloads and documentation one click away.</p>
     </header>
     <ul class="app-list" role="list">
+      <li class="card">
+        <div class="app-body">
+          <p class="app-kicker">Released · Open source, GPL-3.0</p>
+          <h2 class="app-title">Arkos IDE</h2>
+          <div class="app-desc prose">
+<p>A grid of terminal panes with tabs for running many Claude Code sessions side by side, a docked
+Chrome pane, and a file tree with a git worktree explorer, in a window that stays light on memory
+and scrolls smoothly. Every session lives in a separate daemon, so a frozen window never loses
+work, and a restart brings them all back where they were.</p>
+<p>Written in Rust with GPUI, for Apple silicon Macs. Installed from the Homebrew tap, it updates itself.</p>
+          </div>
+          <ul class="tags" role="list"><li>Rust</li><li>GPUI</li><li>macOS</li></ul>
+          <a class="card-link stretch" href="https://apps.csarko.sh/ide-arkos" data-visits-event="app-ide-arkos">Install and docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        </div>
+      </li>
       <li class="card app-card">
         <div class="app-preview">
           <!-- generated:app-preview:lib-visits -->

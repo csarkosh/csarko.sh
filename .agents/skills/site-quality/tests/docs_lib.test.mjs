@@ -715,3 +715,11 @@ test('an app with an alt gets a preview the asset build fills, laid out as a fil
   assert.ok(appsPage([app('m', ['link: Install and docs'])], themeBlocks(INDEX)).includes('data-visits-event="app-m">Install and docs <svg'));
   assert.equal(jsonLd(html).find((n) => n['@type'] === 'CollectionPage').mainEntity.itemListElement[0].item.operatingSystem, 'Linux, macOS');
 });
+
+test('an app with an order leads the list whatever its date, and sections and order are checked', () => {
+  const apps = sortApps([app('a', ['released: 2026-10-15']), app('z', ['released: 2026-01-01', 'order: 1']), app('m', ['order: 2'])]);
+  assert.deepEqual(apps.map((x) => x.slug), ['z', 'm', 'a']);
+  assert.deepEqual(app('s', ['sections: Keyboard, Config , License']).sections, ['Keyboard', 'Config', 'License']);
+  assert.throws(() => app('x', ['order: 0']), /order must be a whole number from 1/);
+  assert.throws(() => app('x', ['sections: , ']), /sections names at least one heading/);
+});
