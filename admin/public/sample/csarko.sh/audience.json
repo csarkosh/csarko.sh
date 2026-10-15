@@ -121,19 +121,19 @@
   ],
   "viewports": [
     {
-      "name": "Under 480",
+      "name": "under 400",
       "visitors": 97
     },
     {
-      "name": "480 to 767",
+      "name": "400 to 799",
       "visitors": 17
     },
     {
-      "name": "768 to 1279",
+      "name": "800 to 1199",
       "visitors": 44
     },
     {
-      "name": "1280 and up",
+      "name": "1200 and up",
       "visitors": 49
     }
   ],
