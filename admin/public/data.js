@@ -29,7 +29,12 @@ async function readJson(url, init) {
   } catch (error) {
     throw new Error(`could not reach ${new URL(url, location.href).host}: ${error.message}`);
   }
-  if (!response.ok) throw new Error(`${response.status} ${response.statusText || ''}`.trim());
+  if (!response.ok) {
+    // Every API answers a failure as `{ error }`; that message says whose fault it was.
+    const body = await response.json().catch(() => null);
+    const said = typeof body?.error === 'string' && body.error !== '' ? body.error : response.statusText || '';
+    throw new Error(`${response.status}${said ? `: ${said}` : ''}`);
+  }
   return response.json();
 }
 

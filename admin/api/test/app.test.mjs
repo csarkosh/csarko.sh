@@ -2,6 +2,7 @@ import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 import { createApp } from "../src/app.mjs";
+import { UpstreamError } from "../src/http.mjs";
 import { IpLimiter } from "../src/limiter.mjs";
 
 const TOKEN = "a-signed-id-token-for-an-allowed-account";
@@ -13,9 +14,9 @@ const queries = {
   async pages(days) { return { days }; },
   async referrers(days) { return { days }; },
   async events(days) { return { days }; },
-  async audience(days) { return { days }; },
+  async audience(days) { if (days === 90) throw new UpstreamError("GoatCounter unreachable (ECONNRESET)"); return { days }; },
   async search(days) { return { days }; },
-  async reach(days) { return { days }; },
+  async reach(days) { if (days === 90) throw Object.assign(new TypeError("fetch failed"), { cause: { code: "ETIMEDOUT" } }); return { days }; },
   async health(days) { if (days === 90) throw new Error("boom"); return { days }; },
   async manual(key, value) { calls.push(["manual", key, value]); return { ok: true, at: "t" }; },
   async snapshot() { calls.push(["snapshot"]); return { date: "2026-10-12" }; },
@@ -72,6 +73,13 @@ test("the routes", async () => {
   const failed = await call(server, "GET", "/admin/query/health?days=90", auth("3.3.3.3"));
   assert.equal(failed.status, 500);
   assert.deepEqual(failed.body, { error: "boom" });
+
+  const upstream = await call(server, "GET", "/admin/query/audience?days=90", auth("3.3.3.3"));
+  assert.equal(upstream.status, 502, "a vendor that failed is a bad gateway, not our 500");
+  assert.deepEqual(upstream.body, { error: "GoatCounter unreachable (ECONNRESET)" });
+  const unnamed = await call(server, "GET", "/admin/query/reach?days=90", auth("3.3.3.3"));
+  assert.equal(unnamed.status, 502, "any collector's failed fetch is a bad gateway too");
+  assert.deepEqual(unnamed.body, { error: "an upstream service was unreachable (ETIMEDOUT)" });
 
   const manual = await call(server, "POST", "/admin/manual/substack", { ...auth("4.4.4.4"), headers: { ...auth().headers, "content-type": "application/json" }, body: JSON.stringify({ value: 12 }) });
   assert.equal(manual.status, 200);

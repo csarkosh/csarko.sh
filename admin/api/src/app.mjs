@@ -19,7 +19,7 @@
  */
 
 import { bearerOf, audiencesFor } from "./auth.mjs";
-import { answer, fail, readBody, parseDays, isAllowedOrigin, corsHeaders, preflightHeaders } from "./http.mjs";
+import { answer, fail, failureOf, readBody, parseDays, isAllowedOrigin, corsHeaders, preflightHeaders } from "./http.mjs";
 import { clientIpOf } from "./limiter.mjs";
 import { isQueryName, isManualKey } from "./queries.mjs";
 
@@ -70,7 +70,8 @@ export function createApp({ config, queries, limiter, adminAuth, oidc, now = Dat
       } catch (error) {
         // The cause goes to the log, where it can be read later; the page gets the message.
         log.error(`admin: ${req.method} ${path} failed`, error);
-        fail(res, 500, error instanceof Error ? error.message : String(error), cors);
+        const { status, message } = failureOf(error);
+        fail(res, status, message, cors);
       }
     })();
   };

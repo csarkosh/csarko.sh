@@ -6,6 +6,8 @@
  * most three a second and through the shared cache (five minutes by URL), so
  * eight cards loading at once cost a handful of requests and never a 429. A
  * 429 that does arrive is honoured once, for `X-Rate-Limit-Reset` seconds.
+ * Anything else that goes wrong between here and GoatCounter is an
+ * `UpstreamError`, which the route answers as a 502 naming GoatCounter.
  *
  * Shapes, from `https://www.goatcounter.com/api.json` (read 2026-10-12):
  *
@@ -20,6 +22,8 @@
  * exists in the API. The mapping below reports `pageviews: null` rather than
  * copying the visit count into a field that would read as something else.
  */
+
+import { UpstreamError } from "../http.mjs";
 
 const RATE_PER_SECOND = 3;
 
@@ -47,7 +51,13 @@ export function createGoatCounter({ site, token, fetch, cache, now = Date.now, s
 
   async function request(url, retried = false) {
     await slot();
-    const res = await fetch(url, { headers: { authorization: `Bearer ${token}`, "content-type": "application/json", accept: "application/json" } });
+    let res;
+    try {
+      res = await fetch(url, { headers: { authorization: `Bearer ${token}`, "content-type": "application/json", accept: "application/json" } });
+    } catch (error) {
+      const code = error?.cause?.code ?? error?.code;
+      throw new UpstreamError(`GoatCounter unreachable${code ? ` (${code})` : ""}`, { cause: error });
+    }
     if (res.status === 429 && !retried) {
       const wait = Math.min(30, Math.max(1, Number(res.headers.get("x-rate-limit-reset") ?? "2")));
       log.warn(`goatcounter: 429, waiting ${wait}s`);
@@ -56,7 +66,7 @@ export function createGoatCounter({ site, token, fetch, cache, now = Date.now, s
     }
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      throw new Error(`goatcounter ${res.status} on ${url.replace(base, "")}: ${body.slice(0, 200)}`);
+      throw new UpstreamError(`goatcounter ${res.status} on ${url.replace(base, "")}: ${body.slice(0, 200)}`);
     }
     return res.json();
   }

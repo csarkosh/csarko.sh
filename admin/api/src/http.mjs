@@ -40,6 +40,33 @@ export function fail(res, status, message, headers = {}) {
   answer(res, status, { error: message }, headers);
 }
 
+/**
+ * A vendor that could not be reached or answered with an error: the route
+ * answers 502 with this message, so the card says whose fault it was rather
+ * than showing a bare 500 that reads as ours.
+ */
+export class UpstreamError extends Error {
+  constructor(message, options) {
+    super(message, options);
+    this.name = "UpstreamError";
+  }
+}
+
+/**
+ * The status and message for an error a route threw: 502 for an
+ * `UpstreamError`, and for any collector's `fetch` that failed below HTTP
+ * (undici's "fetch failed", its cause carrying the socket's code); 500 for
+ * the rest.
+ */
+export function failureOf(error) {
+  if (error instanceof UpstreamError) return { status: 502, message: error.message };
+  if (error instanceof TypeError && error.message === "fetch failed") {
+    const code = error.cause?.code;
+    return { status: 502, message: `an upstream service was unreachable${code ? ` (${code})` : ""}` };
+  }
+  return { status: 500, message: error instanceof Error ? error.message : String(error) };
+}
+
 /** The body up to `maxBytes`, or null past it: the request is destroyed at the cap. */
 export function readBody(req, maxBytes) {
   return new Promise((resolve) => {

@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createCache } from "../src/cache.mjs";
+import { UpstreamError } from "../src/http.mjs";
 import { createGoatCounter, visitsOf, perDayOf, pageRowsOf, eventRowsOf, eventKindOf, outboundRateOf, outboundOf, namedRowsOf } from "../src/collectors/goatcounter.mjs";
 import { hourlyRange } from "../src/time.mjs";
 
@@ -98,4 +99,13 @@ test("the queue starts at most three requests a second", async () => {
   const gc = createGoatCounter({ site: "x", token: "t", fetch, cache: createCache({ now: () => t }), now: () => t, sleep: async (ms) => { slept.push(ms); t += ms; } });
   await Promise.all(["a", "b", "c", "d", "e", "f", "g"].map((p) => gc.page(p, "s", "e")));
   assert.deepEqual(starts, [0, 0, 0, 1000, 1000, 1000, 2000]);
+});
+
+test("GoatCounter refusing the connection or answering an error is an upstream failure that names it", async () => {
+  const reset = Object.assign(new TypeError("fetch failed"), { cause: Object.assign(new Error("read ECONNRESET"), { code: "ECONNRESET" }) });
+  const down = createGoatCounter({ site: "csarko", token: "t", fetch: async () => { throw reset; }, cache: createCache() });
+  await assert.rejects(down.total("a", "b"), (error) => error instanceof UpstreamError && error.message === "GoatCounter unreachable (ECONNRESET)" && error.cause === reset);
+
+  const failing = createGoatCounter({ site: "csarko", token: "t", fetch: async () => ({ ok: false, status: 503, headers: new Map(), text: async () => "maintenance" }), cache: createCache() });
+  await assert.rejects(failing.total("a", "b"), (error) => error instanceof UpstreamError && /^goatcounter 503 on stats\/total/.test(error.message));
 });
