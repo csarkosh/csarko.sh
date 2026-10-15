@@ -26,8 +26,8 @@ let app = null;
 let range = 7;
 let generation = 0;
 
-const rangeText = (days) => (days === 1 ? 'today' : `the last ${days} days`);
-const previousText = (days) => (days === 1 ? 'yesterday' : `the ${days} days before`);
+const rangeText = (days) => (days === 1 ? 'the last 24 hours' : `the last ${days} days`);
+const previousText = (days) => (days === 1 ? 'the 24 hours before' : `the ${days} days before`);
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const num = (v) => (isNum(v) ? v : 0);
 const str = (v) => (v === null || v === undefined ? '' : String(v));
@@ -117,11 +117,14 @@ function eventsCard([events, visits], days) {
   if (!events.rows) return [notConfigured(missing(events, 'visits'))];
   const rows = events.rows;
   const byKind = (kind) => rows.filter((r) => r.kind === kind).reduce((n, r) => n + num(r.visitors), 0);
-  const out = byKind('out');
+  // The API's distinct count of visitors who clicked out; without it (older answers) the per-link
+  // visitor counts are summed, which counts a visitor once per link.
+  const distinct = isNum(events.outboundVisitors);
+  const out = distinct ? events.outboundVisitors : byKind('out');
   const total = visits?.current ? num(visits.current.visits) : null;
   const rate = isNum(events.outboundRate) ? events.outboundRate : null;
   const tiles = el('div', { class: 'tiles' },
-    tile('Outbound clicks', out, { note: rate === null ? 'LinkedIn, GitHub, Substack, YouTube' : `${pct(rate)} of home page visitors went on to a profile` }),
+    tile(distinct ? 'Visitors who clicked out' : 'Outbound clicks', out, { note: rate === null ? 'LinkedIn, GitHub, Substack, YouTube' : `${pct(rate)} of home page visitors went on to a profile` }),
     tile('Went to play', byKind('play'), { note: 'Play in your browser, on /games' }),
     tile('Went to watch', byKind('watch'), { note: 'Watch on YouTube, on /film' }),
     tile('Read to the end', byKind('read'), { note: 'Reached the last line of a doc' }));
@@ -129,7 +132,7 @@ function eventsCard([events, visits], days) {
     ? el('p', { class: 'empty' }, 'Visits are not available, so the share of visits cannot be drawn.')
     : bars([
       { name: 'Visits', value: total, detail: `Visits ${rangeText(days)}` },
-      { name: 'Clicked out', value: out, detail: 'Outbound clicks' },
+      { name: 'Clicked out', value: out, detail: distinct ? 'Visitors who clicked out' : 'Outbound clicks' },
       { name: 'Went to play', value: byKind('play'), detail: 'Play clicks' },
       { name: 'Went to watch', value: byKind('watch'), detail: 'Watch clicks' },
     ], { ramp: true, share: true, label: 'From a visit to a click out, as a share of visits' });
@@ -137,60 +140,166 @@ function eventsCard([events, visits], days) {
     { key: 'name', label: 'Event', render: mono },
     { key: 'kind', label: 'Kind', render: (v) => KINDS[str(v)] ?? cap(str(v)) },
     { key: 'visitors', label: 'Visitors', num: true },
+    { key: 'clicks', label: 'Clicks', num: true, render: (v) => (isNum(v) ? v.toLocaleString('en-US') : '') },
   ], [...rows].sort((a, b) => b.visitors - a.visitors), 'No events in this range: the public site has none wired yet.'));
   return [...errorLines(events, visits), tiles, el('h3', {}, 'Share of visits'), funnel, list];
 }
 
 // ---------------------------------------------------------------- journeys
 
-/** Engaged seconds as "41s" or "3m 05s". */
-const duration = (s) => (s >= 60 ? `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s` : `${s}s`);
-const clock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+/** Seconds as "41s" or "3m 05s": the engaged and visible figures. */
+const duration = (s) => { const n = Math.max(0, Math.round(s)); return n >= 60 ? `${Math.floor(n / 60)}m ${String(n % 60).padStart(2, '0')}s` : `${n}s`; };
+/** Seconds as m:ss: positions on the timeline and spans. */
+const clock = (s) => { const n = Math.max(0, Math.round(s)); return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`; };
 const SOURCE_NAMES = { 'google.com': 'Google', 'bing.com': 'Bing', 'duckduckgo.com': 'DuckDuckGo', 'github.com': 'GitHub', 'linkedin.com': 'LinkedIn', 'substack.com': 'Substack', 'youtube.com': 'YouTube', 'chatgpt.com': 'ChatGPT', 't.co': 'X' };
-const sourceName = (src) => (src.kind === 'external' ? SOURCE_NAMES[src.host] ?? src.host : src.kind === 'internal' ? 'This site' : 'Direct');
+/** The host's name by suffix (www.google.com is Google too), else the host as given. */
+function hostName(host) {
+  const h = str(host).toLowerCase();
+  for (const [suffix, name] of Object.entries(SOURCE_NAMES)) if (h === suffix || h.endsWith(`.${suffix}`)) return name;
+  return str(host);
+}
+const sourceName = (src) => (src?.kind === 'external' ? hostName(src.host) || 'Elsewhere' : src?.kind === 'internal' ? 'This site' : 'Direct');
 const ARROW_SVG = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const arrow = () => { const a = el('li', { class: 'j-arrow', 'aria-hidden': 'true' }); a.innerHTML = ARROW_SVG; return a; };
 
-/** One visit, left to right: where it came from, each page with its time and depth, how it ended. */
+const NY_CLOCK = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+/** The visit's start on a New York wall clock, "Wed 3:41 pm"; with the date once the weekday alone is ambiguous, "Wed 8 Oct 3:41 pm". */
+function wallClock(iso, now) {
+  const ms = Date.parse(str(iso));
+  if (!Number.isFinite(ms)) return '';
+  const p = Object.fromEntries(NY_CLOCK.formatToParts(ms).filter((x) => x.type !== 'literal').map((x) => [x.type, x.value]));
+  const date = now - ms > 6 * 86_400_000 ? ` ${p.day} ${p.month}` : '';
+  return `${p.weekday}${date} ${p.hour}:${p.minute} ${str(p.dayPeriod).toLowerCase()}`;
+}
+
+/** "Chrome 155 · macOS · 1512×982 · America/New_York · dark · touch · en-US", the unknowns left out. */
+function deviceLine(d) {
+  if (!d) return '';
+  const vp = Array.isArray(d.viewport) && isNum(d.viewport[0]) && isNum(d.viewport[1]) ? `${d.viewport[0]}×${d.viewport[1]}` : '';
+  return [[d.browser, d.version].map(str).filter(Boolean).join(' '), d.os, vp, d.tz, d.theme, d.touch === true ? 'touch' : '', d.lang].map(str).filter(Boolean).join(' · ');
+}
+
+/** The LCP chip: the figure, graded by Google's thresholds (good to 2.5 s, needs work to 4 s, poor past it), with CLS and INP in small beside it. */
+function lcpChip(s) {
+  if (!isNum(s.lcp)) return null;
+  const sec = s.lcp / 1000;
+  const grade = sec <= 2.5 ? 'good' : sec <= 4 ? 'needs' : 'poor';
+  const word = grade === 'good' ? 'good' : grade === 'needs' ? 'needs work' : 'poor';
+  const extra = [isNum(s.cls) ? `CLS ${s.cls.toFixed(2)}` : '', isNum(s.inp) ? `INP ${Math.round(s.inp)} ms` : ''].filter(Boolean);
+  const text = `LCP ${sec.toFixed(1)} s`;
+  const chip = el('span', { class: `j-lcp ${grade}`, title: `${text}, ${word}` }, text);
+  if (grade !== 'good') chip.append(el('small', {}, ` · ${word}`));
+  if (!extra.length) return chip;
+  return el('span', { class: 'j-vitals' }, chip, el('span', { class: 'j-small' }, extra.join(' · ')));
+}
+
+const NAV_TAGS = { reload: 'reloaded', back_forward: 'back', prerender: 'prerendered' };
+
+/** One page of a journey: when it was reached, its title and path, how far it was scrolled, how long it was visible and on screen, its LCP. */
+function pageNode(s, i) {
+  const at = num(s.at);
+  const secs = isNum(s.secs) ? s.secs : null;
+  const onPage = isNum(s.left) ? Math.max(0, s.left - at) : null;
+  const kicker = el('span', { class: 'j-kicker' }, `Page ${i + 1} · at ${clock(at)}`);
+  if (NAV_TAGS[s.nav]) kicker.append(' ', el('span', { class: 'j-tag' }, NAV_TAGS[s.nav]));
+  const depthKnown = isNum(s.depth);
+  const depthPct = depthKnown ? Math.max(0, Math.min(100, Math.round(s.depth))) : 0;
+  const depth = el('span', { class: 'j-depth', role: 'img', 'aria-label': depthKnown ? `Scrolled ${depthPct}%` : 'No scroll depth recorded' }, el('span', { style: `width:${depthPct}%` }));
+  const scrolled = el('span', { class: 'j-small' }, depthKnown ? `scrolled ${depthPct}%` : secs === null ? 'no leave beacon' : 'no scroll depth');
+  const read = s.read === true ? el('span', { class: 'j-badge' }, 'read to the end') : s.read === false ? el('span', { class: 'j-small' }, 'not to the end') : null;
+  const time = el('span', { class: 'j-time' }, secs === null ? '–' : duration(secs), el('small', {}, ' visible'));
+  const wall = onPage !== null && (secs === null || Math.round(onPage) !== Math.round(secs)) ? el('span', { class: 'j-small' }, `on page ${clock(onPage)}`) : null;
+  return el('li', { class: 'j-node' }, kicker,
+    el('span', { class: 'j-title', title: str(s.title || s.path) }, str(s.title || s.path)),
+    el('span', { class: 'j-path mono', title: str(s.path) }, str(s.path)),
+    depth, scrolled, read, lcpChip(s), time, wall);
+}
+
+/** How the visit ended: the click out, or the last time the visitor was seen. */
+function exitNode(exit, lastSeen) {
+  if (exit?.kind === 'click') {
+    return el('li', { class: 'j-node edge' },
+      el('span', { class: 'j-kicker' }, 'Left by a click'),
+      el('span', { class: 'j-main' }, `Clicked out to ${str(exit.host) || 'a link'}`),
+      el('span', { class: 'j-small mono', title: str(exit.url || exit.event) }, exit.event ? `event ${exit.event}` : str(exit.url) || 'no event name or url'));
+  }
+  return el('li', { class: 'j-node edge' },
+    el('span', { class: 'j-kicker' }, 'Exit'),
+    el('span', { class: 'j-main' }, lastSeen === null ? 'Ended here' : 'Left'),
+    el('span', { class: 'j-small' }, lastSeen === null ? 'no leave beacon from the last page' : `last seen +${clock(lastSeen)}`));
+}
+
+/** One visit: its header and device, then left to right from where it came to how it left, and the strip of time on each page. */
 function journey(j, now) {
-  const last = j.steps[j.steps.length - 1];
-  const ends = (last?.at ?? 0) + (last?.secs ?? 0);
+  const steps = Array.isArray(j.steps) ? j.steps : [];
+  const first = steps[0];
+  const last = steps[steps.length - 1];
+  const lastLeft = steps.reduce((m, s) => (isNum(s.left) ? Math.max(m, s.left) : m), -1);
+  const lastSeen = lastLeft >= 0 ? lastLeft : last && isNum(last.secs) ? num(last.at) + last.secs : null;
+  const span = lastSeen !== null && first ? lastSeen - num(first.at) : null;
+  const n = steps.length;
+  const src = j.source ?? { kind: 'direct' };
   const from = el('li', { class: 'j-node edge' },
     el('span', { class: 'j-kicker' }, 'Arrived from'),
-    el('span', { class: 'j-main' }, sourceName(j.source)),
-    el('span', { class: 'j-small' }, j.source.campaign ? `tagged ${j.source.campaign}` : j.source.kind === 'external' ? j.source.host : j.source.kind === 'direct' ? 'no referrer' : 'an earlier visit'));
+    el('span', { class: 'j-main' }, sourceName(src)),
+    el('span', { class: 'j-small mono', title: str(src.kind === 'internal' ? src.path : src.host) || null }, src.kind === 'external' ? str(src.host) : src.kind === 'internal' ? str(src.path) || 'an earlier page' : 'no referrer'));
   const items = [from];
-  j.steps.forEach((s, i) => {
-    const depth = el('span', { class: 'j-depth', title: s.depth === null ? 'No scroll depth recorded' : `Scrolled ${s.depth}%` }, el('span', { style: `width:${s.depth ?? 0}%` }));
-    items.push(arrow(), el('li', { class: 'j-node' },
-      el('span', { class: 'j-kicker' }, `Page ${i + 1} · at ${clock(s.at)}`),
-      el('span', { class: 'j-main mono', title: s.title || s.path }, s.path),
-      depth,
-      s.read ? el('span', { class: 'j-badge' }, 'read to the end') : el('span', { class: 'j-small' }, s.depth === null ? 'no leave beacon yet' : `scrolled ${s.depth}%`),
-      el('span', { class: 'j-time' }, s.secs === null ? '' : duration(s.secs), s.secs === null ? '' : el('small', {}, ' engaged'))));
-  });
-  items.push(arrow(), el('li', { class: 'j-node edge' },
-    el('span', { class: 'j-kicker' }, 'Left'),
-    el('span', { class: 'j-main' }, j.exit.kind === 'click' ? `Clicked out to ${j.exit.host ?? 'a link'}` : 'Ended here'),
-    el('span', { class: 'j-small' }, j.exit.kind === 'click' ? (j.exit.event ? `event ${j.exit.event}` : j.exit.url) : 'closed, idled or went back')));
-  const timed = j.steps.filter((s) => isNum(s.secs) && s.secs > 0);
-  const strip = timed.length
-    ? el('div', { class: 'j-strip', role: 'img', 'aria-label': `Engaged time: ${timed.map((s) => `${s.path} ${duration(s.secs)}`).join(', ')}` },
-      ...timed.map((s, i) => el('span', { style: `flex:${s.secs} 1 0`, class: `ord-${Math.min(4, timed.length - i)}`, title: `${s.path}: ${duration(s.secs)}` })))
+  steps.forEach((s, i) => items.push(arrow(), pageNode(s, i)));
+  items.push(arrow(), exitNode(j.exit, lastSeen));
+  // The strip: one segment per page, sized by its wall time (left - at), by its visible time when the leave is unknown.
+  const sized = steps.map((s) => ({ path: str(s.path), size: isNum(s.left) ? Math.max(0, s.left - num(s.at)) : isNum(s.secs) ? s.secs : 0 })).filter((s) => s.size > 0);
+  const strip = sized.length
+    ? el('div', { class: 'j-strip', role: 'img', 'aria-label': `Time on each page: ${sized.map((s) => `${s.path} ${clock(s.size)}`).join(', ')}` },
+      ...sized.map((s, i) => el('span', { style: `flex:${s.size} 1 0`, class: `ord-${Math.min(4, sized.length - i)}`, title: `${s.path}: ${clock(s.size)}` })))
     : null;
   const head = el('p', { class: 'j-head' },
-    el('span', {}, ago(j.started, now)),
-    ` · ${j.engaged === null ? 'no engaged time yet' : `${duration(j.engaged)} engaged`} · ${j.steps.length} page${j.steps.length === 1 ? '' : 's'}${ends ? ` over ${clock(ends)}` : ''}`);
-  return el('li', { class: 'journey' }, head, el('ol', { class: 'j-flow', 'aria-label': `Journey from ${sourceName(j.source)}` }, ...items), strip);
+    el('span', { class: 'j-when' }, wallClock(j.started, now)),
+    ` · ${ago(j.started, now)} · ${isNum(j.engaged) ? `${duration(j.engaged)} engaged` : 'no engaged time'} · ${n} page${n === 1 ? '' : 's'}${span !== null ? ` over ${clock(span)}` : ''}`);
+  const chips = [];
+  if (num(j.stitched) > 0) chips.push(el('span', { class: 'badge' }, 'stitched across midnight'));
+  if (j.suspect) chips.push(el('span', { class: 'badge warn' }, 'suspect: UTC clock, no engaged time'));
+  if (src.campaign) chips.push(el('span', { class: 'badge' }, `tagged ${str(src.campaign)}`));
+  const device = deviceLine(j.device);
+  const meta = el('div', { class: 'j-meta' }, device ? el('span', { class: 'j-device mono' }, device) : null, chips.length ? el('span', { class: 'tags j-chips' }, ...chips) : null);
+  return el('li', { class: `journey${j.suspect ? ' suspect' : ''}` }, head, meta, el('ol', { class: 'j-flow', 'aria-label': `Journey from ${sourceName(src)}` }, ...items), strip);
 }
+
+const JOURNEY_FILTERS = [
+  { id: 'suspect', label: 'Hide suspect', on: true, keep: (j) => !j.suspect },
+  { id: 'multi', label: 'Only 2+ pages', on: false, keep: (j) => (j.steps?.length ?? 0) >= 2 },
+  { id: 'click', label: 'Only with a click', on: false, keep: (j) => j.exit?.kind === 'click' },
+];
+const JOURNEYS_SHOWN = 8;
 
 function journeysCard([journeys]) {
   if (!journeys.rows) return [notConfigured(missing(journeys, 'visits'))];
   const rows = journeys.rows;
   if (!rows.length) return [...errorLines(journeys), el('p', { class: 'empty' }, 'No visits in this range yet. Journeys start at the cutover to lib-visits, 2026-10-15.')];
   const now = Date.now();
+  const state = Object.fromEntries(JOURNEY_FILTERS.map((f) => [f.id, f.on]));
+  const hidden = el('span', { class: 'j-hidden', role: 'status' });
+  const host = el('div', { class: 'j-list' });
   const list = (items) => el('ol', { class: 'journeys', role: 'list' }, ...items.map((j) => journey(j, now)));
-  return [...errorLines(journeys), list(rows.slice(0, 5)), rows.length > 5 ? folded(`More journeys · ${rows.length - 5}`, list(rows.slice(5))) : null].filter(Boolean);
+  const render = () => {
+    const kept = rows.filter((j) => JOURNEY_FILTERS.every((f) => !state[f.id] || f.keep(j)));
+    const n = rows.length - kept.length;
+    hidden.textContent = n ? `${n} hidden` : '';
+    host.replaceChildren(...[
+      kept.length ? list(kept.slice(0, JOURNEYS_SHOWN)) : el('p', { class: 'empty' }, 'Every journey in this range is hidden by the filters.'),
+      kept.length > JOURNEYS_SHOWN ? folded(`More journeys · ${kept.length - JOURNEYS_SHOWN}`, list(kept.slice(JOURNEYS_SHOWN))) : null,
+    ].filter(Boolean));
+  };
+  const buttons = JOURNEY_FILTERS.map((f) => {
+    const b = el('button', { type: 'button', 'aria-pressed': String(state[f.id]) }, f.label);
+    b.addEventListener('click', () => {
+      state[f.id] = !state[f.id];
+      b.setAttribute('aria-pressed', String(state[f.id]));
+      render();
+    });
+    return b;
+  });
+  render();
+  return [...errorLines(journeys), el('div', { class: 'j-filters', role: 'group', 'aria-label': 'Journey filters' }, ...buttons, hidden), host];
 }
 
 function searchCard([search], days) {
@@ -367,13 +476,26 @@ function audienceCard([audience]) {
   return [...errorLines(audience), el('p', { class: 'sub' }, summary || 'Who the visitors are'), folded('Countries, screen sizes, browsers, systems, languages, theme, viewport, input, timezones', cols)];
 }
 
+const GOATCOUNTER_NOTE = "Before the cutover, counts are GoatCounter's, a browser once per page per session.";
+/**
+ * The Visitors card's sub: the range (the API's own `label` when it sends one, "last 24 hours"
+ * for a day), and that a visit's day is UTC (`dayLabel`), which rolls at 8 pm New York in summer.
+ */
+function visitorsSub(d, visits) {
+  const label = typeof visits?.label === 'string' && visits.label ? `the ${visits.label.replace(/^the /, '')}` : rangeText(d);
+  const dayNote = visits?.dayLabel && visits.dayLabel !== 'utc'
+    ? `A visit is one browser on one day (${visits.dayLabel}); nothing is stored in it.`
+    : "A visit is one browser on one UTC day, which rolls at 8 pm New York in summer and 7 pm in winter; nothing is stored in it.";
+  return `Visits ${label}, against ${previousText(d)}. ${dayNote} ${GOATCOUNTER_NOTE}`;
+}
+
 /** Each card: its queries, its copy, how it renders, and the skeleton that stands in for it while the queries run. */
 const CARDS = [
-  { id: 'visitors', title: 'Visitors', queries: ['visits'], sub: (d) => `Visits ${rangeText(d)}, against ${previousText(d)}. A visit is one browser on one day; nothing is stored in it. Before the cutover the counts are GoatCounter's, a browser once per page; since then, once per day.`, render: visitorsCard, skeleton: { tiles: 2, chart: true } },
-  { id: 'referrers', title: 'Where they come from', half: true, queries: ['referrers'], sub: () => 'Visitors by where the visit started; the raw referrers and the tagged links folded below.', render: referrersCard, skeleton: { lines: 6 } },
-  { id: 'pages', title: 'What they read', half: true, queries: ['pages'], sub: () => 'Pages by visitors; the paths that hit the 404 page folded below.', render: pagesCard, skeleton: { lines: 6 } },
-  { id: 'events', title: 'Where they go next', queries: ['events', 'visits'], sub: () => 'Clicks out to a profile, to play, to watch, and docs read to the end.', render: eventsCard, skeleton: { tiles: 3, lines: 4 } },
-  { id: 'journeys', title: 'Journeys', queries: ['journeys'], sub: () => 'The most recent visits, each from where it came to how it left: every page with its engaged time and scroll depth, and the click that ended it. From lib-visits, so since the cutover only.', render: journeysCard, skeleton: { lines: 6 } },
+  { id: 'visitors', title: 'Visitors', queries: ['visits'], sub: visitorsSub, render: visitorsCard, skeleton: { tiles: 2, chart: true } },
+  { id: 'referrers', title: 'Where they come from', half: true, queries: ['referrers'], sub: () => `Visitors by where the visit started; the raw referrers and the tagged links folded below. ${GOATCOUNTER_NOTE}`, render: referrersCard, skeleton: { lines: 6 } },
+  { id: 'pages', title: 'What they read', half: true, queries: ['pages'], sub: () => `Pages by visitors; the paths that hit the 404 page folded below. ${GOATCOUNTER_NOTE}`, render: pagesCard, skeleton: { lines: 6 } },
+  { id: 'events', title: 'Where they go next', queries: ['events', 'visits'], sub: () => `Clicks out to a profile, to play, to watch, and docs read to the end. ${GOATCOUNTER_NOTE}`, render: eventsCard, skeleton: { tiles: 3, lines: 4 } },
+  { id: 'journeys', title: 'Journeys', queries: ['journeys'], sub: () => 'The most recent visits, newest first, each from where it came to how it left: every page with when it was reached, how far it was scrolled, how long it was visible and on screen, its LCP, and the click that ended the visit. From lib-visits, so since the cutover only.', render: journeysCard, skeleton: { lines: 6 } },
   { id: 'search', title: 'Search', queries: ['search'], sub: (d, s) => s?.lag ?? 'Google Search Console runs 2 to 3 days behind.', render: searchCard, skeleton: { tiles: 4, chart: true } },
   { id: 'reach', title: 'Reach', queries: ['reach'], sub: () => 'YouTube, GitHub, Hacker News and Substack: exposure beyond the site. A section reads Not configured until its credential is in Secret Manager.', render: reachCard, skeleton: { tiles: 3, lines: 4 } },
   { id: 'health', title: 'Health', half: true, queries: ['health'], sub: () => '', render: healthCard, skeleton: { tiles: 4, lines: 1 } },

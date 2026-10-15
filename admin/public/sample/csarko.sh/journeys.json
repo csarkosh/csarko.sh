@@ -2,204 +2,123 @@
   "rows": [
     {
       "started": "2026-10-15T14:05:12Z",
-      "source": {
-        "kind": "external",
-        "host": "google.com"
-      },
+      "source": { "kind": "external", "host": "www.google.com" },
+      "device": { "browser": "Chrome", "version": "155", "os": "macOS", "viewport": [1512, 982], "tz": "America/New_York", "theme": "dark", "touch": false, "lang": "en-US" },
       "steps": [
-        {
-          "path": "/",
-          "title": "Cyrus Sarkosh",
-          "at": 0,
-          "secs": 41,
-          "depth": 70,
-          "read": false
-        },
-        {
-          "path": "/research",
-          "title": "Research & notes",
-          "at": 41,
-          "secs": 22,
-          "depth": 45,
-          "read": false
-        },
-        {
-          "path": "/research/stylized-shader-looks",
-          "title": "Stylized shader looks",
-          "at": 63,
-          "secs": 185,
-          "depth": 100,
-          "read": true
-        }
+        { "path": "/", "title": "Cyrus Sarkosh", "at": 0, "left": 44, "secs": 41, "depth": 70, "read": null, "nav": "navigate", "lcp": 1240, "cls": 0.01, "inp": 48 },
+        { "path": "/research", "title": "Research & notes", "at": 44, "left": 66, "secs": 22, "depth": 45, "read": null, "nav": "navigate", "lcp": 980, "cls": 0, "inp": 32 },
+        { "path": "/research/stylized-shader-looks", "title": "Stylized shader looks", "at": 66, "left": 251, "secs": 185, "depth": 100, "read": true, "nav": "navigate", "lcp": 1810, "cls": 0.02, "inp": 120 }
       ],
-      "exit": {
-        "kind": "click",
-        "event": "out-github",
-        "url": "https://github.com/csarkosh",
-        "host": "github.com"
-      },
-      "engaged": 248
+      "exit": { "kind": "click", "event": "out-github", "url": "https://github.com/csarkosh", "host": "github.com" },
+      "engaged": 248,
+      "stitched": 0,
+      "suspect": false
     },
     {
       "started": "2026-10-15T12:41:03Z",
-      "source": {
-        "kind": "external",
-        "host": "substack.com",
-        "campaign": "substack"
-      },
+      "source": { "kind": "external", "host": "substack.com", "campaign": "substack" },
+      "device": { "browser": "Safari", "version": "26", "os": "iOS", "viewport": [390, 664], "tz": "America/Los_Angeles", "theme": "light", "touch": true, "lang": "en-US" },
       "steps": [
-        {
-          "path": "/research/telemetry-without-identifying-anyone",
-          "title": "Telemetry without identifying anyone",
-          "at": 0,
-          "secs": 312,
-          "depth": 100,
-          "read": true
-        },
-        {
-          "path": "/apps",
-          "title": "Apps and libraries",
-          "at": 312,
-          "secs": 18,
-          "depth": 60,
-          "read": false
-        }
+        { "path": "/research/telemetry-without-identifying-anyone", "title": "Telemetry without identifying anyone", "at": 0, "left": 318, "secs": 312, "depth": 100, "read": true, "nav": "navigate", "lcp": 2210, "cls": 0.04, "inp": 96 },
+        { "path": "/apps", "title": "Apps and libraries", "at": 318, "left": 336, "secs": 14, "depth": 60, "read": null, "nav": "navigate", "lcp": 1430, "cls": 0, "inp": 64 },
+        { "path": "/apps", "title": "Apps and libraries", "at": 336, "left": 362, "secs": 24, "depth": 100, "read": null, "nav": "reload", "lcp": 1050, "cls": 0, "inp": null }
       ],
-      "exit": {
-        "kind": "click",
-        "event": "app-lib-visits",
-        "url": "https://apps.csarko.sh/lib-visits",
-        "host": "apps.csarko.sh"
-      },
-      "engaged": 330
+      "exit": { "kind": "click", "url": "https://apps.csarko.sh/lib-visits", "host": "apps.csarko.sh" },
+      "engaged": 350,
+      "stitched": 0,
+      "suspect": false
     },
     {
       "started": "2026-10-15T11:20:44Z",
-      "source": {
-        "kind": "direct"
-      },
+      "source": { "kind": "direct" },
+      "device": { "browser": "Firefox", "version": "148", "os": "Windows", "viewport": [1920, 919], "tz": "Europe/Berlin", "theme": "dark", "touch": false, "lang": "de-DE" },
       "steps": [
-        {
-          "path": "/",
-          "title": "Cyrus Sarkosh",
-          "at": 0,
-          "secs": 12,
-          "depth": 35,
-          "read": false
-        },
-        {
-          "path": "/games",
-          "title": "Games",
-          "at": 12,
-          "secs": 9,
-          "depth": 80,
-          "read": false
-        }
+        { "path": "/", "title": "Cyrus Sarkosh", "at": 0, "left": 12, "secs": 12, "depth": 35, "read": null, "nav": "navigate", "lcp": 1680, "cls": 0.03, "inp": 72 },
+        { "path": "/games", "title": "Games", "at": 12, "left": 41, "secs": 9, "depth": 80, "read": null, "nav": "navigate", "lcp": 1320, "cls": 0, "inp": 40 },
+        { "path": "/", "title": "Cyrus Sarkosh", "at": 41, "left": 58, "secs": 17, "depth": 90, "read": null, "nav": "back_forward", "lcp": null, "cls": null, "inp": null },
+        { "path": "/games", "title": "Games", "at": 58, "left": 71, "secs": 13, "depth": 80, "read": null, "nav": "back_forward", "lcp": null, "cls": null, "inp": null }
       ],
-      "exit": {
-        "kind": "click",
-        "event": "play-day-hike",
-        "url": "https://games.csarko.sh/dayhike/",
-        "host": "games.csarko.sh"
-      },
-      "engaged": 21
+      "exit": { "kind": "click", "event": "play-day-hike", "url": "https://games.csarko.sh/dayhike/", "host": "games.csarko.sh" },
+      "engaged": 51,
+      "stitched": 0,
+      "suspect": false
     },
     {
       "started": "2026-10-15T09:58:30Z",
-      "source": {
-        "kind": "external",
-        "host": "linkedin.com"
-      },
+      "source": { "kind": "external", "host": "www.linkedin.com" },
+      "device": { "browser": "Chrome", "version": "155", "os": "Android", "viewport": [412, 780], "tz": "America/Chicago", "theme": "light", "touch": true, "lang": "en-US" },
       "steps": [
-        {
-          "path": "/",
-          "title": "Cyrus Sarkosh",
-          "at": 0,
-          "secs": 64,
-          "depth": 100,
-          "read": false
-        }
+        { "path": "/", "title": "Cyrus Sarkosh", "at": 0, "left": 64, "secs": 64, "depth": 100, "read": null, "nav": "navigate", "lcp": 2960, "cls": 0.08, "inp": 210 }
       ],
-      "exit": {
-        "kind": "click",
-        "event": "out-linkedin",
-        "url": "https://www.linkedin.com/in/csarkosh",
-        "host": "linkedin.com"
-      },
-      "engaged": 64
+      "exit": { "kind": "left" },
+      "engaged": 64,
+      "stitched": 0,
+      "suspect": false
     },
     {
       "started": "2026-10-15T08:12:09Z",
-      "source": {
-        "kind": "external",
-        "host": "chatgpt.com"
-      },
+      "source": { "kind": "internal", "path": "/research/stylized-shader-looks" },
+      "device": { "browser": "Edge", "version": "154", "os": "Windows", "viewport": [1366, 641], "tz": "Asia/Kolkata", "theme": "light", "touch": false, "lang": "en-IN" },
       "steps": [
-        {
-          "path": "/research/photorealistic-water-rendering",
-          "title": "Photorealistic water rendering",
-          "at": 0,
-          "secs": 96,
-          "depth": 58,
-          "read": false
-        }
+        { "path": "/research/babylon-material-plugin-traps", "title": "Babylon material plugin traps", "at": 0, "left": 142, "secs": 118, "depth": 88, "read": false, "nav": "navigate", "lcp": 1910, "cls": 0.01, "inp": 88 },
+        { "path": "/apps", "title": "Apps and libraries", "at": 142, "left": 171, "secs": 29, "depth": 100, "read": null, "nav": "navigate", "lcp": 1120, "cls": 0, "inp": 56 }
       ],
-      "exit": {
-        "kind": "left"
-      },
-      "engaged": 96
+      "exit": { "kind": "click", "event": "app-lib-visits", "url": "https://apps.csarko.sh/lib-visits", "host": "apps.csarko.sh" },
+      "engaged": 147,
+      "stitched": 0,
+      "suspect": false
+    },
+    {
+      "started": "2026-10-14T23:52:10Z",
+      "source": { "kind": "external", "host": "chatgpt.com" },
+      "device": { "browser": "Chrome", "version": "155", "os": "macOS", "viewport": [1440, 788], "tz": "America/New_York", "theme": "dark", "touch": false, "lang": "en-US" },
+      "steps": [
+        { "path": "/research/photorealistic-water-rendering", "title": "Photorealistic water rendering", "at": 0, "left": 402, "secs": 346, "depth": 76, "read": false, "nav": "navigate", "lcp": 4620, "cls": 0.11, "inp": 340 },
+        { "path": "/research/rock-on-steep-terrain", "title": "Rock on steep terrain", "at": 402, "left": 619, "secs": 217, "depth": 100, "read": true, "nav": "navigate", "lcp": 3140, "cls": 0.02, "inp": 150 }
+      ],
+      "exit": { "kind": "left" },
+      "engaged": 563,
+      "stitched": 1,
+      "suspect": false
     },
     {
       "started": "2026-10-14T22:47:51Z",
-      "source": {
-        "kind": "external",
-        "host": "github.com"
-      },
+      "source": { "kind": "external", "host": "github.com" },
+      "device": { "browser": "Safari", "version": "26", "os": "macOS", "viewport": [1728, 1005], "tz": "Europe/London", "theme": "light", "touch": false, "lang": "en-GB" },
       "steps": [
-        {
-          "path": "/",
-          "title": "Cyrus Sarkosh",
-          "at": 0,
-          "secs": 26,
-          "depth": 100,
-          "read": false
-        },
-        {
-          "path": "/film",
-          "title": "Short films",
-          "at": 26,
-          "secs": 7,
-          "depth": 40,
-          "read": false
-        }
+        { "path": "/", "title": "Cyrus Sarkosh", "at": 0, "left": 26, "secs": 26, "depth": 100, "read": null, "nav": "navigate", "lcp": 1390, "cls": 0, "inp": 40 },
+        { "path": "/film", "title": "Short films on YouTube", "at": 26, "left": 39, "secs": 7, "depth": 40, "read": null, "nav": "navigate", "lcp": 1760, "cls": 0.05, "inp": 72 }
       ],
-      "exit": {
-        "kind": "click",
-        "event": "watch-who-is-standing-in-my-hallway",
-        "url": "https://www.youtube.com/shorts/x",
-        "host": "youtube.com"
-      },
-      "engaged": 33
+      "exit": { "kind": "click", "event": "watch-who-is-standing-in-my-hallway", "url": "https://www.youtube.com/shorts/x", "host": "youtube.com" },
+      "engaged": 33,
+      "stitched": 0,
+      "suspect": false
     },
     {
       "started": "2026-10-14T19:03:15Z",
-      "source": {
-        "kind": "direct"
-      },
+      "source": { "kind": "direct" },
+      "device": { "browser": "Chrome", "version": "131", "os": "Linux", "viewport": [800, 600], "tz": "UTC", "theme": "light", "touch": false, "lang": "en-US" },
       "steps": [
-        {
-          "path": "/apps",
-          "title": "Apps and libraries",
-          "at": 0,
-          "secs": null,
-          "depth": null,
-          "read": false
-        }
+        { "path": "/apps", "title": "Apps and libraries", "at": 0, "left": null, "secs": null, "depth": null, "read": null, "nav": null, "lcp": null, "cls": null, "inp": null },
+        { "path": "/research", "title": "Research & notes", "at": 2, "left": null, "secs": null, "depth": null, "read": null, "nav": null, "lcp": null, "cls": null, "inp": null },
+        { "path": "/games", "title": "Games", "at": 3, "left": null, "secs": null, "depth": null, "read": null, "nav": null, "lcp": null, "cls": null, "inp": null }
       ],
-      "exit": {
-        "kind": "left"
-      },
-      "engaged": null
+      "exit": { "kind": "left" },
+      "engaged": null,
+      "stitched": 0,
+      "suspect": true
+    },
+    {
+      "started": "2026-10-14T16:30:27Z",
+      "source": { "kind": "external", "host": "t.co" },
+      "device": { "browser": "Safari", "version": "26", "os": "iOS", "viewport": [430, 739], "tz": "America/Denver", "theme": "dark", "touch": true, "lang": "en-US" },
+      "steps": [
+        { "path": "/research/photorealistic-water-rendering", "title": "Photorealistic water rendering", "at": 0, "left": 131, "secs": 96, "depth": 58, "read": false, "nav": "navigate", "lcp": 3380, "cls": 0.06, "inp": 180 }
+      ],
+      "exit": { "kind": "left" },
+      "engaged": 96,
+      "stitched": 0,
+      "suspect": false
     }
   ]
 }

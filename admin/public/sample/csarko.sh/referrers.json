@@ -5,8 +5,8 @@
       "visitors": 61
     },
     {
-      "group": "direct",
-      "visitors": 58
+      "group": "ai",
+      "visitors": 0
     },
     {
       "group": "social",
@@ -23,6 +23,18 @@
     {
       "group": "video",
       "visitors": 9
+    },
+    {
+      "group": "direct",
+      "visitors": 58
+    },
+    {
+      "group": "own",
+      "visitors": 0
+    },
+    {
+      "group": "spam",
+      "visitors": 0
     },
     {
       "group": "other",

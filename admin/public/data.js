@@ -96,8 +96,8 @@ function sampleRange(name, data, days) {
   }
   const scaleRows = (rows, key = 'visitors') => (rows ?? []).map((r) => ({ ...r, [key]: Math.round((r[key] ?? 0) * scale) }));
   if (name === 'pages') return { rows: scaleRows(data.rows).map((r) => ({ ...r, pageviews: Math.round(r.pageviews * scale) })) };
-  if (name === 'referrers') return { groups: scaleRows(data.groups), rows: scaleRows(data.rows), campaigns: scaleRows(data.campaigns) };
-  if (name === 'events') return { ...data, rows: scaleRows(data.rows) };
+  if (name === 'referrers') return { ...data, groups: scaleRows(data.groups), rows: scaleRows(data.rows), campaigns: scaleRows(data.campaigns) };
+  if (name === 'events') return { ...data, rows: scaleRows(scaleRows(data.rows), 'clicks'), outboundVisitors: Math.round((data.outboundVisitors ?? 0) * scale) };
   if (name === 'audience') return Object.fromEntries(Object.entries(data).map(([k, v]) => [k, scaleRows(v)]));
   return data;
 }
