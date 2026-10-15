@@ -952,7 +952,7 @@ def analytics_checks(pages):
     print("analytics")
     if not ANALYTICS:
         for name, (page, html) in pages.items():
-            check("data-visits" not in html, f"{name}: analytics is off but a visits tag is present")
+            check("data-visits" not in html, f"{name}: analytics is off and no visits tag is present")
         return
 
     def want(stem):
@@ -962,26 +962,26 @@ def analytics_checks(pages):
     for name, (page, html) in pages.items():
         scripts = [a for a, _ in page.scripts]
         core = [a for a in scripts if "data-visits" in a]
-        check(len(core) == 1, f"{name}: one visits tag expected, found {len(core)}; run generate-assets.sh")
+        check(len(core) == 1, f"{name}: one visits tag ({len(core)} found; if not, run generate-assets.sh)")
         if core:
             c = core[0]
-            check(c.get("data-visits") == ANALYTICS["endpoint"], f"{name}: the visits tag's endpoint is {c.get('data-visits')}, not {ANALYTICS['endpoint']}")
+            check(c.get("data-visits") == ANALYTICS["endpoint"], f"{name}: the visits tag's endpoint is {ANALYTICS['endpoint']} (found {c.get('data-visits')})")
             check(local_path(c.get("src", "")) is not None and c.get("src", "").endswith(f"assets/{want_core}"),
-                  f"{name}: the visits tag's file is not the vendored one ({want_core}): stale build")
-            check("defer" in c, f"{name}: the visits tag is not deferred")
+                  f"{name}: the visits tag loads the vendored file ({want_core}); a mismatch is a stale build")
+            check("defer" in c, f"{name}: the visits tag is deferred")
         vitals = [a for a in scripts if a.get("src", "").endswith(f"assets/{want_vitals}")]
-        check(len(vitals) == 1, f"{name}: one vitals tag expected ({want_vitals}), found {len(vitals)}; stale build?")
+        check(len(vitals) == 1, f"{name}: one vitals tag ({want_vitals}; {len(vitals)} found, else a stale build)")
         if vitals:
-            check("defer" in vitals[0], f"{name}: the vitals tag is not deferred")
+            check("defer" in vitals[0], f"{name}: the vitals tag is deferred")
         others = [a.get("src") or "(inline)" for a in scripts if a not in core and a not in vitals]
-        check(not others, f"{name}: scripts besides the two visits tags: {others}")
+        check(not others, f"{name}: no scripts besides the two visits tags {others or ''}")
         if page_kind(name) == "doc":
-            check(html.count(" data-read-end") == 1, f"{name}: one data-read-end marker expected")
+            check(html.count(" data-read-end") == 1, f"{name}: one data-read-end marker")
     _, catch_all = csp_from_config()
     csp = parse_csp(catch_all.get("Content-Security-Policy"))
-    check(csp.get("script-src") == ["'self'"], "CSP script-src is not exactly 'self'")
-    check(csp.get("connect-src") == ["'self'"], "CSP connect-src is not exactly 'self'")
-    check(csp.get("img-src") == ["'self'"], "CSP img-src is not exactly 'self'")
+    check(csp.get("script-src") == ["'self'"], "CSP script-src is exactly 'self'")
+    check(csp.get("connect-src") == ["'self'"], "CSP connect-src is exactly 'self'")
+    check(csp.get("img-src") == ["'self'"], "CSP img-src is exactly 'self'")
 
 
 # ---- admin.csarko.sh: a csarko.sh page in everything but indexing (AGENTS.md "Admin pages")

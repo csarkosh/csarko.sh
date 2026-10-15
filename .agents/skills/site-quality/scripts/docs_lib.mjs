@@ -753,8 +753,8 @@ ${DOCS_CSS}${extraCss}
 
 // The page links, in the order the whole site uses them (see public/index.html, which carries the
 // same three after its heading links). `current` marks the page you are already on. There is no
-// Home link: the wordmark to their left is it, on every page. The third value is the GoatCounter
-// click event (count.js binds every data-goatcounter-click), a stable identifier that outlives a
+// Home link: the wordmark to their left is it, on every page. The third value is the visits
+// event (lib-visits' client, visits.min.js, binds every data-visits-event), a stable identifier that outlives a
 // rename of the label or the URL; the home page's nav carries the same three names.
 const PAGE_LINKS = [[`/${FILM_DIR}`, FILM_TITLE, 'nav-film'], ['/games', GAMES_TITLE, 'nav-games'], [`/${DOCS_DIR}`, DOCS_NAV, 'nav-research']];
 
@@ -765,7 +765,7 @@ const nav = (current) => `  <a class="skip-link" href="#top">Skip to content</a>
       <a class="wordmark" href="/">csarko<span>.sh</span></a>
       <ul>
 ${PAGE_LINKS.map(([href, label, event]) =>
-    `        <li><a href="${href}"${href === current ? ' aria-current="page"' : ` data-goatcounter-click="${event}"`}>${label}</a></li>`).join('\n')}
+    `        <li><a href="${href}"${href === current ? ' aria-current="page"' : ` data-visits-event="${event}"`}>${label}</a></li>`).join('\n')}
       </ul>
     </div>
   </nav>`;
@@ -924,7 +924,7 @@ function gameList(games, pad) {
     // never does, and it is stretched over the card, as on the old home page Projects card. The
     // click counts as "play-<slug>" in GoatCounter: a visitor who went on to play.
     const play = game.play
-      ? `${pad}    <a class="card-link stretch" href="${escapeHtml(game.play)}" target="_blank" rel="noopener" data-goatcounter-click="play-${game.slug}">Play in your browser ${EXTERNAL_ARROW}</a>\n`
+      ? `${pad}    <a class="card-link stretch" href="${escapeHtml(game.play)}" target="_blank" rel="noopener" data-visits-event="play-${game.slug}">Play in your browser ${EXTERNAL_ARROW}</a>\n`
       : '';
     return `${pad}  <li class="card">
 ${pad}    <p class="game-kicker">${escapeHtml(game.kicker)}</p>
@@ -1003,7 +1003,7 @@ ${pad}    <h2 class="film-title">${film.titleHtml}</h2>
 ${pad}    <div class="film-desc prose">
 ${film.html}${pad}    </div>
 ${pad}    <ul class="tags" role="list">${film.tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>
-${pad}    <a class="card-link stretch" href="${escapeHtml(film.watch)}" target="_blank" rel="noopener" data-goatcounter-click="watch-${film.slug}">Watch on YouTube ${EXTERNAL_ARROW}</a>
+${pad}    <a class="card-link stretch" href="${escapeHtml(film.watch)}" target="_blank" rel="noopener" data-visits-event="watch-${film.slug}">Watch on YouTube ${EXTERNAL_ARROW}</a>
 ${pad}  </div>
 ${pad}</li>`;
 }

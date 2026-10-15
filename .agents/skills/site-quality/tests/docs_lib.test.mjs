@@ -424,14 +424,14 @@ test('gamesPage lists every game with VideoGame JSON-LD and marks itself current
   assert.ok(html.includes('<meta property="og:type" content="website" />'));
   assert.ok(html.includes('<li><a href="/games" aria-current="page">Games</a></li>'));
   // Every other page link counts a nav-<page> click; the one you are on reloads, so it does not.
-  assert.ok(html.includes('<li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>'));
-  assert.ok(html.includes('<li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>'));
+  assert.ok(html.includes('<li><a href="/research" data-visits-event="nav-research">Research</a></li>'));
+  assert.ok(html.includes('<li><a href="/film" data-visits-event="nav-film">Film</a></li>'));
   assert.ok(html.includes('<p class="game-kicker">Playable now · No install</p>'));
   assert.ok(html.includes('<ul class="tags" role="list"><li>TypeScript</li><li>Babylon.js</li></ul>'));
   // The play link is the card's own, stretched over it, styled as the home page's card link; the
   // repo is not linked from the card.
   assert.ok(html.includes('<li class="card">'));
-  assert.ok(html.includes('<a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-goatcounter-click="play-day-hike">Play in your browser <svg'));
+  assert.ok(html.includes('<a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play in your browser <svg'));
   assert.ok(!html.includes('github.com/csarkosh/game-dayhike'));
   const page = jsonLd(html).find((n) => n['@type'] === 'CollectionPage');
   assert.equal(page.url, 'https://csarko.sh/games');
@@ -588,7 +588,7 @@ test('filmsPage cards the poster, links out to YouTube and lists VideoObject JSO
   assert.ok(html.indexOf('href="/film"') < html.indexOf('href="/games"'));
   assert.ok(html.includes('<p class="film-kicker">Short film · 0:16</p>'));
   assert.ok(html.includes('<ul class="tags" role="list"><li>Analog horror</li><li>Photo puppetry</li></ul>'));
-  assert.ok(html.includes('<a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener" data-goatcounter-click="watch-hallway">Watch on YouTube <svg'));
+  assert.ok(html.includes('<a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener" data-visits-event="watch-hallway">Watch on YouTube <svg'));
   // The poster is a marker build_assets.py fills, carrying a usable img and its alt until it does.
   assert.ok(html.includes('<!-- generated:film-poster:hallway -->'));
   assert.ok(html.includes('alt="A woman in a dim hallway."'));
