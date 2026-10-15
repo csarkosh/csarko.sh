@@ -166,3 +166,12 @@ mode, anything in `lib-visits` itself.
   hash. `--trusted-proxies` is 1 on the `run.app` URL, confirmed with `--log-ip`: the
   logged address equalled this machine's public IPv6 address. The depth through Hosting
   is confirmed at the cutover.
+- 2026-10-15, the cutover: the site deploy that switched the scripts was released between
+  14:19:37 and 14:20:29 UTC, so `visits_history_until` is `2026-10-15T15:00:00Z`. Through
+  `https://csarko.sh/v` the depth is **2**, not 1: with `--log-ip` at 1 the collector logged
+  a Google edge address (`66.102.8.97`), at 2 the caller's own address.
+  `trusted_proxies = 2` is in `_infra/main.tf`. A direct `run.app` request now resolves no
+  address (one hop is fewer than two) and counts by its page id, which only the deploy
+  checks do.
+- Countries are not recorded: `csarko-visits` runs without a GeoIP database, and the
+  dashboard's Countries section says so.
