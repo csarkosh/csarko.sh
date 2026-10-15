@@ -175,3 +175,18 @@ mode, anything in `lib-visits` itself.
   checks do.
 - Countries are not recorded: `csarko-visits` runs without a GeoIP database, and the
   dashboard's Countries section says so.
+- GoatCounter's history: the CSV export came back empty twice (15:21 and 14:20 UTC, 0 rows,
+  finished in milliseconds; GoatCounter kept no per-hit rows for the site), so
+  `visits/goatcounter-api.mjs` rebuilt it from the stats API: each path's hourly visits and
+  each page-hour's referrers, New York hours converted to UTC. 390 rows, 405 visits (389 page,
+  16 event), 2026-09-11 16:00 to 2026-10-15 04:00 UTC (the last hit before the outage),
+  equal to GoatCounter's `stats/total`. Loaded with `--replace`. History referrers leave out
+  the site's own host, as the live query does.
+- The cutover's applies and deploys: `terraform apply` (admin env, `goatcounter-token`
+  destroyed) to `csarko-admin-00013-v9b`, the image `csarko-admin-00014-94j`, then
+  `admin/deploy.sh`. The five visits queries answer against real BigQuery for 7, 30 and 90
+  days with no errors (91, 370 and 389 visits). First live rows through the site: a real
+  visitor's `leave` at 15:11 UTC with a visit hash, and a headless check flagged as a bot
+  (so not counted). `check.py --live --lighthouse --observatory`: every Lighthouse floor and
+  Observatory A+ passed; one sitemap URL check timed out under the Lighthouse load and passed
+  on a rerun of `--live`.
