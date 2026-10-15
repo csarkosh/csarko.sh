@@ -198,6 +198,7 @@ module "gcp_visits" {
   # Hosting's rewrite and Cloud Run's frontend: confirmed 2026-10-15 with --log-ip through
   # https://csarko.sh/v (at 1 the collector saw a Google edge address, at 2 the caller's).
   trusted_proxies              = 2
+  ignore_ips                   = var.visits_ignore_ips
   reader_service_account_email = module.gcp_admin_api.service_account_email
 
   providers = {

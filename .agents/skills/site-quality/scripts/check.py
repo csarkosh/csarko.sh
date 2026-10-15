@@ -910,7 +910,10 @@ def lighthouse_run(url, theme, scheme):
     print(f"lighthouse ({theme} theme): {url}")
     name = re.sub(r"[^a-z0-9]+", "-", url.split("://", 1)[-1].lower()).strip("-")
     out = f"/tmp/csarko-sh-lighthouse-{name}-{theme}.json"
-    subprocess.run(["npx", "-y", "lighthouse@12", url, "--quiet",
+    # Lighthouse's emulated phone carries a stock user agent, which the visits collector would
+    # count as a visitor; naming Lighthouse in it makes the collector flag the run as a bot.
+    ua = "Mozilla/5.0 (Linux; Android 11; moto g power (2022)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Mobile Safari/537.36 Chrome-Lighthouse"
+    subprocess.run(["npx", "-y", "lighthouse@12", url, "--quiet", f"--emulated-user-agent={ua}",
                     f"--chrome-flags=--headless=new --blink-settings=preferredColorScheme={scheme}",
                     "--only-categories=seo,accessibility,performance,best-practices",
                     "--output=json", f"--output-path={out}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

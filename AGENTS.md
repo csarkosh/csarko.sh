@@ -336,8 +336,8 @@ anything related to the admin pages in this repo:
 cutover deploy is the step that makes it live. GoatCounter, set up 2026-09-11, was
 dropped because its host went down and took the numbers with it.)*
 
-- **[lib-visits](https://github.com/csarkosh/lib-visits)** (private, GPL-3.0-only, tag
-  `v0.1.0`) is Cyrus's own analytics: two small scripts and a collector. No cookies,
+- **[lib-visits](https://github.com/csarkosh/lib-visits)** (public, GPL-3.0-only, tag
+  `v0.2.0` since 2026-10-15) is Cyrus's own analytics: two small scripts and a collector. No cookies,
   so no consent banner. The only storage is the visitor's own `#visits-off` opt-out.
 - **Configured in one place:** `.agents/skills/site-quality/site.json`
   (`analytics.provider` is `visits`, `endpoint` is `/v`). `generate-assets.sh` derives the
@@ -346,15 +346,15 @@ dropped because its host went down and took the numbers with it.)*
   Don't edit any of those by hand. Set `provider` to `null` and both scripts and every
   event go away together.
 - **The scripts are vendored unmodified** at
-  `.agents/skills/site-quality/assets/vendor/visits.min.js` (3,068 B) and `vitals.min.js`
+  `.agents/skills/site-quality/assets/vendor/visits.min.js` (2,997 B) and `vitals.min.js`
   (995 B), each with a provenance line (tag, licence, sha256) that `strip_comments` drops
   before hashing, so the served, content-hashed file is byte-identical to the tag's.
   The vendoring command:
 
   ```bash
-  LIB=~/Projects/lib-visits; git -C "$LIB" checkout -q v0.1.0
+  LIB=~/Projects/lib-visits; git -C "$LIB" checkout -q v0.2.0
   for f in visits vitals; do
-    { printf '// lib-visits v0.1.0 (GPL-3.0-only), client/dist/%s.min.js, sha256 %s\n' "$f" "$(shasum -a 256 "$LIB/client/dist/$f.min.js" | cut -c1-64)"; cat "$LIB/client/dist/$f.min.js"; } > .agents/skills/site-quality/assets/vendor/$f.min.js
+    { printf '// lib-visits v0.2.0 (GPL-3.0-only), client/dist/%s.min.js, sha256 %s\n' "$f" "$(shasum -a 256 "$LIB/client/dist/$f.min.js" | cut -c1-64)"; cat "$LIB/client/dist/$f.min.js"; } > .agents/skills/site-quality/assets/vendor/$f.min.js
   done
   git -C "$LIB" checkout -q main
   ```
@@ -374,7 +374,17 @@ dropped because its host went down and took the numbers with it.)*
   `csarko_history.goatcounter_history`; the admin dashboard reads both, joined at the
   cutover instant.
 - `localhost` and `file://` previews are never counted. The 404 page counts too (the
-  path shows the broken link).
+  path shows the broken link). **Cyrus's own visits are never counted either** *(2026-10-15)*:
+  his home addresses are the collector's `--ignore-ips`, set as `visits_ignore_ips` in the
+  git-ignored `_infra/terraform.tfvars` (the repo is public; the addresses go nowhere else),
+  and the collector answers their beacons without writing them. When his address changes,
+  update the list there and `terraform apply`. Lighthouse runs (`check.py --lighthouse`) name
+  themselves in their user agent, so the collector flags them as bots.
+- **Every row's `timestamp` is the event's time** *(v0.2.0)*: the client sends its clock (`ts`)
+  and the collector writes `time`, which Cloud Logging takes as the entry's timestamp, so
+  beacons arriving together after a cold start keep their order. Rows before 2026-10-15
+  evening carry their arrival time instead. A named outbound link sends both its event name
+  and its url, so a journey can end on the click.
 - **Events** *(unchanged from 2026-10-12, when they were added for the admin dashboard)*:
   clicks out to LinkedIn, GitHub, Substack and YouTube count as `out-linkedin`,
   `out-github`, `out-substack`, `out-youtube` (hero chips, Contact buttons and the Filming

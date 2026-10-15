@@ -76,6 +76,18 @@ variable "admin_hosting_site_id" {
   default     = "csarko-sh-admin"
 }
 
+variable "visits_ignore_ips" {
+  description = <<-EOT
+    Cyrus's own addresses (plain or CIDR, v4 and v6), whose beacons the collector drops so
+    the dashboard never counts him. Set in the git-ignored terraform.tfvars, never here:
+    the repo is public. Check the current ones with `curl -4 https://api.ipify.org` and
+    `curl -6 https://api64.ipify.org` (the v6 one as its /64).
+  EOT
+  type        = list(string)
+  default     = []
+  sensitive   = true
+}
+
 variable "visits_history_until" {
   description = <<-EOT
     Where the admin dashboard stops reading GoatCounter's backfilled history and

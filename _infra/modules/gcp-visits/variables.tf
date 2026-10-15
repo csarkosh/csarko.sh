@@ -18,6 +18,13 @@ variable "trusted_proxies" {
   default     = 1
 }
 
+variable "ignore_ips" {
+  description = "Addresses or CIDR prefixes whose beacons the collector answers and never writes: the owner's own machines. Sensitive, so a plan never prints them."
+  type        = list(string)
+  default     = []
+  sensitive   = true
+}
+
 variable "retention_days" {
   description = "How long the rows stay in the log bucket. Two years, so a year reads against the one before."
   type        = number
