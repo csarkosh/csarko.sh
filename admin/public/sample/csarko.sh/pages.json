@@ -1,17 +1,107 @@
 {
   "rows": [
-    { "path": "/", "title": "Cyrus Sarkosh · Senior Software Engineer", "visitors": 118, "pageviews": null, "inSitemap": true },
-    { "path": "/research/stylized-shader-looks", "title": "Stylized shader looks", "visitors": 31, "pageviews": null, "inSitemap": true },
-    { "path": "/research/babylon-material-plugin-traps", "title": "Babylon material plugin traps", "visitors": 22, "pageviews": null, "inSitemap": true },
-    { "path": "/games", "title": "Games", "visitors": 19, "pageviews": null, "inSitemap": true },
-    { "path": "/research/rock-on-steep-terrain", "title": "Rock on steep terrain: shape it, cover it, or skin it", "visitors": 17, "pageviews": null, "inSitemap": true },
-    { "path": "/film", "title": "Film", "visitors": 14, "pageviews": null, "inSitemap": true },
-    { "path": "/research", "title": "Research & notes", "visitors": 12, "pageviews": null, "inSitemap": true },
-    { "path": "/research/browser-coop-netcode", "title": "Browser co-op netcode", "visitors": 9, "pageviews": null, "inSitemap": true },
-    { "path": "/research/ai-short-film-generation", "title": "AI short film generation", "visitors": 7, "pageviews": null, "inSitemap": true },
-    { "path": "/research/olympic-peninsula-rock-formations", "title": "Rock formations of the Olympic Peninsula", "visitors": 6, "pageviews": null, "inSitemap": true },
-    { "path": "/projects", "title": "Page not found", "visitors": 4, "pageviews": null, "inSitemap": false },
-    { "path": "/contact", "title": "Page not found", "visitors": 3, "pageviews": null, "inSitemap": false },
-    { "path": "/wp-login.php", "title": "Page not found", "visitors": 2, "pageviews": null, "inSitemap": false }
+    {
+      "path": "/",
+      "title": "Cyrus Sarkosh · Senior Software Engineer",
+      "visitors": 118,
+      "pageviews": null,
+      "inSitemap": true,
+      "engagedMedian": 41,
+      "reached": 0.62
+    },
+    {
+      "path": "/research/stylized-shader-looks",
+      "title": "Stylized shader looks",
+      "visitors": 31,
+      "pageviews": null,
+      "inSitemap": true,
+      "engagedMedian": 38,
+      "reached": 0.55
+    },
+    {
+      "path": "/research/babylon-material-plugin-traps",
+      "title": "Babylon material plugin traps",
+      "visitors": 22,
+      "pageviews": null,
+      "inSitemap": true,
+      "engagedMedian": 33,
+      "reached": 0.48
+    },
+    {
+      "path": "/games",
+      "title": "Games",
+      "visitors": 19,
+      "pageviews": null,
+      "inSitemap": true,
+      "engagedMedian": 30,
+      "reached": 0.4
+    },
+    {
+      "path": "/research/rock-on-steep-terrain",
+      "title": "Rock on steep terrain: shape it, cover it, or skin it",
+      "visitors": 17,
+      "pageviews": null,
+      "inSitemap": true,
+      "engagedMedian": 26,
+      "reached": 0.35
+    },
+    {
+      "path": "/film",
+      "title": "Film",
+      "visitors": 14,
+      "pageviews": null,
+      "inSitemap": true,
+      "engagedMedian": null,
+      "reached": null
+    },
+    {
+      "path": "/research",
+      "title": "Research & notes",
+      "visitors": 12,
+      "pageviews": null,
+      "inSitemap": true
+    },
+    {
+      "path": "/research/browser-coop-netcode",
+      "title": "Browser co-op netcode",
+      "visitors": 9,
+      "pageviews": null,
+      "inSitemap": true
+    },
+    {
+      "path": "/research/ai-short-film-generation",
+      "title": "AI short film generation",
+      "visitors": 7,
+      "pageviews": null,
+      "inSitemap": true
+    },
+    {
+      "path": "/research/olympic-peninsula-rock-formations",
+      "title": "Rock formations of the Olympic Peninsula",
+      "visitors": 6,
+      "pageviews": null,
+      "inSitemap": true
+    },
+    {
+      "path": "/projects",
+      "title": "Page not found",
+      "visitors": 4,
+      "pageviews": null,
+      "inSitemap": false
+    },
+    {
+      "path": "/contact",
+      "title": "Page not found",
+      "visitors": 3,
+      "pageviews": null,
+      "inSitemap": false
+    },
+    {
+      "path": "/wp-login.php",
+      "title": "Page not found",
+      "visitors": 2,
+      "pageviews": null,
+      "inSitemap": false
+    }
   ]
 }

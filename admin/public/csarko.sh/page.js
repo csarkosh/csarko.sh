@@ -7,7 +7,7 @@
  * credential is missing, with `notConfigured: { <part>: "<ENV NAME>" }` naming the secret
  * to add, and `errors: { <part>: "<message>" }` for a part that failed; every card renders
  * those as "Not configured (ENV)" in --faint or as its error line, never as a blank or 0.
- * GoatCounter counts visits only, so every `pageviews` field is null and nothing here
+ * A visit is one browser on one day, so every `pageviews` field is null and nothing here
  * shows one.
  */
 
@@ -50,7 +50,7 @@ function errorLines(...answers) {
 function visitorsCard([visits], days) {
   const cur = visits.current;
   const prev = visits.previous;
-  if (!cur) return [notConfigured(missing(visits, 'goatcounter'))];
+  if (!cur) return [notConfigured(missing(visits, 'visits'))];
   const prevDays = prev?.perDay ?? [];
   const tiles = el('div', { class: 'tiles compact' },
     tile('Visits', cur.visits, { delta: delta(cur.visits, prev?.visits, { vs: previousText(days) }) }));
@@ -71,23 +71,28 @@ function visitorsCard([visits], days) {
 }
 
 function referrersCard([refs]) {
-  if (!refs.groups) return [notConfigured(missing(refs, 'goatcounter'))];
+  if (!refs.groups) return [notConfigured(missing(refs, 'visits'))];
   const groups = refs.groups.map((g) => ({ name: cap(g.group), value: num(g.visitors), detail: `${cap(g.group)} referrers` }));
   const chart = groups.length ? bars(groups, { label: 'Visitors by referrer group' }) : el('p', { class: 'empty' }, 'No referrers in this range.');
   const raw = folded(`Referrers · ${refs.rows?.length ?? 0}`, refs.rows ? table([
     { key: 'referrer', label: 'Referrer', render: mono },
     { key: 'group', label: 'Group', render: (v) => cap(str(v)) },
     { key: 'visitors', label: 'Visitors', num: true },
-  ], [...refs.rows].sort((a, b) => b.visitors - a.visitors), 'No referrers in this range.') : notConfigured(missing(refs, 'goatcounter')));
+  ], [...refs.rows].sort((a, b) => b.visitors - a.visitors), 'No referrers in this range.') : notConfigured(missing(refs, 'visits')));
   const campaigns = folded(`Campaigns · ${refs.campaigns?.length ?? 0}`, refs.campaigns ? table([
     { key: 'campaign', label: 'Campaign', render: mono },
     { key: 'visitors', label: 'Visitors', num: true },
-  ], [...refs.campaigns].sort((a, b) => b.visitors - a.visitors), 'No tagged links were followed in this range.') : notConfigured(missing(refs, 'goatcounter')));
-  return [...errorLines(refs), chart, raw, campaigns];
+  ], [...refs.campaigns].sort((a, b) => b.visitors - a.visitors), 'No tagged links were followed in this range.') : notConfigured(missing(refs, 'visits')));
+  const paths = folded('Paths through the site', table([
+    { key: 'from', label: 'From', render: mono },
+    { key: 'to', label: 'To', render: mono },
+    { key: 'visitors', label: 'Visitors', num: true },
+  ], refs.paths ?? [], 'No internal navigation in this range.'));
+  return [...errorLines(refs), chart, raw, campaigns, paths];
 }
 
 function pagesCard([pages]) {
-  if (!pages.rows) return [notConfigured(missing(pages, 'goatcounter'))];
+  if (!pages.rows) return [notConfigured(missing(pages, 'visits'))];
   const rows = [...pages.rows].sort((a, b) => b.visitors - a.visitors);
   const known = rows.some((r) => r.inSitemap !== null && r.inSitemap !== undefined);
   const live = rows.filter((r) => r.inSitemap !== false);
@@ -95,6 +100,8 @@ function pagesCard([pages]) {
   const cols = [
     { key: 'path', label: 'Page', wrap: true, render: (v, row) => el('span', { class: 'page-cell' }, mono(v), row.title ? el('small', {}, str(row.title)) : null) },
     { key: 'visitors', label: 'Visitors', num: true },
+    { key: 'engagedMedian', label: 'Median engaged', num: true, render: (v) => (isNum(v) ? `${v}s` : '') },
+    { key: 'reached', label: 'Read to the end', num: true, render: (v) => (isNum(v) ? pct(v) : '') },
   ];
   const parts = [...errorLines(pages), table(cols, live.slice(0, 8), 'No visits in this range.')];
   if (live.length > 8) parts.push(folded(`All pages · ${live.length}`, table(cols, live)));
@@ -107,7 +114,7 @@ function pagesCard([pages]) {
 const KINDS = { out: 'Outbound', play: 'Play', watch: 'Watch', read: 'Read to the end', nav: 'Navigation', other: 'Other' };
 
 function eventsCard([events, visits], days) {
-  if (!events.rows) return [notConfigured(missing(events, 'goatcounter'))];
+  if (!events.rows) return [notConfigured(missing(events, 'visits'))];
   const rows = events.rows;
   const byKind = (kind) => rows.filter((r) => r.kind === kind).reduce((n, r) => n + num(r.visitors), 0);
   const out = byKind('out');
@@ -281,17 +288,17 @@ function healthCard([health]) {
   const nf = health.notFound;
   const list = folded(`404 paths, last 7 days · ${nf ? nf.length : '?'}`, nf
     ? table([{ key: 'path', label: 'Path asked for', render: mono }, { key: 'visitors', label: 'Visitors', num: true }], nf, 'Nobody hit a missing page.')
-    : notConfigured(missing(health, 'goatcounter', 'sitemap')));
+    : notConfigured(missing(health, 'visits', 'sitemap')));
   return [...errorLines(health), el('p', { class: 'sub' }, status(overall.status, overall.note)), tiles, list];
 }
 
 function audienceCard([audience]) {
-  const sections = [['countries', 'Countries'], ['sizes', 'Screen sizes'], ['browsers', 'Browsers'], ['systems', 'Systems'], ['languages', 'Languages']];
-  if (sections.every(([key]) => !audience[key])) return [notConfigured(missing(audience, 'goatcounter'))];
+  const sections = [['countries', 'Countries'], ['sizes', 'Screen sizes'], ['browsers', 'Browsers'], ['systems', 'Systems'], ['languages', 'Languages'], ['themes', 'Theme'], ['viewports', 'Viewport'], ['touch', 'Input'], ['timezones', 'Timezones']];
+  if (sections.every(([key]) => !audience[key])) return [notConfigured(missing(audience, 'visits'))];
   const cols = el('div', { class: 'cols' }, ...sections.map(([key, label]) => {
     const rows = audience[key] ? [...audience[key]].sort((a, b) => b.visitors - a.visitors) : null;
     return el('div', {}, el('h3', {}, label), rows === null
-      ? notConfigured(missing(audience, 'goatcounter'))
+      ? notConfigured(missing(audience, 'visits'))
       : rows.length
         ? bars(rows.slice(0, 6).map((r) => ({ name: r.name, value: num(r.visitors) })), { label: `${label} by visitors` })
         : el('p', { class: 'empty' }, 'Nothing in this range.'));
@@ -301,13 +308,13 @@ function audienceCard([audience]) {
     const total = rows.reduce((n, r) => n + num(r.visitors), 0);
     return rows[0] ? `${rows[0].name} ${pct(num(rows[0].visitors), total)}` : '';
   };
-  const summary = [top('countries'), top('sizes'), top('browsers')].filter(Boolean).join(' · ');
-  return [...errorLines(audience), el('p', { class: 'sub' }, summary || 'Who the visitors are'), folded('Countries, screen sizes, browsers, systems, languages', cols)];
+  const summary = [top('countries'), top('sizes'), top('browsers'), top('themes')].filter(Boolean).join(' · ');
+  return [...errorLines(audience), el('p', { class: 'sub' }, summary || 'Who the visitors are'), folded('Countries, screen sizes, browsers, systems, languages, theme, viewport, input, timezones', cols)];
 }
 
 /** Each card: its queries, its copy, how it renders, and the skeleton that stands in for it while the queries run. */
 const CARDS = [
-  { id: 'visitors', title: 'Visitors', queries: ['visits'], sub: (d) => `Visits ${rangeText(d)}, against ${previousText(d)}. GoatCounter counts visits, not pageviews.`, render: visitorsCard, skeleton: { tiles: 2, chart: true } },
+  { id: 'visitors', title: 'Visitors', queries: ['visits'], sub: (d) => `Visits ${rangeText(d)}, against ${previousText(d)}. A visit is one browser on one day; nothing is stored in it. Before the cutover the counts are GoatCounter's, a browser once per page; since then, once per day.`, render: visitorsCard, skeleton: { tiles: 2, chart: true } },
   { id: 'referrers', title: 'Where they come from', half: true, queries: ['referrers'], sub: () => 'Visitors by where the visit started; the raw referrers and the tagged links folded below.', render: referrersCard, skeleton: { lines: 6 } },
   { id: 'pages', title: 'What they read', half: true, queries: ['pages'], sub: () => 'Pages by visitors; the paths that hit the 404 page folded below.', render: pagesCard, skeleton: { lines: 6 } },
   { id: 'events', title: 'Where they go next', queries: ['events', 'visits'], sub: () => 'Clicks out to a profile, to play, to watch, and docs read to the end.', render: eventsCard, skeleton: { tiles: 3, lines: 4 } },

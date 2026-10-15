@@ -1,28 +1,115 @@
 {
   "groups": [
-    { "group": "search", "visitors": 61 },
-    { "group": "direct", "visitors": 58 },
-    { "group": "social", "visitors": 44 },
-    { "group": "newsletter", "visitors": 21 },
-    { "group": "code", "visitors": 14 },
-    { "group": "video", "visitors": 9 },
-    { "group": "other", "visitors": 5 }
+    {
+      "group": "search",
+      "visitors": 61
+    },
+    {
+      "group": "direct",
+      "visitors": 58
+    },
+    {
+      "group": "social",
+      "visitors": 44
+    },
+    {
+      "group": "newsletter",
+      "visitors": 21
+    },
+    {
+      "group": "code",
+      "visitors": 14
+    },
+    {
+      "group": "video",
+      "visitors": 9
+    },
+    {
+      "group": "other",
+      "visitors": 5
+    }
   ],
   "rows": [
-    { "referrer": "google.com", "group": "search", "visitors": 54 },
-    { "referrer": "linkedin.com", "group": "social", "visitors": 38 },
-    { "referrer": "csarko.substack.com", "group": "newsletter", "visitors": 21 },
-    { "referrer": "github.com", "group": "code", "visitors": 14 },
-    { "referrer": "youtube.com", "group": "video", "visitors": 9 },
-    { "referrer": "t.co", "group": "social", "visitors": 6 },
-    { "referrer": "bing.com", "group": "search", "visitors": 5 },
-    { "referrer": "news.ycombinator.com", "group": "other", "visitors": 3 },
-    { "referrer": "duckduckgo.com", "group": "search", "visitors": 2 },
-    { "referrer": "reddit.com", "group": "other", "visitors": 2 }
+    {
+      "referrer": "google.com",
+      "group": "search",
+      "visitors": 54
+    },
+    {
+      "referrer": "linkedin.com",
+      "group": "social",
+      "visitors": 38
+    },
+    {
+      "referrer": "csarko.substack.com",
+      "group": "newsletter",
+      "visitors": 21
+    },
+    {
+      "referrer": "github.com",
+      "group": "code",
+      "visitors": 14
+    },
+    {
+      "referrer": "youtube.com",
+      "group": "video",
+      "visitors": 9
+    },
+    {
+      "referrer": "t.co",
+      "group": "social",
+      "visitors": 6
+    },
+    {
+      "referrer": "bing.com",
+      "group": "search",
+      "visitors": 5
+    },
+    {
+      "referrer": "news.ycombinator.com",
+      "group": "other",
+      "visitors": 3
+    },
+    {
+      "referrer": "duckduckgo.com",
+      "group": "search",
+      "visitors": 2
+    },
+    {
+      "referrer": "reddit.com",
+      "group": "other",
+      "visitors": 2
+    }
   ],
   "campaigns": [
-    { "campaign": "substack-rock-on-steep-terrain", "visitors": 12 },
-    { "campaign": "linkedin-post", "visitors": 9 },
-    { "campaign": "github-readme", "visitors": 6 }
+    {
+      "campaign": "substack-rock-on-steep-terrain",
+      "visitors": 12
+    },
+    {
+      "campaign": "linkedin-post",
+      "visitors": 9
+    },
+    {
+      "campaign": "github-readme",
+      "visitors": 6
+    }
+  ],
+  "paths": [
+    {
+      "from": "/",
+      "to": "/research",
+      "visitors": 34
+    },
+    {
+      "from": "/",
+      "to": "/games",
+      "visitors": 21
+    },
+    {
+      "from": "/research",
+      "to": "/research/stylized-shader-looks",
+      "visitors": 17
+    }
   ]
 }
