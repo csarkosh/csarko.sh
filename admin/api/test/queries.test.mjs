@@ -48,7 +48,7 @@ function fakes({ visitsOn = true, gscOn = true, youtubeOn = false, githubToken =
       },
       async audience() {
         return {
-          countries: [{ name: "United States", visitors: 100 }],
+          countries: [{ name: "US", visitors: 100 }],
           sizes: [], browsers: [], systems: [], languages: [], themes: [{ name: "dark", visitors: 70 }], viewports: [], touch: [], timezones: [],
         };
       },
@@ -176,7 +176,7 @@ test("the visits queries have the contract's shapes", async () => {
 
   const audience = await q.audience(7);
   assert.deepEqual(Object.keys(audience), ["countries", "sizes", "browsers", "systems", "languages", "themes", "viewports", "touch", "timezones"]);
-  assert.equal(audience.countries[0].name, "United States");
+  assert.equal(audience.countries[0].name, "US");
 });
 
 test("a visits query without a dataset says which variable is missing", async () => {

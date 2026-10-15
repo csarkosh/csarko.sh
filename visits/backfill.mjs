@@ -71,6 +71,7 @@ function fromCsv(text) {
   for (const name of ["Path", "Title", "Event", "Bot", "Referrer", "Date"]) {
     if (!cols.includes(name)) throw new Error(`CSV export lacks the column ${name}; header was: ${header}`);
   }
+  if (!cols.includes("FirstVisit")) console.warn("warning: no FirstVisit column, so every hit counts as a visit (pageviews, not GoatCounter's visits)");
   const idx = (name) => cols.indexOf(name);
   // GoatCounter counts a visit only for a hit marked FirstVisit (a browser's first view of
   // the path in its session); the other hits are repeat views and count nothing.

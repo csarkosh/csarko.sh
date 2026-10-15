@@ -1,23 +1,23 @@
 {
   "countries": [
     {
-      "name": "United States",
+      "name": "US",
       "visitors": 121
     },
     {
-      "name": "Germany",
+      "name": "DE",
       "visitors": 18
     },
     {
-      "name": "United Kingdom",
+      "name": "GB",
       "visitors": 16
     },
     {
-      "name": "Canada",
+      "name": "CA",
       "visitors": 12
     },
     {
-      "name": "India",
+      "name": "IN",
       "visitors": 11
     },
     {

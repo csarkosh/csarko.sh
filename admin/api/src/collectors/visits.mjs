@@ -104,7 +104,6 @@ export function sumBy(rows, key, field) {
   return [...map.values()].sort((a, b) => b[field] - a[field]);
 }
 
-/** BigQuery wraps dates, timestamps and big numbers in objects with `value`; the API wants plain values. */
 /** The UTC dates (`YYYY-MM-DD`) that the instants [from, to) touch, oldest first. */
 export function utcDates(from, to) {
   const out = [];
@@ -112,6 +111,7 @@ export function utcDates(from, to) {
   return out;
 }
 
+/** BigQuery wraps dates, timestamps and big numbers in objects with `value`; the API wants plain values. */
 export function plainRow(row) {
   const out = {};
   for (const [k, v] of Object.entries(row)) out[k] = v !== null && typeof v === "object" && "value" in v ? v.value : v;
