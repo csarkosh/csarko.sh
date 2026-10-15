@@ -282,7 +282,7 @@ test('docPage has the tags, JSON-LD and markers the checks expect', () => {
   assert.ok(html.includes('<body class="doc-page">\n  <a class="skip-link" href="#top">Skip to content</a>'));
   assert.ok(html.includes('<main id="top" tabindex="-1">'));
   assert.ok(html.includes('<a href="#one"><span class="num" aria-hidden="true">01</span><span>One</span></a>'));
-  // No Sources section, so the author box is the end engage.js watches for the read event.
+  // No Sources section, so the author box is the end the visits client's leave beacon reports for the read event.
   assert.ok(html.includes('<section class="author" aria-label="About the author" data-read-end>'));
   for (const marker of ['<!-- generated:head -->\n  <!-- /generated:head -->', '/* generated:fonts */\n    /* /generated:fonts */', '<!-- generated:analytics -->\n  <!-- /generated:analytics -->']) {
     assert.ok(html.includes(marker), marker);

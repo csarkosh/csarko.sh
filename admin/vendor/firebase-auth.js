@@ -2,7 +2,7 @@
  * The entry esbuild bundles into admin/public/vendor/firebase-auth.<hash>.js: the part of
  * the Firebase SDK that `/auth.js` needs, and nothing else. The admin pages allow no
  * third-party script (CSP `script-src 'self'`), so the SDK is self-hosted here the way the
- * site self-hosts count.js, and committed like every other generated asset.
+ * site self-hosts its analytics script (visits.min.js), and committed like every other generated asset.
  *
  * `node admin/build.mjs` runs the bundle step when admin/node_modules is present and the
  * output is missing or older than package-lock.json (`npm install` in admin/ first).

@@ -7,7 +7,7 @@ day into Firestore so the trend lines are ours. Design: `docs/superpowers/specs/
 (Parts 1, 2.1, 2.3, 2.4). Response shapes: `admin/CONTRACT.md`.
 
 Node 22, ES modules, `node:http`, no framework. Runtime dependencies are
-`@google-cloud/firestore` and `jose`, nothing else.
+`@google-cloud/firestore`, `@google-cloud/bigquery` and `jose`, nothing else.
 
 ## Routes
 
