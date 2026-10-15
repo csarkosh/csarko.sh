@@ -2,12 +2,13 @@
 
 Cyrus Sarkosh's portfolio site, live at **https://csarko.sh**. A home page (who
 he is, where he's worked, the games he builds, his skills, and how to reach him),
-a games list at **https://csarko.sh/games**, short films at
+apps at **https://csarko.sh/apps** (each with its own page on
+**https://apps.csarko.sh**), a games list at **https://csarko.sh/games**, short films at
 **https://csarko.sh/film** and research docs at
 **https://csarko.sh/research** (served at `/docs` until 2026-09-17; those URLs
 now 301 there). No framework and no CI; the one build step,
-`generate-assets.sh`, also turns `docs/published/*.md`, `docs/games/*.md` and
-`docs/films/*.md` into pages.
+`generate-assets.sh`, also turns `docs/published/*.md`, `docs/games/*.md`,
+`docs/films/*.md` and `docs/apps/*.md` into pages.
 
 ## Layout
 
@@ -22,13 +23,15 @@ now 301 there). No framework and no CI; the one build step,
 | `public/robots.txt` | Crawl rules. |
 | `docs/published/<YYYY-MM-DD>-<slug>.md` | **Published docs, source of truth.** Markdown with front matter, one file per doc, named for its `published:` date (the build fails if the two disagree). The URL is the slug alone: `/research/<slug>`, no date. The repo is public, so committing a file here publishes it; use the `publish-doc` skill. |
 | `docs/films/<slug>.md` | **The films, source of truth.** One file per short film, named for the slug alone (a date prefix is refused; `released:` in the front matter is the date). Front matter also carries `watch` (the YouTube URL), `runtime`, `alt` (the poster's alt text), `tags` and an optional `warning` (a content warning, shown on the card). Its poster is committed at `.agents/skills/site-quality/assets/films/<slug>.jpg`. The repo is public, so committing a file here publishes it. |
+| `docs/apps/<slug>.md` | **The apps, source of truth** *(added 2026-10-15)*. One file per app, named for the slug alone. Front matter: `description`, `status` (`released` or `in-development`), `page` (the app's page, `https://apps.csarko.sh/<slug>` for one hosted there), `tags`, and optional `license` (joins the status in the card's kicker), `repo` and `released`. The body is the card's copy. The repo is public, so committing a file here publishes it. |
+| `apps/` | **`https://apps.csarko.sh`** *(added 2026-10-15)*: each app's own page, `apps.csarko.sh/<slug>`, a third Firebase Hosting site `csarko-sh-apps`; its `/` 301s to `https://csarko.sh/apps`, as `games.csarko.sh` goes to `/games`. `apps/build.mjs` makes each page from the app's README on GitHub (default branch) and its **latest release**, whose assets become the download buttons, with the site's head, nav, trail, fonts and theme (`pageShell` in `docs_lib.mjs`, `apps/product.mjs`); `apps/public/` is its git-ignored output. **Run `apps/deploy.sh` after an app's README changes or it releases**: the buttons name the release that was latest at build time. No script on this host (no analytics: the collector takes `https://csarko.sh` only). Tests: `node --test apps/test/*.test.mjs`. |
 | `docs/games/<slug>.md` | **The games, source of truth.** Markdown with front matter, one file per game, named for the slug alone: a game is not a dated log entry, so a date prefix is refused (`released:` in the front matter is the date). The repo is public, so committing a file here publishes it. |
-| `public/research/`, `public/games/`, `public/film/`, `public/sitemap.xml` | **Generated** from `docs/published/`, `docs/games/` and `docs/films/` by `build_docs.mjs` (run by `generate-assets.sh`). `public/film/<slug>.jpg` is each film's stable poster, written by `build_assets.py`. |
-| `docs/superpowers/` | Internal design specs and implementation plans. **Never published** (unlike its siblings `docs/published/`, `docs/games/` and `docs/films/`, which are). |
+| `public/research/`, `public/games/`, `public/film/`, `public/apps/`, `public/sitemap.xml` | **Generated** from `docs/published/`, `docs/games/`, `docs/films/` and `docs/apps/` by `build_docs.mjs` (run by `generate-assets.sh`). `public/film/<slug>.jpg` is each film's stable poster, written by `build_assets.py`. |
+| `docs/superpowers/` | Internal design specs and implementation plans. **Never published** (unlike its siblings `docs/published/`, `docs/games/`, `docs/films/` and `docs/apps/`, which are). |
 | `docs/substack/posts.json` | The log of csarko.log posts made with the `substack-post` skill: date, Substack URL, title and the doc slugs each covered. Not a page: the build reads only the three content folders. |
 | `firebase.json`, `.firebaserc` | Firebase Hosting config: publish `public/`, cache headers, and the 301 redirects from the old `/docs` URLs to `/research` (keep them: old links and search results still use them). |
 | `admin/` | **The private dashboard, `https://admin.csarko.sh`** *(designed and approved 2026-10-12; spec: `docs/superpowers/specs/2026-10-12-admin-dashboard-design.md`)*. `admin/public/` is the shell (the index of tracked apps, `/csarko.sh/` the site's own dashboard, `theme.css`, `auth.js`, `charts.js`), a second Firebase Hosting site `csarko-sh-admin`; `admin/api/` is the Cloud Run service `csarko-admin` that reads the visits data in BigQuery, Search Console, YouTube, GitHub and the daily Firestore snapshots; `admin/public/game-dayhike/` is **pulled at deploy** from the game's repo (git-ignored). See "Admin pages" below for the standing rule. |
-| `_infra/` | Terraform for the hosting, DNS, and the admin site and API. Same shape as `~/Projects/game-dayhike/_infra` (project `fps-csarko`). |
+| `_infra/` | Terraform for the hosting, DNS, the apps site, and the admin site and API. Same shape as `~/Projects/game-dayhike/_infra` (project `fps-csarko`). |
 | `.agents/skills/` | Agent skills: `preview`, `deploy`, `site-quality`, `publish-doc` and `substack-post`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
 | `.claude/settings.json` | Imports the shared skill plugins from [`csarkosh/skills-general`](https://github.com/csarkosh/skills-general): `general:doc-preview` (open a markdown doc as a styled page in Chrome; not this repo's `preview`, which previews the site) and `general:search-console` (Google Search Console reports: indexing, sitemap, search performance) and `general-claude:doc-artifact` (publish a doc as a claude.ai Artifact). Change those skills in `skills-general`, not here. On a machine that has never installed them, run `claude plugin install general@csarkosh` and `claude plugin install general-claude@csarkosh`. Codex has no per-repository import: run `codex plugin marketplace add csarkosh/skills-general` and `codex plugin add general@csarkosh` once per machine. |
 | `README.md` | Human-facing overview. `LICENSE` is MIT and predates this version of the site. |
@@ -36,8 +39,8 @@ now 301 there). No framework and no CI; the one build step,
 ## Workflows
 
 - **See a change:** `.agents/skills/preview/scripts/preview.sh` (opens the home page
-  from disk; use `--serve` for `/film`, `/games`, `/research` and their links) or `--shots` for
-  desktop + mobile screenshots of the home page, `/film`, `/games` and the newest doc, in
+  from disk; use `--serve` for `/apps`, `/film`, `/games`, `/research` and their links) or `--shots` for
+  desktop + mobile screenshots of the home page, `/apps`, `/film`, `/games` and the newest doc, in
   both the dark and light themes, in `/tmp/csarko-sh-preview/`. After any visual
   edit, look at the screenshots in both themes before calling it done.
 - **Publish a doc:** the `publish-doc` skill.
@@ -48,7 +51,7 @@ now 301 there). No framework and no CI; the one build step,
   (`/research/voice-profile-vs-pangram`). His voice profile is
   `~/.config/csarko-sh/voice.md`: outside the repo, never committed.
 - **Ship a change:** `.agents/skills/deploy/scripts/deploy.sh`. It verifies the
-  deployed home page, `/film`, `/games`, `/research` and newest doc byte-for-byte on both
+  deployed home page, `/apps`, `/film`, `/games`, `/research` and newest doc byte-for-byte on both
   the web.app URL and csarko.sh. `--preview` gives a 7-day shareable channel
   instead.
 - **Change infrastructure:** `terraform -chdir=_infra plan`, then `apply`. Never
@@ -228,8 +231,9 @@ three from the command line):
   OR across chips, "All" a reset button, no script: the list filters through CSS
   `:has()`) and the tags on each card. The build refuses a doc without them or with a
   name outside the set; the `publish-doc` skill says which to give a doc.
-- **Film** *(added 2026-09-17)*: short films at **`/film`** (nav: `Film`, first
-  among the page links on every page, and no heading link, since the home page
+- **Film** *(added 2026-09-17)*: short films at **`/film`** (nav: `Film`, second
+  among the page links after `Apps` since 2026-10-15, and the first link to collapse when the bar
+  narrows (hidden at ≤ 720px, Cyrus: it has little to show yet); no heading link, since the home page
   has no film section; the page's H1 is "Short films on YouTube",
   its eyebrow "Film"), built from `docs/films/*.md`, one file per film. Each card
   carries the film's poster, a `Short film · <runtime>` kicker, its title, its
@@ -259,7 +263,8 @@ three from the command line):
   makes no third-party request. Launched with `who-is-standing-in-my-hallway`.
 - **Breadcrumbs** *(added 2026-09-15)*: every generated page carries a trail
   under the nav (`Home › Research › <title>` on a doc, `Home › Research` on
-  `/research`, `Home › Games` on `/games`, `Home › Film` on `/film`); the home page and `404.html` carry none.
+  `/research`, `Home › Apps` on `/apps`, `Home › Games` on `/games`, `Home › Film` on `/film`; an app's page on
+  apps.csarko.sh carries `Home › Apps › <app>`, every link absolute); the home page and `404.html` carry none.
   A doc page's eyebrow is therefore the date alone, not `Research · <date>`. The
   trail and the page's `BreadcrumbList` JSON-LD are one array in `docs_lib.mjs`
   and `check.py` fails the build if they drift apart; see `site-quality`,
