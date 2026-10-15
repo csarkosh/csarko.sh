@@ -1,0 +1,205 @@
+{
+  "rows": [
+    {
+      "started": "2026-10-15T14:05:12Z",
+      "source": {
+        "kind": "external",
+        "host": "google.com"
+      },
+      "steps": [
+        {
+          "path": "/",
+          "title": "Cyrus Sarkosh",
+          "at": 0,
+          "secs": 41,
+          "depth": 70,
+          "read": false
+        },
+        {
+          "path": "/research",
+          "title": "Research & notes",
+          "at": 41,
+          "secs": 22,
+          "depth": 45,
+          "read": false
+        },
+        {
+          "path": "/research/stylized-shader-looks",
+          "title": "Stylized shader looks",
+          "at": 63,
+          "secs": 185,
+          "depth": 100,
+          "read": true
+        }
+      ],
+      "exit": {
+        "kind": "click",
+        "event": "out-github",
+        "url": "https://github.com/csarkosh",
+        "host": "github.com"
+      },
+      "engaged": 248
+    },
+    {
+      "started": "2026-10-15T12:41:03Z",
+      "source": {
+        "kind": "external",
+        "host": "substack.com",
+        "campaign": "substack"
+      },
+      "steps": [
+        {
+          "path": "/research/telemetry-without-identifying-anyone",
+          "title": "Telemetry without identifying anyone",
+          "at": 0,
+          "secs": 312,
+          "depth": 100,
+          "read": true
+        },
+        {
+          "path": "/apps",
+          "title": "Apps and libraries",
+          "at": 312,
+          "secs": 18,
+          "depth": 60,
+          "read": false
+        }
+      ],
+      "exit": {
+        "kind": "click",
+        "event": "app-lib-visits",
+        "url": "https://apps.csarko.sh/lib-visits",
+        "host": "apps.csarko.sh"
+      },
+      "engaged": 330
+    },
+    {
+      "started": "2026-10-15T11:20:44Z",
+      "source": {
+        "kind": "direct"
+      },
+      "steps": [
+        {
+          "path": "/",
+          "title": "Cyrus Sarkosh",
+          "at": 0,
+          "secs": 12,
+          "depth": 35,
+          "read": false
+        },
+        {
+          "path": "/games",
+          "title": "Games",
+          "at": 12,
+          "secs": 9,
+          "depth": 80,
+          "read": false
+        }
+      ],
+      "exit": {
+        "kind": "click",
+        "event": "play-day-hike",
+        "url": "https://games.csarko.sh/dayhike/",
+        "host": "games.csarko.sh"
+      },
+      "engaged": 21
+    },
+    {
+      "started": "2026-10-15T09:58:30Z",
+      "source": {
+        "kind": "external",
+        "host": "linkedin.com"
+      },
+      "steps": [
+        {
+          "path": "/",
+          "title": "Cyrus Sarkosh",
+          "at": 0,
+          "secs": 64,
+          "depth": 100,
+          "read": false
+        }
+      ],
+      "exit": {
+        "kind": "click",
+        "event": "out-linkedin",
+        "url": "https://www.linkedin.com/in/csarkosh",
+        "host": "linkedin.com"
+      },
+      "engaged": 64
+    },
+    {
+      "started": "2026-10-15T08:12:09Z",
+      "source": {
+        "kind": "external",
+        "host": "chatgpt.com"
+      },
+      "steps": [
+        {
+          "path": "/research/photorealistic-water-rendering",
+          "title": "Photorealistic water rendering",
+          "at": 0,
+          "secs": 96,
+          "depth": 58,
+          "read": false
+        }
+      ],
+      "exit": {
+        "kind": "left"
+      },
+      "engaged": 96
+    },
+    {
+      "started": "2026-10-14T22:47:51Z",
+      "source": {
+        "kind": "external",
+        "host": "github.com"
+      },
+      "steps": [
+        {
+          "path": "/",
+          "title": "Cyrus Sarkosh",
+          "at": 0,
+          "secs": 26,
+          "depth": 100,
+          "read": false
+        },
+        {
+          "path": "/film",
+          "title": "Short films",
+          "at": 26,
+          "secs": 7,
+          "depth": 40,
+          "read": false
+        }
+      ],
+      "exit": {
+        "kind": "click",
+        "event": "watch-who-is-standing-in-my-hallway",
+        "url": "https://www.youtube.com/shorts/x",
+        "host": "youtube.com"
+      },
+      "engaged": 33
+    },
+    {
+      "started": "2026-10-14T19:03:15Z",
+      "source": {
+        "kind": "direct"
+      },
+      "steps": [
+        {
+          "path": "/apps",
+          "title": "Apps and libraries",
+          "at": 0,
+          "secs": null,
+          "depth": null,
+          "read": false
+        }
+      ],
+      "exit": {
+        "kind": "left"
+      },
+      "engaged": null
+    }
+  ]
+}

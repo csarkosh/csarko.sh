@@ -20,7 +20,7 @@ import { pathsOf, normalizePath } from "./collectors/sitemap.mjs";
 import { assessHealth } from "./health.mjs";
 import { addDays, isoDate, hourlyRange, dailyRange } from "./time.mjs";
 
-export const QUERY_NAMES = ["visits", "pages", "referrers", "events", "audience", "search", "reach", "health"];
+export const QUERY_NAMES = ["visits", "pages", "referrers", "events", "journeys", "audience", "search", "reach", "health"];
 export const MANUAL_KEYS = ["substack"];
 export const APP_NAME = "csarko.sh";
 export const TREND_WEEKS = 12;
@@ -140,6 +140,12 @@ export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, h
       const e = await visits.events(range);
       const rows = e.rows.map((r) => ({ name: r.name, kind: eventKindOf(r.name), visitors: r.visitors }));
       return { rows, outboundRate: e.homeVisitors > 0 ? outboundOf(rows) / e.homeVisitors : null };
+    },
+
+    async journeys(days) {
+      const empty = requireVisits();
+      if (empty) return { rows: null, ...empty };
+      return { rows: await visits.journeys(hourlyRange(days, now())) };
     },
 
     async audience(days) {

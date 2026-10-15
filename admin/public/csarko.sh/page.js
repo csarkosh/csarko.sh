@@ -1,7 +1,7 @@
 /**
- * The csarko.sh dashboard (spec 2.5): a range row, then eight cards in order, each
+ * The csarko.sh dashboard (spec 2.5): a range row, then nine cards in order, each
  * loading its own query (or two) and showing its own error line. Visitors, where they
- * come from, what they read, where they go next, search, reach, health, audience.
+ * come from, what they read, where they go next, journeys, search, reach, health, audience.
  *
  * The API (admin/api, shapes in admin/CONTRACT.md) answers `null` for any part whose
  * credential is missing, with `notConfigured: { <part>: "<ENV NAME>" }` naming the secret
@@ -139,6 +139,58 @@ function eventsCard([events, visits], days) {
     { key: 'visitors', label: 'Visitors', num: true },
   ], [...rows].sort((a, b) => b.visitors - a.visitors), 'No events in this range: the public site has none wired yet.'));
   return [...errorLines(events, visits), tiles, el('h3', {}, 'Share of visits'), funnel, list];
+}
+
+// ---------------------------------------------------------------- journeys
+
+/** Engaged seconds as "41s" or "3m 05s". */
+const duration = (s) => (s >= 60 ? `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s` : `${s}s`);
+const clock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+const SOURCE_NAMES = { 'google.com': 'Google', 'bing.com': 'Bing', 'duckduckgo.com': 'DuckDuckGo', 'github.com': 'GitHub', 'linkedin.com': 'LinkedIn', 'substack.com': 'Substack', 'youtube.com': 'YouTube', 'chatgpt.com': 'ChatGPT', 't.co': 'X' };
+const sourceName = (src) => (src.kind === 'external' ? SOURCE_NAMES[src.host] ?? src.host : src.kind === 'internal' ? 'This site' : 'Direct');
+const ARROW_SVG = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const arrow = () => { const a = el('li', { class: 'j-arrow', 'aria-hidden': 'true' }); a.innerHTML = ARROW_SVG; return a; };
+
+/** One visit, left to right: where it came from, each page with its time and depth, how it ended. */
+function journey(j, now) {
+  const last = j.steps[j.steps.length - 1];
+  const ends = (last?.at ?? 0) + (last?.secs ?? 0);
+  const from = el('li', { class: 'j-node edge' },
+    el('span', { class: 'j-kicker' }, 'Arrived from'),
+    el('span', { class: 'j-main' }, sourceName(j.source)),
+    el('span', { class: 'j-small' }, j.source.campaign ? `tagged ${j.source.campaign}` : j.source.kind === 'external' ? j.source.host : j.source.kind === 'direct' ? 'no referrer' : 'an earlier visit'));
+  const items = [from];
+  j.steps.forEach((s, i) => {
+    const depth = el('span', { class: 'j-depth', title: s.depth === null ? 'No scroll depth recorded' : `Scrolled ${s.depth}%` }, el('span', { style: `width:${s.depth ?? 0}%` }));
+    items.push(arrow(), el('li', { class: 'j-node' },
+      el('span', { class: 'j-kicker' }, `Page ${i + 1} · at ${clock(s.at)}`),
+      el('span', { class: 'j-main mono', title: s.title || s.path }, s.path),
+      depth,
+      s.read ? el('span', { class: 'j-badge' }, 'read to the end') : el('span', { class: 'j-small' }, s.depth === null ? 'no leave beacon yet' : `scrolled ${s.depth}%`),
+      el('span', { class: 'j-time' }, s.secs === null ? '' : duration(s.secs), s.secs === null ? '' : el('small', {}, ' engaged'))));
+  });
+  items.push(arrow(), el('li', { class: 'j-node edge' },
+    el('span', { class: 'j-kicker' }, 'Left'),
+    el('span', { class: 'j-main' }, j.exit.kind === 'click' ? `Clicked out to ${j.exit.host ?? 'a link'}` : 'Ended here'),
+    el('span', { class: 'j-small' }, j.exit.kind === 'click' ? (j.exit.event ? `event ${j.exit.event}` : j.exit.url) : 'closed, idled or went back')));
+  const timed = j.steps.filter((s) => isNum(s.secs) && s.secs > 0);
+  const strip = timed.length
+    ? el('div', { class: 'j-strip', role: 'img', 'aria-label': `Engaged time: ${timed.map((s) => `${s.path} ${duration(s.secs)}`).join(', ')}` },
+      ...timed.map((s, i) => el('span', { style: `flex:${s.secs} 1 0`, class: `ord-${Math.min(4, timed.length - i)}`, title: `${s.path}: ${duration(s.secs)}` })))
+    : null;
+  const head = el('p', { class: 'j-head' },
+    el('span', {}, ago(j.started, now)),
+    ` · ${j.engaged === null ? 'no engaged time yet' : `${duration(j.engaged)} engaged`} · ${j.steps.length} page${j.steps.length === 1 ? '' : 's'}${ends ? ` over ${clock(ends)}` : ''}`);
+  return el('li', { class: 'journey' }, head, el('ol', { class: 'j-flow', 'aria-label': `Journey from ${sourceName(j.source)}` }, ...items), strip);
+}
+
+function journeysCard([journeys]) {
+  if (!journeys.rows) return [notConfigured(missing(journeys, 'visits'))];
+  const rows = journeys.rows;
+  if (!rows.length) return [...errorLines(journeys), el('p', { class: 'empty' }, 'No visits in this range yet. Journeys start at the cutover to lib-visits, 2026-10-15.')];
+  const now = Date.now();
+  const list = (items) => el('ol', { class: 'journeys', role: 'list' }, ...items.map((j) => journey(j, now)));
+  return [...errorLines(journeys), list(rows.slice(0, 5)), rows.length > 5 ? folded(`More journeys · ${rows.length - 5}`, list(rows.slice(5))) : null].filter(Boolean);
 }
 
 function searchCard([search], days) {
@@ -321,6 +373,7 @@ const CARDS = [
   { id: 'referrers', title: 'Where they come from', half: true, queries: ['referrers'], sub: () => 'Visitors by where the visit started; the raw referrers and the tagged links folded below.', render: referrersCard, skeleton: { lines: 6 } },
   { id: 'pages', title: 'What they read', half: true, queries: ['pages'], sub: () => 'Pages by visitors; the paths that hit the 404 page folded below.', render: pagesCard, skeleton: { lines: 6 } },
   { id: 'events', title: 'Where they go next', queries: ['events', 'visits'], sub: () => 'Clicks out to a profile, to play, to watch, and docs read to the end.', render: eventsCard, skeleton: { tiles: 3, lines: 4 } },
+  { id: 'journeys', title: 'Journeys', queries: ['journeys'], sub: () => 'The most recent visits, each from where it came to how it left: every page with its engaged time and scroll depth, and the click that ended it. From lib-visits, so since the cutover only.', render: journeysCard, skeleton: { lines: 6 } },
   { id: 'search', title: 'Search', queries: ['search'], sub: (d, s) => s?.lag ?? 'Google Search Console runs 2 to 3 days behind.', render: searchCard, skeleton: { tiles: 4, chart: true } },
   { id: 'reach', title: 'Reach', queries: ['reach'], sub: () => 'YouTube, GitHub, Hacker News and Substack: exposure beyond the site. A section reads Not configured until its credential is in Secret Manager.', render: reachCard, skeleton: { tiles: 3, lines: 4 } },
   { id: 'health', title: 'Health', half: true, queries: ['health'], sub: () => '', render: healthCard, skeleton: { tiles: 4, lines: 1 } },

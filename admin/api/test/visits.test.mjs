@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createCache } from "../src/cache.mjs";
-import { createVisits, sumBy, plainRow, utcDates } from "../src/collectors/visits.mjs";
+import { createVisits, journeyOf, sumBy, plainRow, utcDates } from "../src/collectors/visits.mjs";
 import { UpstreamError } from "../src/http.mjs";
 
 const rows = JSON.parse(readFileSync(new URL("./fixtures/visits-rows.json", import.meta.url), "utf8"));
@@ -102,4 +102,33 @@ test("utcDates covers every date an hour-aligned window touches, so both windows
   assert.deepEqual(utcDates("2026-10-13T00:00:00Z", "2026-10-16T00:00:00Z"), ["2026-10-13", "2026-10-14", "2026-10-15"]);
   assert.equal(utcDates("2026-10-08T14:00:00Z", "2026-10-15T14:00:00Z").length, 8);
   assert.equal(utcDates("2026-10-01T14:00:00Z", "2026-10-08T14:00:00Z").length, 8);
+});
+
+const journeyRow = (over = {}) => ({
+  started: "2026-10-15T15:32:16Z",
+  source: { rk: "external", rh: "google.com", campaign: null },
+  steps: [
+    { stamp: "2026-10-15T15:32:16Z", path: "/", title: "Home", secs: 41, depth: 70, reached: false },
+    { stamp: "2026-10-15T15:32:17Z", path: "/", title: "Home", secs: null, depth: null, reached: false },
+    { stamp: "2026-10-15T15:32:57Z", path: "/research/x", title: "X", secs: "185", depth: "100", reached: true },
+  ],
+  last_click: { stamp: "2026-10-15T15:36:10Z", event: "out-github", url: "https://www.github.com/csarkosh" },
+  ...over,
+});
+
+test("journeyOf keeps a page loaded twice within two seconds once, times each step and names the exit", () => {
+  const j = journeyOf(journeyRow());
+  assert.deepEqual(j.source, { kind: "external", host: "google.com" });
+  assert.deepEqual(j.steps.map((s) => [s.path, s.at, s.secs, s.depth, s.read]), [["/", 0, 41, 70, false], ["/research/x", 41, 185, 100, true]]);
+  assert.deepEqual(j.exit, { kind: "click", event: "out-github", url: "https://www.github.com/csarkosh", host: "github.com" });
+  assert.equal(j.engaged, 226);
+});
+
+test("journeyOf: a click before the last view is not the exit, a direct visit has no host, no leave means no engaged time", () => {
+  const j = journeyOf(journeyRow({ source: { rk: "direct" }, last_click: { stamp: "2026-10-15T15:32:20Z", event: "out-x", url: "https://x.com/" } }));
+  assert.deepEqual(j.source, { kind: "direct" });
+  assert.deepEqual(j.exit, { kind: "left" });
+  const quiet = journeyOf(journeyRow({ steps: [{ stamp: "2026-10-15T15:32:16Z", path: "/", title: "Home", secs: null, depth: null, reached: false }], last_click: null }));
+  assert.equal(quiet.engaged, null);
+  assert.equal(journeyOf(journeyRow({ source: { rk: "external", campaign: "substack" } })).source.campaign, "substack");
 });

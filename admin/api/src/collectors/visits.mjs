@@ -83,6 +83,13 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
       return { rows: rows.filter((r) => r.name !== "(home)"), homeVisitors: home ? home.visitors : 0 };
     },
 
+    // The most recent visits as journeys (journeys.sql). lib-visits rows only: GoatCounter's
+    // history holds no visit's sequence, so nothing before the cutover can be shown.
+    async journeys(range) {
+      const rows = await run("journeys", { start: range.start, end: range.end });
+      return rows.map(journeyOf);
+    },
+
     async audience(range) {
       const rows = await run("audience", { start: range.start, end: range.end });
       const out = { countries: [], sizes: [], browsers: [], systems: [], languages: [], themes: [], viewports: [], touch: [], timezones: [] };
@@ -90,6 +97,48 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
       return out;
     },
   };
+}
+
+const num = (v) => (v === null || v === undefined || v === '' ? null : Number(v));
+const flag = (v) => v === true || v === 'true';
+
+/**
+ * One journeys.sql row as the API's journey: `source` { kind: direct | external | internal, host?,
+ * campaign? }; `steps` [{ path, title, at (seconds from the first view), secs, depth, read }],
+ * a page loaded twice within two seconds kept once; `exit` { kind: "click", event, url, host }
+ * when the visit's last outbound click came on or after its last view, else { kind: "left" };
+ * `engaged`, the steps' engaged seconds summed (null when no page sent a leave).
+ */
+export function journeyOf(row) {
+  const r = plainRow(row);
+  const started = Date.parse(r.started);
+  const steps = [];
+  for (const raw of r.steps ?? []) {
+    const s = plainRow(raw);
+    const step = { path: s.path, title: s.title ?? "", at: Math.max(0, Math.round((Date.parse(s.stamp) - started) / 1000)), secs: num(s.secs), depth: num(s.depth), read: flag(s.reached) };
+    const prev = steps[steps.length - 1];
+    if (prev && prev.path === step.path && step.at - prev.at <= 2) {
+      prev.secs = prev.secs === null ? step.secs : Math.max(prev.secs, step.secs ?? 0);
+      prev.depth = prev.depth === null ? step.depth : Math.max(prev.depth, step.depth ?? 0);
+      prev.read = prev.read || step.read;
+      continue;
+    }
+    steps.push(step);
+  }
+  const src = plainRow(r.source ?? {});
+  const source = { kind: src.rk === "external" ? "external" : src.rk === "internal" ? "internal" : "direct" };
+  if (source.kind === "external") source.host = src.rh ?? "(unknown)";
+  if (src.campaign) source.campaign = src.campaign;
+  const click = r.last_click ? plainRow(r.last_click) : null;
+  const lastAt = steps.length ? started + steps[steps.length - 1].at * 1000 : started;
+  let exit = { kind: "left" };
+  if (click && Date.parse(click.stamp) >= lastAt) {
+    let host = null;
+    try { host = new URL(click.url).host.replace(/^www\./, ""); } catch { /* a path-only url keeps no host */ }
+    exit = { kind: "click", event: click.event ?? null, url: click.url, host };
+  }
+  const timed = steps.filter((s) => s.secs !== null);
+  return { started: r.started, source, steps, exit, engaged: timed.length ? timed.reduce((n, s) => n + s.secs, 0) : null };
 }
 
 /** Rows with the same `key` folded into one, their `field` summed, highest first. */

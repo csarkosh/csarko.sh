@@ -67,7 +67,7 @@ trend, and the health dot.
 
 ## `GET <api>/admin/query/<name>?days=1|7|30|90` (csarko.sh)
 
-`days` defaults to 7; any other value is a 400. Query names are exactly these eight.
+`days` defaults to 7; any other value is a 400. Query names are exactly these nine.
 The sample files are `admin/public/sample/csarko.sh/<name>.json`, each for `days=7`
 (the preview tiles that week for the other ranges).
 
@@ -119,6 +119,20 @@ other), zero included. `paths` are the site's own edges, the previous page to th
 `kind` is the name's prefix: `out`, `play`, `watch`, `read`, `nav`, else `other`.
 `outboundRate` is outbound clicks over home-page visitors, `null` when nobody reached
 the home page in the range. `rows` is `null` with `notConfigured.visits`.
+
+### `journeys`
+
+The 25 most recent visits in the range, newest first, each as its journey. From lib-visits'
+rows only (GoatCounter's history holds no visit's sequence), so nothing before the cutover.
+`source.kind` is `direct`, `external` (with `host`) or `internal`; `campaign` when the first view
+carried one. Each step's `at` is seconds from the visit's first view; `secs`, `depth` (0 to 100)
+and `read` come from that page's leave beacon, `null`/`false` when none arrived. A page loaded
+twice within two seconds is one step. `exit` is the last outbound click when it came on or after
+the last view, else `{ "kind": "left" }`; `engaged` sums the steps' `secs` (null with none).
+
+```json
+{ "rows": [ { "started": "2026-10-15T14:05:12Z", "source": { "kind": "external", "host": "google.com" }, "steps": [ { "path": "/", "title": "Cyrus Sarkosh", "at": 0, "secs": 41, "depth": 70, "read": false } ], "exit": { "kind": "click", "event": "out-github", "url": "https://github.com/csarkosh", "host": "github.com" }, "engaged": 41 } ] }
+```
 
 ### `audience`
 

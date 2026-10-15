@@ -46,6 +46,9 @@ function fakes({ visitsOn = true, gscOn = true, youtubeOn = false, githubToken =
         const prev = range.start < "2026-10-05";
         return { rows: prev ? eventRows.map((r) => ({ ...r, visitors: Math.floor(r.visitors / 2) })) : eventRows, homeVisitors: 120 };
       },
+      async journeys() {
+        return [{ started: "2026-10-15T15:51:34Z", source: { kind: "external", host: "github.com" }, steps: [{ path: "/", title: "Home", at: 0, secs: 26, depth: 100, read: false }], exit: { kind: "left" }, engaged: 26 }];
+      },
       async audience() {
         return {
           countries: [{ name: "US", visitors: 100 }],
@@ -173,6 +176,9 @@ test("the visits queries have the contract's shapes", async () => {
   assert.equal(events.rows[0].name, "out-linkedin");
   assert.deepEqual(events.rows.map((r) => r.kind), ["out", "out", "play", "read", "watch", "other"]);
   assert.equal(events.outboundRate, 0.25);
+
+  const journeys = await q.journeys(7);
+  assert.equal(journeys.rows[0].source.host, "github.com", "journeys pass through");
 
   const audience = await q.audience(7);
   assert.deepEqual(Object.keys(audience), ["countries", "sizes", "browsers", "systems", "languages", "themes", "viewports", "touch", "timezones"]);
