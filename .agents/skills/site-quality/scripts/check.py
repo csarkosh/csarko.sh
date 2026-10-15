@@ -261,7 +261,7 @@ def resolve_internal(href, public=PUBLIC):
 
 
 _FILLED_BLOCKS = re.compile(
-    r"(<!-- generated:(head|analytics|film-poster:[a-z0-9-]+) -->).*?(<!-- /generated:\2 -->)"
+    r"(<!-- generated:(head|analytics|film-poster:[a-z0-9-]+|app-preview:[a-z0-9-]+) -->).*?(<!-- /generated:\2 -->)"
     r"|(/\* generated:fonts \*/).*?(/\* /generated:fonts \*/)", re.S)
 
 

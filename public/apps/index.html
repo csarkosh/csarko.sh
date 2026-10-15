@@ -72,6 +72,25 @@
                 "url": "https://csarko.sh/"
               }
             }
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "item": {
+              "@type": "SoftwareApplication",
+              "name": "MacStats",
+              "description": "A Mac menu bar app showing CPU, GPU, RAM, temperature and free disk space, each item dropping down a panel that explains it.",
+              "url": "https://apps.csarko.sh/app-macstats",
+              "applicationCategory": "DeveloperApplication",
+              "operatingSystem": "macOS",
+              "license": "MIT",
+              "author": {
+                "@type": "Person",
+                "@id": "https://csarko.sh/#person",
+                "name": "Cyrus Sarkosh",
+                "url": "https://csarko.sh/"
+              }
+            }
           }
         ]
       }
@@ -347,6 +366,20 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .app-card { flex-direction: row; align-items: flex-start; gap: 24px; }
+    .app-preview { flex: none; width: 360px; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); line-height: 0; }
+    .app-preview img { width: 100%; height: auto; display: block; }
+    .app-body { display: flex; flex-direction: column; min-width: 0; }
+    @media (max-width: 640px) {
+      .app-card { flex-direction: column; gap: 0; }
+      .app-card .app-body { display: contents; }
+      .app-card .app-kicker { order: 1; }
+      .app-card .app-title { order: 2; margin-bottom: 14px; }
+      .app-card .app-preview { order: 3; width: 100%; margin-bottom: 18px; }
+      .app-card .app-desc { order: 4; }
+      .app-card .tags { order: 5; }
+      .app-card .card-link { order: 6; }
+    }
   </style>
 </head>
 <body>
@@ -378,17 +411,54 @@
       <p class="lead">Software I have released for anyone to run: what each one does, with its downloads and documentation one click away.</p>
     </header>
     <ul class="app-list" role="list">
-      <li class="card">
-        <p class="app-kicker">Released · Open source, GPL-3.0</p>
-        <h2 class="app-title">lib-visits</h2>
-        <div class="app-desc prose">
+      <li class="card app-card">
+        <div class="app-preview">
+          <!-- generated:app-preview:lib-visits -->
+          <picture>
+            <source media="(prefers-color-scheme: dark)" type="image/avif" srcset="/assets/app-lib-visits-dark-360.f4e86468.avif 360w, /assets/app-lib-visits-dark-540.10692deb.avif 540w, /assets/app-lib-visits-dark-720.332a57ae.avif 720w, /assets/app-lib-visits-dark-1080.3a740a08.avif 1080w" sizes="(max-width: 640px) calc(100vw - 94px), 360px" />
+            <source media="(prefers-color-scheme: dark)" type="image/webp" srcset="/assets/app-lib-visits-dark-360.bbe0b635.webp 360w, /assets/app-lib-visits-dark-540.69f9659c.webp 540w, /assets/app-lib-visits-dark-720.a6a66dbd.webp 720w, /assets/app-lib-visits-dark-1080.142a5c9b.webp 1080w" sizes="(max-width: 640px) calc(100vw - 94px), 360px" />
+            <source type="image/avif" srcset="/assets/app-lib-visits-360.b8e1293d.avif 360w, /assets/app-lib-visits-540.d666ffab.avif 540w, /assets/app-lib-visits-720.4f605168.avif 720w, /assets/app-lib-visits-1080.16ec5632.avif 1080w" sizes="(max-width: 640px) calc(100vw - 94px), 360px" />
+            <source type="image/webp" srcset="/assets/app-lib-visits-360.4bbc524c.webp 360w, /assets/app-lib-visits-540.63f39061.webp 540w, /assets/app-lib-visits-720.913b1206.webp 720w, /assets/app-lib-visits-1080.ee54a085.webp 1080w" sizes="(max-width: 640px) calc(100vw - 94px), 360px" />
+            <img src="/assets/app-lib-visits-360.a197bb79.jpg" srcset="/assets/app-lib-visits-360.a197bb79.jpg 360w, /assets/app-lib-visits-540.ba4b822d.jpg 540w, /assets/app-lib-visits-720.6c2c7674.jpg 720w, /assets/app-lib-visits-1080.ad28ead2.jpg 1080w" sizes="(max-width: 640px) calc(100vw - 94px), 360px" width="360" height="163" alt="One visit, start to finish: arrived from a Google search, read three pages for 41 seconds, 22 seconds and 3 minutes, then clicked out to GitHub" loading="lazy" decoding="async" />
+          </picture>
+          <!-- /generated:app-preview:lib-visits -->
+        </div>
+        <div class="app-body">
+          <p class="app-kicker">Released · Open source, GPL-3.0</p>
+          <h2 class="app-title">lib-visits</h2>
+          <div class="app-desc prose">
 <p>Visits and journeys for your site, with no cookies, no stored ID and no fingerprinting. One script
 of 3,068 bytes on the page and one static binary on the server, which writes what it sees as JSON
 lines: where a visit came from, each page it read, how long and how far, and where it went next.</p>
 <p>It runs anywhere a binary runs, and the events go wherever you keep logs. It counts csarko.sh.</p>
+          </div>
+          <ul class="tags" role="list"><li>Rust</li><li>JavaScript</li><li>Analytics</li></ul>
+          <a class="card-link stretch" href="https://apps.csarko.sh/lib-visits" data-visits-event="app-lib-visits">Download and docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
         </div>
-        <ul class="tags" role="list"><li>Rust</li><li>JavaScript</li><li>Analytics</li></ul>
-        <a class="card-link stretch" href="https://apps.csarko.sh/lib-visits" data-visits-event="app-lib-visits">Download and docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+      </li>
+      <li class="card app-card">
+        <div class="app-preview">
+          <!-- generated:app-preview:app-macstats -->
+          <picture>
+            <source type="image/avif" srcset="/assets/app-app-macstats-360.7ca59d7a.avif 360w, /assets/app-app-macstats-540.28ec1170.avif 540w, /assets/app-app-macstats-720.1a68a3e3.avif 720w, /assets/app-app-macstats-1080.d2b1feec.avif 1080w" sizes="(max-width: 640px) calc(100vw - 94px), 360px" />
+            <source type="image/webp" srcset="/assets/app-app-macstats-360.58cfee6a.webp 360w, /assets/app-app-macstats-540.11391b7c.webp 540w, /assets/app-app-macstats-720.b4e04a26.webp 720w, /assets/app-app-macstats-1080.336e0f01.webp 1080w" sizes="(max-width: 640px) calc(100vw - 94px), 360px" />
+            <img src="/assets/app-app-macstats-360.276dd806.jpg" srcset="/assets/app-app-macstats-360.276dd806.jpg 360w, /assets/app-app-macstats-540.53a693cd.jpg 540w, /assets/app-app-macstats-720.0a3733c7.jpg 720w, /assets/app-app-macstats-1080.734bbd49.jpg 1080w" sizes="(max-width: 640px) calc(100vw - 94px), 360px" width="360" height="164" alt="The top of a Mac&#39;s screen: the menu bar with CPU, GPU, RAM, Temp and Disk free beside the clock, and the CPU panel open under its item" loading="lazy" decoding="async" />
+          </picture>
+          <!-- /generated:app-preview:app-macstats -->
+        </div>
+        <div class="app-body">
+          <p class="app-kicker">Released · Open source, MIT</p>
+          <h2 class="app-title">MacStats</h2>
+          <div class="app-desc prose">
+<p>Five menu bar items for a Mac, CPU usage, GPU utilization, RAM in use, the temperature of the
+hottest part and free disk space as Finder counts it, each with a panel of charts and top
+processes that says what the number means.</p>
+<p>All five update every second for well under 1% of one core, and it asks for no permissions. It
+builds on your own Mac with one command, or installs from Homebrew.</p>
+          </div>
+          <ul class="tags" role="list"><li>Swift</li><li>AppKit</li><li>macOS</li></ul>
+          <a class="card-link stretch" href="https://apps.csarko.sh/app-macstats" data-visits-event="app-app-macstats">Download and docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        </div>
       </li>
     </ul>
   </main>

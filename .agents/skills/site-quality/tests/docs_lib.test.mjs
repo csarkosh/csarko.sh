@@ -652,7 +652,7 @@ test('the page carries the standing notice, which is the only warning on it', ()
 const APP_DESC = 'A library to count visits and journeys without cookies, as a small script and a static collector.';
 const appSrc = (slug, lines = []) => ({
   name: `${slug}.md`,
-  text: ['---', `description: ${APP_DESC}`, 'status: released', `page: https://apps.csarko.sh/${slug}`, 'tags: Rust, JavaScript', ...lines, '---', `# ${slug}`, '', 'What it does.', ''].join('\n'),
+  text: ['---', `description: ${APP_DESC}`, 'status: released', `page: https://apps.csarko.sh/${slug}`, 'platforms: Linux, macOS', 'tags: Rust, JavaScript', ...lines, '---', `# ${slug}`, '', 'What it does.', ''].join('\n'),
 });
 const app = (slug, lines) => { const s = appSrc(slug, lines); return loadApp(s.name, s.text); };
 
@@ -661,9 +661,10 @@ test('loadApp builds the kicker from status and license, and checks its fields',
   assert.equal(app('tool').kicker, 'Released');
   const bad = (lines, pattern) => assert.throws(() => loadApp('x.md', ['---', `description: ${APP_DESC}`, ...lines, '---', '# x', ''].join('\n')),
     (e) => e instanceof DocError && pattern.test(e.message));
-  bad(['status: shipped', 'page: https://apps.csarko.sh/x', 'tags: Rust'], /status must be released or in-development/);
-  bad(['status: released', 'page: http://apps.csarko.sh/x', 'tags: Rust'], /page must be an https:\/\/ URL/);
-  bad(['status: released', 'tags: Rust'], /front matter needs "page"/);
+  bad(['status: shipped', 'page: https://apps.csarko.sh/x', 'platforms: macOS', 'tags: Rust'], /status must be released or in-development/);
+  bad(['status: released', 'page: http://apps.csarko.sh/x', 'platforms: macOS', 'tags: Rust'], /page must be an https:\/\/ URL/);
+  bad(['status: released', 'platforms: macOS', 'tags: Rust'], /front matter needs "page"/);
+  bad(['status: released', 'page: https://apps.csarko.sh/x', 'tags: Rust'], /front matter needs "platforms"/);
   assert.throws(() => loadApp('2026-10-15-x.md', appSrc('x').text), /carries no date/);
 });
 
@@ -699,4 +700,13 @@ test('pageShell links every nav item and crumb back to csarko.sh in full', () =>
   assert.ok(html.includes('<a href="https://csarko.sh/apps">Apps</a>'), 'the crumb is absolute');
   assert.ok(html.includes('<span class="mono">apps.csarko.sh</span>'));
   assert.deepEqual(jsonLd(html).find((n) => n['@type'] === 'BreadcrumbList').itemListElement.map((i) => i.item), ['https://csarko.sh/', 'https://csarko.sh/apps', 'https://apps.csarko.sh/x']);
+});
+
+test('an app with an alt gets a preview the asset build fills, laid out as a film card', () => {
+  const html = appsPage([app('app-macstats', ['alt: The menu bar']), app('tool')], themeBlocks(INDEX));
+  assert.ok(html.includes('<li class="card app-card">'));
+  assert.ok(html.includes('<!-- generated:app-preview:app-macstats -->\n'));
+  assert.ok(html.includes('<img src="/apps/app-macstats.jpg" alt="The menu bar" loading="lazy" decoding="async" />'));
+  assert.ok(!html.includes('generated:app-preview:tool'), 'no alt, no preview');
+  assert.equal(jsonLd(html).find((n) => n['@type'] === 'CollectionPage').mainEntity.itemListElement[0].item.operatingSystem, 'Linux, macOS');
 });

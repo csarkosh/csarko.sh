@@ -2,6 +2,8 @@
 description: Cookieless web analytics: a 3 KB script and a 1 MB static collector that counts visits and the path each one took, written as JSON lines.
 status: released
 page: https://apps.csarko.sh/lib-visits
+platforms: Linux, macOS
+alt: One visit, start to finish: arrived from a Google search, read three pages for 41 seconds, 22 seconds and 3 minutes, then clicked out to GitHub
 license: GPL-3.0
 repo: https://github.com/csarkosh/lib-visits
 released: 2026-10-15

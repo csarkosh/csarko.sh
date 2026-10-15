@@ -5,6 +5,8 @@ build_assets.py — deterministically build the site's hashed static assets.
 Sources (in .agents/skills/site-quality/assets/):
   portrait-source.jpg     the full-resolution portrait
   films/<slug>.jpg        one poster per film in docs/films/, portrait (9:16)
+  apps/<slug>.png         one preview per app in docs/apps/ that names an alt, landscape, and
+  apps/<slug>-dark.png    optionally its dark-theme version
   fonts/*.woff2           self-hosted variable fonts (latin subset)
   vendor/visits.min.js, vendor/vitals.min.js   the lib-visits analytics scripts (see site.json)
 
@@ -15,6 +17,8 @@ Outputs (in public/):
   assets/visits.<hash>.js, assets/vitals.<hash>.js   (the vendored files without their provenance line)
   portrait.jpg                                 stable 720px URL for JSON-LD / sharing
   film/<slug>.jpg                              stable 720px poster, cited by the film's VideoObject
+  assets/app-<slug>[-dark]-<w>.<hash>.{avif,webp,jpg}   w = 360, 540, 720, 1080
+  apps/<slug>.jpg                              stable 720px preview, the <img> before this runs
 
 Every file in public/assets/ is named by the first 8 hex chars of its SHA-256, so
 firebase.json can cache that directory for a year (immutable) without ever
@@ -25,6 +29,7 @@ markers in every public/*.html and every page under public/research, /games, /fi
   /* generated:fonts */    …  /* /generated:fonts */            @font-face rules
   <!-- generated:portrait --> … <!-- /generated:portrait -->    <picture> markup
   <!-- generated:film-poster:<slug> --> … <!-- /… -->           a film's poster <picture>
+  <!-- generated:app-preview:<slug> --> … <!-- /… -->           an app's preview <picture>
   <!-- generated:analytics --> … <!-- /generated:analytics -->  analytics <script>s (visits.js, vitals.js)
 
 It also writes the Content-Security-Policy in firebase.json from CSP below plus
@@ -56,6 +61,11 @@ FILM_DIR = "film"
 FILM_WIDTHS = (200, 240, 400, 480)
 FILM_SIZES = "(max-width: 640px) 200px, 240px"
 FILM_FALLBACK_WIDTH = 240
+# An app's preview is 360px wide beside its card's text, and the card's full width once it stacks
+# on a phone (at most 640px less the page's and the card's padding).
+APP_WIDTHS = (360, 540, 720, 1080)
+APP_SIZES = "(max-width: 640px) calc(100vw - 94px), 360px"
+APP_FALLBACK_WIDTH = 360
 # What the stable poster (and the portrait) are written at: big enough to share, small enough to commit.
 STABLE_WIDTH = 720
 CONFIG = json.loads((ROOT / ".agents/skills/site-quality/site.json").read_text())
@@ -136,6 +146,10 @@ def encode(img, fmt: str) -> bytes:
 # its contents lines up with the markup around it.
 FILM_BLOCK = re.compile(
     r"([ ]*)(<!-- generated:film-poster:([a-z0-9-]+) -->)(.*?)([ ]*)(<!-- /generated:film-poster:\3 -->)", re.S)
+
+
+APP_BLOCK = re.compile(
+    r"([ ]*)(<!-- generated:app-preview:([a-z0-9-]+) -->)(.*?)([ ]*)(<!-- /generated:app-preview:\3 -->)", re.S)
 
 
 def film_block(m, prefix, film_srcsets, film_picture):
@@ -228,6 +242,70 @@ def main() -> int:
             f'{indent}</picture>'
         )
 
+    # ---- app previews, one per assets/apps/<slug>.png, with <slug>-dark.png for the dark theme
+    app_srcsets: dict = {}
+    app_fallback: dict = {}
+    app_dir = SRC / "apps"
+    for src_path in sorted(app_dir.glob("*.png")) if app_dir.is_dir() else []:
+        name = src_path.stem
+        if name.endswith("-dark"):
+            continue
+        slug = name
+        app_srcsets[slug] = {}
+        for variant, path in (("light", src_path), ("dark", app_dir / f"{slug}-dark.png")):
+            if not path.exists():
+                continue
+            image = Image.open(path)
+            # A transparent source (a window with its shadow) is laid on the card's own background,
+            # --surface-2 in that theme, since JPEG has no transparency.
+            if image.mode in ("RGBA", "LA", "P"):
+                image = image.convert("RGBA")
+                ground = Image.new("RGBA", image.size, "#161922" if variant == "dark" else "#eef0f4")
+                image = Image.alpha_composite(ground, image)
+            image = image.convert("RGB")
+            ratio = image.height / image.width
+            app_srcsets[slug][variant] = {"avif": [], "webp": [], "jpg": []}
+            stem = f"app-{slug}" + ("-dark" if variant == "dark" else "")
+            for w in APP_WIDTHS:
+                resized = image.resize((w, round(w * ratio)), Image.Resampling.LANCZOS)
+                for fmt in app_srcsets[slug][variant]:
+                    hashed = write_hashed(f"{stem}-{w}", fmt, encode(resized, fmt), keep)
+                    app_srcsets[slug][variant][fmt].append(f"assets/{hashed} {w}w")
+                    if variant == "light" and fmt == "jpg" and w == APP_FALLBACK_WIDTH:
+                        app_fallback[slug] = (hashed, w, round(w * ratio))
+            if variant == "light":
+                stable = image.resize((STABLE_WIDTH, round(STABLE_WIDTH * ratio)), Image.Resampling.LANCZOS)
+                (PUBLIC / "apps").mkdir(parents=True, exist_ok=True)
+                (PUBLIC / "apps" / f"{slug}.jpg").write_bytes(encode(stable, "jpg"))
+    for stale in sorted((PUBLIC / "apps").glob("*.jpg")) if (PUBLIC / "apps").is_dir() else []:
+        if stale.stem not in app_srcsets:
+            stale.unlink()
+            print(f"removed public/apps/{stale.name}")
+
+    def app_picture(slug, prefix, alt, indent):
+        """An app's preview <picture>: the dark-theme sources first, when the app has them."""
+        name, w, h = app_fallback[slug]
+        sets = app_srcsets[slug]
+        ss = lambda variant, fmt: ", ".join(prefix + s for s in sets[variant][fmt])
+        dark = "".join(
+            f'{indent}  <source media="(prefers-color-scheme: dark)" type="image/{fmt}" srcset="{ss("dark", fmt)}" sizes="{APP_SIZES}" />\n'
+            for fmt in ("avif", "webp")) if "dark" in sets else ""
+        return (
+            f'{indent}<picture>\n{dark}'
+            f'{indent}  <source type="image/avif" srcset="{ss("light", "avif")}" sizes="{APP_SIZES}" />\n'
+            f'{indent}  <source type="image/webp" srcset="{ss("light", "webp")}" sizes="{APP_SIZES}" />\n'
+            f'{indent}  <img src="{prefix}assets/{name}" srcset="{ss("light", "jpg")}" sizes="{APP_SIZES}" '
+            f'width="{w}" height="{h}" alt="{alt}" loading="lazy" decoding="async" />\n'
+            f'{indent}</picture>'
+        )
+
+    def app_block(m, prefix):
+        indent, slug, inner = m.group(1), m.group(3), m.group(4)
+        if slug not in app_fallback:
+            return m.group(0)
+        alt = re.search(r'alt="([^"]*)"', inner)
+        return indent + m.group(2) + "\n" + app_picture(slug, prefix, alt.group(1) if alt else "", indent) + "\n" + indent + m.group(6)
+
     # ---- fonts
     fonts = [(write_hashed(stem, "woff2", (SRC / "fonts" / f"{stem}.woff2").read_bytes(), keep), family, weights, preload)
              for stem, (family, weights, preload) in FONTS.items()]
@@ -315,6 +393,7 @@ def main() -> int:
         for (start, end), body in blocks.items():
             html = re.sub(f"({start})(.*?)({end})", lambda m: m.group(1) + body + m.group(3), html, flags=re.S)
         html = FILM_BLOCK.sub(lambda m: film_block(m, prefix, film_srcsets, film_picture), html)
+        html = APP_BLOCK.sub(lambda m: app_block(m, prefix), html)
         if html != before:
             page.write_text(html, encoding="utf-8")
             print(f"rewrote generated blocks in public/{page.relative_to(PUBLIC)}")

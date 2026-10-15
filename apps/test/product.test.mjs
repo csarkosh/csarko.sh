@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { downloadsHtml, flowHtml, formatSize, parseFlow, prepareReadme, ProductError, productPage } from '../product.mjs';
+import { downloadsHtml, flowHtml, formatSize, imagesOf, parseFlow, prepareReadme, ProductError, productPage } from '../product.mjs';
+
+const BLOB = 'https://github.com/o/r/blob/main/';
 
 const RELEASE = {
   tag: 'v0.1.1',
@@ -12,6 +14,8 @@ const RELEASE = {
     { name: 'vitals.min.js', size: 995, url: 'https://github.com/o/r/releases/download/v0.1.1/vitals.min.js' },
   ],
 };
+
+const THEME = ':root {}\n    @media (prefers-color-scheme: light) { :root {} }';
 
 const README = `# lib-visits
 
@@ -74,25 +78,100 @@ test('downloadsHtml gives a button per platform with its size, and refuses a rel
 });
 
 test('prepareReadme lifts the picture caption and refuses a README without the download step', () => {
-  const { text, caption, flows } = prepareReadme(README);
+  const { text, caption, flows, hero, downloads } = prepareReadme(README, { blob: BLOB });
   assert.equal(caption, 'One visit as lib-visits sees it (sample data).');
+  assert.deepEqual(hero, { light: 'docs/images/journey-light.png', dark: 'docs/images/journey-dark.png', alt: 'One visit' });
+  assert.ok(downloads);
   assert.ok(!text.includes('<picture>') && !text.includes('<sub>'));
   assert.equal(flows.length, 1);
-  assert.throws(() => prepareReadme(README.replace('**[Download `visits`](https://github.com/o/r/releases/latest)**', 'Download')), /Download/);
-  assert.throws(() => prepareReadme(README.replace(/<picture>[\s\S]*?<\/picture>/, '')), /picture/);
+  assert.throws(() => prepareReadme(README.replace('**[Download `visits`](https://github.com/o/r/releases/latest)**', 'Download'), { blob: BLOB }), /Install/);
+  assert.throws(() => prepareReadme(README.replace(/<picture>[\s\S]*?<\/picture>/, ''), { blob: BLOB }), /picture/);
 });
 
 test('productPage puts the buttons in Setup, the flow in its place and everything back to csarko.sh absolute', () => {
-  const app = { slug: 'lib-visits', title: 'lib-visits', description: 'Cookieless web analytics: a small script and a static collector, as JSON lines for your logs.', kicker: 'Released · Open source, GPL-3.0', license: 'GPL-3.0', repo: 'https://github.com/o/r' };
-  const html = productPage({ app, readme: README, release: RELEASE, images: { light: '/lib-visits/journey-light.png', dark: '/lib-visits/journey-dark.png', width: 1904, height: 893 }, theme: ':root {}\n    @media (prefers-color-scheme: light) { :root {} }' });
+  const app = { slug: 'lib-visits', title: 'lib-visits', description: 'Cookieless web analytics: a small script and a static collector, as JSON lines for your logs.', kicker: 'Released · Open source, GPL-3.0', license: 'GPL-3.0', repo: 'https://github.com/o/r', platforms: 'Linux, macOS' };
+  const prepared = prepareReadme(README, { blob: BLOB });
+  const images = Object.fromEntries(imagesOf(prepared).map((p) => [p, { url: `/lib-visits/${p.split('/').pop().replace('.png', '.webp')}`, width: 1904, height: 893 }]));
+  const html = productPage({ app, prepared, release: RELEASE, images, theme: THEME });
   assert.ok(html.includes('<link rel="canonical" href="https://apps.csarko.sh/lib-visits" />'));
   assert.ok(html.includes('<title>lib-visits: cookieless web analytics · Cyrus Sarkosh</title>'));
   assert.ok(/<li>Download <code>visits<\/code> for your platform: <div class="downloads">/.test(html));
   assert.ok(html.includes('<figure class="flow"'));
   assert.ok(html.includes('<p class="muted">Or build it: <code>cargo build</code>.</p>'));
   assert.ok(/<p class="muted">Or build it: <code>cargo build<\/code>\.<\/p>\n<div class="section-head">/.test(html), 'the muted line stays its own paragraph');
-  assert.ok(html.includes('<img src="/lib-visits/journey-light.png" width="1904" height="893" alt="One visit as lib-visits sees it (sample data)."'));
+  assert.ok(html.includes('<source media="(prefers-color-scheme: dark)" srcset="/lib-visits/journey-dark.webp" /><img src="/lib-visits/journey-light.webp" width="1904" height="893" alt="One visit" decoding="async" fetchpriority="high" />'));
+  assert.ok(html.includes('<figcaption>One visit as lib-visits sees it (sample data).</figcaption>'));
   assert.ok(html.includes('<a class="wordmark" href="https://csarko.sh/">'));
   assert.ok(html.includes('<a href="#setup"><span>Setup</span></a>'), 'the contents rail lists the sections');
   assert.ok(!html.includes('@@'));
+});
+
+// MacStats' README: an HTML title and hero, a centred paragraph, a table of panels, an Install
+// section and relative links, with a release that carries no assets.
+const MAC = `<h1 align="center">MacStats</h1>
+
+<p align="center">Five menu bar items for a Mac.</p>
+
+<p align="center"><img src="docs/previews/menubar.png" alt="The menu bar"></p>
+
+<p align="center">
+<b>CPU</b> usage · <b>GPU</b> utilization
+</p>
+
+Each item is a label over a value.
+
+## Install
+
+\`\`\`sh
+brew install csarkosh/tap/macstats
+\`\`\`
+
+## The panels
+
+<table>
+<tr>
+<td width="300" valign="top">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="docs/previews/cpu-dark.png">
+<img src="docs/previews/cpu-light.png" width="280" alt="The CPU panel">
+</picture>
+</td>
+<td valign="top">
+
+### CPU
+
+Two gauges: **usage** and the CPU's **temperature**.
+
+</td>
+</tr>
+</table>
+
+## Credits and licence
+
+MIT; see [LICENSE](LICENSE).
+`;
+
+test('a README made of HTML (title, hero, centred paragraphs, a panel table) becomes the page, with the release under Install', () => {
+  const prepared = prepareReadme(MAC, { blob: BLOB });
+  assert.deepEqual(prepared.hero, { light: 'docs/previews/menubar.png', dark: 'docs/previews/menubar.png', alt: 'The menu bar' });
+  assert.equal(prepared.caption, '');
+  assert.equal(prepared.downloads, false);
+  assert.deepEqual(imagesOf(prepared), ['docs/previews/menubar.png', 'docs/previews/cpu-light.png', 'docs/previews/cpu-dark.png']);
+  const images = Object.fromEntries(imagesOf(prepared).map((p) => [p, { url: `/app-macstats/${p.split('/').pop().replace('.png', '.webp')}`, width: 560, height: 1474 }]));
+  const app = { slug: 'app-macstats', title: 'MacStats', description: 'A Mac menu bar app showing CPU, GPU, RAM, temperature and free disk space, each with a panel.', kicker: 'Released · Open source, MIT', license: 'MIT', repo: 'https://github.com/o/r', platforms: 'macOS' };
+  const html = productPage({ app, prepared, release: { ...RELEASE, tag: 'v1.0.0', assets: [] }, images, theme: THEME });
+  assert.ok(html.includes('<h1>MacStats</h1>'));
+  assert.ok(html.includes('<p><strong>CPU</strong> usage · <strong>GPU</strong> utilization</p>'));
+  assert.ok(/<div class="downloads"><p class="release">v1\.0\.0, released Oct 15, 2026 · <a class="external" href="[^"]+" target="_blank" rel="noopener">release notes<\/a><\/p><\/div>/.test(html));
+  assert.ok(html.includes('<div class="panel"><div class="panel-image"><picture><source media="(prefers-color-scheme: dark)" srcset="/app-macstats/cpu-dark.webp" /><img src="/app-macstats/cpu-light.webp"'));
+  assert.ok(/<div class="panel-body">\s*<h3 id="cpu">[\s\S]*?Two gauges[\s\S]*?<\/div><\/div>/.test(html));
+  assert.ok(html.includes('href="https://github.com/o/r/blob/main/LICENSE"'), 'a relative link goes to GitHub');
+  assert.ok(!/&lt;(?:p|td|img|picture)\b/.test(html));
+});
+
+test('HTML the page cannot draw fails the build by name', () => {
+  const prepared = prepareReadme(MAC.replace('Each item is a label over a value.', '<div>Each item</div>'), { blob: BLOB });
+  const images = Object.fromEntries(imagesOf(prepared).map((p) => [p, { url: '/x.webp', width: 1, height: 1 }]));
+  assert.throws(() => productPage({ app: { slug: 'x', title: 'x', description: 'd: e', kicker: 'k', platforms: 'macOS' }, prepared, release: { ...RELEASE, assets: [] }, images, theme: THEME }),
+    /HTML this page cannot draw: <div>/);
 });

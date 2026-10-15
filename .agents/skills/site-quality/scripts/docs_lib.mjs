@@ -37,9 +37,11 @@ export const categorySlug = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, 
 // section is a numbered list).
 export const IEEE_SINCE = '2026-09-23';
 const GAME_FIELDS = { description: true, status: true, tags: true, play: false, repo: false, released: false };
-// An app is software to download or use: "page" is its own page (on apps.csarko.sh), "license"
-// joins the status in the card's kicker when the app is open source.
-const APP_FIELDS = { description: true, status: true, page: true, tags: true, license: false, repo: false, released: false };
+// An app is software to download or use: "page" is its own page (on apps.csarko.sh), "platforms"
+// what it runs on, "license" joins the status in the card's kicker when the app is open source,
+// and "alt" describes its card's preview image (assets/apps/<slug>.png, and <slug>-dark.png for
+// the dark theme if it has one), which the card shows only when alt is given.
+const APP_FIELDS = { description: true, status: true, page: true, platforms: true, tags: true, license: false, repo: false, released: false, alt: false };
 // A film is a video hosted on YouTube: the page carries its poster and links out, so every field
 // here is needed to build the card and its VideoObject. "alt" describes the poster. There is no
 // per-film warning: the page's standing notice speaks for the whole list.
@@ -754,6 +756,25 @@ const FILTER_CSS = `
     ${CATEGORIES.map((c) => `.docs-index:has(#cat-${categorySlug(c)}:checked) .doc-list > li[data-categories~="${categorySlug(c)}"] { display: flex; }`).join('\n    ')}
     @media (prefers-reduced-motion: reduce) { .chip { transition: none; } }`;
 
+// Only /apps carries the preview card's rules (every page carries DOCS_CSS, and the longest doc
+// sits close to its HTML budget). The card lays out as a film's: the image beside the text, and on
+// a phone the kicker and title first, then the image, then the rest.
+const APPS_CSS = `
+    .app-card { flex-direction: row; align-items: flex-start; gap: 24px; }
+    .app-preview { flex: none; width: 360px; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); line-height: 0; }
+    .app-preview img { width: 100%; height: auto; display: block; }
+    .app-body { display: flex; flex-direction: column; min-width: 0; }
+    @media (max-width: 640px) {
+      .app-card { flex-direction: column; gap: 0; }
+      .app-card .app-body { display: contents; }
+      .app-card .app-kicker { order: 1; }
+      .app-card .app-title { order: 2; margin-bottom: 14px; }
+      .app-card .app-preview { order: 3; width: 100%; margin-bottom: 18px; }
+      .app-card .app-desc { order: 4; }
+      .app-card .tags { order: 5; }
+      .app-card .card-link { order: 6; }
+    }`;
+
 // Only pages with IEEE references carry these rules, so adding them changed no other page.
 const REFERENCES_CSS = `
     .prose .references { list-style: none; padding-left: 0; }
@@ -1003,16 +1024,29 @@ ${play}${pad}  </li>`;
   return `${pad}<ul class="game-list" role="list">\n${items.join('\n')}\n${pad}</ul>`;
 }
 
+// An app's preview, as the markers build_assets.py fills with the hashed <picture> (light, and dark
+// when assets/apps/<slug>-dark.png exists), the way a film's poster is filled. Until it runs, the
+// plain <img> is the stable copy build_assets.py writes to public/apps/<slug>.jpg.
+const appPreview = (app, pad) => `${pad}<div class="app-preview">
+${pad}  <!-- generated:app-preview:${app.slug} -->
+${pad}  <img src="/${APPS_DIR}/${app.slug}.jpg" alt="${escapeHtml(app.alt)}" loading="lazy" decoding="async" />
+${pad}  <!-- /generated:app-preview:${app.slug} -->
+${pad}</div>`;
+
 // An app's card: the whole card links to the app's own page, which carries the downloads and the
-// docs. The click counts as "app-<slug>": a visitor who went on to look at the app.
+// docs. The click counts as "app-<slug>": a visitor who went on to look at the app. With a preview,
+// the card lays out as a film's does: the image beside the text, under the title on a phone.
 function appList(apps, pad) {
-  const items = apps.map((app) => `${pad}  <li class="card">
-${pad}    <p class="app-kicker">${escapeHtml(app.kicker)}</p>
-${pad}    <h2 class="app-title">${app.titleHtml}</h2>
-${pad}    <div class="app-desc prose">
-${app.html}${pad}    </div>
-${pad}    <ul class="tags" role="list">${app.tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>
-${pad}    <a class="card-link stretch" href="${escapeHtml(app.page)}" data-visits-event="app-${app.slug}">Download and docs ${EXTERNAL_ARROW}</a>
+  const items = apps.map((app) => `${pad}  <li class="card${app.alt ? ' app-card' : ''}">
+${app.alt ? `${appPreview(app, `${pad}    `)}
+` : ''}${pad}    <div class="app-body">
+${pad}      <p class="app-kicker">${escapeHtml(app.kicker)}</p>
+${pad}      <h2 class="app-title">${app.titleHtml}</h2>
+${pad}      <div class="app-desc prose">
+${app.html}${pad}      </div>
+${pad}      <ul class="tags" role="list">${app.tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>
+${pad}      <a class="card-link stretch" href="${escapeHtml(app.page)}" data-visits-event="app-${app.slug}">Download and docs ${EXTERNAL_ARROW}</a>
+${pad}    </div>
 ${pad}  </li>`);
   return `${pad}<ul class="app-list" role="list">\n${items.join('\n')}\n${pad}</ul>`;
 }
@@ -1040,7 +1074,7 @@ export function appsPage(apps, theme) {
             description: app.description,
             url: app.page,
             applicationCategory: 'DeveloperApplication',
-            operatingSystem: 'Linux, macOS',
+            operatingSystem: app.platforms,
             ...(app.license ? { license: app.license } : {}),
             author: PERSON_NODE,
           },
@@ -1049,7 +1083,7 @@ export function appsPage(apps, theme) {
     },
     breadcrumbs(trail),
   ];
-  return `${head({ title: `${APPS_HEADING} · Cyrus Sarkosh`, ogTitle: APPS_TITLE, description: APPS_DESCRIPTION, canonical: url, ogType: 'website', graph, theme })}
+  return `${head({ title: `${APPS_HEADING} · Cyrus Sarkosh`, ogTitle: APPS_TITLE, description: APPS_DESCRIPTION, canonical: url, ogType: 'website', extraCss: APPS_CSS, graph, theme })}
 <body>
 ${nav(`/${APPS_DIR}`)}
 ${crumbs(trail)}

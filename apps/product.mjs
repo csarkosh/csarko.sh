@@ -1,15 +1,22 @@
 /**
  * product.mjs: an app's page on apps.csarko.sh, made from its README and its latest release.
- * Pure: README text, release data and the site's theme in, page text out (apps/build.mjs does the
- * fetching and the files). Tests: apps/test/product.test.mjs (node --test).
+ * Pure: README text, release data, image sizes and the site's theme in, page text out
+ * (apps/build.mjs does the fetching and the files). Tests: apps/test/product.test.mjs.
  *
  * The README is the content, rendered by the site's own Markdown (docs_lib.mjs renderMarkdown),
- * which allows no raw HTML, no images and no client script. So before rendering:
- *   - the <picture> under the title and its <sub> caption become the page's own figure;
- *   - any other <sub>…</sub> line becomes a muted paragraph;
- *   - the Setup step that links the download becomes the release's download buttons;
- *   - each ```mermaid flowchart becomes a static row of steps (the CSP allows no Mermaid).
- * A README that has changed shape so a step no longer applies fails the build, by name.
+ * which allows no raw HTML, no images and no client script. So before rendering, the README's
+ * HTML is turned into what the page draws itself:
+ *   - the title, as `# Title` or `<h1>`;
+ *   - the hero: the first <picture> or image before the first `## ` section, with the <sub>
+ *     caption under it if there is one;
+ *   - `<p align=…>` paragraphs, as Markdown paragraphs (<b>, <i>, <code> and <a> kept);
+ *   - other `<sub>…</sub>` lines, as muted paragraphs;
+ *   - a <table> of rows that each pair a <picture> with Markdown, as image-and-text panels;
+ *   - a Setup step "1. **[Download `x`](…)**", as the release's download buttons; without one,
+ *     a line naming the release under `## Install`;
+ *   - each ```mermaid flowchart, as a static row of steps (the CSP allows no Mermaid);
+ *   - relative links, as links to the file on GitHub.
+ * HTML left over after that fails the build by name, rather than reaching the page as text.
  */
 
 import { APPS_HOST, escapeHtml, pageShell, renderMarkdown, SHELL_CRUMBS } from '../.agents/skills/site-quality/scripts/docs_lib.mjs';
@@ -17,8 +24,11 @@ import { APPS_HOST, escapeHtml, pageShell, renderMarkdown, SHELL_CRUMBS } from '
 export class ProductError extends Error {}
 
 const DOWNLOADS = '@@DOWNLOADS@@';
+const RELEASE = '@@RELEASE@@';
 const MUTED = '@@MUTED@@';
 const FLOW = (i) => `@@FLOW${i}@@`;
+const PANEL = (i) => `@@PANEL${i}@@`;
+const PANEL_END = '@@PANELEND@@';
 
 // The platforms a release builds, in the order the buttons show them. `match` picks the asset.
 const PLATFORMS = [
@@ -29,6 +39,7 @@ const PLATFORMS = [
 
 export const formatSize = (bytes) => (bytes >= 1_000_000 ? `${(bytes / 1_000_000).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1000))} KB`);
 const formatDay = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+const attr = (tag, name) => new RegExp(`\\b${name}="([^"]*)"`).exec(tag)?.[1];
 
 /** `flowchart LR` lines into nodes and edges: `A[label] -->|edge| B[label]`, `-.->` for a side path. */
 export function parseFlow(source) {
@@ -70,56 +81,129 @@ export function flowHtml({ steps, branches }) {
   return `<figure class="flow" role="img" aria-label="${escapeHtml(said + sideSaid)}"><p class="flow-row">${row}</p>${side}</figure>`;
 }
 
+const releaseLine = (release, extra = '') => `<p class="release">${escapeHtml(release.tag)}, released ${formatDay(release.published)}${extra} · <a class="external" href="${escapeHtml(release.url)}" target="_blank" rel="noopener">release notes${release.assets.length ? ' and checksums' : ''}</a></p>`;
+
 export function downloadsHtml(release) {
   const buttons = PLATFORMS.map((p) => {
     const asset = release.assets.find((a) => p.match.test(a.name));
     if (!asset) throw new ProductError(`release ${release.tag} has no asset for ${p.label}`);
     return `<a class="btn" href="${escapeHtml(asset.url)}" download>${escapeHtml(p.label)}<small>${formatSize(asset.size)}</small></a>`;
   }).join('');
-  const scripts = ['visits.min.js', 'vitals.min.js'].map((name) => {
-    const asset = release.assets.find((a) => a.name === name);
-    if (!asset) throw new ProductError(`release ${release.tag} has no ${name}`);
-    return `<a href="${escapeHtml(asset.url)}" download>${name}</a> (${asset.size.toLocaleString('en-US')} B)`;
-  }).join(' · ');
-  return `<div class="downloads"><div class="buttons">${buttons}</div><p class="release">${escapeHtml(release.tag)}, released ${formatDay(release.published)} · ${scripts} · <a class="external" href="${escapeHtml(release.url)}" target="_blank" rel="noopener">release notes and checksums</a></p></div>`;
+  const scripts = release.assets.filter((a) => a.name.endsWith('.js'))
+    .map((a) => `<a href="${escapeHtml(a.url)}" download>${escapeHtml(a.name)}</a> (${a.size.toLocaleString('en-US')} B)`).join(' · ');
+  return `<div class="downloads"><div class="buttons">${buttons}</div>${releaseLine(release, scripts ? ` · ${scripts}` : '')}</div>`;
 }
 
-/** The README's Markdown with the four kinds of block above swapped for markers; returns the pieces. */
-export function prepareReadme(readme) {
+// A picture (or a lone image) as { light, dark, alt }: the img's src is the light one, a
+// prefers-color-scheme: dark source the dark one; with no such source both are the img's.
+function pictureOf(html) {
+  const img = /<img\b[^>]*>/.exec(html)?.[0];
+  if (!img) throw new ProductError(`README: a picture without an <img>: ${html.slice(0, 80)}`);
+  const light = attr(img, 'src');
+  const darkSource = /<source\b[^>]*prefers-color-scheme:\s*dark[^>]*>/.exec(html)?.[0];
+  return { light, dark: darkSource ? attr(darkSource, 'srcset') : light, alt: attr(img, 'alt') ?? '' };
+}
+
+// Inline HTML a README paragraph may carry, as Markdown.
+const inlineMarkdown = (html) => html
+  .replace(/<\/?(?:b|strong)>/g, '**')
+  .replace(/<\/?(?:i|em)>/g, '*')
+  .replace(/<\/?code>/g, '`')
+  .replace(/<a\s+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g, '[$2]($1)')
+  .replace(/\s*\n\s*/g, ' ')
+  .trim();
+
+const dedent = (text) => {
+  const lines = text.replace(/^\n+|\s+$/g, '').split('\n');
+  const pad = Math.min(...lines.filter((l) => l.trim()).map((l) => /^ */.exec(l)[0].length));
+  return lines.map((l) => l.slice(pad)).join('\n');
+};
+
+/**
+ * The README's Markdown with its HTML turned into markers the page fills in (see the top).
+ * `blob` is the GitHub URL relative links resolve against ("https://github.com/o/r/blob/main/").
+ */
+export function prepareReadme(readme, { blob }) {
   let text = readme.replace(/\r\n/g, '\n');
-  const picture = /<picture>[\s\S]*?<\/picture>\s*\n(?:\s*\n)*<sub>([\s\S]*?)<\/sub>\s*\n/.exec(text);
-  if (!picture) throw new ProductError('README: no <picture> with a <sub> caption under the title');
-  text = text.replace(picture[0], '');
-  const caption = picture[1].replace(/<[^>]+>/g, '').trim();
-  text = text.replace(/^<sub>(.*?)<\/sub>[ \t]*$/gm, (_, inner) => `${MUTED} ${inner.trim()}`);
+  const htmlTitle = /^<h1\b[^>]*>([\s\S]*?)<\/h1>[ \t]*$/m.exec(text);
+  if (htmlTitle) text = text.replace(htmlTitle[0], `# ${htmlTitle[1].trim()}`);
+
+  // The hero: the first picture or lone image before the first section.
+  const firstSection = text.search(/^## /m);
+  const head = firstSection < 0 ? text : text.slice(0, firstSection);
+  const heroMatch = /<picture>[\s\S]*?<\/picture>|<p\b[^>]*>\s*<img\b[^>]*>\s*<\/p>/.exec(head);
+  if (!heroMatch) throw new ProductError('README: no picture or image under the title');
+  const hero = pictureOf(heroMatch[0]);
+  let caption = '';
+  const after = /^\s*<sub>([\s\S]*?)<\/sub>[ \t]*\n/.exec(text.slice(heroMatch.index + heroMatch[0].length));
+  if (after) caption = after[1].replace(/<[^>]+>/g, '').trim();
+  text = text.slice(0, heroMatch.index) + text.slice(heroMatch.index + heroMatch[0].length + (after ? after[0].length : 0));
+
+  text = text.replace(/^<p\b[^>]*>([\s\S]*?)<\/p>[ \t]*$/gm, (_, inner) => inlineMarkdown(inner));
+  text = text.replace(/^<sub>(.*?)<\/sub>[ \t]*$/gm, (_, inner) => `${MUTED} ${inlineMarkdown(inner)}`);
+
+  // Panels: a table whose every row is a picture cell and a Markdown cell.
+  const panels = [];
+  text = text.replace(/<table>([\s\S]*?)<\/table>/g, (_, body) => [...body.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(([, row]) => {
+    const cells = [...row.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g)].map((m) => m[1]);
+    const pic = cells.findIndex((c) => /<(?:picture|img)\b/.test(c));
+    if (cells.length !== 2 || pic < 0) throw new ProductError('README: a table row that is not a picture beside its text');
+    panels.push(pictureOf(cells[pic]));
+    return `${PANEL(panels.length - 1)}\n\n${dedent(cells[1 - pic])}\n\n${PANEL_END}`;
+  }).join('\n\n'));
+
   const download = /^1\. \*\*\[Download `([^`]+)`\]\([^)]+\)\*\*.*$/m.exec(text);
-  if (!download) throw new ProductError('README: no "1. **[Download `…`](…)**" step in Setup');
-  text = text.replace(download[0], `1. Download \`${download[1]}\` for your platform: ${DOWNLOADS}`);
+  if (download) text = text.replace(download[0], `1. Download \`${download[1]}\` for your platform: ${DOWNLOADS}`);
+  else if (/^## Install[ \t]*$/m.test(text)) text = text.replace(/^## Install[ \t]*$/m, `## Install\n\n${RELEASE}\n`);
+  else throw new ProductError('README: neither a "1. **[Download `…`](…)**" step nor an "## Install" section');
+
   const flows = [];
   text = text.replace(/```mermaid\n([\s\S]*?)```/g, (_, body) => {
     flows.push(parseFlow(body));
     return FLOW(flows.length - 1);
   });
-  return { text, caption, flows };
+  // Relative links go to the file on GitHub; https, anchors and root-relative paths stay.
+  text = text.replace(/\]\((?!https?:|#|\/)([^)\s]+)\)/g, (_, rel) => `](${blob}${rel})`);
+  return { text, hero, caption, panels, downloads: Boolean(download), flows };
 }
 
+// A <picture> of one of the README's images, as build.mjs copied it: `images` maps a README path
+// to { url, width, height } on this host.
+function pictureHtml({ light, dark, alt }, images, { lazy = true } = {}) {
+  const l = images[light];
+  const d = images[dark];
+  if (!l || !d) throw new ProductError(`no copy of the README image ${!l ? light : dark}`);
+  return `<picture>${dark !== light ? `<source media="(prefers-color-scheme: dark)" srcset="${d.url}" />` : ''}<img src="${l.url}" width="${l.width}" height="${l.height}" alt="${escapeHtml(alt)}" decoding="async"${lazy ? ' loading="lazy"' : ' fetchpriority="high"'} /></picture>`;
+}
+
+/** Every README image the page shows, for build.mjs to copy. */
+export const imagesOf = ({ hero, panels }) => [...new Set([hero, ...panels].flatMap((p) => [p.light, p.dark]))];
+
 /**
- * app: the docs/apps entry (loadApp: title, description, license, repo, slug); readme: its README;
- * release: { tag, url, published, assets: [{ name, size, url }] }; images: { light, dark, width,
- * height } paths on this host; theme: themeBlocks() of public/index.html.
+ * app: the docs/apps entry (loadApp: title, description, kicker, license, repo, slug); prepared:
+ * prepareReadme's result; release: { tag, url, published, assets: [{ name, size, url }] };
+ * images: README path → { url, width, height } on this host; theme: themeBlocks() of public/index.html.
  */
-export function productPage({ app, readme, release, images, theme }) {
-  const { text, caption, flows } = prepareReadme(readme);
+export function productPage({ app, prepared, release, images, theme }) {
+  const { text, hero, caption, panels, flows } = prepared;
   const doc = renderMarkdown(text, `${app.slug} README`);
   let html = doc.html;
   const swap = (from, to) => {
-    if (!html.includes(from)) throw new ProductError(`README: rendered page lost the marker ${from}`);
+    if (!html.includes(from)) throw new ProductError(`README: the rendered page lost the marker ${from}`);
     html = html.replace(from, to);
   };
-  swap(DOWNLOADS, downloadsHtml(release));
+  if (prepared.downloads) swap(DOWNLOADS, downloadsHtml(release));
+  else swap(`<p>${RELEASE}</p>`, `<div class="downloads">${releaseLine(release)}</div>`);
   flows.forEach((flow, i) => swap(`<p>${FLOW(i)}</p>`, flowHtml(flow)));
+  panels.forEach((panel, i) => {
+    swap(`<p>${PANEL(i)}</p>`, `<div class="panel"><div class="panel-image">${pictureHtml(panel, images)}</div><div class="panel-body">`);
+    swap(`<p>${PANEL_END}</p>`, '</div></div>');
+  });
   html = html.replaceAll(`<p>${MUTED} `, '<p class="muted">');
   if (html.includes('@@')) throw new ProductError('README: a marker was left in the page');
+  // HTML the README carried that nothing above handled reaches the page escaped; refuse it.
+  const leftover = /&lt;\/?(?:p|div|table|tr|td|img|picture|source|sub|b|i|br|h[1-6]|a|span)\b[^&]*&gt;/.exec(html.replace(/<pre[\s\S]*?<\/pre>|<code>[\s\S]*?<\/code>/g, ''));
+  if (leftover) throw new ProductError(`README: HTML this page cannot draw: ${leftover[0].replace(/&lt;/g, '<').replace(/&gt;/g, '>')}`);
 
   const url = `${APPS_HOST}/${app.slug}`;
   const trail = [SHELL_CRUMBS.home, SHELL_CRUMBS.apps, [app.title, url]];
@@ -130,7 +214,7 @@ export function productPage({ app, readme, release, images, theme }) {
     description: app.description,
     url,
     applicationCategory: 'DeveloperApplication',
-    operatingSystem: 'Linux, macOS',
+    operatingSystem: app.platforms,
     softwareVersion: release.tag.replace(/^v/, ''),
     downloadUrl: release.url,
     ...(app.license ? { license: app.license } : {}),
@@ -155,11 +239,7 @@ ${rail}
         </ul>
       </header>
       <figure class="hero-figure">
-        <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="${images.dark}" />
-          <img src="${images.light}" width="${images.width}" height="${images.height}" alt="${escapeHtml(caption)}" decoding="async" fetchpriority="high" />
-        </picture>
-        <figcaption>${escapeHtml(caption)}</figcaption>
+        ${pictureHtml(hero, images, { lazy: false })}${caption ? `\n        <figcaption>${escapeHtml(caption)}</figcaption>` : ''}
       </figure>
       <div class="prose">
 ${html}
@@ -167,7 +247,7 @@ ${html}
     </main>
   </div>`;
   return pageShell({
-    title: `${app.title}: ${app.description.split(':')[0].toLowerCase()} · Cyrus Sarkosh`,
+    title: `${app.title}: ${app.description.split(/[:.]/)[0].toLowerCase()} · Cyrus Sarkosh`,
     ogTitle: app.title,
     description: app.description,
     canonical: url,
@@ -181,7 +261,7 @@ ${html}
   });
 }
 
-// On top of the doc page's rules: the figure under the title, the download buttons and the flows.
+// On top of the doc page's rules: the hero, the downloads, the flows and the panels.
 const PRODUCT_CSS = `
     .hero-figure { margin: 8px 0 36px; }
     .hero-figure img { display: block; width: 100%; height: auto; border-radius: 14px; }
@@ -201,4 +281,15 @@ const PRODUCT_CSS = `
     .flow-edge { display: inline-flex; align-items: center; gap: 4px; padding: 0 4px; font-family: var(--mono); font-size: 11.5px; color: var(--faint); }
     .flow-edge svg { width: 14px; height: 14px; flex: none; }
     .flow-edge.side { font-style: italic; }
+    .panel { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; align-items: start; margin: 32px 0; }
+    .panel-image img { display: block; width: 100%; height: auto; border-radius: 12px; }
+    .panel-body > :first-child { margin-top: 0; }
+    /* On a phone the panel's heading leads, then its screenshot, then the rest of its text. */
+    @media (max-width: 640px) {
+      .panel { grid-template-columns: minmax(0, 1fr); gap: 0; }
+      .panel-body { display: contents; }
+      .panel-body > :first-child { order: 1; margin-bottom: 12px; }
+      .panel-image { order: 2; max-width: 280px; margin-bottom: 16px; }
+      .panel-body > :not(:first-child) { order: 3; }
+    }
     @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }`;

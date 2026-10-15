@@ -3,10 +3,13 @@
  * build.mjs: build apps.csarko.sh into apps/public/. Node 22, no dependencies.
  *
  *   node apps/build.mjs
+ *   node apps/build.mjs --local lib-visits=~/Projects/lib-visits   an app's README and images from a
+ *                                    checkout instead of GitHub, to look before pushing (repeatable)
  *
  * For each app in docs/apps/ whose page is on apps.csarko.sh it fetches, from GitHub, the README
  * and its images on the default branch and the latest release, and writes
- * apps/public/<slug>/index.html (apps/product.mjs) with the images beside it. Around the pages:
+ * apps/public/<slug>/index.html (apps/product.mjs) with the images beside it, each made a WebP
+ * (Pillow, as build_assets.py uses: a README's PNGs run to a megabyte). Around the pages:
  *   assets/*.woff2                the site's hashed font files, copied from public/assets/
  *   favicon.*, apple-touch-icon   the site's icons
  *   robots.txt, sitemap.xml       this host's own, listing the app pages
@@ -15,16 +18,26 @@
  * A new release of an app reaches its buttons when this runs again (apps/deploy.sh).
  */
 
+import { execFileSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { APPS_DIR, APPS_HOST, loadApp, themeBlocks } from '../.agents/skills/site-quality/scripts/docs_lib.mjs';
-import { productPage } from './product.mjs';
+import { imagesOf, prepareReadme, productPage } from './product.mjs';
 
 const APPS = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(APPS, '..');
 const SITE_PUBLIC = path.join(ROOT, 'public');
 const OUT = path.join(APPS, 'public');
+
+// --local <slug>=<dir>: that app's README and images come from the checkout (the release still
+// comes from GitHub). For a preview only; apps/deploy.sh never passes it.
+const local = new Map();
+for (let i = 2; i < process.argv.length; i++) {
+  if (process.argv[i] !== '--local' || !/^[a-z0-9-]+=.+/.test(process.argv[i + 1] ?? '')) throw new Error('usage: node apps/build.mjs [--local <slug>=<dir>]...');
+  const [slug, dir] = process.argv[++i].split(/=(.*)/);
+  local.set(slug, path.resolve(dir.replace(/^~(?=\/)/, process.env.HOME)));
+}
 
 async function github(pathname, { raw = false } = {}) {
   const url = raw ? pathname : `https://api.github.com/${pathname}`;
@@ -36,8 +49,14 @@ async function github(pathname, { raw = false } = {}) {
   }
 }
 
-// PNG width and height, from the IHDR chunk, for the <img> attributes.
-const pngSize = (buf) => ({ width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) });
+// An image as a WebP beside the page; prints and returns its width and height.
+const WEBP = `import sys, json
+from PIL import Image
+im = Image.open(sys.argv[1])
+im = im.convert("RGBA" if im.mode in ("RGBA", "LA", "P") else "RGB")
+im.save(sys.argv[2], "WEBP", quality=88, method=6)
+print(json.dumps({"width": im.width, "height": im.height}))`;
+const toWebp = (src, dest) => JSON.parse(execFileSync('python3', ['-I', '-c', WEBP, src, dest], { encoding: 'utf8' }));
 
 const indexHtml = readFileSync(path.join(SITE_PUBLIC, 'index.html'), 'utf8');
 const theme = themeBlocks(indexHtml);
@@ -65,7 +84,9 @@ for (const name of sources) {
 
   const meta = await github(`repos/${repo}`);
   const branch = meta.default_branch;
-  const readme = (await github(`https://raw.githubusercontent.com/${repo}/${branch}/README.md`, { raw: true })).toString('utf8');
+  const dirOf = local.get(app.slug);
+  const fetchFile = (file) => (dirOf ? readFileSync(path.join(dirOf, file)) : github(`https://raw.githubusercontent.com/${repo}/${branch}/${file}`, { raw: true }));
+  const readme = (await fetchFile('README.md')).toString('utf8');
   const latest = await github(`repos/${repo}/releases/latest`);
   const release = {
     tag: latest.tag_name,
@@ -74,22 +95,21 @@ for (const name of sources) {
     assets: latest.assets.map((a) => ({ name: a.name, size: a.size, url: a.browser_download_url })),
   };
 
+  const prepared = prepareReadme(readme, { blob: `https://github.com/${repo}/blob/${branch}/` });
   const dir = path.join(OUT, app.slug);
   mkdirSync(dir, { recursive: true });
-  // The README's picture names a light and a dark image; both are copied beside the page.
-  const srcs = [...readme.matchAll(/(?:srcset|src)="(docs\/images\/[^"]+\.png)"/g)].map((m) => m[1]);
-  const light = srcs.find((s) => /light/.test(s));
-  const dark = srcs.find((s) => /dark/.test(s));
-  if (!light || !dark) throw new Error(`${repo} README: the picture needs a light and a dark docs/images/*.png`);
+  // Every README image the page shows, as a WebP beside the page.
   const images = {};
-  for (const [key, src] of [['light', light], ['dark', dark]]) {
-    const buf = await github(`https://raw.githubusercontent.com/${repo}/${branch}/${src}`, { raw: true });
-    writeFileSync(path.join(dir, path.basename(src)), buf);
-    images[key] = `/${app.slug}/${path.basename(src)}`;
-    Object.assign(images, key === 'light' ? pngSize(buf) : {});
+  for (const src of imagesOf(prepared)) {
+    if (!/^[\w./-]+\.(png|jpe?g)$/.test(src) || src.includes('..')) throw new Error(`${repo} README: an image this page cannot copy: ${src}`);
+    const tmp = path.join(dir, `.${path.basename(src)}`);
+    writeFileSync(tmp, await fetchFile(src));
+    const file = `${path.basename(src).replace(/\.(png|jpe?g)$/, '')}.webp`;
+    images[src] = { url: `/${app.slug}/${file}`, ...toWebp(tmp, path.join(dir, file)) };
+    rmSync(tmp);
   }
 
-  let html = productPage({ app, readme, release, images, theme });
+  let html = productPage({ app, prepared, release, images, theme });
   html = html.replace(/\/\* generated:fonts \*\/\n\s*\/\* \/generated:fonts \*\//,
     `/* generated:fonts */\n${fonts}\n    /* /generated:fonts */`);
   html = html.replace(/<!-- generated:head -->\n\s*<!-- \/generated:head -->/,
@@ -97,7 +117,7 @@ for (const name of sources) {
   if (!html.includes(`/assets/${inter}" as="font"`) || !html.includes('@font-face')) throw new Error('the page lacks its generated blocks');
   writeFileSync(path.join(dir, 'index.html'), html);
   pages.push(`${APPS_HOST}/${app.slug}`);
-  console.log(`apps: ${app.slug} from ${repo}@${branch}, release ${release.tag} (${release.assets.length} assets)`);
+  console.log(`apps: ${app.slug} from ${dirOf ?? `${repo}@${branch}`}, release ${release.tag} (${release.assets.length} assets)`);
 }
 if (!pages.length) throw new Error(`no app in docs/${APPS_DIR}/ has a page on ${APPS_HOST}`);
 
