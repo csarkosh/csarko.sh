@@ -175,7 +175,7 @@ mode, anything in `lib-visits` itself.
   checks do.
 - Countries are not recorded: `csarko-visits` runs without a GeoIP database, and the
   dashboard's Countries section says so.
-- GoatCounter's history: the CSV export came back empty twice (15:21 and 14:20 UTC, 0 rows,
+- GoatCounter's history: the CSV export came back empty twice (14:20 and 15:21 UTC, 0 rows,
   finished in milliseconds; GoatCounter kept no per-hit rows for the site), so
   `visits/goatcounter-api.mjs` rebuilt it from the stats API: each path's hourly visits and
   each page-hour's referrers, New York hours converted to UTC. 390 rows, 405 visits (389 page,
