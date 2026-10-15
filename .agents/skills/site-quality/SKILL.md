@@ -142,9 +142,10 @@ front and take `--faint`; page links go to another page, sit after the hairline
 `docs_lib.mjs`) and no divider, with `aria-current="page"` on the index page you
 are on. Nothing links home by name: the wordmark does that on every page. Heading links are `li.heading-link` whose anchor
 carries `data-collapsible="true"`: at ≤ 640px they and the divider hide, leaving
-the page links alone. **Film collapses first** *(Cyrus, 2026-10-15)*: its `li` is
-`.collapse-first` and its anchor carries `data-collapsible="true"`, hidden at ≤ 720px on every page,
-before the heading links go at 640px; below that the bar reads `Apps · Games · Research`. That attribute is also what lets the layout check accept a
+the page links alone. **Film is the first page link to collapse** *(Cyrus, 2026-10-15)*: its `li` is
+`.collapse-first` and its anchor carries `data-collapsible="true"`, hidden below 360px on every page,
+where the four page links no longer fit; the heading links still go first, at 640px. Below 360px
+the bar reads `Apps · Games · Research`. That attribute is also what lets the layout check accept a
 hidden link (every link without it must stay visible at every width), so a new
 nav link needs it only if it is a heading link. Long text is bounded by its own measure, not by the
 shell: `78ch` on role and doc-list copy, `72ch` on a doc's `main`.

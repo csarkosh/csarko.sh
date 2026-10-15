@@ -586,8 +586,8 @@ const DOCS_CSS = `
        Docs pages carry only page links, so these two rules are here to keep the copies in step. */
     .nav .heading-link a { color: var(--faint); }
     .nav .nav-divider { width: 1px; height: 16px; background: var(--border-strong); }
-    /* Film is the first link to go when the bar narrows (the home page has the same rule). */
-    @media (max-width: 720px) { .nav .collapse-first { display: none; } }
+    /* Film is the first page link to go, once the four no longer fit (the home page has the same rule). */
+    @media (max-width: 359px) { .nav .collapse-first { display: none; } }
 
     /* The trail sits under the nav and scrolls away with the page: only the nav is sticky, so
        scroll-padding-top above stays the nav's own height. Its .wrap is the site's, so the first
@@ -815,8 +815,9 @@ ${DOCS_CSS}${extraCss}
 }
 
 // The page links, in the order the whole site uses them (see public/index.html, which carries the
-// same four after its heading links). Film carries the collapse-first class: at <= 720px it is the
-// first link to go, before the home page's heading links (Cyrus, 2026-10-15). `current` marks the page you are already on. There is no
+// same four after its heading links). Film carries the collapse-first class: below 360px, where the
+// four no longer fit, it is the first page link to go; the home page's heading links still go
+// before it, at 640px (Cyrus, 2026-10-15). `current` marks the page you are already on. There is no
 // Home link: the wordmark to their left is it, on every page. The third value is the visits
 // event (lib-visits' client, visits.min.js, binds every data-visits-event), a stable identifier that outlives a
 // rename of the label or the URL; the home page's nav carries the same three names.

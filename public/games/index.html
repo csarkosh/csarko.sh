@@ -195,8 +195,8 @@
        Docs pages carry only page links, so these two rules are here to keep the copies in step. */
     .nav .heading-link a { color: var(--faint); }
     .nav .nav-divider { width: 1px; height: 16px; background: var(--border-strong); }
-    /* Film is the first link to go when the bar narrows (the home page has the same rule). */
-    @media (max-width: 720px) { .nav .collapse-first { display: none; } }
+    /* Film is the first page link to go, once the four no longer fit (the home page has the same rule). */
+    @media (max-width: 359px) { .nav .collapse-first { display: none; } }
 
     /* The trail sits under the nav and scrolls away with the page: only the nav is sticky, so
        scroll-padding-top above stays the nav's own height. Its .wrap is the site's, so the first

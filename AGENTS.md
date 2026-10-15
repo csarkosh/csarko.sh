@@ -233,7 +233,8 @@ three from the command line):
   name outside the set; the `publish-doc` skill says which to give a doc.
 - **Film** *(added 2026-09-17)*: short films at **`/film`** (nav: `Film`, second
   among the page links after `Apps` since 2026-10-15, and the first link to collapse when the bar
-  narrows (hidden at ≤ 720px, Cyrus: it has little to show yet); no heading link, since the home page
+  narrows to below 360px, the first page link to go (Cyrus: it has little to show yet; the home
+  page's section links still go before it, at 640px); no heading link, since the home page
   has no film section; the page's H1 is "Short films on YouTube",
   its eyebrow "Film"), built from `docs/films/*.md`, one file per film. Each card
   carries the film's poster, a `Short film · <runtime>` kicker, its title, its
