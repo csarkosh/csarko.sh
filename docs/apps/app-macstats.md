@@ -2,6 +2,7 @@
 description: A Mac menu bar app showing CPU, GPU, RAM, temperature and free disk space, each item dropping down a panel that explains it.
 status: released
 page: https://apps.csarko.sh/app-macstats
+link: Install and docs
 platforms: macOS
 license: MIT
 repo: https://github.com/csarkosh/app-macstats

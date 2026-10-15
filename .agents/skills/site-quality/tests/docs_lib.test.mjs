@@ -708,5 +708,7 @@ test('an app with an alt gets a preview the asset build fills, laid out as a fil
   assert.ok(html.includes('<!-- generated:app-preview:app-macstats -->\n'));
   assert.ok(html.includes('<img src="/apps/app-macstats.jpg" alt="The menu bar" loading="lazy" decoding="async" />'));
   assert.ok(!html.includes('generated:app-preview:tool'), 'no alt, no preview');
+  assert.equal((html.match(/>Download and docs <svg/g) ?? []).length, 2, 'the default link');
+  assert.ok(appsPage([app('m', ['link: Install and docs'])], themeBlocks(INDEX)).includes('data-visits-event="app-m">Install and docs <svg'));
   assert.equal(jsonLd(html).find((n) => n['@type'] === 'CollectionPage').mainEntity.itemListElement[0].item.operatingSystem, 'Linux, macOS');
 });

@@ -40,8 +40,9 @@ const GAME_FIELDS = { description: true, status: true, tags: true, play: false, 
 // An app is software to download or use: "page" is its own page (on apps.csarko.sh), "platforms"
 // what it runs on, "license" joins the status in the card's kicker when the app is open source,
 // and "alt" describes its card's preview image (assets/apps/<slug>.png, and <slug>-dark.png for
-// the dark theme if it has one), which the card shows only when alt is given.
-const APP_FIELDS = { description: true, status: true, page: true, platforms: true, tags: true, license: false, repo: false, released: false, alt: false };
+// the dark theme if it has one), which the card shows only when alt is given. "link" names the
+// card's link to the page ("Download and docs" unless it says otherwise, e.g. "Install and docs").
+const APP_FIELDS = { description: true, status: true, page: true, platforms: true, tags: true, license: false, repo: false, released: false, alt: false, link: false };
 // A film is a video hosted on YouTube: the page carries its poster and links out, so every field
 // here is needed to build the card and its VideoObject. "alt" describes the poster. There is no
 // per-film warning: the page's standing notice speaks for the whole list.
@@ -1045,7 +1046,7 @@ ${pad}      <h2 class="app-title">${app.titleHtml}</h2>
 ${pad}      <div class="app-desc prose">
 ${app.html}${pad}      </div>
 ${pad}      <ul class="tags" role="list">${app.tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>
-${pad}      <a class="card-link stretch" href="${escapeHtml(app.page)}" data-visits-event="app-${app.slug}">Download and docs ${EXTERNAL_ARROW}</a>
+${pad}      <a class="card-link stretch" href="${escapeHtml(app.page)}" data-visits-event="app-${app.slug}">${escapeHtml(app.link ?? 'Download and docs')} ${EXTERNAL_ARROW}</a>
 ${pad}    </div>
 ${pad}  </li>`);
   return `${pad}<ul class="app-list" role="list">\n${items.join('\n')}\n${pad}</ul>`;
