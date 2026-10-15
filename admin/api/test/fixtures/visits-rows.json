@@ -25,7 +25,7 @@
     { "name": "read-a", "visitors": 1 },
     { "name": "(home)", "visitors": 6 }
   ],
-  "history-events": [{ "name": "out-github", "visitors": 3 }],
+  "history-events": [{ "name": "out-github", "visitors": 3 }, { "name": "(home)", "visitors": 4 }],
   "audience": [
     { "dim": "countries", "name": "US", "visitors": 5 },
     { "dim": "themes", "name": "dark", "visitors": 4 },

@@ -38,6 +38,14 @@ test("visits sums live and history rows by day and window, and a row without a v
   assert.deepEqual(r.previous.perDay.map((d) => d.day), ["2026-10-09", "2026-10-10"]);
   assert.deepEqual(calls.map((c) => c.name), ["visits", "history-visits"]);
   assert.deepEqual(calls[0].params, { start: range.start, end: range.end, prev_start: range.prevStart, prev_end: range.prevEnd });
+  assert.deepEqual(calls[1].params, { ...calls[0].params, until: "2026-10-14T00:00:00Z" });
+});
+
+test("history is asked for by each query's own lower bound, as instants", async () => {
+  const { v, calls } = make({ historyUntil: "2026-10-11T00:00:00Z" });
+  await v.visits(range);
+  await v.pages(range);
+  assert.deepEqual(calls.map((c) => c.name), ["visits", "history-visits", "pages"]);
 });
 
 test("history is not queried when the window starts after the cutover", async () => {
@@ -65,7 +73,7 @@ test("events fold history and lift the home-page visitors out of the rows", asyn
   const { v } = make();
   const r = await v.events(range);
   assert.deepEqual(r.rows, [{ name: "out-github", visitors: 5 }, { name: "read-a", visitors: 1 }]);
-  assert.equal(r.homeVisitors, 6);
+  assert.equal(r.homeVisitors, 10);
 });
 
 test("audience groups by dimension", async () => {

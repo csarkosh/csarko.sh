@@ -33,7 +33,8 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
     });
   }
 
-  const wantsHistory = (range) => Boolean(historyDataset && historyUntil && range.prevStart < historyUntil);
+  const wantsHistory = (bound) => Boolean(historyDataset && historyUntil && Date.parse(bound) < Date.parse(historyUntil));
+  const hist = (name, params) => run(name, { ...params, until: historyUntil });
   const win = (range) => ({ start: range.start, end: range.end, prev_start: range.prevStart, prev_end: range.prevEnd });
 
   return {
@@ -43,7 +44,7 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
 
     async visits(range) {
       const live = await run("visits", win(range));
-      const rows = wantsHistory(range) ? [...live, ...(await run("history-visits", win(range)))] : live;
+      const rows = wantsHistory(range.prevStart) ? [...live, ...(await hist("history-visits", win(range)))] : live;
       const shape = (w) => {
         const byDay = new Map();
         for (const r of rows) if (r.win === w) byDay.set(r.day, (byDay.get(r.day) ?? 0) + Number(r.visits));
@@ -56,14 +57,14 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
     async pages(range) {
       const live = await run("pages", { start: range.start, end: range.end });
       const rows = live.map((r) => ({ path: r.path, title: r.title ?? "", visitors: Number(r.visitors), pageviews: null, engagedMedian: r.engaged_median === null || r.engaged_median === undefined ? null : Number(r.engaged_median), reached: r.reached === null || r.reached === undefined ? null : Number(r.reached) }));
-      if (!wantsHistory(range)) return rows;
-      const history = await run("history-pages", { start: range.start, end: range.end });
+      if (!wantsHistory(range.start)) return rows;
+      const history = await hist("history-pages", { start: range.start, end: range.end });
       return sumBy([...rows, ...history.map((r) => ({ path: r.path, title: r.title ?? "", visitors: Number(r.visitors), pageviews: null, engagedMedian: null, reached: null }))], "path", "visitors");
     },
 
     async referrers(range) {
       const live = await run("referrers", { start: range.start, end: range.end });
-      const all = wantsHistory(range) ? [...live, ...(await run("history-referrers", { start: range.start, end: range.end }))] : live;
+      const all = wantsHistory(range.start) ? [...live, ...(await hist("history-referrers", { start: range.start, end: range.end }))] : live;
       const of = (kind) => all.filter((r) => r.kind === kind);
       return {
         referrers: sumBy(of("referrer").map((r) => ({ name: r.name ?? "", visitors: Number(r.visitors) })), "name", "visitors"),
@@ -74,7 +75,7 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
 
     async events(range) {
       const live = await run("events", { start: range.start, end: range.end });
-      const all = wantsHistory(range) ? [...live, ...(await run("history-events", { start: range.start, end: range.end }))] : live;
+      const all = wantsHistory(range.start) ? [...live, ...(await hist("history-events", { start: range.start, end: range.end }))] : live;
       const rows = sumBy(all.map((r) => ({ name: r.name, visitors: Number(r.visitors) })), "name", "visitors");
       const home = rows.find((r) => r.name === "(home)");
       return { rows: rows.filter((r) => r.name !== "(home)"), homeVisitors: home ? home.visitors : 0 };

@@ -14,7 +14,7 @@ WITH views AS (
     AND IFNULL(JSON_VALUE(json_payload.s.bot), 'false') != 'true'
     AND JSON_VALUE(json_payload.p) NOT IN ('/deploy-check', '/depth-check')
 )
-SELECT 'referrer' AS kind, IF(rk = 'direct', '', IFNULL(rh, '')) AS name, '' AS target, COUNT(DISTINCT visit) AS visitors
+SELECT 'referrer' AS kind, IF(rk = 'direct', '', IFNULL(rh, '(unknown)')) AS name, '' AS target, COUNT(DISTINCT visit) AS visitors
 FROM views WHERE rk IN ('direct', 'external') GROUP BY name
 UNION ALL
 SELECT 'campaign', campaign, '', COUNT(DISTINCT visit) FROM views WHERE campaign IS NOT NULL GROUP BY campaign
