@@ -25,3 +25,6 @@ __pycache__/
 
 # The substack-post voice profile lives in ~/.config/csarko-sh/, never here.
 voice.md
+
+# apps.csarko.sh is built from GitHub at each deploy (apps/build.mjs); nothing in it is a source.
+apps/public/

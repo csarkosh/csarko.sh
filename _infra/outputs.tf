@@ -43,6 +43,26 @@ output "site_url" {
   value       = "https://${var.domain_name}"
 }
 
+output "apps_hosting_site_id" {
+  description = "Firebase Hosting site id of the apps site"
+  value       = module.gcp_hosting_apps.site_id
+}
+
+output "apps_hosting_default_url" {
+  description = "The apps site's own web.app URL, usable before DNS is live"
+  value       = module.gcp_hosting_apps.default_url
+}
+
+output "apps_custom_domain_state" {
+  description = "Host, ownership and certificate state of the apps domain. All ACTIVE means done."
+  value       = module.gcp_hosting_apps.custom_domain_state
+}
+
+output "apps_site_url" {
+  description = "URL of the apps site"
+  value       = "https://${var.apps_domain_name}"
+}
+
 output "admin_hosting_site_id" {
   description = "Firebase Hosting site id of the admin dashboard"
   value       = module.gcp_hosting_admin.site_id

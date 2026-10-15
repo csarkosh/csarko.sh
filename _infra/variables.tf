@@ -52,6 +52,18 @@ variable "firebase_hosting_ips" {
   default     = ["199.36.158.100"]
 }
 
+variable "apps_domain_name" {
+  description = "Hostname of the apps site: each released app's page (apps.csarko.sh/<slug>), with / redirecting to https://csarko.sh/apps."
+  type        = string
+  default     = "apps.csarko.sh"
+}
+
+variable "apps_hosting_site_id" {
+  description = "Firebase Hosting site id of the apps site. Globally unique across all of Firebase."
+  type        = string
+  default     = "csarko-sh-apps"
+}
+
 variable "admin_domain_name" {
   description = "Hostname of the admin dashboard. A subdomain of domain_name, so it CNAMEs to its site's web.app host."
   type        = string

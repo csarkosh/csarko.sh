@@ -108,6 +108,27 @@ module "gcp_hosting_admin" {
   depends_on = [module.gcp_hosting]
 }
 
+# The apps site, https://apps.csarko.sh: a third Hosting site in the project. It carries
+# each released app's page (apps/build.mjs builds them from the app's README and latest
+# release), and firebase.json redirects its "/" to https://csarko.sh/apps, as
+# games.csarko.sh's "/" goes to /games. Deploys on its own (apps/deploy.sh).
+module "gcp_hosting_apps" {
+  source = "./modules/gcp-hosting"
+
+  project_id            = var.gcp_project_id
+  site_id               = var.apps_hosting_site_id
+  domain_name           = var.apps_domain_name
+  redirect_domain_names = []
+  manage_project        = false
+
+  providers = {
+    google      = google
+    google-beta = google-beta
+  }
+
+  depends_on = [module.gcp_hosting]
+}
+
 # The API behind the dashboard: Cloud Run, its secrets, Firestore for the
 # daily snapshots, the Scheduler job that takes them, and the project budget.
 # Google sign-in for admin.csarko.sh: every app's admin API trusts the ID
@@ -194,6 +215,7 @@ module "gcp_visits" {
 locals {
   hosting_cname_target       = trimprefix(module.gcp_hosting.default_url, "https://")
   admin_hosting_cname_target = trimprefix(module.gcp_hosting_admin.default_url, "https://")
+  apps_hosting_cname_target  = trimprefix(module.gcp_hosting_apps.default_url, "https://")
 }
 
 # csarko.sh is a zone apex, so it cannot be a CNAME the way games.csarko.sh is
@@ -216,10 +238,11 @@ module "aws_dns" {
   ]
 
   # Non-apex hostnames CNAME straight to their site's own web.app host: the
-  # redirect domains (www) to the public site, admin to the admin site.
+  # redirect domains (www) to the public site, admin to the admin site, apps to the apps site.
   cname_records = merge(
     { for d in var.redirect_domain_names : d => local.hosting_cname_target },
     { (var.admin_domain_name) = local.admin_hosting_cname_target },
+    { (var.apps_domain_name) = local.apps_hosting_cname_target },
   )
 
   providers = {
