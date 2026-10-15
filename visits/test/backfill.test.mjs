@@ -65,3 +65,43 @@ test("the CSV is parsed by column name, not position", () => {
     { hour: "2026-10-01T10:00:00Z", path: "/a", title: "A", event: false, ref: "", visits: 1 },
   ]);
 });
+
+test("a header with the version glued to the first name parses the same", () => {
+  const csv = [
+    "2Path,Title,Event,UserAgent,Browser,System,Session,Bot,Referrer,Referrer scheme,Screen size,Location,FirstVisit,Date",
+    '"/","Home","false","","Firefox 128","macOS","s1","0","https://google.com/","h","1920","US","1","2026-10-01 10:05:00"',
+  ].join("\n");
+  assert.deepEqual(rowsOf(csv), [
+    { hour: "2026-10-01T10:00:00Z", path: "/", title: "Home", event: false, ref: "google.com", visits: 1 },
+  ]);
+});
+
+test("a header lacking a needed column throws", () => {
+  assert.throws(() => rowsOf('Path,Title,Event,Referrer,Date\n"/","","false","","2026-10-01 10:05:00"'), /lacks the column Bot/);
+});
+
+test("hostOf reduces scheme-less referrers with a path, query or port", () => {
+  assert.equal(hostOf("google.com/search?q=x"), "google.com");
+  assert.equal(hostOf("t.co/abc"), "t.co");
+  assert.equal(hostOf("WWW.Example.com:8443/x"), "example.com");
+});
+
+test("a CRLF CSV leaves no carriage return on the last cell", () => {
+  const csv = ["Path,Title,Event,Bot,Referrer,Date", '"/","Home","false","0","","2026-10-01 10:05:00"'].join("\r\n");
+  assert.deepEqual(rowsOf(csv), [
+    { hour: "2026-10-01T10:00:00Z", path: "/", title: "Home", event: false, ref: "", visits: 1 },
+  ]);
+});
+
+test("two ref ids with one host give one row", () => {
+  const text = [
+    { path: { id: 1, path: "/", title: "" } },
+    { ref: { id: 7, ref: "google.com" } },
+    { ref: { id: 8, ref: "https://www.google.com/" } },
+    { hit_stat: { hour: "2026-10-01T10:00:00Z", path_id: 1, ref_id: 7, count: 1 } },
+    { hit_stat: { hour: "2026-10-01T10:00:00Z", path_id: 1, ref_id: 8, count: 2 } },
+  ].map((o) => JSON.stringify(o)).join("\n");
+  assert.deepEqual(rowsOf(text), [
+    { hour: "2026-10-01T10:00:00Z", path: "/", title: "", event: false, ref: "google.com", visits: 3 },
+  ]);
+});

@@ -22,8 +22,9 @@ export const hourOf = (stamp) => {
   return d.toISOString().replace(".000Z", "Z");
 };
 export const hostOf = (ref) => {
-  const m = /^[a-z][a-z0-9+.-]*:\/\/([^/?#@]+@)?([^/?#:]+)/i.exec(ref);
-  return (m ? m[2] : ref).replace(/^www\./i, "").toLowerCase();
+  let h = ref.replace(/^[a-z][a-z0-9+.-]*:\/\//i, "");
+  h = h.split(/[/?#]/)[0].replace(/^[^@]*@/, "").replace(/:\d*$/, "");
+  return h.replace(/^www\./i, "").toLowerCase();
 };
 
 /** `{ rows, skipped }`: rows are `[{ hour, path, title, event, ref, visits }]` from the JSON-lines or CSV export. */
@@ -36,32 +37,40 @@ export const rowsOf = (text) => reduceExport(text).rows;
 function fromJson(text) {
   const paths = new Map();
   const refs = new Map([[0, ""]]);
-  const sums = new Map();
+  const stats = [];
   let skipped = 0;
-  for (const line of text.split("\n")) {
+  for (const line of text.split(/\r?\n/)) {
     if (!line.trim()) continue;
     const o = JSON.parse(line);
     if (o.path) paths.set(o.path.id, o.path);
     else if (o.ref) refs.set(o.ref.id, hostOf(o.ref.ref ?? ""));
-    else if (o.hit_stat) {
-      const h = o.hit_stat;
-      const key = `${hourOf(h.hour)}\t${h.path_id}\t${h.ref_id ?? 0}`;
-      sums.set(key, (sums.get(key) ?? 0) + Number(h.count));
-    } else skipped++;
+    else if (o.hit_stat) stats.push(o.hit_stat);
+    else skipped++;
+  }
+  // Summed after the whole file is read, by host, so two ref ids with one host give one row.
+  const sums = new Map();
+  for (const h of stats) {
+    const key = `${hourOf(h.hour)}\t${h.path_id}\t${refs.get(Number(h.ref_id ?? 0)) ?? ""}`;
+    sums.set(key, (sums.get(key) ?? 0) + Number(h.count));
   }
   const rows = [...sums.entries()].map(([key, visits]) => {
-    const [hour, pathId, refId] = key.split("\t");
+    const [hour, pathId, ref] = key.split("\t");
     const p = paths.get(Number(pathId)) ?? { path: `#${pathId}`, title: "" };
-    return { hour, path: p.path, title: p.title ?? "", event: Boolean(p.event), ref: refs.get(Number(refId)) ?? "", visits };
+    return { hour, path: p.path, title: p.title ?? "", event: Boolean(p.event), ref, visits };
   });
   return { rows, skipped };
 }
 
 function fromCsv(text) {
-  const [header, ...lines] = text.split("\n").filter((l) => l.trim());
+  const [header, ...lines] = text.split(/\r?\n/).filter((l) => l.trim());
   const cols = parseCsvLine(header);
-  // The header opens with the export's version number ("2"), which no data row repeats.
-  if (/^\d+$/.test(cols[0])) cols.shift();
+  // The header opens with the export's version number, glued to the first name ("2Path")
+  // or alone ("2"); no data row repeats it.
+  cols[0] = cols[0].replace(/^\d+/, "");
+  if (cols[0] === "") cols.shift();
+  for (const name of ["Path", "Title", "Event", "Bot", "Referrer", "Date"]) {
+    if (!cols.includes(name)) throw new Error(`CSV export lacks the column ${name}; header was: ${header}`);
+  }
   const idx = (name) => cols.indexOf(name);
   const sums = new Map();
   const meta = new Map();
