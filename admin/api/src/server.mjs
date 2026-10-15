@@ -17,7 +17,8 @@ import { createAdminAuth, createOidcVerifier } from "./auth.mjs";
 import { createApp } from "./app.mjs";
 import { createQueries } from "./queries.mjs";
 import { createMemoryStore, createFirestoreStore } from "./store.mjs";
-import { createGoatCounter } from "./collectors/goatcounter.mjs";
+import { BigQuery } from "@google-cloud/bigquery";
+import { createVisits } from "./collectors/visits.mjs";
 import { createGsc } from "./collectors/gsc.mjs";
 import { createYouTube } from "./collectors/youtube.mjs";
 import { createGitHub } from "./collectors/github.mjs";
@@ -35,7 +36,7 @@ const log = console;
 const store = process.env.ADMIN_STORE === "memory" ? createMemoryStore() : await createFirestoreStore({ projectId: config.projectId, log });
 
 const queries = createQueries({
-  gc: createGoatCounter({ site: config.goatcounter.site, token: config.goatcounter.token, fetch, cache, log }),
+  visits: createVisits({ bigquery: config.visits.dataset ? new BigQuery({ projectId: config.projectId }) : null, projectId: config.projectId, dataset: config.visits.dataset, historyDataset: config.visits.historyDataset, historyUntil: config.visits.historyUntil, cache, log }),
   gsc: createGsc({ key: config.gsc.key, property: config.gsc.property, fetch, cache }),
   youtube: createYouTube({ key: config.youtube.key, handle: config.youtube.handle, fetch, cache }),
   github: createGitHub({ token: config.github.token, owner: config.github.owner, fetch, cache, log }),
@@ -65,7 +66,7 @@ const app = createApp({
 if (config.adminEmails.length === 0) log.error("admin: ADMIN_EMAILS is empty; /admin/* will answer 503 until the allowlist names an account");
 else log.log(`admin: ${config.adminEmails.length} account(s) may sign in, through Firebase project ${config.firebaseProject}`);
 const unconfigured = [
-  config.goatcounter.token === null && "GOATCOUNTER_TOKEN",
+  !config.visits.dataset && "VISITS_DATASET",
   config.gsc.key === null && "GSC_SA_KEY",
   config.youtube.key === null && "YOUTUBE_KEY",
   config.github.token === null && "GITHUB_TOKEN",

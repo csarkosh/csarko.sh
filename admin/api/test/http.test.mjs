@@ -38,23 +38,23 @@ test("an empty or placeholder credential is not configured; the allowlist is par
   assert.equal(secret(""), null);
   assert.equal(secret(undefined), null);
   assert.equal(secret("unset-but-real"), "unset-but-real");
-  const config = readConfig({ ADMIN_EMAILS: "", GOATCOUNTER_TOKEN: "unset", YOUTUBE_KEY: "", GITHUB_TOKEN: " unset ", PSI_KEY: "unset", GSC_SA_KEY: "unset" }, quiet);
+  const config = readConfig({ ADMIN_EMAILS: "", YOUTUBE_KEY: "", GITHUB_TOKEN: " unset ", PSI_KEY: "unset", GSC_SA_KEY: "unset" }, quiet);
   assert.deepEqual(config.adminEmails, [], "no readers");
-  assert.equal(config.goatcounter.token, null);
+  assert.equal(config.visits.dataset, "");
+  assert.equal(config.visits.historyUntil, null);
   assert.equal(config.youtube.key, null);
   assert.equal(config.github.token, null);
   assert.equal(config.psiKey, null);
   assert.equal(config.gsc.key, null);
-  const real = readConfig({ ADMIN_EMAILS: "A@b.c, d@e.f", FIREBASE_PROJECT: "csarko-sh", GOATCOUNTER_TOKEN: "tok" }, quiet);
+  const real = readConfig({ ADMIN_EMAILS: "A@b.c, d@e.f", FIREBASE_PROJECT: "csarko-sh", VISITS_DATASET: "csarko_visits" }, quiet);
   assert.deepEqual(real.adminEmails, ["a@b.c", "d@e.f"]);
   assert.equal(real.firebaseProject, "csarko-sh");
-  assert.equal(real.goatcounter.token, "tok");
+  assert.equal(real.visits.dataset, "csarko_visits");
 });
 
 test("defaults and lists", () => {
   const quiet = { error() {} };
   const config = readConfig({}, quiet);
-  assert.equal(config.goatcounter.site, "csarko");
   assert.equal(config.gsc.property, "sc-domain:csarko.sh");
   assert.equal(config.sitemapUrl, "https://csarko.sh/sitemap.xml");
   assert.deepEqual(config.allowedOrigins, ["https://admin.csarko.sh", "http://localhost:8788"]);

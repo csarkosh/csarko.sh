@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createQueries, weeklyTrend, snapshotAgo } from "../src/queries.mjs";
+import { createQueries, weeklyTrend, snapshotAgo, eventKindOf } from "../src/queries.mjs";
 import { createMemoryStore } from "../src/store.mjs";
 
 const fixture = (name) => JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), "utf8"));
@@ -9,22 +9,48 @@ const NOW = Date.parse("2026-10-12T15:30:00Z");
 const TODAY = "2026-10-12";
 
 /** Fakes for every collector: configured ones answer from the fixtures, the rest are switched off. */
-function fakes({ gcOn = true, gscOn = true, youtubeOn = false, githubToken = false, psiOn = false } = {}) {
-  const total = fixture("goatcounter-total");
-  const hits = fixture("goatcounter-hits").hits;
-  const prevTotal = { ...total, total: 160, total_events: 10 };
+function fakes({ visitsOn = true, gscOn = true, youtubeOn = false, githubToken = false, psiOn = false } = {}) {
+  const perDay = [20, 25, 30, 28, 26, 27, 25].map((visits, i) => ({ day: `2026-10-0${6 + i}`, visits }));
+  const eventRows = [
+    { name: "out-linkedin", visitors: 18 },
+    { name: "out-github", visitors: 12 },
+    { name: "play-dayhike", visitors: 9 },
+    { name: "read-stylized-shader-looks", visitors: 6 },
+    { name: "watch-who-is-standing-in-my-hallway", visitors: 4 },
+    { name: "signup", visitors: 1 },
+  ];
   const log = { error() {}, warn() {}, log() {} };
   return {
-    gc: {
-      configured: gcOn,
-      async total(start) {
-        return start < "2026-10-05" ? prevTotal : total;
+    visits: {
+      configured: visitsOn,
+      async visits() {
+        return { current: { visits: 181, pageviews: null, perDay }, previous: { visits: 150, pageviews: null, perDay } };
       },
-      async hits(start) {
-        return start < "2026-10-05" ? hits.map((h) => ({ ...h, count: Math.floor(h.count / 2) })) : hits;
+      async pages() {
+        return [
+          { path: "/", visitors: 90, pageviews: null, engagedMedian: 40, reached: null },
+          { path: "/research/stylized-shader-looks", visitors: 40, pageviews: null, engagedMedian: 120, reached: 0.4 },
+          { path: "/games", visitors: 20, pageviews: null, engagedMedian: 30, reached: null },
+          { path: "/docs/old-slug", visitors: 7, pageviews: null, engagedMedian: 2, reached: null },
+          { path: "/wp-login.php", visitors: 2, pageviews: null, engagedMedian: 0, reached: null },
+        ];
       },
-      async page(name) {
-        return name === "toprefs" ? fixture("goatcounter-toprefs").stats : fixture("goatcounter-locations").stats;
+      async referrers() {
+        return {
+          referrers: fixture("goatcounter-toprefs").stats.map((x) => ({ name: x.name, visitors: x.count })),
+          campaigns: [{ campaign: "substack", visitors: 5 }],
+          paths: [{ from: "/", to: "/games", visitors: 12 }],
+        };
+      },
+      async events(range) {
+        const prev = range.start < "2026-10-05";
+        return { rows: prev ? eventRows.map((r) => ({ ...r, visitors: Math.floor(r.visitors / 2) })) : eventRows, homeVisitors: 120 };
+      },
+      async audience() {
+        return {
+          countries: [{ name: "United States", visitors: 100 }],
+          sizes: [], browsers: [], systems: [], languages: [], themes: [{ name: "dark", visitors: 70 }], viewports: [], touch: [], timezones: [],
+        };
       },
     },
     gsc: {
@@ -114,16 +140,16 @@ test("kpis assembles the four cards from the sources and the trend from the snap
 });
 
 test("kpis with no credentials has null values, zero trends and a notConfigured hint, never a throw", async () => {
-  const deps = fakes({ gcOn: false, gscOn: false });
+  const deps = fakes({ visitsOn: false, gscOn: false });
   const body = await createQueries(deps).kpis();
   assert.deepEqual(body.kpis.map((k) => k.value), [null, null, null, null]);
   assert.deepEqual(body.kpis[0].trend, new Array(12).fill(0));
-  assert.deepEqual(body.notConfigured, { visits: "GOATCOUNTER_TOKEN", outbound: "GOATCOUNTER_TOKEN", search: "GSC_SA_KEY" });
+  assert.deepEqual(body.notConfigured, { visits: "VISITS_DATASET", outbound: "VISITS_DATASET", search: "GSC_SA_KEY" });
   assert.equal(body.health.status, "good");
   assert.match(body.health.note, /unknown: lighthouse, indexing, 404s, sitemap fetch/);
 });
 
-test("the GoatCounter queries have the contract's shapes", async () => {
+test("the visits queries have the contract's shapes", async () => {
   const q = createQueries(fakes());
   const visits = await q.visits(7);
   assert.equal(visits.days, 7);
@@ -136,25 +162,35 @@ test("the GoatCounter queries have the contract's shapes", async () => {
   const pages = await q.pages(7);
   assert.deepEqual(pages.rows.map((r) => [r.path, r.inSitemap]), [["/", true], ["/research/stylized-shader-looks", true], ["/games", true], ["/docs/old-slug", false], ["/wp-login.php", false]]);
 
+  assert.deepEqual([pages.rows[1].engagedMedian, pages.rows[1].reached], [120, 0.4], "engaged time and the share read pass through");
+
   const referrers = await q.referrers(7);
   assert.equal(referrers.groups.length, 7);
-  assert.equal(referrers.campaigns[0].campaign, "United States", "the fake answers every panel with the locations fixture");
+  assert.equal(referrers.campaigns[0].campaign, "substack");
+  assert.deepEqual(referrers.paths, [{ from: "/", to: "/games", visitors: 12 }], "the site's own edges pass through");
 
   const events = await q.events(7);
   assert.equal(events.rows[0].name, "out-linkedin");
+  assert.deepEqual(events.rows.map((r) => r.kind), ["out", "out", "play", "read", "watch", "other"]);
   assert.equal(events.outboundRate, 0.25);
 
   const audience = await q.audience(7);
-  assert.deepEqual(Object.keys(audience), ["countries", "sizes", "browsers", "systems", "languages"]);
+  assert.deepEqual(Object.keys(audience), ["countries", "sizes", "browsers", "systems", "languages", "themes", "viewports", "touch", "timezones"]);
   assert.equal(audience.countries[0].name, "United States");
 });
 
-test("a GoatCounter query without a token says which secret is missing", async () => {
-  const q = createQueries(fakes({ gcOn: false }));
+test("a visits query without a dataset says which variable is missing", async () => {
+  const q = createQueries(fakes({ visitsOn: false }));
   const visits = await q.visits(30);
   assert.equal(visits.current, null);
-  assert.deepEqual(visits.notConfigured, { goatcounter: "GOATCOUNTER_TOKEN" });
-  assert.deepEqual((await q.pages(7)).notConfigured, { goatcounter: "GOATCOUNTER_TOKEN" });
+  assert.deepEqual(visits.notConfigured, { visits: "VISITS_DATASET" });
+  assert.deepEqual((await q.pages(7)).notConfigured, { visits: "VISITS_DATASET" });
+});
+
+test("eventKindOf reads the prefix and calls anything else other", () => {
+  assert.equal(eventKindOf("out-github"), "out");
+  assert.equal(eventKindOf("nav-film"), "nav");
+  assert.equal(eventKindOf("link-example.com"), "other");
 });
 
 test("search has the lag note, per-day rows for every day, totals, previous, tops, indexed and sitemap", async () => {
@@ -246,10 +282,10 @@ test("snapshot writes today's document with every counter and is idempotent for 
   assert.equal((await deps.store.listSnapshots("2026-01-01", "2026-12-31")).length, 1);
   assert.deepEqual(again, doc);
 
-  const partial = await createQueries(fakes({ gcOn: false })).snapshot();
+  const partial = await createQueries(fakes({ visitsOn: false })).snapshot();
   assert.equal(partial.visits7, null);
   assert.equal(partial.outbound7, null);
-  assert.deepEqual(partial.notConfigured, { visits: "GOATCOUNTER_TOKEN", events: "GOATCOUNTER_TOKEN", youtube: "YOUTUBE_KEY", lighthouse: "PSI_KEY" });
+  assert.deepEqual(partial.notConfigured, { visits: "VISITS_DATASET", events: "VISITS_DATASET", youtube: "YOUTUBE_KEY", lighthouse: "PSI_KEY" });
 });
 
 test("manual appends with the time and the store caps the series", async () => {

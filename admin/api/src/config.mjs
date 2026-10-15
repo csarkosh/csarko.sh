@@ -64,7 +64,7 @@ export function readConfig(env = process.env, log = console) {
   return {
     adminEmails: parseAllowlist(env.ADMIN_EMAILS),
     firebaseProject: text(env.FIREBASE_PROJECT, text(env.GOOGLE_CLOUD_PROJECT)),
-    goatcounter: { token: secret(env.GOATCOUNTER_TOKEN), site: text(env.GOATCOUNTER_SITE, "csarko") },
+    visits: { dataset: text(env.VISITS_DATASET, ""), historyDataset: text(env.VISITS_HISTORY_DATASET, ""), historyUntil: text(env.VISITS_HISTORY_UNTIL, "") || null },
     gsc: { key: parseServiceAccountKey(env.GSC_SA_KEY, log), property: text(env.GSC_PROPERTY, "sc-domain:csarko.sh") },
     youtube: { key: secret(env.YOUTUBE_KEY), handle: text(env.YOUTUBE_HANDLE, "csarkosh") },
     github: { token: secret(env.GITHUB_TOKEN), owner: text(env.GITHUB_OWNER, DEFAULT_GITHUB_OWNER) },

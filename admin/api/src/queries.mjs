@@ -14,7 +14,6 @@
  * turns into a 500.
  */
 
-import * as gcMap from "./collectors/goatcounter.mjs";
 import * as gscMap from "./collectors/gsc.mjs";
 import { groupReferrers } from "./referrers.mjs";
 import { pathsOf, normalizePath } from "./collectors/sitemap.mjs";
@@ -25,6 +24,14 @@ export const QUERY_NAMES = ["visits", "pages", "referrers", "events", "audience"
 export const MANUAL_KEYS = ["substack"];
 export const APP_NAME = "csarko.sh";
 export const TREND_WEEKS = 12;
+
+const EVENT_KINDS = ["out", "play", "watch", "read", "nav"];
+/** The kind of an event name from its prefix: `out-github` is an outbound click, `read-<slug>` a read to the end. */
+export function eventKindOf(name) {
+  const prefix = String(name).split("-")[0];
+  return EVENT_KINDS.includes(prefix) ? prefix : "other";
+}
+const outboundOf = (rows) => rows.filter((r) => eventKindOf(r.name) === "out").reduce((n, r) => n + r.visitors, 0);
 
 export function isQueryName(name) {
   return QUERY_NAMES.includes(name);
@@ -64,7 +71,7 @@ export function snapshotAgo(snapshots, today, daysAgo = 7) {
   return pick;
 }
 
-export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosting, sitemap, store, config, now = Date.now, log = console }) {
+export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, hosting, sitemap, store, config, now = Date.now, log = console }) {
   /** Runs one part of an answer, reporting a missing credential or a failure instead of throwing. */
   async function part(hints, name, envName, configured, fn) {
     if (!configured) {
@@ -87,67 +94,58 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
     ...(Object.keys(h.errors).length > 0 ? { errors: h.errors } : {}),
   });
 
-  const requireGc = () => {
-    if (!gc.configured) return { notConfigured: { goatcounter: "GOATCOUNTER_TOKEN" } };
-    return null;
-  };
+  const requireVisits = () => (visits.configured ? null : { notConfigured: { visits: "VISITS_DATASET" } });
 
   async function sitemapPaths(h) {
     const urls = await part(h, "sitemap", "SITEMAP_URL", true, () => sitemap.urls());
     return urls === null ? null : pathsOf(urls);
   }
 
-  async function notFoundOf(hits, h) {
+  async function notFoundOf(rows, h) {
     const paths = await sitemapPaths(h);
     if (paths === null) return null;
-    return gcMap.pageRowsOf(hits)
-      .filter((r) => r.visitors > 0 && !paths.has(normalizePath(r.path)))
-      .map((r) => ({ path: r.path, visitors: r.visitors }));
+    return rows.filter((r) => r.visitors > 0 && !paths.has(normalizePath(r.path))).map((r) => ({ path: r.path, visitors: r.visitors }));
   }
 
   const queries = {
     async visits(days) {
       const range = hourlyRange(days, now());
-      const empty = requireGc();
+      const empty = requireVisits();
       if (empty) return { days, from: range.start, to: range.end, current: null, previous: null, ...empty };
-      const [cur, prev] = await Promise.all([gc.total(range.start, range.end), gc.total(range.prevStart, range.prevEnd)]);
-      const shape = (t) => ({ visits: gcMap.visitsOf(t), pageviews: null, perDay: gcMap.perDayOf(t) });
-      return { days, from: range.start, to: range.end, current: shape(cur), previous: shape(prev) };
+      const { current, previous } = await visits.visits(range);
+      return { days, from: range.start, to: range.end, current, previous };
     },
 
     async pages(days) {
-      const empty = requireGc();
+      const empty = requireVisits();
       if (empty) return { rows: null, ...empty };
       const range = hourlyRange(days, now());
       const h = hints();
-      const [hits, paths] = await Promise.all([gc.hits(range.start, range.end), sitemapPaths(h)]);
-      const rows = gcMap.pageRowsOf(hits).map((r) => ({ ...r, inSitemap: paths === null ? null : paths.has(normalizePath(r.path)) }));
-      return withHints({ rows }, h);
+      const [rows, paths] = await Promise.all([visits.pages(range), sitemapPaths(h)]);
+      return withHints({ rows: rows.map((r) => ({ ...r, inSitemap: paths === null ? null : paths.has(normalizePath(r.path)) })) }, h);
     },
 
     async referrers(days) {
-      const empty = requireGc();
-      if (empty) return { groups: null, rows: null, campaigns: null, ...empty };
+      const empty = requireVisits();
+      if (empty) return { groups: null, rows: null, campaigns: null, paths: null, ...empty };
       const range = hourlyRange(days, now());
-      const [refs, campaigns] = await Promise.all([gc.page("toprefs", range.start, range.end), gc.page("campaigns", range.start, range.end)]);
-      return { ...groupReferrers(refs), campaigns: gcMap.namedRowsOf(campaigns).map((c) => ({ campaign: c.name, visitors: c.visitors })) };
+      const r = await visits.referrers(range);
+      return { ...groupReferrers(r.referrers.map((x) => ({ name: x.name, count: x.visitors }))), campaigns: r.campaigns, paths: r.paths };
     },
 
     async events(days) {
-      const empty = requireGc();
+      const empty = requireVisits();
       if (empty) return { rows: null, outboundRate: null, ...empty };
       const range = hourlyRange(days, now());
-      const hits = await gc.hits(range.start, range.end);
-      return { rows: gcMap.eventRowsOf(hits), outboundRate: gcMap.outboundRateOf(hits) };
+      const e = await visits.events(range);
+      const rows = e.rows.map((r) => ({ name: r.name, kind: eventKindOf(r.name), visitors: r.visitors }));
+      return { rows, outboundRate: e.homeVisitors > 0 ? outboundOf(rows) / e.homeVisitors : null };
     },
 
     async audience(days) {
-      const empty = requireGc();
-      if (empty) return { countries: null, sizes: null, browsers: null, systems: null, languages: null, ...empty };
-      const range = hourlyRange(days, now());
-      const panel = (name) => gc.page(name, range.start, range.end, 50).then(gcMap.namedRowsOf);
-      const [countries, sizes, browsers, systems, languages] = await Promise.all(["locations", "sizes", "browsers", "systems", "languages"].map(panel));
-      return { countries, sizes, browsers, systems, languages };
+      const empty = requireVisits();
+      if (empty) return { countries: null, sizes: null, browsers: null, systems: null, languages: null, themes: null, viewports: null, touch: null, timezones: null, ...empty };
+      return visits.audience(hourlyRange(days, now()));
     },
 
     async search(days) {
@@ -205,11 +203,11 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
     async health(days = 7) {
       const h = hints();
       const range = hourlyRange(days, now());
-      const [live, latest, lastDeployAt, hits, urls, sitemapState] = await Promise.all([
+      const [live, latest, lastDeployAt, pageRows, urls, sitemapState] = await Promise.all([
         uptime.check(),
         store.latestSnapshot(),
         part(h, "hosting", "HOSTING_SITE", true, () => hosting.lastDeployAt()),
-        part(h, "goatcounter", "GOATCOUNTER_TOKEN", gc.configured, () => gc.hits(range.start, range.end)),
+        part(h, "visits", "VISITS_DATASET", visits.configured, () => visits.pages(range)),
         part(h, "sitemap", "SITEMAP_URL", true, () => sitemap.urls()),
         part(h, "sitemapState", "GSC_SA_KEY", gsc.configured, () => gsc.sitemap(config.sitemapUrl)),
       ]);
@@ -221,7 +219,7 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
         lighthousePerformance = score?.performance ?? null;
         lighthouseAt = score?.at ?? null;
       }
-      const notFound = hits === null ? null : await notFoundOf(hits, h);
+      const notFound = pageRows === null ? null : await notFoundOf(pageRows, h);
       // Indexing comes from the snapshot as well: a URL inspection takes 5 to
       // 7 s, so the sitemap's 33 cost a cold instance a minute when they ran
       // on the request (seen 2026-10-13: 60 s and a 504). The daily job
@@ -254,15 +252,16 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
       const today = isoDate(now());
       const range = hourlyRange(7, now());
       const daily = dailyRange(28, now());
-      const [snapshots, visits, outbound, search, health] = await Promise.all([
+      const [snapshots, visitsKpi, outbound, search, health] = await Promise.all([
         store.listSnapshots(addDays(today, -7 * TREND_WEEKS + 1), today),
-        part(h, "visits", "GOATCOUNTER_TOKEN", gc.configured, async () => {
-          const [cur, prev] = await Promise.all([gc.total(range.start, range.end), gc.total(range.prevStart, range.prevEnd)]);
-          return { value: gcMap.visitsOf(cur), prev: gcMap.visitsOf(prev) };
+        part(h, "visits", "VISITS_DATASET", visits.configured, async () => {
+          const { current, previous } = await visits.visits(range);
+          return { value: current.visits, prev: previous.visits };
         }),
-        part(h, "outbound", "GOATCOUNTER_TOKEN", gc.configured, async () => {
-          const [cur, prev] = await Promise.all([gc.hits(range.start, range.end), gc.hits(range.prevStart, range.prevEnd)]);
-          return { value: gcMap.outboundOf(cur), prev: gcMap.outboundOf(prev) };
+        part(h, "outbound", "VISITS_DATASET", visits.configured, async () => {
+          const prevRange = { ...range, start: range.prevStart, end: range.prevEnd, prevStart: range.prevStart, prevEnd: range.prevStart };
+          const [cur, prev] = await Promise.all([visits.events(range), visits.events(prevRange)]);
+          return { value: outboundOf(cur.rows), prev: outboundOf(prev.rows) };
         }),
         part(h, "search", "GSC_SA_KEY", gsc.configured, async () => {
           const [cur, prev] = await Promise.all([
@@ -278,7 +277,7 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
         app: APP_NAME,
         at: new Date(now()).toISOString(),
         kpis: [
-          kpi("visits", "Visits, 7 days", visits?.value ?? null, visits?.prev ?? null, "visits7"),
+          kpi("visits", "Visits, 7 days", visitsKpi?.value ?? null, visitsKpi?.prev ?? null, "visits7"),
           kpi("search", "Search clicks, 28 days", search?.cur.clicks ?? null, search?.prev.clicks ?? null, "searchClicks7"),
           kpi("impressions", "Impressions, 28 days", search?.cur.impressions ?? null, search?.prev.impressions ?? null, "impressions7"),
           kpi("outbound", "Outbound clicks, 7 days", outbound?.value ?? null, outbound?.prev ?? null, "outbound7"),
@@ -296,9 +295,9 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
       const d28 = dailyRange(28, t);
       const d7 = dailyRange(7, t);
       const gscTotals = (r) => gsc.query({ startDate: r.startDate, endDate: r.endDate, dimensions: ["date"] }).then((rows) => gscMap.totalsOf(gscMap.perDayOf(rows, r.startDate, r.endDate)));
-      const [total, hits, s28, s7, channel, repos, score, live, urls] = await Promise.all([
-        part(h, "visits", "GOATCOUNTER_TOKEN", gc.configured, () => gc.total(range.start, range.end)),
-        part(h, "events", "GOATCOUNTER_TOKEN", gc.configured, () => gc.hits(range.start, range.end)),
+      const [total, evs, s28, s7, channel, repos, score, live, urls] = await Promise.all([
+        part(h, "visits", "VISITS_DATASET", visits.configured, () => visits.visits(range)),
+        part(h, "events", "VISITS_DATASET", visits.configured, () => visits.events(range)),
         part(h, "search28", "GSC_SA_KEY", gsc.configured, () => gscTotals(d28)),
         part(h, "search7", "GSC_SA_KEY", gsc.configured, () => gscTotals(d7)),
         part(h, "youtube", "YOUTUBE_KEY", youtube.configured, () => youtube.channel()),
@@ -316,13 +315,13 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
       }
       const doc = {
         at: new Date(t).toISOString(),
-        visits7: total === null ? null : gcMap.visitsOf(total),
+        visits7: total === null ? null : total.current.visits,
         pageviews7: null,
         searchClicks28: s28?.clicks ?? null,
         impressions28: s28?.impressions ?? null,
         searchClicks7: s7?.clicks ?? null,
         impressions7: s7?.impressions ?? null,
-        outbound7: hits === null ? null : gcMap.outboundOf(hits),
+        outbound7: evs === null ? null : outboundOf(evs.rows),
         youtube: channel === null ? null : { subscribers: channel.subscribers, views: channel.views },
         github: githubDoc,
         lighthousePerformance: score?.performance ?? null,

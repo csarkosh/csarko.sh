@@ -14,7 +14,7 @@ const queries = {
   async pages(days) { return { days }; },
   async referrers(days) { return { days }; },
   async events(days) { return { days }; },
-  async audience(days) { if (days === 90) throw new UpstreamError("GoatCounter unreachable (ECONNRESET)"); return { days }; },
+  async audience(days) { if (days === 90) throw new UpstreamError("BigQuery audience failed: quota"); return { days }; },
   async search(days) { return { days }; },
   async reach(days) { if (days === 90) throw Object.assign(new TypeError("fetch failed"), { cause: { code: "ETIMEDOUT" } }); return { days }; },
   async health(days) { if (days === 90) throw new Error("boom"); return { days }; },
@@ -76,7 +76,7 @@ test("the routes", async () => {
 
   const upstream = await call(server, "GET", "/admin/query/audience?days=90", auth("3.3.3.3"));
   assert.equal(upstream.status, 502, "a vendor that failed is a bad gateway, not our 500");
-  assert.deepEqual(upstream.body, { error: "GoatCounter unreachable (ECONNRESET)" });
+  assert.deepEqual(upstream.body, { error: "BigQuery audience failed: quota" });
   const unnamed = await call(server, "GET", "/admin/query/reach?days=90", auth("3.3.3.3"));
   assert.equal(unnamed.status, 502, "any collector's failed fetch is a bad gateway too");
   assert.deepEqual(unnamed.body, { error: "an upstream service was unreachable (ETIMEDOUT)" });
