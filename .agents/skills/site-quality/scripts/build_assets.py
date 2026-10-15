@@ -6,13 +6,13 @@ Sources (in .agents/skills/site-quality/assets/):
   portrait-source.jpg     the full-resolution portrait
   films/<slug>.jpg        one poster per film in docs/films/, portrait (9:16)
   fonts/*.woff2           self-hosted variable fonts (latin subset)
-  vendor/goatcounter-count.js, engage.js   the analytics scripts (see site.json)
+  vendor/visits.min.js, vendor/vitals.min.js   the lib-visits analytics scripts (see site.json)
 
 Outputs (in public/):
   assets/portrait-<w>.<hash>.{avif,webp,jpg}   w = 240, 360, 480, 720
   assets/film-<slug>-<w>.<hash>.{avif,webp,jpg}   w = 200, 240, 400, 480
   assets/<font>.<hash>.woff2
-  assets/goatcounter-count.<hash>.js, assets/engage.<hash>.js   (engage.js without its comment lines)
+  assets/visits.<hash>.js, assets/vitals.<hash>.js   (the vendored files without their provenance line)
   portrait.jpg                                 stable 720px URL for JSON-LD / sharing
   film/<slug>.jpg                              stable 720px poster, cited by the film's VideoObject
 
@@ -25,7 +25,7 @@ markers in every public/*.html, public/research/*.html and public/games/*.html t
   /* generated:fonts */    …  /* /generated:fonts */            @font-face rules
   <!-- generated:portrait --> … <!-- /generated:portrait -->    <picture> markup
   <!-- generated:film-poster:<slug> --> … <!-- /… -->           a film's poster <picture>
-  <!-- generated:analytics --> … <!-- /generated:analytics -->  analytics <script>s (count.js; plus engage.js on a doc page)
+  <!-- generated:analytics --> … <!-- /generated:analytics -->  analytics <script>s (visits.js, vitals.js)
 
 It also writes the Content-Security-Policy in firebase.json from CSP below plus
 whatever analytics needs, so the page, the policy and check.py's allowlist all
@@ -76,10 +76,11 @@ CSP = [
 VALUELESS = {"upgrade-insecure-requests"}
 
 
-def analytics_origin():
+def analytics():
+    """The analytics config, or None when `provider` is null: `{"endpoint": "/v"}` for lib-visits."""
     a = CONFIG.get("analytics") or {}
-    if a.get("provider") == "goatcounter" and a.get("code"):
-        return f"https://{a['code']}.goatcounter.com"
+    if a.get("provider") == "visits" and a.get("endpoint"):
+        return {"endpoint": a["endpoint"]}
     return None
 FONTS = {
     # file stem: (family, weight range, preload?)
@@ -112,8 +113,8 @@ def write_hashed(stem: str, ext: str, data: bytes, keep: set) -> str:
 
 
 def strip_comments(js: bytes) -> bytes:
-    """Drop whole-line // comments from our own scripts before hashing. count.js takes 9.4 KB of
-    the 10 KB script budget, so engage.js ships only its code; its reasons stay in the source.
+    """Drop whole-line // comments from the vendored scripts before hashing, so the provenance
+    line stays in the source and the served bytes are the tag's.
     check.py applies the same rule when it verifies the hash."""
     return b"".join(line for line in js.splitlines(keepends=True) if not line.lstrip().startswith(b"//"))
 
@@ -252,30 +253,28 @@ def main() -> int:
         return "\n".join(f'  <link rel="preload" href="{prefix}assets/{name}" as="font" type="font/woff2" crossorigin />'
                           for name, _, _, preload in fonts if preload)
 
-    # ---- analytics: GoatCounter's count.js, self-hosted so no third-party script loads, and on
-    # doc pages our engage.js, which counts a "read-<slug>" event when the reader reaches the end.
-    origin = analytics_origin()
-    counter = engage = None
-    if origin:
-        counter = write_hashed("goatcounter-count", "js", (SRC / "vendor/goatcounter-count.js").read_bytes(), keep)
-        engage = write_hashed("engage", "js", strip_comments((SRC / "engage.js").read_bytes()), keep)
+    # ---- analytics: lib-visits, self-hosted, the beacon to the same origin (/v is a Hosting
+    # rewrite to the collector), so the page makes no third-party request. The vendored
+    # copies carry a provenance line that strip_comments drops before hashing, so the served
+    # bytes are the tag's.
+    conf = analytics()
+    core = vitals = None
+    if conf:
+        core = write_hashed("visits", "js", strip_comments((SRC / "vendor/visits.min.js").read_bytes()), keep)
+        vitals = write_hashed("vitals", "js", strip_comments((SRC / "vendor/vitals.min.js").read_bytes()), keep)
 
-    def analytics(prefix, slug):
-        if not counter:
+    def analytics_block(prefix, slug):
+        if not core:
             return ""
-        tags = f'\n  <script data-goatcounter="{origin}/count" async src="{prefix}assets/{counter}"></script>'
-        # The slug rides on the tag so the script needs no knowledge of the URL scheme. count.js is
-        # async and engage.js defer, so neither blocks rendering; engage.js waits for load if needed.
-        if slug:
-            tags += f'\n  <script defer src="{prefix}assets/{engage}" data-slug="{slug}"></script>'
-        return tags + "\n  "
+        return (
+            f'\n  <script defer src="{prefix}assets/{core}" data-visits="{conf["endpoint"]}"></script>'
+            f'\n  <script defer src="{prefix}assets/{vitals}"></script>\n  '
+        )
 
     # ---- Content-Security-Policy in firebase.json
     directives = {k: list(v) for k, v in CSP}
-    if origin:
+    if conf:
         directives["script-src"].append("'self'")
-        directives["connect-src"].append(origin)
-        directives["img-src"].append(origin)  # count.js falls back to an image beacon
     csp = "; ".join(k if k in VALUELESS else f"{k} {' '.join(v)}" for k, v in directives.items() if v or k in VALUELESS)
     fb_path = ROOT / "firebase.json"
     fb = json.loads(fb_path.read_text())
@@ -309,7 +308,7 @@ def main() -> int:
             (r"<!-- generated:head -->", r"<!-- /generated:head -->"): "\n" + preloads(prefix) + "\n  ",
             (r"/\* generated:fonts \*/", r"/\* /generated:fonts \*/"): "\n" + font_faces(prefix) + "\n    ",
             (r"<!-- generated:portrait -->", r"<!-- /generated:portrait -->"): "\n        " + picture(prefix) + "\n        ",
-            (r"<!-- generated:analytics -->", r"<!-- /generated:analytics -->"): analytics(prefix, slug),
+            (r"<!-- generated:analytics -->", r"<!-- /generated:analytics -->"): analytics_block(prefix, slug),
         }
         html = page.read_text(encoding="utf-8")
         before = html

@@ -1,6 +1,6 @@
 {
   "analytics": {
-    "provider": "goatcounter",
-    "code": "csarko"
+    "provider": "visits",
+    "endpoint": "/v"
   }
 }
