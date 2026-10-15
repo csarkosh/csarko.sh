@@ -12,6 +12,7 @@ ENV NODE_ENV=production
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund
 COPY src ./src
+COPY queries ./queries
 USER node
 # Cloud Run injects PORT; 8080 is the default `config.mjs` falls back to.
 ENV PORT=8080
