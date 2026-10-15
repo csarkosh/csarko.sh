@@ -92,7 +92,9 @@ terraform {
 }
 
 resource "google_project_service" "apis" {
-  for_each           = toset(["run.googleapis.com", "logging.googleapis.com", "bigquery.googleapis.com", "secretmanager.googleapis.com", "artifactregistry.googleapis.com", "cloudbuild.googleapis.com"])
+  # Only the two the admin module does not already own; run, secretmanager, artifactregistry
+  # and cloudbuild are enabled there, and one project service must have one owner.
+  for_each           = toset(["logging.googleapis.com", "bigquery.googleapis.com"])
   project            = var.project_id
   service            = each.value
   disable_on_destroy = false
@@ -332,7 +334,7 @@ output "visits_history_dataset" { value = module.gcp_visits.history_dataset }
 - [ ] **Step 5: Validate and plan**
 
 Run: `terraform -chdir=_infra init -input=false >/dev/null && terraform -chdir=_infra validate && terraform -chdir=_infra plan -input=false 2>&1 | grep -E "Plan:|Error" `
-Expected: `Plan: 14 to add, 0 to change, 0 to destroy.` (apis ×6, SA, secret, secret IAM, service, invoker, bucket, sink, exclusion, linked dataset, dataset, table, reader ×2, dataset IAM ×2 = more than 14; read the number the plan prints and confirm every added resource is in this module and nothing is changed or destroyed outside it).
+Expected: a plan that adds only this module's resources (apis ×2, SA, secret, secret IAM, service, invoker, bucket, sink, exclusion, linked dataset, dataset, table, reader ×2, dataset IAM ×2 = more than 14; read the number the plan prints and confirm every added resource is in this module and nothing is changed or destroyed outside it).
 
 - [ ] **Step 6: Commit**
 
