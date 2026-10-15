@@ -72,11 +72,14 @@ function fromCsv(text) {
     if (!cols.includes(name)) throw new Error(`CSV export lacks the column ${name}; header was: ${header}`);
   }
   const idx = (name) => cols.indexOf(name);
+  // GoatCounter counts a visit only for a hit marked FirstVisit (a browser's first view of
+  // the path in its session); the other hits are repeat views and count nothing.
+  const firstVisit = (f) => !cols.includes("FirstVisit") || ["1", "true"].includes(f[idx("FirstVisit")]);
   const sums = new Map();
   const meta = new Map();
   for (const line of lines) {
     const f = parseCsvLine(line);
-    if (Number(f[idx("Bot")] ?? 0) > 0) continue;
+    if (Number(f[idx("Bot")] ?? 0) > 0 || !firstVisit(f)) continue;
     const hour = hourOf(f[idx("Date")]);
     const path = f[idx("Path")];
     const ref = hostOf(f[idx("Referrer")] ?? "");
@@ -118,7 +121,8 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   writeFileSync(out, rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
   const visits = rows.reduce((n, r) => n + r.visits, 0);
   const days = new Set(rows.map((r) => r.hour.slice(0, 10))).size;
-  console.log(`${rows.length} rows, ${visits} visits, ${days} days, ${skipped} lines skipped -> ${out}`);
+  const events = rows.filter((r) => r.event).reduce((n, r) => n + r.visits, 0);
+  console.log(`${rows.length} rows, ${visits} visits (${visits - events} page, ${events} event), ${days} days, ${skipped} lines skipped -> ${out}`);
   if (flag === "--load") {
     console.log(`loading ${rows.length} rows (${visits} visits) with --replace: the table's current contents are replaced`);
     execFileSync("bq", ["load", "--project_id", PROJECT, "--source_format=NEWLINE_DELIMITED_JSON", "--replace", TABLE, out], { stdio: "inherit" });

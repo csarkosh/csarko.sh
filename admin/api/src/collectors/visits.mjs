@@ -5,7 +5,7 @@
  * under `queries/`, with `@start`, `@end`, `@prev_start`, `@prev_end` as
  * string parameters the SQL casts to TIMESTAMP; one job a query, cached five
  * minutes by name and window. History rows are merged in code (summed by
- * day, path or name), since the two datasets are in different locations.
+ * day, path or name), each query reading one dataset.
  */
 
 import { readFileSync } from "node:fs";
@@ -45,13 +45,15 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
     async visits(range) {
       const live = await run("visits", win(range));
       const rows = wantsHistory(range.prevStart) ? [...live, ...(await hist("history-visits", win(range)))] : live;
-      const shape = (w) => {
+      // Every UTC date the window touches, zeros included: the dashboard lines the
+      // previous window up with the current one by index, and both span the same dates.
+      const shape = (w, from, to) => {
         const byDay = new Map();
         for (const r of rows) if (r.win === w) byDay.set(r.day, (byDay.get(r.day) ?? 0) + Number(r.visits));
-        const perDay = [...byDay.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([day, visits]) => ({ day, visits, pageviews: null }));
+        const perDay = utcDates(from, to).map((day) => ({ day, visits: byDay.get(day) ?? 0, pageviews: null }));
         return { visits: perDay.reduce((n, d) => n + d.visits, 0), pageviews: null, perDay };
       };
-      return { current: shape("current"), previous: shape("previous") };
+      return { current: shape("current", range.start, range.end), previous: shape("previous", range.prevStart, range.prevEnd) };
     },
 
     async pages(range) {
@@ -103,6 +105,13 @@ export function sumBy(rows, key, field) {
 }
 
 /** BigQuery wraps dates, timestamps and big numbers in objects with `value`; the API wants plain values. */
+/** The UTC dates (`YYYY-MM-DD`) that the instants [from, to) touch, oldest first. */
+export function utcDates(from, to) {
+  const out = [];
+  for (let t = Date.parse(`${from.slice(0, 10)}T00:00:00Z`); t < Date.parse(to); t += 86_400_000) out.push(new Date(t).toISOString().slice(0, 10));
+  return out;
+}
+
 export function plainRow(row) {
   const out = {};
   for (const [k, v] of Object.entries(row)) out[k] = v !== null && typeof v === "object" && "value" in v ? v.value : v;

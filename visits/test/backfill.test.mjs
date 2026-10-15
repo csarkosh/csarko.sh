@@ -19,13 +19,15 @@ test("the JSON export's hourly hit stats become rows, joined to paths and refs",
   ]);
 });
 
-test("the per-hit CSV export is reduced to hourly counts, bots dropped", () => {
+test("the per-hit CSV export is reduced to hourly counts of first visits, bots and repeat views dropped", () => {
   const csv = [
     "2,Path,Title,Event,UserAgent,Browser,System,Session,Bot,Referrer,Referrer scheme,Screen size,Location,FirstVisit,Date",
     '"/","Home","false","","Firefox 128","macOS","s1","0","https://google.com/","h","1920","US","1","2026-10-01 10:05:00"',
     '"/","Home","false","","Firefox 128","macOS","s2","0","https://google.com/","h","1920","US","1","2026-10-01 10:50:00"',
     '"/","Home","false","","bot","","s3","150","","","0","","1","2026-10-01 10:51:00"',
-    '"out-github","","true","","Firefox 128","macOS","s1","0","","","1920","US","0","2026-10-01 11:00:00"',
+    '"/","Home","false","","Firefox 128","macOS","s1","0","","","1920","US","0","2026-10-01 10:55:00"',
+    '"out-github","","true","","Firefox 128","macOS","s1","0","","","1920","US","true","2026-10-01 11:00:00"',
+    '"out-github","","true","","Firefox 128","macOS","s1","0","","","1920","US","false","2026-10-01 11:02:00"',
   ].join("\n");
   assert.deepEqual(rowsOf(csv), [
     { hour: "2026-10-01T10:00:00Z", path: "/", title: "Home", event: false, ref: "google.com", visits: 2 },

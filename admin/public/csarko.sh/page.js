@@ -292,6 +292,9 @@ function healthCard([health]) {
   return [...errorLines(health), el('p', { class: 'sub' }, status(overall.status, overall.note)), tiles, list];
 }
 
+// csarko-visits runs without a GeoIP database (lib-visits' `--geoip`), so rows carry no country.
+const NO_COUNTRIES = 'Not recorded: the collector has no GeoIP database. Timezones are the nearest guide.';
+
 function audienceCard([audience]) {
   const sections = [['countries', 'Countries'], ['sizes', 'Screen sizes'], ['browsers', 'Browsers'], ['systems', 'Systems'], ['languages', 'Languages'], ['themes', 'Theme'], ['viewports', 'Viewport'], ['touch', 'Input'], ['timezones', 'Timezones']];
   if (sections.every(([key]) => !audience[key])) return [notConfigured(missing(audience, 'visits'))];
@@ -301,7 +304,7 @@ function audienceCard([audience]) {
       ? notConfigured(missing(audience, 'visits'))
       : rows.length
         ? bars(rows.slice(0, 6).map((r) => ({ name: r.name, value: num(r.visitors) })), { label: `${label} by visitors` })
-        : el('p', { class: 'empty' }, 'Nothing in this range.'));
+        : el('p', { class: 'empty' }, key === 'countries' ? NO_COUNTRIES : 'Nothing in this range.'));
   }));
   const top = (key) => {
     const rows = audience[key] ? [...audience[key]].sort((a, b) => b.visitors - a.visitors) : [];

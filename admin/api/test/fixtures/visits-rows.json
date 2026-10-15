@@ -5,7 +5,7 @@
     { "win": "current", "day": { "value": "2026-10-15" }, "visits": 2 }
   ],
   "history-visits": [
-    { "win": "previous", "day": { "value": "2026-10-09" }, "visits": 4 },
+    { "win": "previous", "day": { "value": "2026-10-11" }, "visits": 4 },
     { "win": "current", "day": { "value": "2026-10-14" }, "visits": 1 }
   ],
   "pages": [

@@ -123,7 +123,7 @@ the home page in the range. `rows` is `null` with `notConfigured.visits`.
 ### `audience`
 
 ```json
-{ "countries": [ { "name": "United States", "visitors": 121 } ], "sizes": [], "browsers": [], "systems": [], "languages": [], "themes": [], "viewports": [], "touch": [], "timezones": [] }
+{ "countries": [ { "name": "US", "visitors": 121 } ], "sizes": [], "browsers": [], "systems": [], "languages": [], "themes": [], "viewports": [], "touch": [], "timezones": [] }
 ```
 
 Nine lists of `{ name, visitors }`, most visited first. `themes` is the visitor's colour scheme, `viewports` is bucketed as `under 400`, `400 to 799`, `800 to 1199` and `1200 and up`, `touch` is `touch` or `pointer`, and `timezones` are IANA names. Each is `null` with

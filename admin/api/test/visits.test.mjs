@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createCache } from "../src/cache.mjs";
-import { createVisits, sumBy, plainRow } from "../src/collectors/visits.mjs";
+import { createVisits, sumBy, plainRow, utcDates } from "../src/collectors/visits.mjs";
 import { UpstreamError } from "../src/http.mjs";
 
 const rows = JSON.parse(readFileSync(new URL("./fixtures/visits-rows.json", import.meta.url), "utf8"));
@@ -33,9 +33,10 @@ const make = (opts = {}) => {
 test("visits sums live and history rows by day and window, and a row without a visit still counts", async () => {
   const { v, calls } = make();
   const r = await v.visits(range);
-  assert.deepEqual(r.current.perDay, [{ day: "2026-10-14", visits: 6, pageviews: null }, { day: "2026-10-15", visits: 2, pageviews: null }]);
+  assert.deepEqual(r.current.perDay, [{ day: "2026-10-13", visits: 0, pageviews: null }, { day: "2026-10-14", visits: 6, pageviews: null }, { day: "2026-10-15", visits: 2, pageviews: null }]);
   assert.equal(r.current.visits, 8);
-  assert.deepEqual(r.previous.perDay.map((d) => d.day), ["2026-10-09", "2026-10-10"]);
+  assert.deepEqual(r.previous.perDay.map((d) => [d.day, d.visits]), [["2026-10-10", 3], ["2026-10-11", 4], ["2026-10-12", 0]]);
+  assert.equal(r.previous.visits, 7);
   assert.deepEqual(calls.map((c) => c.name), ["visits", "history-visits"]);
   assert.deepEqual(calls[0].params, { start: range.start, end: range.end, prev_start: range.prevStart, prev_end: range.prevEnd });
   assert.deepEqual(calls[1].params, { ...calls[0].params, until: "2026-10-14T00:00:00Z" });
@@ -95,4 +96,10 @@ test("a BigQuery failure is an upstream error, and the same window is cached", a
 test("sumBy and plainRow", () => {
   assert.deepEqual(sumBy([{ k: "a", n: 1 }, { k: "b", n: 5 }, { k: "a", n: 2 }], "k", "n"), [{ k: "b", n: 5 }, { k: "a", n: 3 }]);
   assert.deepEqual(plainRow({ day: { value: "2026-10-14" }, n: 2, s: null }), { day: "2026-10-14", n: 2, s: null });
+});
+
+test("utcDates covers every date an hour-aligned window touches, so both windows are the same length", () => {
+  assert.deepEqual(utcDates("2026-10-13T00:00:00Z", "2026-10-16T00:00:00Z"), ["2026-10-13", "2026-10-14", "2026-10-15"]);
+  assert.equal(utcDates("2026-10-08T14:00:00Z", "2026-10-15T14:00:00Z").length, 8);
+  assert.equal(utcDates("2026-10-01T14:00:00Z", "2026-10-08T14:00:00Z").length, 8);
 });
