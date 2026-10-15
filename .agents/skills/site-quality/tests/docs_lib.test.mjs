@@ -1,7 +1,7 @@
 // Tests for docs_lib.mjs. Run: node --test .agents/skills/site-quality/tests/docs_lib.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { appsPage, buildSite, CATEGORIES, categorySlug, DocError, docPage, IEEE_SINCE, filmsPage, formatDate, gamesPage, indexPage, loadApp, loadDoc, loadFilm, loadGame, pageShell, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, SHELL_CRUMBS, sitemap, sortApps, sortDocs, sortFilms, sortGames, themeBlocks } from '../scripts/docs_lib.mjs';
+import { appsPage, buildSite, CATEGORIES, categorySlug, DocError, docPage, IEEE_SINCE, filmsPage, formatDate, gamesPage, indexPage, loadApp, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, sitemap, sortApps, sortDocs, sortFilms, sortGames, standaloneShell, themeBlocks } from '../scripts/docs_lib.mjs';
 
 const FILE = 'docs/published/2026-09-14-example.md';
 const DESC = 'A description that is long enough to pass the seventy character minimum for search.';
@@ -692,14 +692,17 @@ test('the sitemap and the site build carry /apps when there is an app', () => {
   assert.ok(files.has('apps/index.html'));
 });
 
-test('pageShell links every nav item and crumb back to csarko.sh in full', () => {
-  const html = pageShell({ title: 'x · Cyrus Sarkosh', ogTitle: 'x', description: 'd', canonical: 'https://apps.csarko.sh/x', graph: [], theme: themeBlocks(INDEX),
-    trail: [SHELL_CRUMBS.home, SHELL_CRUMBS.apps, ['x', 'https://apps.csarko.sh/x']], main: '<main id="top"></main>' });
-  assert.ok(html.includes('<a class="wordmark" href="https://csarko.sh/">'));
-  assert.ok(html.includes('<li><a href="https://csarko.sh/apps" data-visits-event="nav-apps">Apps</a></li>'));
-  assert.ok(html.includes('<a href="https://csarko.sh/apps">Apps</a>'), 'the crumb is absolute');
-  assert.ok(html.includes('<span class="mono">apps.csarko.sh</span>'));
-  assert.deepEqual(jsonLd(html).find((n) => n['@type'] === 'BreadcrumbList').itemListElement.map((i) => i.item), ['https://csarko.sh/', 'https://csarko.sh/apps', 'https://apps.csarko.sh/x']);
+test('standaloneShell wears none of the site\'s chrome: its own bar, its own footer, one credit', () => {
+  const html = standaloneShell({ title: 'x: a thing', ogTitle: 'x', description: 'd', canonical: 'https://apps.csarko.sh/x', graph: [], theme: themeBlocks(INDEX),
+    name: 'x', links: [['Download', '#setup'], ['GitHub', 'https://github.com/o/r', true]], licence: 'MIT', main: '<main id="top"></main>' });
+  assert.ok(html.includes('<a class="app-name" href="https://apps.csarko.sh/x">x</a>'));
+  assert.ok(html.includes('<li><a href="#setup">Download</a></li>'));
+  assert.ok(html.includes('<li><a href="https://github.com/o/r" class="external" target="_blank" rel="noopener">GitHub</a></li>'));
+  assert.ok(html.includes('<span>x · MIT</span>'));
+  assert.ok(html.includes('Made by <a class="maker" href="https://csarko.sh/">Cyrus Sarkosh</a>'));
+  assert.ok(!html.includes('<nav class="nav"') && !html.includes('<a class="wordmark"') && !html.includes('<nav class="crumbs"'), 'no site nav, wordmark or trail in the markup');
+  assert.ok(!html.includes('BreadcrumbList'));
+  assert.ok(!html.includes('<title>x: a thing · Cyrus Sarkosh</title>'), 'the title is the app\'s alone');
 });
 
 test('an app with an alt gets a preview the asset build fills, laid out as a film card', () => {

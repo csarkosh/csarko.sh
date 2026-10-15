@@ -1102,22 +1102,39 @@ ${FOOTER}`;
 }
 
 /**
- * A page of the site served from another host (apps.csarko.sh): the same head, nav, trail and
- * footer as a csarko.sh page, with every link back to csarko.sh absolute. `trail` ends with the
- * page itself; `main` is the page's own markup inside <body>, after the trail.
+ * A standalone page on another host (apps.csarko.sh): an app's own page, the way
+ * games.csarko.sh/dayhike is the game's. It shares the site's head, tokens, fonts and type, but
+ * none of its chrome: no nav, no trail, no wordmark. Its bar carries the app's name and a few
+ * links of its own; its footer credits the maker once and names the licence. `main` is the
+ * page's own markup inside <body>.
  */
-export function pageShell({ title, ogTitle, description, canonical, ogType = 'website', extraCss = '', graph, theme, trail, main, bodyClass = '' }) {
-  return `${head({ title, ogTitle, description, canonical, ogType, extraCss, graph: [...graph, breadcrumbs(trail)], theme })}
+export function standaloneShell({ title, ogTitle, description, canonical, ogType = 'website', extraCss = '', graph, theme, name, links = [], licence = '', main, bodyClass = '' }) {
+  const bar = links.map(([label, href, external]) =>
+    `        <li><a href="${escapeHtml(href)}"${external ? ' class="external" target="_blank" rel="noopener"' : ''}>${escapeHtml(label)}</a></li>`).join('\n');
+  return `${head({ title, ogTitle, description, canonical, ogType, extraCss, graph, theme })}
 <body${bodyClass ? ` class="${bodyClass}"` : ''}>
-${nav(null, SITE)}
-${crumbs(trail, { local: false })}
+  <a class="skip-link" href="#top">Skip to content</a>
+  <header class="app-bar">
+    <div class="wrap">
+      <a class="app-name" href="${escapeHtml(canonical)}">${escapeHtml(name)}</a>
+      <ul>
+${bar}
+      </ul>
+    </div>
+  </header>
 
 ${main}
 
-${FOOTER.replace('<span class="mono">csarko.sh</span>', `<span class="mono">${escapeHtml(new URL(canonical).host)}</span>`)}`;
+  <footer>
+    <div class="wrap">
+      <span>${escapeHtml(name)}${licence ? ` · ${escapeHtml(licence)}` : ''}</span>
+      <span>Made by <a class="maker" href="${SITE}/">Cyrus Sarkosh</a></span>
+    </div>
+  </footer>
+</body>
+</html>
+`;
 }
-
-export const SHELL_CRUMBS = { home: HOME_CRUMB, apps: [APPS_TITLE, `${SITE}/${APPS_DIR}`] };
 
 export function gamesPage(games, theme) {
   const url = `${SITE}/games`;

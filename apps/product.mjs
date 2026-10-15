@@ -19,7 +19,7 @@
  * HTML left over after that fails the build by name, rather than reaching the page as text.
  */
 
-import { APPS_HOST, escapeHtml, pageShell, renderMarkdown, SHELL_CRUMBS } from '../.agents/skills/site-quality/scripts/docs_lib.mjs';
+import { APPS_HOST, escapeHtml, renderMarkdown, standaloneShell } from '../.agents/skills/site-quality/scripts/docs_lib.mjs';
 
 export class ProductError extends Error {}
 
@@ -206,7 +206,6 @@ export function productPage({ app, prepared, release, images, theme }) {
   if (leftover) throw new ProductError(`README: HTML this page cannot draw: ${leftover[0].replace(/&lt;/g, '<').replace(/&gt;/g, '>')}`);
 
   const url = `${APPS_HOST}/${app.slug}`;
-  const trail = [SHELL_CRUMBS.home, SHELL_CRUMBS.apps, [app.title, url]];
   const graph = [{
     '@type': 'SoftwareApplication',
     '@id': `${url}#app`,
@@ -222,6 +221,14 @@ export function productPage({ app, prepared, release, images, theme }) {
     author: { '@type': 'Person', '@id': 'https://csarko.sh/#person', name: 'Cyrus Sarkosh', url: 'https://csarko.sh/' },
   }];
   const rail = doc.rail.map((s) => `        <li><a href="#${s.id}"><span>${escapeHtml(s.text)}</span></a></li>`).join('\n');
+  // The bar's links: the section with the downloads or the install commands, the source, and
+  // the release, so the page says what it is before the first scroll.
+  const getIt = doc.rail.find((s) => /^(setup|install|download|get)/i.test(s.text));
+  const links = [
+    ...(getIt ? [[prepared.downloads ? 'Download' : 'Install', `#${getIt.id}`]] : []),
+    ...(app.repo ? [['GitHub', app.repo, true]] : []),
+    [release.tag, release.url, true],
+  ];
   const main = `  <div class="wrap shell">
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
@@ -246,8 +253,8 @@ ${html}
       </div>
     </main>
   </div>`;
-  return pageShell({
-    title: `${app.title}: ${app.description.split(/[:.]/)[0].toLowerCase()} · Cyrus Sarkosh`,
+  return standaloneShell({
+    title: `${app.title}: ${app.description.split(/[:.]/)[0].toLowerCase()}`,
     ogTitle: app.title,
     description: app.description,
     canonical: url,
@@ -255,14 +262,28 @@ ${html}
     extraCss: PRODUCT_CSS,
     graph,
     theme,
-    trail,
+    name: app.title,
+    links,
+    licence: app.license ?? '',
     main,
     bodyClass: 'doc-page',
   });
 }
 
-// On top of the doc page's rules: the hero, the downloads, the flows and the panels.
+// On top of the doc page's rules: the app's own bar and footer, the hero, the downloads, the
+// flows and the panels.
 const PRODUCT_CSS = `
+    .app-bar { position: sticky; top: 0; z-index: 10; backdrop-filter: saturate(140%) blur(12px); -webkit-backdrop-filter: saturate(140%) blur(12px); background: var(--nav-bg); border-bottom: 1px solid var(--border); }
+    .app-bar .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 16px; }
+    .app-name { font-family: var(--mono); font-weight: 600; font-size: 15px; letter-spacing: -0.01em; color: var(--text); }
+    .app-bar ul { display: flex; align-items: center; gap: 20px; list-style: none; margin: 0; padding: 0; }
+    .app-bar ul a { color: var(--muted); font-size: 14px; transition: color .15s ease; }
+    .app-bar ul a:hover { color: var(--text); }
+    .app-bar ul li:last-child a { font-family: var(--mono); font-size: 12.5px; padding: 3px 9px; border: 1px solid var(--border-strong); border-radius: 999px; }
+    footer .maker { color: var(--muted); }
+    footer .maker:hover { color: var(--text); }
+    @media (max-width: 640px) { .app-bar ul { gap: 14px; } .app-bar ul a { font-size: 13.5px; } }
+    @media (prefers-reduced-motion: reduce) { .app-bar ul a { transition: none; } }
     .hero-figure { margin: 8px 0 36px; }
     .hero-figure img { display: block; width: 100%; height: auto; border-radius: 14px; }
     .hero-figure figcaption { margin-top: 10px; font-size: 13.5px; color: var(--muted); }
