@@ -13,7 +13,7 @@ now 301 there). No framework and no CI; the one build step,
 
 | Path | What |
 |---|---|
-| `public/index.html` | **The home page.** One file: inline CSS, inline SVG icons, JSON-LD. The only JavaScript is the self-hosted GoatCounter counter. Its nav bar and 1120px `.wrap` must stay in step with the generated pages' copy in `docs_lib.mjs` (see `site-quality`, "One bar, one width, every page"). |
+| `public/index.html` | **The home page.** One file: inline CSS, inline SVG icons, JSON-LD. The only JavaScript is the two self-hosted lib-visits scripts. Its nav bar and 1120px `.wrap` must stay in step with the generated pages' copy in `docs_lib.mjs` (see `site-quality`, "One bar, one width, every page"). |
 | `public/me.jpg` | Portrait (640px wide JPEG, from `~/Pictures/Cyrus/me_1.png`). |
 | `public/assets/` | **Generated, content-hashed, cached for a year:** responsive portraits (AVIF/WebP/JPEG) and self-hosted fonts. |
 | `public/og-image.jpg`, `portrait.jpg`, `favicon.*`, `apple-touch-icon.png` | **Generated** too. Everything generated comes from `.agents/skills/site-quality/assets/` via `generate-assets.sh` — never hand-edit, including the `generated:` blocks inside the HTML. |
@@ -27,7 +27,7 @@ now 301 there). No framework and no CI; the one build step,
 | `docs/superpowers/` | Internal design specs and implementation plans. **Never published** (unlike its siblings `docs/published/`, `docs/games/` and `docs/films/`, which are). |
 | `docs/substack/posts.json` | The log of csarko.log posts made with the `substack-post` skill: date, Substack URL, title and the doc slugs each covered. Not a page: the build reads only the three content folders. |
 | `firebase.json`, `.firebaserc` | Firebase Hosting config: publish `public/`, cache headers, and the 301 redirects from the old `/docs` URLs to `/research` (keep them: old links and search results still use them). |
-| `admin/` | **The private dashboard, `https://admin.csarko.sh`** *(designed and approved 2026-10-12; spec: `docs/superpowers/specs/2026-10-12-admin-dashboard-design.md`)*. `admin/public/` is the shell (the index of tracked apps, `/csarko.sh/` the site's own dashboard, `theme.css`, `auth.js`, `charts.js`), a second Firebase Hosting site `csarko-sh-admin`; `admin/api/` is the Cloud Run service `csarko-admin` that reads GoatCounter, Search Console, YouTube, GitHub and the daily Firestore snapshots; `admin/public/game-dayhike/` is **pulled at deploy** from the game's repo (git-ignored). See "Admin pages" below for the standing rule. |
+| `admin/` | **The private dashboard, `https://admin.csarko.sh`** *(designed and approved 2026-10-12; spec: `docs/superpowers/specs/2026-10-12-admin-dashboard-design.md`)*. `admin/public/` is the shell (the index of tracked apps, `/csarko.sh/` the site's own dashboard, `theme.css`, `auth.js`, `charts.js`), a second Firebase Hosting site `csarko-sh-admin`; `admin/api/` is the Cloud Run service `csarko-admin` that reads the visits data in BigQuery, Search Console, YouTube, GitHub and the daily Firestore snapshots; `admin/public/game-dayhike/` is **pulled at deploy** from the game's repo (git-ignored). See "Admin pages" below for the standing rule. |
 | `_infra/` | Terraform for the hosting, DNS, and the admin site and API. Same shape as `~/Projects/game-dayhike/_infra` (project `fps-csarko`). |
 | `.agents/skills/` | Agent skills: `preview`, `deploy`, `site-quality`, `publish-doc` and `substack-post`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
 | `.claude/settings.json` | Imports the shared skill plugins from [`csarkosh/skills-general`](https://github.com/csarkosh/skills-general): `general:doc-preview` (open a markdown doc as a styled page in Chrome; not this repo's `preview`, which previews the site) and `general:search-console` (Google Search Console reports: indexing, sitemap, search performance) and `general-claude:doc-artifact` (publish a doc as a claude.ai Artifact). Change those skills in `skills-general`, not here. On a machine that has never installed them, run `claude plugin install general@csarkosh` and `claude plugin install general-claude@csarkosh`. Codex has no per-repository import: run `codex plugin marketplace add csarkosh/skills-general` and `codex plugin add general@csarkosh` once per machine. |
@@ -67,15 +67,15 @@ Three sources, each for a different question. **Pick by the question, not by hab
 
 | Question | Source | Where |
 |---|---|---|
-| Who's visiting? How many visits, which pages, where from (referrers), countries, devices, browsers? Which broken links do people hit (404 paths)? | **GoatCounter** | https://csarko.goatcounter.com |
+| Who's visiting? How many visits, which pages, where from (referrers), countries, devices, browsers? Which broken links do people hit (404 paths)? | **The admin dashboard**, with BigQuery behind it *(moved from GoatCounter, 2026-10-15)* | https://admin.csarko.sh/csarko.sh/ |
 | How does the site do in **Google Search**? Queries people search, impressions, clicks, CTR, average position; whether pages are **indexed**; sitemap status; URL removals; structured-data and page-experience reports | **Google Search Console** | the `general:search-console` skill (`gsc.py index \| sitemap \| perf`) for indexing, sitemap and performance; the rest at https://search.google.com/search-console?resource_id=sc-domain%3Acsarko.sh (Domain property `csarko.sh`) |
 | Is the site fast, accessible, SEO-correct and locked down right now? (lab measurements, not visitors) | **`site-quality` checks** | `.agents/skills/site-quality/scripts/check.py --live --lighthouse --observatory` |
 
-- **"Traffic", "visitors", "views", "where are people coming from"** → GoatCounter.
+- **"Traffic", "visitors", "views", "where are people coming from"** → the admin dashboard.
   **"Google", "ranking", "search results", "indexed", "impressions", "why doesn't my site show up"** → Search Console.
-  A referrer of `google.com` in GoatCounter tells you a visit came from search;
+  A referrer of `google.com` in the dashboard tells you a visit came from search;
   *which query* it came from is only in Search Console.
-- **Search Console is connected to agents; GoatCounter is not.** The shared
+- **Search Console is connected to agents.** The shared
   `general:search-console` skill (in
   [`csarkosh/skills-general`](https://github.com/csarkosh/skills-general), so
   change it there, not here) reads indexing, sitemap and performance data
@@ -86,9 +86,12 @@ Three sources, each for a different question. **Pick by the question, not by hab
   the key or the grant is missing, `gsc.py` prints the setup steps. Anything
   the API doesn't expose (the aggregate Page Indexing report, Links, Manual
   actions, Removals, Crawl stats, and the "Request indexing" button) is still
-  Cyrus opening the dashboard. **GoatCounter has no credentials here:** ask him
-  for a screenshot or export rather than guessing numbers, or have him issue an
-  API token under Settings → API. **Never commit a token.**
+  Cyrus opening the dashboard.
+- **Visit data is readable by agents too** *(2026-10-15)*: BigQuery answers from the
+  command line, `bq query --project_id=csarko-sh` over `csarko_visits._AllLogs` (the
+  collector's rows) and `csarko_history.goatcounter_history` (the old hourly counts).
+  The SQL the dashboard runs is in `admin/api/queries/`; start from it rather than
+  guessing column names. It needs Cyrus's `gcloud` login; **never commit a key.**
 - **Expect small numbers and lag.** It's a personal site. Search Console's
   reports run 2–3 days behind and show nothing for queries with very low volume.
   Its Core Web Vitals report needs real-user traffic volume the site may never
@@ -321,40 +324,63 @@ anything related to the admin pages in this repo:
   Screenshots in both themes (`admin/preview.sh --shots`) are looked at before a visual
   change is called done.
 
-## Analytics: how GoatCounter is wired in
+## Analytics: how lib-visits is wired in
 
-- **GoatCounter**, dashboard at **https://csarko.goatcounter.com** (Cyrus's account,
-  code `csarko`, set up 2026-09-11). No cookies, so no consent banner.
-- **Configured in one place:** `.agents/skills/site-quality/site.json`.
-  `generate-assets.sh` derives the `<script>` tag on both pages, the CSP
-  (`script-src 'self'`, beacons to `https://csarko.goatcounter.com` in
-  `connect-src` and `img-src`), and `check.py`'s allowlist from it. Don't edit
-  any of those by hand. Set `code` to `null` to turn analytics off cleanly.
-- **count.js is self-hosted:** vendored unmodified (ISC license) at
-  `.agents/skills/site-quality/assets/vendor/goatcounter-count.js` and served as
-  a content-hashed file, so no third-party script loads and Observatory stays A+.
-  To update it, re-download `https://gc.zgo.at/count.js` over that file (keep the
-  provenance comment accurate) and re-run the generator.
-- The 404 page counts too (the path shows the broken link). `localhost` and
-  `file://` previews are never counted.
-- **Events** *(added 2026-10-12 for the admin dashboard, spec Part 1.2)*: clicks out to
-  LinkedIn, GitHub, Substack and YouTube count as `out-linkedin`, `out-github`,
-  `out-substack`, `out-youtube` (hero chips, Contact buttons and the Filming tile's link
-  in `index.html`); the nav's page links count `nav-film`, `nav-games`, `nav-research` in
-  both navs (never on the page you are on); a game card's "Play in your browser" counts
-  `play-<slug>` and a film card's "Watch on YouTube" counts `watch-<slug>`
-  (`docs_lib.mjs`). All are `data-goatcounter-click` attributes that count.js binds. The
-  one event with a script is `read-<slug>`: `.agents/skills/site-quality/assets/engage.js`
-  (ours, 549 B shipped as `public/assets/engage.<hash>.js`, comment lines stripped at
-  build) fires it once when a doc's end (the Sources heading, else the "Written by" box,
-  marked `data-read-end` by the build) scrolls into view. Doc pages only; a doc page now
-  carries 9,922 B of the 10,000 B script budget, so the next script needs a deliberate
-  budget decision. **Event names are stable identifiers, not copy:** renaming a button or
-  a URL must not rename its series. Set `code` to `null` in `site.json` and both scripts
-  and every event go away together. Campaign tags on links Cyrus posts (`?ref=substack`,
-  `?ref=linkedin`) show up as GoatCounter campaigns; the site does nothing for them.
-- Verified on first deploy: Lighthouse still 100/100/100/100 (LCP 1.2s, CLS 0),
-  Observatory A+ 120, beacon returns 200, zero console errors.
+*(2026-10-15, after GoatCounter's outage that day; this is the end state, and the
+cutover deploy is the step that makes it live. GoatCounter, set up 2026-09-11, was
+dropped because its host went down and took the numbers with it.)*
+
+- **[lib-visits](https://github.com/csarkosh/lib-visits)** (private, GPL-3.0-only, tag
+  `v0.1.0`) is Cyrus's own analytics: two small scripts and a collector. No cookies,
+  so no consent banner. The only storage is the visitor's own `#visits-off` opt-out.
+- **Configured in one place:** `.agents/skills/site-quality/site.json`
+  (`analytics.provider` is `visits`, `endpoint` is `/v`). `generate-assets.sh` derives the
+  two `<script>` tags on every page, the CSP (`script-src 'self'`, `connect-src 'self'`,
+  `img-src 'self'`: no third-party origin at all) and `check.py`'s allowlist from it.
+  Don't edit any of those by hand. Set `provider` to `null` and both scripts and every
+  event go away together.
+- **The scripts are vendored unmodified** at
+  `.agents/skills/site-quality/assets/vendor/visits.min.js` (3,068 B) and `vitals.min.js`
+  (995 B), each with a provenance line (tag, licence, sha256) that `strip_comments` drops
+  before hashing, so the served, content-hashed file is byte-identical to the tag's.
+  The vendoring command:
+
+  ```bash
+  LIB=~/Projects/lib-visits; git -C "$LIB" checkout -q v0.1.0
+  for f in visits vitals; do
+    { printf '// lib-visits v0.1.0 (GPL-3.0-only), client/dist/%s.min.js, sha256 %s\n' "$f" "$(shasum -a 256 "$LIB/client/dist/$f.min.js" | cut -c1-64)"; cat "$LIB/client/dist/$f.min.js"; } > .agents/skills/site-quality/assets/vendor/$f.min.js
+  done
+  git -C "$LIB" checkout -q main
+  ```
+
+  To bump the client, repeat this with the new tag, run `generate-assets.sh`, and commit
+  the vendored files, the hashed assets and the pages together; `check.py` refuses a page
+  whose hash is not the vendored file's.
+- **The beacon is same-origin.** `firebase.json` rewrites `/v` to the Cloud Run service
+  `csarko-visits` (`us-west1`), so there is no CORS, no preflight and no new origin in the
+  CSP. `.agents/skills/site-quality/tests/firebase.test.mjs` pins the rewrite and fails if a
+  file in `public/` would shadow `/v`. The service is Terraform's
+  (`_infra/modules/gcp-visits`); the image is built from the lib-visits tag by
+  `visits/deploy.sh`.
+- **Where the rows go:** the collector logs one row an event to the log bucket
+  `csarko-visits`, with Log Analytics on, linked as the BigQuery dataset `csarko_visits`
+  (query `csarko_visits._AllLogs`). GoatCounter's history was backfilled to
+  `csarko_history.goatcounter_history`; the admin dashboard reads both, joined at the
+  cutover instant.
+- `localhost` and `file://` previews are never counted. The 404 page counts too (the
+  path shows the broken link).
+- **Events** *(unchanged from 2026-10-12, when they were added for the admin dashboard)*:
+  clicks out to LinkedIn, GitHub, Substack and YouTube count as `out-linkedin`,
+  `out-github`, `out-substack`, `out-youtube` (hero chips, Contact buttons and the Filming
+  tile's link in `index.html`); the nav's page links count `nav-film`, `nav-games`,
+  `nav-research` in both navs (never on the page you are on); a game card's "Play in your
+  browser" counts `play-<slug>` and a film card's "Watch on YouTube" counts `watch-<slug>`
+  (`docs_lib.mjs`). All are `data-visits-event` attributes. `read-<slug>` needs no script of
+  ours any more: it is derived from lib-visits' `leave.re` (the reader reached the end of a
+  doc). **Event names are stable identifiers, not copy:** renaming a button or a URL must
+  not rename its series. A doc page now carries about 4,063 B of the 10,000 B script
+  budget. Campaign tags on links Cyrus posts (`?ref=substack`, `?ref=linkedin`) are
+  recorded as the page's query; the site does nothing for them.
 
 ## Theme tokens
 
