@@ -19,7 +19,7 @@ Outputs (in public/):
 Every file in public/assets/ is named by the first 8 hex chars of its SHA-256, so
 firebase.json can cache that directory for a year (immutable) without ever
 serving a stale file. The HTML references are rewritten between generated
-markers in every public/*.html, public/research/*.html and public/games/*.html that has them:
+markers in every public/*.html and every page under public/research, /games, /film and /apps that has them:
 
   <!-- generated:head -->  …  <!-- /generated:head -->          font preload
   /* generated:fonts */    …  /* /generated:fonts */            @font-face rules
@@ -297,8 +297,8 @@ def main() -> int:
     # ---- rewrite generated blocks in every page that has them
     # index.html uses relative paths (so the file:// preview works). 404.html is
     # served for missing URLs at any depth, and the built pages live a directory
-    # down under /research, /games and /film, so their paths must be root-relative.
-    built = [q for d in ("research", "games", FILM_DIR) if (PUBLIC / d).is_dir()
+    # down under /research, /games, /film and /apps, so their paths must be root-relative.
+    built = [q for d in ("research", "games", FILM_DIR, "apps") if (PUBLIC / d).is_dir()
              for q in sorted((PUBLIC / d).glob("*.html"))]
     for page in sorted(PUBLIC.glob("*.html")) + built:
         prefix = "" if page == PUBLIC / "index.html" else "/"

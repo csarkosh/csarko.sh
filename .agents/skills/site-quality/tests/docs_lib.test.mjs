@@ -1,7 +1,7 @@
 // Tests for docs_lib.mjs. Run: node --test .agents/skills/site-quality/tests/docs_lib.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSite, CATEGORIES, categorySlug, DocError, docPage, IEEE_SINCE, filmsPage, formatDate, gamesPage, indexPage, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, sitemap, sortDocs, sortFilms, sortGames, themeBlocks } from '../scripts/docs_lib.mjs';
+import { appsPage, buildSite, CATEGORIES, categorySlug, DocError, docPage, IEEE_SINCE, filmsPage, formatDate, gamesPage, indexPage, loadApp, loadDoc, loadFilm, loadGame, pageShell, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, SHELL_CRUMBS, sitemap, sortApps, sortDocs, sortFilms, sortGames, themeBlocks } from '../scripts/docs_lib.mjs';
 
 const FILE = 'docs/published/2026-09-14-example.md';
 const DESC = 'A description that is long enough to pass the seventy character minimum for search.';
@@ -425,7 +425,9 @@ test('gamesPage lists every game with VideoGame JSON-LD and marks itself current
   assert.ok(html.includes('<li><a href="/games" aria-current="page">Games</a></li>'));
   // Every other page link counts a nav-<page> click; the one you are on reloads, so it does not.
   assert.ok(html.includes('<li><a href="/research" data-visits-event="nav-research">Research</a></li>'));
-  assert.ok(html.includes('<li><a href="/film" data-visits-event="nav-film">Film</a></li>'));
+  assert.ok(html.includes('<li class="collapse-first"><a href="/film" data-visits-event="nav-film" data-collapsible="true">Film</a></li>'));
+  assert.ok(html.includes('<li><a href="/apps" data-visits-event="nav-apps">Apps</a></li>'));
+  assert.ok(html.indexOf('href="/apps"') < html.indexOf('href="/film"'), 'Apps leads the page links');
   assert.ok(html.includes('<p class="game-kicker">Playable now · No install</p>'));
   assert.ok(html.includes('<ul class="tags" role="list"><li>TypeScript</li><li>Babylon.js</li></ul>'));
   // The play link is the card's own, stretched over it, styled as the home page's card link; the
@@ -583,7 +585,7 @@ test('sortFilms puts the newest release first, ties broken by slug', () => {
 test('filmsPage cards the poster, links out to YouTube and lists VideoObject JSON-LD', () => {
   const html = filmsPage(sortFilms([film('hallway')]), themeBlocks(INDEX));
   assert.ok(html.includes('<link rel="canonical" href="https://csarko.sh/film" />'));
-  assert.ok(html.includes('<li><a href="/film" aria-current="page">Film</a></li>'));
+  assert.ok(html.includes('<li class="collapse-first"><a href="/film" aria-current="page" data-collapsible="true">Film</a></li>'));
   // Film leads the page links on every page of the site.
   assert.ok(html.indexOf('href="/film"') < html.indexOf('href="/games"'));
   assert.ok(html.includes('<p class="film-kicker">Short film · 0:16</p>'));
@@ -645,4 +647,56 @@ test('the page carries the standing notice, which is the only warning on it', ()
   // It sits under the lead, above the list, so it is read before any card is tapped.
   assert.ok(html.indexOf('class="film-notice"') > html.indexOf('class="lead"'));
   assert.ok(html.indexOf('class="film-notice"') < html.indexOf('class="film-list"'));
+});
+
+const APP_DESC = 'A library to count visits and journeys without cookies, as a small script and a static collector.';
+const appSrc = (slug, lines = []) => ({
+  name: `${slug}.md`,
+  text: ['---', `description: ${APP_DESC}`, 'status: released', `page: https://apps.csarko.sh/${slug}`, 'tags: Rust, JavaScript', ...lines, '---', `# ${slug}`, '', 'What it does.', ''].join('\n'),
+});
+const app = (slug, lines) => { const s = appSrc(slug, lines); return loadApp(s.name, s.text); };
+
+test('loadApp builds the kicker from status and license, and checks its fields', () => {
+  assert.equal(app('lib-visits', ['license: GPL-3.0']).kicker, 'Released · Open source, GPL-3.0');
+  assert.equal(app('tool').kicker, 'Released');
+  const bad = (lines, pattern) => assert.throws(() => loadApp('x.md', ['---', `description: ${APP_DESC}`, ...lines, '---', '# x', ''].join('\n')),
+    (e) => e instanceof DocError && pattern.test(e.message));
+  bad(['status: shipped', 'page: https://apps.csarko.sh/x', 'tags: Rust'], /status must be released or in-development/);
+  bad(['status: released', 'page: http://apps.csarko.sh/x', 'tags: Rust'], /page must be an https:\/\/ URL/);
+  bad(['status: released', 'tags: Rust'], /front matter needs "page"/);
+  assert.throws(() => loadApp('2026-10-15-x.md', appSrc('x').text), /carries no date/);
+});
+
+test('sortApps puts released apps first, newest first', () => {
+  const apps = sortApps([app('b'), app('a', ['released: 2026-01-01']), app('c', ['released: 2026-10-15'])]);
+  assert.deepEqual(apps.map((a) => a.slug), ['c', 'a', 'b']);
+});
+
+test('appsPage cards each app, links out to its page and marks itself current', () => {
+  const html = appsPage([app('lib-visits', ['license: GPL-3.0'])], themeBlocks(INDEX));
+  assert.ok(html.includes('<link rel="canonical" href="https://csarko.sh/apps" />'));
+  assert.ok(html.includes('<li><a href="/apps" aria-current="page">Apps</a></li>'));
+  assert.ok(html.includes('<p class="app-kicker">Released · Open source, GPL-3.0</p>'));
+  assert.ok(html.includes('<a class="card-link stretch" href="https://apps.csarko.sh/lib-visits" data-visits-event="app-lib-visits">Download and docs <svg'));
+  const page = jsonLd(html).find((n) => n['@type'] === 'CollectionPage');
+  assert.equal(page.mainEntity.itemListElement[0].item['@type'], 'SoftwareApplication');
+  assert.equal(page.mainEntity.itemListElement[0].item.license, 'GPL-3.0');
+  assert.deepEqual(jsonLd(html).find((n) => n['@type'] === 'BreadcrumbList').itemListElement.map((i) => i.name), ['Home', 'Apps']);
+});
+
+test('the sitemap and the site build carry /apps when there is an app', () => {
+  assert.ok(sitemap([], [], [], [app('lib-visits')]).includes('<loc>https://csarko.sh/apps</loc>'));
+  assert.ok(!sitemap([], [], [], []).includes('/apps'));
+  const files = buildSite({ sources: [], appSources: [appSrc('lib-visits')], indexHtml: INDEX });
+  assert.ok(files.has('apps/index.html'));
+});
+
+test('pageShell links every nav item and crumb back to csarko.sh in full', () => {
+  const html = pageShell({ title: 'x · Cyrus Sarkosh', ogTitle: 'x', description: 'd', canonical: 'https://apps.csarko.sh/x', graph: [], theme: themeBlocks(INDEX),
+    trail: [SHELL_CRUMBS.home, SHELL_CRUMBS.apps, ['x', 'https://apps.csarko.sh/x']], main: '<main id="top"></main>' });
+  assert.ok(html.includes('<a class="wordmark" href="https://csarko.sh/">'));
+  assert.ok(html.includes('<li><a href="https://csarko.sh/apps" data-visits-event="nav-apps">Apps</a></li>'));
+  assert.ok(html.includes('<a href="https://csarko.sh/apps">Apps</a>'), 'the crumb is absolute');
+  assert.ok(html.includes('<span class="mono">apps.csarko.sh</span>'));
+  assert.deepEqual(jsonLd(html).find((n) => n['@type'] === 'BreadcrumbList').itemListElement.map((i) => i.item), ['https://csarko.sh/', 'https://csarko.sh/apps', 'https://apps.csarko.sh/x']);
 });

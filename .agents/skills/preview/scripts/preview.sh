@@ -58,6 +58,7 @@ if (( SHOTS )); then
 
   NEWEST="$("$CHECK" --newest-doc)"
   SHOTS_LIST=("|/")                                   # <file prefix>|<path>
+  [[ -f "$PUBLIC/apps/index.html" ]] && SHOTS_LIST+=("apps-|/apps")
   [[ -f "$PUBLIC/film/index.html" ]] && SHOTS_LIST+=("film-|/film")
   [[ -f "$PUBLIC/games/index.html" ]] && SHOTS_LIST+=("games-|/games")
   [[ -n "$NEWEST" ]] && SHOTS_LIST+=("doc-|/${NEWEST%.html}")

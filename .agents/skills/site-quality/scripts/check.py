@@ -61,6 +61,8 @@ BUILD_DOCS = SKILL / "scripts/build_docs.mjs"
 DOCS_DIR = "research"
 # /film, built from docs/films/ with its posters in public/film/ (docs_lib.mjs, build_assets.py).
 FILM_DIR = "film"
+# /apps, built from docs/apps/ (docs_lib.mjs); each card links out to the app's page on apps.csarko.sh.
+APPS_DIR = "apps"
 LEGACY_DOCS_DIR = "docs"
 
 REQUIRED_HEADERS = {
@@ -229,7 +231,8 @@ def parse_csp(value):
 
 def page_kind(rel):
     return {"index.html": "home", "404.html": "404", f"{DOCS_DIR}/index.html": "docs-index",
-            "games/index.html": "games-index", f"{FILM_DIR}/index.html": "film-index"}.get(rel, "doc")
+            "games/index.html": "games-index", f"{FILM_DIR}/index.html": "film-index",
+            f"{APPS_DIR}/index.html": "apps-index"}.get(rel, "doc")
 
 
 def canonical_for(rel):
@@ -284,6 +287,7 @@ def newest_doc(public=PUBLIC):
 
 def indexable_pages(public=PUBLIC):
     return (["index.html"]
+            + sorted(f"{APPS_DIR}/{p.name}" for p in (public / APPS_DIR).glob("*.html"))
             + sorted(f"{FILM_DIR}/{p.name}" for p in (public / FILM_DIR).glob("*.html"))
             + sorted(f"games/{p.name}" for p in (public / "games").glob("*.html"))
             + sorted(f"{DOCS_DIR}/{p.name}" for p in (public / DOCS_DIR).glob("*.html")))
@@ -383,8 +387,8 @@ def jsonld_checks(page, kind, canonical):
     items = (node("BreadcrumbList") or {}).get("itemListElement", [])
     check(items and items[0].get("item") == CANONICAL and items[-1].get("item") == canonical,
           f"JSON-LD BreadcrumbList runs from {CANONICAL} to {canonical}")
-    if kind in ("docs-index", "games-index", "film-index"):
-        what = {"docs-index": "doc", "games-index": "game"}.get(kind, "film")
+    if kind in ("docs-index", "games-index", "film-index", "apps-index"):
+        what = {"docs-index": "doc", "games-index": "game", "apps-index": "app"}.get(kind, "film")
         collection = node("CollectionPage") or {}
         listed = collection.get("mainEntity", {}).get("itemListElement", [])
         check(collection.get("url") == canonical and listed, f"JSON-LD CollectionPage lists {len(listed)} {what}(s)")
@@ -552,7 +556,8 @@ def performance_checks(page, html, name):
     check(not bad, f"public/assets/ names match content hashes {bad or ''}")
     referenced = set()
     for other in [*PUBLIC.glob("*.html"), *(PUBLIC / DOCS_DIR).glob("*.html"),
-                  *(PUBLIC / "games").glob("*.html"), *(PUBLIC / FILM_DIR).glob("*.html")]:
+                  *(PUBLIC / "games").glob("*.html"), *(PUBLIC / FILM_DIR).glob("*.html"),
+                  *(PUBLIC / APPS_DIR).glob("*.html")]:
         referenced |= set(re.findall(r"assets/([A-Za-z0-9._-]+)", other.read_text(encoding="utf-8")))
     unused = sorted(f.name for f in (PUBLIC / "assets").glob("*") if f.name not in referenced)
     (warn if unused else ok)(f"unreferenced files in public/assets/: {unused or 'none'}")
@@ -703,7 +708,7 @@ def internal_link_checks(pages):
 def docs_build_checks():
     """Build the docs twice into temp dirs. The builds must match each other (deterministic)
     and the committed files (fresh), ignoring the blocks build_assets.py fills afterwards."""
-    print("docs build (docs/published + docs/games + docs/films → public/)")
+    print("docs build (docs/published + docs/games + docs/films + docs/apps → public/)")
     if not shutil.which("node"):
         fail("node not found: install Node 18+ (build_docs.mjs builds the docs pages)")
         return
@@ -718,11 +723,11 @@ def docs_build_checks():
                            for p in Path(out).rglob("*") if p.is_file()})
     check(builds[0] == builds[1], "docs build is deterministic (two builds are byte-identical)")
     committed = {rel: (PUBLIC / rel).read_text(encoding="utf-8") for rel in ("sitemap.xml",)}
-    for d in (DOCS_DIR, "games", FILM_DIR):
+    for d in (DOCS_DIR, "games", FILM_DIR, APPS_DIR):
         committed |= {f"{d}/{p.name}": p.read_text(encoding="utf-8") for p in (PUBLIC / d).glob("*.html")}
     stale = sorted(rel for rel in set(builds[0]) | set(committed)
                    if blank_generated(builds[0].get(rel, "")) != blank_generated(committed.get(rel, "")))
-    check(not stale, f"public/ matches docs/published/, docs/games/ and docs/films/ {stale or ''}"
+    check(not stale, f"public/ matches docs/published/, docs/games/, docs/films/ and docs/apps/ {stale or ''}"
           + (" — run generate-assets.sh" if stale else ""))
 
 
@@ -736,7 +741,7 @@ def layout_checks():
     if not Path(CHROME).exists():
         warn("Google Chrome not found — layout checks skipped")
         return
-    targets = ["index.html"] + [rel for rel in (f"{FILM_DIR}/index.html", "games/index.html", f"{DOCS_DIR}/index.html", newest_doc())
+    targets = ["index.html"] + [rel for rel in (f"{APPS_DIR}/index.html", f"{FILM_DIR}/index.html", "games/index.html", f"{DOCS_DIR}/index.html", newest_doc())
                                 if rel and (PUBLIC / rel).exists()]
     frames = [{"key": f"{rel} {w}px", "width": w, "src": (PUBLIC / rel).as_uri()} for rel in targets for w in LAYOUT_WIDTHS]
     with tempfile.TemporaryDirectory() as tmp:
@@ -847,14 +852,14 @@ def live_checks(base):
         s, h, _ = fetch(f"{base}/assets/{asset.name}")
         check(s == 200 and "immutable" in h.get("cache-control", ""), f"/assets/{asset.name} -> {s}, {h.get('cache-control')}")
 
-    built = [rel for rel in indexable_pages() if rel.startswith((f"{DOCS_DIR}/", "games/", f"{FILM_DIR}/"))]
+    built = [rel for rel in indexable_pages() if rel.startswith((f"{DOCS_DIR}/", "games/", f"{FILM_DIR}/", f"{APPS_DIR}/"))]
     for rel in built:
         path = canonical_for(rel)[len(SITE):]
         s, h, _ = fetch(base + path)
         same_csp = h.get("content-security-policy") == catch_all.get("Content-Security-Policy")
         check(s == 200 and same_csp, f"{path} -> {s}, CSP {'matches' if same_csp else 'differs from'} firebase.json")
     # cleanUrls redirects the trailing slash; check each directory that has an index page.
-    for d in (DOCS_DIR, "games", FILM_DIR):
+    for d in (DOCS_DIR, "games", FILM_DIR, APPS_DIR):
         if any(rel.startswith(f"{d}/") for rel in built):
             s, h, _ = fetch(f"{base}/{d}/")
             check(s in (301, 308) and h.get("location", "").endswith(f"/{d}"),

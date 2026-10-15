@@ -37,6 +37,9 @@ export const categorySlug = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, 
 // section is a numbered list).
 export const IEEE_SINCE = '2026-09-23';
 const GAME_FIELDS = { description: true, status: true, tags: true, play: false, repo: false, released: false };
+// An app is software to download or use: "page" is its own page (on apps.csarko.sh), "license"
+// joins the status in the card's kicker when the app is open source.
+const APP_FIELDS = { description: true, status: true, page: true, tags: true, license: false, repo: false, released: false };
 // A film is a video hosted on YouTube: the page carries its poster and links out, so every field
 // here is needed to build the card and its VideoObject. "alt" describes the poster. There is no
 // per-film warning: the page's standing notice speaks for the whole list.
@@ -48,6 +51,7 @@ const RUNTIME = /^(\d{1,2}):([0-5]\d)$/;
 
 // A game's status is also the kicker line above its title, so the two can never disagree.
 const STATUSES = { playable: 'Playable now · No install', 'in-development': 'In development' };
+const APP_STATUSES = { released: 'Released', 'in-development': 'In development' };
 
 const isDate = (value) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -108,6 +112,23 @@ export function parseGameFrontMatter(text, file) {
   if (meta.play !== undefined && !/^https:\/\/\S+$/.test(meta.play)) {
     throw new DocError(`${file}: play must be an https:// URL`);
   }
+  if (meta.repo !== undefined && !/^https:\/\/github\.com\/\S+$/.test(meta.repo)) {
+    throw new DocError(`${file}: repo must be an https://github.com/ URL`);
+  }
+  if (meta.released !== undefined && !isDate(meta.released)) {
+    throw new DocError(`${file}: released must be a real YYYY-MM-DD date`);
+  }
+  const tags = meta.tags.split(',').map((tag) => tag.trim()).filter(Boolean);
+  if (!tags.length || tags.length > 5) throw new DocError(`${file}: tags must be 1 to 5 comma-separated names`);
+  return { meta: { ...meta, tags }, body };
+}
+
+export function parseAppFrontMatter(text, file) {
+  const { meta, body } = parseBlock(text, file, APP_FIELDS);
+  if (!(meta.status in APP_STATUSES)) {
+    throw new DocError(`${file}: status must be ${Object.keys(APP_STATUSES).join(' or ')}`);
+  }
+  if (!/^https:\/\/\S+$/.test(meta.page)) throw new DocError(`${file}: page must be an https:// URL`);
   if (meta.repo !== undefined && !/^https:\/\/github\.com\/\S+$/.test(meta.repo)) {
     throw new DocError(`${file}: repo must be an https://github.com/ URL`);
   }
@@ -353,6 +374,27 @@ export function loadGame(name, text) {
   return { slug, ...meta, kicker: STATUSES[meta.status], ...renderMarkdown(body, file) };
 }
 
+export function parseAppFileName(name) {
+  const m = GAME_FILE_NAME.exec(name);
+  if (!m) {
+    throw new DocError(`docs/${APPS_DIR}/${name}: file name must be <slug>.md, the slug lowercase letters, digits and hyphens`);
+  }
+  if (/^\d{4}-\d{2}-\d{2}-/.test(m[1])) {
+    throw new DocError(`docs/${APPS_DIR}/${name}: an app file name carries no date; use "released:" in the front matter`);
+  }
+  return { slug: m[1] };
+}
+
+export function loadApp(name, text) {
+  const file = `docs/${APPS_DIR}/${name}`;
+  const { slug } = parseAppFileName(name);
+  if (slug === 'index') throw new DocError(`${file}: "index" is reserved for the apps index page`);
+  if (text.includes('—')) throw new DocError(`${file}: contains an em-dash; use a comma, colon or semicolon`);
+  const { meta, body } = parseAppFrontMatter(text, file);
+  const kicker = `${APP_STATUSES[meta.status]}${meta.license ? ` · Open source, ${meta.license}` : ''}`;
+  return { slug, ...meta, kicker, ...renderMarkdown(body, file) };
+}
+
 export function parseFilmFileName(name) {
   const m = GAME_FILE_NAME.exec(name);
   if (!m) {
@@ -434,6 +476,14 @@ const FILM_LEAD = 'An experiment in how far AI generation can be pushed toward a
 const FILM_NOTICE = 'Contains horror imagery that some viewers may find disturbing.';
 // A film's kicker, with its runtime after it, so the card says what it is before you read the title.
 const FILM_KICKER = 'Short film';
+// The apps live at /apps, built from docs/apps/; each card links out to the app's own page on
+// apps.csarko.sh (APPS_HOST), which carries the downloads and the documentation.
+export const APPS_DIR = 'apps';
+export const APPS_HOST = 'https://apps.csarko.sh';
+const APPS_TITLE = 'Apps';
+const APPS_HEADING = 'Apps and libraries';
+const APPS_DESCRIPTION = 'Apps and libraries by Cyrus Sarkosh to download and run yourself: what each one does, where to get it, and how to set it up.';
+const APPS_LEAD = 'Software I have released for anyone to run: what each one does, with its downloads and documentation one click away.';
 const GAMES_HEADING = 'Games, playable in your browser';
 const GAMES_DESCRIPTION = 'Games by Cyrus Sarkosh that run in a browser with no install: what is playable now, and what is being built.';
 const GAMES_LEAD = 'What I have built and what I am building now. Each one runs in a browser, with no install and no account.';
@@ -446,6 +496,14 @@ export const sortDocs = (docs) =>
 export const sortGames = (games) =>
   [...games].sort((a, b) => {
     if (!a.released !== !b.released) return a.released ? 1 : -1;
+    if (a.released !== b.released) return a.released < b.released ? 1 : -1;
+    return a.slug < b.slug ? -1 : 1;
+  });
+
+// Released apps first, newest first, then what is still being built; ties break on slug.
+export const sortApps = (apps) =>
+  [...apps].sort((a, b) => {
+    if (!a.released !== !b.released) return a.released ? -1 : 1;
     if (a.released !== b.released) return a.released < b.released ? 1 : -1;
     return a.slug < b.slug ? -1 : 1;
   });
@@ -478,12 +536,15 @@ const breadcrumbs = (items) => ({
 // The trail, under the nav on every page but the home page. The last crumb is the page you are
 // already on, so it is a <span> rather than a link back to itself. The separators are CSS, so they
 // reach neither the accessibility tree nor a copied line of text.
-function crumbs(trail) {
+// `local` is false on a page served from another host (apps.csarko.sh), whose crumbs must name
+// csarko.sh in full.
+function crumbs(trail, { local = true } = {}) {
   const items = trail.map(([name, url], i) => {
     const text = escapeHtml(name);
+    const href = local && url.startsWith(SITE) ? url.slice(SITE.length) || '/' : url;
     const inner = i === trail.length - 1
       ? `<span aria-current="page">${text}</span>`
-      : `<a href="${url.slice(SITE.length) || '/'}">${text}</a>`;
+      : `<a href="${href}">${text}</a>`;
     return `        <li>${inner}</li>`;
   });
   return `  <nav class="crumbs" aria-label="Breadcrumb">
@@ -525,6 +586,8 @@ const DOCS_CSS = `
        Docs pages carry only page links, so these two rules are here to keep the copies in step. */
     .nav .heading-link a { color: var(--faint); }
     .nav .nav-divider { width: 1px; height: 16px; background: var(--border-strong); }
+    /* Film is the first link to go when the bar narrows (the home page has the same rule). */
+    @media (max-width: 720px) { .nav .collapse-first { display: none; } }
 
     /* The trail sits under the nav and scrolls away with the page: only the nav is sticky, so
        scroll-padding-top above stays the nav's own height. Its .wrap is the site's, so the first
@@ -608,9 +671,9 @@ const DOCS_CSS = `
     .card:hover, .card:focus-within { border-color: var(--accent-border); transform: translateY(-2px); background: var(--surface-hover); }
     /* ::before, not ::after: an external link already uses ::after for its ↗ mark. */
     .card .stretch::before { content: ""; position: absolute; inset: 0; border-radius: var(--radius); }
-    .card .tags, .card .game-desc a, .card .film-desc a { position: relative; z-index: 1; }
+    .card .tags, .card .game-desc a, .card .film-desc a, .card .app-desc a { position: relative; z-index: 1; }
 
-    .doc-list, .game-list, .film-list { display: grid; gap: 14px; list-style: none; margin: 0; padding: 0; }
+    .doc-list, .game-list, .film-list, .app-list { display: grid; gap: 14px; list-style: none; margin: 0; padding: 0; }
     .doc-list .doc-title { margin: 0 0 4px; font-size: 1.2rem; line-height: 1.35; letter-spacing: -0.015em; font-weight: 600; }
     .doc-list .doc-title a { transition: color .15s ease; }
     .doc-list li:hover .doc-title a, .doc-list .doc-title a:focus-visible { color: var(--accent); }
@@ -648,12 +711,12 @@ const DOCS_CSS = `
       .film-card .card-link { order: 6; }
     }
 
-    .game-kicker { margin: 0 0 10px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
-    .game-title { margin: 0 0 10px; font-size: 1.4rem; line-height: 1.3; letter-spacing: -0.02em; font-weight: 600; }
-    .game-desc { max-width: 78ch; }
-    .game-desc p { margin: 0 0 12px; }
-    .game-desc p:last-child { margin-bottom: 0; }
-    .game-list .tags { margin-top: 16px; }
+    .game-kicker, .app-kicker { margin: 0 0 10px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .game-title, .app-title { margin: 0 0 10px; font-size: 1.4rem; line-height: 1.3; letter-spacing: -0.02em; font-weight: 600; }
+    .game-desc, .app-desc { max-width: 78ch; }
+    .game-desc p, .app-desc p { margin: 0 0 12px; }
+    .game-desc p:last-child, .app-desc p:last-child { margin-bottom: 0; }
+    .game-list .tags, .app-list .tags { margin-top: 16px; }
     /* The home page's .card-link ("Play in your browser"), here as the card's own link. */
     .card-link { align-self: flex-start; margin-top: 18px; font-size: 14px; font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
     .card-link svg { width: 14px; height: 14px; transition: transform .18s ease; }
@@ -752,20 +815,22 @@ ${DOCS_CSS}${extraCss}
 }
 
 // The page links, in the order the whole site uses them (see public/index.html, which carries the
-// same three after its heading links). `current` marks the page you are already on. There is no
+// same four after its heading links). Film carries the collapse-first class: at <= 720px it is the
+// first link to go, before the home page's heading links (Cyrus, 2026-10-15). `current` marks the page you are already on. There is no
 // Home link: the wordmark to their left is it, on every page. The third value is the visits
 // event (lib-visits' client, visits.min.js, binds every data-visits-event), a stable identifier that outlives a
 // rename of the label or the URL; the home page's nav carries the same three names.
-const PAGE_LINKS = [[`/${FILM_DIR}`, FILM_TITLE, 'nav-film'], ['/games', GAMES_TITLE, 'nav-games'], [`/${DOCS_DIR}`, DOCS_NAV, 'nav-research']];
+const PAGE_LINKS = [[`/${APPS_DIR}`, APPS_TITLE, 'nav-apps'], [`/${FILM_DIR}`, FILM_TITLE, 'nav-film', true], ['/games', GAMES_TITLE, 'nav-games'], [`/${DOCS_DIR}`, DOCS_NAV, 'nav-research']];
 
 // The link to the page you are on reloads it, which is not a navigation, so it counts nothing.
-const nav = (current) => `  <a class="skip-link" href="#top">Skip to content</a>
+// `origin` is empty on csarko.sh and the site's URL on a page served from another host.
+const nav = (current, origin = '') => `  <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
-      <a class="wordmark" href="/">csarko<span>.sh</span></a>
+      <a class="wordmark" href="${origin}/">csarko<span>.sh</span></a>
       <ul>
-${PAGE_LINKS.map(([href, label, event]) =>
-    `        <li><a href="${href}"${href === current ? ' aria-current="page"' : ` data-visits-event="${event}"`}>${label}</a></li>`).join('\n')}
+${PAGE_LINKS.map(([href, label, event, collapse]) =>
+    `        <li${collapse ? ' class="collapse-first"' : ''}><a href="${origin}${href}"${href === current ? ' aria-current="page"' : ` data-visits-event="${event}"`}${collapse ? ' data-collapsible="true"' : ''}>${label}</a></li>`).join('\n')}
       </ul>
     </div>
   </nav>`;
@@ -937,6 +1002,87 @@ ${play}${pad}  </li>`;
   return `${pad}<ul class="game-list" role="list">\n${items.join('\n')}\n${pad}</ul>`;
 }
 
+// An app's card: the whole card links to the app's own page, which carries the downloads and the
+// docs. The click counts as "app-<slug>": a visitor who went on to look at the app.
+function appList(apps, pad) {
+  const items = apps.map((app) => `${pad}  <li class="card">
+${pad}    <p class="app-kicker">${escapeHtml(app.kicker)}</p>
+${pad}    <h2 class="app-title">${app.titleHtml}</h2>
+${pad}    <div class="app-desc prose">
+${app.html}${pad}    </div>
+${pad}    <ul class="tags" role="list">${app.tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>
+${pad}    <a class="card-link stretch" href="${escapeHtml(app.page)}" data-visits-event="app-${app.slug}">Download and docs ${EXTERNAL_ARROW}</a>
+${pad}  </li>`);
+  return `${pad}<ul class="app-list" role="list">\n${items.join('\n')}\n${pad}</ul>`;
+}
+
+export function appsPage(apps, theme) {
+  const url = `${SITE}/${APPS_DIR}`;
+  const trail = [HOME_CRUMB, [APPS_TITLE, url]];
+  const graph = [
+    {
+      '@type': 'CollectionPage',
+      '@id': `${url}#page`,
+      url,
+      name: APPS_TITLE,
+      description: APPS_DESCRIPTION,
+      isPartOf: { '@id': WEBSITE },
+      about: { '@id': PERSON },
+      mainEntity: {
+        '@type': 'ItemList',
+        itemListElement: apps.map((app, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          item: {
+            '@type': 'SoftwareApplication',
+            name: app.title,
+            description: app.description,
+            url: app.page,
+            applicationCategory: 'DeveloperApplication',
+            operatingSystem: 'Linux, macOS',
+            ...(app.license ? { license: app.license } : {}),
+            author: PERSON_NODE,
+          },
+        })),
+      },
+    },
+    breadcrumbs(trail),
+  ];
+  return `${head({ title: `${APPS_HEADING} · Cyrus Sarkosh`, ogTitle: APPS_TITLE, description: APPS_DESCRIPTION, canonical: url, ogType: 'website', graph, theme })}
+<body>
+${nav(`/${APPS_DIR}`)}
+${crumbs(trail)}
+
+  <main id="top" class="wrap docs-index" tabindex="-1">
+    <header class="doc-header">
+      <p class="eyebrow">${APPS_TITLE}</p>
+      <h1>${escapeHtml(APPS_HEADING)}</h1>
+      <p class="lead">${escapeHtml(APPS_LEAD)}</p>
+    </header>
+${appList(apps, '    ')}
+  </main>
+
+${FOOTER}`;
+}
+
+/**
+ * A page of the site served from another host (apps.csarko.sh): the same head, nav, trail and
+ * footer as a csarko.sh page, with every link back to csarko.sh absolute. `trail` ends with the
+ * page itself; `main` is the page's own markup inside <body>, after the trail.
+ */
+export function pageShell({ title, ogTitle, description, canonical, ogType = 'website', extraCss = '', graph, theme, trail, main, bodyClass = '' }) {
+  return `${head({ title, ogTitle, description, canonical, ogType, extraCss, graph: [...graph, breadcrumbs(trail)], theme })}
+<body${bodyClass ? ` class="${bodyClass}"` : ''}>
+${nav(null, SITE)}
+${crumbs(trail, { local: false })}
+
+${main}
+
+${FOOTER.replace('<span class="mono">csarko.sh</span>', `<span class="mono">${escapeHtml(new URL(canonical).host)}</span>`)}`;
+}
+
+export const SHELL_CRUMBS = { home: HOME_CRUMB, apps: [APPS_TITLE, `${SITE}/${APPS_DIR}`] };
+
 export function gamesPage(games, theme) {
   const url = `${SITE}/games`;
   const trail = [HOME_CRUMB, [GAMES_TITLE, url]];
@@ -1061,11 +1207,12 @@ ${films.map((film) => filmCard(film, '      ')).join('\n')}
 ${FOOTER}`;
 }
 
-export function sitemap(docs, games = [], films = []) {
-  // /, /film, /games and /research get no <lastmod>: a home-page-only edit never moves it, so it
+export function sitemap(docs, games = [], films = [], apps = []) {
+  // /, /apps, /film, /games and /research get no <lastmod>: a home-page-only edit never moves it, so it
   // was unreliable. Each doc keeps its own (updated, else published), which is a real content date.
   const entries = [
     [`${SITE}/`, null],
+    ...(apps.length ? [[`${SITE}/${APPS_DIR}`, null]] : []),
     ...(films.length ? [[`${SITE}/${FILM_DIR}`, null]] : []),
     ...(games.length ? [[`${SITE}/games`, null]] : []),
     ...(docs.length ? [[`${SITE}/${DOCS_DIR}`, null]] : []),
@@ -1078,10 +1225,11 @@ export function sitemap(docs, games = [], films = []) {
 
 // ---------------------------------------------------------------- everything
 
-export function buildSite({ sources, gameSources = [], filmSources = [], indexHtml }) {
+export function buildSite({ sources, gameSources = [], filmSources = [], appSources = [], indexHtml }) {
   const docs = sortDocs(sources.map(({ name, text }) => loadDoc(name, text)));
   const games = sortGames(gameSources.map(({ name, text }) => loadGame(name, text)));
   const films = sortFilms(filmSources.map(({ name, text }) => loadFilm(name, text)));
+  const apps = sortApps(appSources.map(({ name, text }) => loadApp(name, text)));
   // The date lives in the file name, so the directory no longer keeps slugs unique: two dates can
   // claim one URL, and the second page would silently overwrite the first.
   const bySlug = new Map();
@@ -1098,6 +1246,7 @@ export function buildSite({ sources, gameSources = [], filmSources = [], indexHt
   if (docs.length) files.set(`${DOCS_DIR}/index.html`, indexPage(docs, theme));
   if (games.length) files.set('games/index.html', gamesPage(games, theme));
   if (films.length) files.set(`${FILM_DIR}/index.html`, filmsPage(films, theme));
-  files.set('sitemap.xml', sitemap(docs, games, films));
+  if (apps.length) files.set(`${APPS_DIR}/index.html`, appsPage(apps, theme));
+  files.set('sitemap.xml', sitemap(docs, games, films, apps));
   return files;
 }

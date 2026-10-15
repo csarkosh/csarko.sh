@@ -213,6 +213,9 @@
     .nav .heading-link a { color: var(--faint); }
     .nav .heading-link a:hover { color: var(--text); }
     .nav .nav-divider { width: 1px; height: 16px; background: var(--border-strong); }
+    /* Film is the first link to go when the bar narrows, before the heading links at 640px
+       (Cyrus, 2026-10-15); docs_lib.mjs carries the same rule. */
+    @media (max-width: 720px) { .nav .collapse-first { display: none; } }
 
     /* Hero */
     .hero { padding-block: 88px 56px; display: grid; grid-template-columns: 1fr auto; gap: 48px; align-items: center; }
@@ -339,7 +342,8 @@
         <li class="heading-link"><a href="#education" data-collapsible="true">Education</a></li>
         <li class="heading-link"><a href="#contact" data-collapsible="true">Contact</a></li>
         <li class="nav-divider" aria-hidden="true"></li>
-        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
+        <li><a href="/apps" data-visits-event="nav-apps">Apps</a></li>
+        <li class="collapse-first"><a href="/film" data-visits-event="nav-film" data-collapsible="true">Film</a></li>
         <li><a href="/games" data-visits-event="nav-games">Games</a></li>
         <li><a href="/research" data-visits-event="nav-research">Research</a></li>
       </ul>
