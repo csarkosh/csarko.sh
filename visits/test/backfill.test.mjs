@@ -107,3 +107,22 @@ test("two ref ids with one host give one row", () => {
     { hour: "2026-10-01T10:00:00Z", path: "/", title: "", event: false, ref: "google.com", visits: 3 },
   ]);
 });
+
+test("api_row lines become rows: URL referrers reduced to the host, campaign names kept, same keys summed", () => {
+  const lines = [
+    JSON.stringify({ api_row: { hour: "2026-10-14T19:00:00Z", path: "/", title: "Home", event: false, ref: "github.com/csarkosh", ref_scheme: "h", visits: 1 } }),
+    JSON.stringify({ api_row: { hour: "2026-10-14T19:00:00Z", path: "/", title: "Home", event: false, ref: "www.github.com", ref_scheme: "h", visits: 1 } }),
+    JSON.stringify({ api_row: { hour: "2026-10-14T19:00:00Z", path: "/", title: "Home", event: false, ref: "substack", ref_scheme: "c", visits: 2 } }),
+    JSON.stringify({ api_row: { hour: "2026-10-14T19:00:00Z", path: "/", title: "Home", event: false, ref: "", ref_scheme: "", visits: 1 } }),
+    JSON.stringify({ api_row: { hour: "2026-10-15T00:00:00Z", path: "nav-games", title: "", event: true, ref: "", ref_scheme: "", visits: 1 } }),
+  ].join("\n");
+  assert.deepEqual(reduceExport(lines), {
+    rows: [
+      { hour: "2026-10-14T19:00:00Z", path: "/", title: "Home", event: false, ref: "github.com", visits: 2 },
+      { hour: "2026-10-14T19:00:00Z", path: "/", title: "Home", event: false, ref: "substack", visits: 2 },
+      { hour: "2026-10-14T19:00:00Z", path: "/", title: "Home", event: false, ref: "", visits: 1 },
+      { hour: "2026-10-15T00:00:00Z", path: "nav-games", title: "", event: true, ref: "", visits: 1 },
+    ],
+    skipped: 0,
+  });
+});

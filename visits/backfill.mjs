@@ -4,8 +4,9 @@
 //   node visits/backfill.mjs export.json.gz        # or export.csv.gz, or the uncompressed file
 //   node visits/backfill.mjs export.json.gz --load # also runs bq load (--replace: wipes the table)
 //
-// Either export format reduces to hourly counts per path and referrer, which is what the
-// dashboard's trends need. Audience history is not carried over.
+// Either export format, or the api_row lines visits/goatcounter-api.mjs writes from the stats
+// API, reduces to hourly counts per path and referrer, which is what the dashboard's trends
+// need. Audience history is not carried over.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
@@ -27,7 +28,7 @@ export const hostOf = (ref) => {
   return h.replace(/^www\./i, "").toLowerCase();
 };
 
-/** `{ rows, skipped }`: rows are `[{ hour, path, title, event, ref, visits }]` from the JSON-lines or CSV export. */
+/** `{ rows, skipped }`: rows are `[{ hour, path, title, event, ref, visits }]` from the JSON-lines (export or api_row) or CSV export. */
 export function reduceExport(text) {
   const t = text.trimStart();
   return t.startsWith("{") ? fromJson(t) : { rows: fromCsv(t), skipped: 0 };
@@ -38,6 +39,7 @@ function fromJson(text) {
   const paths = new Map();
   const refs = new Map([[0, ""]]);
   const stats = [];
+  const api = [];
   let skipped = 0;
   for (const line of text.split(/\r?\n/)) {
     if (!line.trim()) continue;
@@ -45,6 +47,7 @@ function fromJson(text) {
     if (o.path) paths.set(o.path.id, o.path);
     else if (o.ref) refs.set(o.ref.id, hostOf(o.ref.ref ?? ""));
     else if (o.hit_stat) stats.push(o.hit_stat);
+    else if (o.api_row) api.push(o.api_row);
     else skipped++;
   }
   // Summed after the whole file is read, by host, so two ref ids with one host give one row.
@@ -58,6 +61,20 @@ function fromJson(text) {
     const p = paths.get(Number(pathId)) ?? { path: `#${pathId}`, title: "" };
     return { hour, path: p.path, title: p.title ?? "", event: Boolean(p.event), ref, visits };
   });
+  // api_row: one path, hour and referrer each, already in visits. A URL referrer (scheme h) is
+  // reduced to its host like the exports'; a campaign or generated name is kept as it is.
+  const apiSums = new Map();
+  const apiMeta = new Map();
+  for (const a of api) {
+    const ref = a.ref_scheme === "h" ? hostOf(a.ref ?? "") : (a.ref ?? "");
+    const key = `${hourOf(a.hour)}\t${a.path}\t${ref}`;
+    apiSums.set(key, (apiSums.get(key) ?? 0) + Number(a.visits));
+    apiMeta.set(a.path, { title: a.title ?? "", event: Boolean(a.event) });
+  }
+  for (const [key, visits] of apiSums) {
+    const [hour, path, ref] = key.split("\t");
+    rows.push({ hour, path, ...apiMeta.get(path), ref, visits });
+  }
   return { rows, skipped };
 }
 
