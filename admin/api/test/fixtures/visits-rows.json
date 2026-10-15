@@ -1,34 +1,275 @@
 {
   "visits": [
-    { "win": "previous", "day": { "value": "2026-10-10" }, "visits": 3 },
-    { "win": "current", "day": { "value": "2026-10-14" }, "visits": 5 },
-    { "win": "current", "day": { "value": "2026-10-15" }, "visits": 2 }
+    {
+      "win": "previous",
+      "day": {
+        "value": "2026-10-10"
+      },
+      "visits": 3
+    },
+    {
+      "win": "current",
+      "day": {
+        "value": "2026-10-14"
+      },
+      "visits": 5
+    },
+    {
+      "win": "current",
+      "day": {
+        "value": "2026-10-15"
+      },
+      "visits": 2
+    }
   ],
   "history-visits": [
-    { "win": "previous", "day": { "value": "2026-10-11" }, "visits": 4 },
-    { "win": "current", "day": { "value": "2026-10-14" }, "visits": 1 }
+    {
+      "win": "previous",
+      "day": {
+        "value": "2026-10-11"
+      },
+      "visits": 4
+    },
+    {
+      "win": "current",
+      "day": {
+        "value": "2026-10-14"
+      },
+      "visits": 1
+    }
   ],
   "pages": [
-    { "path": "/", "title": "Home", "visitors": 6, "engaged_median": 12, "reached": null },
-    { "path": "/research/a", "title": "A", "visitors": 2, "engaged_median": 90, "reached": 0.5 }
+    {
+      "path": "/",
+      "title": "Home",
+      "visitors": 6,
+      "engaged_median": 12,
+      "reached": null
+    },
+    {
+      "path": "/research/a",
+      "title": "A",
+      "visitors": 2,
+      "engaged_median": 90,
+      "reached": 0.5
+    }
   ],
-  "history-pages": [{ "path": "/", "title": "Home", "visitors": 10 }],
+  "history-pages": [
+    {
+      "path": "/",
+      "title": "Home",
+      "visitors": 10
+    }
+  ],
   "referrers": [
-    { "kind": "referrer", "name": "", "target": "", "visitors": 4 },
-    { "kind": "referrer", "name": "google.com", "target": "", "visitors": 3 },
-    { "kind": "campaign", "name": "substack", "target": "", "visitors": 1 },
-    { "kind": "internal", "name": "/", "target": "/games", "visitors": 2 }
+    {
+      "kind": "referrer",
+      "name": "",
+      "target": "",
+      "visitors": 4
+    },
+    {
+      "kind": "referrer",
+      "name": "google.com",
+      "target": "",
+      "visitors": 3
+    },
+    {
+      "kind": "campaign",
+      "name": "substack",
+      "target": "",
+      "visitors": 1
+    },
+    {
+      "kind": "internal",
+      "name": "/",
+      "target": "/games",
+      "visitors": 2
+    }
   ],
-  "history-referrers": [{ "kind": "referrer", "name": "google.com", "target": "", "visitors": 7 }],
+  "history-referrers": [
+    {
+      "kind": "referrer",
+      "name": "google.com",
+      "target": "",
+      "visitors": 7
+    }
+  ],
   "events": [
-    { "name": "out-github", "visitors": 2 },
-    { "name": "read-a", "visitors": 1 },
-    { "name": "(home)", "visitors": 6 }
+    {
+      "name": "out-github",
+      "visitors": 2,
+      "clicks": 3
+    },
+    {
+      "name": "link-example.org",
+      "visitors": 1,
+      "clicks": 1
+    },
+    {
+      "name": "read-a",
+      "visitors": 1,
+      "clicks": 1
+    },
+    {
+      "name": "(home)",
+      "visitors": 6,
+      "clicks": 7
+    },
+    {
+      "name": "(outbound)",
+      "visitors": 2,
+      "clicks": 2
+    }
   ],
-  "history-events": [{ "name": "out-github", "visitors": 3 }, { "name": "(home)", "visitors": 4 }],
+  "history-events": [
+    {
+      "name": "out-github",
+      "visitors": 3
+    },
+    {
+      "name": "(home)",
+      "visitors": 4
+    }
+  ],
   "audience": [
-    { "dim": "countries", "name": "US", "visitors": 5 },
-    { "dim": "themes", "name": "dark", "visitors": 4 },
-    { "dim": "touch", "name": "pointer", "visitors": 6 }
+    {
+      "dim": "countries",
+      "name": "US",
+      "visitors": 5
+    },
+    {
+      "dim": "themes",
+      "name": "dark",
+      "visitors": 4
+    },
+    {
+      "dim": "touch",
+      "name": "pointer",
+      "visitors": 6
+    }
+  ],
+  "journeys": [
+    {
+      "started": "2026-10-15T00:03:10Z",
+      "source": {
+        "rk": "internal",
+        "rh": null,
+        "rp": "/research/x",
+        "campaign": null
+      },
+      "device": {
+        "bn": "Chrome",
+        "bv": "155",
+        "os": "macOS",
+        "vw": "1544",
+        "vh": "1256",
+        "tz": "America/New_York",
+        "th": "dark",
+        "tp": "false",
+        "lg": "en-US"
+      },
+      "steps": [
+        {
+          "stamp": "2026-10-15T00:03:10Z",
+          "path": "/games",
+          "title": "Games",
+          "nt": "navigate",
+          "secs": "20",
+          "depth": "60",
+          "reached": "false",
+          "lcp": "300.0",
+          "cls": "0.01",
+          "inp": null
+        }
+      ],
+      "last_click": {
+        "stamp": "2026-10-15T00:03:25Z",
+        "ev": "play-dayhike",
+        "u": "https://games.csarko.sh/dayhike"
+      }
+    },
+    {
+      "started": "2026-10-14T23:59:00Z",
+      "source": {
+        "rk": "direct",
+        "rh": null,
+        "rp": null,
+        "campaign": null
+      },
+      "device": {
+        "bn": "Chrome",
+        "bv": "148",
+        "os": "Windows",
+        "vw": "1024",
+        "vh": "768",
+        "tz": "UTC",
+        "th": "light",
+        "tp": "false",
+        "lg": "en-US"
+      },
+      "steps": [
+        {
+          "stamp": "2026-10-14T23:59:00Z",
+          "path": "/apps",
+          "title": "Apps",
+          "nt": "navigate",
+          "secs": null,
+          "depth": null,
+          "reached": "false",
+          "lcp": null,
+          "cls": null,
+          "inp": null
+        }
+      ],
+      "last_click": null
+    },
+    {
+      "started": "2026-10-14T23:50:00Z",
+      "source": {
+        "rk": "external",
+        "rh": "google.com",
+        "rp": null,
+        "campaign": "substack"
+      },
+      "device": {
+        "bn": "Chrome",
+        "bv": "155",
+        "os": "macOS",
+        "vw": "1544",
+        "vh": "1256",
+        "tz": "America/New_York",
+        "th": "dark",
+        "tp": "false",
+        "lg": "en-US"
+      },
+      "steps": [
+        {
+          "stamp": "2026-10-14T23:50:00Z",
+          "path": "/",
+          "title": "Home",
+          "nt": "navigate",
+          "secs": "30",
+          "depth": "100",
+          "reached": "false",
+          "lcp": "200.0",
+          "cls": "0.0",
+          "inp": null
+        },
+        {
+          "stamp": "2026-10-14T23:50:30Z",
+          "path": "/research/x",
+          "title": "X",
+          "nt": "navigate",
+          "secs": "600",
+          "depth": "100",
+          "reached": "true",
+          "lcp": "250.0",
+          "cls": "0.0",
+          "inp": "40.0"
+        }
+      ],
+      "last_click": null
+    }
   ]
 }

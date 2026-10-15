@@ -1,6 +1,9 @@
 /**
- * Which group a referrer belongs to: search, social, newsletter, code,
- * video, direct or other. Rows come from the visits SQL as `{ name, count }`:
+ * Which group a referrer belongs to: search, ai (assistants that cite the
+ * site), social, newsletter, code, video, direct, own (the site's own hosts:
+ * csarko.sh's subdomains and the Firebase preview channels, a visit that began
+ * on one of our pages rather than an outside one), spam (referrer spam seen
+ * in the rows, never a visitor) or other. Rows come from the visits SQL as `{ name, count }`:
  * a visit with no referrer has an empty name, and everything else is a host,
  * sometimes with a path, which is classified by its host alone. The history
  * rows (the years before the cutover) fold the Google country domains into one
@@ -9,7 +12,11 @@
  */
 
 const GROUPS = [
-  ["search", [/^(www\.)?google\./, /^(www\.)?bing\./, /^(www\.)?duckduckgo\./, /(^|\.)yahoo\./, /^(www\.)?ecosia\./, /^search\.brave\.com$/, /^(www\.)?brave\.com$/, /^(www\.)?startpage\.com$/, /^(www\.)?qwant\.com$/, /^yandex\./, /^(www\.)?baidu\.com$/]],
+  ["own", [/(^|\.)csarko\.sh$/, /--preview-[^.]*\.web\.app$/, /^csarko-sh\.web\.app$/]],
+  ["spam", [/(^|\.)wnnkd\.com$/, /(^|\.)webdig\.asia$/, /(^|\.)cindyblog\.online$/]],
+  // Before search: gemini.google.com is an assistant, not a search.
+  ["ai", [/^(www\.)?chatgpt\.com$/, /^chat\.openai\.com$/, /^(www\.)?perplexity\.ai$/, /^(www\.)?claude\.ai$/, /^gemini\.google\.com$/, /^copilot\.microsoft\.com$/, /^(www\.)?you\.com$/]],
+  ["search", [/^(www\.)?google\./, /^(www\.)?bing\./, /^(www\.)?duckduckgo\./, /(^|\.)yahoo\./, /^(www\.)?ecosia\./, /^search\.brave\.com$/, /^(www\.)?brave\.com$/, /^(www\.)?startpage\.com$/, /^(www\.)?qwant\.com$/, /^(www\.)?yandex(\.|$)/, /^(www\.)?baidu\.com$/]],
   ["social", [/(^|\.)linkedin\.com$/, /^lnkd\.in$/, /^t\.co$/, /(^|\.)twitter\.com$/, /^(www\.)?x\.com$/, /(^|\.)facebook\.com$/, /^(l\.|m\.)?facebook\.com$/, /^fb\.me$/, /(^|\.)instagram\.com$/, /^l\.instagram\.com$/, /(^|\.)bsky\.app$/, /(^|\.)threads\.net$/, /^(www\.|old\.|out\.)?reddit\.com$/, /^news\.ycombinator\.com$/, /(^|\.)mastodon\.(social|online|world)$/, /^(www\.)?(hachyderm\.io|fosstodon\.org|mstdn\.social|techhub\.social|infosec\.exchange)$/, /^(www\.)?lobste\.rs$/]],
   ["newsletter", [/(^|\.)substack\.com$/, /^substack\.com$/, /^mail\./, /(^|\.)outlook\.(com|live\.com|office\.com)$/, /^outlook\./, /(^|\.)gmail\.com$/, /^(www\.)?getpocket\.com$/, /^email\./]],
   ["code", [/(^|\.)github\.com$/, /^github\.io$/, /(^|\.)gitlab\.com$/, /(^|\.)npmjs\.com$/, /(^|\.)codeberg\.org$/, /(^|\.)sourcehut\.org$/]],
@@ -48,7 +55,7 @@ export function classifyReferrer(referrer, scheme = undefined) {
   return "other";
 }
 
-export const REFERRER_GROUPS = ["search", "social", "newsletter", "code", "video", "direct", "other"];
+export const REFERRER_GROUPS = ["search", "ai", "social", "newsletter", "code", "video", "direct", "own", "spam", "other"];
 
 /** Referrer rows grouped and summed, every group present even at zero so the bars keep their order. */
 export function groupReferrers(rows) {

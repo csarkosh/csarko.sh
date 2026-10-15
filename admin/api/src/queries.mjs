@@ -26,12 +26,14 @@ export const APP_NAME = "csarko.sh";
 export const TREND_WEEKS = 12;
 
 const EVENT_KINDS = ["out", "play", "watch", "read", "nav"];
-/** The kind of an event name from its prefix: `out-github` is an outbound click, `read-<slug>` a read to the end. */
+/** The kind of an event name from its prefix: `out-github` is an outbound click, `read-<slug>` a read to the end; `link-<host>` (an unnamed link out) is `out` too. */
 export function eventKindOf(name) {
   const prefix = String(name).split("-")[0];
+  if (prefix === "link") return "out";
   return EVENT_KINDS.includes(prefix) ? prefix : "other";
 }
-const outboundOf = (rows) => rows.filter((r) => eventKindOf(r.name) === "out").reduce((n, r) => n + r.visitors, 0);
+/** Outbound clicks, the count: every out-* and link-* row's clicks summed (the KPI and the snapshot's `outbound7`). */
+const outboundOf = (rows) => rows.filter((r) => eventKindOf(r.name) === "out").reduce((n, r) => n + (r.clicks ?? r.visitors), 0);
 
 export function isQueryName(name) {
   return QUERY_NAMES.includes(name);
@@ -108,12 +110,15 @@ export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, h
   }
 
   const queries = {
+    // `dayLabel` says which day the perDay rows are cut on (UTC: the collector's daily hash rolls
+    // then, so a day cannot be re-cut), and days=1 is the last 24 hours, not a calendar day.
     async visits(days) {
       const range = hourlyRange(days, now());
+      const head = { days, from: range.start, to: range.end, dayLabel: "utc", ...(days === 1 ? { label: "last 24 hours" } : {}) };
       const empty = requireVisits();
-      if (empty) return { days, from: range.start, to: range.end, current: null, previous: null, ...empty };
+      if (empty) return { ...head, current: null, previous: null, ...empty };
       const { current, previous } = await visits.visits(range);
-      return { days, from: range.start, to: range.end, current, previous };
+      return { ...head, current, previous };
     },
 
     async pages(days) {
@@ -135,11 +140,12 @@ export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, h
 
     async events(days) {
       const empty = requireVisits();
-      if (empty) return { rows: null, outboundRate: null, ...empty };
+      if (empty) return { rows: null, outboundVisitors: null, outboundRate: null, ...empty };
       const range = hourlyRange(days, now());
       const e = await visits.events(range);
-      const rows = e.rows.map((r) => ({ name: r.name, kind: eventKindOf(r.name), visitors: r.visitors }));
-      return { rows, outboundRate: e.homeVisitors > 0 ? outboundOf(rows) / e.homeVisitors : null };
+      const rows = e.rows.map((r) => ({ name: r.name, kind: eventKindOf(r.name), visitors: r.visitors, clicks: r.clicks }));
+      // Distinct visitors who clicked out at all over the home page's, so it cannot pass 100%.
+      return { rows, outboundVisitors: e.outboundVisitors, outboundRate: e.homeVisitors > 0 ? Math.min(1, e.outboundVisitors / e.homeVisitors) : null };
     },
 
     async journeys(days) {

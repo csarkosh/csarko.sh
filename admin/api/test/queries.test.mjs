@@ -12,12 +12,13 @@ const TODAY = "2026-10-12";
 function fakes({ visitsOn = true, gscOn = true, youtubeOn = false, githubToken = false, psiOn = false } = {}) {
   const perDay = [20, 25, 30, 28, 26, 27, 25].map((visits, i) => ({ day: `2026-10-0${6 + i}`, visits }));
   const eventRows = [
-    { name: "out-linkedin", visitors: 18 },
-    { name: "out-github", visitors: 12 },
-    { name: "play-dayhike", visitors: 9 },
-    { name: "read-stylized-shader-looks", visitors: 6 },
-    { name: "watch-who-is-standing-in-my-hallway", visitors: 4 },
-    { name: "signup", visitors: 1 },
+    { name: "out-linkedin", visitors: 18, clicks: 20 },
+    { name: "out-github", visitors: 12, clicks: 12 },
+    { name: "play-dayhike", visitors: 9, clicks: 11 },
+    { name: "read-stylized-shader-looks", visitors: 6, clicks: 6 },
+    { name: "watch-who-is-standing-in-my-hallway", visitors: 4, clicks: 4 },
+    { name: "link-example.org", visitors: 2, clicks: 2 },
+    { name: "signup", visitors: 1, clicks: 1 },
   ];
   const log = { error() {}, warn() {}, log() {} };
   return {
@@ -44,10 +45,10 @@ function fakes({ visitsOn = true, gscOn = true, youtubeOn = false, githubToken =
       },
       async events(range) {
         const prev = range.start < "2026-10-05";
-        return { rows: prev ? eventRows.map((r) => ({ ...r, visitors: Math.floor(r.visitors / 2) })) : eventRows, homeVisitors: 120 };
+        return { rows: prev ? eventRows.map((r) => ({ ...r, visitors: Math.floor(r.visitors / 2), clicks: Math.floor(r.clicks / 2) })) : eventRows, homeVisitors: 120, outboundVisitors: prev ? 12 : 24 };
       },
       async journeys() {
-        return [{ started: "2026-10-15T15:51:34Z", source: { kind: "external", host: "github.com" }, steps: [{ path: "/", title: "Home", at: 0, secs: 26, depth: 100, read: false }], exit: { kind: "left" }, engaged: 26 }];
+        return [{ started: "2026-10-15T15:51:34Z", source: { kind: "external", host: "github.com" }, device: { browser: "Chrome", version: "155", os: "macOS", viewport: [1544, 1256], tz: "America/New_York", theme: "dark", touch: false, lang: "en-US" }, steps: [{ path: "/", title: "Home", at: 0, left: 26, secs: 26, depth: 100, read: null, nav: "navigate", lcp: 216, cls: 0, inp: null }], exit: { kind: "left" }, engaged: 26, stitched: 0, suspect: false }];
       },
       async audience() {
         return {
@@ -130,12 +131,13 @@ test("kpis assembles the four cards from the sources and the trend from the snap
     ["visits", "Visits, 7 days", 181, 150, ""],
     ["search", "Search clicks, 28 days", 6, 4, ""],
     ["impressions", "Impressions, 28 days", 300, 90, ""],
-    ["outbound", "Outbound clicks, 7 days", 30, 15, ""],
+    ["outbound", "Outbound clicks, 7 days", 34, 17, ""],
   ]);
   for (const k of body.kpis) assert.equal(k.trend.length, 12);
   assert.deepEqual(body.kpis[0].trend.slice(-2), [150, 181]);
   assert.deepEqual(body.kpis[1].trend.slice(-2), [3, 6]);
   assert.deepEqual(body.kpis[3].trend.slice(-2), [12, 30]);
+  assert.equal(body.kpis[3].value, 34, "out-* and link-* clicks summed, not visitors");
   assert.deepEqual(body.kpis[0].trend.slice(0, 10), new Array(10).fill(0));
   assert.equal(body.health.status, "warning", "one sitemap URL is not indexed and a 404 path has 7 hits");
   assert.match(body.health.note, /1 of 3 pages not indexed/);
@@ -161,6 +163,9 @@ test("the visits queries have the contract's shapes", async () => {
   assert.equal(visits.previous.visits, 150);
   assert.equal(visits.current.pageviews, null);
   assert.equal(visits.current.perDay.length, 7);
+  assert.equal(visits.dayLabel, "utc");
+  assert.equal(visits.label, undefined, "only days=1 carries a label");
+  assert.equal((await q.visits(1)).label, "last 24 hours");
 
   const pages = await q.pages(7);
   assert.deepEqual(pages.rows.map((r) => [r.path, r.inSitemap]), [["/", true], ["/research/stylized-shader-looks", true], ["/games", true], ["/docs/old-slug", false], ["/wp-login.php", false]]);
@@ -168,14 +173,14 @@ test("the visits queries have the contract's shapes", async () => {
   assert.deepEqual([pages.rows[1].engagedMedian, pages.rows[1].reached], [120, 0.4], "engaged time and the share read pass through");
 
   const referrers = await q.referrers(7);
-  assert.equal(referrers.groups.length, 7);
+  assert.equal(referrers.groups.length, 10);
   assert.equal(referrers.campaigns[0].campaign, "substack");
   assert.deepEqual(referrers.paths, [{ from: "/", to: "/games", visitors: 12 }], "the site's own edges pass through");
 
   const events = await q.events(7);
-  assert.equal(events.rows[0].name, "out-linkedin");
-  assert.deepEqual(events.rows.map((r) => r.kind), ["out", "out", "play", "read", "watch", "other"]);
-  assert.equal(events.outboundRate, 0.25);
+  assert.deepEqual(events.rows[0], { name: "out-linkedin", kind: "out", visitors: 18, clicks: 20 });
+  assert.deepEqual(events.rows.map((r) => r.kind), ["out", "out", "play", "read", "watch", "out", "other"]);
+  assert.equal(events.outboundRate, 0.2, "distinct visitors who clicked out over home visitors");
 
   const journeys = await q.journeys(7);
   assert.equal(journeys.rows[0].source.host, "github.com", "journeys pass through");
@@ -189,14 +194,16 @@ test("a visits query without a dataset says which variable is missing", async ()
   const q = createQueries(fakes({ visitsOn: false }));
   const visits = await q.visits(30);
   assert.equal(visits.current, null);
+  assert.equal(visits.dayLabel, "utc");
   assert.deepEqual(visits.notConfigured, { visits: "VISITS_DATASET" });
   assert.deepEqual((await q.pages(7)).notConfigured, { visits: "VISITS_DATASET" });
 });
 
-test("eventKindOf reads the prefix and calls anything else other", () => {
+test("eventKindOf reads the prefix, counts an unnamed link out as out, and calls anything else other", () => {
   assert.equal(eventKindOf("out-github"), "out");
   assert.equal(eventKindOf("nav-film"), "nav");
-  assert.equal(eventKindOf("link-example.com"), "other");
+  assert.equal(eventKindOf("link-example.com"), "out");
+  assert.equal(eventKindOf("app-lib-visits"), "other");
 });
 
 test("search has the lag note, per-day rows for every day, totals, previous, tops, indexed and sitemap", async () => {
@@ -276,7 +283,7 @@ test("snapshot writes today's document with every counter and is idempotent for 
   assert.equal(doc.searchClicks28, 6);
   assert.equal(doc.impressions28, 300);
   assert.equal(doc.searchClicks7, 6);
-  assert.equal(doc.outbound7, 30);
+  assert.equal(doc.outbound7, 34);
   assert.deepEqual(doc.youtube, { subscribers: 40, views: 1200 });
   assert.deepEqual(doc.github, { "csarkosh/game-dayhike": { stars: 3, views14: 20, uniques14: 9, clones14: 2 } });
   assert.equal(doc.lighthousePerformance, 97);

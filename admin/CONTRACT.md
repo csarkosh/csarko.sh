@@ -30,8 +30,15 @@ Conventions, for every route:
   field (`visits.current.pageviews`, `visits.previous.pageviews`, `perDay[].pageviews`,
   `pages.rows[].pageviews`) is always `null` and the page never shows one. The fields stay
   in the shape so a future collector that has them does not change it. The pre-cutover
-  history (GoatCounter's unit: a browser once per page per session) is merged in by day,
-  path and name for ranges that reach back before `VISITS_HISTORY_UNTIL`.
+  history is merged in by day, path and name for ranges that reach back before
+  `VISITS_HISTORY_UNTIL`.
+- **Units differ across the cutover.** Rows before 2026-10-15T15:00Z are GoatCounter's
+  per-page-per-session counts (a browser once per page per session), the rows after it are
+  lib-visits' visits (one browser on one UTC day). A range that spans the cutover adds the
+  two, and the page should say so where it matters.
+- **Bots and checks are out of every live number.** A page load (one `id`) is a bot when any
+  of its beacons says so (Lighthouse's view says bot=false, its leave and vitals true), and
+  the deploy and depth checks never count.
 - `cache-control: no-store` on every answer; the API caches upstream calls for five
   minutes itself.
 - CORS allows `https://admin.csarko.sh` and `http://localhost:8788` (the preview) with
@@ -75,14 +82,18 @@ The sample files are `admin/public/sample/csarko.sh/<name>.json`, each for `days
 
 ```json
 {
-  "days": 7, "from": "2026-10-05T01:00:00Z", "to": "2026-10-12T01:00:00Z",
+  "days": 7, "from": "2026-10-05T01:00:00Z", "to": "2026-10-12T01:00:00Z", "dayLabel": "utc",
   "current": { "visits": 212, "pageviews": null, "perDay": [ { "day": "2026-10-05", "visits": 24, "pageviews": null } ] },
   "previous": { "visits": 180, "pageviews": null, "perDay": [ { "day": "2026-09-28", "visits": 20, "pageviews": null } ] }
 }
 ```
 
-`perDay` has one entry per day, oldest first, the same length in both ranges. `current`
-and `previous` are `null` with `notConfigured.visits = "VISITS_DATASET"`.
+`perDay` has one entry per day, oldest first, the same length in both ranges. `dayLabel` is
+always `"utc"`: the days are UTC days (the collector's daily visit hash rolls at UTC midnight,
+so a day cannot be re-cut to another zone), and the card should say so. With `days=1` the
+answer also carries `"label": "last 24 hours"`, since the range is the last 24 hours, not a
+calendar day; the other ranges carry no `label`. `current` and `previous` are `null` with
+`notConfigured.visits = "VISITS_DATASET"`.
 
 ### `pages`
 
@@ -90,49 +101,98 @@ and `previous` are `null` with `notConfigured.visits = "VISITS_DATASET"`.
 { "rows": [ { "path": "/research/stylized-shader-looks", "title": "Stylized shader looks", "visitors": 31, "pageviews": null, "inSitemap": true, "engagedMedian": 48, "reached": 0.62 } ] }
 ```
 
-Events are excluded. `inSitemap: false` marks a path that is not in `sitemap.xml`
-(a 404 candidate); `engagedMedian` is the median, in seconds, of each page load's last
-leave and `reached` (0 to 1) the share of loads whose leave reached the end of the page,
-both `null` when no load has a leave; `inSitemap: null` on every row means the sitemap could not be read
+Events are excluded. `visitors` is the distinct visits with a view of the path.
+`inSitemap: false` marks a path that is not in `sitemap.xml` (a 404 candidate).
+`engagedMedian` is the median, in seconds, over visits of each visit's longest engaged time
+on the path, among page loads that sent a leave (a load's time is the most its leaves
+reported, capped at 1800 s), `null` when no load did. `reached` (0 to 1) is the share of all
+the path's views whose load reached the end of the page (a view with no leave did not), and
+only on `/research/<slug>` pages, the ones with a read-end marker; `null` for every other
+path. `inSitemap: null` on every row means the sitemap could not be read
 (`notConfigured.sitemap`). `rows` is `null` with `notConfigured.visits`.
 
 ### `referrers`
 
 ```json
 {
-  "groups": [ { "group": "search", "visitors": 61 }, { "group": "social", "visitors": 44 }, { "group": "newsletter", "visitors": 21 }, { "group": "code", "visitors": 14 }, { "group": "video", "visitors": 9 }, { "group": "direct", "visitors": 58 }, { "group": "other", "visitors": 5 } ],
+  "groups": [ { "group": "search", "visitors": 61 }, { "group": "ai", "visitors": 3 }, { "group": "social", "visitors": 44 }, { "group": "newsletter", "visitors": 21 }, { "group": "code", "visitors": 14 }, { "group": "video", "visitors": 9 }, { "group": "direct", "visitors": 58 }, { "group": "own", "visitors": 2 }, { "group": "spam", "visitors": 1 }, { "group": "other", "visitors": 5 } ],
   "rows": [ { "referrer": "google.com", "group": "search", "visitors": 54 } ],
   "campaigns": [ { "campaign": "substack-rock-on-steep-terrain", "visitors": 12 } ],
   "paths": [ { "from": "/", "to": "/research", "visitors": 18 } ]
 }
 ```
 
-`groups` always lists all seven (search, social, newsletter, code, video, direct,
-other), zero included. `paths` are the site's own edges, the previous page to this one. All four are `null` with `notConfigured.visits`.
+`groups` always lists all ten, in this order and zero included: `search`, `ai` (assistants
+such as chatgpt.com, perplexity.ai, claude.ai, gemini.google.com), `social`, `newsletter`,
+`code`, `video`, `direct`, `own` (the site's own hosts: `*.csarko.sh` and the Firebase preview
+channels, so a visit that began on one of our pages rather than an outside one, as when the
+daily visit hash rolled at UTC midnight mid-visit), `spam` (known referrer spam, never a
+visitor) and `other`. Each visit counts once, by its first view's referrer; `campaigns` are
+the first view's too. `paths` are the site's own edges, the previous page to this one, every
+view counted. All four are `null` with `notConfigured.visits`.
 
 ### `events`
 
 ```json
-{ "rows": [ { "name": "out-linkedin", "kind": "out", "visitors": 14 } ], "outboundRate": 0.16 }
+{ "rows": [ { "name": "out-linkedin", "kind": "out", "visitors": 14, "clicks": 17 }, { "name": "link-example.org", "kind": "out", "visitors": 1, "clicks": 1 } ], "outboundVisitors": 19, "outboundRate": 0.16 }
 ```
 
-`kind` is the name's prefix: `out`, `play`, `watch`, `read`, `nav`, else `other`.
-`outboundRate` is outbound clicks over home-page visitors, `null` when nobody reached
-the home page in the range. `rows` is `null` with `notConfigured.visits`.
+`visitors` is the distinct visits that fired the event, `clicks` how many times it fired
+(for `read-<slug>`, the page loads that reached the end; the history's one count stands for
+both). `kind` is the name's prefix: `out`, `play`, `watch`, `read`, `nav`, else `other`;
+`link-<host>` (a click on a link to another host that the page did not name, the host
+without `www.`) is kind `out`. `outboundVisitors` is the distinct visitors who clicked any `out-*` or `link-*` event; `outboundRate` is the distinct visitors who clicked any
+`out-*` or `link-*` over the home page's visitors, so it never passes 1; `null` when nobody
+reached the home page in the range. `rows` is `null` with `notConfigured.visits`.
 
 ### `journeys`
 
-The 25 most recent visits in the range, newest first, each as its journey. From lib-visits'
-rows only (GoatCounter's history holds no visit's sequence), so nothing before the cutover.
-`source.kind` is `direct`, `external` (with `host`) or `internal`; `campaign` when the first view
-carried one. Each step's `at` is seconds from the visit's first view; `secs`, `depth` (0 to 100)
-and `read` come from that page's leave beacon, `null`/`false` when none arrived. A page loaded
-twice within two seconds is one step. `exit` is the last outbound click when it came on or after
-the last view, else `{ "kind": "left" }`; `engaged` sums the steps' `secs` (null with none).
+The 50 most recent visits in the range (fewer once stitched), newest first, each as its
+journey. From lib-visits' rows only (GoatCounter's history holds no visit's sequence), so
+nothing before the cutover. A page's leave, vitals and clicks belong to the view with the same
+page-load id, whatever visit they name themselves.
+
+```
+{ started, source: { kind: 'direct'|'external'|'internal', host?, path?, campaign? },
+  device: { browser, version, os, viewport: [w, h], tz, theme, touch, lang },
+  steps: [{ path, title, at, left, secs, depth, read, nav, lcp, cls, inp }],
+  exit: { kind: 'click', event, url, host } | { kind: 'left' },
+  engaged, stitched, suspect }
+```
+
+- `source` is the first view's referrer: `host` with `external`, `path` (the site's own page it
+  came from) with `internal`, `campaign` when the view carried one.
+- `device` is the first view's: `browser` and `version` (a string) and `os` as the collector
+  names them, `viewport` as `[width, height]` in CSS pixels (each `null` when unknown), `tz`
+  the IANA zone, `theme` `dark` or `light`, `touch` a boolean, `lang` the browser's language.
+- `steps` are the views in order. `at` is seconds from the first view; `left` is when the
+  visitor left that page, in the same seconds: the next step's `at`, else the exit click's
+  time, else `at + secs` when the page sent a leave, else `null`. `secs` and `depth` (0 to
+  100) come from the page's leave beacon (`null` when none arrived). `read` is whether the
+  reader reached the end, only on `/research/<slug>` pages (the ones with a read-end marker)
+  and `null` elsewhere. `nav` is the navigation type (`navigate`, `reload`, `back_forward`) or
+  `null`. `lcp`, `cls`, `inp` come from the page's vitals beacon, `null` when none or when the
+  metric was not measured (INP needs an interaction). A page loaded again within two seconds,
+  or reloaded, is the same step with the larger `secs` and `depth`.
+- `exit` is the last outbound click (`event` the link's event name or `null`, `url`, `host`
+  without `www.`) when it came on or after the last view, else `{ "kind": "left" }`.
+- `engaged` sums the steps' known `secs`, `null` with none.
+- `stitched` counts the later visits joined onto this one: the daily visit hash rolls at UTC
+  midnight, so a visit under way then arrives as two, and the second (from one of our own
+  pages, the one the first ended on, on the same device, within 30 minutes of when the first
+  left it) is appended to the first with its `at`/`left` moved by the real gap; the first
+  then carries the second's exit and the sum of both engaged times. 0 for most.
+- `suspect` is `true` for a visit that looks like automation: a UTC clock, no leave and no
+  vitals from any page.
 
 ```json
-{ "rows": [ { "started": "2026-10-15T14:05:12Z", "source": { "kind": "external", "host": "google.com" }, "steps": [ { "path": "/", "title": "Cyrus Sarkosh", "at": 0, "secs": 41, "depth": 70, "read": false } ], "exit": { "kind": "click", "event": "out-github", "url": "https://github.com/csarkosh", "host": "github.com" }, "engaged": 41 } ] }
+{ "rows": [ { "started": "2026-10-15T14:05:12Z", "source": { "kind": "external", "host": "google.com" }, "device": { "browser": "Chrome", "version": "155", "os": "macOS", "viewport": [1544, 1256], "tz": "America/New_York", "theme": "dark", "touch": false, "lang": "en-US" }, "steps": [ { "path": "/", "title": "Cyrus Sarkosh", "at": 0, "left": 41, "secs": 41, "depth": 70, "read": null, "nav": "navigate", "lcp": 216, "cls": 0, "inp": null } ], "exit": { "kind": "click", "event": "out-github", "url": "https://github.com/csarkosh", "host": "github.com" }, "engaged": 41, "stitched": 0, "suspect": false } ] }
 ```
+
+A visit's steps are capped at 40. Stitching only sees the visits returned (the range's 50
+newest), so a visit whose first half falls before the range, or past the 50, shows as an
+unstitched journey from "This site". `suspect` is a UTC clock with no engaged second on any
+page, the mark of a headless browser.
 
 ### `audience`
 
