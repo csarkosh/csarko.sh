@@ -1,6 +1,6 @@
 # csarko.sh on lib-visits: the wiring and the cutover
 
-*2026-10-15. Approved in conversation; this is the written form. The library itself is
+*2026-10-15, amended 2026-10-15 after the survey (history dataset, roles, budget, the export's shape). Approved in conversation; this is the written form. The library itself is
 specified in `~/Projects/lib-visits/docs/superpowers/specs/2026-10-15-lib-visits-design.md`;
 this document is only what csarko.sh does with it.*
 
@@ -31,11 +31,14 @@ A new Terraform module `_infra/modules/gcp-visits`, called from `_infra/main.tf`
   resource.labels.service_name="csarko-visits" AND jsonPayload.v=1`, an exclusion keeping
   the rows and the successful request entries out of `_Default`, and a linked BigQuery
   dataset `csarko_visits`.
-- **The reader:** `csarko-admin`'s service account gets `roles/bigquery.jobUser` on the
-  project and `roles/bigquery.dataViewer` on the dataset, as the game grants its admin
-  routes.
-- **The budget** alert the game has is folded into the existing `gcp_admin_api` one by
-  adding Cloud Logging to its filter, not duplicated.
+- **The reader:** `csarko-admin`'s service account gets `roles/bigquery.jobUser` and
+  `roles/logging.viewAccessor` on the project and `roles/bigquery.dataViewer` on the
+  linked dataset, as the game grants its admin routes.
+- **The history dataset:** a Log Analytics linked dataset is read-only, so GoatCounter's
+  history lives in an ordinary dataset `csarko_history` (location `US`) with one table,
+  `goatcounter_history`, that the module also creates; the reader gets `dataViewer` on it.
+- **The budget:** the existing `google_billing_budget.project` has no `services` filter
+  (it covers the whole project), so Cloud Logging is already inside it; nothing changes.
 
 **Deploy:** `visits/deploy.sh` runs `gcloud run deploy csarko-visits --source
 ~/Projects/lib-visits --region us-west1 --project csarko-sh` after checking that checkout
@@ -94,10 +97,16 @@ dashboard line in "Where to look" becomes the admin dashboard.
 
 `admin/api`:
 - adds `@google-cloud/bigquery` and a `collectors/visits.mjs` that runs saved SQL files
-  from `admin/api/queries/*.sql` with `@days` as a parameter, the pattern of the game's
-  `adminQueries.ts`; the GoatCounter collector, its client and its tests are deleted;
-- the five queries, over `csarko_visits._AllLogs` unioned with `goatcounter_history`
-  (section 6), bots filtered out:
+  from `admin/api/queries/*.sql` with `@start`, `@end`, `@prev_start` and `@prev_end`
+  string parameters (the `hourlyRange` stamps, cast with `TIMESTAMP()` in the SQL), one
+  job per query, cached five minutes by name and window; the GoatCounter collector, its
+  client and its tests are deleted; the `notConfigured` hint key becomes `visits` with env
+  `VISITS_DATASET`;
+- the history table is in another dataset and location, so each query runs its live SQL
+  over `csarko_visits._AllLogs` and, when the window reaches before the cutover date, a
+  second SQL over `csarko_history.goatcounter_history`, and merges the rows in code
+  (per-day visits summed, page and referrer rows summed by key);
+- the five queries, bots filtered out:
   - **visits**: visits a day (`COUNT(DISTINCT s.visit)` over `view` rows) and the range's
     total, with the previous range for the delta;
   - **pages**: visits a path; plus, new, median engaged seconds and the share that reached
@@ -105,7 +114,9 @@ dashboard line in "Where to look" becomes the admin dashboard.
   - **referrers**: external referrer hosts and campaigns; plus, new, the top internal
     paths (`rk = "internal"` grouped by `rp` → `p`), the journey's edges;
   - **events**: `click` rows by `ev` with the kind by prefix as today, plus outbound `u`
-    hosts; the outbound rate over home-page visits as today;
+    hosts; `read-<slug>` rows synthesised from `leave` rows with `re` true on
+    `/research/<slug>`, so the "Read to the end" tile and the `read` series keep their
+    names; the outbound rate over home-page visits as today;
   - **audience**: countries, screen sizes, browsers, systems, languages as today; plus,
     new, theme (dark or light), viewport buckets, touch, timezones;
 - the KPI card's visits figure comes from the same source;
@@ -120,12 +131,15 @@ field-vitals line on the Health card is a follow-up once a week of `vitals` rows
 
 One deploy, with the history backfilled first:
 
-1. **Export** GoatCounter (Settings → Export, the per-pageview CSV).
-2. **Backfill:** `visits/backfill.mjs` maps each CSV row to the wire shape (`view` with
-   `p`, `t`, `r`, `sw`; `s.at`, `s.visit` from the export's session column, `s.bn`,
-   `s.os`, `s.cc`, `s.rk`/`s.rh`; `bot` false) and loads them into a plain BigQuery table
-   `csarko_visits.goatcounter_history` with the same column shape the queries read. One
-   run, kept in the repo for the record.
+1. **Export** GoatCounter (Settings → Export). GoatCounter stores aggregates, not
+   pageviews, so the export is either its JSON format (paths, hourly hit counts per path
+   and referrer, per-day browser/system/location/size/language counts) or the older
+   per-hit CSV; both carry the hourly path-and-referrer counts the trends need.
+2. **Backfill:** `visits/backfill.mjs` reads either format and writes JSON lines of
+   `{ hour, path, title, event, ref, visits }` (per-hit CSV rows reduced to hourly
+   counts), loaded with `bq load` into `csarko_history.goatcounter_history`. Audience
+   history is not backfilled: the Audience card is a window over the chosen range and the
+   gap closes on its own after 90 days. One run, kept in the repo for the record.
 3. **Deploy**, in order: `terraform apply` (the service, the bucket, the dataset, the
    grants), the secret's value, `visits/deploy.sh`, the proxy-depth check, then
    `generate-assets.sh` and `deploy.sh` for the site (which also ships `firebase.json`'s
