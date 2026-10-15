@@ -170,8 +170,8 @@ him, in this order:
 `?utm_source=substack&utm_medium=email&utm_campaign=<post-slug>`, where `<post-slug>` is
 the title lowercased with each run of non-letters turned into one hyphen. The title
 isn't written yet at this point, so tag the outline's links with a working slug and retag
-them once his title is final. GoatCounter shows these visits under the referrer
-`substack`.
+them once his title is final. The visits log records the tag with the page's query,
+so the campaign can be told apart there.
 
 **Site rules** to tell him about, from `AGENTS.md`'s Content rules: no em-dashes, no email
 address or phone number, no metrics or customer names from his DoorDash work, nothing
@@ -247,7 +247,7 @@ he keeps on purpose stays a miss on the card, marked as his call.
 | Plain prose: no headers, at most two bold phrases | reads on a phone | lint |
 | One closing question, one a reader can answer | comments are what the feed rewards | lint (present), review (answerable, not rhetorical) |
 | One button at the end | one call to action | lint |
-| Every csarko.sh link tagged | GoatCounter can only count what's tagged | lint |
+| Every csarko.sh link tagged | the visits log can only tell apart what's tagged | lint |
 | Two Notes, 120 to 300 characters, no URL or domain | a link in a Note halves its reach | lint (length, links), review (two, one naming the post) |
 
 Publishing as email and web, restacking and the next day's Note are timing, so they stay

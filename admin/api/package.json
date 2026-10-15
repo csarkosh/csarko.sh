@@ -2,7 +2,7 @@
   "name": "csarko-admin-api",
   "version": "1.0.0",
   "private": true,
-  "description": "The csarko.sh admin API: proxies GoatCounter, Search Console, YouTube, GitHub and a few public endpoints for admin.csarko.sh, and keeps a daily snapshot in Firestore.",
+  "description": "The csarko.sh admin API: proxies the lib-visits data in BigQuery, Search Console, YouTube, GitHub and a few public endpoints for admin.csarko.sh, and keeps a daily snapshot in Firestore.",
   "type": "module",
   "engines": {
     "node": ">=22.9"

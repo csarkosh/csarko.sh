@@ -1,9 +1,11 @@
 /**
  * Which group a referrer belongs to: search, social, newsletter, code,
- * video, direct or other. GoatCounter already folds the Google country
- * domains into one "Google" row (`ref_scheme: "g"`), and reports a visit
- * with no referrer as an empty name; everything else is a host, sometimes
- * with a path, which is classified by its host alone.
+ * video, direct or other. Rows come from the visits SQL as `{ name, count }`:
+ * a visit with no referrer has an empty name, and everything else is a host,
+ * sometimes with a path, which is classified by its host alone. The history
+ * rows (the years before the cutover) fold the Google country domains into one
+ * "Google" row, which is why the `ref_scheme` parameter stays; the live SQL
+ * never sends it.
  */
 
 const GROUPS = [
@@ -14,7 +16,7 @@ const GROUPS = [
   ["video", [/(^|\.)youtube\.com$/, /^youtu\.be$/, /(^|\.)vimeo\.com$/]],
 ];
 
-/** The host of a referrer as GoatCounter shows it: `https://www.a.com/x` and `www.a.com/x` both give `www.a.com`. */
+/** The host of a referrer as the visits SQL names it: `https://www.a.com/x` and `www.a.com/x` both give `www.a.com`. */
 export function hostOf(referrer) {
   const text = String(referrer ?? "").trim().toLowerCase();
   if (text === "") return "";
@@ -23,8 +25,8 @@ export function hostOf(referrer) {
 }
 
 /**
- * @param referrer the GoatCounter row's `name`
- * @param scheme the row's `ref_scheme`: `g` is a generated group such as "Google", `c` a campaign
+ * @param referrer the row's `name`
+ * @param scheme the row's `ref_scheme`, kept for compatibility: `g` is a generated group such as "Google", `c` a campaign; the visits SQL never sends it
  */
 export function classifyReferrer(referrer, scheme = undefined) {
   const text = String(referrer ?? "").trim();
@@ -39,7 +41,7 @@ export function classifyReferrer(referrer, scheme = undefined) {
   for (const [group, patterns] of GROUPS) {
     if (patterns.some((p) => p.test(host))) return group;
   }
-  // GoatCounter's generated names are words, not hosts ("Hacker News", "Google").
+  // The history's generated names are words, not hosts ("Hacker News", "Google").
   const lower = text.toLowerCase();
   if (/^google$|^bing$|^duckduckgo$|^yahoo/.test(lower)) return "search";
   if (/^hacker news$|^reddit$|^twitter$|^linkedin$|^facebook$/.test(lower)) return "social";

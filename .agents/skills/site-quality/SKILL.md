@@ -10,8 +10,8 @@ description: >-
   whenever the user asks about SEO, Google, speed, Lighthouse, Core Web Vitals,
   security headers, accessibility, link previews, favicons, the 404 page, the
   mobile menu, analytics, or adding any script or third-party service; and when
-  they ask how the site is doing, route visitor/traffic questions to GoatCounter
-  (csarko.goatcounter.com) and Google search/indexing questions to Search
+  they ask how the site is doing, route visitor/traffic questions to the admin dashboard
+  (admin.csarko.sh, lib-visits) and Google search/indexing questions to Search
   Console (see AGENTS.md "Where to look") — and
   apply its checklist on EVERY change to public/, even when the user didn't
   mention quality. The preview and deploy skills run its checks automatically.
@@ -58,7 +58,7 @@ Same inputs, same outputs (two builds produce identical hashes).
 | `public/assets/portrait-{240,360,480,720}.<hash>.{avif,webp,jpg}` | `assets/portrait-source.jpg` | Responsive LCP image. Desktop 2x loads a ~15 KB AVIF instead of a 100 KB JPEG. |
 | `public/assets/<font>.<hash>.woff2` | `assets/fonts/*.woff2` | Inter + JetBrains Mono variable, latin subset. License: `public/licenses/fonts-OFL.txt`. |
 | `public/portrait.jpg` | same | Stable URL for JSON-LD `Person.image`. |
-| `public/assets/goatcounter-count.<hash>.js`, `public/assets/engage.<hash>.js` | `assets/vendor/goatcounter-count.js` (unmodified), `assets/engage.js` (comment lines stripped) | The analytics scripts, only while `site.json` has a `code`. count.js goes on every page, engage.js on doc pages only; see "Analytics (in place)". |
+| `public/assets/visits.<hash>.js`, `public/assets/vitals.<hash>.js` | `assets/vendor/visits.min.js`, `assets/vendor/vitals.min.js` (unmodified, provenance line stripped before hashing) | The lib-visits client, only while `site.json` has a `provider`. Both go on every page; see "Analytics (in place)". |
 | `<!-- generated:head -->`, `/* generated:fonts */`, `<!-- generated:portrait -->` blocks in `public/*.html` | the above | `index.html` gets relative paths (the file:// preview works); `404.html` gets root-relative paths (it's served at any depth). |
 | `favicon.{ico,svg}`, `favicon-96x96.png`, `apple-touch-icon.png` | `assets/favicon.svg` | Real files, so Google Search shows them. |
 | `og-image.jpg` (1200×630) | `assets/og-image.html` | Link-preview card. |
@@ -158,20 +158,22 @@ section means renaming it in `PAGE_LINKS`/`DOCS_NAV` and nowhere else.
 
 ## Analytics (in place)
 
-GoatCounter, configured only in `site.json` (`analytics.code`). The generator
-writes the async `<script data-goatcounter>` tag into every page, the hashed
-self-hosted `count.js`, and the CSP; `check.py` derives its allowlist from the
-same file and verifies all three agree. Source script:
-`assets/vendor/goatcounter-count.js` (unmodified, ISC; 9.4 KB raw, 3 KB
-transferred).
+[lib-visits](https://github.com/csarkosh/lib-visits) (tag `v0.1.0`), configured only
+in `site.json` (`analytics.provider` is `visits`, `endpoint` is `/v`). The generator
+writes the two `<script>` tags into every page, the hashed self-hosted
+`visits.min.js` and `vitals.min.js`, and the CSP (`script-src 'self'`,
+`connect-src 'self'`: no third-party origin); `check.py` derives its allowlist from
+the same file and verifies all three agree. The scripts are vendored unmodified under
+`assets/vendor/`, each with a provenance line (tag, licence, sha256) that
+`strip_comments` drops before hashing. `AGENTS.md` -> "Analytics: how lib-visits is
+wired in" has the vendoring command, the same-origin `/v` rewrite and where the rows
+go (BigQuery `csarko_visits`, plus `csarko_history` for the GoatCounter years).
 
 **Events** *(added 2026-10-12 for the admin dashboard; spec
 `docs/superpowers/specs/2026-10-12-admin-dashboard-design.md`, Part 1.2)*.
-GoatCounter stores an event as a path flagged `event`, so the same
-`stats/hits` call returns them. Every name is a stable identifier that
-outlives a change of label or URL; never rename one without a reason the
-dashboard can absorb. Click events are `data-goatcounter-click` attributes,
-which `count.js` binds on load:
+Every name is a stable identifier that outlives a change of label or URL; never
+rename one without a reason the dashboard can absorb. Click events are
+`data-visits-event` attributes, which `visits.min.js` binds on load:
 
 | Event | On |
 |---|---|
@@ -179,27 +181,14 @@ which `count.js` binds on load:
 | `nav-film`, `nav-games`, `nav-research` | the page links of every nav: the home page's by hand, the generated pages' from `PAGE_LINKS` in `docs_lib.mjs`; the link to the page you are on carries none, since a reload is not a navigation |
 | `play-<slug>` | a game card's "Play in your browser" (`gameList`) |
 | `watch-<slug>` | a film card's "Watch on YouTube" (`filmCard`) |
-| `read-<slug>` | a doc page, once, when its end scrolls into view (below) |
+| `read-<slug>` | derived, not sent: a doc page whose reader's last leave reached the end (`leave.re`) |
 
-`read-<slug>` is the one event with a script: `assets/engage.js` (ours, not
-vendored). `docs_lib.mjs` marks one element per doc `data-read-end`, the
-Sources heading when the doc has one (a reader who finished the prose has read
-the doc, and a long reference list would otherwise hide them) and otherwise
-the "Written by" box; the script watches it with an IntersectionObserver and
-calls `goatcounter.count({ path: 'read-<slug>', event: true })` once, waiting
-for `load` if `count.js` (async) has not run yet. It is a no-op without
-`window.goatcounter` (blocked), without IntersectionObserver, and on localhost
-and `file://`, where `count.js` drops the beacon. `build_assets.py` writes it
-to `public/assets/engage.<hash>.js` with its whole-line `//` comments stripped
-(`strip_comments`; 549 B), and emits
-`<script defer src="/assets/engage.<hash>.js" data-slug="<slug>">` after
-`count.js` inside the `generated:analytics` block of doc pages only. The
-budget is now 9,922 B of 10,000 on a doc page, 9,373 B elsewhere. `check.py`
-(`analytics_checks`) fails a doc page without the tag, any other page with
-it, a tag that is not `defer`, a hash that is not the stripped source, a
-`data-slug` that is not the page's, a page with no or more than one
-`data-read-end`, and any `<script src>` that is not `count.js` or
-`engage.js`.
+`read-<slug>` needs no script of ours any more (`engage.js` is gone):
+`docs_lib.mjs` still marks one element per doc `data-read-end`, the Sources
+heading when the doc has one and otherwise the "Written by" box, and lib-visits
+reports whether a leave reached it. `check.py` (`analytics_checks`) fails a page
+without both tags, a tag that is not `defer`, a hash that is not the vendored
+file's, and any `<script src>` that is not one of the two.
 
 ## Adding a script or third-party service
 
@@ -210,7 +199,7 @@ This is the change most likely to regress everything above. In order:
    freely), a vendor's under `assets/vendor/` unmodified with a provenance
    comment. `build_assets.py` hashes it into `public/assets/` with
    `write_hashed` and writes the tag into the `generated:analytics` block
-   (`engage.js` is the pattern, including how a tag reaches only some pages).
+   (the vendored `visits.min.js` is the pattern).
    Never a hand-written tag in `public/`. If the vendor's host is required,
    load it `async`/`defer`, never render-blocking.
 2. Add the vendor's origins to `THIRD_PARTY` in `check.py` (`script-src`, plus
@@ -218,9 +207,9 @@ This is the change most likely to regress everything above. In order:
    in `firebase.json`. No inline `<script>` unless its hash is in `script-src`.
 3. Teach `check.py` about it: `analytics_checks` fails any `<script src>` it
    does not know, so a new script needs its own hash check and page rule
-   there, next to `engage.js`'s.
-4. Stay within `BUDGET_SCRIPTS` (10,000 B). `count.js` and `engage.js` already
-   take 9,922 B of it on a doc page, so anything new displaces something or
+   there, next to the lib-visits scripts'.
+4. Stay within `BUDGET_SCRIPTS` (10,000 B). The lib-visits scripts already
+   take about 4,063 B of it on a doc page, so anything new displaces something or
    comes with a deliberate budget change, agreed with Cyrus.
 5. Run `check.py`, deploy, then `check.py --live --lighthouse --observatory`.
    Performance must stay ≥ 95 and Observatory A+.
@@ -254,7 +243,7 @@ Content rules in `AGENTS.md` still win (no email/phone, no metrics in Experience
 
 **Use it for:** search queries, impressions, clicks, average position, indexing
 and coverage, sitemap status, removals, and structured-data reports. For visitor
-counts and referrers use GoatCounter instead. `AGENTS.md` → "Where to look" has
+counts and referrers use the admin dashboard (lib-visits) instead. `AGENTS.md` → "Where to look" has
 the URLs, the routing table, and the property's current state (pending items
 with dates).
 

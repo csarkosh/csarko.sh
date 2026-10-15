@@ -1,7 +1,7 @@
 /**
  * The public site's sitemap, which is the list of pages that exist: a path
- * GoatCounter saw that is not in it is a 404 somebody actually hit (the 404
- * page has no canonical, so GoatCounter records the path asked for), and the
+ * the visits log has that is not in it is a 404 somebody actually hit (the 404
+ * page has no canonical, so the log records the path asked for), and the
  * `indexed n of m` card counts against it. Fetched once an hour.
  */
 
@@ -32,7 +32,7 @@ function decodeEntities(text) {
   return text.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'");
 }
 
-/** The paths of the sitemap's URLs, so GoatCounter's paths can be checked against them: `/`, `/research/<slug>`. */
+/** The paths of the sitemap's URLs, so the visits log's paths can be checked against them: `/`, `/research/<slug>`. */
 export function pathsOf(urls) {
   const paths = new Set();
   for (const u of urls) {
@@ -46,7 +46,7 @@ export function pathsOf(urls) {
   return paths;
 }
 
-/** A GoatCounter path with its query string and trailing slash dropped, the way the sitemap spells it. */
+/** A visits-log path with its query string and trailing slash dropped, the way the sitemap spells it. */
 export function normalizePath(path) {
   const bare = String(path).split(/[?#]/)[0].replace(/\/+$/, "");
   return bare === "" ? "/" : bare;

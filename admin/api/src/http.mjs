@@ -91,7 +91,7 @@ export const DAYS = new Set([1, 7, 30, 90]);
 /**
  * The `days` query parameter: absent means 7, anything but the four ranges
  * the page offers is a 400 (null here), since a free-form range would let
- * one URL make GoatCounter and Search Console do arbitrary work.
+ * one URL make BigQuery and Search Console do arbitrary work.
  */
 export function parseDays(raw) {
   if (raw === null || raw === undefined || raw === "") return 7;

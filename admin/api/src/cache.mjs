@@ -4,8 +4,8 @@
  *
  * The entry holds the promise, not the value, so two cards asking for the
  * same thing at once share one request instead of two: that is what keeps
- * GoatCounter under its 4 requests a second and Search Console's URL
- * inspection under its daily quota. A failure is evicted at once, so an
+ * BigQuery's per-job overhead (about a second each) paid once and Search
+ * Console's URL inspection under its daily quota. A failure is evicted at once, so an
  * outage is retried on the next request rather than remembered for the TTL.
  */
 

@@ -15,7 +15,7 @@ Conventions, for every route:
   and answers 401 otherwise. The shell then shows its gate again with
   "<email> is not on the list." See "Auth: what `/auth.js` exports" below.
 - **Times** are ISO 8601 UTC strings (`2026-10-12T13:05:00Z`). A `day` is `YYYY-MM-DD`.
-  `visits.from`/`to` are UTC hour stamps because GoatCounter ranges are hourly.
+  `visits.from`/`to` are UTC hour stamps because the ranges are hourly.
 - **Numbers are numbers**, never strings. A value the source does not have is `null`,
   never 0 (0 is a measurement).
 - **Not configured.** A part whose credential is missing is `null`, and the answer carries
@@ -26,10 +26,12 @@ Conventions, for every route:
   `errors: { "<part>": "<message>" }` when the rest of the answer is worth showing; the
   page shows each as the card's error line. A single-source query that fails answers a
   500 `{ "error": "..." }`, which the page shows as the card's error line too.
-- **Pageviews are not available.** GoatCounter counts visits only, so every `pageviews`
+- **Pageviews are not available.** lib-visits counts a visit as one browser on one day (a stateless daily hash), so every `pageviews`
   field (`visits.current.pageviews`, `visits.previous.pageviews`, `perDay[].pageviews`,
   `pages.rows[].pageviews`) is always `null` and the page never shows one. The fields stay
-  in the shape so a future collector that has them does not change it.
+  in the shape so a future collector that has them does not change it. The pre-cutover
+  history (GoatCounter's unit: a browser once per page per session) is merged in by day,
+  path and name for ranges that reach back before `VISITS_HISTORY_UNTIL`.
 - `cache-control: no-store` on every answer; the API caches upstream calls for five
   minutes itself.
 - CORS allows `https://admin.csarko.sh` and `http://localhost:8788` (the preview) with
@@ -80,17 +82,19 @@ The sample files are `admin/public/sample/csarko.sh/<name>.json`, each for `days
 ```
 
 `perDay` has one entry per day, oldest first, the same length in both ranges. `current`
-and `previous` are `null` with `notConfigured.goatcounter = "GOATCOUNTER_TOKEN"`.
+and `previous` are `null` with `notConfigured.visits = "VISITS_DATASET"`.
 
 ### `pages`
 
 ```json
-{ "rows": [ { "path": "/research/stylized-shader-looks", "title": "Stylized shader looks", "visitors": 31, "pageviews": null, "inSitemap": true } ] }
+{ "rows": [ { "path": "/research/stylized-shader-looks", "title": "Stylized shader looks", "visitors": 31, "pageviews": null, "inSitemap": true, "engagedMedian": 48, "reached": 0.62 } ] }
 ```
 
 Events are excluded. `inSitemap: false` marks a path that is not in `sitemap.xml`
-(a 404 candidate); `inSitemap: null` on every row means the sitemap could not be read
-(`notConfigured.sitemap`). `rows` is `null` with `notConfigured.goatcounter`.
+(a 404 candidate); `engagedMedian` is the median, in seconds, of each page load's last
+leave and `reached` (0 to 1) the share of loads whose leave reached the end of the page,
+both `null` when no load has a leave; `inSitemap: null` on every row means the sitemap could not be read
+(`notConfigured.sitemap`). `rows` is `null` with `notConfigured.visits`.
 
 ### `referrers`
 
@@ -98,12 +102,13 @@ Events are excluded. `inSitemap: false` marks a path that is not in `sitemap.xml
 {
   "groups": [ { "group": "search", "visitors": 61 }, { "group": "social", "visitors": 44 }, { "group": "newsletter", "visitors": 21 }, { "group": "code", "visitors": 14 }, { "group": "video", "visitors": 9 }, { "group": "direct", "visitors": 58 }, { "group": "other", "visitors": 5 } ],
   "rows": [ { "referrer": "google.com", "group": "search", "visitors": 54 } ],
-  "campaigns": [ { "campaign": "substack-rock-on-steep-terrain", "visitors": 12 } ]
+  "campaigns": [ { "campaign": "substack-rock-on-steep-terrain", "visitors": 12 } ],
+  "paths": [ { "from": "/", "to": "/research", "visitors": 18 } ]
 }
 ```
 
 `groups` always lists all seven (search, social, newsletter, code, video, direct,
-other), zero included. All three are `null` with `notConfigured.goatcounter`.
+other), zero included. `paths` are the site's own edges, the previous page to this one. All four are `null` with `notConfigured.visits`.
 
 ### `events`
 
@@ -113,16 +118,16 @@ other), zero included. All three are `null` with `notConfigured.goatcounter`.
 
 `kind` is the name's prefix: `out`, `play`, `watch`, `read`, `nav`, else `other`.
 `outboundRate` is outbound clicks over home-page visitors, `null` when nobody reached
-the home page in the range. `rows` is `null` with `notConfigured.goatcounter`.
+the home page in the range. `rows` is `null` with `notConfigured.visits`.
 
 ### `audience`
 
 ```json
-{ "countries": [ { "name": "United States", "visitors": 121 } ], "sizes": [], "browsers": [], "systems": [], "languages": [] }
+{ "countries": [ { "name": "United States", "visitors": 121 } ], "sizes": [], "browsers": [], "systems": [], "languages": [], "themes": [], "viewports": [], "touch": [], "timezones": [] }
 ```
 
-Five lists of `{ name, visitors }`, most visited first. Each is `null` with
-`notConfigured.goatcounter`.
+Nine lists of `{ name, visitors }`, most visited first. `themes` is the visitor's colour scheme, `viewports` is bucketed as `under 400`, `400 to 799`, `800 to 1199` and `1200 and up`, `touch` is `touch` or `pointer`, and `timezones` are IANA names. Each is `null` with
+`notConfigured.visits`.
 
 ### `search`
 
@@ -185,7 +190,7 @@ fetched the feed.
 `null` when the check could not run (`up` is then `false` or `null`).
 `lighthousePerformance`/`lighthouseAt` are `null` with `notConfigured.lighthouse =
 "PSI_KEY"` or before the first snapshot; `lastDeployAt` with `notConfigured.hosting`;
-`notFound` with `notConfigured.goatcounter` or `.sitemap`; `indexed` with
+`notFound` with `notConfigured.visits` or `.sitemap`; `indexed` with
 `notConfigured.indexed`; `sitemapFetchedAt` with `notConfigured.sitemapState`.
 `overall` is always present (an unknown check does not degrade the status; the note
 says what is unknown).

@@ -24,7 +24,7 @@ AGENTS.md          working context and rules for agents; CLAUDE.md points to it
 
 [admin.csarko.sh](https://admin.csarko.sh) is one private page per app, behind a Google sign-in with an allowlist, with the look and the quality bar of the site itself. An index card per app shows its KPIs against the period before, twelve weeks of trend and a health reading; each app's own page goes deeper. For the site that is visits, referrers, pages, outbound clicks, search queries and impressions, reach (YouTube, every public GitHub repo, Hacker News, Substack), health (uptime, certificate, Lighthouse, pages indexed, 404s) and audience; for [Day Hike](https://games.csarko.sh/dayhike) it is the game's own telemetry.
 
-- **No cookies, no vendor on the page:** GoatCounter (self-hosted script) counts visits; Search Console, YouTube, GitHub and PageSpeed Insights are read server-side by a Cloud Run service that scales to zero.
+- **No cookies, no vendor on the page:** lib-visits (two self-hosted scripts and a same-origin collector) counts visits; Search Console, YouTube, GitHub and PageSpeed Insights are read server-side by a Cloud Run service that scales to zero.
 - **$0 a month:** every source is a free API, the daily snapshot of every KPI is a few KB a day in Firestore, and Cloud Scheduler writes it.
 - **Scales by contract:** an app is one entry in `admin/public/apps.json` and two routes on its API (`admin/CONTRACT.md`); the Day Hike page is built in its own repo and pulled in at deploy.
 - **Fast to read:** every card is a skeleton the moment the page opens and fills on its own; the slow sources (URL inspection, Lighthouse) run once a day in the snapshot, never on a page load.
@@ -61,7 +61,7 @@ Lighthouse 100 across SEO, accessibility and best practices, performance ≥ 95,
 - **Findable:** canonical URLs, schema.org `Person` data on the home page and `TechArticle` + breadcrumbs on every doc, a 1200×630 link-preview card, real favicons, `robots.txt` and a generated sitemap.
 - **Locked down:** a strict Content-Security-Policy and the full set of security headers.
 - **Accessible:** skip link, WCAG AA contrast in both the dark and light themes (the page follows your system setting), and a layout checked from 320px to 1440px.
-- **Private analytics:** [GoatCounter](https://www.goatcounter.com), with its script self-hosted and no cookies, so no consent banner and no third-party code on the page.
+- **Private analytics:** lib-visits (my own, private), with its scripts self-hosted, a same-origin collector and no cookies, so no consent banner and no third-party code on the page.
 
 `.agents/skills/site-quality/scripts/check.py` verifies all of it. Preview runs it, deploy won't publish without it, and `generate-assets.sh` rebuilds every generated asset deterministically.
 

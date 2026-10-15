@@ -1,6 +1,6 @@
 /**
- * Dates, all in UTC: the snapshot's document id is a UTC date, GoatCounter
- * and Search Console both report in UTC, and a dashboard that mixed zones
+ * Dates, all in UTC: the snapshot's document id is a UTC date, the visits
+ * SQL and Search Console both work in UTC, and a dashboard that mixed zones
  * would show a day's numbers under two different labels.
  */
 
@@ -15,7 +15,7 @@ export function addDays(date, days) {
   return isoDate(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS);
 }
 
-/** The instant rounded down to the hour, as GoatCounter wants its bounds: 2026-10-12T15:00:00Z. */
+/** The instant rounded down to the hour, as the visits SQL takes its bounds: 2026-10-12T15:00:00Z. */
 export function hourStamp(ms) {
   const d = new Date(ms);
   d.setUTCMinutes(0, 0, 0);
@@ -23,7 +23,7 @@ export function hourStamp(ms) {
 }
 
 /**
- * A GoatCounter range of `days` ending at the current hour (the hour under
+ * An hourly range of `days` ending at the current hour (the hour under
  * way is included: `end` is the next boundary), and the equal range before
  * it, so every card can show "versus the previous period".
  */

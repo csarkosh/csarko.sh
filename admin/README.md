@@ -101,7 +101,7 @@ before calling a visual change done.
 - **Not configured.** A part the API answers `null` for, with a `notConfigured` hint,
   reads "Not configured (ENV NAME)" in `--faint`; a KPI tile shows a dash. An `errors`
   entry becomes the card's error line. See `CONTRACT.md`.
-- **No pageviews.** GoatCounter counts visits only; nothing on the page shows a
+- **No pageviews.** lib-visits counts visits (one browser on one day), not pageviews; nothing on the page shows a
   pageview or a pages-per-visit figure.
 - **Charts.** Columns per day with the previous range ghosted behind, horizontal bars for
   groups and events (the funnel on an ordinal ramp mixed from the accent, validated with

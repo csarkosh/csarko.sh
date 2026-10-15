@@ -230,7 +230,7 @@ export function renderMarkdown(body, file, { ieee = false } = {}) {
   const references = findReferences(tokens, file, ieee, problems);
   const rail = [];
   const usedIds = new Set(['top']); // "top" is the skip link's target; never reused
-  // engage.js counts a "read-<slug>" event when the element marked data-read-end scrolls into view.
+  // lib-visits derives a "read-<slug>" event when a leave reached the element marked data-read-end.
   // With a Sources section that is its heading: a reader who finished the prose has read the doc,
   // and a long reference list would otherwise hide them. Without one, docPage marks its author box.
   let hasSources = false;
@@ -922,7 +922,7 @@ function gameList(games, pad) {
   const items = games.map((game) => {
     // The title is not a link: "Play in your browser" says where it goes, which a repeated title
     // never does, and it is stretched over the card, as on the old home page Projects card. The
-    // click counts as "play-<slug>" in GoatCounter: a visitor who went on to play.
+    // click counts as "play-<slug>" in the visits log: a visitor who went on to play.
     const play = game.play
       ? `${pad}    <a class="card-link stretch" href="${escapeHtml(game.play)}" target="_blank" rel="noopener" data-visits-event="play-${game.slug}">Play in your browser ${EXTERNAL_ARROW}</a>\n`
       : '';
