@@ -772,11 +772,13 @@ const FILTER_CSS = `
 
 // Only /apps carries the preview card's rules (every page carries DOCS_CSS, and the longest doc
 // sits close to its HTML budget). The card lays out as a film's: the image beside the text, and on
-// a phone the kicker and title first, then the image, then the rest.
+// a phone the kicker and title first, then the image, then the rest. A portrait preview
+// (build_assets.py marks its <picture>) keeps a 240px frame at every width.
 const APPS_CSS = `
     .app-card { flex-direction: row; align-items: flex-start; gap: 24px; }
     .app-preview { flex: none; width: 360px; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); line-height: 0; }
     .app-preview img { width: 100%; height: auto; display: block; }
+    .app-card:has(.portrait) .app-preview { width: 240px; }
     .app-body { display: flex; flex-direction: column; min-width: 0; }
     @media (max-width: 640px) {
       .app-card { flex-direction: column; gap: 0; }
