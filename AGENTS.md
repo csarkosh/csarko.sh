@@ -376,7 +376,7 @@ dropped because its host went down and took the numbers with it.)*
 - `localhost` and `file://` previews are never counted. The 404 page counts too (the
   path shows the broken link). **Cyrus's own visits are never counted either** *(2026-10-15)*:
   his home addresses are the collector's `--ignore-ips`, set as `visits_ignore_ips` in the
-  git-ignored `_infra/terraform.tfvars` (the repo is public; the addresses go nowhere else),
+  git-ignored `_infra/terraform.tfvars` (the repo is public; beyond that file they reach only the Cloud Run revision's args and the Terraform state, both private to the project, and the list is sensitive, so a plan shows the service's args redacted),
   and the collector answers their beacons without writing them. When his address changes,
   update the list there and `terraform apply`. Lighthouse runs (`check.py --lighthouse`) name
   themselves in their user agent, so the collector flags them as bots.
