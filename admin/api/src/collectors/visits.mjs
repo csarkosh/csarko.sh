@@ -44,9 +44,9 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
     async visits(range) {
       const live = await run("visits", win(range));
       const rows = wantsHistory(range) ? [...live, ...(await run("history-visits", win(range)))] : live;
-      const shape = (window) => {
+      const shape = (w) => {
         const byDay = new Map();
-        for (const r of rows) if (r.window === window) byDay.set(r.day, (byDay.get(r.day) ?? 0) + Number(r.visits));
+        for (const r of rows) if (r.win === w) byDay.set(r.day, (byDay.get(r.day) ?? 0) + Number(r.visits));
         const perDay = [...byDay.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([day, visits]) => ({ day, visits, pageviews: null }));
         return { visits: perDay.reduce((n, d) => n + d.visits, 0), pageviews: null, perDay };
       };

@@ -4,7 +4,7 @@
 WITH views AS (
   SELECT
     DATE(timestamp) AS day,
-    IF(timestamp >= TIMESTAMP(@start), 'current', 'previous') AS window,
+    IF(timestamp >= TIMESTAMP(@start), 'current', 'previous') AS win,
     COALESCE(JSON_VALUE(json_payload.s.visit), JSON_VALUE(json_payload.id)) AS visit
   FROM `csarko-sh.csarko_visits._AllLogs`
   WHERE timestamp >= TIMESTAMP(@prev_start) AND timestamp < TIMESTAMP(@end)
@@ -12,7 +12,7 @@ WITH views AS (
     AND IFNULL(JSON_VALUE(json_payload.s.bot), 'false') != 'true'
     AND JSON_VALUE(json_payload.p) NOT IN ('/deploy-check', '/depth-check')
 )
-SELECT window, day, COUNT(DISTINCT visit) AS visits
+SELECT win, day, COUNT(DISTINCT visit) AS visits
 FROM views
-GROUP BY window, day
+GROUP BY win, day
 ORDER BY day
