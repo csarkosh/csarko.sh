@@ -131,16 +131,18 @@ module "gcp_auth" {
 module "gcp_admin_api" {
   source = "./modules/gcp-admin-api"
 
-  project_id       = var.gcp_project_id
-  region           = var.gcp_region
-  site_url         = "https://${var.domain_name}"
-  sitemap_url      = "https://${var.domain_name}/sitemap.xml"
-  hosting_site_id  = module.gcp_hosting.site_id
-  goatcounter_site = var.goatcounter_site
-  gsc_property     = "sc-domain:${var.domain_name}"
-  youtube_handle   = var.youtube_handle
-  github_owner     = var.github_owner
-  admin_emails     = var.admin_emails
+  project_id             = var.gcp_project_id
+  region                 = var.gcp_region
+  site_url               = "https://${var.domain_name}"
+  sitemap_url            = "https://${var.domain_name}/sitemap.xml"
+  hosting_site_id        = module.gcp_hosting.site_id
+  visits_dataset         = local.visits_dataset
+  visits_history_dataset = local.visits_history_dataset
+  visits_history_until   = var.visits_history_until
+  gsc_property           = "sc-domain:${var.domain_name}"
+  youtube_handle         = var.youtube_handle
+  github_owner           = var.github_owner
+  admin_emails           = var.admin_emails
   allowed_origins = [
     "https://${var.admin_domain_name}",
     # The local preview of admin/public, served by its preview script.
@@ -156,12 +158,22 @@ module "gcp_admin_api" {
   }
 }
 
+# The two datasets' names are set here and passed to both modules: the admin API
+# reads them, and gcp_visits waits on the whole admin module (its APIs), so the
+# admin module cannot take them from gcp_visits' outputs without a cycle.
+locals {
+  visits_dataset         = "csarko_visits"
+  visits_history_dataset = "csarko_history"
+}
+
 module "gcp_visits" {
   source = "./modules/gcp-visits"
 
   project_id                   = var.gcp_project_id
   region                       = var.gcp_region
   origins                      = ["https://${var.domain_name}"]
+  dataset                      = local.visits_dataset
+  history_dataset              = local.visits_history_dataset
   reader_service_account_email = module.gcp_admin_api.service_account_email
 
   providers = {

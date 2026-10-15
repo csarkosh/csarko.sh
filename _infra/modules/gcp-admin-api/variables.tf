@@ -29,8 +29,18 @@ variable "hosting_site_id" {
   type        = string
 }
 
-variable "goatcounter_site" {
-  description = "GoatCounter site code (the <code>.goatcounter.com host)."
+variable "visits_dataset" {
+  description = "BigQuery dataset linked to the csarko-visits log bucket (the collector's rows)."
+  type        = string
+}
+
+variable "visits_history_dataset" {
+  description = "BigQuery dataset holding goatcounter_history, GoatCounter's backfilled hourly counts."
+  type        = string
+}
+
+variable "visits_history_until" {
+  description = "The cutover instant, RFC 3339 on a whole UTC hour (e.g. 2026-10-15T18:00:00Z): history answers before it, the collector's rows from it on."
   type        = string
 }
 
@@ -62,11 +72,10 @@ variable "secret_ids" {
   EOT
   type        = map(string)
   default = {
-    goatcounter-token = "GOATCOUNTER_TOKEN"
-    gsc-sa-key        = "GSC_SA_KEY"
-    youtube-key       = "YOUTUBE_KEY"
-    github-token      = "GITHUB_TOKEN"
-    psi-key           = "PSI_KEY"
+    gsc-sa-key   = "GSC_SA_KEY"
+    youtube-key  = "YOUTUBE_KEY"
+    github-token = "GITHUB_TOKEN"
+    psi-key      = "PSI_KEY"
   }
 }
 

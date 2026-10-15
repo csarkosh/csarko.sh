@@ -24,6 +24,16 @@ variable "retention_days" {
   default     = 730
 }
 
+variable "dataset" {
+  description = "The BigQuery dataset linked to the log bucket, where the rows are read."
+  type        = string
+}
+
+variable "history_dataset" {
+  description = "The BigQuery dataset for analytics history from before lib-visits."
+  type        = string
+}
+
 variable "reader_service_account_email" {
   description = "The admin API's service account, which reads the datasets."
   type        = string

@@ -64,10 +64,16 @@ variable "admin_hosting_site_id" {
   default     = "csarko-sh-admin"
 }
 
-variable "goatcounter_site" {
-  description = "GoatCounter site code; the same value as `code` in .agents/skills/site-quality/site.json."
+variable "visits_history_until" {
+  description = <<-EOT
+    Where the admin dashboard stops reading GoatCounter's backfilled history and
+    starts reading lib-visits: the next whole UTC hour after the site deploy that
+    switched the scripts, RFC 3339 (e.g. "2026-10-15T18:00:00Z"). Ceiling to the
+    hour keeps GoatCounter's last partial hour. No default, so no apply can run
+    before it is set, and setting it comes after the GoatCounter export (an apply
+    destroys the goatcounter-token secret the export reads).
+  EOT
   type        = string
-  default     = "csarko"
 }
 
 variable "youtube_handle" {

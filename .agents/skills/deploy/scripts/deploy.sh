@@ -11,7 +11,8 @@
 #
 # Exit status is non-zero if a guard fails (privacy, config, site quality), the deploy
 # fails, the site's own web.app URL does not serve the exact home page, research index and
-# newest doc that were just deployed, or the live checks fail afterwards.
+# newest doc that were just deployed, https://csarko.sh/v does not take a test beacon,
+# or the live checks fail afterwards.
 
 set -euo pipefail
 
@@ -106,6 +107,13 @@ verify() { # verify <base url>: every page in VERIFY serves its local file
 echo
 verify "$DEFAULT_URL" || die "the deploy did not land on $DEFAULT_URL"
 verify "$SITE_URL" || echo "  (the custom domain may still be propagating or its certificate may still be issuing — check \`terraform -chdir=_infra output hosting_custom_domain_state\`)"
+
+# The beacon route: one test event through the Hosting rewrite to csarko-visits
+# must be taken. Live queries exclude /deploy-check. Skipped when analytics is off.
+if grep -q '"provider": *"visits"' .agents/skills/site-quality/site.json; then
+  code="$(curl -s -m 20 -o /dev/null -w '%{http_code}' -H "Origin: $SITE_URL" -H 'Content-Type: text/plain' -d '{"v":1,"n":"view","id":"deploy-check","p":"/deploy-check"}' "$SITE_URL/v")" || code=000
+  [[ "$code" == "204" ]] && echo "✓ $SITE_URL/v takes a beacon (204)" || die "$SITE_URL/v answered $code: is the rewrite deployed and csarko-visits up?"
+fi
 
 echo
 .agents/skills/site-quality/scripts/check.py --live "$SITE_URL" || die "the deploy landed, but live checks failed — see above"

@@ -11,9 +11,12 @@ dns_zone_name = "csarko.sh"
 # are easy to find.
 # admin_domain_name     = "admin.csarko.sh"
 # admin_hosting_site_id = "csarko-sh-admin"
-# goatcounter_site      = "csarko"
 # youtube_handle        = "csarkosh"
 # github_owner          = "csarkosh"
+
+# Required: the cutover instant, the next whole UTC hour after the site deploy
+# that switched to lib-visits (variables.tf says why it has no default).
+# visits_history_until = "2026-10-15T18:00:00Z"
 
 # Optional: a monthly budget alert for the whole project. Empty creates none.
 # billing_account_id = "XXXXXX-XXXXXX-XXXXXX"

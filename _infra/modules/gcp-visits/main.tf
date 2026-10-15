@@ -103,8 +103,15 @@ resource "google_cloud_run_v2_service" "visits" {
   }
 
   lifecycle {
+    # visits/deploy.sh owns the image and, through `gcloud run deploy
+    # --source`, stamps `build_config`, `client` and `client_version`;
+    # `scaling` is the service-level block the API reports with zeroed fields
+    # (template.scaling holds the instance counts). Same reasons as the admin
+    # API's service.
     ignore_changes = [
       template[0].containers[0].image,
+      build_config,
+      scaling,
       client,
       client_version,
     ]
@@ -160,7 +167,7 @@ resource "google_logging_project_exclusion" "visits_duplicates" {
 resource "google_logging_linked_dataset" "visits" {
   parent      = "projects/${var.project_id}"
   location    = "global"
-  link_id     = "csarko_visits"
+  link_id     = var.dataset
   bucket      = google_logging_project_bucket_config.visits.id
   description = "csarko.sh visits, as a dataset."
 }
@@ -169,7 +176,7 @@ resource "google_logging_linked_dataset" "visits" {
 # into a plain dataset beside it. One table, hourly counts per path and referrer.
 resource "google_bigquery_dataset" "history" {
   project     = var.project_id
-  dataset_id  = "csarko_history"
+  dataset_id  = var.history_dataset
   location    = "US"
   description = "Analytics history from before lib-visits: GoatCounter's hourly counts."
   depends_on  = [google_project_service.apis]

@@ -1,13 +1,13 @@
 # The admin API: the Cloud Run service behind https://admin.csarko.sh that
-# collects the site's numbers (GoatCounter, Search Console, YouTube, GitHub,
+# collects the site's numbers (lib-visits in BigQuery, Search Console, YouTube, GitHub,
 # Hacker News, PageSpeed Insights, Hosting) for the dashboard, the secrets it
 # reads them with, the Firestore database it keeps its daily snapshots in, and
 # the Cloud Scheduler job that takes them. Design: docs/superpowers/specs/
 # 2026-10-12-admin-dashboard-design.md, Part 2 (approved 2026-10-12).
 #
 # Everything here sits inside the free tiers at one reader: Cloud Run's two
-# million requests a month, Secret Manager's six active versions (exactly the
-# six secrets below), Firestore's free (default) database, and three Scheduler
+# million requests a month, Secret Manager's six active versions (the four
+# secrets below and gcp-visits' one), Firestore's free (default) database, and three Scheduler
 # jobs. The budget at the end is the alarm if that ever stops being true.
 
 terraform {
@@ -54,7 +54,7 @@ resource "google_project_service" "apis" {
 
 # Its own identity rather than the default compute service account, which
 # carries project-wide editor. Three permissions, all read or write of its own
-# data: the Firestore snapshots, the six secrets (each granted on the secret
+# data: the Firestore snapshots, the four secrets (each granted on the secret
 # itself, below, not project-wide), and the public site's Hosting releases for
 # the "last deploy" check.
 resource "google_service_account" "admin" {
@@ -237,7 +237,7 @@ resource "google_cloud_run_v2_service" "admin" {
       # redeploy. Cloud Run refuses a revision whose secret has no version,
       # so on the very first apply the versions are added between the
       # secrets' creation and the service's: a targeted apply of the secrets,
-      # the five `gcloud secrets versions add` commands, then the full apply
+      # the four `gcloud secrets versions add` commands, then the full apply
       # (AGENTS.md, "Infrastructure").
       dynamic "env" {
         for_each = var.secret_ids
@@ -252,9 +252,20 @@ resource "google_cloud_run_v2_service" "admin" {
         }
       }
 
+      # The visits rows (the collector's linked dataset), GoatCounter's
+      # backfilled hours, and the instant the dashboard switches from the
+      # second to the first.
       env {
-        name  = "GOATCOUNTER_SITE"
-        value = var.goatcounter_site
+        name  = "VISITS_DATASET"
+        value = var.visits_dataset
+      }
+      env {
+        name  = "VISITS_HISTORY_DATASET"
+        value = var.visits_history_dataset
+      }
+      env {
+        name  = "VISITS_HISTORY_UNTIL"
+        value = var.visits_history_until
       }
 
       env {
@@ -333,9 +344,12 @@ resource "google_cloud_run_v2_service" "admin" {
     # tool last deployed, which is gcloud, deliberately. `deletion_protection`
     # is turned on by `gcloud run deploy` and off here; left to Terraform the
     # two would flip it on every apply and deploy, so the live value wins.
+    # `build_config` is the build ID and source upload that `--source`
+    # stamps on the service at every deploy.
     # The sibling repo (game-dayhike) found each of these the hard way.
     ignore_changes = [
       template[0].containers[0].image,
+      build_config,
       scaling,
       client,
       client_version,
@@ -378,8 +392,8 @@ resource "google_project_service_identity" "scheduler" {
   depends_on = [google_project_service.apis["cloudscheduler.googleapis.com"]]
 }
 
-# 06:00 New York, every day: after midnight Pacific, when GoatCounter's and
-# Search Console's previous day are complete, and before Cyrus looks.
+# 06:00 New York, every day: after midnight Pacific, when Search Console's
+# previous day is complete, and before Cyrus looks.
 resource "google_cloud_scheduler_job" "snapshot" {
   project     = var.project_id
   region      = var.region
