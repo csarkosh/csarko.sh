@@ -37,18 +37,13 @@ SITE = "https://csarko.sh"
 CANONICAL = SITE + "/"
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
-# Third-party origins the pages may use, per CSP directive. Derived from
-# site.json, the same config build_assets.py uses to write the page's analytics
-# tag and the CSP, so the three can't drift. Scripts are always self-hosted.
+# Third-party origins the pages may use, per CSP directive. None: lib-visits' beacon
+# goes to this site's own /v, and every script is self-hosted. ANALYTICS mirrors
+# build_assets.py's analytics(): {"endpoint": "/v"}, or None when analytics is off.
 CONFIG = json.loads((SKILL / "site.json").read_text())
 _analytics = CONFIG.get("analytics") or {}
-ANALYTICS_ORIGIN = (f"https://{_analytics['code']}.goatcounter.com"
-                    if _analytics.get("provider") == "goatcounter" and _analytics.get("code") else None)
-THIRD_PARTY = {
-    "script-src": [],
-    "connect-src": [ANALYTICS_ORIGIN] if ANALYTICS_ORIGIN else [],
-    "img-src": [ANALYTICS_ORIGIN] if ANALYTICS_ORIGIN else [],  # GoatCounter's image-beacon fallback
-}
+ANALYTICS = {"endpoint": _analytics.get("endpoint", "/v")} if _analytics.get("provider") == "visits" else None
+THIRD_PARTY = {"script-src": [], "connect-src": [], "img-src": []}
 
 # Performance budgets (bytes).
 BUDGET_HTML = 50_000
@@ -953,47 +948,40 @@ def strip_comments(js: bytes) -> bytes:
 
 
 def analytics_checks(pages):
+    """Every page carries the two lib-visits tags, with the vendored files' hashes, and nothing else."""
     print("analytics")
-    vendored = SKILL / "assets/vendor/goatcounter-count.js"
-    want_counter = f"goatcounter-count.{hashlib.sha256(vendored.read_bytes()).hexdigest()[:8]}.js"
-    want_engage = f"engage.{hashlib.sha256(strip_comments((SKILL / 'assets/engage.js').read_bytes())).hexdigest()[:8]}.js"
+    if not ANALYTICS:
+        for name, (page, html) in pages.items():
+            check("data-visits" not in html, f"{name}: analytics is off but a visits tag is present")
+        return
+
+    def want(stem):
+        data = strip_comments((SKILL / f"assets/vendor/{stem}.min.js").read_bytes())
+        return f"{stem}.{hashlib.sha256(data).hexdigest()[:8]}.js"
+    want_core, want_vitals = want("visits"), want("vitals")
     for name, (page, html) in pages.items():
-        tags = [a for a, _ in page.scripts if "data-goatcounter" in a]
-        # engage.js counts "read-<slug>" when a doc's end scrolls into view: doc pages only.
-        engage = [a for a, _ in page.scripts if re.search(r"assets/engage\.[0-9a-f]{8}\.js$", a.get("src", ""))]
-        if not ANALYTICS_ORIGIN:
-            check(not tags and not engage, f"{name}: no analytics tag (analytics is off in site.json)")
-            continue
-        if len(tags) != 1:
-            fail(f"{name}: expected one GoatCounter <script>, found {len(tags)} — run generate-assets.sh")
-            continue
-        t = tags[0]
-        src = t.get("src", "")
-        check(t.get("data-goatcounter") == f"{ANALYTICS_ORIGIN}/count", f"{name}: counts to {t.get('data-goatcounter')}")
-        check("async" in t or "defer" in t, f"{name}: analytics script is async")
-        check(local_path(src) is not None and re.search(r"assets/goatcounter-count\.[0-9a-f]{8}\.js$", src),
-              f"{name}: count.js is self-hosted and content-hashed ({src})")
-        check(src.endswith(want_counter), f"{name}: count.js matches the vendored copy")
+        scripts = [a for a, _ in page.scripts]
+        core = [a for a in scripts if "data-visits" in a]
+        check(len(core) == 1, f"{name}: one visits tag expected, found {len(core)}; run generate-assets.sh")
+        if core:
+            c = core[0]
+            check(c.get("data-visits") == ANALYTICS["endpoint"], f"{name}: the visits tag's endpoint is {c.get('data-visits')}, not {ANALYTICS['endpoint']}")
+            check(local_path(c.get("src", "")) is not None and c.get("src", "").endswith(f"assets/{want_core}"),
+                  f"{name}: the visits tag's file is not the vendored one ({want_core}): stale build")
+            check("defer" in c, f"{name}: the visits tag is not deferred")
+        vitals = [a for a in scripts if a.get("src", "").endswith(f"assets/{want_vitals}")]
+        check(len(vitals) == 1, f"{name}: one vitals tag expected ({want_vitals}), found {len(vitals)}; stale build?")
+        if vitals:
+            check("defer" in vitals[0], f"{name}: the vitals tag is not deferred")
+        others = [a.get("src") or "(inline)" for a in scripts if a not in core and a not in vitals]
+        check(not others, f"{name}: scripts besides the two visits tags: {others}")
         if page_kind(name) == "doc":
-            if len(engage) != 1:
-                fail(f"{name}: expected one engage.js <script> on a doc page, found {len(engage)}; run generate-assets.sh")
-                continue
-            e = engage[0]
-            check("defer" in e, f"{name}: engage.js is deferred")
-            check(e.get("src", "").endswith(want_engage), f"{name}: engage.js matches assets/engage.js without its comments")
-            check(e.get("data-slug") == Path(name).stem, f"{name}: engage.js is told this doc's slug ({e.get('data-slug')})")
-            scripts = [a for a, _ in page.scripts]
-            check(scripts.index(t) < scripts.index(e), f"{name}: engage.js comes after count.js")
-            check(html.count(" data-read-end") == 1, f"{name}: marks one end of the doc with data-read-end")
-        else:
-            check(not engage, f"{name}: no engage.js (it belongs on doc pages only)")
-        strays = [a["src"] for a, _ in page.scripts if a.get("src") and a is not t and a not in engage]
-        check(not strays, f"{name}: no scripts besides count.js and engage.js {strays or ''}")
+            check(html.count(" data-read-end") == 1, f"{name}: one data-read-end marker expected")
     _, catch_all = csp_from_config()
     csp = parse_csp(catch_all.get("Content-Security-Policy"))
-    if ANALYTICS_ORIGIN:
-        check("'self'" in csp.get("script-src", []) and len(csp.get("script-src", [])) == 1,
-              "CSP script-src is exactly 'self' (no third-party or inline scripts)")
+    check(csp.get("script-src") == ["'self'"], "CSP script-src is not exactly 'self'")
+    check(csp.get("connect-src") == ["'self'"], "CSP connect-src is not exactly 'self'")
+    check(csp.get("img-src") == ["'self'"], "CSP img-src is not exactly 'self'")
 
 
 # ---- admin.csarko.sh: a csarko.sh page in everything but indexing (AGENTS.md "Admin pages")
