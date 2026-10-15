@@ -6,9 +6,9 @@
 # 2026-10-12-admin-dashboard-design.md, Part 2 (approved 2026-10-12).
 #
 # Everything here sits inside the free tiers at one reader: Cloud Run's two
-# million requests a month, Secret Manager's six active versions (the four
-# secrets below and gcp-visits' one), Firestore's free (default) database, and three Scheduler
-# jobs. The budget at the end is the alarm if that ever stops being true.
+# million requests a month, five of Secret Manager's six free active versions
+# (the four secrets below and gcp-visits' one), Firestore's free (default)
+# database, and three Scheduler jobs. The budget at the end is the alarm if that ever stops being true.
 
 terraform {
   required_providers {

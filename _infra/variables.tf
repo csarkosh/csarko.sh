@@ -74,6 +74,13 @@ variable "visits_history_until" {
     destroys the goatcounter-token secret the export reads).
   EOT
   type        = string
+
+  # A malformed instant would parse to NaN in the admin API and drop the history
+  # from every chart without an error.
+  validation {
+    condition     = can(regex("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:00:00Z$", var.visits_history_until))
+    error_message = "visits_history_until must be a whole UTC hour in RFC 3339, e.g. 2026-10-15T18:00:00Z."
+  }
 }
 
 variable "youtube_handle" {

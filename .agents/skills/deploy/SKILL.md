@@ -40,8 +40,8 @@ refuse a stale `public/`.
    local files.
    The web.app check must pass; the custom-domain check is reported but only
    warns, since CDN propagation can lag a few seconds.
-   Then it posts one test beacon (`p: /deploy-check`) to `https://csarko.sh/v` and
-   refuses anything but `204`: the Hosting rewrite to `csarko-visits` is live and the
+   Then it posts a test beacon (`p: /deploy-check`) to the site's `/v`, up to three
+   tries, and refuses anything but `204`: the Hosting rewrite to `csarko-visits` is live and the
    collector takes events. Skipped when `site.json`'s analytics provider is not
    `visits`; live queries exclude the path.
 5. **Checks the live site** (`check.py --live`): security headers match
