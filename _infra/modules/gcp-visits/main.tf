@@ -46,15 +46,19 @@ resource "google_secret_manager_secret_iam_member" "visits_reads" {
 }
 
 resource "google_cloud_run_v2_service" "visits" {
-  project             = var.project_id
-  location            = var.region
-  name                = "csarko-visits"
+  project  = var.project_id
+  location = var.region
+  name     = "csarko-visits"
+  # Reachable at its run.app URL as well as through the Hosting rewrite (a rewrite needs
+  # "all" ingress). A direct caller can forge X-Forwarded-For at the depth the service
+  # trusts; that shapes only the daily visit hash and the courtesy rate limit, never a
+  # row's content, so it is accepted rather than fronted with a load balancer.
   ingress             = "INGRESS_TRAFFIC_ALL"
   deletion_protection = false
 
   template {
-    service_account = google_service_account.visits.email
-    timeout         = "10s"
+    service_account                  = google_service_account.visits.email
+    timeout                          = "10s"
     max_instance_request_concurrency = 200
     scaling {
       min_instance_count = 0

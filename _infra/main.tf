@@ -168,6 +168,9 @@ module "gcp_visits" {
     google      = google
     google-beta = google-beta
   }
+
+  # The admin module enables run, secretmanager and iam; this module only adds logging and bigquery.
+  depends_on = [module.gcp_admin_api]
 }
 
 # Each site's own hostname, e.g. "csarko-sh.web.app". default_url stays populated
