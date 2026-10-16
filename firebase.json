@@ -161,6 +161,22 @@
       ],
       "cleanUrls": true,
       "trailingSlash": false,
+      "rewrites": [
+        {
+          "source": "/a",
+          "run": {
+            "serviceId": "csarko-visits",
+            "region": "us-west1"
+          }
+        },
+        {
+          "source": "/a/check",
+          "run": {
+            "serviceId": "csarko-visits",
+            "region": "us-west1"
+          }
+        }
+      ],
       "redirects": [
         {
           "source": "/",

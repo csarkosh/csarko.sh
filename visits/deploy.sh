@@ -16,7 +16,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 die() { echo "error: $*" >&2; exit 1; }
 
-VISITS_TAG="${VISITS_TAG:-v0.2.0}"
+VISITS_TAG="${VISITS_TAG:-v0.3.1}"
 LIB="${VISITS_LIB:-$HOME/Projects/lib-visits}"
 
 command -v terraform >/dev/null || die "terraform is not installed"

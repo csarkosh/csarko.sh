@@ -45,3 +45,9 @@ variable "reader_service_account_email" {
   description = "The admin API's service account, which reads the datasets."
   type        = string
 }
+
+variable "apps" {
+  description = "Installed programs allowed to post reports, as NAME or NAME=REDIRECT (the collector's --app); the report route is mounted only when this is not empty."
+  type        = list(string)
+  default     = []
+}

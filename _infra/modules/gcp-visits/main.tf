@@ -66,7 +66,7 @@ resource "google_cloud_run_v2_service" "visits" {
     }
     containers {
       image = var.image
-      args  = concat(["serve", "--trusted-proxies", tostring(var.trusted_proxies)], length(var.ignore_ips) > 0 ? ["--ignore-ips", join(",", var.ignore_ips)] : [])
+      args  = concat(["serve", "--trusted-proxies", tostring(var.trusted_proxies)], length(var.ignore_ips) > 0 ? ["--ignore-ips", join(",", var.ignore_ips)] : [], flatten([for a in var.apps : ["--app", a]]))
       ports {
         container_port = 8080
       }
@@ -145,7 +145,7 @@ resource "google_logging_project_sink" "visits" {
   project     = var.project_id
   name        = "csarko-visits"
   destination = "logging.googleapis.com/projects/${var.project_id}/locations/global/buckets/${google_logging_project_bucket_config.visits.bucket_id}"
-  filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${google_cloud_run_v2_service.visits.name}\" AND jsonPayload.v=1"
+  filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${google_cloud_run_v2_service.visits.name}\" AND (jsonPayload.v=1 OR jsonPayload.v=2)"
 }
 
 # The rows need not also sit in _Default, and the service's successful request
@@ -156,7 +156,7 @@ resource "google_logging_project_exclusion" "visits_duplicates" {
   description = "Visits rows live in their own bucket; successful beacon requests are counted there."
   filter      = <<-EOT
     resource.type="cloud_run_revision" AND resource.labels.service_name="${google_cloud_run_v2_service.visits.name}" AND (
-      jsonPayload.v=1 OR (
+      jsonPayload.v=1 OR jsonPayload.v=2 OR (
         logName="projects/${var.project_id}/logs/run.googleapis.com%2Frequests"
         AND httpRequest.status<400
       )

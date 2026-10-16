@@ -208,6 +208,8 @@ module "gcp_visits" {
 
   # The admin module enables run, secretmanager and iam; this module only adds logging and bigquery.
   depends_on = [module.gcp_admin_api]
+  # Arkos IDE's reports and its daily update check, which is redirected to the manifest on GitHub.
+  apps = ["arkos=https://github.com/csarkosh/ide-arkos/releases/latest/download/manifest.json"]
 }
 
 # Each site's own hostname, e.g. "csarko-sh.web.app". default_url stays populated
