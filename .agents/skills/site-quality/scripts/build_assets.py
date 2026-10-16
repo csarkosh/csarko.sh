@@ -5,9 +5,11 @@ build_assets.py — deterministically build the site's hashed static assets.
 Sources (in .agents/skills/site-quality/assets/):
   portrait-source.jpg     the full-resolution portrait
   films/<slug>.jpg        one poster per film in docs/films/, portrait (9:16)
-  apps/<slug>.png         one preview per app in docs/apps/ that names an alt, landscape or
-                          portrait (a taller one gets the card's narrower portrait frame), and
-  apps/<slug>-dark.png    optionally its dark-theme version
+  apps/<slug>.png         one preview per app in docs/apps/ that names an alt, landscape;
+  apps/<slug>-dark.png    optionally its dark-theme version;
+  apps/<slug>-portrait.png, <slug>-portrait-dark.png
+                          optionally a tall version, shown beside the card's text on a desktop
+                          (the landscape one shows under the title on a phone)
   fonts/*.woff2           self-hosted variable fonts (latin subset)
   vendor/visits.min.js, vendor/vitals.min.js   the lib-visits analytics scripts (see site.json)
 
@@ -66,8 +68,12 @@ FILM_FALLBACK_WIDTH = 240
 # on a phone (at most 640px less the page's and the card's padding).
 APP_WIDTHS = (360, 540, 720, 1080)
 APP_SIZES = "(max-width: 640px) calc(100vw - 94px), 360px"
-# A portrait preview (taller than wide) sits in a 240px frame at every width (APPS_CSS in docs_lib.mjs).
+# With a portrait version: the landscape one on a phone (under the title, full width), the
+# portrait one beside the text in a 240px frame otherwise (APPS_CSS in docs_lib.mjs).
+PHONE = "(max-width: 640px)"
+APP_SIZES_PHONE = "calc(100vw - 94px)"
 APP_SIZES_PORTRAIT = "240px"
+APP_WIDTHS_PORTRAIT = (240, 480, 720)
 APP_FALLBACK_WIDTH = 360
 # What the stable poster (and the portrait) are written at: big enough to share, small enough to commit.
 STABLE_WIDTH = 720
@@ -246,17 +252,18 @@ def main() -> int:
         )
 
     # ---- app previews, one per assets/apps/<slug>.png, with <slug>-dark.png for the dark theme
+    #      and <slug>-portrait[-dark].png for the tall version beside the text
     app_srcsets: dict = {}
     app_fallback: dict = {}
-    app_portrait: set = set()
     app_dir = SRC / "apps"
     for src_path in sorted(app_dir.glob("*.png")) if app_dir.is_dir() else []:
         name = src_path.stem
-        if name.endswith("-dark"):
+        if name.endswith("-dark") or name.endswith("-portrait"):
             continue
         slug = name
         app_srcsets[slug] = {}
-        for variant, path in (("light", src_path), ("dark", app_dir / f"{slug}-dark.png")):
+        variants = (("light", src_path), ("dark", app_dir / f"{slug}-dark.png"), ("portrait-light", app_dir / f"{slug}-portrait.png"), ("portrait-dark", app_dir / f"{slug}-portrait-dark.png"))
+        for variant, path in variants:
             if not path.exists():
                 continue
             image = Image.open(path)
@@ -264,15 +271,13 @@ def main() -> int:
             # --surface-2 in that theme, since JPEG has no transparency.
             if image.mode in ("RGBA", "LA", "P"):
                 image = image.convert("RGBA")
-                ground = Image.new("RGBA", image.size, "#161922" if variant == "dark" else "#eef0f4")
+                ground = Image.new("RGBA", image.size, "#161922" if variant.endswith("dark") else "#eef0f4")
                 image = Image.alpha_composite(ground, image)
             image = image.convert("RGB")
             ratio = image.height / image.width
-            if variant == "light" and ratio > 1:
-                app_portrait.add(slug)
             app_srcsets[slug][variant] = {"avif": [], "webp": [], "jpg": []}
-            stem = f"app-{slug}" + ("-dark" if variant == "dark" else "")
-            for w in APP_WIDTHS:
+            stem = f"app-{slug}" + ("" if variant == "light" else f"-{variant}")
+            for w in (APP_WIDTHS_PORTRAIT if variant.startswith("portrait") else APP_WIDTHS):
                 resized = image.resize((w, round(w * ratio)), Image.Resampling.LANCZOS)
                 for fmt in app_srcsets[slug][variant]:
                     hashed = write_hashed(f"{stem}-{w}", fmt, encode(resized, fmt), keep)
@@ -289,23 +294,45 @@ def main() -> int:
             print(f"removed public/apps/{stale.name}")
 
     def app_picture(slug, prefix, alt, indent):
-        """An app's preview <picture>: the dark-theme sources first, when the app has them. A
-        portrait one carries class="portrait", which gives it the card's narrower frame."""
+        """An app's preview <picture>. With a portrait version it carries class="portrait" (the
+        card's narrower frame on a desktop) and lists the landscape sources for a phone first,
+        then the portrait ones; the dark theme's sources come before the light's each time, and
+        the <img> is the one a browser without <picture> support or a phone-less query falls
+        back to."""
         name, w, h = app_fallback[slug]
         sets = app_srcsets[slug]
-        portrait = slug in app_portrait
-        sizes = APP_SIZES_PORTRAIT if portrait else APP_SIZES
-        attrs = ' class="portrait"' if portrait else ""
+        portrait = "portrait-light" in sets
         ss = lambda variant, fmt: ", ".join(prefix + s for s in sets[variant][fmt])
-        dark = "".join(
-            f'{indent}  <source media="(prefers-color-scheme: dark)" type="image/{fmt}" srcset="{ss("dark", fmt)}" sizes="{sizes}" />\n'
-            for fmt in ("avif", "webp")) if "dark" in sets else ""
+        lines = []
+        def sources(variant, media, sizes, with_jpeg=False):
+            if variant not in sets:
+                return
+            fmts = ("avif", "webp", "jpg") if with_jpeg else ("avif", "webp")
+            for fmt in fmts:
+                mime = "jpeg" if fmt == "jpg" else fmt
+                lines.append(f'{indent}  <source{f" media={chr(34)}{media}{chr(34)}" if media else ""} type="image/{mime}" srcset="{ss(variant, fmt)}" sizes="{sizes}" />')
+        if portrait:
+            sources("dark", f"(prefers-color-scheme: dark) and {PHONE}", APP_SIZES_PHONE)
+            sources("light", PHONE, APP_SIZES_PHONE, with_jpeg=True)
+            sources("portrait-dark", "(prefers-color-scheme: dark)", APP_SIZES_PORTRAIT)
+            sources("portrait-light", None, APP_SIZES_PORTRAIT)
+            img_variant, sizes = "portrait-light", APP_SIZES_PORTRAIT
+        else:
+            sources("dark", "(prefers-color-scheme: dark)", APP_SIZES)
+            sources("light", None, APP_SIZES)
+            img_variant, sizes = "light", APP_SIZES
+        # The <img>: the portrait light fallback when there is one (its first width is what a
+        # desktop shows), else the landscape one.
+        fallback = sets[img_variant]["jpg"][0].split(" ")[0] if portrait else f"assets/{name}"
+        if portrait:
+            fw = APP_WIDTHS_PORTRAIT[0]
+            fh = round(fw * Image.open(app_dir / f"{slug}-portrait.png").height / Image.open(app_dir / f"{slug}-portrait.png").width)
+        else:
+            fw, fh = w, h
         return (
-            f'{indent}<picture{attrs}>\n{dark}'
-            f'{indent}  <source type="image/avif" srcset="{ss("light", "avif")}" sizes="{sizes}" />\n'
-            f'{indent}  <source type="image/webp" srcset="{ss("light", "webp")}" sizes="{sizes}" />\n'
-            f'{indent}  <img src="{prefix}assets/{name}" srcset="{ss("light", "jpg")}" sizes="{sizes}" '
-            f'width="{w}" height="{h}" alt="{alt}" loading="lazy" decoding="async" />\n'
+            f'{indent}<picture{" class=" + chr(34) + "portrait" + chr(34) if portrait else ""}>\n' + "\n".join(lines) + "\n"
+            f'{indent}  <img src="{prefix}{fallback}" srcset="{ss(img_variant, "jpg")}" sizes="{sizes}" '
+            f'width="{fw}" height="{fh}" alt="{alt}" loading="lazy" decoding="async" />\n'
             f'{indent}</picture>'
         )
 
