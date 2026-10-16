@@ -218,3 +218,16 @@ GPL-3.0.
   assert.ok(html.includes('<li><a href="#install">Install</a></li>'), 'the bar links to Install');
   assert.ok(!html.includes('## Status') && !html.includes('How a release is made'));
 });
+
+test('a picture on its own inside a section is a figure, and the page draws it', () => {
+  const readme = `# App\n\nIntro.\n\n## Who\n\nText.\n\n<picture>\n  <source media="(prefers-color-scheme: dark)" srcset="docs/images/a-dark.png">\n  <img alt="A" src="docs/images/a-light.png" width="760">\n</picture>\n\n## Install\n\nSteps.\n`;
+  const prepared = prepareReadme(readme, { blob: 'https://github.com/o/r/blob/main/' });
+  assert.equal(prepared.figures.length, 1);
+  assert.deepEqual(prepared.figures[0], { light: 'docs/images/a-light.png', dark: 'docs/images/a-dark.png', alt: 'A' });
+  assert.deepEqual(imagesOf(prepared), ['docs/images/a-light.png', 'docs/images/a-dark.png']);
+  const images = Object.fromEntries(imagesOf(prepared).map((p) => [p, { url: `/app/${p.split('/').pop()}`, width: 1800, height: 610 }]));
+  const app = { slug: 'app', title: 'App', description: 'An app.', kicker: 'Released', license: 'MIT', repo: 'https://github.com/o/r', platforms: 'macOS' };
+  const html = productPage({ app, prepared, release: RELEASE, images, theme: THEME });
+  assert.match(html, /<figure class="figure"><picture><source media="\(prefers-color-scheme: dark\)" srcset="\/app\/a-dark.png" \/><img src="\/app\/a-light.png"/);
+  assert.doesNotMatch(html, /@@/);
+});

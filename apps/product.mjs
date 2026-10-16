@@ -16,6 +16,7 @@
  *   - `<p align=…>` paragraphs, as Markdown paragraphs (<b>, <i>, <code> and <a> kept);
  *   - other `<sub>…</sub>` lines, as muted paragraphs;
  *   - a <table> of rows that each pair a <picture> with Markdown, as image-and-text panels;
+ *   - a <picture> (or a lone <p><img></p>) on its own inside a section, as a figure;
  *   - a Setup step "1. **[Download `x`](…)**", as the release's download buttons; without one,
  *     a line naming the release under `## Install`;
  *   - each ```mermaid flowchart, as a static row of steps (the CSP allows no Mermaid);
@@ -33,6 +34,7 @@ const MUTED = '@@MUTED@@';
 const FLOW = (i) => `@@FLOW${i}@@`;
 const PANEL = (i) => `@@PANEL${i}@@`;
 const PANEL_END = '@@PANELEND@@';
+const FIGURE = (i) => `@@FIGURE${i}@@`;
 
 // The platforms a release builds, in the order the buttons show them. `match` picks the asset.
 const PLATFORMS = [
@@ -185,6 +187,14 @@ export function prepareReadme(readme, { blob, sections = null, install = null })
     return `${PANEL(panels.length - 1)}\n\n${dedent(cells[1 - pic])}\n\n${PANEL_END}`;
   }).join('\n\n'));
 
+  // Figures: a picture on its own inside a section (the hero above was the one before the
+  // first section).
+  const figures = [];
+  text = text.replace(/^<picture>[\s\S]*?<\/picture>[ \t]*$|^<p\b[^>]*>\s*<img\b[^>]*>\s*<\/p>[ \t]*$/gm, (block) => {
+    figures.push(pictureOf(block));
+    return FIGURE(figures.length - 1);
+  });
+
   const download = /^1\. \*\*\[Download `([^`]+)`\]\([^)]+\)\*\*.*$/m.exec(text);
   if (download) text = text.replace(download[0], `1. Download \`${download[1]}\` for your platform: ${DOWNLOADS}`);
   else if (/^## Install[ \t]*$/m.test(text)) text = text.replace(/^## Install[ \t]*$/m, `## Install\n\n${RELEASE}\n`);
@@ -197,7 +207,7 @@ export function prepareReadme(readme, { blob, sections = null, install = null })
   });
   // Relative links go to the file on GitHub; https, anchors and root-relative paths stay.
   text = text.replace(/\]\((?!https?:|#|\/)([^)\s]+)\)/g, (_, rel) => `](${blob}${rel})`);
-  return { text, hero, caption, panels, downloads: Boolean(download), flows };
+  return { text, hero, caption, panels, figures, downloads: Boolean(download), flows };
 }
 
 // A <picture> of one of the README's images, as build.mjs copied it: `images` maps a README path
@@ -210,7 +220,7 @@ function pictureHtml({ light, dark, alt }, images, { lazy = true } = {}) {
 }
 
 /** Every README image the page shows, for build.mjs to copy. */
-export const imagesOf = ({ hero, panels }) => [...new Set([hero, ...panels].filter(Boolean).flatMap((p) => [p.light, p.dark]))];
+export const imagesOf = ({ hero, panels, figures = [] }) => [...new Set([hero, ...panels, ...figures].filter(Boolean).flatMap((p) => [p.light, p.dark]))];
 
 /**
  * app: the docs/apps entry (loadApp: title, description, kicker, license, repo, slug); prepared:
@@ -218,7 +228,7 @@ export const imagesOf = ({ hero, panels }) => [...new Set([hero, ...panels].filt
  * images: README path → { url, width, height } on this host; theme: themeBlocks() of public/index.html.
  */
 export function productPage({ app, prepared, release, images, theme }) {
-  const { text, hero, caption, panels, flows } = prepared;
+  const { text, hero, caption, panels, flows, figures = [] } = prepared;
   const doc = renderMarkdown(text, `${app.slug} README`);
   let html = doc.html;
   const swap = (from, to) => {
@@ -232,6 +242,7 @@ export function productPage({ app, prepared, release, images, theme }) {
     swap(`<p>${PANEL(i)}</p>`, `<div class="panel"><div class="panel-image">${pictureHtml(panel, images)}</div><div class="panel-body">`);
     swap(`<p>${PANEL_END}</p>`, '</div></div>');
   });
+  figures.forEach((figure, i) => swap(`<p>${FIGURE(i)}</p>`, `<figure class="figure">${pictureHtml(figure, images)}</figure>`));
   html = html.replaceAll(`<p>${MUTED} `, '<p class="muted">');
   if (html.includes('@@')) throw new ProductError('README: a marker was left in the page');
   // HTML the README carried that nothing above handled reaches the page escaped; refuse it.
@@ -337,6 +348,8 @@ const PRODUCT_CSS = `
     .flow-edge.side { font-style: italic; }
     .panel { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; align-items: start; margin: 32px 0; }
     .panel-image img { display: block; width: 100%; height: auto; border-radius: 12px; }
+    .figure { margin: 24px 0 32px; }
+    .figure img { display: block; width: 100%; height: auto; border-radius: 12px; }
     .panel-body > :first-child { margin-top: 0; }
     /* On a phone the panel's heading leads, then its screenshot, then the rest of its text. */
     @media (max-width: 640px) {
