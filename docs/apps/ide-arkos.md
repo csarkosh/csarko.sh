@@ -10,7 +10,7 @@ order: 1
 link: Install and docs
 sections: Session awareness, After a restart, Sidebar and viewer, Browser pane, Keyboard, Config, Updating, If you get headaches, License
 tags: Rust, GPUI, macOS
-alt: An Arkos IDE window: the file tree and git worktrees on the left, two Claude Code tabs in the middle pane, one working and one waiting, a docked Chrome window showing a web page and a shell running tests on the right
+alt: Three Arkos IDE windows fanned out like postcards: in front the multi tasker, three Claude Code sessions each running its own subagents on an unrelated project; behind, the web developer with a docked browser and tests, and the blogger with posts open in the markdown editor
 ---
 # Arkos IDE
 
