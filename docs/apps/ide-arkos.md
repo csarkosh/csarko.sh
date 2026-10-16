@@ -10,6 +10,7 @@ order: 1
 link: Install and docs
 sections: Session awareness, After a restart, Sidebar and viewer, Browser pane, Keyboard, Config, Updating, If you get headaches, License
 tags: Rust, GPUI, macOS
+alt: An Arkos IDE window: the file tree and git worktrees on the left, two Claude Code tabs in the middle pane, one working and one waiting, a docked Chrome window showing a web page and a shell running tests on the right
 ---
 # Arkos IDE
 
