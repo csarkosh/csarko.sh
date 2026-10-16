@@ -8,7 +8,7 @@ repo: https://github.com/csarkosh/ide-arkos
 released: 2026-10-15
 order: 1
 link: Install and docs
-sections: Who it's for, Session awareness, After a restart, Sidebar and viewer, Browser pane, Keyboard, Config, Updating, If you get headaches, License
+sections: Install, Who it's for, Session awareness, After a restart, Sidebar and viewer, Editing markdown, Browser pane, Keyboard, Config, Updating, If you get headaches, License
 tags: Rust, GPUI, macOS
 alt: Three Arkos IDE windows fanned out like postcards: in front the multi tasker, three Claude Code sessions each running its own subagents on an unrelated project; behind, the web developer with a docked browser and tests, and the blogger with posts open in the markdown editor
 ---
