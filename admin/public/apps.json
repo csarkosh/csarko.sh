@@ -1,4 +1,5 @@
 [
   { "slug": "csarko.sh", "name": "csarko.sh", "home": "https://csarko.sh", "api": "https://csarko-admin-lwkslxdnnq-uw.a.run.app", "page": "/csarko.sh/" },
-  { "slug": "game-dayhike", "name": "Day Hike", "home": "https://games.csarko.sh/dayhike", "api": "https://fps-telemetry-5pogqa5sqq-uw.a.run.app", "page": "/game-dayhike/" }
+  { "slug": "game-dayhike", "name": "Day Hike", "home": "https://games.csarko.sh/dayhike", "api": "https://fps-telemetry-5pogqa5sqq-uw.a.run.app", "page": "/game-dayhike/" },
+  { "slug": "ide-arkos", "name": "Arkos IDE", "home": "https://apps.csarko.sh/ide-arkos", "api": "https://csarko-admin-lwkslxdnnq-uw.a.run.app/arkos", "page": "/ide-arkos/" }
 ]

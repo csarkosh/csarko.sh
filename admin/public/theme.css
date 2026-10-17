@@ -351,6 +351,51 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .bars .n small { color: var(--faint); margin-left: 4px; }
 .bars li:focus-within .fill, .bars li:hover .fill { filter: brightness(1.08); }
 
+/* Arkos' journey (ide-arkos/page.js). The flow: a step's bar in the step's tone, bands in a
+   wash of the accent (the end's in --faint), lit while a step is hovered or focused. It keeps
+   its labels' width and scrolls sideways inside the card on a narrow screen. */
+.flow { margin: 4px 0 0; }
+.flow svg { display: block; }
+.fl-band { fill: var(--accent); opacity: .16; transition: opacity .15s ease; }
+.fl-band.end { fill: var(--faint); }
+.fl.dim .fl-band { opacity: .05; }
+.fl.dim .fl-band.on { opacity: .42; }
+.fl-step { cursor: default; outline: none; }
+.fl-step:focus-visible .fl-node { stroke: var(--text); stroke-width: 2; }
+.fl-node.g-1, .s-tick.g-1 { fill: var(--ord-1); background: var(--ord-1); }
+.fl-node.g-2, .s-tick.g-2 { fill: var(--ord-2); background: var(--ord-2); }
+.fl-node.g-3, .s-tick.g-3 { fill: var(--ord-3); background: var(--ord-3); }
+.fl-node.g-4, .s-tick.g-4 { fill: var(--ord-4); background: var(--ord-4); }
+.fl-node.g-warn, .s-tick.g-warn { fill: var(--warning); background: var(--warning); }
+.fl-node.g-end, .s-tick.g-end { fill: var(--faint); background: var(--faint); }
+.fl-label { fill: var(--text); font-size: 12px; font-family: var(--sans); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
+.fl-n { fill: var(--faint); font-family: var(--mono); font-size: 11px; }
+/* A share as a thin bar in a table cell: the milestones. First sessions in the ramp's paler step. */
+.mbar { display: grid; grid-template-columns: minmax(80px, 160px) auto; align-items: center; gap: 10px; }
+.mbar .track { height: 10px; border-radius: 0 3px 3px 0; background: var(--surface-2); overflow: hidden; }
+.mbar .fill { display: block; height: 100%; background: var(--ord-1); }
+.mbar .fill.first { background: var(--ord-3); }
+.mbar .n { color: var(--text); font-variant-numeric: tabular-nums; }
+.next h3 { margin: 0 0 10px; }
+.next h3 small, .card h3 small { font-family: var(--mono); font-size: 11.5px; font-weight: 400; color: var(--faint); }
+/* A session: a time line with a tick per step, then the steps in order, each with its time. */
+.s-line { position: relative; height: 14px; margin: 2px 0 12px; border-radius: 3px; background: var(--surface-2); border: 1px solid var(--border); }
+.s-tick { position: absolute; top: 2px; bottom: 2px; width: 3px; margin-left: -1px; border-radius: 1px; }
+.s-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.s-step { display: inline-flex; align-items: baseline; gap: 6px; max-width: 100%; padding: 4px 9px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--ord-4); font-size: 13px; color: var(--text); overflow-wrap: anywhere; }
+.s-step.g-1 { border-left-color: var(--ord-1); }
+.s-step.g-2 { border-left-color: var(--ord-2); }
+.s-step.g-3 { border-left-color: var(--ord-3); }
+.s-step.g-warn { border-left-color: var(--warning); }
+.s-step.g-end { border-left-color: var(--faint); color: var(--muted); }
+.s-t { color: var(--faint); font-size: 11px; }
+.s-detail { color: var(--muted); font-size: 12px; }
+.s-legend { margin-top: 6px; font-size: 12.5px; }
+/* A cohort's cell: its count over a wash of the accent as wide as its share of the first week. */
+.cohort { display: inline-block; min-width: 3ch; padding: 0 4px; border-radius: 3px; background: linear-gradient(90deg, var(--accent-soft) var(--share), transparent var(--share)); color: var(--text); }
+.stack { margin-top: 10px; }
+.stack pre { margin: 6px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); overflow-x: auto; }
+
 /* Tables: the docs pages' table, in a scroll box so 320px holds. */
 .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
@@ -428,6 +473,6 @@ footer .mono { font-family: var(--mono); }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .nav ul a, .btn, .range button, .j-filters button, .card .card-title a, details.folded summary::before { transition: none; }
+  .nav ul a, .btn, .range button, .j-filters button, .card .card-title a, details.folded summary::before, .fl-band { transition: none; }
   .skel::after { animation: none; }
 }

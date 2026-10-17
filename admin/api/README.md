@@ -18,11 +18,24 @@ Node 22, ES modules, `node:http`, no framework. Runtime dependencies are
 | `GET /admin/query/<name>?days=1\|7\|30\|90` | admin token | one of `visits`, `pages`, `referrers`, `events`, `audience`, `search`, `reach`, `health`; `days` defaults to 7, anything else is 400 |
 | `POST /admin/manual/<key>` body `{ "value": n }` | admin token | appends `{ at, value }` to `manual/<key>` (key: `substack`) |
 | `POST /admin/snapshot` | admin token, or Cloud Scheduler's OIDC token | runs every collector and merges `snapshots/<YYYY-MM-DD>` (UTC) |
+| `GET /arkos/admin/kpis` | admin token | Arkos IDE's index card: active Macs, new installs, sessions and crash-free sessions over 7 days, each with the 7 days before and a 12-week trend computed from the rows, plus the health dot |
+| `GET /arkos/admin/query/<name>?days=1\|7\|30\|90` | admin token | one of Arkos's `installs`, `journey`, `sessions`, `crashes`; same `days` rule |
+
+Arkos IDE is served under the prefix `/arkos`, so `apps.json` names `<service>/arkos` as its API
+and the shell's two routes hold. Its routes read the Arkos rows in the same log bucket
+(`json_payload.app = 'arkos'`: the daily update checks, the opt-in session reports, the crash
+reports) through `queries/arkos-*.sql`; the journey (steps, paths, milestones, next steps,
+features) is worked out in code (`src/arkos.mjs`, `src/steps.mjs`) over the range's 5,000 newest
+session reports. Macs are counted without an id from the check's `rd`, which needs whole UTC days, so
+`installs` and the KPIs take whole days ending today (`days=1` is today so far against
+yesterday); `journey`, `sessions` and `crashes` take the last `days` times 24 hours, as the
+csarko.sh queries do. Design: `docs/superpowers/specs/2026-10-17-arkos-admin-dashboard-design.md`.
 
 Every answer is JSON with `cache-control: no-store`. Errors are `{ "error": "..." }`:
 401 without the token, 403 for an origin that is not allowed, 404 for an unknown route
 or query, 405 for the wrong method, 429 past 60 requests in a burst and one a second
-per address, 503 on every `/admin/*` route while `ADMIN_EMAILS` is empty.
+per address, 503 on every `/admin/*` and `/arkos/admin/*` route while `ADMIN_EMAILS` is empty. Both
+prefixes go through the same checks in the same order.
 
 A source whose credential is missing answers `null` for its part and a
 `notConfigured: { <part>: "<ENV NAME>" }` hint, never a 500. A source that is configured
@@ -43,7 +56,7 @@ variables from Secret Manager. A credential whose value is empty or the placehol
 |---|---|---|
 | `ADMIN_EMAILS` | required | comma-separated Google accounts that may read the admin routes; empty means 503 on `/admin/*`, logged at startup |
 | `FIREBASE_PROJECT` | `GOOGLE_CLOUD_PROJECT` | the Firebase project whose Auth issues the shell's ID tokens (issuer `https://securetoken.google.com/<project>`, audience `<project>`) |
-| `VISITS_DATASET` | | the BigQuery dataset linked to the lib-visits log bucket (`csarko_visits`, table `_AllLogs`); empty means the visits parts are not configured |
+| `VISITS_DATASET` | | the BigQuery dataset linked to the lib-visits log bucket (`csarko_visits`, table `_AllLogs`); empty means the visits parts, and every Arkos part, are not configured |
 | `VISITS_HISTORY_DATASET`, `VISITS_HISTORY_UNTIL` | | the dataset holding GoatCounter's backfilled history (`csarko_history`) and the cutover instant (RFC 3339) where it hands over to the live rows; an empty instant means no history |
 | `GSC_SA_KEY`, `GSC_PROPERTY` | `sc-domain:csarko.sh` | the service account key's JSON content (not a path) and the Search Console property |
 | `YOUTUBE_KEY`, `YOUTUBE_HANDLE` | `csarkosh` | YouTube Data API key and the channel handle |
@@ -111,10 +124,13 @@ src/limiter.mjs         per-address token bucket (60 burst, 1/s)
 src/cache.mjs           TTL cache keyed by URL, shared by every collector
 src/config.mjs          environment with defaults; `unset` means not configured
 src/queries.mjs         the eight queries, kpis, snapshot, manual
+src/arkos-queries.mjs   Arkos IDE's kpis and four queries, their ranges and not-configured shapes
+src/arkos.mjs           Arkos rows to answers: journey (paths, milestones, next, features...), installs, crashes, kpis
+src/steps.mjs           the Arkos event-to-step table, restore folding and duplicate collapsing
 src/health.mjs          the thresholds behind the health dot
 src/referrers.mjs       host to group classifier (rows are `{ name, count }`)
 src/store.mjs           Firestore and in-memory stores
-src/collectors/*.mjs    visits, gsc, youtube, github, hn, psi, uptime, hosting, sitemap
+src/collectors/*.mjs    visits (and the BigQuery runner), arkos, gsc, youtube, github, hn, psi, uptime, hosting, sitemap
 queries/*.sql           the saved BigQuery SQL, one job per query, copied into the image
 test/                   node:test suites and JSON fixtures
 ```

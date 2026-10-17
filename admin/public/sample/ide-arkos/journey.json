@@ -1,0 +1,1965 @@
+{
+ "days": 7,
+ "sessions": 120,
+ "firstSessions": 18,
+ "previous": {
+  "sessions": 98
+ },
+ "capped": false,
+ "paths": {
+  "columns": [
+   [
+    {
+     "id": "0:Launched",
+     "label": "Launched",
+     "group": "launch",
+     "sessions": 120
+    }
+   ],
+   [
+    {
+     "id": "1:Claude resumed",
+     "label": "Claude resumed",
+     "group": "agent",
+     "sessions": 35
+    },
+    {
+     "id": "1:Terminal tab",
+     "label": "Terminal tab",
+     "group": "tab",
+     "sessions": 29
+    },
+    {
+     "id": "1:Claude started",
+     "label": "Claude started",
+     "group": "agent",
+     "sessions": 21
+    },
+    {
+     "id": "1:File tab",
+     "label": "File tab",
+     "group": "tab",
+     "sessions": 16
+    },
+    {
+     "id": "1:Palette: new terminal",
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "sessions": 13
+    },
+    {
+     "id": "1:Other agent",
+     "label": "Other agent",
+     "group": "agent",
+     "sessions": 3
+    },
+    {
+     "id": "1:Other",
+     "label": "Other",
+     "group": "other",
+     "sessions": 3
+    }
+   ],
+   [
+    {
+     "id": "2:Agent asked for input",
+     "label": "Agent asked for input",
+     "group": "agent",
+     "sessions": 50
+    },
+    {
+     "id": "2:Terminal tab",
+     "label": "Terminal tab",
+     "group": "tab",
+     "sessions": 13
+    },
+    {
+     "id": "2:Claude started",
+     "label": "Claude started",
+     "group": "agent",
+     "sessions": 8
+    },
+    {
+     "id": "2:Viewed markdown",
+     "label": "Viewed markdown",
+     "group": "view",
+     "sessions": 7
+    },
+    {
+     "id": "2:File tab",
+     "label": "File tab",
+     "group": "tab",
+     "sessions": 6
+    },
+    {
+     "id": "2:Viewed code",
+     "label": "Viewed code",
+     "group": "view",
+     "sessions": 6
+    },
+    {
+     "id": "2:Other",
+     "label": "Other",
+     "group": "other",
+     "sessions": 26
+    },
+    {
+     "id": "2:Ended",
+     "label": "Ended",
+     "group": "end",
+     "sessions": 4,
+     "ends": {
+      "quit": 4,
+      "lost": 0,
+      "unknown": 0
+     }
+    }
+   ],
+   [
+    {
+     "id": "3:Terminal tab",
+     "label": "Terminal tab",
+     "group": "tab",
+     "sessions": 16
+    },
+    {
+     "id": "3:File tab",
+     "label": "File tab",
+     "group": "tab",
+     "sessions": 11
+    },
+    {
+     "id": "3:Palette: split",
+     "label": "Palette: split",
+     "group": "palette",
+     "sessions": 10
+    },
+    {
+     "id": "3:Agent asked for input",
+     "label": "Agent asked for input",
+     "group": "agent",
+     "sessions": 8
+    },
+    {
+     "id": "3:Closed a tab",
+     "label": "Closed a tab",
+     "group": "tab",
+     "sessions": 8
+    },
+    {
+     "id": "3:Claude resumed",
+     "label": "Claude resumed",
+     "group": "agent",
+     "sessions": 6
+    },
+    {
+     "id": "3:Other",
+     "label": "Other",
+     "group": "other",
+     "sessions": 56
+    },
+    {
+     "id": "3:Ended",
+     "label": "Ended",
+     "group": "end",
+     "sessions": 1,
+     "ends": {
+      "quit": 1,
+      "lost": 0,
+      "unknown": 0
+     }
+    }
+   ],
+   [
+    {
+     "id": "4:Terminal tab",
+     "label": "Terminal tab",
+     "group": "tab",
+     "sessions": 12
+    },
+    {
+     "id": "4:Claude started",
+     "label": "Claude started",
+     "group": "agent",
+     "sessions": 11
+    },
+    {
+     "id": "4:Closed a tab",
+     "label": "Closed a tab",
+     "group": "tab",
+     "sessions": 10
+    },
+    {
+     "id": "4:File tab",
+     "label": "File tab",
+     "group": "tab",
+     "sessions": 9
+    },
+    {
+     "id": "4:Palette: split",
+     "label": "Palette: split",
+     "group": "palette",
+     "sessions": 8
+    },
+    {
+     "id": "4:Viewed markdown",
+     "label": "Viewed markdown",
+     "group": "view",
+     "sessions": 7
+    },
+    {
+     "id": "4:Other",
+     "label": "Other",
+     "group": "other",
+     "sessions": 57
+    },
+    {
+     "id": "4:Ended",
+     "label": "Ended",
+     "group": "end",
+     "sessions": 1,
+     "ends": {
+      "quit": 1,
+      "lost": 0,
+      "unknown": 0
+     }
+    }
+   ],
+   [
+    {
+     "id": "5:Terminal tab",
+     "label": "Terminal tab",
+     "group": "tab",
+     "sessions": 22
+    },
+    {
+     "id": "5:File tab",
+     "label": "File tab",
+     "group": "tab",
+     "sessions": 14
+    },
+    {
+     "id": "5:Closed a tab",
+     "label": "Closed a tab",
+     "group": "tab",
+     "sessions": 8
+    },
+    {
+     "id": "5:Palette: split",
+     "label": "Palette: split",
+     "group": "palette",
+     "sessions": 8
+    },
+    {
+     "id": "5:Agent asked for input",
+     "label": "Agent asked for input",
+     "group": "agent",
+     "sessions": 5
+    },
+    {
+     "id": "5:Browser tab",
+     "label": "Browser tab",
+     "group": "tab",
+     "sessions": 5
+    },
+    {
+     "id": "5:Other",
+     "label": "Other",
+     "group": "other",
+     "sessions": 52
+    }
+   ]
+  ],
+  "links": [
+   {
+    "from": "0:Launched",
+    "to": "1:Terminal tab",
+    "sessions": 29
+   },
+   {
+    "from": "0:Launched",
+    "to": "1:Claude resumed",
+    "sessions": 35
+   },
+   {
+    "from": "0:Launched",
+    "to": "1:Claude started",
+    "sessions": 21
+   },
+   {
+    "from": "0:Launched",
+    "to": "1:Palette: new terminal",
+    "sessions": 13
+   },
+   {
+    "from": "0:Launched",
+    "to": "1:File tab",
+    "sessions": 16
+   },
+   {
+    "from": "0:Launched",
+    "to": "1:Other agent",
+    "sessions": 3
+   },
+   {
+    "from": "0:Launched",
+    "to": "1:Other",
+    "sessions": 3
+   },
+   {
+    "from": "1:Terminal tab",
+    "to": "2:Other",
+    "sessions": 19
+   },
+   {
+    "from": "1:Claude resumed",
+    "to": "2:Agent asked for input",
+    "sessions": 26
+   },
+   {
+    "from": "1:Claude started",
+    "to": "2:Agent asked for input",
+    "sessions": 21
+   },
+   {
+    "from": "1:Terminal tab",
+    "to": "2:Claude started",
+    "sessions": 5
+   },
+   {
+    "from": "1:Palette: new terminal",
+    "to": "2:Terminal tab",
+    "sessions": 13
+   },
+   {
+    "from": "1:Terminal tab",
+    "to": "2:File tab",
+    "sessions": 5
+   },
+   {
+    "from": "1:File tab",
+    "to": "2:Viewed code",
+    "sessions": 6
+   },
+   {
+    "from": "1:Claude resumed",
+    "to": "2:Ended",
+    "sessions": 4
+   },
+   {
+    "from": "1:File tab",
+    "to": "2:Viewed markdown",
+    "sessions": 7
+   },
+   {
+    "from": "1:Claude resumed",
+    "to": "2:Other",
+    "sessions": 2
+   },
+   {
+    "from": "1:Other agent",
+    "to": "2:Agent asked for input",
+    "sessions": 3
+   },
+   {
+    "from": "1:File tab",
+    "to": "2:Other",
+    "sessions": 3
+   },
+   {
+    "from": "1:Claude resumed",
+    "to": "2:Claude started",
+    "sessions": 3
+   },
+   {
+    "from": "1:Other",
+    "to": "2:Other",
+    "sessions": 2
+   },
+   {
+    "from": "1:Other",
+    "to": "2:File tab",
+    "sessions": 1
+   },
+   {
+    "from": "2:Other",
+    "to": "3:Claude resumed",
+    "sessions": 2
+   },
+   {
+    "from": "2:Agent asked for input",
+    "to": "3:File tab",
+    "sessions": 10
+   },
+   {
+    "from": "2:Other",
+    "to": "3:Other",
+    "sessions": 13
+   },
+   {
+    "from": "2:Agent asked for input",
+    "to": "3:Palette: split",
+    "sessions": 7
+   },
+   {
+    "from": "2:Agent asked for input",
+    "to": "3:Other",
+    "sessions": 20
+   },
+   {
+    "from": "2:Claude started",
+    "to": "3:Agent asked for input",
+    "sessions": 7
+   },
+   {
+    "from": "2:Agent asked for input",
+    "to": "3:Closed a tab",
+    "sessions": 2
+   },
+   {
+    "from": "2:Other",
+    "to": "3:Closed a tab",
+    "sessions": 3
+   },
+   {
+    "from": "2:Terminal tab",
+    "to": "3:Other",
+    "sessions": 10
+   },
+   {
+    "from": "2:Agent asked for input",
+    "to": "3:Claude resumed",
+    "sessions": 4
+   },
+   {
+    "from": "2:File tab",
+    "to": "3:Other",
+    "sessions": 6
+   },
+   {
+    "from": "2:Terminal tab",
+    "to": "3:Closed a tab",
+    "sessions": 2
+   },
+   {
+    "from": "2:Viewed code",
+    "to": "3:Other",
+    "sessions": 4
+   },
+   {
+    "from": "2:Viewed markdown",
+    "to": "3:Other",
+    "sessions": 3
+   },
+   {
+    "from": "2:Other",
+    "to": "3:Terminal tab",
+    "sessions": 6
+   },
+   {
+    "from": "2:Viewed code",
+    "to": "3:Terminal tab",
+    "sessions": 2
+   },
+   {
+    "from": "2:Agent asked for input",
+    "to": "3:Terminal tab",
+    "sessions": 7
+   },
+   {
+    "from": "2:Viewed markdown",
+    "to": "3:File tab",
+    "sessions": 1
+   },
+   {
+    "from": "2:Other",
+    "to": "3:Agent asked for input",
+    "sessions": 1
+   },
+   {
+    "from": "2:Claude started",
+    "to": "3:Ended",
+    "sessions": 1
+   },
+   {
+    "from": "2:Terminal tab",
+    "to": "3:Palette: split",
+    "sessions": 1
+   },
+   {
+    "from": "2:Viewed markdown",
+    "to": "3:Terminal tab",
+    "sessions": 1
+   },
+   {
+    "from": "2:Viewed markdown",
+    "to": "3:Palette: split",
+    "sessions": 1
+   },
+   {
+    "from": "2:Viewed markdown",
+    "to": "3:Closed a tab",
+    "sessions": 1
+   },
+   {
+    "from": "2:Other",
+    "to": "3:Palette: split",
+    "sessions": 1
+   },
+   {
+    "from": "3:Claude resumed",
+    "to": "4:Other",
+    "sessions": 4
+   },
+   {
+    "from": "3:File tab",
+    "to": "4:Other",
+    "sessions": 4
+   },
+   {
+    "from": "3:Other",
+    "to": "4:Closed a tab",
+    "sessions": 4
+   },
+   {
+    "from": "3:Palette: split",
+    "to": "4:Other",
+    "sessions": 7
+   },
+   {
+    "from": "3:Other",
+    "to": "4:Terminal tab",
+    "sessions": 10
+   },
+   {
+    "from": "3:Agent asked for input",
+    "to": "4:File tab",
+    "sessions": 2
+   },
+   {
+    "from": "3:Closed a tab",
+    "to": "4:Palette: split",
+    "sessions": 1
+   },
+   {
+    "from": "3:Closed a tab",
+    "to": "4:Terminal tab",
+    "sessions": 1
+   },
+   {
+    "from": "3:Other",
+    "to": "4:Other",
+    "sessions": 33
+   },
+   {
+    "from": "3:Closed a tab",
+    "to": "4:Other",
+    "sessions": 5
+   },
+   {
+    "from": "3:Other",
+    "to": "4:File tab",
+    "sessions": 3
+   },
+   {
+    "from": "3:File tab",
+    "to": "4:Viewed markdown",
+    "sessions": 7
+   },
+   {
+    "from": "3:Other",
+    "to": "4:Claude started",
+    "sessions": 3
+   },
+   {
+    "from": "3:Terminal tab",
+    "to": "4:Other",
+    "sessions": 3
+   },
+   {
+    "from": "3:Terminal tab",
+    "to": "4:File tab",
+    "sessions": 3
+   },
+   {
+    "from": "3:Terminal tab",
+    "to": "4:Closed a tab",
+    "sessions": 3
+   },
+   {
+    "from": "3:Agent asked for input",
+    "to": "4:Claude started",
+    "sessions": 1
+   },
+   {
+    "from": "3:Other",
+    "to": "4:Palette: split",
+    "sessions": 3
+   },
+   {
+    "from": "3:Claude resumed",
+    "to": "4:Ended",
+    "sessions": 1
+   },
+   {
+    "from": "3:Terminal tab",
+    "to": "4:Claude started",
+    "sessions": 5
+   },
+   {
+    "from": "3:Palette: split",
+    "to": "4:Claude started",
+    "sessions": 2
+   },
+   {
+    "from": "3:Agent asked for input",
+    "to": "4:Closed a tab",
+    "sessions": 2
+   },
+   {
+    "from": "3:Terminal tab",
+    "to": "4:Palette: split",
+    "sessions": 2
+   },
+   {
+    "from": "3:Closed a tab",
+    "to": "4:File tab",
+    "sessions": 1
+   },
+   {
+    "from": "3:Claude resumed",
+    "to": "4:Closed a tab",
+    "sessions": 1
+   },
+   {
+    "from": "3:Agent asked for input",
+    "to": "4:Other",
+    "sessions": 1
+   },
+   {
+    "from": "3:Agent asked for input",
+    "to": "4:Palette: split",
+    "sessions": 2
+   },
+   {
+    "from": "3:Palette: split",
+    "to": "4:Terminal tab",
+    "sessions": 1
+   },
+   {
+    "from": "4:Other",
+    "to": "5:Other",
+    "sessions": 23
+   },
+   {
+    "from": "4:Other",
+    "to": "5:Closed a tab",
+    "sessions": 8
+   },
+   {
+    "from": "4:Closed a tab",
+    "to": "5:Terminal tab",
+    "sessions": 1
+   },
+   {
+    "from": "4:Terminal tab",
+    "to": "5:Other",
+    "sessions": 5
+   },
+   {
+    "from": "4:File tab",
+    "to": "5:Other",
+    "sessions": 9
+   },
+   {
+    "from": "4:Palette: split",
+    "to": "5:Terminal tab",
+    "sessions": 5
+   },
+   {
+    "from": "4:Terminal tab",
+    "to": "5:Palette: split",
+    "sessions": 4
+   },
+   {
+    "from": "4:Other",
+    "to": "5:Terminal tab",
+    "sessions": 13
+   },
+   {
+    "from": "4:Viewed markdown",
+    "to": "5:Other",
+    "sessions": 4
+   },
+   {
+    "from": "4:Claude started",
+    "to": "5:Agent asked for input",
+    "sessions": 4
+   },
+   {
+    "from": "4:Closed a tab",
+    "to": "5:File tab",
+    "sessions": 3
+   },
+   {
+    "from": "4:Other",
+    "to": "5:File tab",
+    "sessions": 4
+   },
+   {
+    "from": "4:Claude started",
+    "to": "5:Palette: split",
+    "sessions": 1
+   },
+   {
+    "from": "4:Closed a tab",
+    "to": "5:Other",
+    "sessions": 6
+   },
+   {
+    "from": "4:Other",
+    "to": "5:Agent asked for input",
+    "sessions": 1
+   },
+   {
+    "from": "4:Other",
+    "to": "5:Browser tab",
+    "sessions": 5
+   },
+   {
+    "from": "4:Terminal tab",
+    "to": "5:File tab",
+    "sessions": 3
+   },
+   {
+    "from": "4:Viewed markdown",
+    "to": "5:Terminal tab",
+    "sessions": 2
+   },
+   {
+    "from": "4:Claude started",
+    "to": "5:Other",
+    "sessions": 3
+   },
+   {
+    "from": "4:Other",
+    "to": "5:Palette: split",
+    "sessions": 3
+   },
+   {
+    "from": "4:Palette: split",
+    "to": "5:Other",
+    "sessions": 2
+   },
+   {
+    "from": "4:Palette: split",
+    "to": "5:File tab",
+    "sessions": 1
+   },
+   {
+    "from": "4:Claude started",
+    "to": "5:File tab",
+    "sessions": 2
+   },
+   {
+    "from": "4:Viewed markdown",
+    "to": "5:File tab",
+    "sessions": 1
+   },
+   {
+    "from": "4:Claude started",
+    "to": "5:Terminal tab",
+    "sessions": 1
+   }
+  ],
+  "first": {
+   "columns": [
+    [
+     {
+      "id": "0:Launched",
+      "label": "Launched",
+      "group": "launch",
+      "sessions": 18
+     }
+    ],
+    [
+     {
+      "id": "1:Terminal tab",
+      "label": "Terminal tab",
+      "group": "tab",
+      "sessions": 10
+     },
+     {
+      "id": "1:Palette: new terminal",
+      "label": "Palette: new terminal",
+      "group": "palette",
+      "sessions": 5
+     },
+     {
+      "id": "1:Help: documentation",
+      "label": "Help: documentation",
+      "group": "help",
+      "sessions": 1
+     },
+     {
+      "id": "1:Help: keybindings",
+      "label": "Help: keybindings",
+      "group": "help",
+      "sessions": 1
+     },
+     {
+      "id": "1:Palette: open settings",
+      "label": "Palette: open settings",
+      "group": "palette",
+      "sessions": 1
+     }
+    ],
+    [
+     {
+      "id": "2:Terminal tab",
+      "label": "Terminal tab",
+      "group": "tab",
+      "sessions": 5
+     },
+     {
+      "id": "2:Claude started",
+      "label": "Claude started",
+      "group": "agent",
+      "sessions": 3
+     },
+     {
+      "id": "2:Palette: split",
+      "label": "Palette: split",
+      "group": "palette",
+      "sessions": 3
+     },
+     {
+      "id": "2:File tab",
+      "label": "File tab",
+      "group": "tab",
+      "sessions": 2
+     },
+     {
+      "id": "2:Changed a setting",
+      "label": "Changed a setting",
+      "group": "settings",
+      "sessions": 1
+     },
+     {
+      "id": "2:Closed a tab",
+      "label": "Closed a tab",
+      "group": "tab",
+      "sessions": 1
+     },
+     {
+      "id": "2:Other",
+      "label": "Other",
+      "group": "other",
+      "sessions": 3
+     }
+    ],
+    [
+     {
+      "id": "3:Agent asked for input",
+      "label": "Agent asked for input",
+      "group": "agent",
+      "sessions": 3
+     },
+     {
+      "id": "3:Closed a tab",
+      "label": "Closed a tab",
+      "group": "tab",
+      "sessions": 2
+     },
+     {
+      "id": "3:Changed a setting",
+      "label": "Changed a setting",
+      "group": "settings",
+      "sessions": 1
+     },
+     {
+      "id": "3:Markdown: details",
+      "label": "Markdown: details",
+      "group": "md",
+      "sessions": 1
+     },
+     {
+      "id": "3:Markdown: Mermaid",
+      "label": "Markdown: Mermaid",
+      "group": "md",
+      "sessions": 1
+     },
+     {
+      "id": "3:Palette: cycle tab",
+      "label": "Palette: cycle tab",
+      "group": "palette",
+      "sessions": 1
+     },
+     {
+      "id": "3:Other",
+      "label": "Other",
+      "group": "other",
+      "sessions": 9
+     }
+    ],
+    [
+     {
+      "id": "4:Claude started",
+      "label": "Claude started",
+      "group": "agent",
+      "sessions": 4
+     },
+     {
+      "id": "4:File tab",
+      "label": "File tab",
+      "group": "tab",
+      "sessions": 2
+     },
+     {
+      "id": "4:Palette: open settings",
+      "label": "Palette: open settings",
+      "group": "palette",
+      "sessions": 2
+     },
+     {
+      "id": "4:Palette: split",
+      "label": "Palette: split",
+      "group": "palette",
+      "sessions": 2
+     },
+     {
+      "id": "4:Browser tab",
+      "label": "Browser tab",
+      "group": "tab",
+      "sessions": 1
+     },
+     {
+      "id": "4:Changed a setting",
+      "label": "Changed a setting",
+      "group": "settings",
+      "sessions": 1
+     },
+     {
+      "id": "4:Other",
+      "label": "Other",
+      "group": "other",
+      "sessions": 6
+     }
+    ],
+    [
+     {
+      "id": "5:Agent asked for input",
+      "label": "Agent asked for input",
+      "group": "agent",
+      "sessions": 3
+     },
+     {
+      "id": "5:Palette: split",
+      "label": "Palette: split",
+      "group": "palette",
+      "sessions": 3
+     },
+     {
+      "id": "5:Terminal tab",
+      "label": "Terminal tab",
+      "group": "tab",
+      "sessions": 3
+     },
+     {
+      "id": "5:Changed a setting",
+      "label": "Changed a setting",
+      "group": "settings",
+      "sessions": 2
+     },
+     {
+      "id": "5:Browser tab",
+      "label": "Browser tab",
+      "group": "tab",
+      "sessions": 1
+     },
+     {
+      "id": "5:Claude started",
+      "label": "Claude started",
+      "group": "agent",
+      "sessions": 1
+     },
+     {
+      "id": "5:Other",
+      "label": "Other",
+      "group": "other",
+      "sessions": 5
+     }
+    ]
+   ],
+   "links": [
+    {
+     "from": "0:Launched",
+     "to": "1:Palette: new terminal",
+     "sessions": 5
+    },
+    {
+     "from": "0:Launched",
+     "to": "1:Terminal tab",
+     "sessions": 10
+    },
+    {
+     "from": "0:Launched",
+     "to": "1:Palette: open settings",
+     "sessions": 1
+    },
+    {
+     "from": "0:Launched",
+     "to": "1:Help: documentation",
+     "sessions": 1
+    },
+    {
+     "from": "0:Launched",
+     "to": "1:Help: keybindings",
+     "sessions": 1
+    },
+    {
+     "from": "1:Palette: new terminal",
+     "to": "2:Terminal tab",
+     "sessions": 5
+    },
+    {
+     "from": "1:Terminal tab",
+     "to": "2:Palette: split",
+     "sessions": 3
+    },
+    {
+     "from": "1:Terminal tab",
+     "to": "2:Claude started",
+     "sessions": 3
+    },
+    {
+     "from": "1:Terminal tab",
+     "to": "2:Other",
+     "sessions": 2
+    },
+    {
+     "from": "1:Terminal tab",
+     "to": "2:File tab",
+     "sessions": 1
+    },
+    {
+     "from": "1:Palette: open settings",
+     "to": "2:Changed a setting",
+     "sessions": 1
+    },
+    {
+     "from": "1:Terminal tab",
+     "to": "2:Closed a tab",
+     "sessions": 1
+    },
+    {
+     "from": "1:Help: documentation",
+     "to": "2:File tab",
+     "sessions": 1
+    },
+    {
+     "from": "1:Help: keybindings",
+     "to": "2:Other",
+     "sessions": 1
+    },
+    {
+     "from": "2:Terminal tab",
+     "to": "3:Closed a tab",
+     "sessions": 1
+    },
+    {
+     "from": "2:Terminal tab",
+     "to": "3:Markdown: details",
+     "sessions": 1
+    },
+    {
+     "from": "2:Palette: split",
+     "to": "3:Other",
+     "sessions": 3
+    },
+    {
+     "from": "2:Terminal tab",
+     "to": "3:Markdown: Mermaid",
+     "sessions": 1
+    },
+    {
+     "from": "2:Claude started",
+     "to": "3:Agent asked for input",
+     "sessions": 3
+    },
+    {
+     "from": "2:Other",
+     "to": "3:Other",
+     "sessions": 2
+    },
+    {
+     "from": "2:Other",
+     "to": "3:Changed a setting",
+     "sessions": 1
+    },
+    {
+     "from": "2:Terminal tab",
+     "to": "3:Palette: cycle tab",
+     "sessions": 1
+    },
+    {
+     "from": "2:File tab",
+     "to": "3:Other",
+     "sessions": 2
+    },
+    {
+     "from": "2:Changed a setting",
+     "to": "3:Closed a tab",
+     "sessions": 1
+    },
+    {
+     "from": "2:Closed a tab",
+     "to": "3:Other",
+     "sessions": 1
+    },
+    {
+     "from": "2:Terminal tab",
+     "to": "3:Other",
+     "sessions": 1
+    },
+    {
+     "from": "3:Closed a tab",
+     "to": "4:Palette: open settings",
+     "sessions": 1
+    },
+    {
+     "from": "3:Markdown: details",
+     "to": "4:File tab",
+     "sessions": 1
+    },
+    {
+     "from": "3:Other",
+     "to": "4:File tab",
+     "sessions": 1
+    },
+    {
+     "from": "3:Markdown: Mermaid",
+     "to": "4:Other",
+     "sessions": 1
+    },
+    {
+     "from": "3:Agent asked for input",
+     "to": "4:Claude started",
+     "sessions": 1
+    },
+    {
+     "from": "3:Other",
+     "to": "4:Other",
+     "sessions": 1
+    },
+    {
+     "from": "3:Other",
+     "to": "4:Changed a setting",
+     "sessions": 1
+    },
+    {
+     "from": "3:Changed a setting",
+     "to": "4:Other",
+     "sessions": 1
+    },
+    {
+     "from": "3:Palette: cycle tab",
+     "to": "4:Other",
+     "sessions": 1
+    },
+    {
+     "from": "3:Other",
+     "to": "4:Claude started",
+     "sessions": 3
+    },
+    {
+     "from": "3:Other",
+     "to": "4:Palette: open settings",
+     "sessions": 1
+    },
+    {
+     "from": "3:Agent asked for input",
+     "to": "4:Other",
+     "sessions": 1
+    },
+    {
+     "from": "3:Closed a tab",
+     "to": "4:Other",
+     "sessions": 1
+    },
+    {
+     "from": "3:Other",
+     "to": "4:Palette: split",
+     "sessions": 1
+    },
+    {
+     "from": "3:Agent asked for input",
+     "to": "4:Palette: split",
+     "sessions": 1
+    },
+    {
+     "from": "3:Other",
+     "to": "4:Browser tab",
+     "sessions": 1
+    },
+    {
+     "from": "4:Palette: open settings",
+     "to": "5:Changed a setting",
+     "sessions": 2
+    },
+    {
+     "from": "4:File tab",
+     "to": "5:Other",
+     "sessions": 2
+    },
+    {
+     "from": "4:Other",
+     "to": "5:Other",
+     "sessions": 2
+    },
+    {
+     "from": "4:Claude started",
+     "to": "5:Palette: split",
+     "sessions": 1
+    },
+    {
+     "from": "4:Other",
+     "to": "5:Palette: split",
+     "sessions": 1
+    },
+    {
+     "from": "4:Changed a setting",
+     "to": "5:Other",
+     "sessions": 1
+    },
+    {
+     "from": "4:Other",
+     "to": "5:Terminal tab",
+     "sessions": 1
+    },
+    {
+     "from": "4:Other",
+     "to": "5:Browser tab",
+     "sessions": 1
+    },
+    {
+     "from": "4:Claude started",
+     "to": "5:Agent asked for input",
+     "sessions": 3
+    },
+    {
+     "from": "4:Other",
+     "to": "5:Claude started",
+     "sessions": 1
+    },
+    {
+     "from": "4:Palette: split",
+     "to": "5:Terminal tab",
+     "sessions": 2
+    },
+    {
+     "from": "4:Browser tab",
+     "to": "5:Palette: split",
+     "sessions": 1
+    }
+   ]
+  }
+ },
+ "milestones": [
+  {
+   "key": "launch",
+   "label": "Launched",
+   "sessions": 120,
+   "first": 18,
+   "medianSecs": 0,
+   "firstMedianSecs": 0
+  },
+  {
+   "key": "tab",
+   "label": "Opened a tab",
+   "sessions": 114,
+   "first": 18,
+   "medianSecs": 69,
+   "firstMedianSecs": 51
+  },
+  {
+   "key": "agent",
+   "label": "Started an agent",
+   "sessions": 118,
+   "first": 17,
+   "medianSecs": 30,
+   "firstMedianSecs": 1437
+  },
+  {
+   "key": "waiting",
+   "label": "An agent asked for input",
+   "sessions": 105,
+   "first": 16,
+   "medianSecs": 374,
+   "firstMedianSecs": 1591
+  },
+  {
+   "key": "file",
+   "label": "Opened a file",
+   "sessions": 94,
+   "first": 15,
+   "medianSecs": 781,
+   "firstMedianSecs": 1840
+  },
+  {
+   "key": "panes",
+   "label": "Worked in two panes",
+   "sessions": 114,
+   "first": 18,
+   "medianSecs": 264,
+   "firstMedianSecs": 680
+  },
+  {
+   "key": "browser",
+   "label": "Used the browser pane",
+   "sessions": 47,
+   "first": 8,
+   "medianSecs": 1766,
+   "firstMedianSecs": 2357
+  }
+ ],
+ "next": [
+  {
+   "label": "Launched",
+   "group": "launch",
+   "sessions": 120,
+   "to": [
+    {
+     "label": "Claude resumed",
+     "group": "agent",
+     "sessions": 35
+    },
+    {
+     "label": "Terminal tab",
+     "group": "tab",
+     "sessions": 29
+    },
+    {
+     "label": "Claude started",
+     "group": "agent",
+     "sessions": 21
+    },
+    {
+     "label": "File tab",
+     "group": "tab",
+     "sessions": 16
+    },
+    {
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "sessions": 13
+    }
+   ]
+  },
+  {
+   "label": "Terminal tab",
+   "group": "tab",
+   "sessions": 113,
+   "to": [
+    {
+     "label": "File tab",
+     "group": "tab",
+     "sessions": 36
+    },
+    {
+     "label": "Closed a tab",
+     "group": "tab",
+     "sessions": 31
+    },
+    {
+     "label": "Claude started",
+     "group": "agent",
+     "sessions": 30
+    },
+    {
+     "label": "Palette: split",
+     "group": "palette",
+     "sessions": 30
+    },
+    {
+     "label": "Ended",
+     "group": "end",
+     "sessions": 28
+    }
+   ]
+  },
+  {
+   "label": "Agent asked for input",
+   "group": "agent",
+   "sessions": 105,
+   "to": [
+    {
+     "label": "File tab",
+     "group": "tab",
+     "sessions": 18
+    },
+    {
+     "label": "Palette: split",
+     "group": "palette",
+     "sessions": 11
+    },
+    {
+     "label": "Terminal tab",
+     "group": "tab",
+     "sessions": 10
+    },
+    {
+     "label": "Notice: update ready",
+     "group": "notice",
+     "sessions": 9
+    },
+    {
+     "label": "Claude started",
+     "group": "agent",
+     "sessions": 8
+    }
+   ]
+  },
+  {
+   "label": "File tab",
+   "group": "tab",
+   "sessions": 94,
+   "to": [
+    {
+     "label": "Viewed markdown",
+     "group": "view",
+     "sessions": 74
+    },
+    {
+     "label": "Viewed code",
+     "group": "view",
+     "sessions": 57
+    },
+    {
+     "label": "Viewed plain text",
+     "group": "view",
+     "sessions": 18
+    },
+    {
+     "label": "Closed a tab",
+     "group": "tab",
+     "sessions": 1
+    }
+   ]
+  },
+  {
+   "label": "Claude resumed",
+   "group": "agent",
+   "sessions": 84,
+   "to": [
+    {
+     "label": "Agent asked for input",
+     "group": "agent",
+     "sessions": 44
+    },
+    {
+     "label": "Ended",
+     "group": "end",
+     "sessions": 16
+    },
+    {
+     "label": "Terminal tab",
+     "group": "tab",
+     "sessions": 13
+    },
+    {
+     "label": "Palette: split",
+     "group": "palette",
+     "sessions": 9
+    },
+    {
+     "label": "Claude started",
+     "group": "agent",
+     "sessions": 7
+    }
+   ]
+  },
+  {
+   "label": "Claude started",
+   "group": "agent",
+   "sessions": 84,
+   "to": [
+    {
+     "label": "Agent asked for input",
+     "group": "agent",
+     "sessions": 53
+    },
+    {
+     "label": "Terminal tab",
+     "group": "tab",
+     "sessions": 16
+    },
+    {
+     "label": "Ended",
+     "group": "end",
+     "sessions": 11
+    },
+    {
+     "label": "File tab",
+     "group": "tab",
+     "sessions": 11
+    },
+    {
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "sessions": 8
+    }
+   ]
+  },
+  {
+   "label": "Viewed markdown",
+   "group": "view",
+   "sessions": 74,
+   "to": [
+    {
+     "label": "Terminal tab",
+     "group": "tab",
+     "sessions": 18
+    },
+    {
+     "label": "File tab",
+     "group": "tab",
+     "sessions": 16
+    },
+    {
+     "label": "Closed a tab",
+     "group": "tab",
+     "sessions": 12
+    },
+    {
+     "label": "Claude started",
+     "group": "agent",
+     "sessions": 10
+    },
+    {
+     "label": "Claude resumed",
+     "group": "agent",
+     "sessions": 7
+    }
+   ]
+  },
+  {
+   "label": "Palette: split",
+   "group": "palette",
+   "sessions": 73,
+   "to": [
+    {
+     "label": "Terminal tab",
+     "group": "tab",
+     "sessions": 24
+    },
+    {
+     "label": "Claude resumed",
+     "group": "agent",
+     "sessions": 12
+    },
+    {
+     "label": "File tab",
+     "group": "tab",
+     "sessions": 12
+    },
+    {
+     "label": "Claude started",
+     "group": "agent",
+     "sessions": 8
+    },
+    {
+     "label": "Closed a tab",
+     "group": "tab",
+     "sessions": 7
+    }
+   ]
+  }
+ ],
+ "features": {
+  "opened": [
+   {
+    "name": "terminal",
+    "how": "key",
+    "sessions": 99,
+    "count": 206
+   },
+   {
+    "name": "terminal",
+    "how": "click",
+    "sessions": 72,
+    "count": 108
+   },
+   {
+    "name": "viewer",
+    "how": "explorer",
+    "sessions": 63,
+    "count": 99
+   },
+   {
+    "name": "terminal",
+    "how": "palette",
+    "sessions": 59,
+    "count": 89
+   },
+   {
+    "name": "viewer",
+    "how": "palette",
+    "sessions": 48,
+    "count": 57
+   },
+   {
+    "name": "browser",
+    "how": "palette",
+    "sessions": 47,
+    "count": 58
+   },
+   {
+    "name": "viewer",
+    "how": "link",
+    "sessions": 45,
+    "count": 60
+   }
+  ],
+  "palette": [
+   {
+    "name": "split",
+    "sessions": 73,
+    "count": 111
+   },
+   {
+    "name": "new_terminal",
+    "sessions": 59,
+    "count": 89
+   },
+   {
+    "name": "dock_chrome_window",
+    "sessions": 47,
+    "count": 58
+   },
+   {
+    "name": "open_settings",
+    "sessions": 44,
+    "count": 61
+   },
+   {
+    "name": "set_theme",
+    "sessions": 25,
+    "count": 30
+   },
+   {
+    "name": "focus_pane",
+    "sessions": 21,
+    "count": 21
+   },
+   {
+    "name": "toggle_sidebar",
+    "sessions": 21,
+    "count": 21
+   },
+   {
+    "name": "toggle_markdown_view",
+    "sessions": 20,
+    "count": 22
+   },
+   {
+    "name": "cycle_tab",
+    "sessions": 20,
+    "count": 21
+   },
+   {
+    "name": "find",
+    "sessions": 20,
+    "count": 20
+   },
+   {
+    "name": "move_tab_to_pane",
+    "sessions": 18,
+    "count": 20
+   },
+   {
+    "name": "toggle_maximize",
+    "sessions": 17,
+    "count": 22
+   }
+  ],
+  "md": [
+   {
+    "name": "details",
+    "sessions": 20,
+    "count": 24
+   },
+   {
+    "name": "mermaid",
+    "sessions": 17,
+    "count": 18
+   },
+   {
+    "name": "checklist",
+    "sessions": 14,
+    "count": 14
+   },
+   {
+    "name": "inline_diff",
+    "sessions": 13,
+    "count": 13
+   },
+   {
+    "name": "table_edit",
+    "sessions": 11,
+    "count": 12
+   }
+  ],
+  "views": [
+   {
+    "name": "markdown",
+    "mode": "rendered",
+    "sessions": 62,
+    "count": 88
+   },
+   {
+    "name": "code",
+    "mode": "raw",
+    "sessions": 57,
+    "count": 79
+   },
+   {
+    "name": "markdown",
+    "mode": "raw",
+    "sessions": 22,
+    "count": 25
+   },
+   {
+    "name": "plain",
+    "mode": "raw",
+    "sessions": 18,
+    "count": 23
+   }
+  ],
+  "settings": [
+   {
+    "name": "font.preset",
+    "sessions": 14,
+    "count": 15
+   },
+   {
+    "name": "update.auto",
+    "sessions": 13,
+    "count": 13
+   },
+   {
+    "name": "sidebar.collapsed",
+    "sessions": 11,
+    "count": 12
+   },
+   {
+    "name": "telemetry.usage",
+    "sessions": 10,
+    "count": 14
+   },
+   {
+    "name": "theme.dark",
+    "sessions": 6,
+    "count": 7
+   }
+  ],
+  "help": [
+   {
+    "name": "keybindings",
+    "sessions": 19,
+    "count": 19
+   },
+   {
+    "name": "about",
+    "sessions": 10,
+    "count": 10
+   },
+   {
+    "name": "documentation",
+    "sessions": 10,
+    "count": 10
+   }
+  ],
+  "agents": [
+   {
+    "name": "claude",
+    "how": "new",
+    "sessions": 84,
+    "count": 145
+   },
+   {
+    "name": "claude",
+    "how": "resume",
+    "sessions": 84,
+    "count": 143
+   },
+   {
+    "name": "other",
+    "how": "resume",
+    "sessions": 8,
+    "count": 8
+   },
+   {
+    "name": "other",
+    "how": "new",
+    "sessions": 5,
+    "count": 5
+   }
+  ]
+ },
+ "focus": [
+  {
+   "name": "terminal",
+   "secs": 236410,
+   "sessions": 120
+  },
+  {
+   "name": "viewer",
+   "secs": 76098,
+   "sessions": 103
+  },
+  {
+   "name": "browser",
+   "secs": 7548,
+   "sessions": 47
+  },
+  {
+   "name": "settings",
+   "secs": 1994,
+   "sessions": 44
+  }
+ ],
+ "lengths": [
+  {
+   "name": "<1m",
+   "sessions": 1
+  },
+  {
+   "name": "1-10m",
+   "sessions": 19
+  },
+  {
+   "name": "10-60m",
+   "sessions": 37
+  },
+  {
+   "name": "1-4h",
+   "sessions": 48
+  },
+  {
+   "name": "4h+",
+   "sessions": 15
+  }
+ ],
+ "ends": {
+  "quit": 100,
+  "lost": 3,
+  "unknown": 17
+ },
+ "errorEvents": [
+  {
+   "name": "chrome_missing",
+   "sessions": 9,
+   "count": 9
+  },
+  {
+   "name": "save_failed",
+   "sessions": 9,
+   "count": 9
+  },
+  {
+   "name": "daemon_restarted",
+   "sessions": 6,
+   "count": 6
+  },
+  {
+   "name": "mermaid_failed",
+   "sessions": 4,
+   "count": 4
+  }
+ ],
+ "notices": [
+  {
+   "name": "update_ready",
+   "sessions": 44,
+   "count": 54
+  }
+ ],
+ "dropped": 0,
+ "rejected": 4,
+ "rhythm": [
+  {
+   "name": "first",
+   "sessions": 18
+  },
+  {
+   "name": "same day",
+   "sessions": 49
+  },
+  {
+   "name": "1",
+   "sessions": 31
+  },
+  {
+   "name": "2-6",
+   "sessions": 16
+  },
+  {
+   "name": "7+",
+   "sessions": 6
+  }
+ ],
+ "cohorts": [
+  {
+   "week": "2026-09-10",
+   "weeks": [
+    null,
+    null,
+    null,
+    null,
+    2,
+    0
+   ]
+  },
+  {
+   "week": "2026-09-17",
+   "weeks": [
+    null,
+    null,
+    null,
+    11,
+    4
+   ]
+  },
+  {
+   "week": "2026-09-24",
+   "weeks": [
+    null,
+    null,
+    15,
+    9
+   ]
+  },
+  {
+   "week": "2026-10-01",
+   "weeks": [
+    null,
+    23,
+    7
+   ]
+  },
+  {
+   "week": "2026-10-08",
+   "weeks": [
+    25,
+    15
+   ]
+  },
+  {
+   "week": "2026-10-15",
+   "weeks": [
+    9
+   ]
+  }
+ ]
+}

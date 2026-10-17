@@ -9,6 +9,13 @@
  *   GET  /admin/query/<name>?days=N    one of the eight saved queries
  *   POST /admin/manual/<key>           { value } appended to the hand-entered series
  *   POST /admin/snapshot               the daily ledger write (admin token or the scheduler's OIDC token)
+ *   GET  /arkos/admin/kpis             Arkos IDE's index card
+ *   GET  /arkos/admin/query/<name>?days=N   one of Arkos's four queries
+ *
+ * Arkos IDE is served under the prefix `/arkos` so that its `api` in
+ * apps.json is `<service>/arkos` and the shell's two routes hold for it.
+ * Both prefixes go through the same checks in the same order; only the
+ * route table differs.
  *
  * Order of the checks, and why: the origin first, so somebody else's page
  * gets a 403 and no CORS headers; the preflight next, since it carries no
@@ -22,10 +29,13 @@ import { bearerOf, audiencesFor } from "./auth.mjs";
 import { answer, fail, failureOf, readBody, parseDays, isAllowedOrigin, corsHeaders, preflightHeaders } from "./http.mjs";
 import { clientIpOf } from "./limiter.mjs";
 import { isQueryName, isManualKey } from "./queries.mjs";
+import { isArkosQueryName } from "./arkos-queries.mjs";
 
 const MAX_BODY_BYTES = 1024;
 
-export function createApp({ config, queries, limiter, adminAuth, oidc, now = Date.now, log = console }) {
+const ARKOS_PREFIX = "/arkos";
+
+export function createApp({ config, queries, arkos = null, limiter, adminAuth, oidc, now = Date.now, log = console }) {
   const readersMissingLogged = { done: false };
 
   return function handle(req, res) {
@@ -36,7 +46,8 @@ export function createApp({ config, queries, limiter, adminAuth, oidc, now = Dat
       if (req.method !== "GET" && req.method !== "HEAD") return fail(res, 405, "method not allowed", { allow: "GET, HEAD" });
       return answer(res, 200, { ok: true, at: new Date(now()).toISOString() });
     }
-    if (!path.startsWith("/admin/")) return fail(res, 404, "not found");
+    const isArkos = arkos !== null && path.startsWith(`${ARKOS_PREFIX}/admin/`);
+    if (!path.startsWith("/admin/") && !isArkos) return fail(res, 404, "not found");
 
     const origin = req.headers.origin;
     if (!isAllowedOrigin(origin, config.allowedOrigins)) return fail(res, 403, "origin not allowed");
@@ -66,7 +77,8 @@ export function createApp({ config, queries, limiter, adminAuth, oidc, now = Dat
           authorized = (await oidc.verify(token, audiencesFor(req, config.serviceUrl))) !== null;
         }
         if (!authorized) return fail(res, 401, "unauthorized", cors);
-        await route(req, res, path, url.searchParams, cors);
+        if (isArkos) await routeArkos(req, res, path.slice(ARKOS_PREFIX.length), url.searchParams, cors);
+        else await route(req, res, path, url.searchParams, cors);
       } catch (error) {
         // The cause goes to the log, where it can be read later; the page gets the message.
         log.error(`admin: ${req.method} ${path} failed`, error);
@@ -103,6 +115,25 @@ export function createApp({ config, queries, limiter, adminAuth, oidc, now = Dat
     if (path === "/admin/snapshot") {
       if (req.method !== "POST") return fail(res, 405, "method not allowed", { ...cors, allow: "POST, OPTIONS" });
       return answer(res, 200, await queries.snapshot(), cors);
+    }
+
+    return fail(res, 404, "not found", cors);
+  }
+
+  /** Arkos's two routes, `path` with the prefix taken off: the index card and the queries, nothing else. */
+  async function routeArkos(req, res, path, search, cors) {
+    if (path === "/admin/kpis") {
+      if (req.method !== "GET") return fail(res, 405, "method not allowed", { ...cors, allow: "GET, OPTIONS" });
+      return answer(res, 200, await arkos.kpis(), cors);
+    }
+
+    const query = /^\/admin\/query\/([a-z]+)$/.exec(path);
+    if (query !== null) {
+      if (!isArkosQueryName(query[1])) return fail(res, 404, "no such query", cors);
+      if (req.method !== "GET") return fail(res, 405, "method not allowed", { ...cors, allow: "GET, OPTIONS" });
+      const days = parseDays(search.get("days"));
+      if (days === null) return fail(res, 400, "days must be 1, 7, 30 or 90", cors);
+      return answer(res, 200, await arkos[query[1]](days), cors);
     }
 
     return fail(res, 404, "not found", cors);

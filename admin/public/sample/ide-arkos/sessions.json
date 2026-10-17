@@ -1,0 +1,6529 @@
+{
+ "rows": [
+  {
+   "received": "2026-10-17T08:19:00Z",
+   "ver": "0.5.1",
+   "osv": 26,
+   "arch": "x86_64",
+   "len": 9518,
+   "end": "quit",
+   "rd": 1,
+   "iw": "2026-09-17",
+   "focus": {
+    "terminal": 5282,
+    "browser": 278
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 1 tab restored"
+    },
+    {
+     "t": 23,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 605,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1210,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1436,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 2114,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 2619,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 2998,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 4032,
+     "label": "Palette: find",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5070,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5072,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 5261,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 5449,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 6067,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 6067,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 6548,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 6870,
+     "label": "Palette: set theme",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 7542,
+     "label": "Palette: toggle maximize",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 7853,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 7853,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 8154,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 9038,
+     "label": "Palette: toggle sidebar",
+     "group": "palette",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-17T07:54:06Z",
+   "ver": "0.5.0",
+   "osv": 14,
+   "arch": "arm64",
+   "len": 16571,
+   "end": "quit",
+   "rd": 1,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 3977,
+    "viewer": 1420,
+    "settings": 70
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal"
+    },
+    {
+     "t": 14,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 189,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 207,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 207,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 2272,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 2547,
+     "label": "Palette: toggle maximize",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3584,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3589,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "sidebar.collapsed"
+    },
+    {
+     "t": 4550,
+     "label": "Palette: find",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5500,
+     "label": "Palette: toggle maximize",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 7528,
+     "label": "Help: keybindings",
+     "group": "help",
+     "detail": null
+    },
+    {
+     "t": 9495,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 9691,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 10508,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 11759,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 12310,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 12722,
+     "label": "Palette: toggle maximize",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 13918,
+     "label": "Palette: toggle markdown view",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 15826,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 15826,
+     "label": "Viewed plain text",
+     "group": "view",
+     "detail": "raw"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-17T05:52:22Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 3724,
+   "end": "quit",
+   "rd": 1,
+   "iw": "2026-09-24",
+   "focus": {
+    "terminal": 1085,
+    "viewer": 387
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 1 tab restored"
+    },
+    {
+     "t": 15,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 388,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 466,
+     "label": "Markdown: table edit",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 866,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 1299,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 1687,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 1687,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 2054,
+     "label": "Palette: toggle sidebar",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2213,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 2608,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 2935,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key, x3"
+    },
+    {
+     "t": 3462,
+     "label": "Palette: find",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3651,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-17T05:33:03Z",
+   "ver": "0.5.0",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 809,
+   "end": "unknown",
+   "rd": 0,
+   "iw": "2026-10-15",
+   "focus": {
+    "terminal": 422,
+    "viewer": 150,
+    "browser": 30,
+    "settings": 11
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 4 tabs restored"
+    },
+    {
+     "t": 20,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 203,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 287,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 340,
+     "label": "Help: about",
+     "group": "help",
+     "detail": null
+    },
+    {
+     "t": 381,
+     "label": "Palette: toggle markdown view",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 431,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 431,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 436,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 438,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 504,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 547,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 590,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 595,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "telemetry.usage"
+    },
+    {
+     "t": 668,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 702,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 784,
+     "label": "Help: documentation",
+     "group": "help",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-17T00:19:50Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 16064,
+   "end": "quit",
+   "rd": 0,
+   "iw": "2026-10-01",
+   "focus": {
+    "terminal": 5068,
+    "viewer": 1810
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 4 tabs restored"
+    },
+    {
+     "t": 19,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 332,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 523,
+     "label": "Palette: set theme",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1952,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 2537,
+     "label": "Palette: set theme",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 4494,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 5347,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 5347,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 6152,
+     "label": "Palette: find",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 8086,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 9771,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 11359,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 11394,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 12211,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 13249,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 13966,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 13966,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 15038,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 15180,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-16T22:52:34Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 5401,
+   "end": "quit",
+   "rd": 2,
+   "iw": "2026-09-24",
+   "focus": {
+    "terminal": 1254,
+    "viewer": 448
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "relaunch, 2 tabs restored"
+    },
+    {
+     "t": 29,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 260,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 324,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 464,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 464,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 832,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 832,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 1372,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 1606,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 1606,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 1820,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 2311,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 2468,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 2468,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 2749,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 2749,
+     "label": "Viewed plain text",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 2811,
+     "label": "Palette: move tab to pane",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3424,
+     "label": "Palette: toggle maximize",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 4045,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 4304,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 4309,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 4557,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 5189,
+     "label": "Markdown: Mermaid",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 5339,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 5339,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-16T21:05:30Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 306,
+   "end": "quit",
+   "rd": 1,
+   "iw": "2026-10-01",
+   "focus": {
+    "terminal": 125,
+    "viewer": 45
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 2 tabs restored"
+    },
+    {
+     "t": 11,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 81,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 118,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 132,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 142,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 176,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 192,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 203,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 231,
+     "label": "Error: mermaid failed",
+     "group": "error",
+     "detail": null
+    },
+    {
+     "t": 255,
+     "label": "Markdown: details",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 279,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 286,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 286,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-16T19:37:30Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 3646,
+   "end": "quit",
+   "rd": 2,
+   "iw": "2026-09-17",
+   "focus": {
+    "terminal": 1173,
+    "viewer": 419,
+    "browser": 83
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 3 tabs restored"
+    },
+    {
+     "t": 29,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 249,
+     "label": "Palette: toggle markdown view",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 596,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 727,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click, x2"
+    },
+    {
+     "t": 1127,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": "x2"
+    },
+    {
+     "t": 1614,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1614,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 1739,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 2033,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2035,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 2375,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 2489,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 2813,
+     "label": "Palette: toggle markdown view",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3142,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 3507,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3507,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-16T19:15:37Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 54,
+   "end": "quit",
+   "rd": 0,
+   "iw": "2026-09-24",
+   "focus": {
+    "terminal": 26,
+    "viewer": 9
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "updated, 1 tab restored"
+    },
+    {
+     "t": 6,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 6,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 16,
+     "label": "Palette: toggle sidebar",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 24,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 25,
+     "label": "Update staged",
+     "group": "update",
+     "detail": null
+    },
+    {
+     "t": 30,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-16T18:29:59Z",
+   "ver": "0.5.1",
+   "osv": 26,
+   "arch": "arm64",
+   "len": 1285,
+   "end": "quit",
+   "rd": 0,
+   "iw": "2026-09-24",
+   "focus": {
+    "terminal": 596,
+    "viewer": 213,
+    "browser": 42
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 1 tab restored"
+    },
+    {
+     "t": 18,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 303,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 394,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 396,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 452,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 462,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 518,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 651,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 773,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 775,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 835,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 865,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 908,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 994,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 1019,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 1019,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 1142,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 1142,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 1153,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 1203,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-16T13:42:28Z",
+   "ver": "0.5.0",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 2284,
+   "end": "quit",
+   "rd": 2,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 1065,
+    "viewer": 380,
+    "browser": 76,
+    "settings": 75
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 1 tab restored"
+    },
+    {
+     "t": 21,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 257,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 445,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": "x2"
+    },
+    {
+     "t": 572,
+     "label": "Palette: move tab to pane",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 637,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 875,
+     "label": "Markdown: details",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 1095,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1095,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 1227,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 1227,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 1243,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1476,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1478,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 1715,
+     "label": "Help: about",
+     "group": "help",
+     "detail": null
+    },
+    {
+     "t": 1924,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1975,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1980,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "update.auto"
+    },
+    {
+     "t": 2241,
+     "label": "Palette: focus pane",
+     "group": "palette",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-16T13:31:49Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 3715,
+   "end": "unknown",
+   "rd": 4,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 1493,
+    "viewer": 533
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 3 tabs restored"
+    },
+    {
+     "t": 6,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 129,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 129,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 385,
+     "label": "Palette: set theme",
+     "group": "palette",
+     "detail": "x2"
+    },
+    {
+     "t": 725,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 791,
+     "label": "Help: keybindings",
+     "group": "help",
+     "detail": null
+    },
+    {
+     "t": 962,
+     "label": "Palette: set theme",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1028,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 1398,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1637,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 2087,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2276,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 2718,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 2869,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2950,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 3091,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 3091,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 3315,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-16T12:30:34Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "x86_64",
+   "len": 3603,
+   "end": "unknown",
+   "rd": -1,
+   "iw": "2026-10-15",
+   "focus": {
+    "terminal": 2717,
+    "browser": 143,
+    "settings": 43
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal"
+    },
+    {
+     "t": 50,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 50,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 359,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 376,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 381,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "font.preset"
+    },
+    {
+     "t": 624,
+     "label": "Palette: toggle maximize",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1026,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 1159,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 1231,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 1240,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1245,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "sidebar.collapsed"
+    },
+    {
+     "t": 1666,
+     "label": "Palette: toggle sidebar",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1981,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 2426,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2426,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 2616,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2618,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 2926,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 3092,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 3305,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 3592,
+     "label": "Markdown: Mermaid",
+     "group": "md",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-16T11:32:59Z",
+   "ver": "0.5.0",
+   "osv": 14,
+   "arch": "arm64",
+   "len": 2253,
+   "end": "quit",
+   "rd": -1,
+   "iw": "2026-10-15",
+   "focus": {
+    "terminal": 1052,
+    "viewer": 375
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal"
+    },
+    {
+     "t": 84,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 84,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 252,
+     "label": "Markdown: details",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 509,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 509,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 568,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 960,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 1227,
+     "label": "Palette: toggle markdown view",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1267,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 1538,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1660,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 1660,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 1768,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1768,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 1946,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2018,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 2056,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 2122,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-16T11:07:30Z",
+   "ver": "0.5.0",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 5936,
+   "end": "lost",
+   "rd": 0,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 1435,
+    "viewer": 512,
+    "settings": 73
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "relaunch"
+    },
+    {
+     "t": 26,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 144,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 826,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 826,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 1269,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1379,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 2062,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2067,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "update.auto"
+    },
+    {
+     "t": 2376,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 2376,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 2837,
+     "label": "Palette: toggle maximize",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3491,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 3491,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 3649,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 4330,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 4714,
+     "label": "Markdown: checklist",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 4977,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 5041,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5359,
+     "label": "Palette: toggle markdown view",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5695,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-16T07:15:48Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "x86_64",
+   "len": 5943,
+   "end": "unknown",
+   "rd": 2,
+   "iw": "2026-10-01",
+   "focus": {
+    "terminal": 2748,
+    "viewer": 981
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "relaunch, 2 tabs restored"
+    },
+    {
+     "t": 29,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 29,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 261,
+     "label": "Palette: toggle maximize",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 973,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1226,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 1599,
+     "label": "Markdown: inline diff",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 2055,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 2055,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 2267,
+     "label": "Markdown: table edit",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 2498,
+     "label": "Error: daemon restarted",
+     "group": "error",
+     "detail": null
+    },
+    {
+     "t": 3168,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 3674,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key, x2"
+    },
+    {
+     "t": 4739,
+     "label": "Palette: cycle tab",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5161,
+     "label": "Palette: toggle maximize",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5303,
+     "label": "Error: chrome missing",
+     "group": "error",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-16T07:15:23Z",
+   "ver": "0.5.1",
+   "osv": 14,
+   "arch": "arm64",
+   "len": 2289,
+   "end": "quit",
+   "rd": 0,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 882,
+    "viewer": 315,
+    "settings": 74
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal"
+    },
+    {
+     "t": 6,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 160,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 333,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 334,
+     "label": "Update staged",
+     "group": "update",
+     "detail": null
+    },
+    {
+     "t": 380,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 587,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 704,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 715,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 715,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 768,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 769,
+     "label": "Update staged",
+     "group": "update",
+     "detail": null
+    },
+    {
+     "t": 902,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 957,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 957,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 1220,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1254,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 1275,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 1290,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1543,
+     "label": "Markdown: checklist",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 1627,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 1768,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 1855,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 2031,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2135,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2140,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "update.auto"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-16T06:20:27Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 9383,
+   "end": "quit",
+   "rd": 1,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 5226,
+    "viewer": 1866,
+    "browser": 373,
+    "settings": 49
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 1 tab restored"
+    },
+    {
+     "t": 10,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 254,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 1058,
+     "label": "Markdown: inline diff",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 1900,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 2017,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2022,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "update.auto"
+    },
+    {
+     "t": 2696,
+     "label": "Palette: toggle markdown view",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2847,
+     "label": "Palette: toggle sidebar",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3735,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 3735,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 3969,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 3969,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 4130,
+     "label": "Palette: focus pane",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5033,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5035,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 5440,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5442,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 5857,
+     "label": "Markdown: details",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 5908,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 6041,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 6901,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 8007,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 8739,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-16T02:39:04Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "x86_64",
+   "len": 16119,
+   "end": "unknown",
+   "rd": 0,
+   "iw": "2026-10-01",
+   "focus": {
+    "terminal": 7077,
+    "viewer": 2527
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 2 tabs restored"
+    },
+    {
+     "t": 25,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 571,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 571,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 1567,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 1567,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 2076,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 2076,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 3506,
+     "label": "Markdown: details",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 5232,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 5232,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 5391,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 6134,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 6197,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 7858,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 8855,
+     "label": "Palette: toggle sidebar",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 8929,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 9785,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 10483,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 10806,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 12389,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 13285,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 13805,
+     "label": "Markdown: details",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 14409,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 15425,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 15425,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-16T02:10:07Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 363,
+   "end": "quit",
+   "rd": 1,
+   "iw": "2026-09-17",
+   "focus": {
+    "terminal": 100,
+    "viewer": 36
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 4 tabs restored"
+    },
+    {
+     "t": 11,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-16T00:13:47Z",
+   "ver": "0.5.1",
+   "osv": 14,
+   "arch": "arm64",
+   "len": 5887,
+   "end": "quit",
+   "rd": 0,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 1450,
+    "viewer": 518,
+    "browser": 103
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "updated, 2 tabs restored"
+    },
+    {
+     "t": 27,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 27,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 572,
+     "label": "Markdown: inline diff",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 975,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 1237,
+     "label": "Palette: find",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1969,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 2505,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 2505,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 2957,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 3191,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 3224,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 3703,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3705,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 3916,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 4252,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 4830,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 5489,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 5743,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T22:05:19Z",
+   "ver": "0.5.1",
+   "osv": 26,
+   "arch": "arm64",
+   "len": 1098,
+   "end": "quit",
+   "rd": 1,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 376,
+    "viewer": 134,
+    "settings": 49
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "relaunch, 3 tabs restored"
+    },
+    {
+     "t": 27,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 27,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 118,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 123,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "font.preset"
+    },
+    {
+     "t": 188,
+     "label": "Markdown: Mermaid",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 275,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 275,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 367,
+     "label": "Palette: set theme",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 386,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 391,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "theme.dark"
+    },
+    {
+     "t": 479,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 567,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 653,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 658,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "sidebar.collapsed"
+    },
+    {
+     "t": 751,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 751,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 846,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 846,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 956,
+     "label": "Palette: find",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 974,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 1017,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1022,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "sidebar.collapsed"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T20:18:15Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 465,
+   "end": "unknown",
+   "rd": -1,
+   "iw": "2026-10-15",
+   "focus": {
+    "terminal": 215,
+    "viewer": 77
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal"
+    },
+    {
+     "t": 45,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 61,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 85,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 123,
+     "label": "Palette: toggle markdown view",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 156,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 156,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 177,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 314,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 351,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 351,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 383,
+     "label": "Palette: set theme",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 420,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 420,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 438,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 439,
+     "label": "Update staged",
+     "group": "update",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T20:07:25Z",
+   "ver": "0.5.0",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 2056,
+   "end": "quit",
+   "rd": 1,
+   "iw": "2026-10-01",
+   "focus": {
+    "terminal": 512,
+    "viewer": 183
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 1 tab restored"
+    },
+    {
+     "t": 29,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 111,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 277,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 441,
+     "label": "Help: about",
+     "group": "help",
+     "detail": null
+    },
+    {
+     "t": 500,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 736,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 800,
+     "label": "Palette: toggle maximize",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1015,
+     "label": "Markdown: Mermaid",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 1256,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 1394,
+     "label": "Palette: move tab to pane",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1502,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 1737,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 1737,
+     "label": "Viewed plain text",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 1886,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 2032,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 2032,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "raw"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T18:31:26Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 369,
+   "end": "quit",
+   "rd": 1,
+   "iw": "2026-10-01",
+   "focus": {
+    "terminal": 115,
+    "viewer": 41
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "updated, 2 tabs restored"
+    },
+    {
+     "t": 22,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 22,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 41,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 83,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 83,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 124,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 154,
+     "label": "Palette: set theme",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 199,
+     "label": "Palette: move tab to pane",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 228,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 228,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 254,
+     "label": "Palette: set theme",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 278,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T16:55:53Z",
+   "ver": "0.5.1",
+   "osv": 26,
+   "arch": "arm64",
+   "len": 9168,
+   "end": "unknown",
+   "rd": 1,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 2409,
+    "viewer": 860,
+    "settings": 32
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal"
+    },
+    {
+     "t": 5,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 321,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 406,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 407,
+     "label": "Update staged",
+     "group": "update",
+     "detail": null
+    },
+    {
+     "t": 1053,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 1775,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2714,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 2787,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 2916,
+     "label": "Palette: toggle markdown view",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3833,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3833,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 4628,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer, x2"
+    },
+    {
+     "t": 5028,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 6044,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 6556,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 6556,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 7686,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 7971,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 7976,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "update.auto"
+    },
+    {
+     "t": 8546,
+     "label": "Palette: move tab to pane",
+     "group": "palette",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T16:38:32Z",
+   "ver": "0.5.1",
+   "osv": 14,
+   "arch": "arm64",
+   "len": 1842,
+   "end": "quit",
+   "rd": 1,
+   "iw": "2026-09-24",
+   "focus": {
+    "terminal": 587,
+    "viewer": 209,
+    "settings": 75
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 2 tabs restored"
+    },
+    {
+     "t": 5,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 122,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 219,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 313,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 396,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 396,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 442,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 442,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 509,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 509,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 687,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 823,
+     "label": "Palette: toggle sidebar",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1020,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 1044,
+     "label": "Markdown: details",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 1162,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 1242,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 1416,
+     "label": "Palette: set theme",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1554,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1559,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "font.preset"
+    },
+    {
+     "t": 1726,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 1726,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 1735,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T15:58:17Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 5927,
+   "end": "quit",
+   "rd": 0,
+   "iw": "2026-09-24",
+   "focus": {
+    "terminal": 1869,
+    "viewer": 667
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 2 tabs restored"
+    },
+    {
+     "t": 17,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 415,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 657,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 657,
+     "label": "Viewed plain text",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 744,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 744,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 1113,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1206,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 1206,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 1649,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 2042,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 2518,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 3142,
+     "label": "Palette: move tab to pane",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3742,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3742,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 3906,
+     "label": "Error: save failed",
+     "group": "error",
+     "detail": null
+    },
+    {
+     "t": 4588,
+     "label": "Markdown: details",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 4766,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 4766,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 4900,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 5563,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T12:03:06Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 9040,
+   "end": "quit",
+   "rd": -1,
+   "iw": "2026-10-15",
+   "focus": {
+    "terminal": 4946,
+    "viewer": 1766,
+    "browser": 353
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal"
+    },
+    {
+     "t": 34,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 34,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 406,
+     "label": "Markdown: Mermaid",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 1430,
+     "label": "Palette: toggle markdown view",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2325,
+     "label": "Palette: move tab to pane",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2331,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 2392,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 2493,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 2574,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2576,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 3009,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3011,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 3721,
+     "label": "Palette: cycle tab",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 4580,
+     "label": "Palette: set theme",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5037,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5037,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 5226,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 6099,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 6099,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 7031,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 7031,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 7297,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 7297,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 7836,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 8176,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T11:42:34Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 393,
+   "end": "quit",
+   "rd": 1,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 294
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "updated, 2 tabs restored"
+    },
+    {
+     "t": 4,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T11:28:59Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 4130,
+   "end": "quit",
+   "rd": 0,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 2235,
+    "viewer": 798,
+    "browser": 159,
+    "settings": 30
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal"
+    },
+    {
+     "t": 24,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 321,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 663,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 867,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 872,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "telemetry.usage"
+    },
+    {
+     "t": 1104,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 1613,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 1647,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 2135,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 2492,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 2492,
+     "label": "Viewed plain text",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 2870,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 3220,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 3226,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 3226,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 3317,
+     "label": "Help: keybindings",
+     "group": "help",
+     "detail": null
+    },
+    {
+     "t": 3719,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3721,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 3928,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 3928,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 4021,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 4026,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "telemetry.usage"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T10:03:41Z",
+   "ver": "0.5.1",
+   "osv": 26,
+   "arch": "arm64",
+   "len": 726,
+   "end": "lost",
+   "rd": 0,
+   "iw": "2026-09-17",
+   "focus": {
+    "terminal": 211,
+    "viewer": 75
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 4 tabs restored"
+    },
+    {
+     "t": 22,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 157,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 224,
+     "label": "Markdown: inline diff",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 230,
+     "label": "Palette: toggle sidebar",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 312,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 340,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 359,
+     "label": "Error: daemon restarted",
+     "group": "error",
+     "detail": null
+    },
+    {
+     "t": 370,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 439,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 471,
+     "label": "Markdown: Mermaid",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 547,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 571,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 579,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 579,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 613,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 613,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 661,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 696,
+     "label": "Markdown: Mermaid",
+     "group": "md",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T08:38:21Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 9049,
+   "end": "quit",
+   "rd": -1,
+   "iw": "2026-10-15",
+   "focus": {
+    "terminal": 2686,
+    "viewer": 959
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal"
+    },
+    {
+     "t": 34,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 1136,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": "x2"
+    },
+    {
+     "t": 1666,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 2540,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 3002,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": "x2"
+    },
+    {
+     "t": 3950,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 4227,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 4227,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 4527,
+     "label": "Markdown: inline diff",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 5163,
+     "label": "Markdown: Mermaid",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 5379,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5768,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 6894,
+     "label": "Palette: focus pane",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 7320,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 7320,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 8278,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T08:23:40Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 4000,
+   "end": "quit",
+   "rd": -1,
+   "iw": "2026-10-15",
+   "focus": {
+    "terminal": 1765,
+    "viewer": 630
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal"
+    },
+    {
+     "t": 36,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 172,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 173,
+     "label": "Update staged",
+     "group": "update",
+     "detail": null
+    },
+    {
+     "t": 620,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 757,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1097,
+     "label": "Palette: toggle sidebar",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1437,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1516,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 1553,
+     "label": "Palette: focus pane",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1595,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 1672,
+     "label": "Markdown: checklist",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 2008,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 2153,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer, x2"
+    },
+    {
+     "t": 2409,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 2409,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 2462,
+     "label": "Error: save failed",
+     "group": "error",
+     "detail": null
+    },
+    {
+     "t": 2642,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2642,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 2752,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": "x2"
+    },
+    {
+     "t": 3056,
+     "label": "Palette: toggle markdown view",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3380,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": "x2"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T07:25:21Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 5913,
+   "end": "quit",
+   "rd": -1,
+   "iw": "2026-10-15",
+   "focus": {
+    "terminal": 2181,
+    "viewer": 779,
+    "browser": 155,
+    "settings": 34
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal"
+    },
+    {
+     "t": 57,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 254,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 832,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 837,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "theme.dark"
+    },
+    {
+     "t": 1546,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 1546,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 1785,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1785,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 1863,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1868,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "font.preset"
+    },
+    {
+     "t": 1935,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2135,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2137,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 2603,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2608,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "theme.dark"
+    },
+    {
+     "t": 3245,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 3355,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 3373,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key, x2"
+    },
+    {
+     "t": 4628,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 4628,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 4972,
+     "label": "Palette: focus pane",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5211,
+     "label": "Palette: find",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5741,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5741,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T06:46:52Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 3960,
+   "end": "quit",
+   "rd": 0,
+   "iw": "2026-09-24",
+   "focus": {
+    "terminal": 1549,
+    "viewer": 553,
+    "browser": 110,
+    "settings": 10
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 2 tabs restored"
+    },
+    {
+     "t": 27,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 364,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 559,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 604,
+     "label": "Palette: set theme",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 810,
+     "label": "Markdown: checklist",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 1294,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 1354,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1595,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 1812,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 1813,
+     "label": "Update staged",
+     "group": "update",
+     "detail": null
+    },
+    {
+     "t": 1850,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 1850,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 1859,
+     "label": "Palette: find",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2069,
+     "label": "Markdown: details",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 2357,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 2560,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2562,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 2625,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 2637,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 2930,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 2930,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 3182,
+     "label": "Error: save failed",
+     "group": "error",
+     "detail": null
+    },
+    {
+     "t": 3618,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3831,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3836,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "theme.dark"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T06:07:07Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 2148,
+   "end": "quit",
+   "rd": 0,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 961,
+    "viewer": 343
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 2 tabs restored"
+    },
+    {
+     "t": 27,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 316,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 373,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 516,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 588,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 817,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 817,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 901,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 901,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 999,
+     "label": "Palette: move tab to pane",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1147,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1170,
+     "label": "Help: keybindings",
+     "group": "help",
+     "detail": null
+    },
+    {
+     "t": 1393,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 1393,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 1589,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 1589,
+     "label": "Viewed plain text",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 1819,
+     "label": "Markdown: inline diff",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 1954,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 1955,
+     "label": "Update staged",
+     "group": "update",
+     "detail": null
+    },
+    {
+     "t": 2054,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 2064,
+     "label": "Palette: cycle tab",
+     "group": "palette",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T05:01:25Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 1362,
+   "end": "quit",
+   "rd": 0,
+   "iw": "2026-09-24",
+   "focus": {
+    "terminal": 368,
+    "viewer": 131,
+    "settings": 27
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 2 tabs restored"
+    },
+    {
+     "t": 3,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 45,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 45,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 89,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 262,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 392,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 436,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 437,
+     "label": "Update staged",
+     "group": "update",
+     "detail": null
+    },
+    {
+     "t": 495,
+     "label": "Markdown: details",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 530,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 586,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 587,
+     "label": "Update staged",
+     "group": "update",
+     "detail": null
+    },
+    {
+     "t": 657,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 686,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 686,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 705,
+     "label": "Help: documentation",
+     "group": "help",
+     "detail": null
+    },
+    {
+     "t": 746,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 747,
+     "label": "Update staged",
+     "group": "update",
+     "detail": null
+    },
+    {
+     "t": 880,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 920,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 920,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 1029,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key, x2"
+    },
+    {
+     "t": 1231,
+     "label": "Markdown: Mermaid",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 1280,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 1305,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1310,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "update.auto"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T04:13:10Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 2296,
+   "end": "quit",
+   "rd": 0,
+   "iw": "2026-09-24",
+   "focus": {
+    "terminal": 1221,
+    "viewer": 436,
+    "settings": 42
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 2 tabs restored"
+    },
+    {
+     "t": 7,
+     "label": "Other agent",
+     "group": "agent",
+     "detail": "new"
+    },
+    {
+     "t": 248,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 280,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 357,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 357,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 522,
+     "label": "Palette: cycle tab",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 611,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 611,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 710,
+     "label": "Palette: toggle maximize",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 731,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 731,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 929,
+     "label": "Help: documentation",
+     "group": "help",
+     "detail": null
+    },
+    {
+     "t": 1160,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 1166,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1234,
+     "label": "Markdown: Mermaid",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 1433,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 1596,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1601,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "telemetry.usage"
+    },
+    {
+     "t": 1645,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1878,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 2069,
+     "label": "Palette: toggle maximize",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2089,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2220,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2225,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "telemetry.usage"
+    },
+    {
+     "t": 2245,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T03:10:09Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 70,
+   "end": "quit",
+   "rd": 1,
+   "iw": "2026-10-01",
+   "focus": {
+    "terminal": 24
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal"
+    },
+    {
+     "t": 20,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T01:27:04Z",
+   "ver": "0.5.1",
+   "osv": 14,
+   "arch": "x86_64",
+   "len": 389,
+   "end": "quit",
+   "rd": 4,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 198
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 1 tab restored"
+    },
+    {
+     "t": 10,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 10,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 30,
+     "label": "Palette: cycle tab",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 47,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 60,
+     "label": "Markdown: checklist",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 80,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T01:24:45Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 9229,
+   "end": "quit",
+   "rd": 1,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 4290,
+    "viewer": 1532
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 4 tabs restored"
+    },
+    {
+     "t": 15,
+     "label": "Other agent",
+     "group": "agent",
+     "detail": "resume"
+    },
+    {
+     "t": 280,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 1180,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2272,
+     "label": "Help: about",
+     "group": "help",
+     "detail": null
+    },
+    {
+     "t": 2839,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 3676,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 4113,
+     "label": "Palette: find",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5062,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 6208,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 6208,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 7095,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 7096,
+     "label": "Update staged",
+     "group": "update",
+     "detail": null
+    },
+    {
+     "t": 8099,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 8498,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 8498,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T00:44:02Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 3911,
+   "end": "quit",
+   "rd": -1,
+   "iw": "2026-10-15",
+   "focus": {
+    "terminal": 1968,
+    "viewer": 703,
+    "settings": 28
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal"
+    },
+    {
+     "t": 21,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 220,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 225,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "update.auto"
+    },
+    {
+     "t": 356,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 356,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 428,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 705,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 1046,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 1046,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 1153,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 1153,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 1162,
+     "label": "Markdown: checklist",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 1456,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1461,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "font.preset"
+    },
+    {
+     "t": 1601,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 1830,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1830,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 2198,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 2506,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2718,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 2827,
+     "label": "Error: chrome missing",
+     "group": "error",
+     "detail": null
+    },
+    {
+     "t": 2924,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 2924,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 2965,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2970,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "telemetry.usage"
+    },
+    {
+     "t": 3062,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 3444,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 3449,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "telemetry.usage"
+    },
+    {
+     "t": 3562,
+     "label": "Palette: toggle markdown view",
+     "group": "palette",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-15T00:11:42Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "x86_64",
+   "len": 2280,
+   "end": "quit",
+   "rd": 1,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 1140,
+    "viewer": 407,
+    "settings": 68
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 2 tabs restored"
+    },
+    {
+     "t": 29,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 275,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 340,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 377,
+     "label": "Palette: find",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 384,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 384,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 408,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 515,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 520,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "font.preset"
+    },
+    {
+     "t": 758,
+     "label": "Other agent",
+     "group": "agent",
+     "detail": "resume"
+    },
+    {
+     "t": 1142,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 1169,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 1308,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1366,
+     "label": "Palette: cycle tab",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1466,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1636,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1642,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1690,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 1690,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 1974,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2213,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 2213,
+     "label": "Viewed code",
+     "group": "view",
+     "detail": "raw"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-14T23:59:12Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 646,
+   "end": "quit",
+   "rd": -1,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 253,
+    "browser": 13
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal"
+    },
+    {
+     "t": 57,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 57,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 116,
+     "label": "Palette: cycle tab",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 186,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 188,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 248,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key, x2"
+    },
+    {
+     "t": 332,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 332,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 350,
+     "label": "Palette: set theme",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 376,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 444,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 564,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 576,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 576,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 586,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 604,
+     "label": "Markdown: Mermaid",
+     "group": "md",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-14T23:08:32Z",
+   "ver": "0.5.0",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 388,
+   "end": "quit",
+   "rd": 0,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 288,
+    "browser": 15,
+    "settings": 21
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "relaunch, 2 tabs restored"
+    },
+    {
+     "t": 19,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 181,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 207,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 209,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 246,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 253,
+     "label": "Palette: open settings",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 258,
+     "label": "Changed a setting",
+     "group": "settings",
+     "detail": "sidebar.collapsed"
+    },
+    {
+     "t": 285,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 313,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 331,
+     "label": "Markdown: inline diff",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 351,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-14T22:09:46Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "arm64",
+   "len": 332,
+   "end": "unknown",
+   "rd": 1,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 118,
+    "viewer": 42
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 1 tab restored"
+    },
+    {
+     "t": 6,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "link"
+    },
+    {
+     "t": 6,
+     "label": "Viewed plain text",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 26,
+     "label": "Help: keybindings",
+     "group": "help",
+     "detail": null
+    },
+    {
+     "t": 59,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 94,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 94,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 122,
+     "label": "Other agent",
+     "group": "agent",
+     "detail": "resume"
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-14T20:14:42Z",
+   "ver": "0.5.1",
+   "osv": 14,
+   "arch": "arm64",
+   "len": 9414,
+   "end": "quit",
+   "rd": 8,
+   "iw": "2026-09-24",
+   "focus": {
+    "terminal": 4497,
+    "viewer": 1606
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "updated, 2 tabs restored"
+    },
+    {
+     "t": 23,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 23,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "raw"
+    },
+    {
+     "t": 897,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1123,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 1173,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "terminal"
+    },
+    {
+     "t": 2053,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 2846,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 3599,
+     "label": "Markdown: details",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 4361,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key, x2"
+    },
+    {
+     "t": 4971,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 5303,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 5303,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 6469,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 7621,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 7621,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 7744,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key, x4"
+    },
+    {
+     "t": 8982,
+     "label": "Help: about",
+     "group": "help",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-14T20:13:09Z",
+   "ver": "0.5.1",
+   "osv": 15,
+   "arch": "x86_64",
+   "len": 16166,
+   "end": "quit",
+   "rd": 0,
+   "iw": "2026-10-08",
+   "focus": {
+    "terminal": 6835,
+    "viewer": 2441,
+    "browser": 488
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "normal, 4 tabs restored"
+    },
+    {
+     "t": 14,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "explorer"
+    },
+    {
+     "t": 14,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 1074,
+     "label": "File tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 1074,
+     "label": "Viewed markdown",
+     "group": "view",
+     "detail": "rendered"
+    },
+    {
+     "t": 2557,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 3254,
+     "label": "Markdown: checklist",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 4699,
+     "label": "Claude resumed",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 4771,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 5007,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 7002,
+     "label": "Error: chrome missing",
+     "group": "error",
+     "detail": null
+    },
+    {
+     "t": 7550,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 9410,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 9412,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 9968,
+     "label": "Palette: set theme",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 11712,
+     "label": "Closed a tab",
+     "group": "tab",
+     "detail": "viewer"
+    },
+    {
+     "t": 12548,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 13987,
+     "label": "Palette: new terminal",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 13987,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 14563,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 14716,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 14755,
+     "label": "Palette: split",
+     "group": "palette",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  },
+  {
+   "received": "2026-10-14T19:58:11Z",
+   "ver": "0.5.1",
+   "osv": 26,
+   "arch": "arm64",
+   "len": 2003,
+   "end": "quit",
+   "rd": 2,
+   "iw": "2026-09-24",
+   "focus": {
+    "terminal": 800,
+    "viewer": 286,
+    "browser": 57
+   },
+   "steps": [
+    {
+     "t": 0,
+     "label": "Launched",
+     "group": "launch",
+     "detail": "updated, 4 tabs restored"
+    },
+    {
+     "t": 14,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "key"
+    },
+    {
+     "t": 41,
+     "label": "Help: keybindings",
+     "group": "help",
+     "detail": null
+    },
+    {
+     "t": 278,
+     "label": "Palette: set theme",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 460,
+     "label": "Markdown: checklist",
+     "group": "md",
+     "detail": null
+    },
+    {
+     "t": 605,
+     "label": "Palette: toggle maximize",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 757,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1100,
+     "label": "Agent asked for input",
+     "group": "agent",
+     "detail": "claude"
+    },
+    {
+     "t": 1244,
+     "label": "Notice: update ready",
+     "group": "notice",
+     "detail": null
+    },
+    {
+     "t": 1245,
+     "label": "Update staged",
+     "group": "update",
+     "detail": null
+    },
+    {
+     "t": 1410,
+     "label": "Palette: dock chrome window",
+     "group": "palette",
+     "detail": null
+    },
+    {
+     "t": 1412,
+     "label": "Browser tab",
+     "group": "tab",
+     "detail": "palette"
+    },
+    {
+     "t": 1637,
+     "label": "Terminal tab",
+     "group": "tab",
+     "detail": "click"
+    },
+    {
+     "t": 1824,
+     "label": "Claude started",
+     "group": "agent",
+     "detail": null
+    },
+    {
+     "t": 1997,
+     "label": "Palette: move tab to pane",
+     "group": "palette",
+     "detail": null
+    }
+   ],
+   "dropped": 0,
+   "rejected": 0
+  }
+ ]
+}

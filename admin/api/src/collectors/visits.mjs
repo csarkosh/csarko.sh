@@ -15,13 +15,18 @@ import { UpstreamError } from "../http.mjs";
 const LIVE_TABLE = /`csarko-sh\.csarko_visits\._AllLogs`/g;
 const HISTORY_TABLE = /`csarko-sh\.csarko_history\.goatcounter_history`/g;
 
-export function createVisits({ bigquery, projectId, dataset, historyDataset, historyUntil, cache, now = Date.now, log = console, ttlMs = 300_000, queriesDir = join(process.cwd(), "queries") }) {
+/**
+ * Runs a saved SQL file by name with string parameters, its table names
+ * rewritten to the configured datasets, as plain rows; cached `ttlMs` by
+ * name and parameters. The arkos collector runs its files through this too.
+ */
+export function createRunner({ bigquery, projectId, dataset, historyDataset, cache, ttlMs = 300_000, queriesDir = join(process.cwd(), "queries") }) {
   const sqlOf = (name) => {
     const sql = readFileSync(join(queriesDir, `${name}.sql`), "utf8");
     return sql.replace(LIVE_TABLE, `\`${projectId}.${dataset}._AllLogs\``).replace(HISTORY_TABLE, `\`${projectId}.${historyDataset}.goatcounter_history\``);
   };
 
-  async function run(name, params) {
+  return async function run(name, params) {
     const key = `visits:${name}:${JSON.stringify(params)}`;
     return cache.get(key, ttlMs, async () => {
       try {
@@ -31,7 +36,11 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
         throw new UpstreamError(`BigQuery ${name} failed: ${error?.message ?? error}`, { cause: error });
       }
     });
-  }
+  };
+}
+
+export function createVisits({ bigquery, projectId, dataset, historyDataset, historyUntil, cache, now = Date.now, log = console, ttlMs = 300_000, queriesDir = join(process.cwd(), "queries") }) {
+  const run = createRunner({ bigquery, projectId, dataset, historyDataset, cache, ttlMs, queriesDir });
 
   const wantsHistory = (bound) => Boolean(historyDataset && historyUntil && Date.parse(bound) < Date.parse(historyUntil));
   const hist = (name, params) => run(name, { ...params, until: historyUntil });

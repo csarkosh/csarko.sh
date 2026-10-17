@@ -16,9 +16,11 @@ import { IpLimiter } from "./limiter.mjs";
 import { createAdminAuth, createOidcVerifier } from "./auth.mjs";
 import { createApp } from "./app.mjs";
 import { createQueries } from "./queries.mjs";
+import { createArkosQueries } from "./arkos-queries.mjs";
 import { createMemoryStore, createFirestoreStore } from "./store.mjs";
 import { BigQuery } from "@google-cloud/bigquery";
 import { createVisits } from "./collectors/visits.mjs";
+import { createArkos } from "./collectors/arkos.mjs";
 import { createGsc } from "./collectors/gsc.mjs";
 import { createYouTube } from "./collectors/youtube.mjs";
 import { createGitHub } from "./collectors/github.mjs";
@@ -35,8 +37,11 @@ const log = console;
 
 const store = process.env.ADMIN_STORE === "memory" ? createMemoryStore() : await createFirestoreStore({ projectId: config.projectId, log });
 
+// One client for the site's visits and Arkos's rows: both live in the lib-visits log bucket's dataset.
+const bigquery = config.visits.dataset ? new BigQuery({ projectId: config.projectId }) : null;
+
 const queries = createQueries({
-  visits: createVisits({ bigquery: config.visits.dataset ? new BigQuery({ projectId: config.projectId }) : null, projectId: config.projectId, dataset: config.visits.dataset, historyDataset: config.visits.historyDataset, historyUntil: config.visits.historyUntil, cache, log }),
+  visits: createVisits({ bigquery, projectId: config.projectId, dataset: config.visits.dataset, historyDataset: config.visits.historyDataset, historyUntil: config.visits.historyUntil, cache, log }),
   gsc: createGsc({ key: config.gsc.key, property: config.gsc.property, fetch, cache }),
   youtube: createYouTube({ key: config.youtube.key, handle: config.youtube.handle, fetch, cache }),
   github: createGitHub({ token: config.github.token, owner: config.github.owner, fetch, cache, log }),
@@ -50,6 +55,8 @@ const queries = createQueries({
   log,
 });
 
+const arkos = createArkosQueries({ arkos: createArkos({ bigquery, projectId: config.projectId, dataset: config.visits.dataset, cache }), log });
+
 const limiter = new IpLimiter();
 const prune = setInterval(() => limiter.prune(), 60_000);
 prune.unref();
@@ -57,6 +64,7 @@ prune.unref();
 const app = createApp({
   config,
   queries,
+  arkos,
   limiter,
   adminAuth: createAdminAuth({ projectId: config.firebaseProject, allowed: config.adminEmails }),
   oidc: createOidcVerifier({ invoker: config.snapshotInvoker }),

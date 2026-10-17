@@ -76,5 +76,16 @@
       }
     ],
     "health": { "status": "good", "note": "error rate 1.2%, down from 2.0%" }
+  },
+  "ide-arkos": {
+    "app": "ide-arkos",
+    "at": "2026-10-17T13:05:00Z",
+    "kpis": [
+      { "key": "active", "label": "Active Macs, 7 days", "value": 41, "prev": 37, "unit": "", "trend": [0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 37, 41] },
+      { "key": "new", "label": "New installs, 7 days", "value": 6, "prev": 4, "unit": "", "trend": [0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 4, 6] },
+      { "key": "sessions", "label": "Sessions, 7 days", "value": 120, "prev": 98, "unit": "", "trend": [0, 0, 0, 0, 0, 0, 0, 0, 0, 31, 98, 120] },
+      { "key": "crashfree", "label": "Crash-free sessions, 7 days", "value": 97.5, "prev": 96.9, "unit": "%", "trend": [0, 0, 0, 0, 0, 0, 0, 0, 0, 96.8, 96.9, 97.5] }
+    ],
+    "health": { "status": "warning", "note": "Crash-free sessions are under 98% over 7 days" }
   }
 }

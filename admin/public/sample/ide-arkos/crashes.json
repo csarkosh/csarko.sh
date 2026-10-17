@@ -1,0 +1,106 @@
+{
+ "total": 4,
+ "previous": 2,
+ "sessions": 120,
+ "lost": 3,
+ "byVersion": [
+  {
+   "ver": "0.5.1",
+   "crashes": 2,
+   "sessions": 96,
+   "lost": 2
+  },
+  {
+   "ver": "0.5.0",
+   "crashes": 2,
+   "sessions": 22,
+   "lost": 1
+  },
+  {
+   "ver": "0.4.2",
+   "crashes": 0,
+   "sessions": 2,
+   "lost": 0
+  }
+ ],
+ "groups": [
+  {
+   "key": "other:7d1e04a2",
+   "pk": "other",
+   "mh": "7d1e04a2c9b35f18e6a0d4c2b7f91e3a5c8d0b6f2a4e7c91d3b5f08a6e2c4d71",
+   "file": "/src/crates/arkos/src/md_view.rs",
+   "line": 812,
+   "versions": [
+    "0.5.1",
+    "0.5.0"
+   ],
+   "count": 3,
+   "first": "2026-10-12T15:20:00Z",
+   "last": "2026-10-17T09:12:00Z",
+   "up": {
+    "<10m": 1,
+    "<1h": 2
+   },
+   "frames": [
+    [
+     0,
+     1843200
+    ],
+    [
+     0,
+     1790466
+    ],
+    [
+     0,
+     1022140
+    ],
+    [
+     0,
+     98304
+    ]
+   ],
+   "image": [
+    "arkos",
+    "6c3f0e2a9b8d4c7e1f5a0b9c8d7e6f5a",
+    48234496
+   ],
+   "commit": "0cf587d"
+  },
+  {
+   "key": "other:b5bb9d80",
+   "pk": "other",
+   "mh": "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
+   "file": "/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gpui-0.2.1/src/window.rs",
+   "line": 3301,
+   "versions": [
+    "0.5.0"
+   ],
+   "count": 1,
+   "first": "2026-10-13T22:41:00Z",
+   "last": "2026-10-13T22:41:00Z",
+   "up": {
+    ">=1d": 1
+   },
+   "frames": [
+    [
+     0,
+     5242880
+    ],
+    [
+     0,
+     5160960
+    ],
+    [
+     0,
+     409600
+    ]
+   ],
+   "image": [
+    "arkos",
+    "1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c",
+    48121856
+   ],
+   "commit": "531adba"
+  }
+ ]
+}

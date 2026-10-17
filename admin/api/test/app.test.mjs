@@ -21,11 +21,18 @@ const queries = {
   async manual(key, value) { calls.push(["manual", key, value]); return { ok: true, at: "t" }; },
   async snapshot() { calls.push(["snapshot"]); return { date: "2026-10-12" }; },
 };
+const arkos = {
+  async kpis() { return { app: "ide-arkos", kpis: [] }; },
+  async installs(days) { calls.push(["arkos-installs", days]); return { days }; },
+  async journey(days) { if (days === 90) throw new UpstreamError("BigQuery arkos-sessions failed: quota"); return { days }; },
+  async sessions(days) { return { rows: [], days }; },
+  async crashes(days) { return { total: 0, days }; },
+};
 const oidc = { async verify(token, audiences) { return token === "oidc-ok" && audiences.length > 0 ? { email: "s@x" } : null; } };
 const log = { error() {}, warn() {}, log() {} };
 
 function serve(config, capacity = 100) {
-  const app = createApp({ config: { allowedOrigins: ["https://admin.csarko.sh"], serviceUrl: null, ...config }, queries, limiter: new IpLimiter({ capacity, refillPerSecond: 0 }), adminAuth: config.adminAuth === undefined ? adminAuth : config.adminAuth, oidc, log });
+  const app = createApp({ config: { allowedOrigins: ["https://admin.csarko.sh"], serviceUrl: null, ...config }, queries, arkos, limiter: new IpLimiter({ capacity, refillPerSecond: 0 }), adminAuth: config.adminAuth === undefined ? adminAuth : config.adminAuth, oidc, log });
   const server = http.createServer(app);
   return new Promise((resolve) => server.listen(0, "127.0.0.1", () => resolve(server)));
 }
@@ -137,4 +144,76 @@ test("with an empty allowlist every admin route answers 503 and /health still wo
   assert.equal(r.status, 503);
   assert.deepEqual(r.body, { error: "admin readers not configured" });
   assert.equal((await call(server, "POST", "/admin/snapshot", { headers: { authorization: "Bearer oidc-ok" } })).status, 503);
+});
+
+test("Arkos under /arkos: the index card and its four queries, through the same auth", async () => {
+  const server = await serve({});
+  servers.push(server);
+  assert.equal((await call(server, "GET", "/arkos", auth("10.0.0.1"))).status, 404);
+  assert.equal((await call(server, "GET", "/arkos/admin", auth("10.0.0.1"))).status, 404);
+  assert.equal((await call(server, "GET", "/arkos/admin/kpis", { ip: "10.0.0.2" })).status, 401, "no token");
+  assert.equal((await call(server, "GET", "/arkos/admin/query/journey", { headers: { authorization: "Bearer nope" }, ip: "10.0.0.2" })).status, 401, "wrong token");
+
+  const kpis = await call(server, "GET", "/arkos/admin/kpis", auth("10.0.0.1"));
+  assert.equal(kpis.status, 200);
+  assert.equal(kpis.body.app, "ide-arkos");
+  assert.equal(kpis.headers.get("cache-control"), "no-store");
+
+  for (const name of ["installs", "journey", "sessions", "crashes"]) {
+    const r = await call(server, "GET", `/arkos/admin/query/${name}?days=30`, auth("10.0.0.1"));
+    assert.equal(r.status, 200, name);
+    assert.equal(r.body.days, 30, name);
+  }
+  assert.deepEqual(calls.at(-1), ["arkos-installs", 30], "the Arkos source answered, not the csarko.sh one");
+  assert.equal((await call(server, "GET", "/arkos/admin/query/installs", auth("10.0.0.1"))).body.days, 7, "default range");
+  assert.equal((await call(server, "GET", "/arkos/admin/query/installs?days=14", auth("10.0.0.1"))).status, 400);
+  assert.equal((await call(server, "GET", "/arkos/admin/query/installs?days=abc", auth("10.0.0.1"))).status, 400);
+  assert.equal((await call(server, "GET", "/arkos/admin/query/nope", auth("10.0.0.1"))).status, 404);
+  assert.equal((await call(server, "GET", "/arkos/admin/query/visits", auth("10.0.0.1"))).status, 404, "the csarko.sh queries are not Arkos's");
+  assert.equal((await call(server, "GET", "/admin/query/journey", auth("10.0.0.1"))).status, 404, "nor Arkos's the csarko.sh ones");
+  assert.equal((await call(server, "POST", "/arkos/admin/query/journey", auth("10.0.0.1"))).status, 405);
+  assert.equal((await call(server, "POST", "/arkos/admin/kpis", auth("10.0.0.1"))).status, 405);
+  assert.equal((await call(server, "POST", "/arkos/admin/snapshot", auth("10.0.0.1"))).status, 404, "no snapshot or manual routes under the prefix");
+  assert.equal((await call(server, "POST", "/arkos/admin/snapshot", { headers: { authorization: "Bearer oidc-ok" }, ip: "10.0.0.1" })).status, 401, "the scheduler's token opens nothing here");
+  assert.equal((await call(server, "POST", "/arkos/admin/manual/substack", { ...auth("10.0.0.1"), body: '{"value":1}' })).status, 404);
+
+  const upstream = await call(server, "GET", "/arkos/admin/query/journey?days=90", auth("10.0.0.3"));
+  assert.equal(upstream.status, 502);
+  assert.deepEqual(upstream.body, { error: "BigQuery arkos-sessions failed: quota" });
+});
+
+test("Arkos: CORS, preflight, foreign origin, rate limit and the empty allowlist in the same order", async () => {
+  const server = await serve({}, 3);
+  servers.push(server);
+  const origin = "https://admin.csarko.sh";
+  const ok = await call(server, "GET", "/arkos/admin/query/crashes", { ...auth("11.0.0.1"), headers: { ...auth().headers, origin } });
+  assert.equal(ok.status, 200);
+  assert.equal(ok.headers.get("access-control-allow-origin"), origin);
+  const pre = await call(server, "OPTIONS", "/arkos/admin/kpis", { headers: { origin, "access-control-request-method": "GET" }, ip: "11.0.0.1" });
+  assert.equal(pre.status, 204);
+  assert.equal(pre.headers.get("access-control-allow-headers"), "authorization, content-type");
+  const foreign = await call(server, "GET", "/arkos/admin/kpis", { ...auth("11.0.0.1"), headers: { ...auth().headers, origin: "https://evil.example" } });
+  assert.equal(foreign.status, 403);
+  assert.equal(foreign.headers.get("access-control-allow-origin"), null);
+  const denied = await call(server, "GET", "/arkos/admin/kpis", { headers: { origin }, ip: "11.0.0.2" });
+  assert.equal(denied.status, 401);
+  assert.equal(denied.headers.get("access-control-allow-origin"), origin, "a 401 still carries CORS so the page can read it");
+
+  for (let i = 0; i < 2; i += 1) assert.equal((await call(server, "GET", "/arkos/admin/kpis", auth("11.0.0.3"))).status, 200);
+  assert.equal((await call(server, "GET", "/admin/kpis", auth("11.0.0.3"))).status, 200, "one bucket an address, whichever prefix");
+  assert.equal((await call(server, "GET", "/arkos/admin/kpis", auth("11.0.0.3"))).status, 429);
+
+  const closed = await serve({ adminAuth: { enabled: false, async verify() { return null; } } });
+  servers.push(closed);
+  assert.equal((await call(closed, "GET", "/arkos/admin/kpis", auth())).status, 503);
+  assert.equal((await call(closed, "GET", "/arkos/admin/query/nope", auth())).status, 503, "503 before the route is looked at");
+  assert.equal((await call(closed, "GET", "/arkos/admin/kpis", { headers: { origin: "https://evil.example" } })).status, 403, "the origin before the 503");
+});
+
+test("without an Arkos source the prefix is not found", async () => {
+  const app = createApp({ config: { allowedOrigins: [], serviceUrl: null }, queries, limiter: new IpLimiter(), adminAuth, oidc, log });
+  const server = http.createServer(app);
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  servers.push(server);
+  assert.equal((await call(server, "GET", "/arkos/admin/kpis", auth())).status, 404);
 });

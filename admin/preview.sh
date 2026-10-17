@@ -4,7 +4,7 @@
 #
 #   admin/preview.sh               build, serve admin/public on http://localhost:8788, open
 #                                  /?preview and /csarko.sh/?preview in Chrome
-#   admin/preview.sh --shots       desktop (1440) and phone (390) screenshots of both pages, dark
+#   admin/preview.sh --shots       desktop (1440) and phone (390) screenshots of every page, dark
 #                                  and light, in /tmp/csarko-sh-admin-preview/
 #   admin/preview.sh --lighthouse  Lighthouse (performance, accessibility, best practices) on both
 #                                  pages, once per theme, the way site-quality's check.py runs it
@@ -26,7 +26,7 @@ OUT="/tmp/csarko-sh-admin-preview"
 PORT=8788
 SHOT_PORT=8789
 PIDFILE="$OUT/server.pid"
-PAGES=("|/?preview" "csarko-sh-|/csarko.sh/?preview")     # <file prefix>|<path>
+PAGES=("|/?preview" "csarko-sh-|/csarko.sh/?preview" "ide-arkos-|/ide-arkos/?preview")     # <file prefix>|<path>
 
 die() { echo "error: $*" >&2; exit 1; }
 mkdir -p "$OUT"
@@ -136,5 +136,5 @@ if (( SERVE )); then
     echo $! > "$PIDFILE"
     echo "serving $PUBLIC on http://localhost:$PORT (pid $!); stop with --stop"
   fi
-  open -a "Google Chrome" "http://localhost:$PORT/?preview" "http://localhost:$PORT/csarko.sh/?preview"
+  open -a "Google Chrome" "http://localhost:$PORT/?preview" "http://localhost:$PORT/csarko.sh/?preview" "http://localhost:$PORT/ide-arkos/?preview"
 fi

@@ -64,7 +64,7 @@ ADMIN_API_URL="$API_URL" ADMIN_FIREBASE_API_KEY="$(tf admin_web_api_key)" node a
 
 # Privacy guard, the same as the site's: no email address or phone number.
 shopt -s nullglob
-SCAN=(admin/public/*.html admin/public/csarko.sh/*.html admin/public/*.js admin/public/csarko.sh/*.js)
+SCAN=(admin/public/*.html admin/public/csarko.sh/*.html admin/public/ide-arkos/*.html admin/public/*.js admin/public/csarko.sh/*.js admin/public/ide-arkos/*.js)
 shopt -u nullglob
 if grep -nEio 'mailto:[^"]*|[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}' "${SCAN[@]}"; then
   die "an admin page contains an email address — refusing to deploy"
@@ -76,7 +76,7 @@ echo
 
 npx -y firebase-tools deploy --only "hosting:$SITE" --project "$PROJECT" --non-interactive
 
-# Prove it: the two shell pages serve their local files, robots refuses crawlers, and
+# Prove it: the shell's pages serve their local files, robots refuses crawlers, and
 # every app API still answers 401 to a tokenless request from the admin origin.
 serves_local() { # serves_local <base url> <path> <local file>
   local got want
@@ -84,7 +84,7 @@ serves_local() { # serves_local <base url> <path> <local file>
   got="$(curl -fsSL --compressed -m 20 -H 'Cache-Control: no-cache' "$1$2" | shasum -a 256 | cut -d' ' -f1)" || return 1
   [[ "$got" == "$want" ]]
 }
-VERIFY=("/|admin/public/index.html" "/csarko.sh/|admin/public/csarko.sh/index.html")
+VERIFY=("/|admin/public/index.html" "/csarko.sh/|admin/public/csarko.sh/index.html" "/ide-arkos/|admin/public/ide-arkos/index.html")
 [[ -f admin/public/game-dayhike/index.html ]] && VERIFY+=("/game-dayhike/|admin/public/game-dayhike/index.html")
 verify() {
   local url="$1" entry path file i

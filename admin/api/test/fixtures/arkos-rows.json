@@ -1,0 +1,68 @@
+{
+  "arkos-sessions": [
+    {
+      "received": "2026-10-17T14:05:12Z", "ver": "0.5.1", "osv": 15, "arch": "arm64", "len": 5400, "ended": "quit", "rd": 1, "iw": 20734,
+      "focus": "{\"terminal\":3100,\"viewer\":900}",
+      "ev": "[{\"n\":\"launch\",\"t\":0,\"d\":{\"how\":\"normal\"}},{\"n\":\"pane_open\",\"t\":1,\"d\":{\"kind\":\"terminal\",\"how\":\"restore\"}},{\"n\":\"pane_open\",\"t\":2,\"d\":{\"kind\":\"viewer\",\"how\":\"restore\"}},{\"n\":\"pane_open\",\"t\":3,\"d\":{\"kind\":\"terminal\",\"how\":\"restore\"}},{\"n\":\"view\",\"t\":3,\"d\":{\"format\":\"markdown\",\"mode\":\"rendered\"}},{\"n\":\"agent_launch\",\"t\":12,\"d\":{\"agent\":\"claude\",\"how\":\"resume\"}},{\"n\":\"agent_state\",\"t\":140,\"d\":{\"agent\":\"claude\",\"state\":\"waiting\"}},{\"n\":\"pane_open\",\"t\":300,\"d\":{\"kind\":\"viewer\",\"how\":\"explorer\"}},{\"n\":\"view\",\"t\":301,\"d\":{\"format\":\"markdown\",\"mode\":\"rendered\"}},{\"n\":\"md\",\"t\":320,\"d\":{\"feature\":\"mermaid\"}},{\"n\":\"palette\",\"t\":400,\"d\":{\"command\":\"split\"}},{\"n\":\"pane_open\",\"t\":900,\"d\":{\"kind\":\"browser\",\"how\":\"palette\"}},{\"n\":\"settings\",\"t\":950,\"d\":{\"key\":\"theme.dark\"}},{\"n\":\"settings\",\"t\":951,\"d\":{\"key\":\"theme.dark\"}},{\"n\":\"help\",\"t\":1000,\"d\":{\"what\":\"keybindings\"}}]",
+      "ev_dropped": 2, "ev_rejected": 0
+    },
+    {
+      "received": "2026-10-17T10:00:00Z", "ver": "0.5.1", "osv": 14, "arch": "x86_64", "len": 200, "ended": "lost", "rd": -1, "iw": 20741,
+      "focus": "{\"terminal\":100}",
+      "ev": "[{\"n\":\"launch\",\"t\":0,\"d\":{\"how\":\"normal\"}},{\"n\":\"pane_open\",\"t\":21,\"d\":{\"kind\":\"terminal\",\"how\":\"key\"}},{\"n\":\"agent_launch\",\"t\":64,\"d\":{\"agent\":\"claude\",\"how\":\"new\"}},{\"n\":\"error\",\"t\":150,\"d\":{\"kind\":\"session_lost\"}}]",
+      "ev_dropped": 0, "ev_rejected": 0
+    },
+    {
+      "received": "2026-10-16T20:00:00Z", "ver": "0.5.1", "osv": 15, "arch": "arm64", "len": 30, "ended": "quit", "rd": 0, "iw": 20734,
+      "focus": "{}",
+      "ev": "[{\"n\":\"launch\",\"t\":0,\"d\":{\"how\":\"relaunch\"}},{\"n\":\"pane_open\",\"t\":4,\"d\":{\"kind\":\"terminal\",\"how\":\"key\"}},{\"n\":\"pane_open\",\"t\":6,\"d\":{\"kind\":\"terminal\",\"how\":\"key\"}},{\"n\":\"notice\",\"t\":10,\"d\":{\"kind\":\"update_ready\"}}]",
+      "ev_dropped": 0, "ev_rejected": 0
+    },
+    {
+      "received": "2026-10-15T12:00:00Z", "ver": "0.5.0", "osv": 15, "arch": "arm64", "len": 4000, "ended": "unknown", "rd": 2, "iw": 20720,
+      "focus": "{\"terminal\":0,\"browser\":50}",
+      "ev": "[{\"n\":\"agent_launch\",\"t\":5,\"d\":{\"agent\":\"other\",\"how\":\"new\"}},{\"n\":\"view\",\"t\":30,\"d\":{\"format\":\"code\",\"mode\":\"raw\"}}]",
+      "ev_dropped": null, "ev_rejected": "1"
+    },
+    {
+      "received": "2026-10-14T09:00:00Z", "ver": "0.5.1", "osv": "15", "arch": "arm64", "len": "700", "ended": "quit", "rd": "-1", "iw": "20734",
+      "focus": { "terminal": 600, "settings": 20 },
+      "ev": [{ "n": "launch", "t": 0, "d": { "how": "updated" } }, { "n": "pane_open", "t": 10, "d": { "kind": "terminal", "how": "palette" } }, { "n": "agent_launch", "t": 20, "d": { "agent": "claude", "how": "new" } }, { "n": "agent_state", "t": 200, "d": { "agent": "claude", "state": "waiting" } }],
+      "ev_dropped": 0, "ev_rejected": 0
+    }
+  ],
+  "arkos-session-counts": [
+    { "win": "current", "ver": "0.5.1", "sessions": 4, "first": 2, "lost": 1 },
+    { "win": "current", "ver": "0.5.0", "sessions": 1, "first": 0, "lost": 0 },
+    { "win": "previous", "ver": "0.5.0", "sessions": 3, "first": 1, "lost": 1 }
+  ],
+  "arkos-crashes": [
+    { "win": "current", "received": "2026-10-17T09:12:00Z", "ver": "0.5.1", "pk": "other", "mh": "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c", "file": "/src/crates/arkos/src/md_view.rs", "line": 812, "up": "<10m", "commit": "4f2a9c1", "frames": "[[0,1843200],[0,1790466]]", "images": "[[\"arkos\",\"6c3f0e2a9b8d4c7e1f5a0b9c8d7e6f5a\",48234496]]" },
+    { "win": "current", "received": "2026-10-16T08:00:00Z", "ver": "0.5.0", "pk": "daemon_socket", "mh": null, "file": "/src/crates/arkos/src/daemon.rs", "line": 40, "up": ">=1d", "commit": "1a2b3c4", "frames": "[[0,4096]]", "images": "[[\"arkos\",\"aaaa\",1]]" },
+    { "win": "current", "received": "2026-10-15T10:00:00Z", "ver": "0.5.0", "pk": "other", "mh": "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c", "file": "/src/crates/arkos/src/md_view.rs", "line": 800, "up": "<10m", "commit": "0000000", "frames": "[[0,1]]", "images": "[[\"libsystem_c.dylib\",\"ffff\",3],[\"arkos\",\"bbbb\",2]]" },
+    { "win": "previous", "received": "2026-10-09T10:00:00Z", "ver": "0.5.0", "pk": "other", "mh": "cccccccc", "file": "/src/x.rs", "line": 1, "up": "<1m", "commit": "0000000", "frames": "[]", "images": "[]" }
+  ],
+  "arkos-installs": [
+    { "dim": "day", "win": "current", "name": "2026-10-11", "checks": 3, "installs": 1, "back": 0, "macs": 3 },
+    { "dim": "day", "win": "current", "name": "2026-10-13", "checks": 4, "installs": 1, "back": 1, "macs": 2 },
+    { "dim": "day", "win": "current", "name": "2026-10-17", "checks": 2, "installs": 0, "back": 0, "macs": 0 },
+    { "dim": "day", "win": "previous", "name": "2026-10-04", "checks": 2, "installs": 2, "back": 0, "macs": 2 },
+    { "dim": "rhythm", "win": "current", "name": "new", "checks": 2, "installs": 0, "back": 0, "macs": 0 },
+    { "dim": "rhythm", "win": "current", "name": "1", "checks": 6, "installs": 0, "back": 0, "macs": 0 },
+    { "dim": "rhythm", "win": "current", "name": "7+", "checks": 1, "installs": 0, "back": 0, "macs": 0 },
+    { "dim": "version", "win": "current", "name": "0.5.0", "checks": 0, "installs": 0, "back": 0, "macs": 1 },
+    { "dim": "version", "win": "current", "name": "0.5.1", "checks": 0, "installs": 0, "back": 0, "macs": 4 },
+    { "dim": "macos", "win": "current", "name": "15", "checks": 0, "installs": 0, "back": 0, "macs": 5 },
+    { "dim": "arch", "win": "current", "name": "arm64", "checks": 0, "installs": 0, "back": 0, "macs": 4 },
+    { "dim": "arch", "win": "current", "name": null, "checks": 0, "installs": 0, "back": 0, "macs": 1 }
+  ],
+  "arkos-kpis": [
+    { "dim": "week", "week": 0, "ver": null, "checks": 5, "installs": 2, "macs": 2, "sessions": 0, "lost": 0, "crashes": 0 },
+    { "dim": "week", "week": 10, "ver": null, "checks": 30, "installs": 3, "macs": 6, "sessions": 50, "lost": 0, "crashes": 0 },
+    { "dim": "week", "week": 11, "ver": null, "checks": 40, "installs": 4, "macs": 8, "sessions": 200, "lost": 3, "crashes": 2 },
+    { "dim": "crash24", "week": null, "ver": "0.5.0", "checks": 0, "installs": 0, "macs": 0, "sessions": 0, "lost": 0, "crashes": 1 },
+    { "dim": "seen", "week": null, "ver": "0.5.0", "checks": 0, "installs": 0, "macs": 0, "sessions": 0, "lost": 0, "crashes": 0 },
+    { "dim": "seen", "week": null, "ver": "0.10.0", "checks": 0, "installs": 0, "macs": 0, "sessions": 0, "lost": 0, "crashes": 0 },
+    { "dim": "seen", "week": null, "ver": "0.9.2", "checks": 0, "installs": 0, "macs": 0, "sessions": 0, "lost": 0, "crashes": 0 }
+  ]
+}

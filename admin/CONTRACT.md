@@ -275,6 +275,186 @@ Body `{ "value": 47 }` (a non-negative integer). Answer `{ "ok": true, "at": "20
 Appends `{ at, value }` to the `substack` series that `reach` returns; the page then
 reloads the Reach card. `substack` is the only key.
 
+## Arkos IDE: `GET <api>/arkos/admin/kpis` and `/arkos/admin/query/<name>?days=1|7|30|90`
+
+The csarko-admin service serves Arkos under the prefix `/arkos`, so `apps.json` names
+`<service>/arkos` as its `api` and the shell's two routes hold. Same auth, CORS, rate limit,
+cache and conventions as the csarko.sh routes. Every query reads `csarko_visits._AllLogs`
+rows with `json_payload.app = 'arkos'`, of three kinds told apart by `json_payload.k`:
+`check` (one per Mac per day, no consent), `session` (opt-in usage reports) and `crash`.
+Design: `docs/superpowers/specs/2026-10-17-arkos-admin-dashboard-design.md`. Ranges:
+`installs` and `kpis` count whole UTC days ending today (the `rd` count needs whole days), so
+`installs?days=1` is today so far against yesterday; `journey`, `sessions` and `crashes` use
+the csarko.sh rolling window (the last `days`×24 hours ending at the next hour), so their
+`days=1` is the last 24 hours. A KPI's sessions and the journey's can therefore differ by a
+partial day. Every query answers `null` parts with `notConfigured.visits = "VISITS_DATASET"`
+when the dataset is not set. Sample files: `admin/public/sample/ide-arkos/<name>.json`
+(`days=7`), and `sample/kpis.json` under `"ide-arkos"`.
+
+### `kpis`
+
+The index card, the shape of every app's: `app: "ide-arkos"`, four KPIs, each `value`,
+`prev` (the 7 days before) and a 12-week `trend` computed from the rows (not snapshots):
+
+| key | label | value |
+|---|---|---|
+| `active` | Active Macs, 7 days | distinct Macs that checked in, counted by `rd` (below) |
+| `new` | New installs, 7 days | checks with `rd = -1` |
+| `sessions` | Sessions, 7 days | session reports received |
+| `crashfree` | Crash-free sessions, 7 days | `unit: "%"`, sessions whose `end` is not `lost`, of all, 0 to 100 with one decimal; `null` with no sessions |
+
+`health`: `critical` when a crash report arrived in the last 24 hours for the newest
+version seen (the highest version among the last 7 days' Arkos rows), `warning` when
+crash-free sessions are under 98% over 7 days, else `good`; the note says which (`"No
+crashes in 7 days"`, `"2 crashes on 0.5.1 in the last 24 hours"`, `"Crash-free sessions 97.9%
+over 7 days, under 98%"`). `value` is the 7 days ending today and `prev` the 7 before; a week
+with no sessions is 0 in the `crashfree` trend while `value` stays `null`.
+
+**Distinct Macs from `rd`.** A Mac sends at most one check a day through the collector,
+and `rd` is the days since its previous check (`-1` the first time). In a window of UTC
+days `0..n-1`, a check on day `i` is that Mac's first in the window exactly when
+`rd = -1` or `rd > i`; counting those rows counts distinct Macs, no id stored.
+
+### `installs` (no consent)
+
+```json
+{
+  "days": 7, "from": "2026-10-11", "to": "2026-10-17",
+  "current": { "active": 41, "new": 6, "back": 3, "checks": 180,
+    "perDay": [ { "day": "2026-10-11", "active": 26, "new": 1, "back": 0 } ] },
+  "previous": { "active": 37, "new": 4, "back": 2, "checks": 160,
+    "perDay": [ { "day": "2026-10-04", "active": 24, "new": 0, "back": 1 } ] },
+  "rhythm": [ { "name": "new", "checks": 6 }, { "name": "1", "checks": 140 }, { "name": "2-6", "checks": 28 }, { "name": "7+", "checks": 6 } ],
+  "versions": [ { "name": "0.5.1", "macs": 33 }, { "name": "0.5.0", "macs": 8 } ],
+  "macos": [ { "name": "15", "macs": 30 }, { "name": "14", "macs": 11 } ],
+  "arch": [ { "name": "arm64", "macs": 39 }, { "name": "x86_64", "macs": 2 } ]
+}
+```
+
+`active` is distinct Macs over the range (the `rd` count); `perDay[].active` is that day's
+checks (one per Mac). `new` is `rd = -1`, `back` is `rd >= 7` (back after a week or more).
+`perDay` has one entry per UTC day, zeros included, oldest first, the same length in both
+ranges. `rhythm` buckets the range's checks by `rd`: how often Macs come back.
+`versions`, `macos` and `arch` count each distinct Mac once, by its first check in the range,
+largest first.
+
+### `journey` (opt-in session reports: the journey map)
+
+The aggregate over the range's session reports, capped at the 5,000 newest (`capped: true`
+when the cap was hit). Each report's `ev` becomes **steps** (the step table in the design
+spec, section 3): a label, a `group` and an optional detail. Restored tabs in the launch's
+first 5 seconds fold into the launch; consecutive identical steps collapse.
+
+```json
+{
+  "days": 7, "sessions": 120, "firstSessions": 18, "previous": { "sessions": 98 }, "capped": false,
+  "paths": {
+    "columns": [
+      [ { "id": "0:Launched", "label": "Launched", "group": "launch", "sessions": 120 } ],
+      [ { "id": "1:Terminal tab", "label": "Terminal tab", "group": "tab", "sessions": 70 },
+        { "id": "1:Claude resumed", "label": "Claude resumed", "group": "agent", "sessions": 22 },
+        { "id": "1:Other", "label": "Other", "group": "other", "sessions": 20 },
+        { "id": "1:Ended", "label": "Ended", "group": "end", "sessions": 8, "ends": { "quit": 6, "lost": 1, "unknown": 1 } } ]
+    ],
+    "links": [ { "from": "0:Launched", "to": "1:Terminal tab", "sessions": 70 } ],
+    "first": { "columns": [], "links": [] }
+  },
+  "milestones": [
+    { "key": "launch", "label": "Launched", "sessions": 120, "first": 18, "medianSecs": 0, "firstMedianSecs": 0 },
+    { "key": "tab", "label": "Opened a tab", "sessions": 110, "first": 15, "medianSecs": 4, "firstMedianSecs": 21 },
+    { "key": "agent", "label": "Started an agent", "sessions": 96, "first": 11, "medianSecs": 9, "firstMedianSecs": 64 },
+    { "key": "waiting", "label": "An agent asked for input", "sessions": 80, "first": 8, "medianSecs": 140, "firstMedianSecs": 210 },
+    { "key": "file", "label": "Opened a file", "sessions": 52, "first": 6, "medianSecs": 300, "firstMedianSecs": 420 },
+    { "key": "panes", "label": "Worked in two panes", "sessions": 40, "first": 3, "medianSecs": 260, "firstMedianSecs": 600 },
+    { "key": "browser", "label": "Used the browser pane", "sessions": 12, "first": 1, "medianSecs": 900, "firstMedianSecs": null }
+  ],
+  "next": [
+    { "label": "Terminal tab", "group": "tab", "sessions": 104, "to": [ { "label": "Claude started", "group": "agent", "sessions": 61 }, { "label": "Ended", "group": "end", "sessions": 9 } ] }
+  ],
+  "features": {
+    "opened": [ { "name": "terminal", "how": "key", "sessions": 60, "count": 140 } ],
+    "palette": [ { "name": "split", "sessions": 31, "count": 58 } ],
+    "md": [ { "name": "mermaid", "sessions": 12, "count": 12 } ],
+    "views": [ { "name": "markdown", "mode": "rendered", "sessions": 40, "count": 96 } ],
+    "settings": [ { "name": "theme.dark", "sessions": 4, "count": 5 } ],
+    "help": [ { "name": "keybindings", "sessions": 6, "count": 7 } ],
+    "agents": [ { "name": "claude", "how": "resume", "sessions": 70, "count": 160 } ]
+  },
+  "focus": [ { "name": "terminal", "secs": 310000, "sessions": 118 } ],
+  "lengths": [ { "name": "<1m", "sessions": 8 }, { "name": "1-10m", "sessions": 20 }, { "name": "10-60m", "sessions": 41 }, { "name": "1-4h", "sessions": 39 }, { "name": "4h+", "sessions": 12 } ],
+  "ends": { "quit": 100, "lost": 3, "unknown": 17 },
+  "errorEvents": [ { "name": "session_lost", "sessions": 2, "count": 3 } ],
+  "notices": [ { "name": "update_ready", "sessions": 30, "count": 30 } ],
+  "dropped": 0, "rejected": 1,
+  "rhythm": [ { "name": "first", "sessions": 18 }, { "name": "same day", "sessions": 60 }, { "name": "1", "sessions": 25 }, { "name": "2-6", "sessions": 12 }, { "name": "7+", "sessions": 5 } ],
+  "cohorts": [ { "week": "2026-09-24", "weeks": [ 12, 9, 7 ] } ]
+}
+```
+
+- Steps: a report with no launch (a window that reconnected, or usage reports turned on mid-run)
+  starts with a `Continued` step (group `launch`), so column 0 can hold `Launched` and
+  `Continued`; the `launch` milestone counts real launches only. `view` events in the launch's
+  first 5 seconds (restored tabs showing their files) are dropped with the restores. Ids read
+  with spaces: `Palette: new terminal`, `Error: session lost`.
+- `errorEvents` is the `error` events by kind (named so to keep clear of the `errors` map of
+  failed parts).
+- `paths`: the first `PATH_DEPTH = 5` steps after the launch, so six columns (column 0 is
+  the launch). Other and Ended are left out of a column where they have no sessions; Ended's
+  `ends` always has all three keys. Each column keeps its 6 most common labels plus `Other` and `Ended` (a session
+  with fewer steps ends there, `ends` counting its `end`); a session that ended is in no later
+  column. `links` join consecutive columns by node `id` (`<column>:<label>`). `first` is the
+  same over first sessions (`rd = -1`) alone.
+- `milestones` in this order: the sessions (and first sessions) reaching each at any time,
+  and the median seconds from the start to the first time (`null` when none did). `panes` is a
+  `palette` `split`, or a second `pane_open` that is not a restore while the first is open.
+- `next`: the 8 most common labels (by sessions that had them), each with its 5 most common
+  next steps (the label after it in the same session, `Ended` at the end), counting sessions.
+- `features`: sessions that used each and how many times, largest first. `opened` is
+  `pane_open` by `kind` and `how` (restores left out); `agents` is `agent_launch`.
+- `focus`: the reports' `focus` summed per surface; `sessions` is how many had any.
+- `rhythm`: by the session's `rd` (days since the previous session from that copy; `0` is
+  "same day"). `cohorts`: by `iw` (the install week: days since 1970 rounded down to a
+  multiple of 7, so each starts on a Thursday, shown as that date) and weeks since it (the
+  report's day, bucketed the same way, minus `iw`, over 7), the 8 newest install weeks oldest
+  first, each zero-filled to the week under way; a week that ended before the range began was
+  not measured and is `null`, sessions each,
+  newest 8 cohorts.
+- `null` parts and `notConfigured.visits` when the dataset is not set.
+
+### `sessions` (the newest session reports in full)
+
+```json
+{ "rows": [ {
+  "received": "2026-10-17T14:05:12Z", "ver": "0.5.1", "osv": 15, "arch": "arm64",
+  "len": 5400, "end": "quit", "rd": 1, "iw": "2026-10-08",
+  "focus": { "terminal": 3100, "viewer": 900 },
+  "steps": [ { "t": 0, "label": "Launched", "group": "launch", "detail": "normal, 3 tabs restored" },
+             { "t": 12, "label": "Claude resumed", "group": "agent", "detail": null } ],
+  "dropped": 0, "rejected": 0
+} ] }
+```
+
+The 50 newest in the range, newest first. `received` is the row's time (the report is sent
+after the run ends, so the run started about `len` seconds before). `steps` as in `journey`,
+consecutive duplicates kept with a count in `detail` (`"x3"`).
+
+### `crashes`
+
+```json
+{
+  "total": 4, "previous": 2, "sessions": 120, "lost": 3,
+  "byVersion": [ { "ver": "0.5.1", "crashes": 2, "sessions": 80, "lost": 1 } ],
+  "groups": [ { "key": "other:b5bb9d80", "pk": "other", "mh": "b5bb9d8014a0…", "file": "/src/crates/arkos/src/md_view.rs", "line": 812,
+    "versions": ["0.5.1"], "count": 2, "first": "2026-10-15T10:00:00Z", "last": "2026-10-17T09:12:00Z", "up": { "<10m": 2 },
+    "frames": [ [0, 1843200] ], "image": ["arkos", "6c3f0e2a…", 48234496], "commit": "4f2a9c1" } ]
+}
+```
+
+`groups` by `pk` (and `mh` for `other`), largest first, with the newest report's frames,
+image and commit so the offsets can be symbolicated (`atos`). `lost` is session reports
+whose `end` is `lost` (crashes not reported, force quits included). `byVersion` joins
+crash reports and sessions by `ver`.
+
 ## Auth: what `/auth.js` exports
 
 The shell's `public/auth.js` is the one auth surface on the admin host; every app page
@@ -335,6 +515,8 @@ gone.
   { "slug": "game-dayhike", "name": "Day Hike", "home": "https://games.csarko.sh/dayhike", "api": "https://fps-telemetry-5pogqa5sqq-uw.a.run.app", "page": "/game-dayhike/" }
 ]
 ```
+
+Arkos IDE's entry is `{ "slug": "ide-arkos", "name": "Arkos IDE", "home": "https://apps.csarko.sh/ide-arkos", "api": "<csarko-admin>/arkos", "page": "/ide-arkos/" }`.
 
 `page` is root-relative with a trailing slash (the admin site serves with
 `trailingSlash: true` and clean URLs). `api` has no trailing slash. The sample index data
