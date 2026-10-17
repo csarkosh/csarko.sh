@@ -153,12 +153,15 @@ resource "google_logging_project_sink" "visits" {
 resource "google_logging_project_exclusion" "visits_duplicates" {
   project     = var.project_id
   name        = "csarko-visits-duplicates"
-  description = "Visits rows live in their own bucket; successful beacon requests are counted there."
+  description = "Visits rows live in their own bucket; successful beacon requests are counted there; no request entry of an installed program's report or check is kept, refused or not."
   filter      = <<-EOT
     resource.type="cloud_run_revision" AND resource.labels.service_name="${google_cloud_run_v2_service.visits.name}" AND (
       jsonPayload.v=1 OR jsonPayload.v=2 OR (
         logName="projects/${var.project_id}/logs/run.googleapis.com%2Frequests"
         AND httpRequest.status<400
+      ) OR (
+        logName="projects/${var.project_id}/logs/run.googleapis.com%2Frequests"
+        AND httpRequest.requestUrl=~"/a(/check)?(\\?|$)"
       )
     )
   EOT
