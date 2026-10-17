@@ -2,6 +2,7 @@
 description: Getting per-pixel scene depth to a post process on WebGPU and WebGL2, and the six places the two APIs part ways, from shader uniformity to a lost GPU.
 published: 2026-10-16
 categories: Rendering
+updated: 2026-10-17
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-16-scene-depth-webgpu-vs-webgl2.md
 ---
 # Scene depth for a post process: WebGPU against WebGL2
@@ -222,9 +223,10 @@ from Dawn's validation layer [19]. The losses came with a depth texture bound an
 by the post process, twice from the depth renderer's target and once from the
 prepass's; a pass that bound the depth and read a constant instead never lost it, nor
 did the depth pass drawing with no post process reading it, nor any of six later runs
-that read the depth, with and without Dawn's backend validation. The cause is not found.
-The correlation with reading a float render target in a post process is the strongest
-there is, and the runs that survived say it is not that alone.
+that read the depth, with and without Dawn's backend validation. The cause was not found
+then; the correlation with reading a float render target in a post process was the
+strongest there was, and the runs that survived said it was not that alone. It was
+found the day after, and the depth texture was a bystander (section 10).
 
 What a lost GPU looks like is itself an API difference:
 
@@ -250,8 +252,7 @@ an engine change.
 A renderer cannot ship a one-in-three device loss in a feature. The softening shipped
 on both engines because every run after the first nine, among them a full set of
 seven stills at 75 s each, drew with the prepass and lost nothing, and a lost device
-is an event the game's telemetry carries with its reason. If it returns, the telemetry will say on which
-engine.
+is an event the game's telemetry carries with its reason. It returned the day after, on WebGPU, and section 10 has the cause.
 
 ## 7. Three traps that were the same on both
 
@@ -299,10 +300,41 @@ the translation happens, and WebGPU moves it to the author.
 
 No frame times were taken for the prepass against the depth renderer or against no
 softening, on either API; the prepass was chosen on what it does not do, a second
-pass, and on the correctness of its depth, not on a measurement. The device loss has
-no reproduction. Both belong in the next measurement: the cost of the second target
-and its resolve at 4 samples on each API, and a run long enough to say whether the
-loss returns.
+pass, and on the correctness of its depth, not on a measurement. The device loss had
+no reproduction when this was written; section 10 has one. What remains for the next
+measurement is the cost of the second target and its resolve at 4 samples on each API.
+
+## 10. Update (2026-10-17): what lost the GPU
+
+The loss returned the day after the softening shipped, on a Mac whose GPU the
+renderer's high tier saturates (about 0.8 s a frame with every draw in), in about
+half of 60 s runs, and this time it was reproduced and traced. A probe on the page's
+queue, a `GPUQueue.onSubmittedWorkDone` after every submit with the render passes
+each carried, put every loss after a single frame of about 6 s or more of GPU work;
+Chrome's log had the browser's compositor lose its own Dawn device first, `While
+calling [Device].ImportSharedTextureMemory`, then the GPU process restart, and the
+page's device go with it, which is the one line section 6 quotes [19]. The depth
+texture was a bystander. The frames that reached 6 s were the ones drawn while
+pipelines were still being created asynchronously, with the meshes whose pipelines
+were pending left out: with the ground and the trees missing, the grass, the far
+cover and the sky behind them were shaded over the whole screen, and a frame with
+fewer draws cost four to seven times the whole one, 4 to 7 s against 1.3 s. The
+previous build's partial frames took 5.5 s; the prepass's second target and a third
+shadow cascade pushed them over the line. A depth renderer, a second pass over the
+scene, added to the same frames, which is why section 6's runs with one lost the
+device more often; it was never the read of the float target. The compiles were not
+the cost either: every shader compiled in under 10 ms alone, and the seconds they
+appeared to take were the GPU process's main thread waiting on the GPU.
+
+Two things follow for a renderer on WebGPU in Chrome. The page's device and the
+compositor's share one GPU process, so a frame that holds the GPU for seconds is not
+a slow frame, it ends every API the process hosts, WebGL2 included; on a saturated
+GPU the frame's time is a hard limit, not a quality setting. And a frame drawn with
+draws left out is not a cheaper frame when what is left out is the occluders; a
+renderer that creates its pipelines asynchronously does better to hold the frame
+while any creation is pending, which keeps the canvas's last image when the canvas
+texture is acquired only for a pass that draws, than to draw the scene without its
+ground. With the frames held, the same machine lost the device in none of 18 runs.
 
 ## Sources
 
