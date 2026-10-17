@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createCache } from "../src/cache.mjs";
 import { createArkos } from "../src/collectors/arkos.mjs";
-import { createArkosQueries, dayRange, isArkosQueryName, ARKOS_QUERY_NAMES } from "../src/arkos-queries.mjs";
+import { createArkosQueries, dayRange, isArkosQueryName, parseWho, ARKOS_QUERY_NAMES, WHO } from "../src/arkos-queries.mjs";
 
 const rows = JSON.parse(readFileSync(new URL("./fixtures/arkos-rows.json", import.meta.url), "utf8"));
 const queriesDir = new URL("../queries/", import.meta.url).pathname;
@@ -49,7 +49,8 @@ test("Macs are counted over whole UTC days ending today; days=1 is today against
 test("installs runs arkos-installs.sql over the day range and shapes it", async () => {
   const { q, calls } = make();
   const r = await q.installs(7);
-  assert.deepEqual(calls, [{ name: "arkos-installs", params: { start: "2026-10-11T00:00:00Z", end: "2026-10-18T00:00:00Z", prev_start: "2026-10-04T00:00:00Z" } }]);
+  assert.deepEqual(calls, [{ name: "arkos-installs", params: { start: "2026-10-11T00:00:00Z", end: "2026-10-18T00:00:00Z", prev_start: "2026-10-04T00:00:00Z", who: "users" } }]);
+  assert.equal(r.who, "users");
   assert.deepEqual([r.from, r.to, r.current.active, r.current.perDay.length, r.previous.perDay.length], ["2026-10-11", "2026-10-17", 5, 7, 7]);
 });
 
@@ -58,7 +59,7 @@ test("journey and sessions share one cached job over the last days times 24 hour
   const j = await q.journey(7);
   const s = await q.sessions(7);
   assert.deepEqual(calls.map((c) => c.name).sort(), ["arkos-session-counts", "arkos-sessions"]);
-  const window = { start: "2026-10-10T16:00:00Z", end: "2026-10-17T16:00:00Z" };
+  const window = { start: "2026-10-10T16:00:00Z", end: "2026-10-17T16:00:00Z", who: "users" };
   assert.deepEqual(calls.find((c) => c.name === "arkos-sessions").params, window);
   assert.deepEqual(calls.find((c) => c.name === "arkos-session-counts").params, { ...window, prev_start: "2026-10-03T16:00:00Z" });
   assert.equal(j.days, 7);
@@ -80,7 +81,7 @@ test("crashes joins crash reports with the session counts", async () => {
 test("kpis: twelve weeks of days ending today, the last 24 hours for the health rule", async () => {
   const { q, calls } = make();
   const k = await q.kpis();
-  assert.deepEqual(calls, [{ name: "arkos-kpis", params: { start: "2026-07-26T00:00:00Z", end: "2026-10-18T00:00:00Z", since: "2026-10-16T16:00:00Z" } }]);
+  assert.deepEqual(calls, [{ name: "arkos-kpis", params: { start: "2026-07-26T00:00:00Z", end: "2026-10-18T00:00:00Z", since: "2026-10-16T16:00:00Z", who: "users" } }]);
   assert.equal(k.app, "ide-arkos");
   assert.equal(k.at, "2026-10-17T15:30:00.000Z");
   assert.deepEqual(k.kpis.map((x) => x.value), [8, 4, 200, 98.5]);
@@ -95,6 +96,25 @@ test("kpis that fail keep the card: null values, the error under visits, a warni
   assert.equal(k.health.status, "warning");
 });
 
+test("who picks whose rows: users by default, me, all; each its own cached job", async () => {
+  assert.deepEqual(WHO, ["users", "me", "all"]);
+  assert.deepEqual([parseWho(null), parseWho(""), parseWho("me"), parseWho("all"), parseWho("cyrus")], ["users", "users", "me", "all", null]);
+  const { q, calls } = make();
+  await q.installs(7);
+  const me = await q.installs(7, "me");
+  await q.journey(7, "all");
+  await q.crashes(7, "me");
+  assert.equal(me.who, "me");
+  assert.deepEqual(calls.map((c) => `${c.name}:${c.params.who}`), [
+    "arkos-installs:users", "arkos-installs:me", "arkos-sessions:all", "arkos-session-counts:all", "arkos-crashes:me", "arkos-session-counts:me",
+  ]);
+});
+
+test("every Arkos SQL file filters by @who the same way", () => {
+  const rule = "(@who = 'all' OR (@who = 'me') = (IFNULL(JSON_VALUE(json_payload.ch) = 'dogfood', FALSE) OR IFNULL(JSON_VALUE(json_payload.s.own) = 'true', FALSE)))";
+  for (const name of Object.keys(rows)) assert.ok(readFileSync(`${queriesDir}${name}.sql`, "utf8").includes(rule), name);
+});
+
 test("a failing query throws for the route to answer 502", async () => {
   const { q } = make({ fail: true });
   await assert.rejects(q.journey(7), { name: "UpstreamError", message: "BigQuery arkos-sessions failed: quota" });
@@ -104,13 +124,13 @@ test("without VISITS_DATASET every part is null with notConfigured.visits, and n
   const { q, calls } = make({ dataset: "" });
   const hint = { visits: "VISITS_DATASET" };
   const installs = await q.installs(7);
-  assert.deepEqual(installs, { days: 7, from: "2026-10-11", to: "2026-10-17", current: null, previous: null, rhythm: null, versions: null, macos: null, arch: null, notConfigured: hint });
+  assert.deepEqual(installs, { days: 7, who: "users", from: "2026-10-11", to: "2026-10-17", current: null, previous: null, rhythm: null, versions: null, macos: null, arch: null, notConfigured: hint });
   const journey = await q.journey(30);
   assert.equal(journey.days, 30);
   assert.deepEqual(journey.notConfigured, hint);
   for (const key of ["sessions", "firstSessions", "previous", "capped", "paths", "milestones", "next", "features", "focus", "lengths", "ends", "errorEvents", "notices", "dropped", "rejected", "rhythm", "cohorts"]) assert.equal(journey[key], null, key);
-  assert.deepEqual(await q.sessions(7), { rows: null, notConfigured: hint });
-  assert.deepEqual(await q.crashes(7), { total: null, previous: null, sessions: null, lost: null, byVersion: null, groups: null, notConfigured: hint });
+  assert.deepEqual(await q.sessions(7), { who: "users", rows: null, notConfigured: hint });
+  assert.deepEqual(await q.crashes(7), { who: "users", total: null, previous: null, sessions: null, lost: null, byVersion: null, groups: null, notConfigured: hint });
   const k = await q.kpis();
   assert.ok(k.kpis.every((x) => x.value === null && x.prev === null && x.trend.length === 12));
   assert.deepEqual(k.notConfigured, { visits: "VISITS_DATASET", active: "VISITS_DATASET", new: "VISITS_DATASET", sessions: "VISITS_DATASET", crashfree: "VISITS_DATASET" });

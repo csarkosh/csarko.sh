@@ -5,6 +5,8 @@
 --            and crashes
 --   crash24  crash reports since @since (the last 24 hours) by version
 --   seen     every version seen in week 11, of any kind, so the code can pick the newest
+-- @who: 'users' (everyone but Cyrus), 'me' (Cyrus's own Macs: ch = 'dogfood', or s.own, which the
+-- collector sets on rows from his addresses) or 'all'.
 WITH arkos AS (
   SELECT
     timestamp AS ts,
@@ -18,6 +20,7 @@ WITH arkos AS (
   WHERE timestamp >= TIMESTAMP(@start) AND timestamp < TIMESTAMP(@end)
     AND JSON_VALUE(json_payload.app) = 'arkos'
     AND JSON_VALUE(json_payload.k) IN ('check', 'session', 'crash')
+    AND (@who = 'all' OR (@who = 'me') = (IFNULL(JSON_VALUE(json_payload.ch) = 'dogfood', FALSE) OR IFNULL(JSON_VALUE(json_payload.s.own) = 'true', FALSE)))
 )
 SELECT
   'week' AS dim, week, CAST(NULL AS STRING) AS ver,

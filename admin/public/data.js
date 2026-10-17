@@ -102,7 +102,7 @@ function sampleRange(name, data, days) {
   return data;
 }
 
-/** A source: kpis(app), query(app, name, days), manual(app, key, value). */
+/** A source: kpis(app), query(app, name, days, extra), manual(app, key, value). `extra` adds query parameters (Arkos's `who`); the sample ignores it. */
 export function source() {
   if (preview) {
     return {
@@ -124,7 +124,7 @@ export function source() {
   return {
     kind: 'live',
     kpis: (app) => readJson(`${app.api}/admin/kpis`),
-    query: (app, name, days) => readJson(`${app.api}/admin/query/${encodeURIComponent(name)}?days=${days}`),
+    query: (app, name, days, extra = {}) => readJson(`${app.api}/admin/query/${encodeURIComponent(name)}?${new URLSearchParams({ days, ...extra })}`),
     manual: (app, key, value) => readJson(`${app.api}/admin/manual/${encodeURIComponent(key)}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

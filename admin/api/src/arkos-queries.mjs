@@ -9,6 +9,10 @@
  * days ending today (`days=1` is today so far, against yesterday). The
  * session and crash reports have no such rule, so they take the last `days`
  * times 24 hours ending at the current hour, as the csarko.sh routes do.
+ *
+ * Each query also takes `who` (WHO): Cyrus dogfoods Arkos, so his own Macs
+ * are kept apart from everyone else's. `users` is the default; the index
+ * card counts users only.
  */
 
 import { kpisOf, installsOf, journeyOf, sessionsListOf, crashesOf, TREND_WEEKS } from "./arkos.mjs";
@@ -17,6 +21,14 @@ import { addDays, isoDate, hourlyRange, dailyRange } from "./time.mjs";
 
 export const ARKOS_QUERY_NAMES = ["installs", "journey", "sessions", "crashes"];
 export const ARKOS_APP = "ide-arkos";
+/** Whose rows: everyone but Cyrus, his own Macs, or both. */
+export const WHO = ["users", "me", "all"];
+
+/** `who` from the query string: absent is users, anything not in WHO is null. */
+export function parseWho(value) {
+  if (value === null || value === undefined || value === "") return "users";
+  return WHO.includes(value) ? value : null;
+}
 
 export function isArkosQueryName(name) {
   return ARKOS_QUERY_NAMES.includes(name);
@@ -60,31 +72,31 @@ export function createArkosQueries({ arkos, now = Date.now, log = console }) {
       }
     },
 
-    async installs(days) {
+    async installs(days, who = "users") {
       const range = dayRange(days, now());
-      if (!configured()) return { days, from: range.startDate, to: range.endDate, current: null, previous: null, rhythm: null, versions: null, macos: null, arch: null, ...NOT_CONFIGURED };
-      return installsOf(await arkos.installs(range), range);
+      if (!configured()) return { days, who, from: range.startDate, to: range.endDate, current: null, previous: null, rhythm: null, versions: null, macos: null, arch: null, ...NOT_CONFIGURED };
+      return { who, ...installsOf(await arkos.installs(range, who), range) };
     },
 
-    async journey(days) {
-      if (!configured()) return { days, sessions: null, firstSessions: null, previous: null, capped: null, paths: null, milestones: null, next: null, features: null, focus: null, lengths: null, ends: null, errorEvents: null, notices: null, dropped: null, rejected: null, rhythm: null, cohorts: null, ...NOT_CONFIGURED };
+    async journey(days, who = "users") {
+      if (!configured()) return { days, who, sessions: null, firstSessions: null, previous: null, capped: null, paths: null, milestones: null, next: null, features: null, focus: null, lengths: null, ends: null, errorEvents: null, notices: null, dropped: null, rejected: null, rhythm: null, cohorts: null, ...NOT_CONFIGURED };
       const t = now();
       const range = hourlyRange(days, t);
-      const [rows, counts] = await Promise.all([arkos.sessions(range), arkos.sessionCounts(range)]);
-      return journeyOf(rows, { days, previousSessions: sum(counts, "previous", "sessions"), cap: SESSION_CAP, nowMs: t });
+      const [rows, counts] = await Promise.all([arkos.sessions(range, who), arkos.sessionCounts(range, who)]);
+      return { who, ...journeyOf(rows, { days, previousSessions: sum(counts, "previous", "sessions"), cap: SESSION_CAP, nowMs: t }) };
     },
 
-    async sessions(days) {
-      if (!configured()) return { rows: null, ...NOT_CONFIGURED };
+    async sessions(days, who = "users") {
+      if (!configured()) return { who, rows: null, ...NOT_CONFIGURED };
       // The journey's rows, from the same cached job: the newest 50 of them.
-      return sessionsListOf(await arkos.sessions(hourlyRange(days, now())));
+      return { who, ...sessionsListOf(await arkos.sessions(hourlyRange(days, now()), who)) };
     },
 
-    async crashes(days) {
-      if (!configured()) return { total: null, previous: null, sessions: null, lost: null, byVersion: null, groups: null, ...NOT_CONFIGURED };
+    async crashes(days, who = "users") {
+      if (!configured()) return { who, total: null, previous: null, sessions: null, lost: null, byVersion: null, groups: null, ...NOT_CONFIGURED };
       const range = hourlyRange(days, now());
-      const [crashRows, counts] = await Promise.all([arkos.crashes(range), arkos.sessionCounts(range)]);
-      return crashesOf(crashRows, counts);
+      const [crashRows, counts] = await Promise.all([arkos.crashes(range, who), arkos.sessionCounts(range, who)]);
+      return { who, ...crashesOf(crashRows, counts) };
     },
   };
 }

@@ -180,6 +180,9 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 
 /* The range row: one row above everything it scopes. */
 .range { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 24px; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; margin: 0 0 24px; }
+.controls .range { margin: 0; }
+.controls .note { flex-basis: 100%; }
 .range .label { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); margin-right: 4px; }
 .range button { font-family: var(--mono); font-size: 12.5px; line-height: 1.5; padding: 4px 12px; border-radius: 999px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); transition: border-color .15s ease, color .15s ease, background .15s ease; }
 .range button:hover { color: var(--text); border-color: var(--border-strong); }

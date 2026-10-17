@@ -99,9 +99,17 @@ its card on a phone.
 Cards, in order: Installs (tiles and the per-day chart), Paths, Milestones, What comes next, Features, Time,
 Friction, Return, Crashes, Recent sessions.
 
-## 6. Not now
+## 6. Cyrus's own use
+
+*Cyrus, 2026-10-17: "I want it to include myself. I'm dog fooding it for personal things and
+professional. It should distinguish me from actual users though."* A row is his when a release on
+his Mac says `ch = dogfood` (an empty `~/.config/arkos/dogfood`, ide-arkos's telemetry crate) or
+the collector marked it `s.own` because it came from one of his addresses (`--ignore-ips`, which
+still drops his website beacons; lib-visits v0.4.0). Every query takes `who`: `users` (default),
+`me`, `all`; the page has a Whose row beside the range (Users, You, Both, `?who=` opens on one).
+The index card counts users only.
+
+## 7. Not now
 
 - Publishing aggregates (the disclosure's promise; nothing is published).
 - Symbolicating crash frames on the page: offsets are listed, `atos` stays a hand step.
-- Counting the maintainer's own Mac: the collector's `--ignore-ips` drops it, so the page is empty until
-  someone else turns usage reports on; the sample shows the shapes meanwhile.

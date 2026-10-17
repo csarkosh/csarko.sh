@@ -275,7 +275,7 @@ Body `{ "value": 47 }` (a non-negative integer). Answer `{ "ok": true, "at": "20
 Appends `{ at, value }` to the `substack` series that `reach` returns; the page then
 reloads the Reach card. `substack` is the only key.
 
-## Arkos IDE: `GET <api>/arkos/admin/kpis` and `/arkos/admin/query/<name>?days=1|7|30|90`
+## Arkos IDE: `GET <api>/arkos/admin/kpis` and `/arkos/admin/query/<name>?days=1|7|30|90&who=users|me|all`
 
 The csarko-admin service serves Arkos under the prefix `/arkos`, so `apps.json` names
 `<service>/arkos` as its `api` and the shell's two routes hold. Same auth, CORS, rate limit,
@@ -290,6 +290,13 @@ the csarko.sh rolling window (the last `days`×24 hours ending at the next hour)
 partial day. Every query answers `null` parts with `notConfigured.visits = "VISITS_DATASET"`
 when the dataset is not set. Sample files: `admin/public/sample/ide-arkos/<name>.json`
 (`days=7`), and `sample/kpis.json` under `"ide-arkos"`.
+
+**Whose rows** *(Cyrus, 2026-10-17: he dogfoods Arkos, and his use is kept apart from users')*:
+every query takes `who`, `users` (the default: everyone but Cyrus), `me` (his own Macs) or `all`,
+and echoes it as `who`; anything else is `400` `"who must be users, me or all"`. A row is his
+when its `ch` is `dogfood` (a release on a Mac holding `~/.config/arkos/dogfood`) or the
+collector marked it `s.own` (sent from one of its `--ignore-ips` addresses, lib-visits v0.4.0).
+`kpis`, the index card, counts users only. The sample files ignore `who`.
 
 ### `kpis`
 

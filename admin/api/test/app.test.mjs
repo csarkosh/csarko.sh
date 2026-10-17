@@ -23,7 +23,7 @@ const queries = {
 };
 const arkos = {
   async kpis() { return { app: "ide-arkos", kpis: [] }; },
-  async installs(days) { calls.push(["arkos-installs", days]); return { days }; },
+  async installs(days, who) { calls.push(["arkos-installs", days, who]); return { days }; },
   async journey(days) { if (days === 90) throw new UpstreamError("BigQuery arkos-sessions failed: quota"); return { days }; },
   async sessions(days) { return { rows: [], days }; },
   async crashes(days) { return { total: 0, days }; },
@@ -164,7 +164,11 @@ test("Arkos under /arkos: the index card and its four queries, through the same 
     assert.equal(r.status, 200, name);
     assert.equal(r.body.days, 30, name);
   }
-  assert.deepEqual(calls.at(-1), ["arkos-installs", 30], "the Arkos source answered, not the csarko.sh one");
+  assert.deepEqual(calls.at(-1), ["arkos-installs", 30, "users"], "the Arkos source answered, not the csarko.sh one; users by default");
+  assert.equal((await call(server, "GET", "/arkos/admin/query/installs?days=7&who=me", auth("10.0.0.1"))).status, 200);
+  assert.deepEqual(calls.at(-1), ["arkos-installs", 7, "me"], "who passed through");
+  const badWho = await call(server, "GET", "/arkos/admin/query/installs?days=7&who=cyrus", auth("10.0.0.1"));
+  assert.deepEqual([badWho.status, badWho.body.error], [400, "who must be users, me or all"]);
   assert.equal((await call(server, "GET", "/arkos/admin/query/installs", auth("10.0.0.1"))).body.days, 7, "default range");
   assert.equal((await call(server, "GET", "/arkos/admin/query/installs?days=14", auth("10.0.0.1"))).status, 400);
   assert.equal((await call(server, "GET", "/arkos/admin/query/installs?days=abc", auth("10.0.0.1"))).status, 400);

@@ -7,6 +7,8 @@
 --   day      name = the UTC date; checks (= that day's active Macs), installs (rd = -1), back (rd >= 7), macs
 --   rhythm   name = new | 1 | 2-6 | 7+ by rd, current window; checks
 --   version, macos, arch   name = ver, osv, arch of each Mac's first check in the current window; macs
+-- @who: 'users' (everyone but Cyrus), 'me' (Cyrus's own Macs: ch = 'dogfood', or s.own, which the
+-- collector sets on rows from his addresses) or 'all'.
 WITH checks AS (
   SELECT
     IF(timestamp >= TIMESTAMP(@start), 'current', 'previous') AS win,
@@ -19,6 +21,7 @@ WITH checks AS (
   WHERE timestamp >= TIMESTAMP(@prev_start) AND timestamp < TIMESTAMP(@end)
     AND JSON_VALUE(json_payload.app) = 'arkos'
     AND JSON_VALUE(json_payload.k) = 'check'
+    AND (@who = 'all' OR (@who = 'me') = (IFNULL(JSON_VALUE(json_payload.ch) = 'dogfood', FALSE) OR IFNULL(JSON_VALUE(json_payload.s.own) = 'true', FALSE)))
 ),
 marked AS (
   SELECT

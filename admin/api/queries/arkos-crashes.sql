@@ -2,6 +2,8 @@
 -- previous one [prev_start, start), newest first, at most 5,000: grouped in code by failure point
 -- (`pk`, and the cause hash `mh` for 'other'), the newest report's frames, image and commit kept so
 -- the offsets can be symbolicated. `frames` and `images` come back as JSON text.
+-- @who: 'users' (everyone but Cyrus), 'me' (Cyrus's own Macs: ch = 'dogfood', or s.own, which the
+-- collector sets on rows from his addresses) or 'all'.
 SELECT
   IF(timestamp >= TIMESTAMP(@start), 'current', 'previous') AS win,
   FORMAT_TIMESTAMP('%FT%TZ', timestamp) AS received,
@@ -18,5 +20,6 @@ FROM `csarko-sh.csarko_visits._AllLogs`
 WHERE timestamp >= TIMESTAMP(@prev_start) AND timestamp < TIMESTAMP(@end)
   AND JSON_VALUE(json_payload.app) = 'arkos'
   AND JSON_VALUE(json_payload.k) = 'crash'
+  AND (@who = 'all' OR (@who = 'me') = (IFNULL(JSON_VALUE(json_payload.ch) = 'dogfood', FALSE) OR IFNULL(JSON_VALUE(json_payload.s.own) = 'true', FALSE)))
 ORDER BY timestamp DESC
 LIMIT 5000

@@ -6,6 +6,9 @@
  * get, what follows each step, what is used, the time, the friction, who comes back, the crashes,
  * and the newest sessions in full.
  *
+ * Cyrus dogfoods Arkos, so a second row picks whose use the cards show: users (everyone but him,
+ * the default), his own Macs, or both; `?who=me` or `?who=all` opens on one.
+ *
  * The API is csarko-admin under `/arkos` (shapes in admin/CONTRACT.md, "Arkos IDE"). A part it
  * cannot answer is `null` with `notConfigured` naming the secret, or an `errors` entry; every card
  * renders those in place, never as a blank or a 0.
@@ -19,17 +22,26 @@ const SLUG = 'ide-arkos';
 const root = document.getElementById('top');
 const grid = document.getElementById('cards');
 const rangeRow = document.getElementById('range');
+const whoRow = document.getElementById('who');
+const whoNote = document.getElementById('who-note');
 const account = document.getElementById('account');
 
 const data = source();
 let app = null;
 let range = 7;
+const WHOS = [
+  { who: 'users', label: 'Users', note: 'Everyone but you. Your Macs are kept out: they say dogfood (an empty ~/.config/arkos/dogfood), or their rows came from your home addresses.' },
+  { who: 'me', label: 'You', note: 'Only your own Macs: the ones that say dogfood, and rows from your home addresses.' },
+  { who: 'all', label: 'Both', note: 'Everyone, you included.' },
+];
+const whoAsked = new URLSearchParams(location.search).get('who');
+let who = WHOS.some((w) => w.who === whoAsked) ? whoAsked : 'users';
 let generation = 0;
-// Seven cards read the one journey answer: each query is asked once per range.
+// Seven cards read the one journey answer: each query is asked once per range and whose use.
 let asked = new Map();
 const query = (name, days) => {
-  const key = `${name}:${days}`;
-  if (!asked.has(key)) asked.set(key, data.query(app, name, days));
+  const key = `${name}:${days}:${who}`;
+  if (!asked.has(key)) asked.set(key, data.query(app, name, days, { who }));
   return asked.get(key);
 };
 
@@ -72,7 +84,8 @@ const hours = (secs) => Math.round((num(secs) / 3600) * 10) / 10;
 
 /** What no usage reports in the range looks like: say why, since they are opt-in. */
 const NO_SESSIONS = 'No usage reports in this range yet. They are opt-in (Settings > Privacy in Arkos), so this fills as people turn them on.';
-const noSessions = (answer) => [...errorLines(answer), el('p', { class: 'empty' }, NO_SESSIONS)];
+const NO_OWN_SESSIONS = 'None of yours in this range. Turn usage reports on (Settings > Privacy in Arkos) on each of your Macs.';
+const noSessions = (answer) => [...errorLines(answer), el('p', { class: 'empty' }, who === 'me' ? NO_OWN_SESSIONS : NO_SESSIONS)];
 
 // Copy shared by the journey cards' subs.
 const OPT_IN = 'From the usage reports people opt into, one per run of a window.';
@@ -619,6 +632,27 @@ function rangeButtons() {
   rangeRow.append(...buttons);
 }
 
+function whoButtons() {
+  const note = () => { whoNote.textContent = WHOS.find((w) => w.who === who).note; };
+  const buttons = WHOS.map((w) => {
+    const b = el('button', { type: 'button', 'aria-pressed': String(w.who === who) }, w.label);
+    b.addEventListener('click', () => {
+      if (who === w.who) return;
+      who = w.who;
+      for (const other of buttons) other.setAttribute('aria-pressed', String(other === b));
+      note();
+      const url = new URL(location.href);
+      if (who === 'users') url.searchParams.delete('who');
+      else url.searchParams.set('who', who);
+      history.replaceState(null, '', url);
+      load();
+    });
+    return b;
+  });
+  whoRow.append(...buttons);
+  note();
+}
+
 async function start() {
   try {
     const apps = await loadApps();
@@ -632,6 +666,7 @@ async function start() {
 }
 
 rangeButtons();
+whoButtons();
 if (preview) {
   accountMenu(account, { preview: true });
   start();

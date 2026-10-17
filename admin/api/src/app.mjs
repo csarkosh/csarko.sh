@@ -10,7 +10,7 @@
  *   POST /admin/manual/<key>           { value } appended to the hand-entered series
  *   POST /admin/snapshot               the daily ledger write (admin token or the scheduler's OIDC token)
  *   GET  /arkos/admin/kpis             Arkos IDE's index card
- *   GET  /arkos/admin/query/<name>?days=N   one of Arkos's four queries
+ *   GET  /arkos/admin/query/<name>?days=N[&who=users|me|all]   one of Arkos's four queries
  *
  * Arkos IDE is served under the prefix `/arkos` so that its `api` in
  * apps.json is `<service>/arkos` and the shell's two routes hold for it.
@@ -29,7 +29,7 @@ import { bearerOf, audiencesFor } from "./auth.mjs";
 import { answer, fail, failureOf, readBody, parseDays, isAllowedOrigin, corsHeaders, preflightHeaders } from "./http.mjs";
 import { clientIpOf } from "./limiter.mjs";
 import { isQueryName, isManualKey } from "./queries.mjs";
-import { isArkosQueryName } from "./arkos-queries.mjs";
+import { isArkosQueryName, parseWho } from "./arkos-queries.mjs";
 
 const MAX_BODY_BYTES = 1024;
 
@@ -133,7 +133,9 @@ export function createApp({ config, queries, arkos = null, limiter, adminAuth, o
       if (req.method !== "GET") return fail(res, 405, "method not allowed", { ...cors, allow: "GET, OPTIONS" });
       const days = parseDays(search.get("days"));
       if (days === null) return fail(res, 400, "days must be 1, 7, 30 or 90", cors);
-      return answer(res, 200, await arkos[query[1]](days), cors);
+      const who = parseWho(search.get("who"));
+      if (who === null) return fail(res, 400, "who must be users, me or all", cors);
+      return answer(res, 200, await arkos[query[1]](days, who), cors);
     }
 
     return fail(res, 404, "not found", cors);

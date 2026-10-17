@@ -3,6 +3,8 @@
 -- the recent sessions listed in full. `received` is the row's time, which is when the report
 -- arrived: it is sent after its run ended. Numbers may arrive as JSON numbers or strings, so each is
 -- cast; `focus` and `ev` come back as JSON text.
+-- @who: 'users' (everyone but Cyrus), 'me' (Cyrus's own Macs: ch = 'dogfood', or s.own, which the
+-- collector sets on rows from his addresses) or 'all'.
 SELECT
   FORMAT_TIMESTAMP('%FT%TZ', timestamp) AS received,
   JSON_VALUE(json_payload.ver) AS ver,
@@ -20,5 +22,6 @@ FROM `csarko-sh.csarko_visits._AllLogs`
 WHERE timestamp >= TIMESTAMP(@start) AND timestamp < TIMESTAMP(@end)
   AND JSON_VALUE(json_payload.app) = 'arkos'
   AND JSON_VALUE(json_payload.k) = 'session'
+  AND (@who = 'all' OR (@who = 'me') = (IFNULL(JSON_VALUE(json_payload.ch) = 'dogfood', FALSE) OR IFNULL(JSON_VALUE(json_payload.s.own) = 'true', FALSE)))
 ORDER BY timestamp DESC
 LIMIT 5000
