@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>A painted look over a photoreal render: WebGPU against WebGL2 · Cyrus Sarkosh</title>
+  <meta name="description" content="Laying a painted look, a stroke filter and a palette grade, over a physically based browser render, and the four places WebGPU and WebGL2 part ways doing it." />
+  <link rel="canonical" href="https://csarko.sh/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" />
+
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="Cyrus Sarkosh" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:url" content="https://csarko.sh/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" />
+  <meta property="og:title" content="A painted look over a photoreal render: WebGPU against WebGL2" />
+  <meta property="og:description" content="Laying a painted look, a stroke filter and a palette grade, over a physically based browser render, and the four places WebGPU and WebGL2 part ways doing it." />
+  <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
+  <meta property="article:published_time" content="2026-10-17" />
+  <meta property="article:modified_time" content="2026-10-17" />
+  <meta property="article:author" content="https://csarko.sh/" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="A painted look over a photoreal render: WebGPU against WebGL2" />
+  <meta name="twitter:description" content="Laying a painted look, a stroke filter and a palette grade, over a physically based browser render, and the four places WebGPU and WebGL2 part ways doing it." />
+  <meta name="twitter:image" content="https://csarko.sh/og-image.jpg" />
+  <meta name="twitter:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
+
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0a0b0e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)" />
+  <link rel="icon" href="/favicon.ico" sizes="48x48" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicon-96x96.png" type="image/png" sizes="96x96" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+  <!-- generated:head -->
+  <link rel="preload" href="/assets/inter-latin-var.c9407645.woff2" as="font" type="font/woff2" crossorigin />
+  <!-- /generated:head -->
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "TechArticle",
+      "@id": "https://csarko.sh/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2#article",
+      "headline": "A painted look over a photoreal render: WebGPU against WebGL2",
+      "description": "Laying a painted look, a stroke filter and a palette grade, over a physically based browser render, and the four places WebGPU and WebGL2 part ways doing it.",
+      "datePublished": "2026-10-17",
+      "dateModified": "2026-10-17",
+      "url": "https://csarko.sh/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2",
+      "mainEntityOfPage": "https://csarko.sh/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2",
+      "wordCount": 2992,
+      "inLanguage": "en",
+      "image": "https://csarko.sh/og-image.jpg",
+      "author": {
+        "@type": "Person",
+        "@id": "https://csarko.sh/#person",
+        "name": "Cyrus Sarkosh",
+        "url": "https://csarko.sh/"
+      },
+      "publisher": {
+        "@type": "Person",
+        "@id": "https://csarko.sh/#person",
+        "name": "Cyrus Sarkosh",
+        "url": "https://csarko.sh/"
+      },
+      "isPartOf": {
+        "@id": "https://csarko.sh/#website"
+      },
+      "sameAs": [
+        "https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-17-painted-post-webgpu-vs-webgl2.md"
+      ]
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://csarko.sh/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Research",
+          "item": "https://csarko.sh/research"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "A painted look over a photoreal render: WebGPU against WebGL2",
+          "item": "https://csarko.sh/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2"
+        }
+      ]
+    }
+  ]
+}
+  </script>
+  <style>
+    /* Generated by build_docs.mjs from docs/published/. Fonts are filled in by build_assets.py. */
+    /* generated:fonts */
+    @font-face {
+      font-family: "Inter"; font-style: normal; font-weight: 400 700; font-display: swap;
+      src: url("/assets/inter-latin-var.c9407645.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "JetBrains Mono"; font-style: normal; font-weight: 400 500; font-display: swap;
+      src: url("/assets/jetbrains-mono-latin-var.2c32b9b3.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "Inter Fallback"; src: local("Arial");
+      size-adjust: 107.35%; ascent-override: 90.24%; descent-override: 22.47%; line-gap-override: 0%;
+    }
+    @font-face {
+      font-family: "JetBrains Mono Fallback"; src: local("Courier New");
+      size-adjust: 99.98%; ascent-override: 102.02%; descent-override: 30.00%; line-gap-override: 0%;
+    }
+    /* /generated:fonts */
+
+    :root {
+      color-scheme: dark;
+      --bg: #0a0b0e;
+      --surface: #111318;
+      --surface-2: #161922;
+      --surface-hover: #13161c;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.14);
+      --text: #e8eaf0;
+      --muted: #a0a8b8;
+      --faint: #7d8597;
+      /* Content warnings only. Yellow to stand apart from the teal accent. */
+      --warning: #f5c451;
+      --accent: #7dd3c0;
+      --accent-hover: #95e0cf;
+      --on-accent: #06231d;
+      --accent-soft: rgba(125, 211, 192, 0.12);
+      --accent-tint: rgba(125, 211, 192, 0.08);
+      --accent-glow: rgba(125, 211, 192, 0.10);
+      --accent-underline: rgba(125, 211, 192, 0.35);
+      --accent-border: rgba(125, 211, 192, 0.45);
+      --portrait-ring: rgba(125, 211, 192, 0.05);
+      --portrait-shadow: rgba(125, 211, 192, 0.25);
+      --nav-bg: rgba(10, 11, 14, 0.72);
+      --sans: "Inter", "Inter Fallback", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --mono: "JetBrains Mono", "JetBrains Mono Fallback", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      --radius: 14px;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        color-scheme: light;
+        --bg: #f6f7f9;
+        --surface: #ffffff;
+        --surface-2: #eef0f4;
+        --surface-hover: #ffffff;
+        --border: rgba(10, 11, 14, 0.09);
+        --border-strong: rgba(10, 11, 14, 0.16);
+        --text: #12151c;
+        --muted: #4a5263;
+        --faint: #5f677a;
+        --warning: #8a6100;
+        --accent: #0a735f;
+        --accent-hover: #075a4a;
+        --on-accent: #ffffff;
+        --accent-soft: rgba(10, 115, 95, 0.10);
+        --accent-tint: rgba(125, 211, 192, 0.20);
+        --accent-glow: rgba(125, 211, 192, 0.30);
+        --accent-underline: rgba(10, 115, 95, 0.35);
+        --accent-border: rgba(10, 115, 95, 0.45);
+        --portrait-ring: rgba(10, 115, 95, 0.06);
+        --portrait-shadow: rgba(10, 115, 95, 0.28);
+        --nav-bg: rgba(246, 247, 249, 0.78);
+      }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 84px; -webkit-text-size-adjust: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+    body::before { content: ""; position: fixed; inset: -20vh -10vw auto; height: 70vh; background: radial-gradient(ellipse at 30% 0%, var(--accent-glow), transparent 60%); pointer-events: none; z-index: -1; }
+    a { color: inherit; text-decoration: none; }
+    a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+    ::selection { background: var(--accent); color: var(--on-accent); }
+
+    /* One width for the nav, content and footer on every page of the site (see public/index.html). */
+    .wrap { max-width: 1120px; margin: 0 auto; padding-inline: 24px; }
+
+    .nav { position: sticky; top: 0; z-index: 10; backdrop-filter: saturate(140%) blur(12px); -webkit-backdrop-filter: saturate(140%) blur(12px); background: var(--nav-bg); border-bottom: 1px solid var(--border); }
+    .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+    .skip-link { position: absolute; left: 16px; top: -60px; z-index: 100; padding: 8px 14px; border-radius: 8px; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 600; }
+    .skip-link:focus { top: 12px; }
+    main:focus { outline: none; }
+    .wordmark { font-family: var(--mono); font-weight: 500; font-size: 15px; letter-spacing: -0.01em; }
+    .wordmark span { color: var(--accent); }
+    .nav ul { display: flex; align-items: center; gap: 20px; list-style: none; margin: 0; padding: 0; }
+    .nav ul a { color: var(--muted); font-size: 14px; transition: color .15s ease; }
+    .nav ul a:hover { color: var(--text); }
+    /* Same bar as the home page: heading links (dimmer, in front), a divider, then page links.
+       Docs pages carry only page links, so these two rules are here to keep the copies in step. */
+    .nav .heading-link a { color: var(--faint); }
+    .nav .nav-divider { width: 1px; height: 16px; background: var(--border-strong); }
+    /* Film is the first page link to go, once the four no longer fit (the home page has the same rule). */
+    @media (max-width: 359px) { .nav .collapse-first { display: none; } }
+
+    /* The trail sits under the nav and scrolls away with the page: only the nav is sticky, so
+       scroll-padding-top above stays the nav's own height. Its .wrap is the site's, so the first
+       crumb starts at the same left edge as the wordmark at every width. */
+    .crumbs { border-bottom: 1px solid var(--border); }
+    .crumbs ol { display: flex; align-items: center; list-style: none; margin: 0; padding: 11px 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; }
+    .crumbs li { display: flex; align-items: center; min-width: 0; flex: none; }
+    .crumbs li + li::before { content: "›"; color: var(--faint); margin: 0 8px; flex: none; }
+    .crumbs a { color: var(--muted); transition: color .15s ease; }
+    .crumbs a:hover { color: var(--text); }
+    /* The page you are on is the one crumb long enough to overflow a phone, so it is the one that
+       shrinks and truncates; the full title stays in the DOM for assistive tech and for search. */
+    .crumbs li:last-child { flex: 0 1 auto; }
+    .crumbs [aria-current] { min-width: 0; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin: 0 0 20px; display: flex; align-items: center; gap: 10px; }
+    .eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); flex: none; }
+    .section-label { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); margin: 0 0 8px; }
+    .doc-header { padding-bottom: 36px; }
+    h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing: -0.035em; font-weight: 700; margin: 0 0 24px; text-wrap: balance; overflow-wrap: anywhere; }
+    .lead { font-size: clamp(1.05rem, 2.2vw, 1.2rem); color: var(--muted); max-width: 60ch; margin: 0; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+    .tags li { font-family: var(--mono); font-size: 12px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); padding: 3px 9px; border-radius: 999px; line-height: 1.5; }
+
+    .shell { display: grid; grid-template-columns: minmax(0, 1fr); gap: 64px; padding-block: 72px 96px; }
+    .rail { display: none; }
+    /* The reading measure, not the shell, bounds the text: the rail and the article then start at
+       the same left edge as the nav's wordmark, at every width. */
+    .doc-page main { max-width: 72ch; }
+    @media (min-width: 1060px) {
+      .shell { grid-template-columns: 230px minmax(0, 1fr); }
+      .shell.no-rail { grid-template-columns: minmax(0, 1fr); }
+      .rail { display: block; position: sticky; top: 108px; align-self: start; max-height: calc(100vh - 140px); overflow-y: auto; }
+    }
+    .rail ol { list-style: none; margin: 16px 0 0; padding: 0 0 0 16px; border-left: 1px solid var(--border-strong); display: grid; gap: 4px; }
+    .rail a { display: flex; gap: 10px; padding: 4px 0; color: var(--muted); font-size: 13.5px; line-height: 1.45; transition: color .15s ease; }
+    .rail a:hover { color: var(--text); }
+    .rail .num { font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--faint); flex: none; }
+
+    .section-head { border-top: 1px solid var(--border); padding-top: 48px; margin-top: 56px; }
+    .prose h2, .prose h3, .prose h4 { color: var(--text); text-wrap: balance; }
+    .prose h2 { font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.025em; font-weight: 600; margin: 0 0 24px; }
+    .prose h3 { font-size: 1.2rem; letter-spacing: -0.015em; font-weight: 600; margin: 36px 0 12px; }
+    .prose p, .prose li { color: var(--muted); text-wrap: pretty; overflow-wrap: anywhere; }
+    .prose > p:first-child { margin-top: 0; }
+    .prose strong { color: var(--text); font-weight: 600; }
+    .prose ul, .prose ol { padding-left: 1.25em; }
+    .prose li { margin: 12px 0; }
+    .prose li::marker { color: var(--accent); }
+    .prose a:not(.anchor), .author a, .tags a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; transition: text-decoration-color .15s ease; }
+    .prose a:not(.anchor):hover, .author a:hover, .tags a:hover { text-decoration-color: var(--accent); }
+    a.external::after { content: "↗"; font-size: .72em; margin-left: 2px; vertical-align: .3em; display: inline-block; }
+    .prose code { font-family: var(--mono); font-size: .86em; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: .12em .4em; overflow-wrap: anywhere; }
+    .scroll { overflow-x: auto; margin: 24px 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .prose pre { margin: 0; padding: 18px 20px; font-family: var(--mono); font-size: 13.5px; line-height: 1.6; }
+    .prose pre code { background: none; border: 0; padding: 0; overflow-wrap: normal; }
+    .prose table { border-collapse: collapse; width: 100%; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+    .prose th { font-family: var(--mono); font-weight: 500; font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); background: var(--surface-2); }
+    .prose th, .prose td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--muted); }
+    .prose tr:last-child td { border-bottom: 0; }
+    .prose blockquote { margin: 28px 0; padding: 18px 22px; border: 1px solid var(--border); border-radius: var(--radius); background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); }
+    .prose blockquote p { margin: 0; }
+    .prose hr { border: 0; border-top: 1px solid var(--border); margin: 48px 0; }
+
+    .author { margin-top: 72px; padding: 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .author p { margin: 0; color: var(--muted); }
+    .author .author-name { color: var(--text); font-weight: 600; font-size: 1.05rem; margin-bottom: 4px; }
+    .author .author-name a { color: var(--text); text-decoration: none; }
+    .author .author-links { margin-top: 12px; font-size: 14px; }
+
+    .docs-index { padding-block: 72px 96px; }
+
+    /* A .stretch link covers its whole card, so the card is the click target; anything
+       else that has to stay clickable is lifted above that overlay. */
+    .card {
+      position: relative; display: flex; flex-direction: column;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 22px; transition: border-color .18s ease, transform .18s ease, background .18s ease;
+    }
+    .card:hover, .card:focus-within { border-color: var(--accent-border); transform: translateY(-2px); background: var(--surface-hover); }
+    /* ::before, not ::after: an external link already uses ::after for its ↗ mark. */
+    .card .stretch::before { content: ""; position: absolute; inset: 0; border-radius: var(--radius); }
+    .card .tags, .card .game-desc a, .card .film-desc a, .card .app-desc a { position: relative; z-index: 1; }
+
+    .doc-list, .game-list, .film-list, .app-list { display: grid; gap: 14px; list-style: none; margin: 0; padding: 0; }
+    .doc-list .doc-title { margin: 0 0 4px; font-size: 1.2rem; line-height: 1.35; letter-spacing: -0.015em; font-weight: 600; }
+    .doc-list .doc-title a { transition: color .15s ease; }
+    .doc-list li:hover .doc-title a, .doc-list .doc-title a:focus-visible { color: var(--accent); }
+    .doc-meta { margin: 0 0 6px; font-family: var(--mono); font-size: 12px; color: var(--faint); }
+    .doc-desc { margin: 0; color: var(--muted); max-width: 78ch; }
+    .doc-list .tags { margin-top: 14px; }
+    /* A film card is the same card turned on its side: the poster leads, the text sits beside it. */
+    .film-card { flex-direction: row; align-items: flex-start; gap: 22px; }
+    .film-poster { flex: none; width: 240px; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); line-height: 0; }
+    .film-poster img { width: 100%; height: auto; display: block; }
+    .film-body { display: flex; flex-direction: column; min-width: 0; }
+    .film-kicker { margin: 0 0 10px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .film-title { margin: 0 0 10px; font-size: 1.4rem; line-height: 1.3; letter-spacing: -0.02em; font-weight: 600; }
+    .film-desc { max-width: 78ch; }
+    .film-desc p { margin: 0 0 12px; }
+    .film-desc p:last-child { margin-bottom: 0; }
+    .film-list .tags { margin-top: 16px; }
+    /* The page's standing notice, under the lead: every card is a link, so a visitor has to meet
+       the genre before any film is one tap away. It is the only warning on the page. A rule down
+       the side so it reads as a notice. The yellow token, bold; the icon inherits the color. */
+    .film-notice { display: flex; align-items: flex-start; gap: 8px; margin: 20px 0 0; padding-left: 14px; border-left: 2px solid var(--warning); color: var(--warning); font-size: 14px; font-weight: 600; line-height: 1.5; }
+    .film-notice svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
+    /* On a phone the card stacks, and the kicker and title lead: the name of the film should land
+       before the poster, not under it, because a thumbnail alone says nothing about which film it
+       is. display:contents lifts the body's children into the card's own flex flow so they can be
+       ordered around the poster; the card's gap goes with it, so spacing is back on the margins. */
+    @media (max-width: 640px) {
+      .film-card { flex-direction: column; gap: 0; }
+      .film-body { display: contents; }
+      .film-kicker { order: 1; }
+      .film-title { order: 2; margin-bottom: 14px; }
+      .film-poster { order: 3; width: 200px; align-self: flex-start; margin-bottom: 18px; }
+      .film-desc { order: 4; }
+      .film-list .tags { order: 5; }
+      .film-card .card-link { order: 6; }
+    }
+
+    .game-kicker, .app-kicker { margin: 0 0 10px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .game-title, .app-title { margin: 0 0 10px; font-size: 1.4rem; line-height: 1.3; letter-spacing: -0.02em; font-weight: 600; }
+    .game-desc, .app-desc { max-width: 78ch; }
+    .game-desc p, .app-desc p { margin: 0 0 12px; }
+    .game-desc p:last-child, .app-desc p:last-child { margin-bottom: 0; }
+    .game-list .tags, .app-list .tags { margin-top: 16px; }
+    /* The home page's .card-link ("Play in your browser"), here as the card's own link. */
+    .card-link { align-self: flex-start; margin-top: 18px; font-size: 14px; font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
+    .card-link svg { width: 14px; height: 14px; transition: transform .18s ease; }
+    .card:hover .card-link svg { transform: translate(2px, -2px); }
+
+    footer { border-top: 1px solid var(--border); padding-block: 28px 40px; color: var(--faint); font-size: 13px; }
+    footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+    footer .mono { font-family: var(--mono); }
+
+    @media (max-width: 640px) {
+      .nav ul { gap: 14px; }
+      .nav ul a { font-size: 13.5px; }
+      .shell, .docs-index { padding-block: 48px 72px; }
+      .section-head { padding-top: 40px; margin-top: 44px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
+    }
+    .prose .references { list-style: none; padding-left: 0; }
+    .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
+    .prose .references li:target { background: var(--surface-2); }
+    .prose .references .ref-num { font-family: var(--mono); font-size: 13px; line-height: 1.9; color: var(--faint); }
+    .prose .references li > div > p { margin: 0; }
+    .prose a.cite { white-space: nowrap; }
+  </style>
+</head>
+<body class="doc-page">
+  <a class="skip-link" href="#top">Skip to content</a>
+  <nav class="nav" aria-label="Primary">
+    <div class="wrap">
+      <a class="wordmark" href="/">csarko<span>.sh</span></a>
+      <ul>
+        <li><a href="/apps" data-visits-event="nav-apps">Apps</a></li>
+        <li class="collapse-first"><a href="/film" data-visits-event="nav-film" data-collapsible="true">Film</a></li>
+        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
+        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+      </ul>
+    </div>
+  </nav>
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <div class="wrap">
+      <ol>
+        <li><a href="/">Home</a></li>
+        <li><a href="/research">Research</a></li>
+        <li><span aria-current="page">A painted look over a photoreal render: WebGPU against WebGL2</span></li>
+      </ol>
+    </div>
+  </nav>
+
+  <div class="wrap shell">
+    <aside class="rail" aria-label="Contents">
+      <p class="section-label">Contents</p>
+      <ol>
+        <li><a href="#what-a-painted-look-is-made-of"><span class="num" aria-hidden="true">01</span><span>What a painted look is made of</span></a></li>
+        <li><a href="#one-filter-two-speeds"><span class="num" aria-hidden="true">02</span><span>One filter, two speeds</span></a></li>
+        <li><a href="#loops-that-end-on-a-uniform-and-the-uniformity-analysis"><span class="num" aria-hidden="true">03</span><span>Loops that end on a uniform, and the uniformity analysis</span></a></li>
+        <li><a href="#nine-small-uniforms"><span class="num" aria-hidden="true">04</span><span>Nine small uniforms</span></a></li>
+        <li><a href="#the-targets-the-same-on-both"><span class="num" aria-hidden="true">05</span><span>The targets, the same on both</span></a></li>
+        <li><a href="#the-trap-that-was-the-same-on-both-strokes-on-linear-light"><span class="num" aria-hidden="true">06</span><span>The trap that was the same on both: strokes on linear light</span></a></li>
+        <li><a href="#the-palette-as-something-the-game-turns"><span class="num" aria-hidden="true">07</span><span>The palette as something the game turns</span></a></li>
+        <li><a href="#what-was-not-measured"><span class="num" aria-hidden="true">08</span><span>What was not measured</span></a></li>
+        <li><a href="#sources"><span>Sources</span></a></li>
+      </ol>
+    </aside>
+    <main id="top" tabindex="-1">
+      <header class="doc-header">
+        <p class="eyebrow">Oct 17, 2026</p>
+        <h1>A painted look over a photoreal render: WebGPU against WebGL2</h1>
+        <ul class="tags">
+          <li>13 min read</li>
+          <li><a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-17-painted-post-webgpu-vs-webgl2.md" target="_blank" rel="noopener">Also on GitHub</a></li>
+        </ul>
+      </header>
+      <div class="prose">
+<p><strong>Question:</strong> A renderer built to read as a photograph, physically based materials,
+a scattering sky, a height fog, can be given the look of a landscape in oils without
+rebuilding any of it: a post chain that flattens texture into strokes while it keeps
+edges, and a grade that pulls the frame&#39;s values and colours toward a palette the
+game can change at will. The chain is two fragment shaders written once in GLSL. On
+a browser engine that runs them on WebGPU as well as WebGL2, which of the two APIs&#39;
+differences does a painterly post chain meet, and what does the same shader cost on
+each?</p>
+<p><strong>Short answer:</strong> the look is the same on both, because it is fragment work on
+full-screen passes, which both have in the same shape: a half-float render target,
+a sampler, a quad. The two parted in four places. The stroke filter&#39;s loops, with
+trip counts set by a uniform and early exits inside them, translate to WGSL and run,
+but the textbook shape of the filter, its eight sectors&#39; sums in function-scope
+arrays indexed by a loop variable, costs six times on WebGPU what it costs on
+WebGL2; the same sums as named variables, added to by a function called once a
+sector with the sector a constant, cost the same on both <a class="cite" href="#ref-1">[1]</a>. WGSL&#39;s
+uniformity analysis sees a texture read inside a loop whose exits depend only on
+uniforms as uniform control flow, which is what the filter needs, where a read under
+a branch on a per-pixel value is the case the previous article met <a class="cite" href="#ref-2">[2]</a>, <a class="cite" href="#ref-3">[3]</a>. A
+palette of nine small uniforms is nine uniform calls a draw on WebGL2 and one buffer
+with 16-byte alignment on WebGPU, which the engine hides and which decides how a
+palette should be packed <a class="cite" href="#ref-4">[4]</a>, <a class="cite" href="#ref-5">[5]</a>. And a frame rate read with no post chain at all
+is capped by the display on one engine and not on the other, so a cost measured as
+a difference of frame rates can be wrong by the whole cap <a class="cite" href="#ref-6">[6]</a>. One more thing was the
+same on both and took longest: a stroke filter on linear high-dynamic-range colour
+turns every leaf against a low sun cyan-white unless its statistics are taken on a
+compressed range and its output is a linear mean.</p>
+<p>The worked example is Day Hike, a first-person hiking game in Babylon.js 9.18, public at
+<a class="external" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener">game-dayhike</a> and playable at
+<a class="external" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener">games.csarko.sh/dayhike</a>. Its high tier draws with
+WebGPU in Chrome and Edge and everything else draws with WebGL2
+(<a href="/research/webgpu-vs-webgl2">WebGPU and WebGL2: what changes and what does not</a>); the
+post chain&#39;s prepass for the far field is the subject of
+<a href="/research/scene-depth-for-a-post-process-webgpu-vs-webgl2">Scene depth for a post process</a>.
+The machine throughout is an Apple M4 running Chrome 157, WebGPU through Metal and
+WebGL2 through ANGLE&#39;s Metal backend, with the render at 1200 by 675.</p>
+<div class="section-head"><p class="section-label">01</p><h2 id="what-a-painted-look-is-made-of"><a class="anchor" href="#what-a-painted-look-is-made-of">What a painted look is made of</a></h2></div>
+<p>Three things, read off landscape painting in oils, and each a different part of
+the chain.</p>
+<p><strong>Strokes, not pixels.</strong> Fine texture is gone, replaced by strokes that keep the
+edges: bark is a few marks, grass a field of strokes, the sky a wash. The filter that
+does this is the Kuwahara filter and its descendants <a class="cite" href="#ref-7">[7]</a>, <a class="cite" href="#ref-8">[8]</a>, <a class="cite" href="#ref-1">[1]</a>: the window round
+each pixel is cut into sectors, each sector&#39;s mean and variance are taken, and the
+pixel becomes the means weighted by how flat each sector is. An edge is kept where
+the sectors on either side of it disagree, and the texture inside a region flattens
+into a stroke. The generalized form <a class="cite" href="#ref-8">[8]</a> weights each tap by a smooth function of
+where it lies in its sector; the anisotropic form <a class="cite" href="#ref-1">[1]</a> stretches the sectors along the
+image&#39;s structure so strokes follow bark and grass. What follows uses the generalized
+form with round sectors.</p>
+<p><strong>Value over hue.</strong> The pictures live on a wide tonal range, deep warm darks against
+a luminous sky, with muted colour inside it. A grade after the tone map widens the
+lit values round middle grey and leaves the deep shadow and the brightest lights
+where the render put them.</p>
+<p><strong>A warm, drained palette.</strong> Shadows go to an umber, midtones to an olive, highlights
+to a cream, the whole drained of a tenth of its saturation and its blacks lifted a
+shade. This is a split-tone, three tints with their amounts, and it belongs to the
+game rather than to the shader: a record the game sets by name and fades between,
+so a place or an event can turn the atmosphere.</p>
+<p>The chain, then: the stroke filter first on the scene&#39;s linear colour, the grade
+after it with the palette&#39;s nine uniforms, and the rest of the chain as it was. None
+of this touches a material or a light. In Day Hike the world was also moved a step
+toward the palette afterward (a drearier opening weather, a warmer ground haze, the
+cover&#39;s green toward a sage, the sky&#39;s aerosols up for a paler noon), which is
+ordinary tuning and the same on both APIs.</p>
+<div class="section-head"><p class="section-label">02</p><h2 id="one-filter-two-speeds"><a class="anchor" href="#one-filter-two-speeds">One filter, two speeds</a></h2></div>
+<p>The filter as first written was the textbook shape: one scan of the window, and at
+each tap a loop over the eight sectors adding the tap into that sector&#39;s mean,
+square and weight, the three held in function-scope arrays indexed by the sector.
+It compiles on both engines and draws the same picture on both. It does not cost the
+same.</p>
+<div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
+<thead>
+<tr>
+<th>Engine, medium tier, 1200 by 675, display cap off</th>
+<th>No stroke filter</th>
+<th>Sector arrays</th>
+<th>Named sums</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>WebGL2 (ANGLE, Metal)</td>
+<td>55.3 fps, 18.1 ms</td>
+<td>49.6 fps, 20.2 ms</td>
+<td>49.1 fps, 20.4 ms</td>
+</tr>
+<tr>
+<td>WebGPU (Dawn, Metal)</td>
+<td>76.9 fps, 13.0 ms</td>
+<td>39.3 fps, 25.5 ms</td>
+<td>65.5 fps, 15.3 ms</td>
+</tr>
+</tbody></table></div>
+<p>The stroke radius is 2 px on this tier, 25 taps a window, and the frames were
+counted over 15 s with the display&#39;s cap off in Chrome (<code>--disable-frame-rate-limit --disable-gpu-vsync</code>), without which the WebGPU column reads 60 with no filter and
+the filter&#39;s cost cannot be told from the cap <a class="cite" href="#ref-6">[6]</a>. The array shape costs 2.1 ms on
+WebGL2 and 12.5 ms on WebGPU. The same filter with its sums as named variables, a
+function called eight times a tap with the sector&#39;s direction a constant and the
+window&#39;s loops run to the radius rather than to a fixed reach, costs 2.3 ms on
+both. A third shape tried between them, the sectors taken one after another with
+their own scan of the window each, no array but eight times the texture reads, cost
+more than the arrays on WebGL2 and about the same on WebGPU: the reads, not the
+arrays, were its cost.</p>
+<p>What the two paths do with the same source explains it. On WebGL2, ANGLE translates
+GLSL ES 3.00 to Metal directly <a class="cite" href="#ref-9">[9]</a>. On WebGPU, Babylon.js translates GLSL to SPIR-V
+with glslang and the SPIR-V to WGSL with Tint, and the browser&#39;s Dawn compiles the
+WGSL to Metal again <a class="cite" href="#ref-10">[10]</a>, <a class="cite" href="#ref-4">[4]</a>. A function-scope array indexed by a loop variable is,
+in WGSL, a variable in the function address space whose elements are addressed at
+run time <a class="cite" href="#ref-11">[11]</a>; the compiler at the end of the longer chain did not keep the eight
+accumulators in registers, and every tap&#39;s eight updates went through memory. The
+shorter chain did keep them. Writing the filter with no array to index is a change
+of shape and not of arithmetic, and it is the shape to write first on any shader
+that will run through a translation: the index that a compiler can see through on
+one path is one it may not on the other.</p>
+<div class="section-head"><p class="section-label">03</p><h2 id="loops-that-end-on-a-uniform-and-the-uniformity-analysis"><a class="anchor" href="#loops-that-end-on-a-uniform-and-the-uniformity-analysis">Loops that end on a uniform, and the uniformity analysis</a></h2></div>
+<p>The filter&#39;s window is a loop whose bound is the radius, a uniform, with an early
+exit inside it: a tap past the radius&#39;s circle is skipped with <code>continue</code>. GLSL ES
+3.00 allows loops with any bound and any
+exit <a class="cite" href="#ref-12">[12]</a>. WGSL allows them too, and translates them; what WGSL adds is the
+uniformity analysis, which refuses a <code>textureSample</code> that it cannot prove is reached
+by every invocation of a quad together <a class="cite" href="#ref-2">[2]</a>. The previous article met the refusal:
+a texture read after a branch on a per-pixel value, fixed by reading an explicit
+level instead <a class="cite" href="#ref-3">[3]</a>. The filter&#39;s reads are inside loops whose exits depend on the loop
+counters, on the radius uniform and on the tap&#39;s place in its sector, none of them
+per-pixel, so the analysis accepts them as written, and the pass compiles with no
+diagnostic. The filter&#39;s reads are also made at an explicit level, which is the
+other way to satisfy the analysis and costs nothing on a target with one level.</p>
+<p>The one pass in the chain that reads the scene under a per-pixel branch, the film
+finish, whose peripheral overlap reads the scene a second time inside a branch on
+the pixel&#39;s distance from the frame&#39;s centre, turns the analysis off for itself:
+the engine honours a per-shader define, <code>DISABLE_UNIFORMITY_ANALYSIS</code>, which it
+turns into WGSL&#39;s <code>diagnostic(off, derivative_uniformity)</code> for that one translation
+<a class="cite" href="#ref-13">[13]</a>, <a class="cite" href="#ref-4">[4]</a>. It is safe there because the target has one mip level, so the level of
+detail an implicit-derivative read gives up cannot select another; it would not be
+safe on a mipmapped texture, where the read&#39;s derivatives are undefined on both APIs
+<a class="cite" href="#ref-12">[12]</a>. The engine also has the same switch page-wide, for every shader it translates,
+and that is the wrong tool on a renderer with hundreds of stages: the analysis is
+the one place that says which reads are the unsafe ones. Day Hike leaves the
+page-wide switch on, lets one stage turn the analysis off, and makes both the
+page-wide state and each stage&#39;s own switch part of the key under which its
+precompiled WGSL is looked up, so a translation made under one setting is never
+served under the other.</p>
+<div class="section-head"><p class="section-label">04</p><h2 id="nine-small-uniforms"><a class="anchor" href="#nine-small-uniforms">Nine small uniforms</a></h2></div>
+<p>The palette is nine uniforms: three tints as <code>vec3</code>, three amounts as <code>vec2</code>, a
+saturation, a curve as <code>vec2</code>, a lift as <code>vec3</code>. The engine&#39;s post process takes a
+list of uniform names and a callback that sets them each frame, and that is the whole
+of the API on both engines. Underneath it is not the same object. On WebGL2 each
+name is a uniform location and each set is a call <a class="cite" href="#ref-14">[14]</a>. On WebGPU a post process&#39;s
+uniforms are one uniform buffer, and WGSL lays a buffer out with alignment rules:
+a <code>vec3</code> of f32 is 12 bytes in size but aligned to 16, so three tints as <code>vec3</code> are
+padded to 48 bytes, and a <code>vec2</code> is aligned to 8 <a class="cite" href="#ref-5">[5]</a>. The engine writes the buffer
+with those rules, and nothing in the shader changes. What the rules decide is how a
+palette should be declared when it grows: a tint and its amount as one <code>vec4</code> each
+(the three channels and the density, the saturation beside the next) is 16 bytes a
+band with no padding and one set a band, where <code>vec3</code> and <code>vec2</code> apart are 32 bytes
+and two sets. The nine uniforms here are set once a frame and cost nothing either
+way; a palette set a draw, or a hundred of them, would be packed.</p>
+<div class="section-head"><p class="section-label">05</p><h2 id="the-targets-the-same-on-both"><a class="anchor" href="#the-targets-the-same-on-both">The targets, the same on both</a></h2></div>
+<p>The chain runs on linear colour in a half-float render target, so the stroke filter
+sees the scene&#39;s dynamic range and the tone map in the grade sees the filter&#39;s
+output as the renderer made it. A half-float target is renderable on WebGL2 through
+<code>EXT_color_buffer_float</code> and on WebGPU as the <code>rgba16float</code> format <a class="cite" href="#ref-15">[15]</a>, <a class="cite" href="#ref-16">[16]</a>; the
+engine asks for the one it has and the chain is built on it. The first pass of the
+chain owns the scene&#39;s render target and carries its multisampling, a blit to
+resolve on one API and a resolve target on the other, which the previous article
+covered <a class="cite" href="#ref-3">[3]</a>. Where the stroke filter is first in the chain it takes that place; where
+the far field&#39;s prepass is first, the filter follows it and reads its output. Nothing
+here differed between the engines beyond what the earlier article found.</p>
+<div class="section-head"><p class="section-label">06</p><h2 id="the-trap-that-was-the-same-on-both-strokes-on-linear-light"><a class="anchor" href="#the-trap-that-was-the-same-on-both-strokes-on-linear-light">The trap that was the same on both: strokes on linear light</a></h2></div>
+<p>The stroke filter was written on the scene&#39;s linear colour, before the tone map,
+and at noon it painted. At a low sun it turned every crown against the sky
+cyan-white, with holes where leaves had been, on both engines alike. Two things
+compound. A sun seen through a crown is a texel of ten or a hundred where the leaves
+beside it are tenths; in a sector&#39;s mean and variance the one texel owns the sector,
+and the flattest sector near a crown is the sky&#39;s. And a leaf seen against a bright
+sky takes the sky&#39;s sector, because it is the flattest, and vanishes into it.</p>
+<p>The first fix, taking the statistics on the colour compressed toward one (c over
+1 + c) and expanding the chosen mean again, made it worse in a way worth recording:
+a mean taken in the compressed range and expanded is not a mean of the colours, and
+near the top of the range it bends toward whichever channel was brighter, so a
+salmon leaf beside a pale sky came back cyan. The filter now judges its sectors on
+the compressed colour, so the bright texel is one among the others, and writes the
+sectors&#39; mean of the linear colour itself, capped, so the colour written is a colour
+the scene had. A sector whose mean is far from the pixel&#39;s own colour weighs less,
+so a thin leaf keeps its own sector against a flat sky. With that the crowns stood
+at every hour.</p>
+<p>The grade&#39;s value curve met a cousin of the same thing: widening the lit values
+round middle grey pushed the brightest leaf past one and it clipped channel by
+channel to the same cyan. The curve now rolls off above the upper midtones, and the
+deep shadow is left alone from the other side, so a dark evening stays legible.</p>
+<div class="section-head"><p class="section-label">07</p><h2 id="the-palette-as-something-the-game-turns"><a class="anchor" href="#the-palette-as-something-the-game-turns">The palette as something the game turns</a></h2></div>
+<p>Because the split-tone is a record and not a constant, the frame&#39;s tonal identity is
+a thing the game can set: the default oils; an ash, cold and drained, for a dead
+place; an amber, an evening gone to gold; and none, the render as the tone map
+leaves it. A palette is set by name and the frame fades from the one it wears to the
+new one over three seconds, every value of the record interpolated. This costs
+nothing on either engine beyond the nine uniforms, and it is the part of the work
+that a game can build on: a weather that carries its own palette, a place that fades
+one in as the player enters it, a palette as the sign that something has changed.</p>
+<div class="section-head"><p class="section-label">08</p><h2 id="what-was-not-measured"><a class="anchor" href="#what-was-not-measured">What was not measured</a></h2></div>
+<p>The frame rates are from one machine, through two translation chains, at one
+resolution; the rig pairs on a discrete GPU, where the array shape may well cost
+what it should, were not taken. The anisotropic form of the filter, whose sectors
+follow the image&#39;s structure tensor, is the one the paper recommends and costs a
+pass more to build the tensor, a fragment pass to a texture on WebGL2 or either that
+or a compute pass on WebGPU; its cost on each was not measured. And the uniformity
+diagnostic the film finish still logs was read, not removed.</p>
+<div class="section-head" data-read-end><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
+<ol class="references">
+<li id="ref-1"><span class="ref-num">[1]</span><div>J. E. Kyprianidis, H. Kang, and J. Döllner, &quot;Image and Video Abstraction by Anisotropic Kuwahara Filtering,&quot; <em>Comput. Graph. Forum</em>, vol. 28, no. 7, pp. 1955-1963, 2009. Accessed: Oct. 17, 2026. [Online]. Available: <a class="external" href="https://diglib.eg.org/handle/10.2312/CGF.v28i7pp1955-1963" target="_blank" rel="noopener">https://diglib.eg.org/handle/10.2312/CGF.v28i7pp1955-1963</a></div></li>
+<li id="ref-2"><span class="ref-num">[2]</span><div>A. Baker, M. O. Derin, and D. Neto, Eds., &quot;WebGPU Shading Language,&quot; section &quot;Uniformity,&quot; W3C Candidate Recommendation Draft. Accessed: Oct. 17, 2026. [Online]. Available: <a class="external" href="https://www.w3.org/TR/WGSL/#uniformity" target="_blank" rel="noopener">https://www.w3.org/TR/WGSL/#uniformity</a></div></li>
+<li id="ref-3"><span class="ref-num">[3]</span><div>C. Sarkosh, &quot;Scene depth for a post process: WebGPU against WebGL2,&quot; csarko.sh. Accessed: Oct. 17, 2026. [Online]. Available: <a class="external" href="https://csarko.sh/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" target="_blank" rel="noopener">https://csarko.sh/research/scene-depth-for-a-post-process-webgpu-vs-webgl2</a></div></li>
+<li id="ref-4"><span class="ref-num">[4]</span><div>Babylon.js contributors, &quot;Writing shaders for WebGPU in WGSL,&quot; Babylon.js Documentation. Accessed: Oct. 17, 2026. [Online]. Available: <a class="external" href="https://doc.babylonjs.com/setup/support/webGPU/webGPUWGSL" target="_blank" rel="noopener">https://doc.babylonjs.com/setup/support/webGPU/webGPUWGSL</a></div></li>
+<li id="ref-5"><span class="ref-num">[5]</span><div>A. Baker, M. O. Derin, and D. Neto, Eds., &quot;WebGPU Shading Language,&quot; section &quot;Memory Layout,&quot; W3C Candidate Recommendation Draft. Accessed: Oct. 17, 2026. [Online]. Available: <a class="external" href="https://www.w3.org/TR/WGSL/#memory-layouts" target="_blank" rel="noopener">https://www.w3.org/TR/WGSL/#memory-layouts</a></div></li>
+<li id="ref-6"><span class="ref-num">[6]</span><div>MDN contributors, &quot;Window: requestAnimationFrame() method,&quot; MDN Web Docs, Mozilla. Accessed: Oct. 17, 2026. [Online]. Available: <a class="external" href="https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame" target="_blank" rel="noopener">https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame</a></div></li>
+<li id="ref-7"><span class="ref-num">[7]</span><div>Wikipedia contributors, &quot;Kuwahara filter,&quot; Wikipedia. Accessed: Oct. 17, 2026. [Online]. Available: <a class="external" href="https://en.wikipedia.org/wiki/Kuwahara_filter" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/Kuwahara_filter</a></div></li>
+<li id="ref-8"><span class="ref-num">[8]</span><div>G. Papari, N. Petkov, and P. Campisi, &quot;Artistic Edge and Corner Enhancing Smoothing,&quot; <em>IEEE Trans. Image Process.</em>, vol. 16, no. 10, pp. 2449-2462, Oct. 2007. Accessed: Oct. 17, 2026. [Online]. Available: <a class="external" href="https://doi.org/10.1109/TIP.2007.903912" target="_blank" rel="noopener">https://doi.org/10.1109/TIP.2007.903912</a></div></li>
+<li id="ref-9"><span class="ref-num">[9]</span><div>ANGLE contributors, &quot;ANGLE: Almost Native Graphics Layer Engine,&quot; GitHub repository. Accessed: Oct. 17, 2026. [Online]. Available: <a class="external" href="https://github.com/google/angle" target="_blank" rel="noopener">https://github.com/google/angle</a></div></li>
+<li id="ref-10"><span class="ref-num">[10]</span><div>Babylon.js contributors, &quot;WebGPU Support,&quot; Babylon.js Documentation. Accessed: Oct. 17, 2026. [Online]. Available: <a class="external" href="https://doc.babylonjs.com/setup/support/webGPU" target="_blank" rel="noopener">https://doc.babylonjs.com/setup/support/webGPU</a></div></li>
+<li id="ref-11"><span class="ref-num">[11]</span><div>A. Baker, M. O. Derin, and D. Neto, Eds., &quot;WebGPU Shading Language,&quot; section &quot;Address Spaces,&quot; W3C Candidate Recommendation Draft. Accessed: Oct. 17, 2026. [Online]. Available: <a class="external" href="https://www.w3.org/TR/WGSL/#address-spaces" target="_blank" rel="noopener">https://www.w3.org/TR/WGSL/#address-spaces</a></div></li>
+<li id="ref-12"><span class="ref-num">[12]</span><div>R. J. Simpson and J. Kessenich, Eds., &quot;The OpenGL ES Shading Language, Version 3.00,&quot; Khronos Group. Accessed: Oct. 17, 2026. [Online]. Available: <a class="external" href="https://registry.khronos.org/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf" target="_blank" rel="noopener">https://registry.khronos.org/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf</a></div></li>
+<li id="ref-13"><span class="ref-num">[13]</span><div>A. Baker, M. O. Derin, and D. Neto, Eds., &quot;WebGPU Shading Language,&quot; section &quot;Diagnostics,&quot; W3C Candidate Recommendation Draft. Accessed: Oct. 17, 2026. [Online]. Available: <a class="external" href="https://www.w3.org/TR/WGSL/#diagnostics" target="_blank" rel="noopener">https://www.w3.org/TR/WGSL/#diagnostics</a></div></li>
+<li id="ref-14"><span class="ref-num">[14]</span><div>MDN contributors, &quot;WebGLRenderingContext: uniform methods, uniform1f to uniform4fv,&quot; MDN Web Docs, Mozilla. Accessed: Oct. 17, 2026. [Online]. Available: <a class="external" href="https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/uniform" target="_blank" rel="noopener">https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/uniform</a></div></li>
+<li id="ref-15"><span class="ref-num">[15]</span><div>MDN contributors, &quot;EXT_color_buffer_float extension,&quot; MDN Web Docs, Mozilla. Accessed: Oct. 17, 2026. [Online]. Available: <a class="external" href="https://developer.mozilla.org/en-US/docs/Web/API/EXT_color_buffer_float" target="_blank" rel="noopener">https://developer.mozilla.org/en-US/docs/Web/API/EXT_color_buffer_float</a></div></li>
+<li id="ref-16"><span class="ref-num">[16]</span><div>K. Ninomiya, B. Jones, and J. Blandy, Eds., &quot;WebGPU,&quot; section &quot;Texture format capabilities,&quot; W3C Candidate Recommendation Draft. Accessed: Oct. 17, 2026. [Online]. Available: <a class="external" href="https://www.w3.org/TR/webgpu/#texture-format-caps" target="_blank" rel="noopener">https://www.w3.org/TR/webgpu/#texture-format-caps</a></div></li>
+</ol>
+
+      </div>
+      <section class="author" aria-label="About the author">
+        <p class="section-label">Written by</p>
+        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
+        <p>Senior software engineer leading distributed systems and AI products.</p>
+        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      <span>© 2026 Cyrus Sarkosh</span>
+      <span class="mono">csarko.sh</span>
+    </div>
+  </footer>
+  <!-- generated:analytics -->
+  <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
+  <script defer src="/assets/vitals.75ad3d15.js"></script>
+  <!-- /generated:analytics -->
+</body>
+</html>
