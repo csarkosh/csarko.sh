@@ -39,7 +39,7 @@ The worked example is Day Hike, a first-person hiking game in Babylon.js 9.18, p
 [game-dayhike](https://github.com/csarkosh/game-dayhike) and playable at
 [games.csarko.sh/dayhike](https://games.csarko.sh/dayhike/). Its high tier draws with
 WebGPU in Chrome and Edge and everything else draws with WebGL2
-([WebGPU and WebGL2: what changes and what does not](/research/webgpu-vs-webgl2)); the
+([WebGPU vs WebGL2: what changes and what does not](/research/webgpu-vs-webgl2)); the
 post chain's prepass for the far field is the subject of
 [Scene depth for a post process](/research/scene-depth-for-a-post-process-webgpu-vs-webgl2).
 The machine throughout is an Apple M4 running Chrome 157, WebGPU through Metal and

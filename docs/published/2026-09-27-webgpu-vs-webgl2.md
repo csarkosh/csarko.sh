@@ -1,9 +1,10 @@
 ---
-description: How WebGPU differs from WebGL2, what it can and cannot make faster, and the porting gotchas, with measurements from a Babylon.js game.
+description: WebGPU vs WebGL2, measured in a Babylon.js game: where WebGPU was faster and where it cannot be, what switching cost, and the porting gotchas.
 published: 2026-09-27
 categories: Rendering
+updated: 2026-10-18
 ---
-# WebGPU and WebGL2: what changes and what does not
+# WebGPU vs WebGL2: what changes and what does not
 
 **Question:** Day Hike, our first-person co-op hiking game in Babylon.js 9.18, renders with WebGL2;
 a WebGPU path for it is being built and has not shipped. What does WebGPU change about how a frame
@@ -29,7 +30,11 @@ Day Hike is public at [game-dayhike](https://github.com/csarkosh/game-dayhike) a
 [games.csarko.sh/dayhike](https://games.csarko.sh/dayhike/). Its GLSL material plugins are described
 in [Babylon.js material plugins: hooks and traps](/research/babylon-material-plugin-traps), and
 [Grass fullness without thinning the field](/research/grass-fullness-without-thinning) asked whether
-WebGPU compute culling would pay.
+WebGPU compute culling would pay. Two later notes take the comparison down to single passes:
+[Scene depth for a post process](/research/scene-depth-for-a-post-process-webgpu-vs-webgl2) finds
+six places the APIs part ways in getting depth to a post process, and
+[A painted look over a photoreal render](/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2)
+four in a stroke filter and a palette grade.
 
 ## 1. Two mental models
 

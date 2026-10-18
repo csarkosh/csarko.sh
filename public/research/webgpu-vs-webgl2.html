@@ -3,26 +3,26 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>WebGPU and WebGL2: what changes and what does not · Cyrus Sarkosh</title>
-  <meta name="description" content="How WebGPU differs from WebGL2, what it can and cannot make faster, and the porting gotchas, with measurements from a Babylon.js game." />
+  <title>WebGPU vs WebGL2: what changes and what does not · Cyrus Sarkosh</title>
+  <meta name="description" content="WebGPU vs WebGL2, measured in a Babylon.js game: where WebGPU was faster and where it cannot be, what switching cost, and the porting gotchas." />
   <link rel="canonical" href="https://csarko.sh/research/webgpu-vs-webgl2" />
 
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="Cyrus Sarkosh" />
   <meta property="og:locale" content="en_US" />
   <meta property="og:url" content="https://csarko.sh/research/webgpu-vs-webgl2" />
-  <meta property="og:title" content="WebGPU and WebGL2: what changes and what does not" />
-  <meta property="og:description" content="How WebGPU differs from WebGL2, what it can and cannot make faster, and the porting gotchas, with measurements from a Babylon.js game." />
+  <meta property="og:title" content="WebGPU vs WebGL2: what changes and what does not" />
+  <meta property="og:description" content="WebGPU vs WebGL2, measured in a Babylon.js game: where WebGPU was faster and where it cannot be, what switching cost, and the porting gotchas." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta property="article:published_time" content="2026-09-27" />
-  <meta property="article:modified_time" content="2026-09-27" />
+  <meta property="article:modified_time" content="2026-10-18" />
   <meta property="article:author" content="https://csarko.sh/" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="WebGPU and WebGL2: what changes and what does not" />
-  <meta name="twitter:description" content="How WebGPU differs from WebGL2, what it can and cannot make faster, and the porting gotchas, with measurements from a Babylon.js game." />
+  <meta name="twitter:title" content="WebGPU vs WebGL2: what changes and what does not" />
+  <meta name="twitter:description" content="WebGPU vs WebGL2, measured in a Babylon.js game: where WebGPU was faster and where it cannot be, what switching cost, and the porting gotchas." />
   <meta name="twitter:image" content="https://csarko.sh/og-image.jpg" />
   <meta name="twitter:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
 
@@ -45,13 +45,13 @@
     {
       "@type": "TechArticle",
       "@id": "https://csarko.sh/research/webgpu-vs-webgl2#article",
-      "headline": "WebGPU and WebGL2: what changes and what does not",
-      "description": "How WebGPU differs from WebGL2, what it can and cannot make faster, and the porting gotchas, with measurements from a Babylon.js game.",
+      "headline": "WebGPU vs WebGL2: what changes and what does not",
+      "description": "WebGPU vs WebGL2, measured in a Babylon.js game: where WebGPU was faster and where it cannot be, what switching cost, and the porting gotchas.",
       "datePublished": "2026-09-27",
-      "dateModified": "2026-09-27",
+      "dateModified": "2026-10-18",
       "url": "https://csarko.sh/research/webgpu-vs-webgl2",
       "mainEntityOfPage": "https://csarko.sh/research/webgpu-vs-webgl2",
-      "wordCount": 6027,
+      "wordCount": 6074,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -88,7 +88,7 @@
         {
           "@type": "ListItem",
           "position": 3,
-          "name": "WebGPU and WebGL2: what changes and what does not",
+          "name": "WebGPU vs WebGL2: what changes and what does not",
           "item": "https://csarko.sh/research/webgpu-vs-webgl2"
         }
       ]
@@ -373,7 +373,7 @@
       <ol>
         <li><a href="/">Home</a></li>
         <li><a href="/research">Research</a></li>
-        <li><span aria-current="page">WebGPU and WebGL2: what changes and what does not</span></li>
+        <li><span aria-current="page">WebGPU vs WebGL2: what changes and what does not</span></li>
       </ol>
     </div>
   </nav>
@@ -392,8 +392,8 @@
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Sep 27, 2026</p>
-        <h1>WebGPU and WebGL2: what changes and what does not</h1>
+        <p class="eyebrow">Sep 27, 2026 · Updated Oct 18, 2026</p>
+        <h1>WebGPU vs WebGL2: what changes and what does not</h1>
         <ul class="tags">
           <li>26 min read</li>
         </ul>
@@ -421,7 +421,11 @@ and Android, so a WebGL2 fallback is still required.</p>
 <a class="external" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener">games.csarko.sh/dayhike</a>. Its GLSL material plugins are described
 in <a href="/research/babylon-material-plugin-traps">Babylon.js material plugins: hooks and traps</a>, and
 <a href="/research/grass-fullness-without-thinning">Grass fullness without thinning the field</a> asked whether
-WebGPU compute culling would pay.</p>
+WebGPU compute culling would pay. Two later notes take the comparison down to single passes:
+<a href="/research/scene-depth-for-a-post-process-webgpu-vs-webgl2">Scene depth for a post process</a> finds
+six places the APIs part ways in getting depth to a post process, and
+<a href="/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2">A painted look over a photoreal render</a>
+four in a stroke filter and a palette grade.</p>
 <div class="section-head"><p class="section-label">01</p><h2 id="two-mental-models"><a class="anchor" href="#two-mental-models">Two mental models</a></h2></div>
 <h3 id="1-1-webgl2-one-context-one-state-machine"><a class="anchor" href="#1-1-webgl2-one-context-one-state-machine">1.1 WebGL2: one context, one state machine</a></h3>
 <p>WebGL2 is &quot;an API that conforms closely to the OpenGL ES 3.0 API&quot;, reached through a canvas context,

@@ -51,7 +51,7 @@ what a mirrored render costs in a browser.
 
 The game is public at [game-dayhike](https://github.com/csarkosh/game-dayhike) and playable
 at [games.csarko.sh/dayhike](https://games.csarko.sh/dayhike/). Its renderer's two paths
-are described in [WebGPU and WebGL2: what changes and what does not](/research/webgpu-vs-webgl2),
+are described in [WebGPU vs WebGL2: what changes and what does not](/research/webgpu-vs-webgl2),
 and its material plugins in
 [Babylon.js material plugins: hooks and traps](/research/babylon-material-plugin-traps).
 Numbers given without a source are our own arithmetic from the sources beside them:
