@@ -19,6 +19,7 @@
 
 import { createSign } from "node:crypto";
 import { HOUR } from "../cache.mjs";
+import { addDays } from "../time.mjs";
 
 export const READ_SCOPE = "https://www.googleapis.com/auth/webmasters.readonly";
 const WEBMASTERS = "https://www.googleapis.com/webmasters/v3";
@@ -26,6 +27,8 @@ const SEARCHCONSOLE = "https://searchconsole.googleapis.com/v1";
 const INDEXED_VERDICTS = new Set(["PASS", "PARTIAL"]);
 
 export const GSC_LAG = "Search Console runs 2 to 3 days behind";
+/** How far back `completeThrough` looks for the last day Google has finished. */
+const PROBE_DAYS = 10;
 
 function b64url(input) {
   return Buffer.from(input).toString("base64url");
@@ -89,6 +92,25 @@ export function createGsc({ key, property, fetch, cache, now = Date.now, ttlMs =
       return cached(`query:${JSON.stringify(payload)}`, ttlMs, async () => {
         const res = await call(`${WEBMASTERS}/sites/${siteSegment}/searchAnalytics/query`, payload);
         return Array.isArray(res.rows) ? res.rows : [];
+      });
+    },
+    /**
+     * The last day Google has finished counting, on or before `today`: the day before the
+     * response's `metadata.firstIncompleteDate` (sent with dataState "all" while recent days are
+     * still filling in; measured 2026-10-18 it was three days back), else the latest day with a
+     * row, else `today`. Ranges end here so their last days are not Google's empty ones.
+     */
+    completeThrough(today) {
+      const payload = { startDate: addDays(today, -(PROBE_DAYS - 1)), endDate: today, dimensions: ["date"], rowLimit: PROBE_DAYS, dataState: "all" };
+      return cached(`through:${today}`, ttlMs, async () => {
+        const res = await call(`${WEBMASTERS}/sites/${siteSegment}/searchAnalytics/query`, payload);
+        const incomplete = res.metadata?.firstIncompleteDate;
+        if (typeof incomplete === "string" && /^\d{4}-\d{2}-\d{2}$/.test(incomplete)) {
+          const day = addDays(incomplete, -1);
+          return day < today ? day : today;
+        }
+        const days = (Array.isArray(res.rows) ? res.rows : []).map((r) => String(r.keys?.[0] ?? "")).filter((d) => d <= today).sort();
+        return days.at(-1) ?? today;
       });
     },
     /** The index status of one URL, `{ verdict, coverageState, lastCrawlTime, ... }`. */

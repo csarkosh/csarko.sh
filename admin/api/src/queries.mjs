@@ -18,7 +18,7 @@ import * as gscMap from "./collectors/gsc.mjs";
 import { groupReferrers } from "./referrers.mjs";
 import { pathsOf, normalizePath } from "./collectors/sitemap.mjs";
 import { assessHealth } from "./health.mjs";
-import { addDays, isoDate, hourlyRange, dailyRange } from "./time.mjs";
+import { addDays, isoDate, hourlyRange, dailyRangeThrough } from "./time.mjs";
 
 export const QUERY_NAMES = ["visits", "pages", "referrers", "events", "journeys", "audience", "search", "reach", "health"];
 export const MANUAL_KEYS = ["substack"];
@@ -96,6 +96,11 @@ export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, h
     ...(Object.keys(h.errors).length > 0 ? { errors: h.errors } : {}),
   });
 
+  /** A Search Console range ending on the last day Google has finished, not today (see time.mjs). */
+  async function searchRange(days, nowMs = now()) {
+    return dailyRangeThrough(days, await gsc.completeThrough(isoDate(nowMs)));
+  }
+
   const requireVisits = () => (visits.configured ? null : { notConfigured: { visits: "VISITS_DATASET" } });
 
   async function sitemapPaths(h) {
@@ -163,7 +168,7 @@ export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, h
     async search(days) {
       const base = { lag: gscMap.GSC_LAG };
       if (!gsc.configured) return { ...base, perDay: null, totals: null, previous: null, queries: null, pages: null, indexed: null, sitemap: null, notConfigured: { search: "GSC_SA_KEY" } };
-      const r = dailyRange(days, now());
+      const r = await searchRange(days);
       const h = hints();
       const [dateRows, prevRows, queryRows, pageRows, urls, latest] = await Promise.all([
         gsc.query({ startDate: r.startDate, endDate: r.endDate, dimensions: ["date"] }),
@@ -263,7 +268,6 @@ export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, h
       const h = hints();
       const today = isoDate(now());
       const range = hourlyRange(7, now());
-      const daily = dailyRange(28, now());
       const [snapshots, visitsKpi, outbound, search, health] = await Promise.all([
         store.listSnapshots(addDays(today, -7 * TREND_WEEKS + 1), today),
         part(h, "visits", "VISITS_DATASET", visits.configured, async () => {
@@ -276,6 +280,7 @@ export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, h
           return { value: outboundOf(cur.rows), prev: outboundOf(prev.rows) };
         }),
         part(h, "search", "GSC_SA_KEY", gsc.configured, async () => {
+          const daily = await searchRange(28);
           const [cur, prev] = await Promise.all([
             gsc.query({ startDate: daily.startDate, endDate: daily.endDate, dimensions: ["date"] }),
             gsc.query({ startDate: daily.prevStartDate, endDate: daily.prevEndDate, dimensions: ["date"] }),
@@ -304,14 +309,12 @@ export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, h
       const t = now();
       const date = isoDate(t);
       const range = hourlyRange(7, t);
-      const d28 = dailyRange(28, t);
-      const d7 = dailyRange(7, t);
-      const gscTotals = (r) => gsc.query({ startDate: r.startDate, endDate: r.endDate, dimensions: ["date"] }).then((rows) => gscMap.totalsOf(gscMap.perDayOf(rows, r.startDate, r.endDate)));
+      const gscTotals = (days) => searchRange(days, t).then((r) => gsc.query({ startDate: r.startDate, endDate: r.endDate, dimensions: ["date"] }).then((rows) => gscMap.totalsOf(gscMap.perDayOf(rows, r.startDate, r.endDate))));
       const [total, evs, s28, s7, channel, repos, score, live, urls] = await Promise.all([
         part(h, "visits", "VISITS_DATASET", visits.configured, () => visits.visits(range)),
         part(h, "events", "VISITS_DATASET", visits.configured, () => visits.events(range)),
-        part(h, "search28", "GSC_SA_KEY", gsc.configured, () => gscTotals(d28)),
-        part(h, "search7", "GSC_SA_KEY", gsc.configured, () => gscTotals(d7)),
+        part(h, "search28", "GSC_SA_KEY", gsc.configured, () => gscTotals(28)),
+        part(h, "search7", "GSC_SA_KEY", gsc.configured, () => gscTotals(7)),
         part(h, "youtube", "YOUTUBE_KEY", youtube.configured, () => youtube.channel()),
         part(h, "github", "GITHUB_OWNER", github.enabled, () => github.all()),
         part(h, "lighthouse", "PSI_KEY", psi.configured, () => psi.performance()),

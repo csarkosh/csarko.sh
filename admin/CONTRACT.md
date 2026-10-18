@@ -66,6 +66,8 @@ trend, and the health dot.
 - `kpis[].value` and `prev` may be `null` (not configured): the tile shows a dash and
   "Not configured (ENV)" from `notConfigured[key]` (`impressions` falls back to the
   `search` entry). `trend` is always 12 numbers; a week with no snapshot is 0.
+- `search` and `impressions` cover the 28 days ending on Google's last finished day, as
+  the `search` query's range does, not today.
 - `unit` is `""` or a short suffix (`"%"`, `"ms"`); the page appends it to the value.
 - `health.status` is `good`, `warning` or `critical`; `note` is one sentence.
 - Optional `good: "down"` on a KPI marks one where a fall is the good direction.
@@ -208,6 +210,8 @@ Nine lists of `{ name, visitors }`, most visited first. `themes` is the visitor'
 ```json
 {
   "lag": "Search Console runs 2 to 3 days behind",
+  "from": "2026-10-03",
+  "to": "2026-10-09",
   "perDay": [ { "day": "2026-10-03", "clicks": 3, "impressions": 112, "ctr": 0.027, "position": 19.2 } ],
   "totals": { "clicks": 31, "impressions": 949, "ctr": 0.033, "position": 18.4 },
   "previous": { "clicks": 24, "impressions": 812 },
@@ -218,7 +222,10 @@ Nine lists of `{ name, visitors }`, most visited first. `themes` is the visitor'
 }
 ```
 
-`ctr` is a ratio in [0, 1]. `position` is `null` on a day, or in `totals`, with no
+The range is `days` whole UTC days ending on `to`, the last day Google has finished
+counting (the day before Search Console's first incomplete day, usually two or three days
+back), not today; `previous` is the equal range before `from`. So `days=1` is that one
+finished day. `ctr` is a ratio in [0, 1]. `position` is `null` on a day, or in `totals`, with no
 impressions. Everything but `lag` is `null` with `notConfigured.search = "GSC_SA_KEY"`;
 `indexed` alone can be `null` with `notConfigured.indexed` or `.sitemap`, and `sitemap`
 with `notConfigured.sitemapState`. `sitemap.lastDownloaded` is `null` until Google has

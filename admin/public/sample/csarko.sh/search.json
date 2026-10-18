@@ -1,5 +1,7 @@
 {
   "lag": "Search Console runs 2 to 3 days behind",
+  "from": "2026-10-03",
+  "to": "2026-10-09",
   "perDay": [
     { "day": "2026-10-03", "clicks": 3, "impressions": 112, "ctr": 0.027, "position": 19.2 },
     { "day": "2026-10-04", "clicks": 5, "impressions": 140, "ctr": 0.036, "position": 18.1 },

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createQueries, weeklyTrend, snapshotAgo, eventKindOf } from "../src/queries.mjs";
 import { createMemoryStore } from "../src/store.mjs";
+import { addDays } from "../src/time.mjs";
 
 const fixture = (name) => JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), "utf8"));
 const NOW = Date.parse("2026-10-12T15:30:00Z");
@@ -59,6 +60,10 @@ function fakes({ visitsOn = true, gscOn = true, youtubeOn = false, githubToken =
     },
     gsc: {
       configured: gscOn,
+      // Google has finished through yesterday in these fakes; the search ranges end there.
+      async completeThrough(today) {
+        return addDays(today, -1);
+      },
       async query({ startDate, endDate, dimensions }) {
         // The previous period, whatever its length, gets one row on its first day.
         if (dimensions[0] === "date") return endDate < "2026-10-06" ? [{ keys: [startDate], clicks: 4, impressions: 90, ctr: 0.04, position: 20 }] : fixture("gsc-dates").rows;
@@ -206,11 +211,12 @@ test("eventKindOf reads the prefix, counts an unnamed link out as out, and calls
   assert.equal(eventKindOf("app-lib-visits"), "other");
 });
 
-test("search has the lag note, per-day rows for every day, totals, previous, tops, indexed and sitemap", async () => {
+test("search ends on Google's last finished day, with the lag note, per-day rows for every day, totals, previous, tops, indexed and sitemap", async () => {
   const search = await createQueries(fakes()).search(7);
   assert.equal(search.lag, "Search Console runs 2 to 3 days behind");
+  assert.deepEqual([search.from, search.to], ["2026-10-05", "2026-10-11"], "through yesterday, not today");
   assert.equal(search.perDay.length, 7);
-  assert.equal(search.perDay[0].day, "2026-10-06");
+  assert.equal(search.perDay[0].day, "2026-10-05");
   assert.deepEqual(search.totals, { clicks: 6, impressions: 300, ctr: 0.02, position: (18.2 * 120 + 22 * 80 + 15 * 100) / 300 });
   assert.deepEqual(search.previous, { clicks: 4, impressions: 90 });
   assert.equal(search.queries[0].query, "stylized shader");

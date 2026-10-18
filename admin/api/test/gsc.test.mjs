@@ -62,6 +62,28 @@ test("the client exchanges the assertion once, then calls the three endpoints wi
   assert.equal(calls.filter((c) => c.url === key.token_uri).length, 1, "one token for every call");
 });
 
+test("completeThrough is the day before Google's first incomplete day, else the latest row, else today", async () => {
+  const { key } = testKey();
+  let answer = {};
+  const bodies = [];
+  const fetch = async (url, init = {}) => {
+    const ok = (body) => ({ ok: true, status: 200, json: async () => body, text: async () => "" });
+    if (url === key.token_uri) return ok({ access_token: "at-1", expires_in: 3600 });
+    bodies.push(JSON.parse(init.body));
+    return ok(answer);
+  };
+  const gsc = createGsc({ key, property: "sc-domain:csarko.sh", fetch, cache: createCache(), now: () => 1_700_000_000_000, ttlMs: 0 });
+  answer = { rows: [{ keys: ["2026-10-16"] }, { keys: ["2026-10-17"] }], metadata: { firstIncompleteDate: "2026-10-16" } };
+  assert.equal(await gsc.completeThrough("2026-10-18"), "2026-10-15");
+  assert.deepEqual(bodies[0], { startDate: "2026-10-09", endDate: "2026-10-18", dimensions: ["date"], rowLimit: 10, dataState: "all" });
+  answer = { rows: [{ keys: ["2026-10-14"] }, { keys: ["2026-10-12"] }] };
+  assert.equal(await gsc.completeThrough("2026-10-19"), "2026-10-14", "no incomplete days: the latest row");
+  answer = {};
+  assert.equal(await gsc.completeThrough("2026-10-20"), "2026-10-20", "no rows at all: today");
+  answer = { metadata: { firstIncompleteDate: "2026-10-30" } };
+  assert.equal(await gsc.completeThrough("2026-10-21"), "2026-10-21", "never after today");
+});
+
 test("isIndexed and the error wording", () => {
   assert.equal(isIndexed({ verdict: "PASS" }), true);
   assert.equal(isIndexed({ verdict: "PARTIAL" }), true);

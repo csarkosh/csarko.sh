@@ -489,6 +489,13 @@ function visitorsSub(d, visits) {
   return `Visits ${label}, against ${previousText(d)}. ${dayNote} ${GOATCOUNTER_NOTE}`;
 }
 
+/** The Search card's sub: the day the range ends on, Google's last finished one, since Search Console runs behind. */
+function searchSub(d, search) {
+  return search?.to
+    ? `Through ${shortDay(search.to)}, the last day Google has finished counting; Search Console runs 2 to 3 days behind.`
+    : 'Google Search Console runs 2 to 3 days behind.';
+}
+
 /** Each card: its queries, its copy, how it renders, and the skeleton that stands in for it while the queries run. */
 const CARDS = [
   { id: 'visitors', title: 'Visitors', queries: ['visits'], sub: visitorsSub, render: visitorsCard, skeleton: { tiles: 2, chart: true } },
@@ -496,7 +503,7 @@ const CARDS = [
   { id: 'pages', title: 'What they read', half: true, queries: ['pages'], sub: () => `Pages by visitors; the paths that hit the 404 page folded below. ${GOATCOUNTER_NOTE}`, render: pagesCard, skeleton: { lines: 6 } },
   { id: 'events', title: 'Where they go next', queries: ['events', 'visits'], sub: () => `Clicks out to a profile, to play, to watch, and docs read to the end. ${GOATCOUNTER_NOTE}`, render: eventsCard, skeleton: { tiles: 3, lines: 4 } },
   { id: 'journeys', title: 'Journeys', queries: ['journeys'], sub: () => 'The most recent visits, newest first, each from where it came to how it left: every page with when it was reached, how far it was scrolled, how long it was visible and on screen, its LCP, and the click that ended the visit. From lib-visits, so since the cutover only.', render: journeysCard, skeleton: { lines: 6 } },
-  { id: 'search', title: 'Search', queries: ['search'], sub: (d, s) => s?.lag ?? 'Google Search Console runs 2 to 3 days behind.', render: searchCard, skeleton: { tiles: 4, chart: true } },
+  { id: 'search', title: 'Search', queries: ['search'], sub: searchSub, render: searchCard, skeleton: { tiles: 4, chart: true } },
   { id: 'reach', title: 'Reach', queries: ['reach'], sub: () => 'YouTube, GitHub, Hacker News and Substack: exposure beyond the site. A section reads Not configured until its credential is in Secret Manager.', render: reachCard, skeleton: { tiles: 3, lines: 4 } },
   { id: 'health', title: 'Health', half: true, queries: ['health'], sub: () => '', render: healthCard, skeleton: { tiles: 4, lines: 1 } },
   { id: 'audience', title: 'Audience', half: true, queries: ['audience'], sub: () => '', render: audienceCard, skeleton: { lines: 5 } },

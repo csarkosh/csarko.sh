@@ -42,13 +42,13 @@ export function hourlyRange(days, nowMs) {
 }
 
 /**
- * A Search Console range in whole days ending today (UTC). Google's data runs
- * two to three days behind, so the last rows are usually empty; that is the
- * source's lag, and the card says so, rather than something to hide by
- * shifting the window.
+ * A Search Console range of `days` whole days ending on `endDate`, and the
+ * equal range before it. Google runs two to three days behind, so the search
+ * queries pass the last day it has finished (`gsc.completeThrough`), not
+ * today: a window ending today ends on empty days, the Today view is always
+ * zero, and the comparison sets partial days against complete ones.
  */
-export function dailyRange(days, nowMs) {
-  const endDate = isoDate(nowMs);
+export function dailyRangeThrough(days, endDate) {
   const startDate = addDays(endDate, -(days - 1));
   return {
     days,
@@ -57,4 +57,9 @@ export function dailyRange(days, nowMs) {
     prevStartDate: addDays(startDate, -days),
     prevEndDate: addDays(startDate, -1),
   };
+}
+
+/** `dailyRangeThrough` ending today (UTC). */
+export function dailyRange(days, nowMs) {
+  return dailyRangeThrough(days, isoDate(nowMs));
 }
