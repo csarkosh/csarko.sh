@@ -22,7 +22,8 @@ export const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ENTI
 // ---------------------------------------------------------------- front matter
 
 // key -> required?
-const FIELDS = { description: true, published: true, categories: true, updated: false, source: false };
+// "featured" puts a doc in the research index's Start here row (Cyrus, 2026-10-18), lowest first.
+const FIELDS = { description: true, published: true, categories: true, updated: false, source: false, featured: false };
 // The categories a doc may carry (Cyrus, 2026-10-13), in the order the /research filter
 // chips show them. One to three per doc, written in front matter as
 // `categories: Rendering, Worlds and terrain`, spelled exactly as here; the build refuses
@@ -106,6 +107,11 @@ export function parseFrontMatter(text, file) {
   if (new Set(names).size !== names.length) throw new DocError(`${file}: a category is listed twice`);
   if (names.length > MAX_CATEGORIES) throw new DocError(`${file}: ${names.length} categories; at most ${MAX_CATEGORIES}`);
   meta.categories = CATEGORIES.filter((c) => names.includes(c));
+  if (meta.featured !== undefined) {
+    const featured = Number(meta.featured);
+    if (!Number.isInteger(featured) || featured < 1) throw new DocError(`${file}: featured must be a whole number from 1`);
+    meta.featured = featured;
+  }
   return { meta, body };
 }
 
@@ -766,9 +772,19 @@ const FILTER_CSS = `
     .chip input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
     .chip:has(input:checked), .filters:not(:has(input:checked)) .chip.all { color: var(--text); background: var(--accent-soft); border-color: var(--accent-border); font-weight: 500; }
     .chip:has(input:focus-visible), .chip.all:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-    .docs-index:has(.filters input:checked) .doc-list > li { display: none; }
-    ${CATEGORIES.map((c) => `.docs-index:has(#cat-${categorySlug(c)}:checked) .doc-list > li[data-categories~="${categorySlug(c)}"] { display: flex; }`).join('\n    ')}
+    .docs-index:has(.filters input:checked) .all-docs > li { display: none; }
+    ${CATEGORIES.map((c) => `.docs-index:has(#cat-${categorySlug(c)}:checked) .all-docs > li[data-categories~="${categorySlug(c)}"] { display: flex; }`).join('\n    ')}
     @media (prefers-reduced-motion: reduce) { .chip { transition: none; } }`;
+
+// The Start here row: the featured docs, smaller cards side by side, above the full list, which
+// the chips filter alone (the rules above match .all-docs).
+const START_CSS = `
+    .start-here { margin: 0 0 44px; }
+    .docs-index h2.section-label { margin: 0 0 14px; }
+    .start-list { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+    .start-list .card { padding: 18px; }
+    .start-list .doc-title { font-size: 1.05rem; }
+    .start-list .doc-desc { font-size: 14px; }`;
 
 // Only /apps carries the preview card's rules (every page carries DOCS_CSS, and the longest doc
 // sits close to its HTML budget). The card lays out as a film's: the image beside the text, and on
@@ -891,14 +907,15 @@ const FOOTER = `  <footer>
 // for a second link inside a card (see gameList).
 // Each card names its categories (the same words as the chips) and carries them as tokens
 // in data-categories, which the filter's CSS matches on.
-function docList(docs, level, pad) {
+// `event` names a card's click in the visits log (the Start here row's start-<slug>).
+function docList(docs, level, pad, { cls = '', event } = {}) {
   const items = docs.map((d) => `${pad}  <li class="card" data-categories="${d.categories.map(categorySlug).join(' ')}">
-${pad}    <h${level} class="doc-title"><a class="stretch" href="${d.path}">${d.titleHtml}</a></h${level}>
+${pad}    <h${level} class="doc-title"><a class="stretch" href="${d.path}"${event ? ` data-visits-event="${event}-${d.slug}"` : ''}>${d.titleHtml}</a></h${level}>
 ${pad}    <p class="doc-meta">${formatDate(d.published)} · ${readingMinutes(d.words)} min read</p>
 ${pad}    <p class="doc-desc">${escapeHtml(d.description)}</p>
 ${pad}    <ul class="tags" aria-label="Categories">${d.categories.map((c) => `<li>${escapeHtml(c)}</li>`).join('')}</ul>
 ${pad}  </li>`);
-  return `${pad}<ul class="doc-list" role="list">\n${items.join('\n')}\n${pad}</ul>`;
+  return `${pad}<ul class="doc-list${cls ? ` ${cls}` : ''}" role="list">\n${items.join('\n')}\n${pad}</ul>`;
 }
 
 /**
@@ -909,9 +926,9 @@ ${pad}  </li>`);
  */
 function filters(docs, pad) {
   const count = (c) => docs.filter((d) => d.categories.includes(c)).length;
-  const chips = CATEGORIES.map((c) => `${pad}  <label class="chip"><input type="checkbox" name="category" value="${categorySlug(c)}" id="cat-${categorySlug(c)}" />${escapeHtml(c)} <small>${count(c)}</small></label>`);
+  const chips = CATEGORIES.map((c) => `${pad}  <label class="chip"><input type="checkbox" name="category" value="${categorySlug(c)}" id="cat-${categorySlug(c)}" data-visits-event="filter-${categorySlug(c)}" />${escapeHtml(c)} <small>${count(c)}</small></label>`);
   return `${pad}<form class="filters" aria-label="Filter by category">
-${pad}  <button type="reset" class="chip all">All <small>${docs.length}</small></button>
+${pad}  <button type="reset" class="chip all" data-visits-event="filter-all">All <small>${docs.length}</small></button>
 ${chips.join('\n')}
 ${pad}</form>`;
 }
@@ -1004,7 +1021,18 @@ export function indexPage(docs, theme) {
     },
     breadcrumbs(trail),
   ];
-  return `${head({ title: `${INDEX_TITLE} · Cyrus Sarkosh`, ogTitle: INDEX_TITLE, description: INDEX_DESCRIPTION, canonical: url, ogType: 'website', extraCss: FILTER_CSS, graph, theme })}
+  // The featured docs lead in their own row; with any, the full list gets a heading of its own
+  // and its cards step down a level under it.
+  const featured = docs.filter((d) => d.featured !== undefined).sort((a, b) => a.featured - b.featured);
+  const start = featured.length
+    ? `    <section class="start-here" aria-labelledby="start-here">
+      <h2 id="start-here" class="section-label">Start here</h2>
+${docList(featured, 3, '      ', { cls: 'start-list', event: 'start' })}
+    </section>
+    <h2 class="section-label">All research</h2>
+`
+    : '';
+  return `${head({ title: `${INDEX_TITLE} · Cyrus Sarkosh`, ogTitle: INDEX_TITLE, description: INDEX_DESCRIPTION, canonical: url, ogType: 'website', extraCss: FILTER_CSS + (featured.length ? START_CSS : ''), graph, theme })}
 <body>
 ${nav(`/${DOCS_DIR}`)}
 ${crumbs(trail)}
@@ -1015,8 +1043,8 @@ ${crumbs(trail)}
       <h1>${escapeHtml(INDEX_TITLE)}</h1>
       <p class="lead">${escapeHtml(INDEX_LEAD)}</p>
     </header>
-${filters(docs, '    ')}
-${docList(docs, 2, '    ')}
+${start}${filters(docs, '    ')}
+${docList(docs, featured.length ? 3 : 2, '    ', { cls: 'all-docs' })}
   </main>
 
 ${FOOTER}`;
@@ -1308,6 +1336,11 @@ export function buildSite({ sources, gameSources = [], filmSources = [], appSour
       throw new DocError(`docs/published/: ${bySlug.get(doc.slug)} and ${name} both build /${DOCS_DIR}/${doc.slug}`);
     }
     bySlug.set(doc.slug, name);
+  }
+  const byFeatured = new Map();
+  for (const doc of docs.filter((d) => d.featured !== undefined)) {
+    if (byFeatured.has(doc.featured)) throw new DocError(`docs/published/: ${byFeatured.get(doc.featured)} and ${doc.slug} are both featured: ${doc.featured}`);
+    byFeatured.set(doc.featured, doc.slug);
   }
   const theme = themeBlocks(indexHtml);
   const files = new Map();

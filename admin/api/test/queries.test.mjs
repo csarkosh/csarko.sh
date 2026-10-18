@@ -208,6 +208,8 @@ test("eventKindOf reads the prefix, counts an unnamed link out as out, and calls
   assert.equal(eventKindOf("out-github"), "out");
   assert.equal(eventKindOf("nav-film"), "nav");
   assert.equal(eventKindOf("link-example.com"), "out");
+  assert.equal(eventKindOf("start-webgpu-vs-webgl2"), "start");
+  assert.equal(eventKindOf("filter-rendering"), "filter");
   assert.equal(eventKindOf("app-lib-visits"), "other");
 });
 

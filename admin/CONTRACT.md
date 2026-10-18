@@ -141,7 +141,7 @@ view counted. All four are `null` with `notConfigured.visits`.
 
 `visitors` is the distinct visits that fired the event, `clicks` how many times it fired
 (for `read-<slug>`, the page loads that reached the end; the history's one count stands for
-both). `kind` is the name's prefix: `out`, `play`, `watch`, `read`, `nav`, else `other`;
+both). `kind` is the name's prefix: `out`, `play`, `watch`, `read`, `nav`, `start` (a card in /research's Start here row), `filter` (a category chip there), else `other`;
 `link-<host>` (a click on a link to another host that the page did not name, the host
 without `www.`) is kind `out`. `outboundVisitors` is the distinct visitors who clicked any `out-*` or `link-*` event; `outboundRate` is the distinct visitors who clicked any
 `out-*` or `link-*` over the home page's visitors, so it never passes 1; `null` when nobody

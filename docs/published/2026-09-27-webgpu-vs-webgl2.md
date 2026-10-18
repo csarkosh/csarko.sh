@@ -3,6 +3,7 @@ description: WebGPU vs WebGL2, measured in a Babylon.js game: where WebGPU was f
 published: 2026-09-27
 categories: Rendering
 updated: 2026-10-18
+featured: 1
 ---
 # WebGPU vs WebGL2: what changes and what does not
 

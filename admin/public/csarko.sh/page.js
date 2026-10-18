@@ -111,7 +111,7 @@ function pagesCard([pages]) {
   return parts;
 }
 
-const KINDS = { out: 'Outbound', play: 'Play', watch: 'Watch', read: 'Read to the end', nav: 'Navigation', other: 'Other' };
+const KINDS = { out: 'Outbound', play: 'Play', watch: 'Watch', read: 'Read to the end', nav: 'Navigation', start: 'Research: Start here', filter: 'Research: filter', other: 'Other' };
 
 function eventsCard([events, visits], days) {
   if (!events.rows) return [notConfigured(missing(events, 'visits'))];

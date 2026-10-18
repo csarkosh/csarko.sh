@@ -392,7 +392,9 @@ dropped because its host went down and took the numbers with it.)*
   tile's link in `index.html`); the nav's page links count `nav-film`, `nav-games`,
   `nav-research` in both navs (never on the page you are on); a game card's "Play in your
   browser" counts `play-<slug>` and a film card's "Watch on YouTube" counts `watch-<slug>`
-  (`docs_lib.mjs`). All are `data-visits-event` attributes. `read-<slug>` needs no script of
+  (`docs_lib.mjs`); on `/research`, a Start here card counts `start-<slug>` and a category chip
+  `filter-<category>` (`filter-all` for All; a click that clears a chip counts too) *(2026-10-18,
+  to see what the index's visitors do before they leave)*. All are `data-visits-event` attributes. `read-<slug>` needs no script of
   ours any more: it is derived from lib-visits' `leave.re` (the reader reached the end of a
   doc). **Event names are stable identifiers, not copy:** renaming a button or a URL must
   not rename its series. A doc page now carries about 4,063 B of the 10,000 B script
