@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Atmosphere and dread: a second shader research pass · Cyrus Sarkosh</title>
+  <title>Atmosphere and dread shaders for horror games · Cyrus Sarkosh</title>
   <meta name="description" content="How atmospheric and horror games use height fog, grading, film grain and dread-driven effects, and what Babylon.js can do at 60 fps in a browser." />
   <link rel="canonical" href="https://csarko.sh/research/atmosphere-and-dread-shaders" />
 
@@ -11,17 +11,17 @@
   <meta property="og:site_name" content="Cyrus Sarkosh" />
   <meta property="og:locale" content="en_US" />
   <meta property="og:url" content="https://csarko.sh/research/atmosphere-and-dread-shaders" />
-  <meta property="og:title" content="Atmosphere and dread: a second shader research pass" />
+  <meta property="og:title" content="Atmosphere and dread shaders for horror games" />
   <meta property="og:description" content="How atmospheric and horror games use height fog, grading, film grain and dread-driven effects, and what Babylon.js can do at 60 fps in a browser." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta property="article:published_time" content="2026-09-15" />
-  <meta property="article:modified_time" content="2026-09-23" />
+  <meta property="article:modified_time" content="2026-10-18" />
   <meta property="article:author" content="https://csarko.sh/" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Atmosphere and dread: a second shader research pass" />
+  <meta name="twitter:title" content="Atmosphere and dread shaders for horror games" />
   <meta name="twitter:description" content="How atmospheric and horror games use height fog, grading, film grain and dread-driven effects, and what Babylon.js can do at 60 fps in a browser." />
   <meta name="twitter:image" content="https://csarko.sh/og-image.jpg" />
   <meta name="twitter:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
@@ -45,13 +45,13 @@
     {
       "@type": "TechArticle",
       "@id": "https://csarko.sh/research/atmosphere-and-dread-shaders#article",
-      "headline": "Atmosphere and dread: a second shader research pass",
+      "headline": "Atmosphere and dread shaders for horror games",
       "description": "How atmospheric and horror games use height fog, grading, film grain and dread-driven effects, and what Babylon.js can do at 60 fps in a browser.",
       "datePublished": "2026-09-15",
-      "dateModified": "2026-09-23",
+      "dateModified": "2026-10-18",
       "url": "https://csarko.sh/research/atmosphere-and-dread-shaders",
       "mainEntityOfPage": "https://csarko.sh/research/atmosphere-and-dread-shaders",
-      "wordCount": 3963,
+      "wordCount": 4194,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -91,7 +91,7 @@
         {
           "@type": "ListItem",
           "position": 3,
-          "name": "Atmosphere and dread: a second shader research pass",
+          "name": "Atmosphere and dread shaders for horror games",
           "item": "https://csarko.sh/research/atmosphere-and-dread-shaders"
         }
       ]
@@ -376,7 +376,7 @@
       <ol>
         <li><a href="/">Home</a></li>
         <li><a href="/research">Research</a></li>
-        <li><span aria-current="page">Atmosphere and dread: a second shader research pass</span></li>
+        <li><span aria-current="page">Atmosphere and dread shaders for horror games</span></li>
       </ol>
     </div>
   </nav>
@@ -395,10 +395,10 @@
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Sep 15, 2026 · Updated Sep 23, 2026</p>
-        <h1>Atmosphere and dread: a second shader research pass</h1>
+        <p class="eyebrow">Sep 15, 2026 · Updated Oct 18, 2026</p>
+        <h1>Atmosphere and dread shaders for horror games</h1>
         <ul class="tags">
-          <li>17 min read</li>
+          <li>18 min read</li>
           <li><a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-15-atmosphere-and-dread-shaders.md" target="_blank" rel="noopener">Also on GitHub</a></li>
         </ul>
       </header>
@@ -647,6 +647,26 @@ Guideline 117) <a class="cite" href="#ref-21">[21]</a>, <a class="cite" href="#r
 <li><strong>Retroreflective tape is a one-line material change,</strong> masked to the headlamp so
 moonlight never makes it glow.</li>
 </ul>
+<h3 id="xbox-accessibility-guideline-117-and-unsettling-effects"><a class="anchor" href="#xbox-accessibility-guideline-117-and-unsettling-effects">Xbox Accessibility Guideline 117 and unsettling effects</a></h3>
+<p>Xbox Accessibility Guideline 117 covers visual distractions and motion: players should be
+able to pause, hide or turn off content that blinks, scrolls or moves on its own, and to tune
+what the camera does to them, for the sake of players prone to motion sickness or easily
+distracted by movement <a class="cite" href="#ref-21">[21]</a>. For a game whose horror is partly screen effects, it reads as a
+checklist:</p>
+<ul>
+<li><strong>Camera shake, head bob, motion blur and weapon sway</strong> are avoided or can be turned off.
+The guideline&#39;s example is Halo Infinite, whose sliders take radial blur, screen shake and
+full-screen effects each from 0 to 100% <a class="cite" href="#ref-21">[21]</a>.</li>
+<li><strong>Field of view</strong> is adjustable, since a narrower view reduces the fishbowl stretch at the
+edges of the frame that feeds motion sickness <a class="cite" href="#ref-21">[21]</a>.</li>
+<li><strong>Camera sensitivity</strong> is adjustable on each axis, and automatic camera moves can be turned
+off <a class="cite" href="#ref-21">[21]</a>.</li>
+<li><strong>Moving or blinking menu backgrounds</strong> can be paused or removed <a class="cite" href="#ref-21">[21]</a>, <a class="cite" href="#ref-22">[22]</a>.</li>
+</ul>
+<p>None of it asks a horror game to give up dread. One way to meet it here (our design, not the
+guideline&#39;s): the scalar that drives the peripheral warp and the aberration also passes
+through the single &quot;unsettling effects&quot; slider, which scales each toward zero, while the
+audio cues and the authored lighting steps, which move no camera, stay as they are.</p>
 <div class="section-head"><p class="section-label">04</p><h2 id="what-babylon-js-9-18-can-do"><a class="anchor" href="#what-babylon-js-9-18-can-do">What Babylon.js 9.18 can do</a></h2></div>
 <p>Checked against the installed <code>@babylonjs/core</code> 9.18.0 source <a class="cite" href="#ref-23">[23]</a>, not the docs alone <a class="cite" href="#ref-24">[24]</a>, <a class="cite" href="#ref-25">[25]</a>, <a class="cite" href="#ref-26">[26]</a>.</p>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>

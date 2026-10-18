@@ -2,9 +2,9 @@
 description: Chromium refuses pointer lock for 1.25 s after Esc. What failed in the browser, and how an 8-byte patch to prebuilt Electron removed the cooldown.
 published: 2026-08-25
 categories: Tooling
-updated: 2026-10-10
+updated: 2026-10-18
 ---
-# Pointer lock's Esc cooldown and an 8-byte patch
+# Pointer lock fails after Esc: an 8-byte fix
 
 **Question:** Day Hike is a first-person game that runs in Chromium. Every time a player
 presses Esc to open the pause menu, the next click to resume does nothing for over a second.

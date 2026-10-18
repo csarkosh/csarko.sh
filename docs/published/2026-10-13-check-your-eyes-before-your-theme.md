@@ -2,8 +2,9 @@
 description: What the evidence says about dark mode, contrast, line spacing, font size, blue light, flicker, breaks and the eye exam for a developer's screen headaches.
 published: 2026-10-13
 categories: Tooling
+updated: 2026-10-18
 ---
-# Check your eyes before your theme
+# Dark mode and headaches: check your eyes first
 
 **Question:** A developer who ends most workdays with a headache after long terminal sessions wants to know what the published evidence says about the usual suspects: dark mode against light mode, pure white on black against a softened palette, line spacing, font size and typeface, blue light and warm screen tints, backlight flicker and refresh rate, blinking and break schedules, and what an eye examination can find that a theme change cannot. Which of these has evidence behind it, what should change first, and what defaults should a terminal-focused IDE ship as a result?
 

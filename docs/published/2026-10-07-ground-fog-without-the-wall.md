@@ -3,8 +3,9 @@ description: How AAA engines draw ground fog as a frustum-aligned volume instead
 published: 2026-10-07
 categories: Rendering
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-07-ground-fog-in-aaa-games.md
+updated: 2026-10-18
 ---
-# Ground fog without the wall
+# Volumetric ground fog without the sprite wall
 
 **Question:** a horror game wants fog that rests on the ground, that the player walks through,
 and that looks like weather rather than a screen effect. Drawn as camera-facing sprites it reads

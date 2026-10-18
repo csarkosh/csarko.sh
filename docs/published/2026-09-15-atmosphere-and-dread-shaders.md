@@ -2,10 +2,10 @@
 description: How atmospheric and horror games use height fog, grading, film grain and dread-driven effects, and what Babylon.js can do at 60 fps in a browser.
 published: 2026-09-15
 categories: Rendering, Game design
-updated: 2026-09-23
+updated: 2026-10-18
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-15-atmosphere-and-dread-shaders.md
 ---
-# Atmosphere and dread: a second shader research pass
+# Atmosphere and dread shaders for horror games
 
 **Question:** the first pass ([Stylized shader looks](/research/stylized-shader-looks))
 surveyed eight ways games build a look out of shaders. The direction chosen from it is
@@ -260,6 +260,28 @@ tape and a planned dread stack. The survey maps onto each:
   Guideline 117) [21], [22]. The centre of the headlamp beam is always trustworthy.
 - **Retroreflective tape is a one-line material change,** masked to the headlamp so
   moonlight never makes it glow.
+
+### Xbox Accessibility Guideline 117 and unsettling effects
+
+Xbox Accessibility Guideline 117 covers visual distractions and motion: players should be
+able to pause, hide or turn off content that blinks, scrolls or moves on its own, and to tune
+what the camera does to them, for the sake of players prone to motion sickness or easily
+distracted by movement [21]. For a game whose horror is partly screen effects, it reads as a
+checklist:
+
+- **Camera shake, head bob, motion blur and weapon sway** are avoided or can be turned off.
+  The guideline's example is Halo Infinite, whose sliders take radial blur, screen shake and
+  full-screen effects each from 0 to 100% [21].
+- **Field of view** is adjustable, since a narrower view reduces the fishbowl stretch at the
+  edges of the frame that feeds motion sickness [21].
+- **Camera sensitivity** is adjustable on each axis, and automatic camera moves can be turned
+  off [21].
+- **Moving or blinking menu backgrounds** can be paused or removed [21], [22].
+
+None of it asks a horror game to give up dread. One way to meet it here (our design, not the
+guideline's): the scalar that drives the peripheral warp and the aberration also passes
+through the single "unsettling effects" slider, which scales each toward zero, while the
+audio cues and the authored lighting steps, which move no camera, stay as they are.
 
 ## 4. What Babylon.js 9.18 can do
 
