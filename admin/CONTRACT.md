@@ -303,7 +303,8 @@ every query takes `who`, `users` (the default: everyone but Cyrus), `me` (his ow
 and echoes it as `who`; anything else is `400` `"who must be users, me or all"`. A row is his
 when its `ch` is `dogfood` (a release on a Mac holding `~/.config/arkos/dogfood`) or the
 collector marked it `s.own` (sent from one of its `--ignore-ips` addresses, lib-visits v0.4.0).
-`kpis`, the index card, counts users only. The sample files ignore `who`.
+`kpis`, the index card, counts users only. The Arkos page opens on `all` *(Cyrus, 2026-10-19)*;
+`?who=users` or `?who=me` opens it on one. The sample files ignore `who`.
 
 ### `kpis`
 

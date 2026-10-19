@@ -6,8 +6,8 @@
  * get, what follows each step, what is used, the time, the friction, who comes back, the crashes,
  * and the newest sessions in full.
  *
- * Cyrus dogfoods Arkos, so a second row picks whose use the cards show: users (everyone but him,
- * the default), his own Macs, or both; `?who=me` or `?who=all` opens on one.
+ * Cyrus dogfoods Arkos, so a second row picks whose use the cards show: users (everyone but him),
+ * his own Macs, or both (the default); `?who=users` or `?who=me` opens on one.
  *
  * The API is csarko-admin under `/arkos` (shapes in admin/CONTRACT.md, "Arkos IDE"). A part it
  * cannot answer is `null` with `notConfigured` naming the secret, or an `errors` entry; every card
@@ -35,7 +35,7 @@ const WHOS = [
   { who: 'all', label: 'Both', note: 'Everyone, you included.' },
 ];
 const whoAsked = new URLSearchParams(location.search).get('who');
-let who = WHOS.some((w) => w.who === whoAsked) ? whoAsked : 'users';
+let who = WHOS.some((w) => w.who === whoAsked) ? whoAsked : 'all';
 let generation = 0;
 // Seven cards read the one journey answer: each query is asked once per range and whose use.
 let asked = new Map();
@@ -642,7 +642,7 @@ function whoButtons() {
       for (const other of buttons) other.setAttribute('aria-pressed', String(other === b));
       note();
       const url = new URL(location.href);
-      if (who === 'users') url.searchParams.delete('who');
+      if (who === 'all') url.searchParams.delete('who');
       else url.searchParams.set('who', who);
       history.replaceState(null, '', url);
       load();
