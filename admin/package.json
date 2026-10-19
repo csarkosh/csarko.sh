@@ -7,7 +7,8 @@
     "build:vendor": "node build.mjs --vendor"
   },
   "devDependencies": {
-    "esbuild": "0.28.2",
-    "firebase": "13.0.0"
+    "@firebase/app": "0.16.3",
+    "@firebase/auth": "1.13.7",
+    "esbuild": "0.28.2"
   }
 }

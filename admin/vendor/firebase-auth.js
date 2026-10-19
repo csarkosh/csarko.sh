@@ -16,7 +16,7 @@
  * in firebase.json allows exactly those.
  */
 
-export { initializeApp } from 'firebase/app';
+export { initializeApp } from '@firebase/app';
 export {
   GoogleAuthProvider,
   browserLocalPersistence,
@@ -25,4 +25,4 @@ export {
   setPersistence,
   signInWithPopup,
   signOut,
-} from 'firebase/auth';
+} from '@firebase/auth';

@@ -163,7 +163,7 @@ let bundles = readdirSync(VENDOR_DIR).filter((name) => VENDOR_RE.test(name)).sor
 const sources = Math.max(mtime(path.join(ADMIN, 'package-lock.json')), mtime(VENDOR_ENTRY));
 const stale = forceVendor || bundles.length === 0 || bundles.some((name) => mtime(path.join(VENDOR_DIR, name)) < sources);
 if (stale) {
-  if (existsSync(path.join(ADMIN, 'node_modules', 'esbuild')) && existsSync(path.join(ADMIN, 'node_modules', 'firebase'))) {
+  if (existsSync(path.join(ADMIN, 'node_modules', 'esbuild')) && existsSync(path.join(ADMIN, 'node_modules', '@firebase', 'auth'))) {
     const esbuild = await import('esbuild');
     const result = await esbuild.build({
       entryPoints: [VENDOR_ENTRY],

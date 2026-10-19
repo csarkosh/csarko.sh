@@ -28,7 +28,7 @@
  */
 
 // generated:vendor
-const VENDOR = '/vendor/firebase-auth.51cbd299.js';
+const VENDOR = '/vendor/firebase-auth.febf56d0.js';
 // /generated:vendor
 const CONFIG_URL = '/auth-config.json';
 export const UNAUTHORIZED = 'admin:unauthorized';

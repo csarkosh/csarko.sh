@@ -26,7 +26,7 @@ there is no sitemap, JSON-LD, Open Graph card or canonical.
 | Path | What |
 |---|---|
 | `build.mjs` | Fills the generated blocks (below), bundles the Firebase Auth SDK when the tooling is installed, and writes `auth-config.json`. Node 22, deterministic; the one dependency is the bundle step (`package.json`). Run it after `generate-assets.sh` changes a token or a font. |
-| `package.json`, `package-lock.json` | Build tooling only, private: `firebase` and `esbuild` as devDependencies for the vendor bundle. `npm install` here once; `node_modules/` is git-ignored. The pages themselves have no dependencies. |
+| `package.json`, `package-lock.json` | Build tooling only, private: `@firebase/app`, `@firebase/auth` and `esbuild` as devDependencies for the vendor bundle (the two Firebase packages, not the whole `firebase` SDK, whose Firestore pulls in a vulnerable `@grpc/grpc-js`). `npm install` here once; `node_modules/` is git-ignored. The pages themselves have no dependencies. |
 | `vendor/firebase-auth.js` | The bundle's entry: the eight Firebase exports `auth.js` needs (`initializeApp`, `getAuth`, `GoogleAuthProvider`, `onAuthStateChanged`, `signInWithPopup`, `signOut`, `browserLocalPersistence`, `setPersistence`), tree-shaken from `firebase/app` and `firebase/auth`. |
 | `preview.sh` | Build, serve `public/` on `http://localhost:8788` and open both pages with sample data; `--shots` for screenshots, `--lighthouse` for the scores, `--stop`. |
 | `public/index.html` | The index. Static shell; `app.js` fills one card per app from `apps.json` and each app's `/admin/kpis`. |
