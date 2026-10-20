@@ -1,5 +1,5 @@
 ---
-description: WebGPU vs WebGL2, measured in a Babylon.js game: where WebGPU was faster and where it cannot be, what switching cost, and the porting gotchas.
+description: WebGPU vs WebGL2, measured in a Babylon.js game: 1.3 to 1.5 ms faster per frame at native resolution, 9.9 ms at 4x the pixels, for 2.7 MB of shader translators.
 published: 2026-09-27
 categories: Rendering
 updated: 2026-10-18
