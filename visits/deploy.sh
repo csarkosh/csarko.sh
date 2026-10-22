@@ -6,7 +6,7 @@
 #
 # Usage:
 #   visits/deploy.sh              build and deploy VISITS_TAG from ~/Projects/lib-visits
-#   VISITS_TAG=v0.4.0 visits/deploy.sh
+#   VISITS_TAG=v0.4.1 visits/deploy.sh
 #
 # The build runs in Cloud Build, not on this machine.
 
@@ -16,7 +16,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 die() { echo "error: $*" >&2; exit 1; }
 
-VISITS_TAG="${VISITS_TAG:-v0.4.0}"
+VISITS_TAG="${VISITS_TAG:-v0.4.1}"
 LIB="${VISITS_LIB:-$HOME/Projects/lib-visits}"
 
 command -v terraform >/dev/null || die "terraform is not installed"
