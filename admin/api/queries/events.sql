@@ -15,7 +15,9 @@ WITH beacons AS (
     JSON_VALUE(json_payload.id) AS id,
     json_payload AS j,
     COALESCE(JSON_VALUE(json_payload.s.visit), JSON_VALUE(json_payload.id)) AS visit,
-    LOGICAL_OR(IFNULL(JSON_VALUE(json_payload.s.bot), 'false') = 'true') OVER (PARTITION BY JSON_VALUE(json_payload.id)) AS bot
+    -- A browser brand starting Headless (the client hints' HeadlessChrome, under a User-Agent that
+    -- claims a real browser) is a bot too, whatever s.bot says.
+    LOGICAL_OR(IFNULL(JSON_VALUE(json_payload.s.bot), 'false') = 'true' OR STARTS_WITH(IFNULL(JSON_VALUE(json_payload.s.bn), ''), 'Headless')) OVER (PARTITION BY JSON_VALUE(json_payload.id)) AS bot
   FROM `csarko-sh.csarko_visits._AllLogs`
   WHERE timestamp >= TIMESTAMP(@start) AND timestamp < TIMESTAMP(@end)
     AND JSON_VALUE(json_payload.p) NOT IN ('/deploy-check', '/depth-check')

@@ -5,21 +5,24 @@
       "day": {
         "value": "2026-10-10"
       },
-      "visits": 3
+      "visits": 3,
+      "readers": 1
     },
     {
       "win": "current",
       "day": {
         "value": "2026-10-14"
       },
-      "visits": 5
+      "visits": 5,
+      "readers": 2
     },
     {
       "win": "current",
       "day": {
         "value": "2026-10-15"
       },
-      "visits": 2
+      "visits": 2,
+      "readers": 2
     }
   ],
   "history-visits": [

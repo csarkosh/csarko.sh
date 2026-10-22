@@ -37,8 +37,10 @@ Conventions, for every route:
   lib-visits' visits (one browser on one UTC day). A range that spans the cutover adds the
   two, and the page should say so where it matters.
 - **Bots and checks are out of every live number.** A page load (one `id`) is a bot when any
-  of its beacons says so (Lighthouse's view says bot=false, its leave and vitals true), and
-  the deploy and depth checks never count.
+  of its beacons says so (Lighthouse's view says bot=false, its leave and vitals true) or
+  names a browser brand starting `Headless` (the client hints' HeadlessChrome, under a
+  User-Agent that claims a real browser, which the collector's own check misses), and the
+  deploy and depth checks never count.
 - `cache-control: no-store` on every answer; the API caches upstream calls for five
   minutes itself.
 - CORS allows `https://admin.csarko.sh` and `http://localhost:8788` (the preview) with
@@ -85,10 +87,18 @@ The sample files are `admin/public/sample/csarko.sh/<name>.json`, each for `days
 ```json
 {
   "days": 7, "from": "2026-10-05T01:00:00Z", "to": "2026-10-12T01:00:00Z", "dayLabel": "utc",
-  "current": { "visits": 212, "pageviews": null, "perDay": [ { "day": "2026-10-05", "visits": 24, "pageviews": null } ] },
-  "previous": { "visits": 180, "pageviews": null, "perDay": [ { "day": "2026-09-28", "visits": 20, "pageviews": null } ] }
+  "current": { "visits": 212, "readers": 87, "readersSince": null, "pageviews": null, "perDay": [ { "day": "2026-10-05", "visits": 24, "readers": 10, "pageviews": null } ] },
+  "previous": { "visits": 180, "readers": 73, "readersSince": null, "pageviews": null, "perDay": [ { "day": "2026-09-28", "visits": 20, "readers": 8, "pageviews": null } ] }
 }
 ```
+
+`readers` are the visits that did something a person does: 5 or more engaged seconds on one
+page load, views of 2 or more paths, or a click (`visits.sql`). The rest, a single page gone in
+under 5 seconds or with no leave at all, are mostly crawlers the bot flag misses, with real
+bounces among them. GoatCounter's history kept no engaged time, so readers come from lib-visits'
+rows only: a range that reaches before the cutover carries `readersSince` (the cutover instant,
+`VISITS_HISTORY_UNTIL`) and counts readers from then, and a day wholly before it has
+`"readers": null`. `readersSince` is `null` otherwise.
 
 `perDay` has one entry per day, oldest first, the same length in both ranges. `dayLabel` is
 always `"utc"`: the days are UTC days (the collector's daily visit hash rolls at UTC midnight,
@@ -159,7 +169,7 @@ page-load id, whatever visit they name themselves.
   device: { browser, version, os, viewport: [w, h], tz, theme, touch, lang },
   steps: [{ path, title, at, left, secs, depth, read, nav, lcp, cls, inp }],
   exit: { kind: 'click', event, url, host } | { kind: 'left' },
-  engaged, stitched, suspect }
+  engaged, stitched, suspect, reader }
 ```
 
 - `source` is the first view's referrer: `host` with `external`, `path` (the site's own page it
@@ -186,9 +196,12 @@ page-load id, whatever visit they name themselves.
   then carries the second's exit and the sum of both engaged times. 0 for most.
 - `suspect` is `true` for a visit that looks like automation: a UTC clock, no leave and no
   vitals from any page.
+- `reader` is the `visits` reader rule for this journey: a step with 5 or more `secs`, 2 or
+  more paths, or a click exit (a journey keeps only its last click). `false` is a glance, which
+  the page labels and hides by default.
 
 ```json
-{ "rows": [ { "started": "2026-10-15T14:05:12Z", "source": { "kind": "external", "host": "google.com" }, "device": { "browser": "Chrome", "version": "155", "os": "macOS", "viewport": [1544, 1256], "tz": "America/New_York", "theme": "dark", "touch": false, "lang": "en-US" }, "steps": [ { "path": "/", "title": "Cyrus Sarkosh", "at": 0, "left": 41, "secs": 41, "depth": 70, "read": null, "nav": "navigate", "lcp": 216, "cls": 0, "inp": null } ], "exit": { "kind": "click", "event": "out-github", "url": "https://github.com/csarkosh", "host": "github.com" }, "engaged": 41, "stitched": 0, "suspect": false } ] }
+{ "rows": [ { "started": "2026-10-15T14:05:12Z", "source": { "kind": "external", "host": "google.com" }, "device": { "browser": "Chrome", "version": "155", "os": "macOS", "viewport": [1544, 1256], "tz": "America/New_York", "theme": "dark", "touch": false, "lang": "en-US" }, "steps": [ { "path": "/", "title": "Cyrus Sarkosh", "at": 0, "left": 41, "secs": 41, "depth": 70, "read": null, "nav": "navigate", "lcp": 216, "cls": 0, "inp": null } ], "exit": { "kind": "click", "event": "out-github", "url": "https://github.com/csarkosh", "host": "github.com" }, "engaged": 41, "stitched": 0, "suspect": false, "reader": true } ] }
 ```
 
 A visit's steps are capped at 40. Stitching only sees the visits returned (the range's 50

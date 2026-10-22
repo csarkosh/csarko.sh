@@ -56,11 +56,25 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
       const rows = wantsHistory(range.prevStart) ? [...live, ...(await hist("history-visits", win(range)))] : live;
       // Every UTC date the window touches, zeros included: the dashboard lines the
       // previous window up with the current one by index, and both span the same dates.
+      // Readers come from lib-visits' rows alone (GoatCounter kept no engaged time), so a window
+      // that reaches before the cutover counts them since the cutover (`readersSince`), and a day
+      // wholly before it has `readers: null`.
       const shape = (w, from, to) => {
         const byDay = new Map();
+        const readersByDay = new Map();
         for (const r of rows) if (r.win === w) byDay.set(r.day, (byDay.get(r.day) ?? 0) + Number(r.visits));
-        const perDay = utcDates(from, to).map((day) => ({ day, visits: byDay.get(day) ?? 0, pageviews: null }));
-        return { visits: perDay.reduce((n, d) => n + d.visits, 0), pageviews: null, perDay };
+        for (const r of live) if (r.win === w) readersByDay.set(r.day, (readersByDay.get(r.day) ?? 0) + Number(r.readers ?? 0));
+        const since = wantsHistory(from) ? historyUntil : null;
+        const readersOf = (day) => readersByDay.get(day) ?? (since && day < since.slice(0, 10) ? null : 0);
+        const perDay = utcDates(from, to).map((day) => ({ day, visits: byDay.get(day) ?? 0, readers: readersOf(day), pageviews: null }));
+        const counted = perDay.filter((d) => d.readers !== null);
+        return {
+          visits: perDay.reduce((n, d) => n + d.visits, 0),
+          readers: counted.length ? counted.reduce((n, d) => n + d.readers, 0) : null,
+          readersSince: since,
+          pageviews: null,
+          perDay,
+        };
       };
       return { current: shape("current", range.start, range.end), previous: shape("previous", range.prevStart, range.prevEnd) };
     },
@@ -132,8 +146,9 @@ const secondsFrom = (startedMs, stamp) => Math.max(0, Math.round((Date.parse(sta
  * leave's reached-the-end, and only on a /research/<slug> page (null elsewhere). `exit` is the last
  * outbound click when it came on or after the last view, else { kind: "left" }. `engaged` sums the
  * known `secs` (null with none). `suspect` marks a visit that looks like automation: a UTC clock, no
- * leave and no vitals from any page. `stitched` is 0 here; stitchJourneys() counts the visits it
- * joined onto this one.
+ * leave and no vitals from any page. `reader` is visits.sql's reader: 5 or more engaged seconds on
+ * one page, 2 or more paths, or a click (here the exit click, the only one a journey keeps).
+ * `stitched` is 0 here; stitchJourneys() counts the visits it joined onto this one.
  */
 export function journeyOf(row) {
   const r = plainRow(row);
@@ -188,8 +203,12 @@ export function journeyOf(row) {
     else if (exit.kind === "click") s.left = Math.max(s.at, secondsFrom(started, click.stamp));
     else if (s.secs !== null) s.left = s.at + s.secs;
   });
-  return { started: r.started, source, device, steps, exit, engaged: engagedOf(steps), stitched: 0, suspect: suspectOf(device, steps) };
+  return { started: r.started, source, device, steps, exit, engaged: engagedOf(steps), stitched: 0, suspect: suspectOf(device, steps), reader: readerOf(steps, exit) };
 }
+
+/** The reader rule in visits.sql: a page engaged 5 s or more, two or more paths, or a click. */
+const READER_SECS = 5;
+const readerOf = (steps, exit) => exit.kind === "click" || steps.some((s) => s.secs >= READER_SECS) || new Set(steps.map((s) => s.path)).size >= 2;
 
 const engagedOf = (steps) => {
   const timed = steps.filter((s) => s.secs !== null);
@@ -244,6 +263,7 @@ export function stitchJourneys(journeys) {
     onto.engaged = onto.engaged === null && j.engaged === null ? null : (onto.engaged ?? 0) + (j.engaged ?? 0);
     onto.stitched += 1 + j.stitched;
     onto.suspect = suspectOf(onto.device, onto.steps);
+    onto.reader = readerOf(onto.steps, onto.exit) || onto.reader || j.reader;
   }
   return out.reverse();
 }

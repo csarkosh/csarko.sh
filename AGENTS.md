@@ -380,7 +380,13 @@ dropped because its host went down and took the numbers with it.)*
   and the collector answers their beacons without writing them (an app's reports and checks from
   them are written, marked `s.own`, since lib-visits v0.4.0: Cyrus's own Arkos use, kept apart). When his address changes,
   update the list there and `terraform apply`. Lighthouse runs (`check.py --lighthouse`) name
-  themselves in their user agent, so the collector flags them as bots.
+  themselves in their user agent, so the collector flags them as bots. So is a browser whose
+  client hints name it `HeadlessChrome` under a phone's User-Agent *(lib-visits v0.4.1,
+  2026-10-22; the dashboard's queries drop that brand too, for the rows before it)*. **Readers**
+  *(2026-10-22)*: the Visitors card counts, beside visits, the visits that engaged 5 s or more on
+  a page, saw 2+ pages or clicked; the rest are glances, mostly crawlers the bot flag misses
+  (one sends a `google.com` referrer from Linux at 1920px with no engagement), labelled and
+  hidden by default in Journeys. The rule is in `admin/api/queries/visits.sql` and `admin/CONTRACT.md`.
 - **Every row's `timestamp` is the event's time** *(v0.2.0)*: the client sends its clock (`ts`)
   and the collector writes `time`, which Cloud Logging takes as the entry's timestamp, so
   beacons arriving together after a cold start keep their order. Rows before 2026-10-15

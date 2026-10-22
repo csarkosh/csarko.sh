@@ -33,8 +33,10 @@ const make = (opts = {}) => {
 test("visits sums live and history rows by day and window, and a row without a visit still counts", async () => {
   const { v, calls } = make();
   const r = await v.visits(range);
-  assert.deepEqual(r.current.perDay, [{ day: "2026-10-13", visits: 0, pageviews: null }, { day: "2026-10-14", visits: 6, pageviews: null }, { day: "2026-10-15", visits: 2, pageviews: null }]);
+  assert.deepEqual(r.current.perDay, [{ day: "2026-10-13", visits: 0, readers: null, pageviews: null }, { day: "2026-10-14", visits: 6, readers: 2, pageviews: null }, { day: "2026-10-15", visits: 2, readers: 2, pageviews: null }]);
   assert.equal(r.current.visits, 8);
+  assert.equal(r.current.readers, 4, "readers from lib-visits' rows only");
+  assert.equal(r.current.readersSince, "2026-10-14T00:00:00Z", "the window reaches before the cutover");
   assert.deepEqual(r.previous.perDay.map((d) => [d.day, d.visits]), [["2026-10-10", 3], ["2026-10-11", 4], ["2026-10-12", 0]]);
   assert.equal(r.previous.visits, 7);
   assert.deepEqual(calls.map((c) => c.name), ["visits", "history-visits"]);
@@ -53,6 +55,24 @@ test("history is not queried when the window starts after the cutover", async ()
   const { v, calls } = make({ historyUntil: "2026-10-01T00:00:00Z" });
   await v.visits(range);
   assert.deepEqual(calls.map((c) => c.name), ["visits"]);
+});
+
+test("after the cutover every day has its readers, zero included, and no readersSince", async () => {
+  const { v } = make({ historyUntil: "2026-10-01T00:00:00Z" });
+  const r = await v.visits(range);
+  assert.deepEqual(r.current.perDay.map((d) => [d.day, d.visits, d.readers]), [["2026-10-13", 0, 0], ["2026-10-14", 5, 2], ["2026-10-15", 2, 2]]);
+  assert.equal(r.current.readers, 4);
+  assert.equal(r.current.readersSince, null);
+  assert.equal(r.previous.readers, 1);
+});
+
+test("journeyOf: a reader engaged 5 s on a page, saw two paths or clicked; a glance did none of them", () => {
+  const step = (path, secs, stamp = "2026-10-15T15:32:16Z") => ({ stamp, path, title: "", nt: "navigate", secs, depth: null, reached: false, lcp: null, cls: null, inp: null });
+  assert.equal(journeyOf(journeyRow({ steps: [step("/", 4)], last_click: null })).reader, false);
+  assert.equal(journeyOf(journeyRow({ steps: [step("/", null)], last_click: null })).reader, false);
+  assert.equal(journeyOf(journeyRow({ steps: [step("/", 5)], last_click: null })).reader, true);
+  assert.equal(journeyOf(journeyRow({ steps: [step("/", null), step("/apps", null, "2026-10-15T15:32:30Z")], last_click: null })).reader, true);
+  assert.equal(journeyOf(journeyRow({ steps: [step("/", null)], last_click: { stamp: "2026-10-15T15:33:00Z", ev: "out-github", u: "https://github.com/csarkosh" } })).reader, true);
 });
 
 test("pages merge history by path and keep engaged time and reached share from live rows", async () => {

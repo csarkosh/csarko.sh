@@ -5,82 +5,100 @@
   "dayLabel": "utc",
   "current": {
     "visits": 212,
+    "readers": 87,
+    "readersSince": null,
     "pageviews": null,
     "perDay": [
       {
         "day": "2026-10-05",
         "visits": 24,
+        "readers": 10,
         "pageviews": null
       },
       {
         "day": "2026-10-06",
         "visits": 31,
+        "readers": 12,
         "pageviews": null
       },
       {
         "day": "2026-10-07",
         "visits": 28,
+        "readers": 13,
         "pageviews": null
       },
       {
         "day": "2026-10-08",
         "visits": 44,
+        "readers": 16,
         "pageviews": null
       },
       {
         "day": "2026-10-09",
         "visits": 39,
+        "readers": 16,
         "pageviews": null
       },
       {
         "day": "2026-10-10",
         "visits": 22,
+        "readers": 11,
         "pageviews": null
       },
       {
         "day": "2026-10-11",
         "visits": 24,
+        "readers": 9,
         "pageviews": null
       }
     ]
   },
   "previous": {
     "visits": 180,
+    "readers": 73,
+    "readersSince": null,
     "pageviews": null,
     "perDay": [
       {
         "day": "2026-09-28",
         "visits": 20,
+        "readers": 8,
         "pageviews": null
       },
       {
         "day": "2026-09-29",
         "visits": 27,
+        "readers": 10,
         "pageviews": null
       },
       {
         "day": "2026-09-30",
         "visits": 25,
+        "readers": 11,
         "pageviews": null
       },
       {
         "day": "2026-10-01",
         "visits": 33,
+        "readers": 12,
         "pageviews": null
       },
       {
         "day": "2026-10-02",
         "visits": 31,
+        "readers": 13,
         "pageviews": null
       },
       {
         "day": "2026-10-03",
         "visits": 21,
+        "readers": 10,
         "pageviews": null
       },
       {
         "day": "2026-10-04",
         "visits": 23,
+        "readers": 9,
         "pageviews": null
       }
     ]

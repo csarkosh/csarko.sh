@@ -47,23 +47,41 @@ function errorLines(...answers) {
 
 // ---------------------------------------------------------------- the eight cards
 
+/**
+ * Readers: the visits that engaged 5 s or more on a page, saw two or more paths, or clicked; the
+ * rest are mostly crawlers the bot flag misses. Counted from lib-visits' rows alone, so a range
+ * that reaches before the cutover (`readersSince`) shows them since the cutover, with no share
+ * of visits and no change against a previous range that has none.
+ */
+function readersTile(cur, prev, days) {
+  if (!isNum(cur.readers)) return tile('Readers', null, { note: 'Not counted before the cutover to lib-visits.' });
+  if (cur.readersSince) return tile('Readers', cur.readers, { note: `Since the cutover, ${shortDay(cur.readersSince.slice(0, 10))}.` });
+  const comparable = isNum(prev?.readers) && !prev.readersSince;
+  return tile('Readers', cur.readers, {
+    delta: delta(cur.readers, comparable ? prev.readers : null, { vs: previousText(days) }),
+    note: `${pct(cur.readers, num(cur.visits))} of visits: 5 s on a page, 2+ pages or a click.`,
+  });
+}
+
 function visitorsCard([visits], days) {
   const cur = visits.current;
   const prev = visits.previous;
   if (!cur) return [notConfigured(missing(visits, 'visits'))];
   const prevDays = prev?.perDay ?? [];
   const tiles = el('div', { class: 'tiles compact' },
-    tile('Visits', cur.visits, { delta: delta(cur.visits, prev?.visits, { vs: previousText(days) }) }));
+    tile('Visits', cur.visits, { delta: delta(cur.visits, prev?.visits, { vs: previousText(days) }) }),
+    readersTile(cur, prev, days));
   const chart = columns(dayBars(cur.perDay ?? [], 'visits'), {
     previous: prev ? (cur.perDay ?? []).map((_, i) => num(prevDays[i]?.visits)) : null,
     label: `Visits per day, ${rangeText(days)}: ${compact(num(cur.visits))} in all${prev ? ` against ${compact(num(prev.visits))} ${previousText(days)}` : ''}`,
     currentLabel: cap(rangeText(days)),
     previousLabel: cap(previousText(days)),
   });
-  const rows = (cur.perDay ?? []).map((r, i) => ({ day: r.day, visits: num(r.visits), prevDay: prevDays[i]?.day ?? '', prevVisits: isNum(prevDays[i]?.visits) ? prevDays[i].visits : null }));
+  const rows = (cur.perDay ?? []).map((r, i) => ({ day: r.day, visits: num(r.visits), readers: isNum(r.readers) ? r.readers : null, prevDay: prevDays[i]?.day ?? '', prevVisits: isNum(prevDays[i]?.visits) ? prevDays[i].visits : null }));
   const list = folded('Per day', table([
     { key: 'day', label: 'Day', render: mono },
     { key: 'visits', label: 'Visits', num: true },
+    { key: 'readers', label: 'Readers', num: true },
     { key: 'prevDay', label: 'Previous day', render: mono },
     { key: 'prevVisits', label: 'Its visits', num: true },
   ], rows));
@@ -258,14 +276,16 @@ function journey(j, now) {
   const chips = [];
   if (num(j.stitched) > 0) chips.push(el('span', { class: 'badge' }, 'stitched across midnight'));
   if (j.suspect) chips.push(el('span', { class: 'badge warn' }, 'suspect: UTC clock, no engaged time'));
+  else if (j.reader === false) chips.push(el('span', { class: 'badge warn' }, 'glance: one page, under 5 s, no click'));
   if (src.campaign) chips.push(el('span', { class: 'badge' }, `tagged ${str(src.campaign)}`));
   const device = deviceLine(j.device);
   const meta = el('div', { class: 'j-meta' }, device ? el('span', { class: 'j-device mono' }, device) : null, chips.length ? el('span', { class: 'tags j-chips' }, ...chips) : null);
-  return el('li', { class: `journey${j.suspect ? ' suspect' : ''}` }, head, meta, el('ol', { class: 'j-flow', 'aria-label': `Journey from ${sourceName(src)}` }, ...items), strip);
+  return el('li', { class: `journey${j.suspect || j.reader === false ? ' suspect' : ''}` }, head, meta, el('ol', { class: 'j-flow', 'aria-label': `Journey from ${sourceName(src)}` }, ...items), strip);
 }
 
 const JOURNEY_FILTERS = [
   { id: 'suspect', label: 'Hide suspect', on: true, keep: (j) => !j.suspect },
+  { id: 'glance', label: 'Hide glances', on: true, keep: (j) => j.reader !== false },
   { id: 'multi', label: 'Only 2+ pages', on: false, keep: (j) => (j.steps?.length ?? 0) >= 2 },
   { id: 'click', label: 'Only with a click', on: false, keep: (j) => j.exit?.kind === 'click' },
 ];

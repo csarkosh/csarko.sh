@@ -12,7 +12,7 @@
       "exit": { "kind": "click", "event": "out-github", "url": "https://github.com/csarkosh", "host": "github.com" },
       "engaged": 248,
       "stitched": 0,
-      "suspect": false
+      "suspect": false, "reader": true
     },
     {
       "started": "2026-10-15T12:41:03Z",
@@ -26,7 +26,7 @@
       "exit": { "kind": "click", "url": "https://apps.csarko.sh/lib-visits", "host": "apps.csarko.sh" },
       "engaged": 350,
       "stitched": 0,
-      "suspect": false
+      "suspect": false, "reader": true
     },
     {
       "started": "2026-10-15T11:20:44Z",
@@ -41,7 +41,7 @@
       "exit": { "kind": "click", "event": "play-day-hike", "url": "https://games.csarko.sh/dayhike/", "host": "games.csarko.sh" },
       "engaged": 51,
       "stitched": 0,
-      "suspect": false
+      "suspect": false, "reader": true
     },
     {
       "started": "2026-10-15T09:58:30Z",
@@ -53,7 +53,7 @@
       "exit": { "kind": "left" },
       "engaged": 64,
       "stitched": 0,
-      "suspect": false
+      "suspect": false, "reader": true
     },
     {
       "started": "2026-10-15T08:12:09Z",
@@ -66,7 +66,7 @@
       "exit": { "kind": "click", "event": "app-lib-visits", "url": "https://apps.csarko.sh/lib-visits", "host": "apps.csarko.sh" },
       "engaged": 147,
       "stitched": 0,
-      "suspect": false
+      "suspect": false, "reader": true
     },
     {
       "started": "2026-10-14T23:52:10Z",
@@ -79,7 +79,7 @@
       "exit": { "kind": "left" },
       "engaged": 563,
       "stitched": 1,
-      "suspect": false
+      "suspect": false, "reader": true
     },
     {
       "started": "2026-10-14T22:47:51Z",
@@ -92,7 +92,7 @@
       "exit": { "kind": "click", "event": "watch-who-is-standing-in-my-hallway", "url": "https://www.youtube.com/shorts/x", "host": "youtube.com" },
       "engaged": 33,
       "stitched": 0,
-      "suspect": false
+      "suspect": false, "reader": true
     },
     {
       "started": "2026-10-14T19:03:15Z",
@@ -106,7 +106,17 @@
       "exit": { "kind": "left" },
       "engaged": null,
       "stitched": 0,
-      "suspect": true
+      "suspect": true, "reader": true
+    },
+    {
+      "started": "2026-10-15T13:20:41Z",
+      "source": { "kind": "direct" },
+      "device": { "browser": "Chrome", "version": "141", "os": "Windows", "viewport": [800, 600], "tz": "Etc/Unknown", "theme": "light", "touch": false, "lang": "en-US" },
+      "steps": [
+        { "path": "/games", "title": "Games, playable in your browser", "at": 0, "left": null, "secs": null, "depth": null, "read": null, "nav": "navigate", "lcp": null, "cls": null, "inp": null }
+      ],
+      "exit": { "kind": "left" },
+      "engaged": null, "stitched": 0, "suspect": false, "reader": false
     },
     {
       "started": "2026-10-14T16:30:27Z",
@@ -118,7 +128,7 @@
       "exit": { "kind": "left" },
       "engaged": 96,
       "stitched": 0,
-      "suspect": false
+      "suspect": false, "reader": true
     }
   ]
 }
