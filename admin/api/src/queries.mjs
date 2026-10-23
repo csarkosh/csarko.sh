@@ -25,7 +25,10 @@ export const MANUAL_KEYS = ["substack"];
 export const APP_NAME = "csarko.sh";
 export const TREND_WEEKS = 12;
 
-const EVENT_KINDS = ["out", "play", "watch", "read", "nav", "start", "filter"];
+// toc, doc, next, series and end are a doc page's own links (its contents, a link in its text to
+// another doc, Keep reading, the series line and the link after the author box); section is a
+// section read for 5 s (2026-10-23).
+const EVENT_KINDS = ["out", "play", "watch", "read", "nav", "start", "filter", "toc", "doc", "next", "series", "end", "section"];
 /** The kind of an event name from its prefix: `out-github` is an outbound click, `read-<slug>` a read to the end; `link-<host>` (an unnamed link out) is `out` too. */
 export function eventKindOf(name) {
   const prefix = String(name).split("-")[0];

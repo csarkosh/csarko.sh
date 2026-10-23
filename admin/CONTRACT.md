@@ -157,7 +157,7 @@ view counted. All four are `null` with `notConfigured.visits`.
 
 `visitors` is the distinct visits that fired the event, `clicks` how many times it fired
 (for `read-<slug>`, the page loads that reached the end; the history's one count stands for
-both). `kind` is the name's prefix: `out`, `play`, `watch`, `read`, `nav`, `start` (a card in /research's Start here row), `filter` (a category chip there), else `other`;
+both). `kind` is the name's prefix: `out`, `play`, `watch`, `read`, `nav`, `start` (a card in /research's Start here row), `filter` (a category chip there), and on a doc page *(2026-10-23)* `toc` (its contents, `toc` inline and `toc-rail` in the rail), `doc` (a link in its text to another doc, `doc-<slug>`), `next` (Keep reading, `next-<slug>`), `series` (the series line under the title), `end` (the Read next link after the author box) and `section` (`section-<n>`, a section that sat across the middle of a visible screen for 5 s, n 0 for the opening; from the site's `reading.js`, so `clicks` counts page loads), else `other`;
 `link-<host>` (a click on a link to another host that the page did not name, the host
 without `www.`) is kind `out`. `outboundVisitors` is the distinct visitors who clicked any `out-*` or `link-*` event; `outboundRate` is the distinct visitors who clicked any
 `out-*` or `link-*` over the home page's visitors, so it never passes 1; `null` when nobody

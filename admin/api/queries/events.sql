@@ -1,4 +1,5 @@
--- Named clicks, outbound links by host, docs read to the end (from the leave beacon), and the
+-- Named clicks, outbound links by host, docs read to the end (from the leave beacon), doc sections
+-- read (section-<n>, the site's reading.js), and the
 -- home page's visitors, in [start, end). Two numbers a name: `visitors`, the distinct visits
 -- that fired it, and `clicks`, how many times it fired (for a read, the page loads that reached
 -- the end; for (home), the home page's views). A click with no event name but a url (a link to
@@ -42,6 +43,12 @@ SELECT name, COUNT(DISTINCT visit) AS visitors, COUNT(*) AS clicks FROM (
     FROM beacons AS b LEFT JOIN loads AS l USING (id)
     WHERE b.n = 'leave' AND NOT b.bot AND JSON_VALUE(b.j.re) = 'true' AND REGEXP_CONTAINS(JSON_VALUE(b.j.p), r'^/research/[^/]+$')
   )
+  UNION ALL
+  -- A doc section read for 5 s with the page in view (the site's reading.js), as section-<n>,
+  -- n 0 for the opening before section 01.
+  SELECT CONCAT('section-', JSON_VALUE(b.j.d.n)), COALESCE(l.visit, b.visit)
+  FROM beacons AS b LEFT JOIN loads AS l USING (id)
+  WHERE b.n = 'section' AND NOT b.bot
   UNION ALL
   SELECT '(home)', visit FROM beacons WHERE n = 'view' AND NOT bot AND JSON_VALUE(j.p) = '/'
   UNION ALL

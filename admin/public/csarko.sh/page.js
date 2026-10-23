@@ -129,7 +129,7 @@ function pagesCard([pages]) {
   return parts;
 }
 
-const KINDS = { out: 'Outbound', play: 'Play', watch: 'Watch', read: 'Read to the end', nav: 'Navigation', start: 'Research: Start here', filter: 'Research: filter', other: 'Other' };
+const KINDS = { out: 'Outbound', play: 'Play', watch: 'Watch', read: 'Read to the end', nav: 'Navigation', start: 'Research: Start here', filter: 'Research: filter', toc: 'Doc: contents', doc: 'Doc: link to a doc', next: 'Doc: keep reading', series: 'Doc: series line', end: 'Doc: read next', section: 'Doc: section read 5 s', other: 'Other' };
 
 function eventsCard([events, visits], days) {
   if (!events.rows) return [notConfigured(missing(events, 'visits'))];
