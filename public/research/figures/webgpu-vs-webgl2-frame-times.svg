@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280" width="420" height="280" role="img" aria-labelledby="t">
+  <title id="t">Frame time in Day Hike, WebGL2 against WebGPU: 24.22 ms against 22.69 ms at 1200 by 2029, 55.14 ms against 45.21 ms at 2400 by 4058</title>
+  <style>
+    text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 14px; fill: #e8eaf0; }
+    .title { font-size: 16px; font-weight: 600; }
+    .sec { fill: #a0a8b8; }
+    .gain { font-weight: 600; fill: #7dd3c0; }
+    .gl { fill: #a0a8b8; }
+    .gpu { fill: #7dd3c0; }
+    .axis { stroke: #3a3f4b; stroke-width: 1.5; }
+    @media (prefers-color-scheme: light) {
+      text { fill: #12151c; }
+      .sec, .gl { fill: #4a5263; }
+      .gain, .gpu { fill: #0a735f; }
+      .axis { stroke: #c9ced6; }
+    }
+  </style>
+  <text class="title" x="16" y="28">Frame time, lower is faster</text>
+  <text class="sec" x="16" y="50">Day Hike's heaviest pose, Apple M4, Chrome 153</text>
+
+  <rect class="gl" x="16" y="66" width="14" height="14" rx="3"/>
+  <text x="36" y="78">WebGL2</text>
+  <rect class="gpu" x="112" y="66" width="14" height="14" rx="3"/>
+  <text x="132" y="78">WebGPU</text>
+
+  <text class="sec" x="16" y="118">Native: 1200 by 2029 (2.4 Mpx)</text>
+  <text class="gain" x="404" y="118" text-anchor="end">1.53 ms faster</text>
+  <rect class="gl" x="16" y="128" width="110" height="20" rx="3"/>
+  <text x="134" y="143">WebGL2 24.22 ms</text>
+  <rect class="gpu" x="16" y="152" width="103" height="20" rx="3"/>
+  <text x="127" y="167">WebGPU 22.69 ms</text>
+
+  <text class="sec" x="16" y="210">4x the pixels: 2400 by 4058 (9.7 Mpx)</text>
+  <text class="gain" x="404" y="210" text-anchor="end">9.93 ms faster</text>
+  <rect class="gl" x="16" y="220" width="250" height="20" rx="3"/>
+  <text x="274" y="235">WebGL2 55.14 ms</text>
+  <rect class="gpu" x="16" y="244" width="205" height="20" rx="3"/>
+  <text x="229" y="259">WebGPU 45.21 ms</text>
+
+  <line class="axis" x1="16" y1="124" x2="16" y2="176"/>
+  <line class="axis" x1="16" y1="216" x2="16" y2="268"/>
+</svg>

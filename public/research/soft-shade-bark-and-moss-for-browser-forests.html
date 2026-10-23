@@ -20,6 +20,7 @@
   <meta property="article:published_time" content="2026-10-13" />
   <meta property="article:modified_time" content="2026-10-13" />
   <meta property="article:author" content="https://csarko.sh/" />
+  <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Soft shade, bark and moss for browser forests" />
   <meta name="twitter:description" content="How AAA games soften and lighten forest shade, texture and shade bark so it stops looking shiny, and grow moss on trunks, sized for a browser frame." />
@@ -127,6 +128,8 @@
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
+      /* A doc's body text: brighter than --muted, which reads as grey at length (2026-10-23). */
+      --prose: #c9ced9;
       --faint: #7d8597;
       /* Content warnings only. Yellow to stand apart from the teal accent. */
       --warning: #f5c451;
@@ -156,6 +159,7 @@
         --border-strong: rgba(10, 11, 14, 0.16);
         --text: #12151c;
         --muted: #4a5263;
+        --prose: #2b3240;
         --faint: #5f677a;
         --warning: #8a6100;
         --accent: #0a735f;
@@ -347,6 +351,57 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .doc-page .prose { font-size: 17px; }
+    .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
+    .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
+    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .rail a[aria-current] { color: var(--text); }
+    .rail a[aria-current] .num { color: var(--accent); }
+    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .toc .section-label { margin: 0 0 6px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
+    .toc a:hover { color: var(--accent); }
+    .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    .figure { margin: 32px 0; }
+    .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+    /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
+    .figure img { max-height: 80vh; object-fit: contain; }
+    .figure figcaption { margin-top: 10px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+    .prose blockquote strong:first-child { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted var(--faint); text-underline-offset: 4px; }
+    .term:hover, .term:focus-visible { text-decoration-color: var(--accent); }
+    .term-def { max-width: min(92vw, 420px); margin: auto; padding: 16px 18px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.55; }
+    .term-def::backdrop { background: var(--nav-bg); }
+    /* A wide table or code block that scrolls sideways shows a shade at the edge it can scroll to. */
+    .scroll { background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
+      var(--surface); }
+    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
+    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
+    .series-name { margin: 0 0 8px; font-weight: 600; }
+    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
+    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
+    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
+    .next-list .card { padding: 16px 18px; background: var(--bg); }
+    .next-list .doc-title { font-size: 1.05rem; }
+    .next-list .doc-desc { font-size: 14.5px; }
+    .play-line { margin: 20px 0 0; }
+    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background .15s ease; }
+    .play:hover { background: var(--accent-hover); }
+    .play svg { width: 14px; height: 14px; }
+    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
+    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color .15s ease; }
+    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
+    .afterward .next:hover { border-color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -382,24 +437,26 @@
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-        <li><a href="#why-forest-shade-goes-black"><span class="num" aria-hidden="true">01</span><span>Why forest shade goes black</span></a></li>
-        <li><a href="#a-softer-shadow"><span class="num" aria-hidden="true">02</span><span>A softer shadow</span></a></li>
-        <li><a href="#lighter-foliage-the-right-way"><span class="num" aria-hidden="true">03</span><span>Lighter foliage, the right way</span></a></li>
-        <li><a href="#bark-at-close-range"><span class="num" aria-hidden="true">04</span><span>Bark at close range</span></a></li>
-        <li><a href="#why-bark-looks-shiny-and-how-to-stop-it"><span class="num" aria-hidden="true">05</span><span>Why bark looks shiny, and how to stop it</span></a></li>
-        <li><a href="#moss"><span class="num" aria-hidden="true">06</span><span>Moss</span></a></li>
-        <li><a href="#textures-you-can-ship-in-an-open-source-game"><span class="num" aria-hidden="true">07</span><span>Textures you can ship in an open-source game</span></a></li>
-        <li><a href="#an-order-of-work-on-a-browser-budget"><span class="num" aria-hidden="true">08</span><span>An order of work on a browser budget</span></a></li>
-        <li><a href="#sources"><span>Sources</span></a></li>
+        <li><a href="#why-forest-shade-goes-black" data-visits-event="toc-rail"><span class="num" aria-hidden="true">01</span><span>Why forest shade goes black</span></a></li>
+        <li><a href="#a-softer-shadow" data-visits-event="toc-rail"><span class="num" aria-hidden="true">02</span><span>A softer shadow</span></a></li>
+        <li><a href="#lighter-foliage-the-right-way" data-visits-event="toc-rail"><span class="num" aria-hidden="true">03</span><span>Lighter foliage, the right way</span></a></li>
+        <li><a href="#bark-at-close-range" data-visits-event="toc-rail"><span class="num" aria-hidden="true">04</span><span>Bark at close range</span></a></li>
+        <li><a href="#why-bark-looks-shiny-and-how-to-stop-it" data-visits-event="toc-rail"><span class="num" aria-hidden="true">05</span><span>Why bark looks shiny, and how to stop it</span></a></li>
+        <li><a href="#moss" data-visits-event="toc-rail"><span class="num" aria-hidden="true">06</span><span>Moss</span></a></li>
+        <li><a href="#textures-you-can-ship-in-an-open-source-game" data-visits-event="toc-rail"><span class="num" aria-hidden="true">07</span><span>Textures you can ship in an open-source game</span></a></li>
+        <li><a href="#an-order-of-work-on-a-browser-budget" data-visits-event="toc-rail"><span class="num" aria-hidden="true">08</span><span>An order of work on a browser budget</span></a></li>
+        <li><a href="#sources" data-visits-event="toc-rail"><span>Sources</span></a></li>
       </ol>
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
         <p class="eyebrow">Oct 13, 2026</p>
         <h1>Soft shade, bark and moss for browser forests</h1>
+        <p class="lead">How AAA games soften and lighten forest shade, texture and shade bark so it stops looking shiny, and grow moss on trunks, sized for a browser frame.</p>
         <ul class="tags">
-          <li>21 min read</li>
+          <li>19 min read</li>
         </ul>
+        <p class="series-line">Part 7 of 7 in <strong>Rendering a browser forest</strong> · Previous: <a href="/research/rock-on-steep-terrain-shape-it-cover-it-or-skin-it" data-visits-event="series-rock-on-steep-terrain-shape-it-cover-it-or-skin-it">Rock on steep terrain: shape it, cover it, or skin it</a></p>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> A forest drawn with stock physically based materials tends to fail in three ways
@@ -429,10 +486,25 @@ facing, its height on the trunk and per-tree noise, and shaded softer than a mic
 can: with light wrap, a sheen or fuzz term and dark occlusion that fades at grazing angles.</p>
 <p>The questions came from Day Hike, a co-op hiking game in Babylon.js set in the old-growth
 forest of a fictional stretch of the Olympic Peninsula. An earlier doc covers what grows there
-and where the moss is heaviest (<a href="/research/olympic-vegetation-for-games">Olympic Peninsula vegetation for game
+and where the moss is heaviest (<a href="/research/olympic-vegetation-for-games" data-visits-event="doc-olympic-vegetation-for-games">Olympic Peninsula vegetation for game
 worlds</a>); another covers wet surfaces in rain
-(<a href="/research/photorealistic-rain-for-browser-games">Photorealistic rain for browser games</a>).
+(<a href="/research/photorealistic-rain-for-browser-games" data-visits-event="doc-photorealistic-rain-for-browser-games">Photorealistic rain for browser games</a>).
 This one is about the shading.</p>
+      </div>
+      <nav class="toc" aria-label="In this doc">
+        <p class="section-label">In this doc</p>
+        <ol>
+          <li><a href="#why-forest-shade-goes-black" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>Why forest shade goes black</span></a></li>
+          <li><a href="#a-softer-shadow" data-visits-event="toc"><span class="num" aria-hidden="true">02</span><span>A softer shadow</span></a></li>
+          <li><a href="#lighter-foliage-the-right-way" data-visits-event="toc"><span class="num" aria-hidden="true">03</span><span>Lighter foliage, the right way</span></a></li>
+          <li><a href="#bark-at-close-range" data-visits-event="toc"><span class="num" aria-hidden="true">04</span><span>Bark at close range</span></a></li>
+          <li><a href="#why-bark-looks-shiny-and-how-to-stop-it" data-visits-event="toc"><span class="num" aria-hidden="true">05</span><span>Why bark looks shiny, and how to stop it</span></a></li>
+          <li><a href="#moss" data-visits-event="toc"><span class="num" aria-hidden="true">06</span><span>Moss</span></a></li>
+          <li><a href="#textures-you-can-ship-in-an-open-source-game" data-visits-event="toc"><span class="num" aria-hidden="true">07</span><span>Textures you can ship in an open-source game</span></a></li>
+          <li><a href="#an-order-of-work-on-a-browser-budget" data-visits-event="toc"><span class="num" aria-hidden="true">08</span><span>An order of work on a browser budget</span></a></li>
+        </ol>
+      </nav>
+      <div class="prose">
 <div class="section-head"><p class="section-label">01</p><h2 id="why-forest-shade-goes-black"><a class="anchor" href="#why-forest-shade-goes-black">Why forest shade goes black</a></h2></div>
 <p>A cast shadow is the absence of one light. What a shadowed pixel shows is everything else:
 the sky&#39;s diffuse light, its reflection, bounce light, and in foliage the light that comes
@@ -782,6 +854,35 @@ small plants out of the casters. Measure: this is the step most likely to cost m
 </ol>
 <p>Lowering the shadow darkness belongs nowhere on the list for clear weather. If the shade is too
 dark after steps 2 and 3, a term is missing or duplicated.</p>
+      </div>
+      <section class="keep-reading" aria-labelledby="next-reads">
+        <h2 id="next-reads" class="section-label">Keep reading</h2>
+        <p class="series-name">Rendering a browser forest · 7 parts</p>
+        <ol class="series-parts">
+          <li><a href="/research/floating-props-on-procedural-terrain" data-visits-event="next-floating-props-on-procedural-terrain">Why props float on procedural terrain</a></li>
+          <li><a href="/research/no-visible-pop-in" data-visits-event="next-no-visible-pop-in">No visible pop-in: dissolving a streamed forest</a></li>
+          <li><a href="/research/grass-and-trail-realism" data-visits-event="next-grass-and-trail-realism">Grass, wind and trails in a browser meadow</a></li>
+          <li><a href="/research/grass-fullness-without-thinning" data-visits-event="next-grass-fullness-without-thinning">Grass fullness without thinning the field</a></li>
+          <li><a href="/research/ground-fog-without-the-wall" data-visits-event="next-ground-fog-without-the-wall">Volumetric ground fog without the sprite wall</a></li>
+          <li><a href="/research/rock-on-steep-terrain-shape-it-cover-it-or-skin-it" data-visits-event="next-rock-on-steep-terrain-shape-it-cover-it-or-skin-it">Rock on steep terrain: shape it, cover it, or skin it</a></li>
+          <li aria-current="true"><span>Soft shade, bark and moss for browser forests</span></li>
+        </ol>
+        <ul class="doc-list next-list" role="list">
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" data-visits-event="next-a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2">A painted look over a photoreal render: WebGPU against WebGL2</a></h3>
+            <p class="doc-meta">11 min read</p>
+            <p class="doc-desc">Laying a painted look, a stroke filter and a palette grade, over a physically based browser render, and the four places WebGPU and WebGL2 part ways doing it.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" data-visits-event="next-scene-depth-for-a-post-process-webgpu-vs-webgl2">Scene depth for a post process: WebGPU against WebGL2</a></h3>
+            <p class="doc-meta">16 min read</p>
+            <p class="doc-desc">Getting per-pixel scene depth to a post process on WebGPU and WebGL2, and the six places the two APIs part ways, from shader uniformity to a lost GPU.</p>
+          </li>
+        </ul>
+        <p class="play-line"><a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
+        <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS) or <a class="external" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">csarko.log</a>.</p>
+      </section>
+      <div class="prose">
 <div class="section-head" data-read-end><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <ol class="references">
 <li id="ref-1"><span class="ref-num">[1]</span><div>Epic Games, &quot;Shading Models in Unreal Engine,&quot; Unreal Engine Documentation. Accessed: Oct. 13, 2026. [Online]. Available: <a class="external" href="https://dev.epicgames.com/documentation/en-us/unreal-engine/shading-models-in-unreal-engine" target="_blank" rel="noopener">https://dev.epicgames.com/documentation/en-us/unreal-engine/shading-models-in-unreal-engine</a></div></li>
@@ -809,7 +910,6 @@ dark after steps 2 and 3, a term is missing or duplicated.</p>
 <li id="ref-23"><span class="ref-num">[23]</span><div>ambientCG, &quot;License,&quot; ambientCG Documentation. Accessed: Oct. 13, 2026. [Online]. Available: <a class="external" href="https://docs.ambientcg.com/license/" target="_blank" rel="noopener">https://docs.ambientcg.com/license/</a></div></li>
 <li id="ref-24"><span class="ref-num">[24]</span><div>cgbookcase, &quot;Bark textures,&quot; cgbookcase. Accessed: Oct. 13, 2026. [Online]. Available: <a class="external" href="https://www.cgbookcase.com/textures/?category=Bark" target="_blank" rel="noopener">https://www.cgbookcase.com/textures/?category=Bark</a></div></li>
 </ol>
-
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
@@ -817,6 +917,11 @@ dark after steps 2 and 3, a term is missing or duplicated.</p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
+      <nav class="afterward" aria-label="Read next">
+        <a class="next" href="/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" data-visits-event="end-a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2"><span class="section-label">Read next</span><span>A painted look over a photoreal render: WebGPU against WebGL2 <span aria-hidden="true">→</span></span></a>
+        <a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        <a href="/research">All research</a>
+      </nav>
     </main>
   </div>
 
@@ -829,6 +934,7 @@ dark after steps 2 and 3, a term is missing or duplicated.</p>
   <!-- generated:analytics -->
   <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
+  <script defer src="/assets/reading.c3e27b33.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

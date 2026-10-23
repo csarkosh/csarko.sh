@@ -20,6 +20,7 @@
   <meta property="article:published_time" content="2026-10-22" />
   <meta property="article:modified_time" content="2026-10-22" />
   <meta property="article:author" content="https://csarko.sh/" />
+  <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="23 Horror Sequences Broken Down Shot by Shot" />
   <meta name="twitter:description" content="Shot-by-shot breakdowns of 23 horror sequences, from the Psycho shower to Weapons: sizes, moves, durations, cut points, and what each one teaches." />
@@ -127,6 +128,8 @@
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
+      /* A doc's body text: brighter than --muted, which reads as grey at length (2026-10-23). */
+      --prose: #c9ced9;
       --faint: #7d8597;
       /* Content warnings only. Yellow to stand apart from the teal accent. */
       --warning: #f5c451;
@@ -156,6 +159,7 @@
         --border-strong: rgba(10, 11, 14, 0.16);
         --text: #12151c;
         --muted: #4a5263;
+        --prose: #2b3240;
         --faint: #5f677a;
         --warning: #8a6100;
         --accent: #0a735f;
@@ -347,6 +351,57 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .doc-page .prose { font-size: 17px; }
+    .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
+    .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
+    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .rail a[aria-current] { color: var(--text); }
+    .rail a[aria-current] .num { color: var(--accent); }
+    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .toc .section-label { margin: 0 0 6px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
+    .toc a:hover { color: var(--accent); }
+    .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    .figure { margin: 32px 0; }
+    .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+    /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
+    .figure img { max-height: 80vh; object-fit: contain; }
+    .figure figcaption { margin-top: 10px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+    .prose blockquote strong:first-child { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted var(--faint); text-underline-offset: 4px; }
+    .term:hover, .term:focus-visible { text-decoration-color: var(--accent); }
+    .term-def { max-width: min(92vw, 420px); margin: auto; padding: 16px 18px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.55; }
+    .term-def::backdrop { background: var(--nav-bg); }
+    /* A wide table or code block that scrolls sideways shows a shade at the edge it can scroll to. */
+    .scroll { background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
+      var(--surface); }
+    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
+    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
+    .series-name { margin: 0 0 8px; font-weight: 600; }
+    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
+    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
+    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
+    .next-list .card { padding: 16px 18px; background: var(--bg); }
+    .next-list .doc-title { font-size: 1.05rem; }
+    .next-list .doc-desc { font-size: 14.5px; }
+    .play-line { margin: 20px 0 0; }
+    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background .15s ease; }
+    .play:hover { background: var(--accent-hover); }
+    .play svg { width: 14px; height: 14px; }
+    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
+    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color .15s ease; }
+    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
+    .afterward .next:hover { border-color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -382,25 +437,39 @@
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-        <li><a href="#how-to-read-the-breakdowns"><span class="num" aria-hidden="true">01</span><span>How to read the breakdowns</span></a></li>
-        <li><a href="#classic-sequences-hollywood-and-britain-1942-1980"><span class="num" aria-hidden="true">02</span><span>Classic sequences: Hollywood and Britain, 1942-1980</span></a></li>
-        <li><a href="#japanese-and-korean-sequences-1998-2016"><span class="num" aria-hidden="true">03</span><span>Japanese and Korean sequences, 1998-2016</span></a></li>
-        <li><a href="#modern-sequences-2013-2025"><span class="num" aria-hidden="true">04</span><span>Modern sequences, 2013-2025</span></a></li>
-        <li><a href="#disputed-facts-and-gaps-in-these-breakdowns"><span class="num" aria-hidden="true">05</span><span>Disputed facts and gaps in these breakdowns</span></a></li>
-        <li><a href="#sources"><span class="num" aria-hidden="true">06</span><span>Sources</span></a></li>
+        <li><a href="#how-to-read-the-breakdowns" data-visits-event="toc-rail"><span class="num" aria-hidden="true">01</span><span>How to read the breakdowns</span></a></li>
+        <li><a href="#classic-sequences-hollywood-and-britain-1942-1980" data-visits-event="toc-rail"><span class="num" aria-hidden="true">02</span><span>Classic sequences: Hollywood and Britain, 1942-1980</span></a></li>
+        <li><a href="#japanese-and-korean-sequences-1998-2016" data-visits-event="toc-rail"><span class="num" aria-hidden="true">03</span><span>Japanese and Korean sequences, 1998-2016</span></a></li>
+        <li><a href="#modern-sequences-2013-2025" data-visits-event="toc-rail"><span class="num" aria-hidden="true">04</span><span>Modern sequences, 2013-2025</span></a></li>
+        <li><a href="#disputed-facts-and-gaps-in-these-breakdowns" data-visits-event="toc-rail"><span class="num" aria-hidden="true">05</span><span>Disputed facts and gaps in these breakdowns</span></a></li>
+        <li><a href="#sources" data-visits-event="toc-rail"><span class="num" aria-hidden="true">06</span><span>Sources</span></a></li>
       </ol>
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
         <p class="eyebrow">Oct 22, 2026</p>
         <h1>23 Horror Sequences Broken Down Shot by Shot</h1>
+        <p class="lead">Shot-by-shot breakdowns of 23 horror sequences, from the Psycho shower to Weapons: sizes, moves, durations, cut points, and what each one teaches.</p>
         <ul class="tags">
-          <li>44 min read</li>
+          <li>36 min read</li>
         </ul>
+        <p class="series-line">Part 5 of 5 in <strong>Horror craft</strong> · Previous: <a href="/research/horror-cinematography-shot-by-shot" data-visits-event="series-horror-cinematography-shot-by-shot">How Horror Directors Build Dread Shot by Shot</a></p>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> How are the most studied set pieces in horror cinema actually built, shot by shot, and what does each one show about how a director, cinematographer and editor move an audience from calm to dread to shock and back?</p>
-<p><strong>Short answer:</strong> Across 23 sequences from Psycho (1960) to Weapons (2025), the same construction recurs under very different surfaces. A long, quiet lead-in gives the audience something to watch (a drain, a cigarette, a children&#39;s song, a spoon in a teacup) and usually gives it more knowledge than the character on screen; the camera then holds a wide or deep frame long enough for the viewer to find the threat first, or follows a character so smoothly that the move itself becomes the menace. The release is short and rationed: a sub-second cut to a close-up on a loud sound, a change of scale from very wide to very close, or a hard cut from a long moving shot to something motionless. Shock is assembled in the cut rather than shown (the knife and the body in separate shots, the decapitation heard and not seen, the hammer blow behind a sliding door), and the aftermath is held long enough to let the audience absorb it. Sound carries what the frame withholds: footsteps that stop, a bus&#39;s air brakes, a tricycle crossing from carpet to parquet, thunder matched to each room. Where a production account exists, these choices are documented decisions, not accidents, and several were made against the wishes of producers, composers or the first cut. The principles these sequences illustrate, the directors&#39; stated intentions and the evidence for what works are set out on the companion page, <a href="/research/horror-cinematography-shot-by-shot">How Horror Directors Build Dread Shot by Shot</a>.</p>
+<p><strong>Short answer:</strong> Across 23 sequences from Psycho (1960) to Weapons (2025), the same construction recurs under very different surfaces. A long, quiet lead-in gives the audience something to watch (a drain, a cigarette, a children&#39;s song, a spoon in a teacup) and usually gives it more knowledge than the character on screen; the camera then holds a wide or deep frame long enough for the viewer to find the threat first, or follows a character so smoothly that the move itself becomes the menace. The release is short and rationed: a sub-second cut to a close-up on a loud sound, a change of scale from very wide to very close, or a hard cut from a long moving shot to something motionless. Shock is assembled in the cut rather than shown (the knife and the body in separate shots, the decapitation heard and not seen, the hammer blow behind a sliding door), and the aftermath is held long enough to let the audience absorb it. Sound carries what the frame withholds: footsteps that stop, a bus&#39;s air brakes, a tricycle crossing from carpet to parquet, thunder matched to each room. Where a production account exists, these choices are documented decisions, not accidents, and several were made against the wishes of producers, composers or the first cut. The principles these sequences illustrate, the directors&#39; stated intentions and the evidence for what works are set out on the companion page, <a href="/research/horror-cinematography-shot-by-shot" data-visits-event="doc-horror-cinematography-shot-by-shot">How Horror Directors Build Dread Shot by Shot</a>.</p>
+      </div>
+      <nav class="toc" aria-label="In this doc">
+        <p class="section-label">In this doc</p>
+        <ol>
+          <li><a href="#how-to-read-the-breakdowns" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>How to read the breakdowns</span></a></li>
+          <li><a href="#classic-sequences-hollywood-and-britain-1942-1980" data-visits-event="toc"><span class="num" aria-hidden="true">02</span><span>Classic sequences: Hollywood and Britain, 1942-1980</span></a></li>
+          <li><a href="#japanese-and-korean-sequences-1998-2016" data-visits-event="toc"><span class="num" aria-hidden="true">03</span><span>Japanese and Korean sequences, 1998-2016</span></a></li>
+          <li><a href="#modern-sequences-2013-2025" data-visits-event="toc"><span class="num" aria-hidden="true">04</span><span>Modern sequences, 2013-2025</span></a></li>
+          <li><a href="#disputed-facts-and-gaps-in-these-breakdowns" data-visits-event="toc"><span class="num" aria-hidden="true">05</span><span>Disputed facts and gaps in these breakdowns</span></a></li>
+        </ol>
+      </nav>
+      <div class="prose">
 <div class="section-head"><p class="section-label">01</p><h2 id="how-to-read-the-breakdowns"><a class="anchor" href="#how-to-read-the-breakdowns">How to read the breakdowns</a></h2></div>
 <p>Each breakdown has three parts. <strong>Documented</strong> collects what can be sourced: a production account, storyboard, filmmaker or editor interview, or a published shot analysis, with the disputes between sources flagged where they exist. <strong>Reconstruction</strong> is a beat-by-beat account of the sequence as it plays, with approximate shot sizes and durations that have not been checked against a timed viewing; treat every duration in a reconstruction as an estimate, and treat any beat marked unverified as a viewer&#39;s recollection rather than a fact. <strong>What it teaches</strong> states the transferable craft point in one or two sentences. The sequences are grouped by era: the classic set pieces from Hollywood and Britain, the Japanese and Korean sequences, and the modern ones from 2013 onwards. The closing section lists the facts about these sequences that remain disputed or unconfirmed.</p>
 <div class="section-head"><p class="section-label">02</p><h2 id="classic-sequences-hollywood-and-britain-1942-1980"><a class="anchor" href="#classic-sequences-hollywood-and-britain-1942-1980">Classic sequences: Hollywood and Britain, 1942-1980</a></h2></div>
@@ -501,6 +570,32 @@
 <p>Several of the best-known production facts behind these sequences are contested in print and should be quoted with care. The Psycho shower scene&#39;s counts vary by source (70 or 78 setups; 50, 52 or 60 cuts; &quot;forty-five seconds&quot; for the stabbing against &quot;some three minutes&quot; for the scene), and its authorship is disputed between Saul Bass&#39;s later claims and the denials of Janet Leigh and Hilton Green; the claim that the knife never touches flesh is contradicted by frame analysis <a class="cite" href="#ref-1">[1]</a>, <a class="cite" href="#ref-4">[4]</a>, <a class="cite" href="#ref-5">[5]</a>. The number and placement of The Exorcist&#39;s subliminal demon frames differ between sources, and no authoritative frame log exists <a class="cite" href="#ref-41">[41]</a>. The Cat People bus is credited variously to Robson, Tourneur and Lewton <a class="cite" href="#ref-18">[18]</a>, <a class="cite" href="#ref-13">[13]</a>. The jungle-gym crows in The Birds are described both as mostly real and as mostly cut-outs <a class="cite" href="#ref-9">[9]</a>, <a class="cite" href="#ref-12">[12]</a>. The Alien chestburster was not a single take but two runs with several cameras <a class="cite" href="#ref-30">[30]</a>. Whether anything appears in It Follows&#39; hallway pan is disputed between a published review and viewers&#39; recollection <a class="cite" href="#ref-77">[77]</a>. The account that Sadako&#39;s walk was filmed backwards and reversed appears in every secondary source and in no filmmaker statement that could be reached; it should be reported as widely repeated rather than confirmed <a class="cite" href="#ref-50">[50]</a>, <a class="cite" href="#ref-51">[51]</a>. Ring&#39;s budget is given as $1.5 million by one source and $1.2 million by Nakata himself <a class="cite" href="#ref-48">[48]</a>, <a class="cite" href="#ref-96">[96]</a>. The Chain Saw dinner is &quot;more than 26 hours&quot; in the fullest account and &quot;27 hours&quot; in circulation <a class="cite" href="#ref-42">[42]</a>. Weapons&#39; lens package is listed as Canon K-35 primes in one account and &quot;K35 zooms&quot; in another <a class="cite" href="#ref-89">[89]</a>, <a class="cite" href="#ref-91">[91]</a>.</p>
 <p>Some of the documented material rests on secondary relays. Nakata&#39;s statement that he watched The Haunting at least five times is relayed through an encyclopaedia summary of a newspaper interview <a class="cite" href="#ref-48">[48]</a>. Hitchcock&#39;s own explanation of the Arbogast overhead, in the Truffaut interviews, is cited only second hand. The claim that butoh dancers helped choreograph The Witch&#39;s coven appears in a single review and is unverified <a class="cite" href="#ref-74">[74]</a>.</p>
 <p>The gaps are specific. No primary statement by Nakata or Hayashi on how the television scene was staged, or by Na, Hong or Kim Sun-min on why The Wailing&#39;s rituals are cross-cut, was reached; Korean- and Japanese-language cinematography press would be the next place to look. No account of how Hereditary&#39;s car scene was shot or cut, how The Witch&#39;s hut or sabbath were rigged, how Jaws&#39; dolly zoom was executed, or how Alien&#39;s air-shaft hunt was lit was found, so those passages are reconstruction only. Flanagan&#39;s reasoning about what the Hill House long take does to a viewer, as opposed to how it was made, is not in any reachable text. Every reconstruction&#39;s shot sizes and durations await a timed viewing.</p>
+      </div>
+      <section class="keep-reading" aria-labelledby="next-reads">
+        <h2 id="next-reads" class="section-label">Keep reading</h2>
+        <p class="series-name">Horror craft · 5 parts</p>
+        <ol class="series-parts">
+          <li><a href="/research/opening-a-game-like-a-film" data-visits-event="next-opening-a-game-like-a-film">Opening a game like a film: sixty seconds of drive, radio and dread</a></li>
+          <li><a href="/research/building-dread-toward-a-late-reveal" data-visits-event="next-building-dread-toward-a-late-reveal">Building dread toward a late reveal in horror games</a></li>
+          <li><a href="/research/how-alan-wake-introduces-its-darkness" data-visits-event="next-how-alan-wake-introduces-its-darkness">How Alan Wake introduces its darkness</a></li>
+          <li><a href="/research/horror-cinematography-shot-by-shot" data-visits-event="next-horror-cinematography-shot-by-shot">How Horror Directors Build Dread Shot by Shot</a></li>
+          <li aria-current="true"><span>23 Horror Sequences Broken Down Shot by Shot</span></li>
+        </ol>
+        <ul class="doc-list next-list" role="list">
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/synthetic-voices-for-a-radio-call" data-visits-event="next-synthetic-voices-for-a-radio-call">Synthetic voices for a radio call</a></h3>
+            <p class="doc-meta">12 min read</p>
+            <p class="doc-desc">Text-to-speech for a game&#39;s radio call in 2026: the models that take direction, what gives them away, the radio chain, licences, cost, cloning your own voice.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/reverse-engineering-an-ai-horror-short" data-visits-event="next-reverse-engineering-an-ai-horror-short">Reverse engineering an AI horror short</a></h3>
+            <p class="doc-meta">9 min read</p>
+            <p class="doc-desc">A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe.</p>
+          </li>
+        </ul>
+        <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS) or <a class="external" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">csarko.log</a>.</p>
+      </section>
+      <div class="prose">
 <div class="section-head" data-read-end><p class="section-label">06</p><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <ol class="references">
 <li id="ref-1"><span class="ref-num">[1]</span><div>Wikipedia contributors, &quot;Psycho shower scene,&quot; Wikipedia. Accessed: Oct. 22, 2026. [Online]. Available: <a class="external" href="https://en.wikipedia.org/wiki/Psycho_shower_scene" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/Psycho_shower_scene</a></div></li>
@@ -600,7 +695,6 @@
 <li id="ref-95"><span class="ref-num">[95]</span><div>J. Walden, &quot;How the terrifying sounds of The Haunting of Hill House were made,&quot; A Sound Effect, Oct. 30, 2018. Accessed: Oct. 22, 2026. [Online]. Available: <a class="external" href="https://www.asoundeffect.com/the-haunting-of-hill-house-sound/" target="_blank" rel="noopener">https://www.asoundeffect.com/the-haunting-of-hill-house-sound/</a></div></li>
 <li id="ref-96"><span class="ref-num">[96]</span><div>Tokyo Weekender, &quot;Hideo Nakata interview,&quot; Tokyo Weekender, May 2013. Accessed: Oct. 22, 2026. [Online]. Available: <a class="external" href="https://www.tokyoweekender.com/2013/05/hideo-nakata-interview/" target="_blank" rel="noopener">https://www.tokyoweekender.com/2013/05/hideo-nakata-interview/</a></div></li>
 </ol>
-
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
@@ -608,6 +702,10 @@
         <p>Senior software engineer leading distributed systems and AI products.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
+      <nav class="afterward" aria-label="Read next">
+        <a class="next" href="/research/synthetic-voices-for-a-radio-call" data-visits-event="end-synthetic-voices-for-a-radio-call"><span class="section-label">Read next</span><span>Synthetic voices for a radio call <span aria-hidden="true">→</span></span></a>
+        <a href="/research">All research</a>
+      </nav>
     </main>
   </div>
 
@@ -620,6 +718,7 @@
   <!-- generated:analytics -->
   <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
+  <script defer src="/assets/reading.c3e27b33.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

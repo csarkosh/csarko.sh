@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 570" width="440" height="570" role="img" aria-labelledby="t">
+  <title id="t">Architecture C, the 3D-first episode build: character and set, shots, render in Cycles, an optional open-weight surface pass, gate, audio and cut, degrade, lock</title>
+  <style>
+    text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 14px; fill: #e8eaf0; }
+    .title { font-size: 16px; font-weight: 600; }
+    .h { font-weight: 600; }
+    .sec { fill: #a0a8b8; font-size: 13px; }
+    .box { fill: none; stroke: #3a3f4b; stroke-width: 1.5; }
+    .hot { fill: none; stroke: #7dd3c0; stroke-width: 1.5; stroke-dasharray: 6 4; }
+    .hh { fill: #7dd3c0; }
+    .ln { stroke: #a0a8b8; stroke-width: 1.5; }
+    .hd { fill: #a0a8b8; }
+    @media (prefers-color-scheme: light) {
+      text { fill: #12151c; }
+      .sec { fill: #4a5263; }
+      .box { stroke: #c9ced6; }
+      .hot { stroke: #0a735f; }
+      .hh { fill: #0a735f; }
+      .ln { stroke: #4a5263; }
+      .hd { fill: #4a5263; }
+    }
+  </style>
+  <text class="title" x="16" y="26">Architecture C: the 3D-first episode build</text>
+  <rect class="box" x="16" y="44" width="408" height="50" rx="8"/>
+  <text class="h" x="30" y="65">Character and set</text>
+  <text class="sec" x="30" y="84">a rigged head and body; a .blend house with a light rig</text>
+  <line class="ln" x1="220" y1="94" x2="220" y2="104"/>
+  <polygon class="hd" points="215,103 225,103 220,110"/>
+  <rect class="box" x="16" y="110" width="408" height="50" rx="8"/>
+  <text class="h" x="30" y="131">Shots</text>
+  <text class="sec" x="30" y="150">a shot list as data: camera, lens, hold time, light, pose</text>
+  <line class="ln" x1="220" y1="160" x2="220" y2="170"/>
+  <polygon class="hd" points="215,169 225,169 220,176"/>
+  <rect class="box" x="16" y="176" width="408" height="50" rx="8"/>
+  <text class="h" x="30" y="197">Render in Cycles</text>
+  <text class="sec" x="30" y="216">beauty, Z, normal and segmentation, with a fixed seed</text>
+  <line class="ln" x1="220" y1="226" x2="220" y2="236"/>
+  <polygon class="hd" points="215,235 225,235 220,242"/>
+  <rect class="hot" x="16" y="242" width="408" height="50" rx="8"/>
+  <text class="h hh" x="30" y="263">Surface pass, an optional upgrade</text>
+  <text class="sec" x="30" y="282">open-weight, under depth and identity lock</text>
+  <line class="ln" x1="220" y1="292" x2="220" y2="302"/>
+  <polygon class="hd" points="215,301 225,301 220,308"/>
+  <rect class="box" x="16" y="308" width="408" height="50" rx="8"/>
+  <text class="h" x="30" y="329">Gate</text>
+  <text class="sec" x="30" y="348">ArcFace, DINO, landmark ratios, depth-edge IoU</text>
+  <line class="ln" x1="220" y1="358" x2="220" y2="368"/>
+  <polygon class="hd" points="215,367 225,367 220,374"/>
+  <rect class="box" x="16" y="374" width="408" height="50" rx="8"/>
+  <text class="h" x="30" y="395">Audio and cut</text>
+  <text class="sec" x="30" y="414">narration, Foley, captions; ffmpeg under bitexact</text>
+  <line class="ln" x1="220" y1="424" x2="220" y2="434"/>
+  <polygon class="hd" points="215,433 225,433 220,440"/>
+  <rect class="box" x="16" y="440" width="408" height="50" rx="8"/>
+  <text class="h" x="30" y="461">Degrade</text>
+  <text class="sec" x="30" y="480">one ntsc-rs pass over the whole cut</text>
+  <line class="ln" x1="220" y1="490" x2="220" y2="500"/>
+  <polygon class="hd" points="215,499 225,499 220,506"/>
+  <rect class="box" x="16" y="506" width="408" height="50" rx="8"/>
+  <text class="h" x="30" y="527">Lock</text>
+  <text class="sec" x="30" y="546">film.lock.json: every hash, seed and accepted take</text>
+</svg>

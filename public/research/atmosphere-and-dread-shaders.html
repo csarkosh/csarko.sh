@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Atmosphere and dread shaders for horror games · Cyrus Sarkosh</title>
-  <meta name="description" content="How atmospheric and horror games use height fog, grading, film grain and dread-driven effects, and what Babylon.js can do at 60 fps in a browser." />
+  <meta name="description" content="Atmospheric games stack height fog, a neutral tone map and grade, and a film finish on photoreal light; Babylon.js does nearly all of it at 60 fps." />
   <link rel="canonical" href="https://csarko.sh/research/atmosphere-and-dread-shaders" />
 
   <meta property="og:type" content="article" />
@@ -12,19 +12,20 @@
   <meta property="og:locale" content="en_US" />
   <meta property="og:url" content="https://csarko.sh/research/atmosphere-and-dread-shaders" />
   <meta property="og:title" content="Atmosphere and dread shaders for horror games" />
-  <meta property="og:description" content="How atmospheric and horror games use height fog, grading, film grain and dread-driven effects, and what Babylon.js can do at 60 fps in a browser." />
-  <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
+  <meta property="og:description" content="Atmospheric games stack height fog, a neutral tone map and grade, and a film finish on photoreal light; Babylon.js does nearly all of it at 60 fps." />
+  <meta property="og:image" content="https://csarko.sh/research/figures/atmosphere-and-dread-shaders-forest.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
+  <meta property="og:image:alt" content="Atmosphere and dread shaders for horror games" />
   <meta property="article:published_time" content="2026-09-15" />
-  <meta property="article:modified_time" content="2026-10-18" />
+  <meta property="article:modified_time" content="2026-10-23" />
   <meta property="article:author" content="https://csarko.sh/" />
+  <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Atmosphere and dread shaders for horror games" />
-  <meta name="twitter:description" content="How atmospheric and horror games use height fog, grading, film grain and dread-driven effects, and what Babylon.js can do at 60 fps in a browser." />
-  <meta name="twitter:image" content="https://csarko.sh/og-image.jpg" />
-  <meta name="twitter:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
+  <meta name="twitter:description" content="Atmospheric games stack height fog, a neutral tone map and grade, and a film finish on photoreal light; Babylon.js does nearly all of it at 60 fps." />
+  <meta name="twitter:image" content="https://csarko.sh/research/figures/atmosphere-and-dread-shaders-forest.jpg" />
+  <meta name="twitter:image:alt" content="Atmosphere and dread shaders for horror games" />
 
   <meta name="color-scheme" content="dark light" />
   <meta name="theme-color" content="#0a0b0e" media="(prefers-color-scheme: dark)" />
@@ -46,14 +47,14 @@
       "@type": "TechArticle",
       "@id": "https://csarko.sh/research/atmosphere-and-dread-shaders#article",
       "headline": "Atmosphere and dread shaders for horror games",
-      "description": "How atmospheric and horror games use height fog, grading, film grain and dread-driven effects, and what Babylon.js can do at 60 fps in a browser.",
+      "description": "Atmospheric games stack height fog, a neutral tone map and grade, and a film finish on photoreal light; Babylon.js does nearly all of it at 60 fps.",
       "datePublished": "2026-09-15",
-      "dateModified": "2026-10-18",
+      "dateModified": "2026-10-23",
       "url": "https://csarko.sh/research/atmosphere-and-dread-shaders",
       "mainEntityOfPage": "https://csarko.sh/research/atmosphere-and-dread-shaders",
-      "wordCount": 4194,
+      "wordCount": 4451,
       "inLanguage": "en",
-      "image": "https://csarko.sh/og-image.jpg",
+      "image": "https://csarko.sh/research/figures/atmosphere-and-dread-shaders-forest.jpg",
       "author": {
         "@type": "Person",
         "@id": "https://csarko.sh/#person",
@@ -130,6 +131,8 @@
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
+      /* A doc's body text: brighter than --muted, which reads as grey at length (2026-10-23). */
+      --prose: #c9ced9;
       --faint: #7d8597;
       /* Content warnings only. Yellow to stand apart from the teal accent. */
       --warning: #f5c451;
@@ -159,6 +162,7 @@
         --border-strong: rgba(10, 11, 14, 0.16);
         --text: #12151c;
         --muted: #4a5263;
+        --prose: #2b3240;
         --faint: #5f677a;
         --warning: #8a6100;
         --accent: #0a735f;
@@ -350,6 +354,57 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .doc-page .prose { font-size: 17px; }
+    .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
+    .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
+    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .rail a[aria-current] { color: var(--text); }
+    .rail a[aria-current] .num { color: var(--accent); }
+    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .toc .section-label { margin: 0 0 6px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
+    .toc a:hover { color: var(--accent); }
+    .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    .figure { margin: 32px 0; }
+    .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+    /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
+    .figure img { max-height: 80vh; object-fit: contain; }
+    .figure figcaption { margin-top: 10px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+    .prose blockquote strong:first-child { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted var(--faint); text-underline-offset: 4px; }
+    .term:hover, .term:focus-visible { text-decoration-color: var(--accent); }
+    .term-def { max-width: min(92vw, 420px); margin: auto; padding: 16px 18px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.55; }
+    .term-def::backdrop { background: var(--nav-bg); }
+    /* A wide table or code block that scrolls sideways shows a shade at the edge it can scroll to. */
+    .scroll { background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
+      var(--surface); }
+    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
+    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
+    .series-name { margin: 0 0 8px; font-weight: 600; }
+    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
+    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
+    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
+    .next-list .card { padding: 16px 18px; background: var(--bg); }
+    .next-list .doc-title { font-size: 1.05rem; }
+    .next-list .doc-desc { font-size: 14.5px; }
+    .play-line { margin: 20px 0 0; }
+    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background .15s ease; }
+    .play:hover { background: var(--accent-hover); }
+    .play svg { width: 14px; height: 14px; }
+    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
+    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color .15s ease; }
+    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
+    .afterward .next:hover { border-color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -385,45 +440,90 @@
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-        <li><a href="#what-the-shaders-did-before-the-restyle"><span class="num" aria-hidden="true">01</span><span>What the shaders did before the restyle</span></a></li>
-        <li><a href="#photoreal-but-atmospheric"><span class="num" aria-hidden="true">02</span><span>Photoreal, but atmospheric</span></a></li>
-        <li><a href="#horror-effects-tied-to-a-state-or-a-mechanic"><span class="num" aria-hidden="true">03</span><span>Horror effects tied to a state or a mechanic</span></a></li>
-        <li><a href="#what-babylon-js-9-18-can-do"><span class="num" aria-hidden="true">04</span><span>What Babylon.js 9.18 can do</span></a></li>
-        <li><a href="#candidate-directions"><span class="num" aria-hidden="true">05</span><span>Candidate directions</span></a></li>
-        <li><a href="#sources"><span>Sources</span></a></li>
+        <li><a href="#before-the-restyle-the-look-was-one-outline-pass-and-a-grade" data-visits-event="toc-rail"><span class="num" aria-hidden="true">01</span><span>Before the restyle, the look was one outline pass and a grade</span></a></li>
+        <li><a href="#photoreal-games-get-their-mood-from-fog-a-grade-and-film" data-visits-event="toc-rail"><span class="num" aria-hidden="true">02</span><span>Photoreal games get their mood from fog, a grade and film</span></a></li>
+        <li><a href="#horror-that-lasts-drives-event-rate-not-screen-warp" data-visits-event="toc-rail"><span class="num" aria-hidden="true">03</span><span>Horror that lasts drives event rate, not screen warp</span></a></li>
+        <li><a href="#babylon-js-9-18-does-nearly-all-of-it-three-pieces-are-custom" data-visits-event="toc-rail"><span class="num" aria-hidden="true">04</span><span>Babylon.js 9.18 does nearly all of it; three pieces are custom</span></a></li>
+        <li><a href="#four-directions-led-by-a-photographed-dusk" data-visits-event="toc-rail"><span class="num" aria-hidden="true">05</span><span>Four directions, led by a photographed dusk</span></a></li>
+        <li><a href="#sources" data-visits-event="toc-rail"><span>Sources</span></a></li>
       </ol>
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Sep 15, 2026 · Updated Oct 18, 2026</p>
+        <p class="eyebrow">Sep 15, 2026 · Updated Oct 23, 2026</p>
         <h1>Atmosphere and dread shaders for horror games</h1>
+        <p class="lead">Atmospheric games stack height fog, a neutral tone map and grade, and a film finish on photoreal light; Babylon.js does nearly all of it at 60 fps.</p>
         <ul class="tags">
-          <li>18 min read</li>
+          <li>17 min read</li>
           <li><a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-15-atmosphere-and-dread-shaders.md" target="_blank" rel="noopener">Also on GitHub</a></li>
         </ul>
+        <p class="series-line">Part 2 of 4 in <strong>Day Hike&#39;s look</strong> · Next: <a href="/research/photorealistic-water-rendering" data-visits-event="series-photorealistic-water-rendering">Photorealistic water rendering: lakes and oceans</a></p>
       </header>
       <div class="prose">
-<p><strong>Question:</strong> the first pass (<a href="/research/stylized-shader-looks">Stylized shader looks</a>)
-surveyed eight ways games build a look out of shaders. The direction chosen from it is
+<p><strong>Question:</strong> the first pass (<a href="/research/stylized-shader-looks" data-visits-event="doc-stylized-shader-looks">Stylized shader looks</a>)
+surveyed eight ways games build a look out of shaders, and the direction chosen from it is
 <em>closer to photoreal, but artsy and atmospheric</em>, keeping the game&#39;s ominous, eerie theme,
-with the two horror families (imitating a camera or recording medium, and shaders tied to
-the mechanics) carrying the horror layer. What, concretely, do the games that achieve that
-look do, what do state-driven horror effects look like when they are done well, and which
-of it can Babylon.js 9.18 do at 60 fps in a browser?</p>
-<p><strong>Short answer:</strong> every photoreal-but-atmospheric game in the survey makes the same core
-move: a physically based sky and lighting underneath, an <strong>artist-controlled height fog</strong>
-on top of it, a <strong>neutral tone map followed by a grade</strong>, and a <strong>film treatment</strong> (halation,
+with two horror families (imitating a camera or recording medium, and shaders tied to the
+mechanics) carrying the horror layer. What do the games that achieve that look actually do,
+and what do state-driven horror effects look like when they are done well? Which of it can
+Babylon.js 9.18 do at 60 fps in a browser?</p>
+<p><strong>Short answer:</strong> every photoreal-but-atmospheric game in the survey puts the same three
+layers on a physically based sky and lighting: an artist-controlled
+<button type="button" class="term" popovertarget="term-1">height fog</button><span class="term-def" id="term-1" popover role="note">Fog that is thickest near the ground and thins with height, instead of one even density everywhere.</span>,
+a neutral <button type="button" class="term" popovertarget="term-2">tone map</button><span class="term-def" id="term-2" popover role="note">The step that squeezes a render&#39;s unlimited brightness into the range a screen can show; ACES and AgX are two of them.</span>
+followed by a grade, and a film treatment
+(<button type="button" class="term" popovertarget="term-3">halation</button><span class="term-def" id="term-3" popover role="note">The red-orange glow film shows around bright lights: a threshold, a wide blur, a tint and a screen blend, not bloom.</span>,
 luminance-weighted grain, dither) so a dark, foggy image survives 8-bit output. The horror
-games that hold up over hours drive <strong>event rate and severity</strong> from their dread state and
-keep screen distortion as the smallest channel, confined to the edge of the frame. Almost
-all of it is cheap in Babylon: a handful of single-pass post-processes and per-material
-plugin terms. The three things Babylon does not give for free are a fog hook (the fog line
-has to be regex-replaced in the PBR fragment), an AgX or filmic tone map (a custom pass),
-and a volumetric headlamp cone (a cone mesh, not the built-in god-ray pass).</p>
+games that hold up over hours drive how often and how badly events land from their dread
+state, and keep screen distortion the smallest channel, at the edge of the frame. Almost all
+of it is cheap in Babylon; a fog hook, an AgX tone map and a headlamp cone are the three
+pieces it does not give for free.</p>
+<figure class="figure">
+<!-- generated:figure:atmosphere-and-dread-shaders/forest -->
+<picture>
+<source type="image/avif" srcset="/assets/fig-atmosphere-and-dread-shaders-forest-480.60c09b4f.avif 480w, /assets/fig-atmosphere-and-dread-shaders-forest-720.12964a6b.avif 720w, /assets/fig-atmosphere-and-dread-shaders-forest-960.db47953c.avif 960w" sizes="(max-width: 768px) calc(100vw - 48px), 720px" />
+<source type="image/webp" srcset="/assets/fig-atmosphere-and-dread-shaders-forest-480.3f9b854f.webp 480w, /assets/fig-atmosphere-and-dread-shaders-forest-720.2bc2b6cc.webp 720w, /assets/fig-atmosphere-and-dread-shaders-forest-960.4986aae6.webp 960w" sizes="(max-width: 768px) calc(100vw - 48px), 720px" />
+<img src="/assets/fig-atmosphere-and-dread-shaders-forest-720.053bbbb0.jpg" srcset="/assets/fig-atmosphere-and-dread-shaders-forest-480.bec84766.jpg 480w, /assets/fig-atmosphere-and-dread-shaders-forest-720.053bbbb0.jpg 720w, /assets/fig-atmosphere-and-dread-shaders-forest-960.138f7ac9.jpg 960w" sizes="(max-width: 768px) calc(100vw - 48px), 720px" width="1200" height="675" alt="A dim fern slope under big trunks in Day Hike&#39;s old wood, the far trunks fading into fog" decoding="async" />
+</picture>
+<!-- /generated:figure:atmosphere-and-dread-shaders/forest -->
+<figcaption>Day Hike after its restyle, which took most of direction 1 in section 5: a closed-form height fog tinted toward the sun, an AgX tone map, then one grade pass ending in a triangular dither, so the far trunks fade into grey mist without banding.</figcaption>
+</figure>
+<p><strong>In numbers:</strong></p>
+<ul>
+<li><strong>Three layers on physically based light:</strong> height fog, a neutral tone map then a grade,
+and a film treatment, in every photoreal-but-atmospheric game surveyed
+(<a href="#photoreal-games-get-their-mood-from-fog-a-grade-and-film">section 2</a>).</li>
+<li><strong>About 0.5 ms</strong> on async compute buys Ghost of Tsushima its 128×64×64 froxel haze
+(<a href="#photoreal-games-get-their-mood-from-fog-a-grade-and-film">section 2</a>).</li>
+<li><strong>Half an LSB of triangular noise,</strong> added after the sRGB transform, is what lets INSIDE&#39;s
+dark, foggy image hold in 8-bit
+(<a href="#photoreal-games-get-their-mood-from-fog-a-grade-and-film">section 2</a>).</li>
+<li><strong>Rate and severity, not amplitude:</strong> Slender: The Arrival&#39;s proximity static was lost once
+encounters became frequent, so the dread scalar should set how often and how badly events
+land (<a href="#horror-that-lasts-drives-event-rate-not-screen-warp">section 3</a>).</li>
+<li><strong>Three gaps in Babylon.js 9.18:</strong> no fog hook in the PBR shader, no AgX or filmic tone map,
+and no volume for an eye-mounted headlamp; the rest is single-pass post-processes and
+per-material plugin terms
+(<a href="#babylon-js-9-18-does-nearly-all-of-it-three-pieces-are-custom">section 4</a>).</li>
+<li><strong>About 2 ms at 1440p</strong> is the budget for the whole post chain
+(<a href="#babylon-js-9-18-does-nearly-all-of-it-three-pieces-are-custom">section 4</a>).</li>
+</ul>
 <p>Every game links to its Steam page, or to its official site or Wikipedia where it is not
 on Steam. Sources are listed at the end; anything marked <em>unverified</em> was reported
 second-hand and the primary source could not be opened.</p>
-<div class="section-head"><p class="section-label">01</p><h2 id="what-the-shaders-did-before-the-restyle"><a class="anchor" href="#what-the-shaders-did-before-the-restyle">What the shaders did before the restyle</a></h2></div>
+      </div>
+      <nav class="toc" aria-label="In this doc">
+        <p class="section-label">In this doc</p>
+        <ol>
+          <li><a href="#before-the-restyle-the-look-was-one-outline-pass-and-a-grade" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>Before the restyle, the look was one outline pass and a grade</span></a></li>
+          <li><a href="#photoreal-games-get-their-mood-from-fog-a-grade-and-film" data-visits-event="toc"><span class="num" aria-hidden="true">02</span><span>Photoreal games get their mood from fog, a grade and film</span></a></li>
+          <li><a href="#horror-that-lasts-drives-event-rate-not-screen-warp" data-visits-event="toc"><span class="num" aria-hidden="true">03</span><span>Horror that lasts drives event rate, not screen warp</span></a></li>
+          <li><a href="#babylon-js-9-18-does-nearly-all-of-it-three-pieces-are-custom" data-visits-event="toc"><span class="num" aria-hidden="true">04</span><span>Babylon.js 9.18 does nearly all of it; three pieces are custom</span></a></li>
+          <li><a href="#four-directions-led-by-a-photographed-dusk" data-visits-event="toc"><span class="num" aria-hidden="true">05</span><span>Four directions, led by a photographed dusk</span></a></li>
+        </ol>
+      </nav>
+      <div class="prose">
+<div class="section-head"><p class="section-label">01</p><h2 id="before-the-restyle-the-look-was-one-outline-pass-and-a-grade"><a class="anchor" href="#before-the-restyle-the-look-was-one-outline-pass-and-a-grade">Before the restyle, the look was one outline pass and a grade</a></h2></div>
 <p>The pre-restyle &quot;style&quot; was thinner than it looked. All of it was in <code>client/src/game/</code>:</p>
 <ul>
 <li><code>lighting.ts</code>: a <code>SkyMaterial</code> sky captured to a reflection probe for image-based
@@ -452,7 +552,7 @@ only thing that expressed the &quot;etched&quot; identity, so the look was one p
 grade, which is why it did not read as distinct; and <code>quality.ts</code> declared an <code>ssao</code> flag
 for the high tier that nothing in <code>client/src</code> consumed. The restyle retired the outline
 pass, <code>/style</code> and the <code>ssao</code> flag.</p>
-<div class="section-head"><p class="section-label">02</p><h2 id="photoreal-but-atmospheric"><a class="anchor" href="#photoreal-but-atmospheric">Photoreal, but atmospheric</a></h2></div>
+<div class="section-head"><p class="section-label">02</p><h2 id="photoreal-games-get-their-mood-from-fog-a-grade-and-film"><a class="anchor" href="#photoreal-games-get-their-mood-from-fog-a-grade-and-film">Photoreal games get their mood from fog, a grade and film</a></h2></div>
 <h3 id="the-games"><a class="anchor" href="#the-games">The games</a></h3>
 <ul>
 <li><a class="external" href="https://store.steampowered.com/app/1850570/" target="_blank" rel="noopener">Death Stranding</a>: the clearest precedent.
@@ -512,7 +612,7 @@ creature; identity from the contrast between areas.</li>
 </ul>
 <p>Dropped after a look: Kholat, Sons of the Forest and Stray (no technique sources) and The
 Long Dark (painterly; belongs to the first pass).</p>
-<h3 id="the-pattern"><a class="anchor" href="#the-pattern">The pattern</a></h3>
+<h3 id="the-pattern-five-moves"><a class="anchor" href="#the-pattern-five-moves">The pattern: five moves</a></h3>
 <ol>
 <li><strong>Height fog with a sun-direction colour, instead of one fog colour.</strong> Iñigo Quílez&#39;s
 closed-form height fog <a class="cite" href="#ref-9">[9]</a> and a <code>mix(shadowColour, sunColour, pow(dot(view, sun), k))</code>
@@ -534,7 +634,7 @@ inscatter term as the fog so motes glow in shafts and die in shadow.</li>
 so silhouettes can be pushed dark against lit mist; a forward PBR equivalent is a plugin
 term that scales ambient down near the fog horizon.</li>
 </ol>
-<div class="section-head"><p class="section-label">03</p><h2 id="horror-effects-tied-to-a-state-or-a-mechanic"><a class="anchor" href="#horror-effects-tied-to-a-state-or-a-mechanic">Horror effects tied to a state or a mechanic</a></h2></div>
+<div class="section-head"><p class="section-label">03</p><h2 id="horror-that-lasts-drives-event-rate-not-screen-warp"><a class="anchor" href="#horror-that-lasts-drives-event-rate-not-screen-warp">Horror that lasts drives event rate, not screen warp</a></h2></div>
 <h3 id="the-games-1"><a class="anchor" href="#the-games-1">The games</a></h3>
 <ul>
 <li><a class="external" href="https://store.steampowered.com/app/1029880/" target="_blank" rel="noopener">Alan Wake</a>: enemies wear a shroud of
@@ -667,7 +767,7 @@ off <a class="cite" href="#ref-21">[21]</a>.</li>
 guideline&#39;s): the scalar that drives the peripheral warp and the aberration also passes
 through the single &quot;unsettling effects&quot; slider, which scales each toward zero, while the
 audio cues and the authored lighting steps, which move no camera, stay as they are.</p>
-<div class="section-head"><p class="section-label">04</p><h2 id="what-babylon-js-9-18-can-do"><a class="anchor" href="#what-babylon-js-9-18-can-do">What Babylon.js 9.18 can do</a></h2></div>
+<div class="section-head"><p class="section-label">04</p><h2 id="babylon-js-9-18-does-nearly-all-of-it-three-pieces-are-custom"><a class="anchor" href="#babylon-js-9-18-does-nearly-all-of-it-three-pieces-are-custom">Babylon.js 9.18 does nearly all of it; three pieces are custom</a></h2></div>
 <p>Checked against the installed <code>@babylonjs/core</code> 9.18.0 source <a class="cite" href="#ref-23">[23]</a>, not the docs alone <a class="cite" href="#ref-24">[24]</a>, <a class="cite" href="#ref-25">[25]</a>, <a class="cite" href="#ref-26">[26]</a>.</p>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
 <thead>
@@ -785,7 +885,7 @@ real. All three traps are already recorded in the shader files.</li>
 throws, so on WebGPU a GLSL-only plugin breaks material creation unless the material
 forces GLSL. The restyle stays on WebGL2.</li>
 </ul>
-<div class="section-head"><p class="section-label">05</p><h2 id="candidate-directions"><a class="anchor" href="#candidate-directions">Candidate directions</a></h2></div>
+<div class="section-head"><p class="section-label">05</p><h2 id="four-directions-led-by-a-photographed-dusk"><a class="anchor" href="#four-directions-led-by-a-photographed-dusk">Four directions, led by a photographed dusk</a></h2></div>
 <p>These are not decisions. They are the shapes the evidence supports.</p>
 <ol>
 <li><strong>&quot;Photographed dusk.&quot;</strong> Keep the PBR world; replace the identity layer with height
@@ -804,6 +904,37 @@ exposure, vignette, grain and mist.</li>
 <li><strong>A letterbox</strong> as both a film cue and a resolution rebate, if the post chain needs the
 headroom.</li>
 </ol>
+      </div>
+      <section class="keep-reading" aria-labelledby="next-reads">
+        <h2 id="next-reads" class="section-label">Keep reading</h2>
+        <p class="series-name">Day Hike&#39;s look · 4 parts</p>
+        <ol class="series-parts">
+          <li><a href="/research/stylized-shader-looks" data-visits-event="next-stylized-shader-looks">Stylized shader looks: how games build a visual identity</a></li>
+          <li aria-current="true"><span>Atmosphere and dread shaders for horror games</span></li>
+          <li><a href="/research/photorealistic-water-rendering" data-visits-event="next-photorealistic-water-rendering">Photorealistic water rendering: lakes and oceans</a></li>
+          <li><a href="/research/photorealistic-rain-for-browser-games" data-visits-event="next-photorealistic-rain-for-browser-games">Photorealistic rain for browser games</a></li>
+        </ol>
+        <ul class="doc-list next-list" role="list">
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/ground-fog-without-the-wall" data-visits-event="next-ground-fog-without-the-wall">Volumetric ground fog without the sprite wall</a></h3>
+            <p class="doc-meta">9 min read</p>
+            <p class="doc-desc">How AAA engines draw ground fog as a frustum-aligned volume instead of sprites, what it costs, where it ghosts, and which of it a browser game can run.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" data-visits-event="next-a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2">A painted look over a photoreal render: WebGPU against WebGL2</a></h3>
+            <p class="doc-meta">11 min read</p>
+            <p class="doc-desc">Laying a painted look, a stroke filter and a palette grade, over a physically based browser render, and the four places WebGPU and WebGL2 part ways doing it.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/building-dread-toward-a-late-reveal" data-visits-event="next-building-dread-toward-a-late-reveal">Building dread toward a late reveal in horror games</a></h3>
+            <p class="doc-meta">10 min read</p>
+            <p class="doc-desc">How horror games make a late monster reveal feel earned, with traces, sound and pacing, and what to do with a mechanic that punishes looking at the monster.</p>
+          </li>
+        </ul>
+        <p class="play-line"><a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
+        <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS) or <a class="external" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">csarko.log</a>.</p>
+      </section>
+      <div class="prose">
 <div class="section-head" data-read-end><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <ol class="references">
 <li id="ref-1"><span class="ref-num">[1]</span><div>G. de Carpentier and K. Ishiyama, &quot;Decima Engine: Advances in Lighting and AA,&quot; presented at SIGGRAPH course Advances in Real-Time Rendering in Games, Los Angeles, CA, USA, Aug. 2017. Accessed: Sep. 23, 2026. [Online]. Available: <a class="external" href="https://advances.realtimerendering.com/s2017/index.html" target="_blank" rel="noopener">https://advances.realtimerendering.com/s2017/index.html</a></div></li>
@@ -835,7 +966,6 @@ headroom.</li>
 <li id="ref-27"><span class="ref-num">[27]</span><div>Khronos Group, &quot;Khronos PBR Neutral Tone Mapper,&quot; KhronosGroup/ToneMapping, GitHub. Accessed: Sep. 23, 2026. [Online]. Available: <a class="external" href="https://github.com/KhronosGroup/ToneMapping/blob/main/PBR_Neutral/README.md" target="_blank" rel="noopener">https://github.com/KhronosGroup/ToneMapping/blob/main/PBR_Neutral/README.md</a></div></li>
 <li id="ref-28"><span class="ref-num">[28]</span><div>J. Chapman, &quot;&#39;Good Enough&#39; Volumetrics for Spotlights,&quot; john-chapman-graphics, Jan. 2013. Accessed: Sep. 23, 2026. [Online]. Available: <a class="external" href="https://john-chapman-graphics.blogspot.com/2013/01/good-enough-volumetrics-for-spotlights.html" target="_blank" rel="noopener">https://john-chapman-graphics.blogspot.com/2013/01/good-enough-volumetrics-for-spotlights.html</a></div></li>
 </ol>
-
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
@@ -843,6 +973,11 @@ headroom.</li>
         <p>Senior software engineer leading distributed systems and AI products.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
+      <nav class="afterward" aria-label="Read next">
+        <a class="next" href="/research/photorealistic-water-rendering" data-visits-event="end-photorealistic-water-rendering"><span class="section-label">Read next</span><span>Photorealistic water rendering: lakes and oceans <span aria-hidden="true">→</span></span></a>
+        <a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        <a href="/research">All research</a>
+      </nav>
     </main>
   </div>
 
@@ -855,6 +990,7 @@ headroom.</li>
   <!-- generated:analytics -->
   <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
+  <script defer src="/assets/reading.c3e27b33.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

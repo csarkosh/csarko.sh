@@ -20,6 +20,7 @@
   <meta property="article:published_time" content="2026-09-30" />
   <meta property="article:modified_time" content="2026-09-30" />
   <meta property="article:author" content="https://csarko.sh/" />
+  <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Photorealistic rain for browser games" />
   <meta name="twitter:description" content="A survey of how AAA games render rain, from streaks to wet ground, splashes, canopy drip and lens drops, and how to build it on a browser frame budget." />
@@ -127,6 +128,8 @@
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
+      /* A doc's body text: brighter than --muted, which reads as grey at length (2026-10-23). */
+      --prose: #c9ced9;
       --faint: #7d8597;
       /* Content warnings only. Yellow to stand apart from the teal accent. */
       --warning: #f5c451;
@@ -156,6 +159,7 @@
         --border-strong: rgba(10, 11, 14, 0.16);
         --text: #12151c;
         --muted: #4a5263;
+        --prose: #2b3240;
         --faint: #5f677a;
         --warning: #8a6100;
         --accent: #0a735f;
@@ -347,6 +351,57 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .doc-page .prose { font-size: 17px; }
+    .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
+    .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
+    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .rail a[aria-current] { color: var(--text); }
+    .rail a[aria-current] .num { color: var(--accent); }
+    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .toc .section-label { margin: 0 0 6px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
+    .toc a:hover { color: var(--accent); }
+    .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    .figure { margin: 32px 0; }
+    .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+    /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
+    .figure img { max-height: 80vh; object-fit: contain; }
+    .figure figcaption { margin-top: 10px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+    .prose blockquote strong:first-child { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted var(--faint); text-underline-offset: 4px; }
+    .term:hover, .term:focus-visible { text-decoration-color: var(--accent); }
+    .term-def { max-width: min(92vw, 420px); margin: auto; padding: 16px 18px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.55; }
+    .term-def::backdrop { background: var(--nav-bg); }
+    /* A wide table or code block that scrolls sideways shows a shade at the edge it can scroll to. */
+    .scroll { background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
+      var(--surface); }
+    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
+    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
+    .series-name { margin: 0 0 8px; font-weight: 600; }
+    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
+    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
+    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
+    .next-list .card { padding: 16px 18px; background: var(--bg); }
+    .next-list .doc-title { font-size: 1.05rem; }
+    .next-list .doc-desc { font-size: 14.5px; }
+    .play-line { margin: 20px 0 0; }
+    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background .15s ease; }
+    .play:hover { background: var(--accent-hover); }
+    .play svg { width: 14px; height: 14px; }
+    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
+    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color .15s ease; }
+    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
+    .afterward .next:hover { border-color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -382,24 +437,26 @@
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-        <li><a href="#what-real-rain-looks-and-sounds-like"><span class="num" aria-hidden="true">01</span><span>What real rain looks and sounds like</span></a></li>
-        <li><a href="#what-makes-a-player-believe-the-world-is-raining"><span class="num" aria-hidden="true">02</span><span>What makes a player believe the world is raining</span></a></li>
-        <li><a href="#how-shipped-games-draw-the-falling-rain"><span class="num" aria-hidden="true">03</span><span>How shipped games draw the falling rain</span></a></li>
-        <li><a href="#the-wet-world"><span class="num" aria-hidden="true">04</span><span>The wet world</span></a></li>
-        <li><a href="#rain-on-the-lens"><span class="num" aria-hidden="true">05</span><span>Rain on the lens</span></a></li>
-        <li><a href="#what-a-browser-can-run"><span class="num" aria-hidden="true">06</span><span>What a browser can run</span></a></li>
-        <li><a href="#a-rain-system-for-a-browser-frame-budget-layer-by-layer"><span class="num" aria-hidden="true">07</span><span>A rain system for a browser frame budget, layer by layer</span></a></li>
-        <li><a href="#what-nobody-has-measured"><span class="num" aria-hidden="true">08</span><span>What nobody has measured</span></a></li>
-        <li><a href="#sources"><span class="num" aria-hidden="true">09</span><span>Sources</span></a></li>
+        <li><a href="#what-real-rain-looks-and-sounds-like" data-visits-event="toc-rail"><span class="num" aria-hidden="true">01</span><span>What real rain looks and sounds like</span></a></li>
+        <li><a href="#what-makes-a-player-believe-the-world-is-raining" data-visits-event="toc-rail"><span class="num" aria-hidden="true">02</span><span>What makes a player believe the world is raining</span></a></li>
+        <li><a href="#how-shipped-games-draw-the-falling-rain" data-visits-event="toc-rail"><span class="num" aria-hidden="true">03</span><span>How shipped games draw the falling rain</span></a></li>
+        <li><a href="#the-wet-world" data-visits-event="toc-rail"><span class="num" aria-hidden="true">04</span><span>The wet world</span></a></li>
+        <li><a href="#rain-on-the-lens" data-visits-event="toc-rail"><span class="num" aria-hidden="true">05</span><span>Rain on the lens</span></a></li>
+        <li><a href="#what-a-browser-can-run" data-visits-event="toc-rail"><span class="num" aria-hidden="true">06</span><span>What a browser can run</span></a></li>
+        <li><a href="#a-rain-system-for-a-browser-frame-budget-layer-by-layer" data-visits-event="toc-rail"><span class="num" aria-hidden="true">07</span><span>A rain system for a browser frame budget, layer by layer</span></a></li>
+        <li><a href="#what-nobody-has-measured" data-visits-event="toc-rail"><span class="num" aria-hidden="true">08</span><span>What nobody has measured</span></a></li>
+        <li><a href="#sources" data-visits-event="toc-rail"><span class="num" aria-hidden="true">09</span><span>Sources</span></a></li>
       </ol>
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
         <p class="eyebrow">Sep 30, 2026</p>
         <h1>Photorealistic rain for browser games</h1>
+        <p class="lead">A survey of how AAA games render rain, from streaks to wet ground, splashes, canopy drip and lens drops, and how to build it on a browser frame budget.</p>
         <ul class="tags">
-          <li>84 min read</li>
+          <li>72 min read</li>
         </ul>
+        <p class="series-line">Part 4 of 4 in <strong>Day Hike&#39;s look</strong> · Previous: <a href="/research/photorealistic-water-rendering" data-visits-event="series-photorealistic-water-rendering">Photorealistic water rendering: lakes and oceans</a></p>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> How do AAA games simulate photorealistic rain, in all its parts: the falling
@@ -454,13 +511,28 @@ on a coast and forest like Washington&#39;s Olympic Peninsula, whose rain today 
 box that follows the camera. It is public at <a class="external" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener">game-dayhike</a>
 and playable at <a class="external" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener">games.csarko.sh/dayhike</a>; its
 renderer&#39;s two paths are described in
-<a href="/research/webgpu-vs-webgl2">WebGPU vs WebGL2: what changes and what does not</a>, its
-post-processing in <a href="/research/atmosphere-and-dread-shaders">Atmosphere and dread shaders</a>,
+<a href="/research/webgpu-vs-webgl2" data-visits-event="doc-webgpu-vs-webgl2">WebGPU vs WebGL2: what changes and what does not</a>, its
+post-processing in <a href="/research/atmosphere-and-dread-shaders" data-visits-event="doc-atmosphere-and-dread-shaders">Atmosphere and dread shaders</a>,
 and its water in
-<a href="/research/photorealistic-water-rendering">Photorealistic water rendering: lakes and oceans</a>.
+<a href="/research/photorealistic-water-rendering" data-visits-event="doc-photorealistic-water-rendering">Photorealistic water rendering: lakes and oceans</a>.
 Numbers given without a source are our own arithmetic from the sources beside them: the
 Marshall-Palmer drop-size distribution, the Gunn-Kinzer fall speeds, the Koschmieder
 visibility law, and the published frame-time tables.</p>
+      </div>
+      <nav class="toc" aria-label="In this doc">
+        <p class="section-label">In this doc</p>
+        <ol>
+          <li><a href="#what-real-rain-looks-and-sounds-like" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>What real rain looks and sounds like</span></a></li>
+          <li><a href="#what-makes-a-player-believe-the-world-is-raining" data-visits-event="toc"><span class="num" aria-hidden="true">02</span><span>What makes a player believe the world is raining</span></a></li>
+          <li><a href="#how-shipped-games-draw-the-falling-rain" data-visits-event="toc"><span class="num" aria-hidden="true">03</span><span>How shipped games draw the falling rain</span></a></li>
+          <li><a href="#the-wet-world" data-visits-event="toc"><span class="num" aria-hidden="true">04</span><span>The wet world</span></a></li>
+          <li><a href="#rain-on-the-lens" data-visits-event="toc"><span class="num" aria-hidden="true">05</span><span>Rain on the lens</span></a></li>
+          <li><a href="#what-a-browser-can-run" data-visits-event="toc"><span class="num" aria-hidden="true">06</span><span>What a browser can run</span></a></li>
+          <li><a href="#a-rain-system-for-a-browser-frame-budget-layer-by-layer" data-visits-event="toc"><span class="num" aria-hidden="true">07</span><span>A rain system for a browser frame budget, layer by layer</span></a></li>
+          <li><a href="#what-nobody-has-measured" data-visits-event="toc"><span class="num" aria-hidden="true">08</span><span>What nobody has measured</span></a></li>
+        </ol>
+      </nav>
+      <div class="prose">
 <div class="section-head"><p class="section-label">01</p><h2 id="what-real-rain-looks-and-sounds-like"><a class="anchor" href="#what-real-rain-looks-and-sounds-like">What real rain looks and sounds like</a></h2></div>
 <h3 id="1-1-drops-sizes-counts-and-rates"><a class="anchor" href="#1-1-drops-sizes-counts-and-rates">1.1 Drops: sizes, counts and rates</a></h3>
 <p>Rain is drops of 0.5 mm and larger; drizzle is drops smaller than 0.5 mm, &quot;very close
@@ -1831,6 +1903,32 @@ literature is the quantitative basis for the sound. And no shipped game describe
 source we could open, how it occludes rain under a dense canopy, how it animates leaves
 under rain, or how it draws rain on open water; those three are where a forest game is on
 its own.</p>
+      </div>
+      <section class="keep-reading" aria-labelledby="next-reads">
+        <h2 id="next-reads" class="section-label">Keep reading</h2>
+        <p class="series-name">Day Hike&#39;s look · 4 parts</p>
+        <ol class="series-parts">
+          <li><a href="/research/stylized-shader-looks" data-visits-event="next-stylized-shader-looks">Stylized shader looks: how games build a visual identity</a></li>
+          <li><a href="/research/atmosphere-and-dread-shaders" data-visits-event="next-atmosphere-and-dread-shaders">Atmosphere and dread shaders for horror games</a></li>
+          <li><a href="/research/photorealistic-water-rendering" data-visits-event="next-photorealistic-water-rendering">Photorealistic water rendering: lakes and oceans</a></li>
+          <li aria-current="true"><span>Photorealistic rain for browser games</span></li>
+        </ol>
+        <ul class="doc-list next-list" role="list">
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" data-visits-event="next-a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2">A painted look over a photoreal render: WebGPU against WebGL2</a></h3>
+            <p class="doc-meta">11 min read</p>
+            <p class="doc-desc">Laying a painted look, a stroke filter and a palette grade, over a physically based browser render, and the four places WebGPU and WebGL2 part ways doing it.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" data-visits-event="next-scene-depth-for-a-post-process-webgpu-vs-webgl2">Scene depth for a post process: WebGPU against WebGL2</a></h3>
+            <p class="doc-meta">16 min read</p>
+            <p class="doc-desc">Getting per-pixel scene depth to a post process on WebGPU and WebGL2, and the six places the two APIs part ways, from shader uniformity to a lost GPU.</p>
+          </li>
+        </ul>
+        <p class="play-line"><a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
+        <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS) or <a class="external" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">csarko.log</a>.</p>
+      </section>
+      <div class="prose">
 <div class="section-head" data-read-end><p class="section-label">09</p><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <ol class="references">
 <li id="ref-1"><span class="ref-num">[1]</span><div>Office of the Federal Coordinator for Meteorological Services and Supporting Research, <em>Federal Meteorological Handbook No. 1: Surface Weather Observations and Reports</em>, FCM-H1-1995, Washington, DC, USA, Dec. 1995. Accessed: Sep. 30, 2026. [Online]. Available: <a class="external" href="https://marrella.aos.wisc.edu/aos452/fmh1.pdf" target="_blank" rel="noopener">https://marrella.aos.wisc.edu/aos452/fmh1.pdf</a></div></li>
@@ -1950,7 +2048,6 @@ its own.</p>
 <li id="ref-115"><span class="ref-num">[115]</span><div>Babylon.js Forum contributors, &quot;Post process depth of field: really that slow?,&quot; Babylon.js Forum. Accessed: Sep. 30, 2026. [Online]. Available: <a class="external" href="https://forum.babylonjs.com/t/post-process-depth-of-field-really-that-slow/32743" target="_blank" rel="noopener">https://forum.babylonjs.com/t/post-process-depth-of-field-really-that-slow/32743</a></div></li>
 <li id="ref-116"><span class="ref-num">[116]</span><div>Babylon.js Authors, &quot;Writing shaders for WebGPU in WGSL,&quot; Babylon.js Documentation, GitHub repository. Accessed: Sep. 30, 2026. [Online]. Available: <a class="external" href="https://raw.githubusercontent.com/BabylonJS/Documentation/master/content/setup/support/webGPU/webGPUWGSL.md" target="_blank" rel="noopener">https://raw.githubusercontent.com/BabylonJS/Documentation/master/content/setup/support/webGPU/webGPUWGSL.md</a></div></li>
 </ol>
-
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
@@ -1958,6 +2055,11 @@ its own.</p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
+      <nav class="afterward" aria-label="Read next">
+        <a class="next" href="/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" data-visits-event="end-a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2"><span class="section-label">Read next</span><span>A painted look over a photoreal render: WebGPU against WebGL2 <span aria-hidden="true">→</span></span></a>
+        <a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        <a href="/research">All research</a>
+      </nav>
     </main>
   </div>
 
@@ -1970,6 +2072,7 @@ its own.</p>
   <!-- generated:analytics -->
   <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
+  <script defer src="/assets/reading.c3e27b33.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

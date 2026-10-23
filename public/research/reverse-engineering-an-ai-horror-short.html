@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Reverse engineering an AI horror short · Cyrus Sarkosh</title>
-  <meta name="description" content="How a viral AI horror short was made, worked out from the pixels alone, then confirmed against the studio&#39;s own posts. With a recipe and a cost table." />
+  <meta name="description" content="A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe." />
   <link rel="canonical" href="https://csarko.sh/research/reverse-engineering-an-ai-horror-short" />
 
   <meta property="og:type" content="article" />
@@ -12,17 +12,18 @@
   <meta property="og:locale" content="en_US" />
   <meta property="og:url" content="https://csarko.sh/research/reverse-engineering-an-ai-horror-short" />
   <meta property="og:title" content="Reverse engineering an AI horror short" />
-  <meta property="og:description" content="How a viral AI horror short was made, worked out from the pixels alone, then confirmed against the studio&#39;s own posts. With a recipe and a cost table." />
+  <meta property="og:description" content="A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta property="article:published_time" content="2026-09-26" />
-  <meta property="article:modified_time" content="2026-09-26" />
+  <meta property="article:modified_time" content="2026-10-23" />
   <meta property="article:author" content="https://csarko.sh/" />
+  <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Reverse engineering an AI horror short" />
-  <meta name="twitter:description" content="How a viral AI horror short was made, worked out from the pixels alone, then confirmed against the studio&#39;s own posts. With a recipe and a cost table." />
+  <meta name="twitter:description" content="A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe." />
   <meta name="twitter:image" content="https://csarko.sh/og-image.jpg" />
   <meta name="twitter:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
 
@@ -46,12 +47,12 @@
       "@type": "TechArticle",
       "@id": "https://csarko.sh/research/reverse-engineering-an-ai-horror-short#article",
       "headline": "Reverse engineering an AI horror short",
-      "description": "How a viral AI horror short was made, worked out from the pixels alone, then confirmed against the studio's own posts. With a recipe and a cost table.",
+      "description": "A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe.",
       "datePublished": "2026-09-26",
-      "dateModified": "2026-09-26",
+      "dateModified": "2026-10-23",
       "url": "https://csarko.sh/research/reverse-engineering-an-ai-horror-short",
       "mainEntityOfPage": "https://csarko.sh/research/reverse-engineering-an-ai-horror-short",
-      "wordCount": 2112,
+      "wordCount": 2288,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -127,6 +128,8 @@
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
+      /* A doc's body text: brighter than --muted, which reads as grey at length (2026-10-23). */
+      --prose: #c9ced9;
       --faint: #7d8597;
       /* Content warnings only. Yellow to stand apart from the teal accent. */
       --warning: #f5c451;
@@ -156,6 +159,7 @@
         --border-strong: rgba(10, 11, 14, 0.16);
         --text: #12151c;
         --muted: #4a5263;
+        --prose: #2b3240;
         --faint: #5f677a;
         --warning: #8a6100;
         --accent: #0a735f;
@@ -347,6 +351,57 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .doc-page .prose { font-size: 17px; }
+    .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
+    .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
+    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .rail a[aria-current] { color: var(--text); }
+    .rail a[aria-current] .num { color: var(--accent); }
+    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .toc .section-label { margin: 0 0 6px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
+    .toc a:hover { color: var(--accent); }
+    .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    .figure { margin: 32px 0; }
+    .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+    /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
+    .figure img { max-height: 80vh; object-fit: contain; }
+    .figure figcaption { margin-top: 10px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+    .prose blockquote strong:first-child { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted var(--faint); text-underline-offset: 4px; }
+    .term:hover, .term:focus-visible { text-decoration-color: var(--accent); }
+    .term-def { max-width: min(92vw, 420px); margin: auto; padding: 16px 18px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.55; }
+    .term-def::backdrop { background: var(--nav-bg); }
+    /* A wide table or code block that scrolls sideways shows a shade at the edge it can scroll to. */
+    .scroll { background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
+      var(--surface); }
+    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
+    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
+    .series-name { margin: 0 0 8px; font-weight: 600; }
+    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
+    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
+    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
+    .next-list .card { padding: 16px 18px; background: var(--bg); }
+    .next-list .doc-title { font-size: 1.05rem; }
+    .next-list .doc-desc { font-size: 14.5px; }
+    .play-line { margin: 20px 0 0; }
+    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background .15s ease; }
+    .play:hover { background: var(--accent-hover); }
+    .play svg { width: 14px; height: 14px; }
+    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
+    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color .15s ease; }
+    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
+    .afterward .next:hover { border-color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -382,60 +437,78 @@
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-        <li><a href="#the-answer-in-five-lines"><span class="num" aria-hidden="true">00</span><span>The answer in five lines</span></a></li>
-        <li><a href="#what-the-short-is"><span class="num" aria-hidden="true">01</span><span>What the short is</span></a></li>
-        <li><a href="#what-the-pixels-say"><span class="num" aria-hidden="true">02</span><span>What the pixels say</span></a></li>
-        <li><a href="#what-the-studio-says-about-its-method"><span class="num" aria-hidden="true">03</span><span>What the studio says about its method</span></a></li>
-        <li><a href="#a-reproduction-recipe"><span class="num" aria-hidden="true">04</span><span>A reproduction recipe</span></a></li>
-        <li><a href="#what-could-not-be-verified"><span class="num" aria-hidden="true">05</span><span>What could not be verified</span></a></li>
-        <li><a href="#sources"><span class="num" aria-hidden="true">06</span><span>Sources</span></a></li>
+        <li><a href="#five-clips-and-a-title-card-from-an-xcvmind-anthology" data-visits-event="toc-rail"><span class="num" aria-hidden="true">01</span><span>Five clips and a title card, from an XCVmind anthology</span></a></li>
+        <li><a href="#the-pixels-prove-generation-and-a-24-fps-source-slowed-to-80" data-visits-event="toc-rail"><span class="num" aria-hidden="true">02</span><span>The pixels prove generation and a 24 fps source slowed to 80 %</span></a></li>
+        <li><a href="#the-studio-animates-stills-on-several-models-best-take-wins" data-visits-event="toc-rail"><span class="num" aria-hidden="true">03</span><span>The studio animates stills on several models, best take wins</span></a></li>
+        <li><a href="#a-14-10-recipe-nano-banana-pro-keyframes-veo-3-1-fast-motion" data-visits-event="toc-rail"><span class="num" aria-hidden="true">04</span><span>A $14.10 recipe: Nano Banana Pro keyframes, Veo 3.1 Fast motion</span></a></li>
+        <li><a href="#unverified-the-model-an-invisible-watermark-the-full-posts" data-visits-event="toc-rail"><span class="num" aria-hidden="true">05</span><span>Unverified: the model, an invisible watermark, the full posts</span></a></li>
+        <li><a href="#sources" data-visits-event="toc-rail"><span class="num" aria-hidden="true">06</span><span>Sources</span></a></li>
       </ol>
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Sep 26, 2026</p>
+        <p class="eyebrow">Sep 26, 2026 · Updated Oct 23, 2026</p>
         <h1>Reverse engineering an AI horror short</h1>
+        <p class="lead">A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe.</p>
         <ul class="tags">
           <li>9 min read</li>
         </ul>
+        <p class="series-line">Part 2 of 3 in <strong>AI short films</strong> · Next: <a href="/research/synthetic-voices-for-a-radio-call" data-visits-event="series-synthetic-voices-for-a-radio-call">Synthetic voices for a radio call</a></p>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> a 45 second vertical horror short turned up on Reddit with no credit: a grinning
 woman in a nightgown climbs out of a fifth floor window of a Soviet apartment block, runs across
 the courtyard, appears through the peephole, then climbs in through the living room window. Was it
 generated, with what, and how would someone make one just like it?</p>
-<p><strong>Short answer:</strong> it is an episode of a Russian AI anthology, &quot;Архив Аномалии&quot; (Archive of
-Anomaly) no. 18 part 5, by the two person studio XCVmind <a class="cite" href="#ref-1">[1]</a>. The pixels give the method away
-before the studio does: five image-to-video clips of 6 to 13 seconds, a shared character
-reference, native 24 fps sources slowed in a video editor, a grain overlay, two stock transitions
-and a title card. The studio&#39;s public posts confirm the shape of that workflow and name the
-models it rotates through: Hailuo, Kling, Midjourney Video, Sora 2 and Veo <a class="cite" href="#ref-2">[2]</a>, <a class="cite" href="#ref-3">[3]</a>. The exact
-model behind this episode cannot be read from the file, because Reddit&#39;s transcode strips every
-provenance tag; the studio sells per-scene breakdowns with prompts on a paid Telegram tier <a class="cite" href="#ref-4">[4]</a>.
-The same look is reproducible today on the Gemini API with Nano Banana Pro for keyframes and
-Veo 3.1 Fast for motion, for under $15 in generation per finished minute.</p>
-<p>This is a companion to <a href="/research/ai-short-film-generation">the September survey of consistent characters and sets in AI
+<p><strong>Short answer:</strong> yes, it was generated. It is episode 18 part 5 of &quot;Архив Аномалии&quot; (Archive of
+Anomaly), a Russian AI anthology by the two person studio XCVmind, made as five
+<button type="button" class="term" popovertarget="term-1">image-to-video</button><span class="term-def" id="term-1" popover role="note">A video model that takes a finished still and a prompt, and animates the scene from it.</span>
+clips from one shared character reference and finished in a video editor. The exact model cannot
+be read from the file, because
+<button type="button" class="term" popovertarget="term-2">Reddit&#39;s transcode</button><span class="term-def" id="term-2" popover role="note">Reddit&#39;s own re-encode of an uploaded video, which drops the original file&#39;s creation tags.</span>
+strips every provenance tag. The same look is reproducible today on the Gemini API, with Nano
+Banana Pro for keyframes and Veo 3.1 Fast for motion, for under $15 in generation per finished
+minute.</p>
+<figure class="figure">
+<!-- generated:figure:reverse-engineering-an-ai-horror-short/shots -->
+<img src="/assets/fig-reverse-engineering-an-ai-horror-short-shots.a5a6a28b.svg" width="440" height="440" alt="A timeline of the 45 second short: an establishing shot of 2.2 seconds, then four longer clips (window, courtyard, hallway to peephole, room) and a 3 second title card" decoding="async" />
+<!-- /generated:figure:reverse-engineering-an-ai-horror-short/shots -->
+<figcaption>The short as section 1 reconstructs it: five generated clips and a still title card. Four of the clips are 24 fps sources slowed to about 80 % on a 30 fps timeline.</figcaption>
+</figure>
+<p><strong>In numbers:</strong></p>
+<ul>
+<li><strong>Five clips of 2.2 to 13 seconds</strong> and a 3 second title card make up the 45 seconds
+(<a href="#five-clips-and-a-title-card-from-an-xcvmind-anthology">section 1</a>).</li>
+<li><strong>No provenance at all:</strong> no C2PA manifest, no XMP, zeroed creation dates and no encoder name
+but ffmpeg in Reddit&#39;s x264 re-encode
+(<a href="#five-clips-and-a-title-card-from-an-xcvmind-anthology">section 1</a>).</li>
+<li><strong>19 to 21 unique frames a second</strong> in four of the clips: 24 fps sources slowed to about 80 %,
+which fits Veo, Sora 2, Runway Gen-4, Seedance and Wan 2.5 better than Kling or Hailuo
+(<a href="#the-pixels-prove-generation-and-a-24-fps-source-slowed-to-80">section 2</a>).</li>
+<li><strong>Seven video models</strong> named by the studio over its channel&#39;s history, the best take winning
+each shot; its per-scene breakdowns with prompts are sold on a paid Telegram tier
+(<a href="#the-studio-animates-stills-on-several-models-best-take-wins">section 3</a>).</li>
+<li><strong>Around 5,000 rubles</strong> and up to dozens of hours per finished minute, by the studio&#39;s own
+account (<a href="#the-studio-animates-stills-on-several-models-best-take-wins">section 3</a>).</li>
+<li><strong>$14.10</strong> in generation for a 45 second reproduction on the Gemini API, at two takes per shot
+(<a href="#a-14-10-recipe-nano-banana-pro-keyframes-veo-3-1-fast-motion">section 4</a>).</li>
+</ul>
+<p>This is a companion to <a href="/research/ai-short-film-generation" data-visits-event="doc-ai-short-film-generation">the September survey of consistent characters and sets in AI
 film</a>. That doc asked whether a series could be locked; this
 one takes one real short apart to see what a working studio actually does.</p>
-<div class="section-head"><p class="section-label">00</p><h2 id="the-answer-in-five-lines"><a class="anchor" href="#the-answer-in-five-lines">The answer in five lines</a></h2></div>
-<ol>
-<li><strong>Generated, not shot.</strong> A formless white shape on the windowsill resolves into a face and a
-body over two seconds. Candles multiply and move within one continuous take. A door&#39;s lock
-hardware changes count as the camera approaches. None of that happens to a camcorder.</li>
-<li><strong>Image first, then motion.</strong> The studio says so in its own words: upload finished artwork,
-set a prompt, let the network animate the scene <a class="cite" href="#ref-2">[2]</a>. The blob-to-person opening is what
-image-to-video does when the still shows a curled figure and the prompt says she rises.</li>
-<li><strong>One character reference across five clips.</strong> Same face, hair and nightgown with the pink
-bow trim in every shot, including a fisheye close-up. Five independent prompts do not do that;
-a reference image fed to every generation does.</li>
-<li><strong>The editor did the rest.</strong> A 30 fps timeline, four of five clips slowed to roughly 80 %,
-a film grain overlay, an RGB scanline glitch and a whip-blur transition, vector title text, an
-ambience bed with no dialogue. All of it is a preset away in CapCut or DaVinci Resolve.</li>
-<li><strong>The model name is not in the file.</strong> Reddit re-encodes to x264 and drops C2PA, XMP and
-every creation tag. The clips carry no watermark. The frame cadence fits a 24 fps generator,
-which narrows the field but does not name one.</li>
-</ol>
-<div class="section-head"><p class="section-label">01</p><h2 id="what-the-short-is"><a class="anchor" href="#what-the-short-is">What the short is</a></h2></div>
+      </div>
+      <nav class="toc" aria-label="In this doc">
+        <p class="section-label">In this doc</p>
+        <ol>
+          <li><a href="#five-clips-and-a-title-card-from-an-xcvmind-anthology" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>Five clips and a title card, from an XCVmind anthology</span></a></li>
+          <li><a href="#the-pixels-prove-generation-and-a-24-fps-source-slowed-to-80" data-visits-event="toc"><span class="num" aria-hidden="true">02</span><span>The pixels prove generation and a 24 fps source slowed to 80 %</span></a></li>
+          <li><a href="#the-studio-animates-stills-on-several-models-best-take-wins" data-visits-event="toc"><span class="num" aria-hidden="true">03</span><span>The studio animates stills on several models, best take wins</span></a></li>
+          <li><a href="#a-14-10-recipe-nano-banana-pro-keyframes-veo-3-1-fast-motion" data-visits-event="toc"><span class="num" aria-hidden="true">04</span><span>A $14.10 recipe: Nano Banana Pro keyframes, Veo 3.1 Fast motion</span></a></li>
+          <li><a href="#unverified-the-model-an-invisible-watermark-the-full-posts" data-visits-event="toc"><span class="num" aria-hidden="true">05</span><span>Unverified: the model, an invisible watermark, the full posts</span></a></li>
+        </ol>
+      </nav>
+      <div class="prose">
+<div class="section-head"><p class="section-label">01</p><h2 id="five-clips-and-a-title-card-from-an-xcvmind-anthology"><a class="anchor" href="#five-clips-and-a-title-card-from-an-xcvmind-anthology">Five clips and a title card, from an XCVmind anthology</a></h2></div>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
 <thead>
 <tr>
@@ -490,12 +563,18 @@ manifest, no XMP, and no H.264 user data. That is what a Reddit copy of anything
 the absence proves nothing about the original export.</p>
 <p>A title card search found nothing. The YouTube link, once supplied, gave the real title:
 &quot;Архив Аномалии №018, часть 5&quot; on the XCVmind channel, uploaded about a week before this doc
-<a class="cite" href="#ref-1">[1]</a>. Episode 18 is a five part arc about a mimic entity that copies people, which is why the
+<a class="cite" href="#ref-1">[1]</a>. The studio&#39;s public posts confirm the shape of the workflow this doc reads from the pixels
+and name the models it rotates through: Hailuo, Kling, Midjourney Video, Sora 2 and Veo <a class="cite" href="#ref-2">[2]</a>, <a class="cite" href="#ref-3">[3]</a>.
+Episode 18 is a five part arc about a mimic entity that copies people, which is why the
 woman grins, climbs out of a window and turns up at the door <a class="cite" href="#ref-4">[4]</a>.</p>
-<div class="section-head"><p class="section-label">02</p><h2 id="what-the-pixels-say"><a class="anchor" href="#what-the-pixels-say">What the pixels say</a></h2></div>
+<div class="section-head"><p class="section-label">02</p><h2 id="the-pixels-prove-generation-and-a-24-fps-source-slowed-to-80"><a class="anchor" href="#the-pixels-prove-generation-and-a-24-fps-source-slowed-to-80">The pixels prove generation and a 24 fps source slowed to 80 %</a></h2></div>
 <p>The tells, strongest first. Each was checked on frames extracted at full resolution, on
 per-clip temporal variance maps (the standard deviation of every pixel across a clip, which
 exposes anything that stays still, such as a watermark), and on a frame difference trace.</p>
+<p>Three of them settle the first question on their own: a formless white shape on the windowsill
+resolves into a face and a body over two seconds, candles multiply and move within one continuous
+take, and a door&#39;s lock hardware changes count as the camera approaches. None of that happens to a
+camcorder.</p>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
 <thead>
 <tr>
@@ -545,6 +624,9 @@ exposes anything that stays still, such as a watermark), and on a frame differen
 <td>Either a long generation or an extend feature; the difference trace shows no cut or dissolve</td>
 </tr>
 </tbody></table></div>
+<p><strong>One character reference.</strong> The same face, hair and nightgown with the pink bow trim appear in
+every shot, including the fisheye close-up. Five independent prompts do not do that; a reference
+image fed to every generation does.</p>
 <p><strong>Frame cadence.</strong> Counting exactly repeated consecutive frames gives the source rate under the
 30 fps container:</p>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
@@ -573,19 +655,23 @@ exposes anything that stays still, such as a watermark), and on a frame differen
 </tbody></table></div>
 <p>A native 24 fps output fits Veo, Sora 2, Runway Gen-4, Seedance and Wan 2.5. Kling emits 30 fps
 and Hailuo 25 fps, so those would need a different slowdown to land at the same numbers; they are
-less likely, not excluded.</p>
+less likely, not excluded. The cadence narrows the field; it does not name a model.</p>
+<p><strong>The edit.</strong> A 30 fps timeline, four of the five clips slowed to roughly 80 %, a film grain
+overlay, two stock transitions (an RGB scanline glitch and a whip-blur), vector title text and an
+ambience bed with no dialogue. All of it is a preset away in CapCut or DaVinci Resolve.</p>
 <p><strong>Audio.</strong> A sound design bed with no dialogue; the low band shows no speech formants. The first
 4.5 seconds are a quieter drone that rolls off at 15 kHz, and everything after is broadband
 ambience with transients (footsteps, a door) that rolls off at 17 kHz, the AAC limit of Reddit&#39;s
 128 kbps re-encode. Two different sources, laid under each other in the edit.</p>
-<div class="section-head"><p class="section-label">03</p><h2 id="what-the-studio-says-about-its-method"><a class="anchor" href="#what-the-studio-says-about-its-method">What the studio says about its method</a></h2></div>
+<div class="section-head"><p class="section-label">03</p><h2 id="the-studio-animates-stills-on-several-models-best-take-wins"><a class="anchor" href="#the-studio-animates-stills-on-several-models-best-take-wins">The studio animates stills on several models, best take wins</a></h2></div>
 <p>XCVmind is an AI film studio co-founded by &quot;misterXCV&quot;. It runs the anthology on YouTube and
 TikTok, with a Telegram channel for the films and a second one for announcements and tips
 <a class="cite" href="#ref-1">[1]</a>, <a class="cite" href="#ref-2">[2]</a>, <a class="cite" href="#ref-3">[3]</a>, <a class="cite" href="#ref-4">[4]</a>. Read across those channels and the studio&#39;s profiles on iFilm, vc.ru,
 DTF and Pikabu <a class="cite" href="#ref-5">[5]</a>, <a class="cite" href="#ref-6">[6]</a>, <a class="cite" href="#ref-7">[7]</a>, <a class="cite" href="#ref-8">[8]</a>, the stated workflow is:</p>
 <ul>
 <li><strong>Image-to-video is the core method.</strong> Finished artwork goes in with a prompt and the video
-model animates the scene <a class="cite" href="#ref-2">[2]</a>.</li>
+model animates the scene <a class="cite" href="#ref-2">[2]</a>. The opening, where a shape on the sill becomes a person, is what
+image-to-video does when the still shows a curled figure and the prompt says she rises.</li>
 <li><strong>Several video models run in parallel</strong> and the best take wins per shot. Named over the
 channel&#39;s history: Hailuo (MiniMax), Kling including its Omni reference mode and its O1
 video editor, Midjourney Video, Sora 2, Veo 3, Grok Imagine and Seedance. The studio&#39;s
@@ -601,7 +687,7 @@ behind this episode <a class="cite" href="#ref-4">[4]</a>.</li>
 Sora app down in April 2026 and retired the Sora 2 API on 24 September 2026 <a class="cite" href="#ref-9">[9]</a>. Any Sora based
 recipe in the studio&#39;s older posts is now historical, and its current shots come from Kling,
 Veo, Hailuo or Seedance.</p>
-<div class="section-head"><p class="section-label">04</p><h2 id="a-reproduction-recipe"><a class="anchor" href="#a-reproduction-recipe">A reproduction recipe</a></h2></div>
+<div class="section-head"><p class="section-label">04</p><h2 id="a-14-10-recipe-nano-banana-pro-keyframes-veo-3-1-fast-motion"><a class="anchor" href="#a-14-10-recipe-nano-banana-pro-keyframes-veo-3-1-fast-motion">A $14.10 recipe: Nano Banana Pro keyframes, Veo 3.1 Fast motion</a></h2></div>
 <p>The studio&#39;s method, restated as steps, with the one stack that a single API key covers.</p>
 <ol>
 <li><strong>Beat sheet.</strong> Five or six beats of 5 to 12 seconds, one location idea per beat, told as
@@ -667,7 +753,7 @@ a start image plus up to three reference images for character consistency <a cla
 budget model for stills, Gemini 2.5 Flash Image, is deprecated with a shutdown on 2 October
 2026, so the Pro model is the one to build on <a class="cite" href="#ref-11">[11]</a>. Expect two to four hours per finished minute
 at first, most of it choosing takes.</p>
-<div class="section-head"><p class="section-label">05</p><h2 id="what-could-not-be-verified"><a class="anchor" href="#what-could-not-be-verified">What could not be verified</a></h2></div>
+<div class="section-head"><p class="section-label">05</p><h2 id="unverified-the-model-an-invisible-watermark-the-full-posts"><a class="anchor" href="#unverified-the-model-an-invisible-watermark-the-full-posts">Unverified: the model, an invisible watermark, the full posts</a></h2></div>
 <ul>
 <li><strong>The model behind this episode.</strong> Nothing in the Reddit copy names it. The studio&#39;s own
 export, or its paid breakdown, would.</li>
@@ -678,6 +764,30 @@ search results but not Telegram, YouTube, TikTok, Instagram or the Russian blog 
 directly, so the workflow statements above come from indexed excerpts of those channels, not
 from reading them end to end.</li>
 </ul>
+      </div>
+      <section class="keep-reading" aria-labelledby="next-reads">
+        <h2 id="next-reads" class="section-label">Keep reading</h2>
+        <p class="series-name">AI short films · 3 parts</p>
+        <ol class="series-parts">
+          <li><a href="/research/ai-short-film-generation" data-visits-event="next-ai-short-film-generation">AI short films: consistent characters and sets</a></li>
+          <li aria-current="true"><span>Reverse engineering an AI horror short</span></li>
+          <li><a href="/research/synthetic-voices-for-a-radio-call" data-visits-event="next-synthetic-voices-for-a-radio-call">Synthetic voices for a radio call</a></li>
+        </ol>
+        <ul class="doc-list next-list" role="list">
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/horror-sequences-shot-by-shot" data-visits-event="next-horror-sequences-shot-by-shot">23 Horror Sequences Broken Down Shot by Shot</a></h3>
+            <p class="doc-meta">36 min read</p>
+            <p class="doc-desc">Shot-by-shot breakdowns of 23 horror sequences, from the Psycho shower to Weapons: sizes, moves, durations, cut points, and what each one teaches.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/horror-cinematography-shot-by-shot" data-visits-event="next-horror-cinematography-shot-by-shot">How Horror Directors Build Dread Shot by Shot</a></h3>
+            <p class="doc-meta">40 min read</p>
+            <p class="doc-desc">How Hitchcock, Kubrick, Carpenter, Nakata, Aster and Eggers build dread: the three levers, a feeling-to-technique table, 30 director profiles, 168 sources.</p>
+          </li>
+        </ul>
+        <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS) or <a class="external" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">csarko.log</a>.</p>
+      </section>
+      <div class="prose">
 <div class="section-head" data-read-end><p class="section-label">06</p><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <ol class="references">
 <li id="ref-1"><span class="ref-num">[1]</span><div>XCVmind, &quot;Архив Аномалии №018, часть 5,&quot; YouTube, Sep. 2026. Accessed: Sep. 26, 2026. [Online]. Available: <a class="external" href="https://www.youtube.com/shorts/dAdaAVyWxNw" target="_blank" rel="noopener">https://www.youtube.com/shorts/dAdaAVyWxNw</a></div></li>
@@ -692,7 +802,6 @@ from reading them end to end.</li>
 <li id="ref-10"><span class="ref-num">[10]</span><div>Google, &quot;Gemini Developer API pricing,&quot; Google AI for Developers. Accessed: Sep. 26, 2026. [Online]. Available: <a class="external" href="https://ai.google.dev/gemini-api/docs/pricing" target="_blank" rel="noopener">https://ai.google.dev/gemini-api/docs/pricing</a></div></li>
 <li id="ref-11"><span class="ref-num">[11]</span><div>Google, &quot;Generate videos with Veo 3.1 in Gemini API,&quot; Google AI for Developers. Accessed: Sep. 26, 2026. [Online]. Available: <a class="external" href="https://ai.google.dev/gemini-api/docs/video" target="_blank" rel="noopener">https://ai.google.dev/gemini-api/docs/video</a></div></li>
 </ol>
-
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
@@ -700,6 +809,10 @@ from reading them end to end.</li>
         <p>Senior software engineer leading distributed systems and AI products.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
+      <nav class="afterward" aria-label="Read next">
+        <a class="next" href="/research/synthetic-voices-for-a-radio-call" data-visits-event="end-synthetic-voices-for-a-radio-call"><span class="section-label">Read next</span><span>Synthetic voices for a radio call <span aria-hidden="true">→</span></span></a>
+        <a href="/research">All research</a>
+      </nav>
     </main>
   </div>
 
@@ -712,6 +825,7 @@ from reading them end to end.</li>
   <!-- generated:analytics -->
   <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
+  <script defer src="/assets/reading.c3e27b33.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

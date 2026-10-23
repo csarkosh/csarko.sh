@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Grass, wind and trails in a browser meadow · Cyrus Sarkosh</title>
-  <meta name="description" content="Why game grass reads as flat, what shipped meadows do instead, wind as one shared field, and what Babylon.js on WebGL2 can afford at 60 Hz." />
+  <meta name="description" content="Flat game grass is a grounding failure, not a triangle count: ground tint, clumping, one wind field and a banded trail fix it in Babylon.js at 60 Hz." />
   <link rel="canonical" href="https://csarko.sh/research/grass-and-trail-realism" />
 
   <meta property="og:type" content="article" />
@@ -12,19 +12,20 @@
   <meta property="og:locale" content="en_US" />
   <meta property="og:url" content="https://csarko.sh/research/grass-and-trail-realism" />
   <meta property="og:title" content="Grass, wind and trails in a browser meadow" />
-  <meta property="og:description" content="Why game grass reads as flat, what shipped meadows do instead, wind as one shared field, and what Babylon.js on WebGL2 can afford at 60 Hz." />
-  <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
+  <meta property="og:description" content="Flat game grass is a grounding failure, not a triangle count: ground tint, clumping, one wind field and a banded trail fix it in Babylon.js at 60 Hz." />
+  <meta property="og:image" content="https://csarko.sh/research/figures/grass-and-trail-realism-trailhead.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
+  <meta property="og:image:alt" content="Grass, wind and trails in a browser meadow" />
   <meta property="article:published_time" content="2026-09-15" />
-  <meta property="article:modified_time" content="2026-10-10" />
+  <meta property="article:modified_time" content="2026-10-23" />
   <meta property="article:author" content="https://csarko.sh/" />
+  <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Grass, wind and trails in a browser meadow" />
-  <meta name="twitter:description" content="Why game grass reads as flat, what shipped meadows do instead, wind as one shared field, and what Babylon.js on WebGL2 can afford at 60 Hz." />
-  <meta name="twitter:image" content="https://csarko.sh/og-image.jpg" />
-  <meta name="twitter:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
+  <meta name="twitter:description" content="Flat game grass is a grounding failure, not a triangle count: ground tint, clumping, one wind field and a banded trail fix it in Babylon.js at 60 Hz." />
+  <meta name="twitter:image" content="https://csarko.sh/research/figures/grass-and-trail-realism-trailhead.jpg" />
+  <meta name="twitter:image:alt" content="Grass, wind and trails in a browser meadow" />
 
   <meta name="color-scheme" content="dark light" />
   <meta name="theme-color" content="#0a0b0e" media="(prefers-color-scheme: dark)" />
@@ -46,14 +47,14 @@
       "@type": "TechArticle",
       "@id": "https://csarko.sh/research/grass-and-trail-realism#article",
       "headline": "Grass, wind and trails in a browser meadow",
-      "description": "Why game grass reads as flat, what shipped meadows do instead, wind as one shared field, and what Babylon.js on WebGL2 can afford at 60 Hz.",
+      "description": "Flat game grass is a grounding failure, not a triangle count: ground tint, clumping, one wind field and a banded trail fix it in Babylon.js at 60 Hz.",
       "datePublished": "2026-09-15",
-      "dateModified": "2026-10-10",
+      "dateModified": "2026-10-23",
       "url": "https://csarko.sh/research/grass-and-trail-realism",
       "mainEntityOfPage": "https://csarko.sh/research/grass-and-trail-realism",
-      "wordCount": 7455,
+      "wordCount": 7729,
       "inLanguage": "en",
-      "image": "https://csarko.sh/og-image.jpg",
+      "image": "https://csarko.sh/research/figures/grass-and-trail-realism-trailhead.jpg",
       "author": {
         "@type": "Person",
         "@id": "https://csarko.sh/#person",
@@ -130,6 +131,8 @@
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
+      /* A doc's body text: brighter than --muted, which reads as grey at length (2026-10-23). */
+      --prose: #c9ced9;
       --faint: #7d8597;
       /* Content warnings only. Yellow to stand apart from the teal accent. */
       --warning: #f5c451;
@@ -159,6 +162,7 @@
         --border-strong: rgba(10, 11, 14, 0.16);
         --text: #12151c;
         --muted: #4a5263;
+        --prose: #2b3240;
         --faint: #5f677a;
         --warning: #8a6100;
         --accent: #0a735f;
@@ -350,6 +354,57 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .doc-page .prose { font-size: 17px; }
+    .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
+    .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
+    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .rail a[aria-current] { color: var(--text); }
+    .rail a[aria-current] .num { color: var(--accent); }
+    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .toc .section-label { margin: 0 0 6px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
+    .toc a:hover { color: var(--accent); }
+    .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    .figure { margin: 32px 0; }
+    .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+    /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
+    .figure img { max-height: 80vh; object-fit: contain; }
+    .figure figcaption { margin-top: 10px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+    .prose blockquote strong:first-child { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted var(--faint); text-underline-offset: 4px; }
+    .term:hover, .term:focus-visible { text-decoration-color: var(--accent); }
+    .term-def { max-width: min(92vw, 420px); margin: auto; padding: 16px 18px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.55; }
+    .term-def::backdrop { background: var(--nav-bg); }
+    /* A wide table or code block that scrolls sideways shows a shade at the edge it can scroll to. */
+    .scroll { background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
+      var(--surface); }
+    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
+    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
+    .series-name { margin: 0 0 8px; font-weight: 600; }
+    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
+    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
+    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
+    .next-list .card { padding: 16px 18px; background: var(--bg); }
+    .next-list .doc-title { font-size: 1.05rem; }
+    .next-list .doc-desc { font-size: 14.5px; }
+    .play-line { margin: 20px 0 0; }
+    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background .15s ease; }
+    .play:hover { background: var(--accent-hover); }
+    .play svg { width: 14px; height: 14px; }
+    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
+    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color .15s ease; }
+    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
+    .afterward .next:hover { border-color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -385,54 +440,95 @@
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-        <li><a href="#what-the-grass-the-wind-and-the-trail-are-today"><span class="num" aria-hidden="true">01</span><span>What the grass, the wind and the trail are today</span></a></li>
-        <li><a href="#why-it-reads-flat"><span class="num" aria-hidden="true">02</span><span>Why it reads flat</span></a></li>
-        <li><a href="#how-shipped-games-make-grass-full-and-alive"><span class="num" aria-hidden="true">03</span><span>How shipped games make grass full and alive</span></a></li>
-        <li><a href="#wind-as-one-field"><span class="num" aria-hidden="true">04</span><span>Wind as one field</span></a></li>
-        <li><a href="#trails-through-grass"><span class="num" aria-hidden="true">05</span><span>Trails through grass</span></a></li>
-        <li><a href="#what-babylon-js-9-18-can-do-and-what-it-costs"><span class="num" aria-hidden="true">06</span><span>What Babylon.js 9.18 can do, and what it costs</span></a></li>
-        <li><a href="#the-60-hz-contract-arithmetic-and-measurement"><span class="num" aria-hidden="true">07</span><span>The 60 Hz contract: arithmetic and measurement</span></a></li>
-        <li><a href="#candidate-directions"><span class="num" aria-hidden="true">08</span><span>Candidate directions</span></a></li>
-        <li><a href="#traps"><span class="num" aria-hidden="true">09</span><span>Traps</span></a></li>
-        <li><a href="#sources"><span>Sources</span></a></li>
+        <li><a href="#the-starting-point-cards-three-sines-and-a-painted-stripe" data-visits-event="toc-rail"><span class="num" aria-hidden="true">01</span><span>The starting point: cards, three sines and a painted stripe</span></a></li>
+        <li><a href="#seven-causes-of-the-flat-read-cheapest-first" data-visits-event="toc-rail"><span class="num" aria-hidden="true">02</span><span>Seven causes of the flat read, cheapest first</span></a></li>
+        <li><a href="#shipped-meadows-tint-clump-and-flatten-not-add-triangles" data-visits-event="toc-rail"><span class="num" aria-hidden="true">03</span><span>Shipped meadows tint, clump and flatten, not add triangles</span></a></li>
+        <li><a href="#wind-that-reads-as-wind-is-one-shared-field" data-visits-event="toc-rail"><span class="num" aria-hidden="true">04</span><span>Wind that reads as wind is one shared field</span></a></li>
+        <li><a href="#a-real-trail-is-a-sunken-bench-with-four-ragged-bands" data-visits-event="toc-rail"><span class="num" aria-hidden="true">05</span><span>A real trail is a sunken bench with four ragged bands</span></a></li>
+        <li><a href="#babylon-js-9-18-on-webgl2-plugin-work-plus-opaque-blades" data-visits-event="toc-rail"><span class="num" aria-hidden="true">06</span><span>Babylon.js 9.18 on WebGL2: plugin work, plus opaque blades</span></a></li>
+        <li><a href="#grass-costs-fill-not-triangles-the-60-hz-arithmetic" data-visits-event="toc-rail"><span class="num" aria-hidden="true">07</span><span>Grass costs fill, not triangles: the 60 Hz arithmetic</span></a></li>
+        <li><a href="#four-packages-ground-wind-trail-then-blades" data-visits-event="toc-rail"><span class="num" aria-hidden="true">08</span><span>Four packages: ground, wind, trail, then blades</span></a></li>
+        <li><a href="#traps-one-discard-turns-off-early-z-for-the-whole-draw" data-visits-event="toc-rail"><span class="num" aria-hidden="true">09</span><span>Traps: one discard turns off early-Z for the whole draw</span></a></li>
+        <li><a href="#sources" data-visits-event="toc-rail"><span>Sources</span></a></li>
       </ol>
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Sep 15, 2026 · Updated Oct 10, 2026</p>
+        <p class="eyebrow">Sep 15, 2026 · Updated Oct 23, 2026</p>
         <h1>Grass, wind and trails in a browser meadow</h1>
+        <p class="lead">Flat game grass is a grounding failure, not a triangle count: ground tint, clumping, one wind field and a banded trail fix it in Babylon.js at 60 Hz.</p>
         <ul class="tags">
-          <li>32 min read</li>
+          <li>29 min read</li>
           <li><a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-15-grass-and-trail-realism.md" target="_blank" rel="noopener">Also on GitHub</a></li>
         </ul>
+        <p class="series-line">Part 3 of 7 in <strong>Rendering a browser forest</strong> · Next: <a href="/research/grass-fullness-without-thinning" data-visits-event="series-grass-fullness-without-thinning">Grass fullness without thinning the field</a></p>
       </header>
       <div class="prose">
-<p><strong>Question:</strong> Day Hike&#39;s grass and trails read as flat and game-like. The goal is grass that
-looks fuller, has volume and moves with a wind the rest of the world shares, and a trail that
-reads as trodden ground rather than a stripe of another texture, all inside a 60 Hz frame
-budget. What do modern games do to get there, which of it is a grounding problem and which a
-geometry problem, and how much of it can Babylon.js 9.18 on WebGL2 do in 16.7 ms?</p>
-<p><strong>Short answer:</strong> &quot;flat and game-like&quot; is mostly a <em>grounding</em> failure, not a triangle-count
-failure, and most of the fix is cheap. Every shipped meadow in this survey does four things
-Day Hike does not: it tints the grass to the ground it stands on (The Witcher 3&#39;s pigment map,
-Horizon&#39;s world-data colourisation), it darkens root to tip and varies height and colour <em>per
-clump</em> rather than per instance (Ghost of Tsushima&#39;s Voronoi clumps), it lights the field as
-one rounded mass instead of N flipping cards (Horizon flattens the view-space normal), and it
-lets low sun through the blades. Wind that reads as <em>wind</em> is one global vector whose strength
-is modulated by noise travelling downwind, with a permanent lean the oscillation rides on,
-sampled by grass, bushes, trees, particles and sound alike; Day Hike&#39;s is three zero-mean sines
-phased on a fixed axis, with trees rigid and mist ignoring it, so it reads as vibration. A real
-trail is a bench cut into the hill with a four-band edge whose width varies along its length;
-Day Hike&#39;s is a constant-width smoothstep with the grass cut off in a soft ring, and the hard
-grass ring and the hard texture edge reinforce each other. In Babylon nearly all of the fix is
-vertex-stage plugin work, per-instance attributes written in a rebuild that already runs, and
-fragment arithmetic inside a branch that already exists. The one structural change worth its
-risk is opaque blade clumps for the nearest 10 to 20 m, because the binding frame cost is
-alpha-tested fill, not triangles, and opaque geometry gives early depth rejection back.</p>
+<p><strong>Question:</strong> grass and trails in a browser game can read as flat and game-like, as Day
+Hike&#39;s did. The goal is grass that looks fuller, has volume and moves with a wind the rest of
+the world shares, and a trail that reads as trodden ground rather than a stripe of another
+texture, all inside a 60 Hz frame budget. What do modern games do to get there, which of it is
+a grounding problem and which a geometry problem, and how much of it can Babylon.js 9.18 on
+WebGL2 do in 16.7 ms?</p>
+<p><strong>Short answer:</strong> &quot;flat and game-like&quot; is mostly a
+<button type="button" class="term" popovertarget="term-1">grounding</button><span class="term-def" id="term-1" popover role="note">Making grass look as if it grows out of the ground under it: tinted by that ground, darker at the root, shadowed where blade meets soil.</span>
+failure, not a triangle-count failure, and most of the fix is cheap: tint the grass to its
+ground, darken it root to tip, vary it per clump, light the field as one mass and let low sun
+through the blades. Wind reads as wind when it is one shared field that leans and travels
+downwind, and a trail reads as trodden when it is a
+<button type="button" class="term" popovertarget="term-2">bench</button><span class="term-def" id="term-2" popover role="note">A trail tread cut into the hillside: it sits a little below the uphill turf, with a short soil face above it.</span>
+with a ragged four-band edge. The one structural change worth its risk is opaque blade clumps
+for the nearest 10 to 20 m, because the binding frame cost is
+<button type="button" class="term" popovertarget="term-3">alpha-tested</button><span class="term-def" id="term-3" popover role="note">Drawn on flat cards whose see-through texels are thrown away pixel by pixel, which switches off the GPU&#39;s early depth rejection for the whole draw.</span>
+fill, not triangles, and opaque geometry gives early depth rejection back.</p>
+<figure class="figure">
+<!-- generated:figure:grass-and-trail-realism/trailhead -->
+<picture>
+<source type="image/avif" srcset="/assets/fig-grass-and-trail-realism-trailhead-480.4776b797.avif 480w, /assets/fig-grass-and-trail-realism-trailhead-720.40584fe7.avif 720w, /assets/fig-grass-and-trail-realism-trailhead-960.a2a2f06c.avif 960w" sizes="(max-width: 768px) calc(100vw - 48px), 720px" />
+<source type="image/webp" srcset="/assets/fig-grass-and-trail-realism-trailhead-480.adf7d9f9.webp 480w, /assets/fig-grass-and-trail-realism-trailhead-720.01571048.webp 720w, /assets/fig-grass-and-trail-realism-trailhead-960.5635637d.webp 960w" sizes="(max-width: 768px) calc(100vw - 48px), 720px" />
+<img src="/assets/fig-grass-and-trail-realism-trailhead-720.97493203.jpg" srcset="/assets/fig-grass-and-trail-realism-trailhead-480.ded0bdb1.jpg 480w, /assets/fig-grass-and-trail-realism-trailhead-720.97493203.jpg 720w, /assets/fig-grass-and-trail-realism-trailhead-960.8884f34a.jpg 960w" sizes="(max-width: 768px) calc(100vw - 48px), 720px" width="1200" height="675" alt="Day Hike&#39;s trailhead: a dirt path leading into a misty forest through dark grass, with an information kiosk on the right" decoding="async" />
+</picture>
+<!-- /generated:figure:grass-and-trail-realism/trailhead -->
+<figcaption>Day Hike&#39;s trailhead today: the trail is painted as four bands with a ragged edge that wear noise widens and darkens along its length, and on the medium and high tiers the near grass is opaque blade clumps rather than cards.</figcaption>
+</figure>
+<p><strong>In numbers:</strong></p>
+<ul>
+<li><strong>7 causes</strong> make grass read flat, and the fixes for the first five are vertex work and
+per-instance data, nearly free (<a href="#seven-causes-of-the-flat-read-cheapest-first">section 2</a>).</li>
+<li><strong>20 to 36 triangles</strong> is Horizon Zero Dawn&#39;s nearest grass: the fidelity is not in the
+triangle count (<a href="#shipped-meadows-tint-clump-and-flatten-not-add-triangles">section 3</a>).</li>
+<li><strong>One global wind vector</strong> whose strength is modulated by noise travelling downwind, with a
+permanent lean the sway rides on, sampled by grass, bushes, trees, particles and sound alike
+(<a href="#wind-that-reads-as-wind-is-one-shared-field">section 4</a>).</li>
+<li><strong>Four bands</strong> from the centre out: a 40 to 75 cm compacted core, a loose margin, trampled
+vegetation, then a ragged boundary at full growth
+(<a href="#a-real-trail-is-a-sunken-bench-with-four-ragged-bands">section 5</a>).</li>
+<li><strong>4 to 6 M fragment invocations,</strong> not 0.97 M triangles, are what the grass costs a frame:
+a fill-rate problem wearing a geometry costume
+(<a href="#grass-costs-fill-not-triangles-the-60-hz-arithmetic">section 7</a>).</li>
+<li><strong>−1 to −3 ms on fill</strong> is the expected net of opaque blade clumps, against +0.2 to +0.5 ms
+of vertex work (<a href="#grass-costs-fill-not-triangles-the-60-hz-arithmetic">section 7</a>).</li>
+</ul>
 <p>The game is public in <a class="external" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener">game-dayhike</a>. Sources are
 listed at the end; anything marked <em>unverified</em> comes from a secondary write-up of a talk
 whose slides could not be read.</p>
-<div class="section-head"><p class="section-label">01</p><h2 id="what-the-grass-the-wind-and-the-trail-are-today"><a class="anchor" href="#what-the-grass-the-wind-and-the-trail-are-today">What the grass, the wind and the trail are today</a></h2></div>
+      </div>
+      <nav class="toc" aria-label="In this doc">
+        <p class="section-label">In this doc</p>
+        <ol>
+          <li><a href="#the-starting-point-cards-three-sines-and-a-painted-stripe" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>The starting point: cards, three sines and a painted stripe</span></a></li>
+          <li><a href="#seven-causes-of-the-flat-read-cheapest-first" data-visits-event="toc"><span class="num" aria-hidden="true">02</span><span>Seven causes of the flat read, cheapest first</span></a></li>
+          <li><a href="#shipped-meadows-tint-clump-and-flatten-not-add-triangles" data-visits-event="toc"><span class="num" aria-hidden="true">03</span><span>Shipped meadows tint, clump and flatten, not add triangles</span></a></li>
+          <li><a href="#wind-that-reads-as-wind-is-one-shared-field" data-visits-event="toc"><span class="num" aria-hidden="true">04</span><span>Wind that reads as wind is one shared field</span></a></li>
+          <li><a href="#a-real-trail-is-a-sunken-bench-with-four-ragged-bands" data-visits-event="toc"><span class="num" aria-hidden="true">05</span><span>A real trail is a sunken bench with four ragged bands</span></a></li>
+          <li><a href="#babylon-js-9-18-on-webgl2-plugin-work-plus-opaque-blades" data-visits-event="toc"><span class="num" aria-hidden="true">06</span><span>Babylon.js 9.18 on WebGL2: plugin work, plus opaque blades</span></a></li>
+          <li><a href="#grass-costs-fill-not-triangles-the-60-hz-arithmetic" data-visits-event="toc"><span class="num" aria-hidden="true">07</span><span>Grass costs fill, not triangles: the 60 Hz arithmetic</span></a></li>
+          <li><a href="#four-packages-ground-wind-trail-then-blades" data-visits-event="toc"><span class="num" aria-hidden="true">08</span><span>Four packages: ground, wind, trail, then blades</span></a></li>
+          <li><a href="#traps-one-discard-turns-off-early-z-for-the-whole-draw" data-visits-event="toc"><span class="num" aria-hidden="true">09</span><span>Traps: one discard turns off early-Z for the whole draw</span></a></li>
+        </ol>
+      </nav>
+      <div class="prose">
+<div class="section-head"><p class="section-label">01</p><h2 id="the-starting-point-cards-three-sines-and-a-painted-stripe"><a class="anchor" href="#the-starting-point-cards-three-sines-and-a-painted-stripe">The starting point: cards, three sines and a painted stripe</a></h2></div>
 <p><strong>Grass</strong> is ground clutter: two card-based tuft models, 0.32 and 0.40 m tall, alpha-masked and
 double-sided, 290 triangles at the near level of detail and 130 at the far, scattered on a 3 m
 lattice out to 110 m with a 4,400-instance budget that is effectively a tuft in every cell.
@@ -445,7 +541,7 @@ colour is one texture with no per-instance variation, no tint from the ground an
 translucency. The ground under it is a 2 m tiled grass photo texture with normal and
 roughness/AO/height detail.</p>
 <p>The level-of-detail swap and the disc edge dissolve through a screen-space dither, described in
-<a href="/research/no-visible-pop-in">No visible pop-in</a>. That plugin is also why every card material runs
+<a href="/research/no-visible-pop-in" data-visits-event="doc-no-visible-pop-in">No visible pop-in</a>. That plugin is also why every card material runs
 with early depth rejection off: any <code>discard</code> in a fragment shader disables it for the whole
 draw, measured at +10.7 ms roadside and +20 ms meadow when the dither was attached to opaque
 materials too.</p>
@@ -472,7 +568,12 @@ trail&#39;s length. The bed is the ground: the trail follows the terrain and is 
 chain. That scene pass is a post-process render target, and a Babylon <code>PostProcess</code> defaults to
 one sample <a class="cite" href="#ref-1">[1]</a>, so <strong>medium and high have no multisampling today</strong> even though the engine is created
 with <code>antialias</code> on; only the low tier, which has no chain, gets it.</p>
-<div class="section-head"><p class="section-label">02</p><h2 id="why-it-reads-flat"><a class="anchor" href="#why-it-reads-flat">Why it reads flat</a></h2></div>
+<div class="section-head"><p class="section-label">02</p><h2 id="seven-causes-of-the-flat-read-cheapest-first"><a class="anchor" href="#seven-causes-of-the-flat-read-cheapest-first">Seven causes of the flat read, cheapest first</a></h2></div>
+<p>Every shipped meadow in this survey does four things Day Hike does not: it tints the grass to
+the ground it stands on (The Witcher 3&#39;s pigment map, Horizon&#39;s world-data colourisation), it
+darkens root to tip and varies height and colour <em>per clump</em> rather than per instance (Ghost of
+Tsushima&#39;s Voronoi clumps), it lights the field as one rounded mass instead of N flipping cards
+(Horizon flattens the view-space normal), and it lets low sun through the blades.</p>
 <p>Mapping the survey against section 1, the game-like read has seven causes, in order of how much
 each costs to fix:</p>
 <ol>
@@ -507,7 +608,7 @@ invocations across three to five layers of alpha-tested cards over the bottom ha
 with early depth rejection off. That is why the fixes for causes 1 to 5 are nearly free, being
 vertex work and per-instance data, and why the one geometry change that matters is the one that
 removes the <code>discard</code>.</p>
-<div class="section-head"><p class="section-label">03</p><h2 id="how-shipped-games-make-grass-full-and-alive"><a class="anchor" href="#how-shipped-games-make-grass-full-and-alive">How shipped games make grass full and alive</a></h2></div>
+<div class="section-head"><p class="section-label">03</p><h2 id="shipped-meadows-tint-clump-and-flatten-not-add-triangles"><a class="anchor" href="#shipped-meadows-tint-clump-and-flatten-not-add-triangles">Shipped meadows tint, clump and flatten, not add triangles</a></h2></div>
 <h3 id="the-games"><a class="anchor" href="#the-games">The games</a></h3>
 <ul>
 <li><strong>Ghost of Tsushima</strong> (GDC 2021, two talks) <a class="cite" href="#ref-3">[3]</a>, <a class="cite" href="#ref-8">[8]</a>. Blades are cubic Bézier curves generated per tile
@@ -590,7 +691,7 @@ texture, coverage-preserving mips, opaque geometry where the budget allows <a cl
 <li><strong>Interaction</strong>: a bend around the players, and a decayed top-down render target if trampling
 memory is ever wanted.</li>
 </ol>
-<div class="section-head"><p class="section-label">04</p><h2 id="wind-as-one-field"><a class="anchor" href="#wind-as-one-field">Wind as one field</a></h2></div>
+<div class="section-head"><p class="section-label">04</p><h2 id="wind-that-reads-as-wind-is-one-shared-field"><a class="anchor" href="#wind-that-reads-as-wind-is-one-shared-field">Wind that reads as wind is one shared field</a></h2></div>
 <p>The games that read as windy share one architecture, and it is the thing Day Hike&#39;s wind lacks.</p>
 <ul>
 <li><strong>Ghost of Tsushima&#39;s</strong> model is stated on a slide as &quot;Vector + Noise + Vorticles&quot; <a class="cite" href="#ref-8">[8]</a>, with the
@@ -626,10 +727,10 @@ which the motes already rely on, and a texture would need a CPU mirror. And ever
 must remain an exact multiple of 2π/300 or the 300 s wrap snaps. Nothing in the wind may touch
 the simulation: sway is cosmetic, peers need not agree on phase, and a wind constant migrating
 into a tunable would move the
-<a href="/research/procedural-world-as-a-pure-function">level id</a> that peers check before they connect.</p>
+<a href="/research/procedural-world-as-a-pure-function" data-visits-event="doc-procedural-world-as-a-pure-function">level id</a> that peers check before they connect.</p>
 <p>A storm is then a parameter, not a feature: base speed up, gust amplitude up, lean angle up, the
 audio oscillator deeper, all from one record the weather preset owns.</p>
-<div class="section-head"><p class="section-label">05</p><h2 id="trails-through-grass"><a class="anchor" href="#trails-through-grass">Trails through grass</a></h2></div>
+<div class="section-head"><p class="section-label">05</p><h2 id="a-real-trail-is-a-sunken-bench-with-four-ragged-bands"><a class="anchor" href="#a-real-trail-is-a-sunken-bench-with-four-ragged-bands">A real trail is a sunken bench with four ragged bands</a></h2></div>
 <h3 id="what-a-real-trail-edge-looks-like"><a class="anchor" href="#what-a-real-trail-edge-looks-like">What a real trail edge looks like</a></h3>
 <p>From trail-construction handbooks and the recreation-ecology literature:</p>
 <ul>
@@ -719,8 +820,10 @@ disappears under the lamp. Edge geometry and wet specular have to carry it after
 <p>The meta-lesson from three shipped systems and one modding decade: <strong>the ground shader and the
 scatter must consume the same field.</strong> Day Hike&#39;s trail paint and grass gate already both read the
 trail distance; the work is making them agree about the four bands rather than one.</p>
-<div class="section-head"><p class="section-label">06</p><h2 id="what-babylon-js-9-18-can-do-and-what-it-costs"><a class="anchor" href="#what-babylon-js-9-18-can-do-and-what-it-costs">What Babylon.js 9.18 can do, and what it costs</a></h2></div>
-<p>Claims below were checked against the installed engine, not the documentation alone.</p>
+<div class="section-head"><p class="section-label">06</p><h2 id="babylon-js-9-18-on-webgl2-plugin-work-plus-opaque-blades"><a class="anchor" href="#babylon-js-9-18-on-webgl2-plugin-work-plus-opaque-blades">Babylon.js 9.18 on WebGL2: plugin work, plus opaque blades</a></h2></div>
+<p>Claims below were checked against the installed engine, not the documentation alone. In
+Babylon nearly all of the fix is vertex-stage plugin work, per-instance attributes written in a
+rebuild that already runs, and fragment arithmetic inside a branch that already exists.</p>
 <h3 id="geometry-without-compute"><a class="anchor" href="#geometry-without-compute">Geometry without compute</a></h3>
 <p>WebGL2 has no compute, and Babylon&#39;s transform feedback (it exists, and GPU particles use it) has
 no mesh-level integration, so blade lists cannot be generated on the GPU the Tsushima way. The
@@ -841,7 +944,7 @@ instantaneous bend is about 1 % of the work for most of the read.</p>
 simulation&#39;s ground height does not, feet float by the sink depth. A few centimetres is under the
 view bob; more than that means the bench belongs in the simulated terrain field, which does move
 the level id.</p>
-<div class="section-head"><p class="section-label">07</p><h2 id="the-60-hz-contract-arithmetic-and-measurement"><a class="anchor" href="#the-60-hz-contract-arithmetic-and-measurement">The 60 Hz contract: arithmetic and measurement</a></h2></div>
+<div class="section-head"><p class="section-label">07</p><h2 id="grass-costs-fill-not-triangles-the-60-hz-arithmetic"><a class="anchor" href="#grass-costs-fill-not-triangles-the-60-hz-arithmetic">Grass costs fill, not triangles: the 60 Hz arithmetic</a></h2></div>
 <p><strong>What today costs.</strong> Grass tufts contribute about 686 k triangles a frame and the carpet 206 k,
 about 0.97 M with bushes and flowers. That is 58 M triangles a second at 60 Hz, which is nothing.
 Fill is the cost: in an open meadow grass covers the bottom 55 to 65 % of a 1080p frame, about
@@ -870,7 +973,7 @@ at its most expensive.</li>
 </ol>
 <p>Sample at the high tier natively and at the low tier&#39;s 1.5× hardware scaling, because a fill
 conclusion inverts with pixel count. The 95th percentile is the stutter tell.</p>
-<div class="section-head"><p class="section-label">08</p><h2 id="candidate-directions"><a class="anchor" href="#candidate-directions">Candidate directions</a></h2></div>
+<div class="section-head"><p class="section-label">08</p><h2 id="four-packages-ground-wind-trail-then-blades"><a class="anchor" href="#four-packages-ground-wind-trail-then-blades">Four packages: ground, wind, trail, then blades</a></h2></div>
 <p>Four packages, ordered by payoff per risk. They compose.</p>
 <p><strong>A. Ground the cards (renderer-only, days).</strong> A per-instance <code>vec4</code> (ground tint, height and
 colour hash, canopy darkening, trail proximity) written in the rebuild; root-to-tip darkening,
@@ -896,7 +999,7 @@ measurement at the four viewpoints before it is allowed to stay.</p>
 <p>The recommended order is A and B together, since they share the plugin and the per-instance
 attribute, then C, then D behind its gate. A and B alone should move the read from &quot;flat and
 game-like&quot; to &quot;grounded and windy&quot;; D is what makes it &quot;full&quot;.</p>
-<div class="section-head"><p class="section-label">09</p><h2 id="traps"><a class="anchor" href="#traps">Traps</a></h2></div>
+<div class="section-head"><p class="section-label">09</p><h2 id="traps-one-discard-turns-off-early-z-for-the-whole-draw"><a class="anchor" href="#traps-one-discard-turns-off-early-z-for-the-whole-draw">Traps: one discard turns off early-Z for the whole draw</a></h2></div>
 <ul>
 <li>A <code>discard</code> anywhere in a fragment shader disables early depth rejection for the whole draw. No
 new fragment feature may add one to an opaque material, and blades must stay opaque.</li>
@@ -924,7 +1027,41 @@ model&#39;s material, so it must stay idempotent.</li>
 frame-time samples.</li>
 </ul>
 <p>More of these are collected in
-<a href="/research/babylon-material-plugin-traps">Babylon.js material plugin traps</a>.</p>
+<a href="/research/babylon-material-plugin-traps" data-visits-event="doc-babylon-material-plugin-traps">Babylon.js material plugin traps</a>.</p>
+      </div>
+      <section class="keep-reading" aria-labelledby="next-reads">
+        <h2 id="next-reads" class="section-label">Keep reading</h2>
+        <p class="series-name">Rendering a browser forest · 7 parts</p>
+        <ol class="series-parts">
+          <li><a href="/research/floating-props-on-procedural-terrain" data-visits-event="next-floating-props-on-procedural-terrain">Why props float on procedural terrain</a></li>
+          <li><a href="/research/no-visible-pop-in" data-visits-event="next-no-visible-pop-in">No visible pop-in: dissolving a streamed forest</a></li>
+          <li aria-current="true"><span>Grass, wind and trails in a browser meadow</span></li>
+          <li><a href="/research/grass-fullness-without-thinning" data-visits-event="next-grass-fullness-without-thinning">Grass fullness without thinning the field</a></li>
+          <li><a href="/research/ground-fog-without-the-wall" data-visits-event="next-ground-fog-without-the-wall">Volumetric ground fog without the sprite wall</a></li>
+          <li><a href="/research/rock-on-steep-terrain-shape-it-cover-it-or-skin-it" data-visits-event="next-rock-on-steep-terrain-shape-it-cover-it-or-skin-it">Rock on steep terrain: shape it, cover it, or skin it</a></li>
+          <li><a href="/research/soft-shade-bark-and-moss-for-browser-forests" data-visits-event="next-soft-shade-bark-and-moss-for-browser-forests">Soft shade, bark and moss for browser forests</a></li>
+        </ol>
+        <ul class="doc-list next-list" role="list">
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/grass-fullness-without-thinning" data-visits-event="next-grass-fullness-without-thinning">Grass fullness without thinning the field</a></h3>
+            <p class="doc-meta">18 min read</p>
+            <p class="doc-desc">Why near grass reads bare from a first-person eye, what fixing it cost in a Babylon.js game, and the GPU techniques that win the frame back without thinning.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/babylon-material-plugin-traps" data-visits-event="next-babylon-material-plugin-traps">Babylon.js material plugins: hooks and traps</a></h3>
+            <p class="doc-meta">16 min read</p>
+            <p class="doc-desc">Babylon.js 9.18 splices plugin GLSL in after #include expansion, before #if: what each PBR hook sees, and the silent preprocessor, comment and bake traps.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/olympic-vegetation-for-games" data-visits-event="next-olympic-vegetation-for-games">Olympic Peninsula vegetation for game worlds</a></h3>
+            <p class="doc-meta">16 min read</p>
+            <p class="doc-desc">What grows where on Washington&#39;s Olympic Peninsula, from drift logs to heather, and how to turn it into placement rules and models for a game world.</p>
+          </li>
+        </ul>
+        <p class="play-line"><a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
+        <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS) or <a class="external" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">csarko.log</a>.</p>
+      </section>
+      <div class="prose">
 <div class="section-head" data-read-end><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <ol class="references">
 <li id="ref-1"><span class="ref-num">[1]</span><div>Babylon.js Authors, &quot;postProcess.pure.ts,&quot; Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/PostProcesses/postProcess.pure.ts" target="_blank" rel="noopener">https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/PostProcesses/postProcess.pure.ts</a></div></li>
@@ -981,7 +1118,6 @@ frame-time samples.</li>
 Horizon&#39;s placement densities; any Firewatch trail technique; Tsushima&#39;s road authoring; every
 technical claim about Breath of the Wild, Tears of the Kingdom, Genshin Impact, Flower and Sky;
 Red Dead Redemption 2&#39;s grass-shadow algorithm; the trail-under-headlamp reasoning.</p>
-
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
@@ -989,6 +1125,11 @@ Red Dead Redemption 2&#39;s grass-shadow algorithm; the trail-under-headlamp rea
         <p>Senior software engineer leading distributed systems and AI products.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
+      <nav class="afterward" aria-label="Read next">
+        <a class="next" href="/research/grass-fullness-without-thinning" data-visits-event="end-grass-fullness-without-thinning"><span class="section-label">Read next</span><span>Grass fullness without thinning the field <span aria-hidden="true">→</span></span></a>
+        <a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        <a href="/research">All research</a>
+      </nav>
     </main>
   </div>
 
@@ -1001,6 +1142,7 @@ Red Dead Redemption 2&#39;s grass-shadow algorithm; the trail-under-headlamp rea
   <!-- generated:analytics -->
   <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
+  <script defer src="/assets/reading.c3e27b33.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

@@ -3,30 +3,38 @@ description: How AAA engines draw ground fog as a frustum-aligned volume instead
 published: 2026-10-07
 categories: Rendering
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-07-ground-fog-in-aaa-games.md
-updated: 2026-10-18
+updated: 2026-10-23
+featured: 1
+series: Rendering a browser forest
 ---
 # Volumetric ground fog without the sprite wall
 
-**Question:** a horror game wants fog that rests on the ground, that the player walks through,
-and that looks like weather rather than a screen effect. Drawn as camera-facing sprites it reads
-as a wall: the terrain cuts each quad along a hard line, the quads' flat bottoms line up into one
-baseline, and a dozen soft blobs overlapping average into a flat sheet. How do the games whose fog
-looks real draw it, what does it cost them, and which of it can a browser game run?
+**Question:** fog drawn as camera-facing sprites reads as a wall: the terrain cuts each quad along
+a hard line, and a dozen soft blobs overlapping average into a flat sheet. How do the games whose
+fog looks real draw it, and which of it can a browser game run?
 
-**Short answer:** every current AAA fog is a volume, not a set of sprites. A low-resolution 3D
-texture aligned to the camera's frustum holds the fog's density and in-scattered light, a scan
-through its depth slices integrates them, and each screen pixel looks up its own depth in the
-result. Because the fog is integrated along the ray to the pixel's own depth there is no surface
-for the ground to cut, which is exactly the wall. Density is an analytic height falloff times one
-octave of wind-blown noise; the look comes from the integration, the phase function and temporal
-filtering, not from texture detail. It costs about 1 ms on a PlayStation 4 and 1 to 3 ms on a
-2014 laptop or desktop GPU, and its one known artifact is ghosting from the temporal filter.
-Sprites survive only as local density fed into the volume, or as soft particles for wisps the
-volume is too coarse for. A browser can do the same integral per pixel in a half-resolution
-fragment pass with a dozen steps, on WebGL2 and WebGPU alike; a true froxel grid needs compute
-and is WebGPU only.
+**Short answer:** every current AAA fog is a volume, not a set of sprites: a low-resolution
+[froxel](#term "A frustum voxel: one cell of a small 3D grid fitted to the camera's view, finer near the eye than far from it.")
+grid that the scene's lights shine through, integrated for each pixel up to that pixel's own
+depth, so there is no surface for the ground to cut. A browser can run the same integral in one
+half-resolution fragment pass on WebGL2 and WebGPU alike; only a true froxel grid needs WebGPU.
 
-## 1. The froxel technique
+![The crest in Day Hike: bare ground in the foreground, an animal on the ridge, and a line of trees beyond it fading into a low grey mist](crest.png "Day Hike today draws the cheapest of the three browser designs in section 3, an analytic height fog: mist that thickens toward the ground and with distance, with no edge for the terrain to cut.")
+
+**In numbers:**
+
+- **About 1 ms** on a PlayStation 4, and 1 to 3 ms on a 2014 laptop or desktop GPU, nearly fixed
+  by the grid's size rather than the scene ([section 1](#every-aaa-fog-is-a-froxel-volume)).
+- **One voxel per 8 screen pixels, 64 to 128 depth slices:** the grid can be tiny because fog
+  holds only soft, low-frequency light ([section 1](#every-aaa-fog-is-a-froxel-volume)).
+- **One octave of wind-blown noise** times a height falloff is the whole density; the look comes
+  from the lighting and the temporal filter ([section 1](#every-aaa-fog-is-a-froxel-volume)).
+- **One known artifact:** ghosting from that temporal filter, which every engine documents
+  ([section 1](#every-aaa-fog-is-a-froxel-volume)).
+- **12 to 16 steps at half resolution** is the browser's version, of the order of 1 to 2 ms on
+  an integrated GPU ([section 3](#three-browser-designs-two-of-them-on-webgl2)).
+
+## 1. Every AAA fog is a froxel volume
 
 **Origin.** Wronski's volumetric fog for Assassin's Creed 4 at GDC and SIGGRAPH 2014 [1], [2],
 made physically based and unified with every other participating medium by Hillaire at Frostbite
@@ -95,7 +103,7 @@ line rather than a risk.
 **The limits.** The fog does not shadow itself [4]; it is bounded by a view distance past which
 an analytic fog takes over [4], [9]; and it is fixed to the camera frustum [4].
 
-## 2. The other half: particles
+## 2. Sprites survive as soft particles and local density
 
 The volume is soft by construction. For wisps at the player's face, smoke and dust, these games
 still draw sprites, and they make the sprites meet the world in two ways.
@@ -116,7 +124,7 @@ of them sorts against the others [7].
 QuadMeshes" for ground fog [5]: flat quads lying on the ground with a noise texture, not vertical
 cards facing the camera.
 
-## 3. What a browser can run
+## 3. Three browser designs, two of them on WebGL2
 
 WebGL2 has fragment shaders, 3D textures and, with a depth pre-pass or a resolved depth
 attachment, a depth texture; it has no compute shaders and no convenient render-to-3D-slice.
@@ -146,7 +154,7 @@ the march is light-bound.
 In every design the density is one scalar a frame (`a` in the analytic form, the extinction
 coefficient in the others), which is what a game's time of day, weather or threat level sets.
 
-## 4. A plan for a browser game
+## 4. The plan: a half-resolution march over an analytic floor
 
 Build the half-resolution march, with the analytic fog as the low tier and as the fallback past
 the march's range, and convert the near sprites to soft particles for the last metre at the face:

@@ -3,6 +3,7 @@ description: Why near grass reads bare from a first-person eye, what fixing it c
 published: 2026-09-26
 categories: Rendering
 updated: 2026-09-26
+series: Rendering a browser forest
 ---
 # Grass fullness without thinning the field
 

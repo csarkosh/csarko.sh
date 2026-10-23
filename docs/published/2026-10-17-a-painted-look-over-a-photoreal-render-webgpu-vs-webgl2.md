@@ -3,6 +3,7 @@ description: Laying a painted look, a stroke filter and a palette grade, over a 
 published: 2026-10-17
 categories: Rendering
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-17-painted-post-webgpu-vs-webgl2.md
+series: WebGPU against WebGL2
 ---
 # A painted look over a photoreal render: WebGPU against WebGL2
 

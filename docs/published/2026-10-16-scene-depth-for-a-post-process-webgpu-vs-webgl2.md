@@ -4,6 +4,7 @@ published: 2026-10-16
 categories: Rendering
 updated: 2026-10-17
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-16-scene-depth-webgpu-vs-webgl2.md
+series: WebGPU against WebGL2
 ---
 # Scene depth for a post process: WebGPU against WebGL2
 

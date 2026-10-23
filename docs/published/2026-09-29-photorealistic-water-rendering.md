@@ -1,54 +1,53 @@
 ---
-description: Real-time water rendering from the physics up: how lakes, ocean waves, breaking surf and foam look, how games draw them, and what it costs on WebGPU and WebGL2.
+description: Water reads as real through light more than waves: a mirror past 20 m, FFT seas at 0.1 to 2 ms, baked breakers, and what WebGPU and WebGL2 can afford.
 published: 2026-09-29
 categories: Rendering
-featured: 3
+series: Day Hike's look
+updated: 2026-10-23
+related: olympic-lakes-for-game-worlds, webgpu-vs-webgl2
 ---
 # Photorealistic water rendering: lakes and oceans
 
-**Question:** Day Hike is a first-person co-op hiking game in Babylon.js 9.18, set on a
-coast and forest like Washington's Olympic Peninsula. Its water is a flat plane with one
-scrolling normal map, and it does not look real. We want photorealistic water of two
-kinds, rendered in real time in a browser: a still forest lake, murky with algae at its
-margin and insects over it, and an ocean coast with waves that are large and concave where
-real ones would be, small where real ones would be, and white where they break. How does
-real water of both kinds behave, what do shipped games do about it, and what can a browser
-afford on WebGPU and on WebGL2? The water system is meant to be reused, in later maps and
-in other games, so the survey covers water at arm's length as well as from a kilometre
-away.
+**Question:** how does real water behave, from a still forest lake to an ocean coast with
+breaking waves, what do shipped games do about it, and what can a browser afford on WebGPU and
+on WebGL2? The test bed is Day Hike, a first-person co-op hiking game in Babylon.js 9.18 set on a
+coast like Washington's Olympic Peninsula, whose water is a flat plane with one scrolling normal
+map and does not look real.
 
-**Short answer:** most of what makes water read as real is cheap, and most of it is about
-light, not waves. Water is a window at your feet and a mirror 20 m away, and the water
-itself is dark, so across a lake or a sea what is seen is the sky and the far shore upside
-down. A sheltered lake mirrors its trees; a rough sea never mirrors its coast, and shows
-sky from 20 to 30° up. A brown forest lake lets red through least badly (measured
-attenuation about 1.1, 1.5 and 3.5 per metre for red, green and blue at a Secchi depth of
-1.8 m), so its bed is an amber rim a few metres wide round a black mirror. On the Olympic
-Peninsula only the lowland lakes with marsh at an end are murky, at 1.5 to 3.8 m of Secchi
-depth; the high lakes are clear to the bed at 5 to 11 m, so one lake material has to span
-both, with its attenuation as the setting. "Algae around the sides" is floating mats of
-filamentous algae in the shallows. Insect swarms hold station over a marker, do not flock,
-and vanish above 3 m/s of wind; a swarm is nearly silent, and the whine is one mosquito at
-the ear.
+**Short answer:** most of what makes water read as real is cheap, and most of it is about light,
+not waves: water is a window at your feet and a mirror 20 m away, and the water itself is dark,
+so across a lake or a sea what is seen is the sky and the far shore upside down. Games solved the
+open sea years ago with an
+[FFT](#term "A fast Fourier transform: here, the step that turns a statistical wave spectrum into a tileable patch of wave heights and sideways displacements.")
+of a wave spectrum, but at the shore they shrink waves where nature grows them, and the concave
+breaker has shipped only as a baked cross-section swept along the shore. In a browser one FFT
+cascade fits even on WebGL2, and in WebGPU compute drawing the water costs more than simulating
+it; for a still lake the mirror is the picture, and nobody has published what a mirrored render
+costs in a browser.
 
-At the coast, the sea is never small (a median of 2 m at 11 s offshore, 3 m in January),
-waves arrive in sets, turn to the beach, and grow before they break in water about 1.3
-times their height. Whether a wave spills or plunges is set by the beach's slope. The
-game's sea bed, at 1:67, spills in every sea. The concave wave belongs on a steep face,
-and this coast has them: the pebble beaches between its headlands stand at 1:9 to 1:17.
-Foam in the surf decays over about 20 s, longer than the gap between waves, so the inner
-surf stays white through a set.
+![Day Hike's tarn from its west shore: lily pads on dark water in the middle distance, a green margin and grey rocks in front, and a forest of tall conifers behind in mist](tarn.png "A tarn added to Day Hike since this survey, when the game had no lake: lilies on dark water under the forest. Its material takes its attenuation in each colour from the lakes measured in section 2, set between the clear high lake and the brown lowland one by how murky the lake is.")
 
-Games solved the open sea years ago with an FFT of a wave spectrum, at 0.1 to 2 ms on
-desktop GPUs. At the shore, shipped engines shrink waves where nature grows them. The
-concave breaker has shipped in four places as one technique: a small baked texture of the
-wave's cross-section over time, swept along the shore. Nobody publishes its cost, which
-is the cost of a mesh fine enough to draw the lip, and nobody has drawn one in a browser.
-In a browser the FFT costs about 0.7 ms a cascade as WebGL2 fragment passes on an Apple
-M5, and under 1 ms for three small cascades in WebGPU compute; with the simulation in
-compute, drawing the water costs more than simulating it. For a still lake the mirror is
-the picture, every published reflection method is weakest there, and no one has published
-what a mirrored render costs in a browser.
+**In numbers:**
+
+- **2 % at your feet, 90 % at 100 m:** how much light flat water reflects, so the whole change
+  from window to mirror happens between 2 and 20 m from a standing walker
+  ([section 2](#real-water-is-a-window-at-your-feet-and-a-mirror-20-m-away)).
+- **1.1, 1.5 and 3.5 per metre** of attenuation in red, green and blue in a brown forest lake at a
+  [Secchi depth](#term "The depth at which a disc lowered into the water can no longer be seen from above: a measure of how clear the water is.")
+  of 1.8 m, so its bed is an amber rim a few metres wide round a black mirror
+  ([section 2](#real-water-is-a-window-at-your-feet-and-a-mirror-20-m-away)).
+- **1.5 to 3.8 m against 5 to 11 m:** the Secchi depths of the Olympic Peninsula's murky lowland
+  lakes, with marsh at an end, and of its clear high lakes, so one lake material has to span both
+  with its attenuation as the setting ([section 5](#only-lowland-lakes-with-marsh-are-murky-high-lakes-are-clear)).
+- **A median of 2 m at 11 s** offshore, 3 m in January: the sea here is never small, and waves
+  break in water about 1.3 times their height ([section 3](#coastal-waves-grow-turn-and-break-by-the-beach-s-slope)).
+- **1:67 spills, 1:9 to 1:17 plunges:** the game's sea bed spills in every sea; the concave
+  [plunging](#term "A breaking wave whose crest curls over and falls into the trough ahead of it: the concave wave.")
+  wave belongs on the pebble faces between this coast's headlands, and foam lasting about 20 s
+  keeps the inner surf white through a set ([section 4](#the-olympic-coast-long-sand-flats-steep-pocket-beaches-stacks)).
+- **0.1 to 2 ms** for an FFT ocean on desktop GPUs; in a browser about 0.7 ms a cascade as WebGL2
+  fragment passes on an Apple M5, and under 1 ms for three small cascades in WebGPU compute
+  ([section 6](#games-solved-the-open-sea-with-ffts-but-shrink-waves-at-shore), [section 8](#browser-water-the-fft-costs-on-webgl2-the-drawing-on-webgpu)).
 
 The game is public at [game-dayhike](https://github.com/csarkosh/game-dayhike) and playable
 at [games.csarko.sh/dayhike](https://games.csarko.sh/dayhike/). Its renderer's two paths
@@ -59,7 +58,13 @@ Numbers given without a source are our own arithmetic from the sources beside th
 Fresnel's equations, the wave dispersion relation, and the published buoy, lidar and survey
 data.
 
-## 1. The water today
+## 1. The starting point: a flat sea with one scrolling normal map
+
+The goal is photorealistic water of two kinds, rendered in real time in a browser: a still
+forest lake, murky with algae at its margin and insects over it, and an ocean coast with waves
+that are large and concave where real ones would be, small where real ones would be, and white
+where they break. The water system is meant to be reused, in later maps and in other games, so
+the survey covers water at arm's length as well as from a kilometre away.
 
 Day Hike's world is a procedural coast and forest modelled on Washington's Olympic Peninsula:
 the Pacific west of the start, sand bays between headlands, sea stacks, a highway along the
@@ -99,7 +104,7 @@ Three properties of the world matter as much as the renderer:
 - **The sea bed is nearly flat.** It falls 1.5 m in 100 m (1:67) for the first 530 m, so the
   sea is under 1 m deep for its first 65 m. Section 3.3 shows what kind of wave that makes.
 
-## 2. How real water looks, and why
+## 2. Real water is a window at your feet and a mirror 20 m away
 
 ### 2.1 Fresnel reflection: clear at your feet, a mirror at a distance
 
@@ -263,9 +268,9 @@ rings, foam, wet stones, floating leaves. Near the feet, 98 % of the beam enters
 In clear shallows it lights the bed; in brown water it lights an amber haze that ends
 within a metre, and the haze glows back at the eye because the lamp is beside it.
 
-## 3. How real ocean waves behave at a coast
+## 3. Coastal waves grow, turn and break by the beach's slope
 
-### 3.1 The waves that arrive
+### 3.1 Arriving waves: a median of 2 m, in sets
 
 The nearest long record is the buoy off Cape Elizabeth, 131 m of water, west of the Olympic
 coast [23]. From its hourly records for 2015 to 2024:
@@ -443,7 +448,9 @@ Surf carries inland as a rumble that rises and falls with the sets. A long beach
 of sound, which fades more slowly with distance than a single source does, and air and
 forest take the high frequencies first.
 
-## 4. The coast the game is modelled on
+## 4. The Olympic coast: long sand flats, steep pocket beaches, stacks
+
+![Day Hike's beach below the road: a broad sweep of wet grey sand with darker patches and a bleached log in front, a forested headland on the left, and a lone sea stack off the shore to the right, all in fog](beach.png "Day Hike's beach below the road, with a sea stack off it in fog. Below the water's wet line the game now darkens the ground to 0.4 of its dry colour and makes it glossy: section 2.4's soaked sand.")
 
 ### 4.1 Two kinds of beach, each with two slopes
 
@@ -502,7 +509,7 @@ satellite's figure is a guide, not a measurement.
 Both say the same thing. In summer the sea off this coast is green and dim, with perhaps 1
 to 4 m of visibility into it, not blue and not clear.
 
-## 5. A still forest lake, murky or clear
+## 5. Only lowland lakes with marsh are murky; high lakes are clear
 
 ### 5.1 Which lake is murky, measured
 
@@ -617,7 +624,7 @@ What changes in the picture follows from section 2.
   is what falls in: needles, pollen in early summer, sunken wood.
 
 
-## 6. How shipped games render the ocean and its shore
+## 6. Games solved the open sea with FFTs, but shrink waves at shore
 
 ### 6.1 Offshore is solved: FFT ocean waves
 
@@ -756,7 +763,7 @@ with distance [111]. Far Cry 5 builds a
 filtering lighting" [90]. For a walker looking across kilometres of sea toward a
 low sun, this decides whether the sea reads as water.
 
-## 7. How shipped games render still water
+## 7. Still water's mirror is where every game method is weakest
 
 ### 7.1 Water reflections are the hard part, and the studios say so
 
@@ -826,7 +833,7 @@ source and four while it moves, since each step of position starts a cross-fade 
 [124], so a whine can be made with no recording at all. No measurement of a
 panner's cost in milliseconds was found.
 
-## 8. What a browser can run: WebGPU and WebGL2
+## 8. Browser water: the FFT costs on WebGL2, the drawing on WebGPU
 
 ### 8.1 What the two APIs allow
 
@@ -923,7 +930,7 @@ Four things follow.
 We found no measured cost, in any browser engine on named hardware, for a mirrored second
 render of a scene or for a copy of the scene's colour taken in the middle of a frame.
 
-### 8.5 Measuring it ourselves
+### 8.5 Measuring it: rounded timestamps, timers that do not add up
 
 Two traps wait for whoever measures. Chrome rounds WebGPU's timestamp queries to steps of
 65,536 ns unless its developer features are switched on [143], and a water
@@ -932,7 +939,7 @@ do not add up: one project's sections summed to 12.6 ms inside a frame of 2.3 ms
 queries themselves cost 2 to 7 % of the frame rate [137]. Paired frame times with
 the feature on and off are the measure to trust there.
 
-## 9. Water rendering options, system by system
+## 9. The options by system: surface, shore, foam, mirror, sound
 
 Costs are the published ones from sections 6 to 8, on the hardware their sources name.
 "Not measured" means no source gave a figure. None of these has been measured in Day Hike.
@@ -987,7 +994,7 @@ Costs are the published ones from sections 6 to 8, on the hardware their sources
 | A copy of the scene's colour, read with an offset | Refraction: the bed raised and wobbling with the ripples | Not measured in any browser | A copy of the frame, this frame's or the last |
 | Wet sand and wet rock in the terrain's shader, in three states | Dry, damp at 0.7 and soaked at 0.4 of dry, with a mirror gloss where water lies | Arithmetic in a shader that already has a wetness term | The waterline's position, which the shore waves give |
 
-### 9.6 The mesh
+### 9.6 The mesh needs cells of 0.25 to 1 m near the viewer
 
 The sea's rings have cells of 8 m near the camera. Waves shorter than about 16 m cannot be
 drawn on them. Every system in section 8 uses cells of 0.25 to 1 m near the viewer, and a
@@ -1033,7 +1040,7 @@ chorus frogs in Washington are offered under Creative Commons 0 [145],
 [146]. The well-known bird archives license for non-commercial use or under
 share-alike terms, which would bind the game's own audio.
 
-## 10. What nobody has measured
+## 10. Unmeasured: a mirrored render in a browser, the breaker mesh
 
 What follows is what this survey looked for and did not find. Each is either a measurement
 to make in the game or a number to choose by eye.
@@ -1073,7 +1080,7 @@ paper in 3.4, and Callaghan's and Monahan's whitecap lifetimes in 3.5. Two talks
 on the breaker were not readable at all: Guerrilla's 2024 follow-up on simulated rolling
 waves, and Sledgehammer's on the sea of Call of Duty: WWII.
 
-## 11. What this means for Day Hike
+## 11. For Day Hike: reachable water, a steep beach, lakes low and high
 
 Three questions in this survey were about the world and not the renderer. We have answered
 them, and each answer changes which of section 9's options are worth their cost.

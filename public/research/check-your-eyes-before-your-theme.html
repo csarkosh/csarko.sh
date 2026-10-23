@@ -20,6 +20,7 @@
   <meta property="article:published_time" content="2026-10-13" />
   <meta property="article:modified_time" content="2026-10-18" />
   <meta property="article:author" content="https://csarko.sh/" />
+  <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Dark mode and headaches: check your eyes first" />
   <meta name="twitter:description" content="What the evidence says about dark mode, contrast, line spacing, font size, blue light, flicker, breaks and the eye exam for a developer&#39;s screen headaches." />
@@ -127,6 +128,8 @@
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
+      /* A doc's body text: brighter than --muted, which reads as grey at length (2026-10-23). */
+      --prose: #c9ced9;
       --faint: #7d8597;
       /* Content warnings only. Yellow to stand apart from the teal accent. */
       --warning: #f5c451;
@@ -156,6 +159,7 @@
         --border-strong: rgba(10, 11, 14, 0.16);
         --text: #12151c;
         --muted: #4a5263;
+        --prose: #2b3240;
         --faint: #5f677a;
         --warning: #8a6100;
         --accent: #0a735f;
@@ -347,6 +351,57 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .doc-page .prose { font-size: 17px; }
+    .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
+    .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
+    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .rail a[aria-current] { color: var(--text); }
+    .rail a[aria-current] .num { color: var(--accent); }
+    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .toc .section-label { margin: 0 0 6px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
+    .toc a:hover { color: var(--accent); }
+    .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    .figure { margin: 32px 0; }
+    .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+    /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
+    .figure img { max-height: 80vh; object-fit: contain; }
+    .figure figcaption { margin-top: 10px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+    .prose blockquote strong:first-child { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted var(--faint); text-underline-offset: 4px; }
+    .term:hover, .term:focus-visible { text-decoration-color: var(--accent); }
+    .term-def { max-width: min(92vw, 420px); margin: auto; padding: 16px 18px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.55; }
+    .term-def::backdrop { background: var(--nav-bg); }
+    /* A wide table or code block that scrolls sideways shows a shade at the edge it can scroll to. */
+    .scroll { background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
+      var(--surface); }
+    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
+    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
+    .series-name { margin: 0 0 8px; font-weight: 600; }
+    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
+    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
+    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
+    .next-list .card { padding: 16px 18px; background: var(--bg); }
+    .next-list .doc-title { font-size: 1.05rem; }
+    .next-list .doc-desc { font-size: 14.5px; }
+    .play-line { margin: 20px 0 0; }
+    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background .15s ease; }
+    .play:hover { background: var(--accent-hover); }
+    .play svg { width: 14px; height: 14px; }
+    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
+    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color .15s ease; }
+    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
+    .afterward .next:hover { border-color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -382,30 +437,48 @@
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-        <li><a href="#headache-after-screen-work-is-common-and-non-specific"><span class="num" aria-hidden="true">01</span><span>Headache after screen work is common and non-specific</span></a></li>
-        <li><a href="#dark-mode-versus-light-mode"><span class="num" aria-hidden="true">02</span><span>Dark mode versus light mode</span></a></li>
-        <li><a href="#contrast-level"><span class="num" aria-hidden="true">03</span><span>Contrast level</span></a></li>
-        <li><a href="#text-as-a-grating-line-spacing-size-typeface"><span class="num" aria-hidden="true">04</span><span>Text as a grating: line spacing, size, typeface</span></a></li>
-        <li><a href="#blue-light-warm-tints-and-ambient-brightness"><span class="num" aria-hidden="true">05</span><span>Blue light, warm tints and ambient brightness</span></a></li>
-        <li><a href="#flicker-pwm-and-refresh-rate"><span class="num" aria-hidden="true">06</span><span>Flicker, PWM and refresh rate</span></a></li>
-        <li><a href="#blinks-dry-eye-and-breaks"><span class="num" aria-hidden="true">07</span><span>Blinks, dry eye and breaks</span></a></li>
-        <li><a href="#what-an-eye-examination-can-find"><span class="num" aria-hidden="true">08</span><span>What an eye examination can find</span></a></li>
-        <li><a href="#evidence-scorecard"><span class="num" aria-hidden="true">09</span><span>Evidence scorecard</span></a></li>
-        <li><a href="#recommendations-ranked"><span class="num" aria-hidden="true">10</span><span>Recommendations, ranked</span></a></li>
-        <li><a href="#sources"><span class="num" aria-hidden="true">11</span><span>Sources</span></a></li>
+        <li><a href="#headache-after-screen-work-is-common-and-non-specific" data-visits-event="toc-rail"><span class="num" aria-hidden="true">01</span><span>Headache after screen work is common and non-specific</span></a></li>
+        <li><a href="#dark-mode-versus-light-mode" data-visits-event="toc-rail"><span class="num" aria-hidden="true">02</span><span>Dark mode versus light mode</span></a></li>
+        <li><a href="#contrast-level" data-visits-event="toc-rail"><span class="num" aria-hidden="true">03</span><span>Contrast level</span></a></li>
+        <li><a href="#text-as-a-grating-line-spacing-size-typeface" data-visits-event="toc-rail"><span class="num" aria-hidden="true">04</span><span>Text as a grating: line spacing, size, typeface</span></a></li>
+        <li><a href="#blue-light-warm-tints-and-ambient-brightness" data-visits-event="toc-rail"><span class="num" aria-hidden="true">05</span><span>Blue light, warm tints and ambient brightness</span></a></li>
+        <li><a href="#flicker-pwm-and-refresh-rate" data-visits-event="toc-rail"><span class="num" aria-hidden="true">06</span><span>Flicker, PWM and refresh rate</span></a></li>
+        <li><a href="#blinks-dry-eye-and-breaks" data-visits-event="toc-rail"><span class="num" aria-hidden="true">07</span><span>Blinks, dry eye and breaks</span></a></li>
+        <li><a href="#what-an-eye-examination-can-find" data-visits-event="toc-rail"><span class="num" aria-hidden="true">08</span><span>What an eye examination can find</span></a></li>
+        <li><a href="#evidence-scorecard" data-visits-event="toc-rail"><span class="num" aria-hidden="true">09</span><span>Evidence scorecard</span></a></li>
+        <li><a href="#recommendations-ranked" data-visits-event="toc-rail"><span class="num" aria-hidden="true">10</span><span>Recommendations, ranked</span></a></li>
+        <li><a href="#sources" data-visits-event="toc-rail"><span class="num" aria-hidden="true">11</span><span>Sources</span></a></li>
       </ol>
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
         <p class="eyebrow">Oct 13, 2026 · Updated Oct 18, 2026</p>
         <h1>Dark mode and headaches: check your eyes first</h1>
+        <p class="lead">What the evidence says about dark mode, contrast, line spacing, font size, blue light, flicker, breaks and the eye exam for a developer&#39;s screen headaches.</p>
         <ul class="tags">
-          <li>43 min read</li>
+          <li>32 min read</li>
         </ul>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> A developer who ends most workdays with a headache after long terminal sessions wants to know what the published evidence says about the usual suspects: dark mode against light mode, pure white on black against a softened palette, line spacing, font size and typeface, blue light and warm screen tints, backlight flicker and refresh rate, blinking and break schedules, and what an eye examination can find that a theme change cannot. Which of these has evidence behind it, what should change first, and what defaults should a terminal-focused IDE ship as a result?</p>
 <p><strong>Short answer:</strong> the highest-yield first move is a comprehensive eye examination that explicitly includes refraction for small astigmatism, binocular (convergence) and accommodative testing, and a dry-eye assessment, not a change of editor theme. Every major review of digital eye strain puts refractive correction and binocular and ocular-surface management first, and no display-side variable (polarity, contrast, font, refresh rate, blue light, line spacing) has ever been tested with headache as a measured outcome. On the display side the one change with real mechanistic support is larger text with looser line spacing: reading speed collapses below an x-height of about 0.2 degrees, the light-mode legibility advantage grows as fonts shrink, and rows of text at the pitch of a typical 12-14 px terminal font on a laptop land close to the 3 cycles-per-degree stripe frequency that provokes the most visual discomfort in susceptible people. Dark against light mode is a draw on comfort: light mode wins every legibility experiment because its higher luminance shrinks the pupil, but fatigue trials find no significant difference and no study has measured headache. Blue-light filtering fails a 120-person double-masked trial and a Cochrane review; software warm tints have no eye-strain trial at all. Invisible 100 Hz lighting flicker more than halved headaches in a double-blind office crossover, but an M4 MacBook Pro backlight was bench-measured at 14,880 Hz, far above every published sensitivity threshold. A 5-minute break every hour has field-trial support that the 20-20-20 rule lacks, and complete blinks matter more than blink count. This is a synthesis of published evidence, not medical advice.</p>
+      </div>
+      <nav class="toc" aria-label="In this doc">
+        <p class="section-label">In this doc</p>
+        <ol>
+          <li><a href="#headache-after-screen-work-is-common-and-non-specific" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>Headache after screen work is common and non-specific</span></a></li>
+          <li><a href="#dark-mode-versus-light-mode" data-visits-event="toc"><span class="num" aria-hidden="true">02</span><span>Dark mode versus light mode</span></a></li>
+          <li><a href="#contrast-level" data-visits-event="toc"><span class="num" aria-hidden="true">03</span><span>Contrast level</span></a></li>
+          <li><a href="#text-as-a-grating-line-spacing-size-typeface" data-visits-event="toc"><span class="num" aria-hidden="true">04</span><span>Text as a grating: line spacing, size, typeface</span></a></li>
+          <li><a href="#blue-light-warm-tints-and-ambient-brightness" data-visits-event="toc"><span class="num" aria-hidden="true">05</span><span>Blue light, warm tints and ambient brightness</span></a></li>
+          <li><a href="#flicker-pwm-and-refresh-rate" data-visits-event="toc"><span class="num" aria-hidden="true">06</span><span>Flicker, PWM and refresh rate</span></a></li>
+          <li><a href="#blinks-dry-eye-and-breaks" data-visits-event="toc"><span class="num" aria-hidden="true">07</span><span>Blinks, dry eye and breaks</span></a></li>
+          <li><a href="#what-an-eye-examination-can-find" data-visits-event="toc"><span class="num" aria-hidden="true">08</span><span>What an eye examination can find</span></a></li>
+          <li><a href="#evidence-scorecard" data-visits-event="toc"><span class="num" aria-hidden="true">09</span><span>Evidence scorecard</span></a></li>
+          <li><a href="#recommendations-ranked" data-visits-event="toc"><span class="num" aria-hidden="true">10</span><span>Recommendations, ranked</span></a></li>
+        </ol>
+      </nav>
+      <div class="prose">
 <div class="section-head"><p class="section-label">01</p><h2 id="headache-after-screen-work-is-common-and-non-specific"><a class="anchor" href="#headache-after-screen-work-is-common-and-non-specific">Headache after screen work is common and non-specific</a></h2></div>
 <p>Headache is one of the core symptoms of what optometry calls computer vision syndrome or digital eye strain, and it is common enough that its presence says almost nothing about its cause. In a survey of 520 New York office workers, 22.3% reported headache at least half the time during computer use in the prior week <a class="cite" href="#ref-1">[1]</a>, <a class="cite" href="#ref-2">[2]</a>. Pooled estimates of any visual symptom run from 50% to 90% of computer users, and the 2023 Tear Film and Ocular Surface Society (TFOS) consensus report notes figures &quot;up to 97%&quot; because there are no agreed diagnostic criteria <a class="cite" href="#ref-3">[3]</a>, <a class="cite" href="#ref-4">[4]</a>. All of these are cross-sectional self-reports; none shows that screens cause the headache rather than co-occur with it.</p>
 <p>What the reviews agree on is the order of attack. TFOS states that &quot;interventions are not well established; patients experiencing digital eye strain should be provided with a full refractive correction for the appropriate working distances. Improving blinking, optimizing the work environment and encouraging regular breaks may help. Based on current, best evidence, blue-light blocking interventions do not appear to be an effective management strategy&quot; <a class="cite" href="#ref-4">[4]</a>. Rosenfield&#39;s review identifies oculomotor anomalies and dry eye as the principal ocular causes and concludes that &quot;the efficacy of proposed treatments to reduce symptoms of CVS is unproven&quot; <a class="cite" href="#ref-3">[3]</a>. Both imply the same order: refraction and binocular status, then the ocular surface, then workstation ergonomics, with unproven add-ons such as tints last.</p>
@@ -785,6 +858,29 @@
 </tr>
 </tbody></table></div>
 <p>The useful reframing is that &quot;dark mode versus light mode&quot; is the wrong axis. The variables that move measured outcomes are luminance reaching the eye, angular text size, line pitch relative to x-height, and whether anything in view modulates at 100 Hz; polarity is a proxy for the first and nothing else. The strongest results here are negative (blue-light lenses) or clinical (sub-dioptre astigmatism multiplying symptom scores, lighting flicker halving headaches), while the display-side folklore with the widest circulation (softened palettes, named coding fonts, 120 Hz, warm tints, 20-20-20) has either no controlled test or a failed one. The three things most likely to help a developer today are an exam that measures convergence and small cylinder, a font two sizes larger with 1.5 line height, and a five-minute walk every hour; none of them is a theme.</p>
+      </div>
+      <section class="keep-reading" aria-labelledby="next-reads">
+        <h2 id="next-reads" class="section-label">Keep reading</h2>
+        <ul class="doc-list next-list" role="list">
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/telemetry-without-identifying-anyone" data-visits-event="next-telemetry-without-identifying-anyone">Privacy-first telemetry without user IDs</a></h3>
+            <p class="doc-meta">40 min read</p>
+            <p class="doc-desc">A privacy-first telemetry design for a desktop IDE: counters and coarse dimensions, no IDs, opt-in consent, crash reports, and legal baselines.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/visits-without-cookies" data-visits-event="next-visits-without-cookies">Visits without cookies, and the path they took</a></h3>
+            <p class="doc-meta">15 min read</p>
+            <p class="doc-desc">What a cookieless counter can know, what more a page says without fingerprinting, where the journey hides, and a 3 KB client with a Rust collector.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/bring-the-agents-back-after-a-reboot" data-visits-event="next-bring-the-agents-back-after-a-reboot">Bring the agents back after a reboot</a></h3>
+            <p class="doc-meta">17 min read</p>
+            <p class="doc-desc">After a restart nothing survives, but the layout, scrollback and each agent&#39;s conversation can come back on their own; how Claude Code and Codex differ.</p>
+          </li>
+        </ul>
+        <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS) or <a class="external" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">csarko.log</a>.</p>
+      </section>
+      <div class="prose">
 <div class="section-head" data-read-end><p class="section-label">11</p><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <ol class="references">
 <li id="ref-1"><span class="ref-num">[1]</span><div>J. K. Portello, M. Rosenfield, Y. Bababekova, J. M. Estrada, and A. Leon, &quot;Computer-related visual symptoms in office workers,&quot; <em>Ophthalmic Physiol. Opt.</em>, vol. 32, no. 5, pp. 375-382, Sep. 2012. Accessed: Oct. 13, 2026. [Online]. Available: <a class="external" href="https://pubmed.ncbi.nlm.nih.gov/22775070/" target="_blank" rel="noopener">https://pubmed.ncbi.nlm.nih.gov/22775070/</a></div></li>
@@ -858,7 +954,6 @@
 <li id="ref-69"><span class="ref-num">[69]</span><div>American Optometric Association, &quot;Computer vision syndrome,&quot; aoa.org. Accessed: Oct. 13, 2026. [Online]. Available: <a class="external" href="https://www.aoa.org/healthy-eyes/eye-and-vision-conditions/computer-vision-syndrome" target="_blank" rel="noopener">https://www.aoa.org/healthy-eyes/eye-and-vision-conditions/computer-vision-syndrome</a></div></li>
 <li id="ref-70"><span class="ref-num">[70]</span><div>T. P. Do et al., &quot;Red and orange flags for secondary headaches in clinical practice: SNNOOP10 list,&quot; <em>Neurology</em>, vol. 92, no. 3, pp. 134-144, Jan. 2019. Accessed: Oct. 13, 2026. [Online]. Available: <a class="external" href="https://pubmed.ncbi.nlm.nih.gov/30587518/" target="_blank" rel="noopener">https://pubmed.ncbi.nlm.nih.gov/30587518/</a></div></li>
 </ol>
-
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
@@ -866,6 +961,10 @@
         <p>Senior software engineer leading distributed systems and AI products.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
+      <nav class="afterward" aria-label="Read next">
+        <a class="next" href="/research/telemetry-without-identifying-anyone" data-visits-event="end-telemetry-without-identifying-anyone"><span class="section-label">Read next</span><span>Privacy-first telemetry without user IDs <span aria-hidden="true">→</span></span></a>
+        <a href="/research">All research</a>
+      </nav>
     </main>
   </div>
 
@@ -878,6 +977,7 @@
   <!-- generated:analytics -->
   <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
+  <script defer src="/assets/reading.c3e27b33.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

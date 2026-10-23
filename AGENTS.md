@@ -224,7 +224,12 @@ three from the command line):
   and `docs/films/*.md`). Docs
   from private repositories such as `magicpixel.ai` need Cyrus's OK per doc, and
   never describe the commercial asset pipeline. Launched with
-  `stylized-shader-looks`, from `game-dayhike`. **Every doc carries `categories:`**
+  `stylized-shader-looks`, from `game-dayhike`. **A doc page is built for the skim**
+  *(2026-10-23)*: its description under the title, a verdict and key numbers first, an "In this
+  doc" list, claim headings, figures (`assets/research/<slug>/`), tap-to-open term definitions,
+  a Keep reading block (its `series:`, `related:` docs, Play Day Hike) before Sources, Read next
+  after the author box, and an Atom feed at `/research/feed.xml`; the `publish-doc` skill's
+  "Write for the skim" has the rules. **Every doc carries `categories:`**
   *(Cyrus, 2026-10-13)*: one to three of the fixed set in `docs_lib.mjs`
   (`CATEGORIES`: Distributed systems, AI, Rendering, Worlds and terrain, Game design,
   Film, Tooling), which are the filter chips above the list on `/research` (multi-select,
@@ -403,8 +408,14 @@ dropped because its host went down and took the numbers with it.)*
   to see what the index's visitors do before they leave)*. All are `data-visits-event` attributes. `read-<slug>` needs no script of
   ours any more: it is derived from lib-visits' `leave.re` (the reader reached the end of a
   doc). **Event names are stable identifiers, not copy:** renaming a button or a URL must
-  not rename its series. A doc page now carries about 4,063 B of the 10,000 B script
-  budget. Campaign tags on links Cyrus posts (`?ref=substack`, `?ref=linkedin`) are
+  not rename its series. **On a doc page** *(2026-10-23, after the reading research: real visitors
+  spent a median of 16 s on a doc and most flicked to the end)*: the contents count `toc` and
+  `toc-rail`, a link in the text to another doc `doc-<slug>`, the series line `series-<slug>`, Keep
+  reading `next-<slug>`, the Read next link after the author box `end-<slug>`, the Play button
+  `play-<game>`, and the site's own `reading.js` (the one script of ours, doc pages only) sends
+  `section` (`d.n`, n 0 for the opening) once a section has sat across the middle of a visible
+  screen for 5 s, which a flick never does; the dashboard's Events card lists it as `section-<n>`. A
+  doc page now carries about 5,054 B of the 10,000 B script budget. Campaign tags on links Cyrus posts (`?ref=substack`, `?ref=linkedin`) are
   recorded as the page's query; the site does nothing for them.
 
 ## Theme tokens
@@ -423,6 +434,7 @@ do).
 | `--bg` | `#0a0b0e` | `#f6f7f9` |
 | `--surface` / `--surface-2` | `#111318` / `#161922` | `#ffffff` / `#eef0f4` |
 | `--text` / `--muted` / `--faint` | `#e8eaf0` / `#a0a8b8` / `#7d8597` | `#12151c` / `#4a5263` / `#5f677a` |
+| `--prose` | `#c9ced9` | `#2b3240` |
 | `--warning` | `#f5c451` | `#8a6100` | 
 
 The light accent is a deep version of the mint (same hue, ~167°), because the
@@ -432,6 +444,9 @@ token** (borders, glows, the nav's glass, shadows too), so a new color needs a
 value in both blocks; `check.py` fails on a hardcoded color, a token the light
 block misses, or text under 4.5:1 in either theme. `404.html` carries a subset
 of the same tokens.
+
+`--prose` *(2026-10-23)* is a doc's body text, its description under the title and its
+contents list: brighter than `--muted`, which read as grey at article length.
 
 `--faint` is the dimmest text that clears WCAG 4.5:1 on every surface in its
 theme (dark was `#6e7688`, which failed). Fonts: Inter (text) and JetBrains Mono (labels,

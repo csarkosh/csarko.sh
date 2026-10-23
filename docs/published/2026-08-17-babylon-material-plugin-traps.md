@@ -1,38 +1,58 @@
 ---
-description: Where Babylon.js 9.18 injects material plugin GLSL, what each PBR hook can see, and the silent failures behind preprocessor, comment and bake traps.
+description: Babylon.js 9.18 splices plugin GLSL in after #include expansion, before #if: what each PBR hook sees, and the silent preprocessor, comment and bake traps.
 published: 2026-08-17
 categories: Rendering, Tooling
-updated: 2026-10-10
+updated: 2026-10-23
+related: webgpu-vs-webgl2, atmosphere-and-dread-shaders, no-visible-pop-in
 ---
 # Babylon.js material plugins: hooks and traps
 
-**Question:** Day Hike extends Babylon.js's `PBRMaterial` with material plugins [1] instead of
-forking its shaders: wind sway, a base conform that seats trees on slopes, a distance
-dither, wing beats for birds, and a terrain plugin that blends CC0 texture maps with
-per-layer normals, roughness and Fresnel. Most of the failures met along the way produced
-no error, a clean console and a passing test suite. When does a plugin's code
-actually reach the shader, what can each injection point see, and which traps are worth
-knowing before writing the first line?
+**Question:** when does the code a Babylon.js
+[material plugin](#term "A class that adds GLSL to Babylon's own PBR shader at named injection points, instead of forking the shader.")
+adds actually reach the shader, what can each injection point see, and which traps are worth
+knowing before writing the first line? Most of the failures met in Day Hike's plugins produced no
+error, a clean console and a passing test suite.
 
-**Short answer:** plugin code is spliced in **after `#include` expansion and before the
-preprocessor evaluates `#if`**, as plain text. Almost every trap follows from that one
-fact: a gate on a define the plugin never declared compiles out, a regex aimed at an
-`#include` line matches nothing, and a GLSL comment that merely spells `#ifdef` becomes a
-real directive that deletes code. The rest come from passes that never run plugin code
-(shadow maps, depth pre-passes, one-shot render targets under their own render pass), from
-Babylon 9's split between `.pure` modules and the wrappers that register them, and from
-the budgets a terrain shader runs into: 16 texture units and float32 time. The fix for
-most of them is the same: run your injected strings through Babylon's real preprocessor in
-a unit test, and read the expanded shader rather than the documentation.
+**Short answer:** plugin code is spliced in as plain text **after `#include` expansion and before
+the [preprocessor](#term "The step that evaluates #if, #ifdef, #else and #endif against the material's defines and removes the code they rule out, before the shader goes to the driver.")
+evaluates `#if`**, and almost every trap follows from that one fact. A gate on a define the
+plugin never declared compiles out, a regex aimed at an `#include` line matches nothing, and a
+GLSL comment that merely spells `#ifdef` becomes a real directive that deletes code. The fix for
+most of them: run your injected strings through Babylon's real preprocessor in a unit test, and
+read the expanded shader rather than the documentation.
 
-Every claim below was checked against the installed `@babylonjs/core` 9.18.0 source, the
+![A flow of five boxes: 1, shader source loaded from the shader store; 2, ProcessIncludes expands every #include; 3, highlighted, plugin code is injected as plain text, when #include lines no longer exist and #if and #ifdef are not evaluated yet; 4, ProcessShaderConversion evaluates #if and #ifdef against the material's defines, then migrates GLSL; 5, the result goes to the driver](injection-order.svg "Plugin code lands between include expansion and the preprocessor, so it can gate on the material's defines but can never anchor on an #include line, and a directive spelled inside a comment is still a directive.")
+
+**In short:**
+
+- **A comment that spells `#ifdef` deletes code:** the preprocessor is line-based and does not
+  know comments; in Day Hike it deleted the terrain's triplanar rock branch with no error
+  ([section 4](#a-comment-that-spells-ifdef-deletes-code)).
+- **Shadow maps, depth pre-passes and geometry buffers never run plugin code,** so a vertex
+  displacement does not move the cast shadow
+  ([section 6](#shadow-and-depth-passes-skip-plugin-code-bakes-miss-the-cache)).
+- **0 of 65,536 pixels:** a one-shot impostor bake under its own render pass came out fully
+  transparent with the whole automated suite green
+  ([section 6](#shadow-and-depth-passes-skip-plugin-code-bakes-miss-the-cache)).
+- **`.pure` modules register nothing:** Babylon 9 splits a feature from the wrapper that
+  registers it, and without the wrapper `thinInstanceSetBuffer` is a silent stub
+  ([section 5](#registration-traps-pure-stubs-late-plugins-nullengine-webgpu)).
+- **16 texture units** is WebGL2's guarantee; two texture arrays fit twelve more terrain maps
+  where separate samplers could not ([section 7](#16-texture-units-texture-arrays-and-per-layer-fresnel)).
+- **Float32 time** advances in steps of about 7.8 ms after a day of uptime, so wrap it on the
+  CPU ([section 9](#float32-time-steps-7-8-ms-after-a-day-so-wrap-it-at-300-s)).
+
+Day Hike extends Babylon.js's `PBRMaterial` with material plugins [1] instead of forking its
+shaders: wind sway, a base conform that seats trees on slopes, a distance dither, wing beats for
+birds, and a terrain plugin that blends CC0 texture maps with per-layer normals, roughness and
+Fresnel. Every claim below was checked against the installed `@babylonjs/core` 9.18.0 source, the
 version pinned in [game-dayhike](https://github.com/csarkosh/game-dayhike) [2]. The
 preprocessor traps were also reproduced by running a test plugin through the real PBR
 fragment shader and `WebGL2ShaderProcessor` in Node. The earlier
 [atmosphere research](/research/atmosphere-and-dread-shaders) names three of these traps in
 passing; this is the long version.
 
-## 1. When plugin code is injected
+## 1. Plugin code lands after includes expand, before #if is evaluated
 
 A `PBRMaterial` builds its effect in this order:
 
@@ -59,7 +79,7 @@ right choice, for a different reason: flipping a uniform is instant, while flipp
 define recompiles the material. But the wind, ground-conform and terrain plugins all gate
 on their own defines, and those gates work.
 
-## 2. What each hook can see
+## 2. Ten PBR hooks: what each can see and where each misleads
 
 | Hook | In scope | The trap |
 | --- | --- | --- |
@@ -90,7 +110,7 @@ colour, detail map and base weight are all multiplied in inside `albedoOpacityBl
 a regex that edits `vAlbedoColor` edits the material constant before any of them. Edit
 `surfaceAlbedo` at `BEFORE_LIGHTS` instead.
 
-## 3. Gates, anchors and declarations
+## 3. Undeclared gates and #include anchors fail silently
 
 These are the traps that follow directly from injecting between include expansion and the
 preprocessor. Each was reproduced in Node with a marker line per case.
@@ -133,7 +153,7 @@ preprocessor. Each was reproduced in Node with a marker line per case.
   `CUSTOM_FRAGMENT_DEFINITIONS`. A `sampler2DArray` there also needs an explicit `highp`:
   GLSL ES 3.00 has no default precision for it, which only a real driver reports.
 
-## 4. Comments that delete code
+## 4. A comment that spells #ifdef deletes code
 
 Babylon's preprocessor is line-based, and it does not know what a comment is.
 
@@ -163,7 +183,7 @@ sees it.
    import that include's module first: the include store is only populated when the module
    loads, and an assertion against `undefined` passes vacuously.
 
-## 5. Registration and headless traps
+## 5. Registration traps: .pure stubs, late plugins, NullEngine, WebGPU
 
 **`.pure` modules register nothing.** Babylon 9 splits most features into a `.pure.js`
 module that defines behaviour and a wrapper that registers it [12]. Methods patched onto a
@@ -204,7 +224,7 @@ back-face culled, so the terrain renders as nothing while every prop on it still
 [`clipmap.ts`](https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/clipmap.ts)
 records the winding and a test guards it.
 
-## 6. Passes that never run plugin code
+## 6. Shadow and depth passes skip plugin code; bakes miss the cache
 
 **Shadow maps, depth pre-passes and geometry buffers.** Babylon's `shadowMap`, `depth` and
 `geometry` shaders expose only a `DEFINITIONS` hook, and the renderers that use them build
@@ -241,7 +261,7 @@ non-instanced, so an unguarded read of a per-instance attribute there would read
 instance happened to be first. Day Hike's conform and wing plugins wrap the body in
 `#ifdef THIN_INSTANCES`, which Babylon sets per submesh from `hasThinInstances`.
 
-## 7. Samplers, texture arrays and per-layer Fresnel
+## 7. 16 texture units: texture arrays and per-layer Fresnel
 
 **The 16-unit budget.** WebGL2 guarantees 16 fragment texture units. When per-layer normal
 and roughness/AO/height maps were added to the terrain, the material already bound eleven
@@ -283,7 +303,7 @@ weather code that scales the terrain material's roughness when the ground is wet
 working. The key is version-fragile by
 nature; a test that runs it against the real shader source catches a Babylon rename.
 
-## 8. Normal maps without tangents
+## 8. Planar terrain layers take normal maps without tangents
 
 **Verify the hook by reading the expanded shader.** Before writing `normalW` at
 `CUSTOM_FRAGMENT_BEFORE_LIGHTS`, check what runs between the normal blocks and the hook.
@@ -314,7 +334,7 @@ on the texture class's `invertY` default, which is why the arrays flip rows them
 The test that settles it is a shot of an asymmetric feature, such as a pebble field, lit
 from one side: the lit faces must point at the sun.
 
-## 9. Float32 time
+## 9. Float32 time steps 7.8 ms after a day, so wrap it at 300 s
 
 A shader animation that feeds `performance.now() / 1000` straight into a float32 uniform
 degrades with uptime. After a day (86,400 seconds) a float32 can only represent multiples of

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Babylon.js material plugins: hooks and traps · Cyrus Sarkosh</title>
-  <meta name="description" content="Where Babylon.js 9.18 injects material plugin GLSL, what each PBR hook can see, and the silent failures behind preprocessor, comment and bake traps." />
+  <meta name="description" content="Babylon.js 9.18 splices plugin GLSL in after #include expansion, before #if: what each PBR hook sees, and the silent preprocessor, comment and bake traps." />
   <link rel="canonical" href="https://csarko.sh/research/babylon-material-plugin-traps" />
 
   <meta property="og:type" content="article" />
@@ -12,17 +12,18 @@
   <meta property="og:locale" content="en_US" />
   <meta property="og:url" content="https://csarko.sh/research/babylon-material-plugin-traps" />
   <meta property="og:title" content="Babylon.js material plugins: hooks and traps" />
-  <meta property="og:description" content="Where Babylon.js 9.18 injects material plugin GLSL, what each PBR hook can see, and the silent failures behind preprocessor, comment and bake traps." />
+  <meta property="og:description" content="Babylon.js 9.18 splices plugin GLSL in after #include expansion, before #if: what each PBR hook sees, and the silent preprocessor, comment and bake traps." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta property="article:published_time" content="2026-08-17" />
-  <meta property="article:modified_time" content="2026-10-10" />
+  <meta property="article:modified_time" content="2026-10-23" />
   <meta property="article:author" content="https://csarko.sh/" />
+  <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Babylon.js material plugins: hooks and traps" />
-  <meta name="twitter:description" content="Where Babylon.js 9.18 injects material plugin GLSL, what each PBR hook can see, and the silent failures behind preprocessor, comment and bake traps." />
+  <meta name="twitter:description" content="Babylon.js 9.18 splices plugin GLSL in after #include expansion, before #if: what each PBR hook sees, and the silent preprocessor, comment and bake traps." />
   <meta name="twitter:image" content="https://csarko.sh/og-image.jpg" />
   <meta name="twitter:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
 
@@ -46,12 +47,12 @@
       "@type": "TechArticle",
       "@id": "https://csarko.sh/research/babylon-material-plugin-traps#article",
       "headline": "Babylon.js material plugins: hooks and traps",
-      "description": "Where Babylon.js 9.18 injects material plugin GLSL, what each PBR hook can see, and the silent failures behind preprocessor, comment and bake traps.",
+      "description": "Babylon.js 9.18 splices plugin GLSL in after #include expansion, before #if: what each PBR hook sees, and the silent preprocessor, comment and bake traps.",
       "datePublished": "2026-08-17",
-      "dateModified": "2026-10-10",
+      "dateModified": "2026-10-23",
       "url": "https://csarko.sh/research/babylon-material-plugin-traps",
       "mainEntityOfPage": "https://csarko.sh/research/babylon-material-plugin-traps",
-      "wordCount": 3672,
+      "wordCount": 3913,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -127,6 +128,8 @@
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
+      /* A doc's body text: brighter than --muted, which reads as grey at length (2026-10-23). */
+      --prose: #c9ced9;
       --faint: #7d8597;
       /* Content warnings only. Yellow to stand apart from the teal accent. */
       --warning: #f5c451;
@@ -156,6 +159,7 @@
         --border-strong: rgba(10, 11, 14, 0.16);
         --text: #12151c;
         --muted: #4a5263;
+        --prose: #2b3240;
         --faint: #5f677a;
         --warning: #8a6100;
         --accent: #0a735f;
@@ -347,6 +351,57 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .doc-page .prose { font-size: 17px; }
+    .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
+    .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
+    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .rail a[aria-current] { color: var(--text); }
+    .rail a[aria-current] .num { color: var(--accent); }
+    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .toc .section-label { margin: 0 0 6px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
+    .toc a:hover { color: var(--accent); }
+    .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    .figure { margin: 32px 0; }
+    .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+    /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
+    .figure img { max-height: 80vh; object-fit: contain; }
+    .figure figcaption { margin-top: 10px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+    .prose blockquote strong:first-child { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted var(--faint); text-underline-offset: 4px; }
+    .term:hover, .term:focus-visible { text-decoration-color: var(--accent); }
+    .term-def { max-width: min(92vw, 420px); margin: auto; padding: 16px 18px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.55; }
+    .term-def::backdrop { background: var(--nav-bg); }
+    /* A wide table or code block that scrolls sideways shows a shade at the edge it can scroll to. */
+    .scroll { background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
+      var(--surface); }
+    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
+    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
+    .series-name { margin: 0 0 8px; font-weight: 600; }
+    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
+    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
+    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
+    .next-list .card { padding: 16px 18px; background: var(--bg); }
+    .next-list .doc-title { font-size: 1.05rem; }
+    .next-list .doc-desc { font-size: 14.5px; }
+    .play-line { margin: 20px 0 0; }
+    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background .15s ease; }
+    .play:hover { background: var(--accent-hover); }
+    .play svg { width: 14px; height: 14px; }
+    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
+    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color .15s ease; }
+    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
+    .afterward .next:hover { border-color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -382,51 +437,91 @@
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-        <li><a href="#when-plugin-code-is-injected"><span class="num" aria-hidden="true">01</span><span>When plugin code is injected</span></a></li>
-        <li><a href="#what-each-hook-can-see"><span class="num" aria-hidden="true">02</span><span>What each hook can see</span></a></li>
-        <li><a href="#gates-anchors-and-declarations"><span class="num" aria-hidden="true">03</span><span>Gates, anchors and declarations</span></a></li>
-        <li><a href="#comments-that-delete-code"><span class="num" aria-hidden="true">04</span><span>Comments that delete code</span></a></li>
-        <li><a href="#registration-and-headless-traps"><span class="num" aria-hidden="true">05</span><span>Registration and headless traps</span></a></li>
-        <li><a href="#passes-that-never-run-plugin-code"><span class="num" aria-hidden="true">06</span><span>Passes that never run plugin code</span></a></li>
-        <li><a href="#samplers-texture-arrays-and-per-layer-fresnel"><span class="num" aria-hidden="true">07</span><span>Samplers, texture arrays and per-layer Fresnel</span></a></li>
-        <li><a href="#normal-maps-without-tangents"><span class="num" aria-hidden="true">08</span><span>Normal maps without tangents</span></a></li>
-        <li><a href="#float32-time"><span class="num" aria-hidden="true">09</span><span>Float32 time</span></a></li>
-        <li><a href="#sources"><span>Sources</span></a></li>
+        <li><a href="#plugin-code-lands-after-includes-expand-before-if-is-evaluated" data-visits-event="toc-rail"><span class="num" aria-hidden="true">01</span><span>Plugin code lands after includes expand, before #if is evaluated</span></a></li>
+        <li><a href="#ten-pbr-hooks-what-each-can-see-and-where-each-misleads" data-visits-event="toc-rail"><span class="num" aria-hidden="true">02</span><span>Ten PBR hooks: what each can see and where each misleads</span></a></li>
+        <li><a href="#undeclared-gates-and-include-anchors-fail-silently" data-visits-event="toc-rail"><span class="num" aria-hidden="true">03</span><span>Undeclared gates and #include anchors fail silently</span></a></li>
+        <li><a href="#a-comment-that-spells-ifdef-deletes-code" data-visits-event="toc-rail"><span class="num" aria-hidden="true">04</span><span>A comment that spells #ifdef deletes code</span></a></li>
+        <li><a href="#registration-traps-pure-stubs-late-plugins-nullengine-webgpu" data-visits-event="toc-rail"><span class="num" aria-hidden="true">05</span><span>Registration traps: .pure stubs, late plugins, NullEngine, WebGPU</span></a></li>
+        <li><a href="#shadow-and-depth-passes-skip-plugin-code-bakes-miss-the-cache" data-visits-event="toc-rail"><span class="num" aria-hidden="true">06</span><span>Shadow and depth passes skip plugin code; bakes miss the cache</span></a></li>
+        <li><a href="#16-texture-units-texture-arrays-and-per-layer-fresnel" data-visits-event="toc-rail"><span class="num" aria-hidden="true">07</span><span>16 texture units: texture arrays and per-layer Fresnel</span></a></li>
+        <li><a href="#planar-terrain-layers-take-normal-maps-without-tangents" data-visits-event="toc-rail"><span class="num" aria-hidden="true">08</span><span>Planar terrain layers take normal maps without tangents</span></a></li>
+        <li><a href="#float32-time-steps-7-8-ms-after-a-day-so-wrap-it-at-300-s" data-visits-event="toc-rail"><span class="num" aria-hidden="true">09</span><span>Float32 time steps 7.8 ms after a day, so wrap it at 300 s</span></a></li>
+        <li><a href="#sources" data-visits-event="toc-rail"><span>Sources</span></a></li>
       </ol>
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Aug 17, 2026 · Updated Oct 10, 2026</p>
+        <p class="eyebrow">Aug 17, 2026 · Updated Oct 23, 2026</p>
         <h1>Babylon.js material plugins: hooks and traps</h1>
+        <p class="lead">Babylon.js 9.18 splices plugin GLSL in after #include expansion, before #if: what each PBR hook sees, and the silent preprocessor, comment and bake traps.</p>
         <ul class="tags">
           <li>16 min read</li>
         </ul>
       </header>
       <div class="prose">
-<p><strong>Question:</strong> Day Hike extends Babylon.js&#39;s <code>PBRMaterial</code> with material plugins <a class="cite" href="#ref-1">[1]</a> instead of
-forking its shaders: wind sway, a base conform that seats trees on slopes, a distance
-dither, wing beats for birds, and a terrain plugin that blends CC0 texture maps with
-per-layer normals, roughness and Fresnel. Most of the failures met along the way produced
-no error, a clean console and a passing test suite. When does a plugin&#39;s code
-actually reach the shader, what can each injection point see, and which traps are worth
-knowing before writing the first line?</p>
-<p><strong>Short answer:</strong> plugin code is spliced in <strong>after <code>#include</code> expansion and before the
-preprocessor evaluates <code>#if</code></strong>, as plain text. Almost every trap follows from that one
-fact: a gate on a define the plugin never declared compiles out, a regex aimed at an
-<code>#include</code> line matches nothing, and a GLSL comment that merely spells <code>#ifdef</code> becomes a
-real directive that deletes code. The rest come from passes that never run plugin code
-(shadow maps, depth pre-passes, one-shot render targets under their own render pass), from
-Babylon 9&#39;s split between <code>.pure</code> modules and the wrappers that register them, and from
-the budgets a terrain shader runs into: 16 texture units and float32 time. The fix for
-most of them is the same: run your injected strings through Babylon&#39;s real preprocessor in
-a unit test, and read the expanded shader rather than the documentation.</p>
-<p>Every claim below was checked against the installed <code>@babylonjs/core</code> 9.18.0 source, the
+<p><strong>Question:</strong> when does the code a Babylon.js
+<button type="button" class="term" popovertarget="term-1">material plugin</button><span class="term-def" id="term-1" popover role="note">A class that adds GLSL to Babylon&#39;s own PBR shader at named injection points, instead of forking the shader.</span>
+adds actually reach the shader, what can each injection point see, and which traps are worth
+knowing before writing the first line? Most of the failures met in Day Hike&#39;s plugins produced no
+error, a clean console and a passing test suite.</p>
+<p><strong>Short answer:</strong> plugin code is spliced in as plain text <strong>after <code>#include</code> expansion and before
+the <button type="button" class="term" popovertarget="term-2">preprocessor</button><span class="term-def" id="term-2" popover role="note">The step that evaluates #if, #ifdef, #else and #endif against the material&#39;s defines and removes the code they rule out, before the shader goes to the driver.</span>
+evaluates <code>#if</code></strong>, and almost every trap follows from that one fact. A gate on a define the
+plugin never declared compiles out, a regex aimed at an <code>#include</code> line matches nothing, and a
+GLSL comment that merely spells <code>#ifdef</code> becomes a real directive that deletes code. The fix for
+most of them: run your injected strings through Babylon&#39;s real preprocessor in a unit test, and
+read the expanded shader rather than the documentation.</p>
+<figure class="figure">
+<!-- generated:figure:babylon-material-plugin-traps/injection-order -->
+<img src="/assets/fig-babylon-material-plugin-traps-injection-order.307377cf.svg" width="420" height="396" alt="A flow of five boxes: 1, shader source loaded from the shader store; 2, ProcessIncludes expands every #include; 3, highlighted, plugin code is injected as plain text, when #include lines no longer exist and #if and #ifdef are not evaluated yet; 4, ProcessShaderConversion evaluates #if and #ifdef against the material&#39;s defines, then migrates GLSL; 5, the result goes to the driver" decoding="async" />
+<!-- /generated:figure:babylon-material-plugin-traps/injection-order -->
+<figcaption>Plugin code lands between include expansion and the preprocessor, so it can gate on the material&#39;s defines but can never anchor on an #include line, and a directive spelled inside a comment is still a directive.</figcaption>
+</figure>
+<p><strong>In short:</strong></p>
+<ul>
+<li><strong>A comment that spells <code>#ifdef</code> deletes code:</strong> the preprocessor is line-based and does not
+know comments; in Day Hike it deleted the terrain&#39;s triplanar rock branch with no error
+(<a href="#a-comment-that-spells-ifdef-deletes-code">section 4</a>).</li>
+<li><strong>Shadow maps, depth pre-passes and geometry buffers never run plugin code,</strong> so a vertex
+displacement does not move the cast shadow
+(<a href="#shadow-and-depth-passes-skip-plugin-code-bakes-miss-the-cache">section 6</a>).</li>
+<li><strong>0 of 65,536 pixels:</strong> a one-shot impostor bake under its own render pass came out fully
+transparent with the whole automated suite green
+(<a href="#shadow-and-depth-passes-skip-plugin-code-bakes-miss-the-cache">section 6</a>).</li>
+<li><strong><code>.pure</code> modules register nothing:</strong> Babylon 9 splits a feature from the wrapper that
+registers it, and without the wrapper <code>thinInstanceSetBuffer</code> is a silent stub
+(<a href="#registration-traps-pure-stubs-late-plugins-nullengine-webgpu">section 5</a>).</li>
+<li><strong>16 texture units</strong> is WebGL2&#39;s guarantee; two texture arrays fit twelve more terrain maps
+where separate samplers could not (<a href="#16-texture-units-texture-arrays-and-per-layer-fresnel">section 7</a>).</li>
+<li><strong>Float32 time</strong> advances in steps of about 7.8 ms after a day of uptime, so wrap it on the
+CPU (<a href="#float32-time-steps-7-8-ms-after-a-day-so-wrap-it-at-300-s">section 9</a>).</li>
+</ul>
+<p>Day Hike extends Babylon.js&#39;s <code>PBRMaterial</code> with material plugins <a class="cite" href="#ref-1">[1]</a> instead of forking its
+shaders: wind sway, a base conform that seats trees on slopes, a distance dither, wing beats for
+birds, and a terrain plugin that blends CC0 texture maps with per-layer normals, roughness and
+Fresnel. Every claim below was checked against the installed <code>@babylonjs/core</code> 9.18.0 source, the
 version pinned in <a class="external" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener">game-dayhike</a> <a class="cite" href="#ref-2">[2]</a>. The
 preprocessor traps were also reproduced by running a test plugin through the real PBR
 fragment shader and <code>WebGL2ShaderProcessor</code> in Node. The earlier
-<a href="/research/atmosphere-and-dread-shaders">atmosphere research</a> names three of these traps in
+<a href="/research/atmosphere-and-dread-shaders" data-visits-event="doc-atmosphere-and-dread-shaders">atmosphere research</a> names three of these traps in
 passing; this is the long version.</p>
-<div class="section-head"><p class="section-label">01</p><h2 id="when-plugin-code-is-injected"><a class="anchor" href="#when-plugin-code-is-injected">When plugin code is injected</a></h2></div>
+      </div>
+      <nav class="toc" aria-label="In this doc">
+        <p class="section-label">In this doc</p>
+        <ol>
+          <li><a href="#plugin-code-lands-after-includes-expand-before-if-is-evaluated" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>Plugin code lands after includes expand, before #if is evaluated</span></a></li>
+          <li><a href="#ten-pbr-hooks-what-each-can-see-and-where-each-misleads" data-visits-event="toc"><span class="num" aria-hidden="true">02</span><span>Ten PBR hooks: what each can see and where each misleads</span></a></li>
+          <li><a href="#undeclared-gates-and-include-anchors-fail-silently" data-visits-event="toc"><span class="num" aria-hidden="true">03</span><span>Undeclared gates and #include anchors fail silently</span></a></li>
+          <li><a href="#a-comment-that-spells-ifdef-deletes-code" data-visits-event="toc"><span class="num" aria-hidden="true">04</span><span>A comment that spells #ifdef deletes code</span></a></li>
+          <li><a href="#registration-traps-pure-stubs-late-plugins-nullengine-webgpu" data-visits-event="toc"><span class="num" aria-hidden="true">05</span><span>Registration traps: .pure stubs, late plugins, NullEngine, WebGPU</span></a></li>
+          <li><a href="#shadow-and-depth-passes-skip-plugin-code-bakes-miss-the-cache" data-visits-event="toc"><span class="num" aria-hidden="true">06</span><span>Shadow and depth passes skip plugin code; bakes miss the cache</span></a></li>
+          <li><a href="#16-texture-units-texture-arrays-and-per-layer-fresnel" data-visits-event="toc"><span class="num" aria-hidden="true">07</span><span>16 texture units: texture arrays and per-layer Fresnel</span></a></li>
+          <li><a href="#planar-terrain-layers-take-normal-maps-without-tangents" data-visits-event="toc"><span class="num" aria-hidden="true">08</span><span>Planar terrain layers take normal maps without tangents</span></a></li>
+          <li><a href="#float32-time-steps-7-8-ms-after-a-day-so-wrap-it-at-300-s" data-visits-event="toc"><span class="num" aria-hidden="true">09</span><span>Float32 time steps 7.8 ms after a day, so wrap it at 300 s</span></a></li>
+        </ol>
+      </nav>
+      <div class="prose">
+<div class="section-head"><p class="section-label">01</p><h2 id="plugin-code-lands-after-includes-expand-before-if-is-evaluated"><a class="anchor" href="#plugin-code-lands-after-includes-expand-before-if-is-evaluated">Plugin code lands after includes expand, before #if is evaluated</a></h2></div>
 <p>A <code>PBRMaterial</code> builds its effect in this order:</p>
 <ol>
 <li>The shader source is loaded from the shader store.</li>
@@ -450,7 +545,7 @@ its code on a uniform because &quot;a define gate would compile out&quot;. The u
 right choice, for a different reason: flipping a uniform is instant, while flipping a
 define recompiles the material. But the wind, ground-conform and terrain plugins all gate
 on their own defines, and those gates work.</p>
-<div class="section-head"><p class="section-label">02</p><h2 id="what-each-hook-can-see"><a class="anchor" href="#what-each-hook-can-see">What each hook can see</a></h2></div>
+<div class="section-head"><p class="section-label">02</p><h2 id="ten-pbr-hooks-what-each-can-see-and-where-each-misleads"><a class="anchor" href="#ten-pbr-hooks-what-each-can-see-and-where-each-misleads">Ten PBR hooks: what each can see and where each misleads</a></h2></div>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
 <thead>
 <tr>
@@ -522,7 +617,7 @@ what you want.</p>
 colour, detail map and base weight are all multiplied in inside <code>albedoOpacityBlock()</code>, so
 a regex that edits <code>vAlbedoColor</code> edits the material constant before any of them. Edit
 <code>surfaceAlbedo</code> at <code>BEFORE_LIGHTS</code> instead.</p>
-<div class="section-head"><p class="section-label">03</p><h2 id="gates-anchors-and-declarations"><a class="anchor" href="#gates-anchors-and-declarations">Gates, anchors and declarations</a></h2></div>
+<div class="section-head"><p class="section-label">03</p><h2 id="undeclared-gates-and-include-anchors-fail-silently"><a class="anchor" href="#undeclared-gates-and-include-anchors-fail-silently">Undeclared gates and #include anchors fail silently</a></h2></div>
 <p>These are the traps that follow directly from injecting between include expansion and the
 preprocessor. Each was reproduced in Node with a marker line per case.</p>
 <ul>
@@ -564,7 +659,7 @@ the <code>ubo</code> list; samplers cannot live in a UBO, so declare them in
 <code>CUSTOM_FRAGMENT_DEFINITIONS</code>. A <code>sampler2DArray</code> there also needs an explicit <code>highp</code>:
 GLSL ES 3.00 has no default precision for it, which only a real driver reports.</li>
 </ul>
-<div class="section-head"><p class="section-label">04</p><h2 id="comments-that-delete-code"><a class="anchor" href="#comments-that-delete-code">Comments that delete code</a></h2></div>
+<div class="section-head"><p class="section-label">04</p><h2 id="a-comment-that-spells-ifdef-deletes-code"><a class="anchor" href="#a-comment-that-spells-ifdef-deletes-code">A comment that spells #ifdef deletes code</a></h2></div>
 <p>Babylon&#39;s preprocessor is line-based, and it does not know what a comment is.</p>
 <p><code>MoveCursorRegex</code> is <code>/(#ifdef)|(#else)|(#elif)|(#endif)|(#ifndef)|(#if)/</code>, unanchored, and
 it is tested against every line containing a <code>#</code> <a class="cite" href="#ref-3">[3]</a>. <code>ShaderCodeCursor</code> passes <code>//</code> lines
@@ -590,7 +685,7 @@ do this for both define states. When a test pins an anchor inside a Babylon incl
 import that include&#39;s module first: the include store is only populated when the module
 loads, and an assertion against <code>undefined</code> passes vacuously.</li>
 </ol>
-<div class="section-head"><p class="section-label">05</p><h2 id="registration-and-headless-traps"><a class="anchor" href="#registration-and-headless-traps">Registration and headless traps</a></h2></div>
+<div class="section-head"><p class="section-label">05</p><h2 id="registration-traps-pure-stubs-late-plugins-nullengine-webgpu"><a class="anchor" href="#registration-traps-pure-stubs-late-plugins-nullengine-webgpu">Registration traps: .pure stubs, late plugins, NullEngine, WebGPU</a></h2></div>
 <p><strong><code>.pure</code> modules register nothing.</strong> Babylon 9 splits most features into a <code>.pure.js</code>
 module that defines behaviour and a wrapper that registers it <a class="cite" href="#ref-12">[12]</a>. Methods patched onto a
 prototype by a wrapper start life as stubs: without
@@ -625,7 +720,7 @@ the textbook right-handed order gets normals of <code>(0, -1, 0)</code>: it is l
 back-face culled, so the terrain renders as nothing while every prop on it still draws.
 <a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/client/src/game/clipmap.ts" target="_blank" rel="noopener"><code>clipmap.ts</code></a>
 records the winding and a test guards it.</p>
-<div class="section-head"><p class="section-label">06</p><h2 id="passes-that-never-run-plugin-code"><a class="anchor" href="#passes-that-never-run-plugin-code">Passes that never run plugin code</a></h2></div>
+<div class="section-head"><p class="section-label">06</p><h2 id="shadow-and-depth-passes-skip-plugin-code-bakes-miss-the-cache"><a class="anchor" href="#shadow-and-depth-passes-skip-plugin-code-bakes-miss-the-cache">Shadow and depth passes skip plugin code; bakes miss the cache</a></h2></div>
 <p><strong>Shadow maps, depth pre-passes and geometry buffers.</strong> Babylon&#39;s <code>shadowMap</code>, <code>depth</code> and
 <code>geometry</code> shaders expose only a <code>DEFINITIONS</code> hook, and the renderers that use them build
 their own effects without the material&#39;s plugin manager. A vertex displacement therefore
@@ -638,7 +733,7 @@ detached from the conformed base.</p>
 <p><strong><code>discard</code> and early depth.</strong> A <code>discard</code> anywhere in a fragment shader can stop the GPU
 from rejecting hidden fragments before shading them, so a dither fade belongs on materials
 that already alpha-test, not on every opaque material. The measured cost and the fade
-design are in <a href="/research/no-visible-pop-in">No visible pop-in</a>.</p>
+design are in <a href="/research/no-visible-pop-in" data-visits-event="doc-no-visible-pop-in">No visible pop-in</a>.</p>
 <p><strong>One-shot <code>RenderTargetTexture</code> bakes.</strong> Day Hike bakes tree impostors at load by
 rendering a cloned LOD into a 256 by 256 render target once. A render target draws under
 its <strong>own</strong> <code>renderPassId</code> <a class="cite" href="#ref-15">[15]</a>, and each submesh caches its effect per pass. The bake also uses
@@ -657,7 +752,7 @@ geometry, and <code>mesh.clone(name, null, false)</code> shares the geometry. Th
 non-instanced, so an unguarded read of a per-instance attribute there would read whichever
 instance happened to be first. Day Hike&#39;s conform and wing plugins wrap the body in
 <code>#ifdef THIN_INSTANCES</code>, which Babylon sets per submesh from <code>hasThinInstances</code>.</p>
-<div class="section-head"><p class="section-label">07</p><h2 id="samplers-texture-arrays-and-per-layer-fresnel"><a class="anchor" href="#samplers-texture-arrays-and-per-layer-fresnel">Samplers, texture arrays and per-layer Fresnel</a></h2></div>
+<div class="section-head"><p class="section-label">07</p><h2 id="16-texture-units-texture-arrays-and-per-layer-fresnel"><a class="anchor" href="#16-texture-units-texture-arrays-and-per-layer-fresnel">16 texture units: texture arrays and per-layer Fresnel</a></h2></div>
 <p><strong>The 16-unit budget.</strong> WebGL2 guarantees 16 fragment texture units. When per-layer normal
 and roughness/AO/height maps were added to the terrain, the material already bound eleven
 samplers (five ground layers, asphalt, the road centreline table, and PBR&#39;s own
@@ -692,7 +787,7 @@ Scaling rather than replacing keeps the material&#39;s own roughness authoritati
 weather code that scales the terrain material&#39;s roughness when the ground is wet keeps
 working. The key is version-fragile by
 nature; a test that runs it against the real shader source catches a Babylon rename.</p>
-<div class="section-head"><p class="section-label">08</p><h2 id="normal-maps-without-tangents"><a class="anchor" href="#normal-maps-without-tangents">Normal maps without tangents</a></h2></div>
+<div class="section-head"><p class="section-label">08</p><h2 id="planar-terrain-layers-take-normal-maps-without-tangents"><a class="anchor" href="#planar-terrain-layers-take-normal-maps-without-tangents">Planar terrain layers take normal maps without tangents</a></h2></div>
 <p><strong>Verify the hook by reading the expanded shader.</strong> Before writing <code>normalW</code> at
 <code>CUSTOM_FRAGMENT_BEFORE_LIGHTS</code>, check what runs between the normal blocks and the hook.
 In 9.18 the fragment runs <code>pbrBlockNormalGeometric</code>, <code>bumpFragment</code> and
@@ -718,7 +813,7 @@ the terrain&#39;s analytic normal and never shimmers.</p>
 on the texture class&#39;s <code>invertY</code> default, which is why the arrays flip rows themselves.
 The test that settles it is a shot of an asymmetric feature, such as a pebble field, lit
 from one side: the lit faces must point at the sun.</p>
-<div class="section-head"><p class="section-label">09</p><h2 id="float32-time"><a class="anchor" href="#float32-time">Float32 time</a></h2></div>
+<div class="section-head"><p class="section-label">09</p><h2 id="float32-time-steps-7-8-ms-after-a-day-so-wrap-it-at-300-s"><a class="anchor" href="#float32-time-steps-7-8-ms-after-a-day-so-wrap-it-at-300-s">Float32 time steps 7.8 ms after a day, so wrap it at 300 s</a></h2></div>
 <p>A shader animation that feeds <code>performance.now() / 1000</code> straight into a float32 uniform
 degrades with uptime. After a day (86,400 seconds) a float32 can only represent multiples of
 1/128 second, about 7.8 ms, so frame-to-frame time advances in uneven steps; at the wind&#39;s
@@ -731,6 +826,30 @@ wrap time on the CPU, <code>(performance.now() / 1000) % 300</code>, and make ev
 an exact multiple of 2π / 300. The wind&#39;s gust, second gust and flutter use multiples 18,
 42 and 600. At the wrap every phase jumps by a whole number of turns, so there is no visible
 snap, and the largest <code>sin()</code> argument stays under about 3,800.</p>
+      </div>
+      <section class="keep-reading" aria-labelledby="next-reads">
+        <h2 id="next-reads" class="section-label">Keep reading</h2>
+        <ul class="doc-list next-list" role="list">
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/webgpu-vs-webgl2" data-visits-event="next-webgpu-vs-webgl2">WebGPU vs WebGL2: what changes and what does not</a></h3>
+            <p class="doc-meta">24 min read</p>
+            <p class="doc-desc">WebGPU vs WebGL2, measured in a Babylon.js game: 1.3 to 1.5 ms faster per frame at native resolution, 9.9 ms at 4x the pixels, for 2.7 MB of shader translators.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/atmosphere-and-dread-shaders" data-visits-event="next-atmosphere-and-dread-shaders">Atmosphere and dread shaders for horror games</a></h3>
+            <p class="doc-meta">17 min read</p>
+            <p class="doc-desc">Atmospheric games stack height fog, a neutral tone map and grade, and a film finish on photoreal light; Babylon.js does nearly all of it at 60 fps.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/no-visible-pop-in" data-visits-event="next-no-visible-pop-in">No visible pop-in: dissolving a streamed forest</a></h3>
+            <p class="doc-meta">15 min read</p>
+            <p class="doc-desc">Keeping a streamed browser forest from visibly spawning: pixel-size arithmetic, screen-space dissolve bands, and what discard costs in opaque shaders.</p>
+          </li>
+        </ul>
+        <p class="play-line"><a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
+        <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS) or <a class="external" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">csarko.log</a>.</p>
+      </section>
+      <div class="prose">
 <div class="section-head" data-read-end><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <ol class="references">
 <li id="ref-1"><span class="ref-num">[1]</span><div>Babylon.js Authors, &quot;Material Plugins,&quot; Babylon.js Documentation. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://doc.babylonjs.com/features/featuresDeepDive/materials/using/materialPlugins" target="_blank" rel="noopener">https://doc.babylonjs.com/features/featuresDeepDive/materials/using/materialPlugins</a></div></li>
@@ -752,7 +871,6 @@ snap, and the largest <code>sin()</code> argument stays under about 3,800.</p>
 <li id="ref-17"><span class="ref-num">[17]</span><div>Babylon.js Authors, &quot;pbrBlockReflectivity.fx,&quot; Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Shaders/ShadersInclude/pbrBlockReflectivity.fx" target="_blank" rel="noopener">https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Shaders/ShadersInclude/pbrBlockReflectivity.fx</a></div></li>
 <li id="ref-18"><span class="ref-num">[18]</span><div>C. Barré-Brisebois and S. Hill, &quot;Blending in Detail,&quot; Self Shadow, 2012. Accessed: Aug. 17, 2026. [Online]. Available: <a class="external" href="https://blog.selfshadow.com/publications/blending-in-detail/" target="_blank" rel="noopener">https://blog.selfshadow.com/publications/blending-in-detail/</a></div></li>
 </ol>
-
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
@@ -760,6 +878,11 @@ snap, and the largest <code>sin()</code> argument stays under about 3,800.</p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
+      <nav class="afterward" aria-label="Read next">
+        <a class="next" href="/research/webgpu-vs-webgl2" data-visits-event="end-webgpu-vs-webgl2"><span class="section-label">Read next</span><span>WebGPU vs WebGL2: what changes and what does not <span aria-hidden="true">→</span></span></a>
+        <a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        <a href="/research">All research</a>
+      </nav>
     </main>
   </div>
 
@@ -772,6 +895,7 @@ snap, and the largest <code>sin()</code> argument stays under about 3,800.</p>
   <!-- generated:analytics -->
   <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
+  <script defer src="/assets/reading.c3e27b33.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

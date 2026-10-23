@@ -23,7 +23,13 @@ export const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ENTI
 
 // key -> required?
 // "featured" puts a doc in the research index's Start here row (Cyrus, 2026-10-18), lowest first.
-const FIELDS = { description: true, published: true, categories: true, updated: false, source: false, featured: false };
+// "series" names the run of docs it belongs to (two or more share the name, read in published
+// order), and "related" the slugs its Keep reading block offers, in that order; without it the
+// build picks by shared category (2026-10-23, so no doc ends in a dead end).
+const FIELDS = { description: true, published: true, categories: true, updated: false, source: false, featured: false, series: false, related: false };
+const MAX_RELATED = 4;
+const SERIES_NAME = /^[A-Z][A-Za-z0-9' ]{2,39}$/;
+const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 // The categories a doc may carry (Cyrus, 2026-10-13), in the order the /research filter
 // chips show them. One to three per doc, written in front matter as
 // `categories: Rendering, Worlds and terrain`, spelled exactly as here; the build refuses
@@ -111,6 +117,17 @@ export function parseFrontMatter(text, file) {
     const featured = Number(meta.featured);
     if (!Number.isInteger(featured) || featured < 1) throw new DocError(`${file}: featured must be a whole number from 1`);
     meta.featured = featured;
+  }
+  if (meta.series !== undefined && !SERIES_NAME.test(meta.series)) {
+    throw new DocError(`${file}: series must be 3 to 40 letters, digits, spaces or apostrophes, starting with a capital`);
+  }
+  if (meta.related !== undefined) {
+    const related = meta.related.split(',').map((s) => s.trim()).filter(Boolean);
+    if (!related.length || related.length > MAX_RELATED) throw new DocError(`${file}: related names 1 to ${MAX_RELATED} doc slugs`);
+    const bad = related.find((s) => !SLUG.test(s));
+    if (bad) throw new DocError(`${file}: related "${bad}" is not a doc slug (the URL's last part, no date)`);
+    if (new Set(related).size !== related.length) throw new DocError(`${file}: a related doc is listed twice`);
+    meta.related = related;
   }
   return { meta, body };
 }
@@ -255,10 +272,18 @@ function linkCitations(html, count, file, problems) {
   return out;
 }
 
+const countWords = (html) => decodeEntities(html.replace(/<[^>]+>/g, ' ')).split(/\s+/).filter(Boolean).length;
+// A doc's figure: ![alt](name.png "caption") alone in its paragraph, the file in the site-quality
+// skill's assets/research/<slug>/. build_assets.py fills the marker with the hashed <picture>.
+const FIGURE_FILE = /^([a-z0-9]+(?:-[a-z0-9]+)*)\.(png|svg)$/;
+const DOC_LINK = new RegExp(`^/${DOCS_DIR}/([a-z0-9]+(?:-[a-z0-9]+)*)(?:#[\\w-]+)?$`);
+
 // The first "# H1" is the title (removed from the body); every "## H2" becomes a section and a
 // stop on the contents rail, and "## 1. Title" shows its number as a mono label ("01").
 // `ieee` makes IEEE references mandatory for a doc with a Sources section (see IEEE_SINCE).
-export function renderMarkdown(body, file, { ieee = false } = {}) {
+// `figures` is the doc's own figure files (name -> { width, height }); without it, as on the
+// games, films and apps lists, an image is refused.
+export function renderMarkdown(body, file, { ieee = false, slug = null, figures = null } = {}) {
   const marked = new Marked({ gfm: true });
   const tokens = marked.lexer(body);
   const h1s = tokens.filter((t) => t.type === 'heading' && t.depth === 1);
@@ -284,6 +309,33 @@ export function renderMarkdown(body, file, { ieee = false } = {}) {
     } finally {
       insideHeading = false;
     }
+  };
+  let terms = 0;
+  let firstFigure = null;
+  // The first figure is often in the first screen, so only the later ones load lazily.
+  const figure = ({ href, title, text }) => {
+    if (!figures) {
+      problems.push(`${file}: images aren't supported here (${href})`);
+      return '';
+    }
+    const m = FIGURE_FILE.exec(href);
+    const size = m && figures.get(href);
+    if (!size) {
+      problems.push(`${file}: figure "${href}" must be <name>.png or <name>.svg in .agents/skills/site-quality/assets/research/${slug}/`);
+      return '';
+    }
+    if (!text.trim()) problems.push(`${file}: figure ${href} needs alt text, what it shows: ![alt](${href} "caption")`);
+    if (!title?.trim()) problems.push(`${file}: figure ${href} needs a caption that says its point: ![alt](${href} "caption")`);
+    const first = firstFigure === null;
+    if (first) firstFigure = { name: m[1], ext: m[2], ...size };
+    const key = `${slug}/${m[1]}`;
+    return `<figure class="figure">
+<!-- generated:figure:${key} -->
+<img src="/${DOCS_DIR}/figures/${slug}-${m[1]}.${m[2] === 'png' ? 'jpg' : 'svg'}" width="${size.width}" height="${size.height}" alt="${escapeHtml(text)}"${first ? '' : ' loading="lazy"'} decoding="async" />
+<!-- /generated:figure:${key} -->
+<figcaption>${escapeHtml(title ?? '')}</figcaption>
+</figure>
+`;
   };
 
   marked.use({
@@ -319,8 +371,16 @@ export function renderMarkdown(body, file, { ieee = false } = {}) {
         const items = token.items.map((item, i) => `<li id="ref-${i + 1}"><span class="ref-num">[${i + 1}]</span><div>${this.parser.parse(item.tokens)}</div></li>\n`);
         return `<ol class="references">\n${items.join('')}</ol>\n`;
       },
+      // A paragraph that is one image and nothing else is a figure.
+      paragraph({ tokens: inline }) {
+        const parts = inline.filter((t) => !(t.type === 'text' && !t.text.trim()));
+        if (parts.length !== 1 || parts[0].type !== 'image') return false;
+        return figure(parts[0]);
+      },
       image({ href }) {
-        problems.push(`${file}: images aren't supported yet (${href})`);
+        problems.push(figures
+          ? `${file}: a figure must be a paragraph of its own (${href})`
+          : `${file}: images aren't supported here (${href})`);
         return '';
       },
       link({ href, title, tokens: inline }) {
@@ -329,10 +389,23 @@ export function renderMarkdown(body, file, { ieee = false } = {}) {
           problems.push(`${file}: headings can't contain links (${href})`);
           return text;
         }
+        // [term](#term "definition"): a word a reader may not know, defined in a popover on tap.
+        // The definition is in the HTML, so it is public and searchable; no script is needed.
+        if (href === '#term') {
+          if (!title?.trim()) {
+            problems.push(`${file}: a term needs its definition as the link's title: [${plainText(text)}](#term "definition")`);
+            return text;
+          }
+          terms += 1;
+          return `<button type="button" class="term" popovertarget="term-${terms}">${text}</button><span class="term-def" id="term-${terms}" popover role="note">${escapeHtml(title)}</span>`;
+        }
         const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
         if (/^https?:\/\//.test(href)) {
           return `<a class="external" href="${escapeHtml(href)}"${titleAttr} target="_blank" rel="noopener">${text}</a>`;
         }
+        // A link to another doc counts as doc-<slug>, so the dashboard sees which links are followed.
+        const doc = DOC_LINK.exec(href);
+        if (doc) return `<a href="${escapeHtml(href)}"${titleAttr} data-visits-event="doc-${doc[1]}">${text}</a>`;
         if (/^#[\w-]+$/.test(href) || /^\/(?!\/)/.test(href)) return `<a href="${escapeHtml(href)}"${titleAttr}>${text}</a>`;
         problems.push(`${file}: link "${href}" must be https://, #anchor or a root-relative /path`);
         return text;
@@ -347,8 +420,12 @@ export function renderMarkdown(body, file, { ieee = false } = {}) {
   if (references) html = linkCitations(html, references.items.length, file, problems);
   if (problems.length) throw new DocError(problems.join('\n'));
   // Tags become spaces here (not in plainText) so "<p>01</p><h2>Title" counts as two words.
-  const words = decodeEntities(html.replace(/<[^>]+>/g, ' ')).split(/\s+/).filter(Boolean).length;
-  return { title: plainText(titleHtml), titleHtml, html, rail, words, references: references ? references.items.length : 0, hasSources };
+  const words = countWords(html);
+  // The read time counts the prose a reader reads: not the Sources list, nor the definitions
+  // that only open on a tap.
+  const end = html.indexOf('<div class="section-head" data-read-end>');
+  const readWords = countWords((end < 0 ? html : html.slice(0, end)).replace(/<span class="term-def"[^>]*>[\s\S]*?<\/span>/g, ' '));
+  return { title: plainText(titleHtml), titleHtml, html, rail, words, readWords, firstFigure, references: references ? references.items.length : 0, hasSources };
 }
 
 // ---------------------------------------------------------------- one doc
@@ -441,7 +518,8 @@ export function loadFilm(name, text) {
   };
 }
 
-export function loadDoc(name, text) {
+// `figures` is the doc's figure files, name -> { width, height } (build_docs.mjs reads them).
+export function loadDoc(name, text, figures = new Map()) {
   const file = `docs/published/${name}`;
   const { date, slug } = parseDocFileName(name);
   if (slug === 'index') throw new DocError(`${file}: "index" is reserved for the docs index page`);
@@ -456,7 +534,7 @@ export function loadDoc(name, text) {
     path: `/${DOCS_DIR}/${slug}`,
     ...meta,
     modified: meta.updated ?? meta.published,
-    ...renderMarkdown(body, file, { ieee: meta.published >= IEEE_SINCE }),
+    ...renderMarkdown(body, file, { ieee: meta.published >= IEEE_SINCE, slug, figures }),
   };
 }
 
@@ -817,7 +895,9 @@ const REFERENCES_CSS = `
     .prose .references li > div > p { margin: 0; }
     .prose a.cite { white-space: nowrap; }`;
 
-function head({ title, ogTitle, description, canonical, ogType, extraMeta = '', extraCss = '', graph, theme }) {
+// `ogImage` is a page's own share card ({ url, width, height, alt }); without one, the site's.
+function head({ title, ogTitle, description, canonical, ogType, ogImage = null, extraMeta = '', extraCss = '', graph, theme }) {
+  const card = ogImage ?? { url: OG_IMAGE, width: 1200, height: 630, alt: OG_IMAGE_ALT };
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -833,15 +913,15 @@ function head({ title, ogTitle, description, canonical, ogType, extraMeta = '', 
   <meta property="og:url" content="${canonical}" />
   <meta property="og:title" content="${escapeHtml(ogTitle)}" />
   <meta property="og:description" content="${escapeHtml(description)}" />
-  <meta property="og:image" content="${OG_IMAGE}" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="${OG_IMAGE_ALT}" />
+  <meta property="og:image" content="${card.url}" />
+  <meta property="og:image:width" content="${card.width}" />
+  <meta property="og:image:height" content="${card.height}" />
+  <meta property="og:image:alt" content="${escapeHtml(card.alt)}" />
 ${extraMeta}  <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${escapeHtml(ogTitle)}" />
   <meta name="twitter:description" content="${escapeHtml(description)}" />
-  <meta name="twitter:image" content="${OG_IMAGE}" />
-  <meta name="twitter:image:alt" content="${OG_IMAGE_ALT}" />
+  <meta name="twitter:image" content="${card.url}" />
+  <meta name="twitter:image:alt" content="${escapeHtml(card.alt)}" />
 
   <meta name="color-scheme" content="dark light" />
   <meta name="theme-color" content="#0a0b0e" media="(prefers-color-scheme: dark)" />
@@ -911,7 +991,7 @@ const FOOTER = `  <footer>
 function docList(docs, level, pad, { cls = '', event } = {}) {
   const items = docs.map((d) => `${pad}  <li class="card" data-categories="${d.categories.map(categorySlug).join(' ')}">
 ${pad}    <h${level} class="doc-title"><a class="stretch" href="${d.path}"${event ? ` data-visits-event="${event}-${d.slug}"` : ''}>${d.titleHtml}</a></h${level}>
-${pad}    <p class="doc-meta">${formatDate(d.published)} · ${readingMinutes(d.words)} min read</p>
+${pad}    <p class="doc-meta">${formatDate(d.published)} · ${readingMinutes(d.readWords)} min read</p>
 ${pad}    <p class="doc-desc">${escapeHtml(d.description)}</p>
 ${pad}    <ul class="tags" aria-label="Categories">${d.categories.map((c) => `<li>${escapeHtml(c)}</li>`).join('')}</ul>
 ${pad}  </li>`);
@@ -933,8 +1013,147 @@ ${chips.join('\n')}
 ${pad}</form>`;
 }
 
-export function docPage(doc, theme) {
+const FEED_LINK = `  <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/${DOCS_DIR}/feed.xml" />\n`;
+const ARROW = '<span aria-hidden="true">→</span>';
+
+// A doc's own share card: its first figure (a PNG; build_assets.py writes a 1200x630 JPEG cut
+// from its middle beside the page), else the site's card.
+function ogImageOf(doc) {
+  const f = doc.firstFigure;
+  if (!f || f.ext !== 'png') return null;
+  return { url: `${SITE}/${DOCS_DIR}/figures/${doc.slug}-${f.name}.jpg`, width: 1200, height: 630, alt: doc.title };
+}
+
+// The "In this doc" list under the opening, at every width (the rail is for wide screens only):
+// a phone gets a map of the page before section 01. Sources is left out; the rail keeps it.
+function inlineContents(doc) {
+  const items = doc.rail.filter((s) => !SOURCES_HEADING.test(s.text));
+  if (items.length < 3) return '';
+  return `      <nav class="toc" aria-label="In this doc">
+        <p class="section-label">In this doc</p>
+        <ol>
+${items.map((s) => `          <li><a href="#${s.id}" data-visits-event="toc">${s.number ? `<span class="num" aria-hidden="true">${s.number}</span>` : ''}<span>${escapeHtml(s.text)}</span></a></li>`).join('\n')}
+        </ol>
+      </nav>
+`;
+}
+
+// The series line under the title: where this doc sits in its run, and the way to the next part.
+function seriesLine(doc, links) {
+  const s = links.series;
+  if (!s) return '';
+  const at = s.parts.indexOf(doc);
+  const step = s.parts[at + 1] ? ['Next', s.parts[at + 1]] : ['Previous', s.parts[at - 1]];
+  return `
+        <p class="series-line">Part ${at + 1} of ${s.parts.length} in <strong>${escapeHtml(s.name)}</strong> · ${step[0]}: <a href="${step[1].path}" data-visits-event="series-${step[1].slug}">${step[1].titleHtml}</a></p>`;
+}
+
+const playLink = (game) => `<a class="play" href="${escapeHtml(game.play)}" target="_blank" rel="noopener" data-visits-event="play-${game.slug}">Play ${escapeHtml(game.title)} in your browser ${EXTERNAL_ARROW}</a>`;
+
+// Where the prose ends, before Sources: the doc's series, two to four docs to read next, the game
+// it is about, and the feed. Hand-picked through front matter, else chosen by build (buildSite).
+function keepReading(doc, links) {
+  const s = links.series;
+  const parts = s
+    ? `        <p class="series-name">${escapeHtml(s.name)} · ${s.parts.length} parts</p>
+        <ol class="series-parts">
+${s.parts.map((d) => (d === doc
+    ? `          <li aria-current="true"><span>${d.titleHtml}</span></li>`
+    : `          <li><a href="${d.path}" data-visits-event="next-${d.slug}">${d.titleHtml}</a></li>`)).join('\n')}
+        </ol>
+`
+    : '';
+  const cards = links.related.length
+    ? `        <ul class="doc-list next-list" role="list">
+${links.related.map((d) => `          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="${d.path}" data-visits-event="next-${d.slug}">${d.titleHtml}</a></h3>
+            <p class="doc-meta">${readingMinutes(d.readWords)} min read</p>
+            <p class="doc-desc">${escapeHtml(d.description)}</p>
+          </li>`).join('\n')}
+        </ul>
+`
+    : '';
+  const play = links.games.map((g) => `        <p class="play-line">${playLink(g)}</p>\n`).join('');
+  return `      <section class="keep-reading" aria-labelledby="next-reads">
+        <h2 id="next-reads" class="section-label">Keep reading</h2>
+${parts}${cards}${play}        <p class="follow">New research as it lands: <a href="/${DOCS_DIR}/feed.xml">the feed</a> (RSS) or <a class="external" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">csarko.log</a>.</p>
+      </section>
+`;
+}
+
+// After the author box, where a reader who flicked to the bottom lands: the one next doc, the game,
+// and the way back to the list.
+function afterward(doc, links) {
+  const s = links.series;
+  const next = (s && s.parts[s.parts.indexOf(doc) + 1]) || links.related[0];
+  const items = [
+    next ? `<a class="next" href="${next.path}" data-visits-event="end-${next.slug}"><span class="section-label">Read next</span><span>${next.titleHtml} ${ARROW}</span></a>` : '',
+    ...links.games.map(playLink),
+    `<a href="/${DOCS_DIR}">All research</a>`,
+  ].filter(Boolean);
+  return `      <nav class="afterward" aria-label="Read next">
+        ${items.join('\n        ')}
+      </nav>
+`;
+}
+
+// Only doc pages carry these rules (the lists share DOCS_CSS and sit nearer their budgets).
+const DOC_CSS = `
+    .doc-page .prose { font-size: 17px; }
+    .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
+    .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
+    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .rail a[aria-current] { color: var(--text); }
+    .rail a[aria-current] .num { color: var(--accent); }
+    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .toc .section-label { margin: 0 0 6px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
+    .toc a:hover { color: var(--accent); }
+    .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    .figure { margin: 32px 0; }
+    .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+    /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
+    .figure img { max-height: 80vh; object-fit: contain; }
+    .figure figcaption { margin-top: 10px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+    .prose blockquote strong:first-child { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted var(--faint); text-underline-offset: 4px; }
+    .term:hover, .term:focus-visible { text-decoration-color: var(--accent); }
+    .term-def { max-width: min(92vw, 420px); margin: auto; padding: 16px 18px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.55; }
+    .term-def::backdrop { background: var(--nav-bg); }
+    /* A wide table or code block that scrolls sideways shows a shade at the edge it can scroll to. */
+    .scroll { background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
+      var(--surface); }
+    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
+    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
+    .series-name { margin: 0 0 8px; font-weight: 600; }
+    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
+    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
+    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
+    .next-list .card { padding: 16px 18px; background: var(--bg); }
+    .next-list .doc-title { font-size: 1.05rem; }
+    .next-list .doc-desc { font-size: 14.5px; }
+    .play-line { margin: 20px 0 0; }
+    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background .15s ease; }
+    .play:hover { background: var(--accent-hover); }
+    .play svg { width: 14px; height: 14px; }
+    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
+    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color .15s ease; }
+    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
+    .afterward .next:hover { border-color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }`;
+
+export function docPage(doc, theme, links = { series: null, related: [], games: [] }) {
   const trail = [HOME_CRUMB, [DOCS_NAV, `${SITE}/${DOCS_DIR}`], [doc.title, doc.url]];
+  const og = ogImageOf(doc);
   const graph = [
     {
       '@type': 'TechArticle',
@@ -947,7 +1166,7 @@ export function docPage(doc, theme) {
       mainEntityOfPage: doc.url,
       wordCount: doc.words,
       inLanguage: 'en',
-      image: OG_IMAGE,
+      image: og ? og.url : OG_IMAGE,
       author: PERSON_NODE,
       publisher: PERSON_NODE,
       isPartOf: { '@id': WEBSITE },
@@ -958,14 +1177,14 @@ export function docPage(doc, theme) {
   const extraMeta = `  <meta property="article:published_time" content="${doc.published}" />
   <meta property="article:modified_time" content="${doc.modified}" />
   <meta property="article:author" content="${SITE}/" />
-`;
+${FEED_LINK}`;
   // The trail above already says Research, so the eyebrow carries only the dates.
   const eyebrow = `${formatDate(doc.published)}${doc.updated ? ` · Updated ${formatDate(doc.updated)}` : ''}`;
   const rail = doc.rail.length
     ? `    <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-${doc.rail.map((s) => `        <li><a href="#${s.id}">${s.number ? `<span class="num" aria-hidden="true">${s.number}</span>` : ''}<span>${escapeHtml(s.text)}</span></a></li>`).join('\n')}
+${doc.rail.map((s) => `        <li><a href="#${s.id}" data-visits-event="toc-rail">${s.number ? `<span class="num" aria-hidden="true">${s.number}</span>` : ''}<span>${escapeHtml(s.text)}</span></a></li>`).join('\n')}
       </ol>
     </aside>
 `
@@ -973,7 +1192,16 @@ ${doc.rail.map((s) => `        <li><a href="#${s.id}">${s.number ? `<span class=
   const source = doc.source
     ? `\n          <li><a class="external" href="${escapeHtml(doc.source)}" target="_blank" rel="noopener">Also on GitHub</a></li>`
     : '';
-  return `${head({ title: `${doc.title} · Cyrus Sarkosh`, ogTitle: doc.title, description: doc.description, canonical: doc.url, ogType: 'article', extraMeta, extraCss: doc.references ? REFERENCES_CSS : '', graph, theme })}
+  // The prose in three runs: the opening (the question and its answer), the sections, and Sources,
+  // with the contents list after the first and Keep reading before the last.
+  const firstSection = doc.html.indexOf('<div class="section-head"');
+  const opening = firstSection < 0 ? doc.html : doc.html.slice(0, firstSection);
+  const rest = firstSection < 0 ? '' : doc.html.slice(firstSection);
+  const sourcesAt = rest.indexOf('<div class="section-head" data-read-end>');
+  const sections = sourcesAt < 0 ? rest : rest.slice(0, sourcesAt);
+  const sources = sourcesAt < 0 ? '' : rest.slice(sourcesAt);
+  const prose = (html) => (html.trim() ? `      <div class="prose">\n${html}      </div>\n` : '');
+  return `${head({ title: `${doc.title} · Cyrus Sarkosh`, ogTitle: doc.title, description: doc.description, canonical: doc.url, ogType: 'article', ogImage: og, extraMeta, extraCss: DOC_CSS + (doc.references ? REFERENCES_CSS : ''), graph, theme })}
 <body class="doc-page">
 ${nav(null)}
 ${crumbs(trail)}
@@ -983,20 +1211,18 @@ ${rail}    <main id="top" tabindex="-1">
       <header class="doc-header">
         <p class="eyebrow">${eyebrow}</p>
         <h1>${doc.titleHtml}</h1>
+        <p class="lead">${escapeHtml(doc.description)}</p>
         <ul class="tags">
-          <li>${readingMinutes(doc.words)} min read</li>${source}
-        </ul>
+          <li>${readingMinutes(doc.readWords)} min read</li>${source}
+        </ul>${seriesLine(doc, links)}
       </header>
-      <div class="prose">
-${doc.html}
-      </div>
-      <section class="author" aria-label="About the author"${doc.hasSources ? '' : ' data-read-end'}>
+${prose(opening)}${inlineContents(doc)}${prose(sections)}${keepReading(doc, links)}${prose(sources)}      <section class="author" aria-label="About the author"${doc.hasSources ? '' : ' data-read-end'}>
         <p class="section-label">Written by</p>
         <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="${LINKEDIN}" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
-    </main>
+${afterward(doc, links)}    </main>
   </div>
 
 ${FOOTER}`;
@@ -1032,7 +1258,7 @@ ${docList(featured, 3, '      ', { cls: 'start-list', event: 'start' })}
     <h2 class="section-label">All research</h2>
 `
     : '';
-  return `${head({ title: `${INDEX_TITLE} · Cyrus Sarkosh`, ogTitle: INDEX_TITLE, description: INDEX_DESCRIPTION, canonical: url, ogType: 'website', extraCss: FILTER_CSS + (featured.length ? START_CSS : ''), graph, theme })}
+  return `${head({ title: `${INDEX_TITLE} · Cyrus Sarkosh`, ogTitle: INDEX_TITLE, description: INDEX_DESCRIPTION, canonical: url, ogType: 'website', extraMeta: FEED_LINK, extraCss: FILTER_CSS + (featured.length ? START_CSS : ''), graph, theme })}
 <body>
 ${nav(`/${DOCS_DIR}`)}
 ${crumbs(trail)}
@@ -1322,8 +1548,82 @@ export function sitemap(docs, games = [], films = [], apps = []) {
 
 // ---------------------------------------------------------------- everything
 
-export function buildSite({ sources, gameSources = [], filmSources = [], appSources = [], indexHtml }) {
-  const docs = sortDocs(sources.map(({ name, text }) => loadDoc(name, text)));
+// The research feed, Atom: every doc, newest first, with its description as the summary.
+export function feed(docs) {
+  const updated = docs.reduce((max, d) => (d.modified > max ? d.modified : max), '');
+  const entries = docs.map((d) => `  <entry>
+    <title>${escapeHtml(d.title)}</title>
+    <link href="${d.url}" />
+    <id>${d.url}</id>
+    <published>${d.published}T00:00:00Z</published>
+    <updated>${d.modified}T00:00:00Z</updated>
+    <summary>${escapeHtml(d.description)}</summary>
+${d.categories.map((c) => `    <category term="${escapeHtml(c)}" />`).join('\n')}
+  </entry>`);
+  return `<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>${escapeHtml(INDEX_TITLE)} · Cyrus Sarkosh</title>
+  <subtitle>${escapeHtml(INDEX_DESCRIPTION)}</subtitle>
+  <link href="${SITE}/${DOCS_DIR}" />
+  <link rel="self" href="${SITE}/${DOCS_DIR}/feed.xml" />
+  <id>${SITE}/${DOCS_DIR}</id>
+  <updated>${updated}T00:00:00Z</updated>
+  <author><name>Cyrus Sarkosh</name><uri>${SITE}/</uri></author>
+${entries.join('\n')}
+</feed>
+`;
+}
+
+const RELATED_AUTO = 3;
+
+/**
+ * What each doc links on to (2026-10-23): its series (every doc sharing the name, oldest first),
+ * the docs it names in `related` or, without that, the ones sharing the most categories with it
+ * (newest first among equals, none from its own series, which is listed apart), and the games it
+ * mentions by name that can be played.
+ */
+export function docLinks(docs, games = []) {
+  const bySlug = new Map(docs.map((d) => [d.slug, d]));
+  const series = new Map();
+  for (const d of docs.filter((x) => x.series)) series.set(d.series, [...(series.get(d.series) ?? []), d]);
+  for (const [name, parts] of series) {
+    if (parts.length < 2) throw new DocError(`docs/published/: the series "${name}" has one doc (${parts[0].slug}); a series needs two or more`);
+    parts.sort((a, b) => (a.published === b.published ? (a.slug < b.slug ? -1 : 1) : a.published < b.published ? -1 : 1));
+  }
+  const playable = games.filter((g) => g.play);
+  const links = new Map();
+  for (const doc of docs) {
+    let related;
+    if (doc.related) {
+      related = doc.related.map((slug) => {
+        if (slug === doc.slug) throw new DocError(`docs/published/${doc.published}-${doc.slug}.md: related names the doc itself`);
+        const other = bySlug.get(slug);
+        if (!other) throw new DocError(`docs/published/${doc.published}-${doc.slug}.md: related "${slug}" is not a published doc`);
+        return other;
+      });
+    } else {
+      const shared = (d) => d.categories.filter((c) => doc.categories.includes(c)).length;
+      related = docs
+        .filter((d) => d !== doc && !(doc.series && d.series === doc.series) && shared(d) > 0)
+        .map((d, i) => ({ d, score: shared(d), i }))
+        .sort((a, b) => b.score - a.score || a.i - b.i)
+        .slice(0, doc.series ? RELATED_AUTO - 1 : RELATED_AUTO)
+        .map((x) => x.d);
+    }
+    const text = plainText(doc.html);
+    links.set(doc.slug, {
+      series: doc.series ? { name: doc.series, parts: series.get(doc.series) } : null,
+      related,
+      games: playable.filter((g) => new RegExp(`\\b${g.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(text)),
+    });
+  }
+  return links;
+}
+
+// `figures` maps a doc's slug to its figure files (name -> { width, height }); build_docs.mjs
+// reads them from the site-quality skill's assets/research/<slug>/.
+export function buildSite({ sources, gameSources = [], filmSources = [], appSources = [], indexHtml, figures = new Map() }) {
+  const docs = sortDocs(sources.map(({ name, text }) => loadDoc(name, text, figures.get(parseDocFileName(name).slug))));
   const games = sortGames(gameSources.map(({ name, text }) => loadGame(name, text)));
   const films = sortFilms(filmSources.map(({ name, text }) => loadFilm(name, text)));
   const apps = sortApps(appSources.map(({ name, text }) => loadApp(name, text)));
@@ -1344,8 +1644,12 @@ export function buildSite({ sources, gameSources = [], filmSources = [], appSour
   }
   const theme = themeBlocks(indexHtml);
   const files = new Map();
-  for (const doc of docs) files.set(`${DOCS_DIR}/${doc.slug}.html`, docPage(doc, theme));
-  if (docs.length) files.set(`${DOCS_DIR}/index.html`, indexPage(docs, theme));
+  const links = docLinks(docs, games);
+  for (const doc of docs) files.set(`${DOCS_DIR}/${doc.slug}.html`, docPage(doc, theme, links.get(doc.slug)));
+  if (docs.length) {
+    files.set(`${DOCS_DIR}/index.html`, indexPage(docs, theme));
+    files.set(`${DOCS_DIR}/feed.xml`, feed(docs));
+  }
   if (games.length) files.set('games/index.html', gamesPage(games, theme));
   if (films.length) files.set(`${FILM_DIR}/index.html`, filmsPage(films, theme));
   if (apps.length) files.set(`${APPS_DIR}/index.html`, appsPage(apps, theme));

@@ -2,6 +2,7 @@
 description: A survey of how AAA games render rain, from streaks to wet ground, splashes, canopy drip and lens drops, and how to build it on a browser frame budget.
 published: 2026-09-30
 categories: Rendering
+series: Day Hike's look
 ---
 # Photorealistic rain for browser games
 

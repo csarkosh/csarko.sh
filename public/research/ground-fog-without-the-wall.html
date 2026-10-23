@@ -13,18 +13,19 @@
   <meta property="og:url" content="https://csarko.sh/research/ground-fog-without-the-wall" />
   <meta property="og:title" content="Volumetric ground fog without the sprite wall" />
   <meta property="og:description" content="How AAA engines draw ground fog as a frustum-aligned volume instead of sprites, what it costs, where it ghosts, and which of it a browser game can run." />
-  <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
+  <meta property="og:image" content="https://csarko.sh/research/figures/ground-fog-without-the-wall-crest.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
+  <meta property="og:image:alt" content="Volumetric ground fog without the sprite wall" />
   <meta property="article:published_time" content="2026-10-07" />
-  <meta property="article:modified_time" content="2026-10-18" />
+  <meta property="article:modified_time" content="2026-10-23" />
   <meta property="article:author" content="https://csarko.sh/" />
+  <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Volumetric ground fog without the sprite wall" />
   <meta name="twitter:description" content="How AAA engines draw ground fog as a frustum-aligned volume instead of sprites, what it costs, where it ghosts, and which of it a browser game can run." />
-  <meta name="twitter:image" content="https://csarko.sh/og-image.jpg" />
-  <meta name="twitter:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
+  <meta name="twitter:image" content="https://csarko.sh/research/figures/ground-fog-without-the-wall-crest.jpg" />
+  <meta name="twitter:image:alt" content="Volumetric ground fog without the sprite wall" />
 
   <meta name="color-scheme" content="dark light" />
   <meta name="theme-color" content="#0a0b0e" media="(prefers-color-scheme: dark)" />
@@ -48,12 +49,12 @@
       "headline": "Volumetric ground fog without the sprite wall",
       "description": "How AAA engines draw ground fog as a frustum-aligned volume instead of sprites, what it costs, where it ghosts, and which of it a browser game can run.",
       "datePublished": "2026-10-07",
-      "dateModified": "2026-10-18",
+      "dateModified": "2026-10-23",
       "url": "https://csarko.sh/research/ground-fog-without-the-wall",
       "mainEntityOfPage": "https://csarko.sh/research/ground-fog-without-the-wall",
-      "wordCount": 2294,
+      "wordCount": 2335,
       "inLanguage": "en",
-      "image": "https://csarko.sh/og-image.jpg",
+      "image": "https://csarko.sh/research/figures/ground-fog-without-the-wall-crest.jpg",
       "author": {
         "@type": "Person",
         "@id": "https://csarko.sh/#person",
@@ -130,6 +131,8 @@
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
+      /* A doc's body text: brighter than --muted, which reads as grey at length (2026-10-23). */
+      --prose: #c9ced9;
       --faint: #7d8597;
       /* Content warnings only. Yellow to stand apart from the teal accent. */
       --warning: #f5c451;
@@ -159,6 +162,7 @@
         --border-strong: rgba(10, 11, 14, 0.16);
         --text: #12151c;
         --muted: #4a5263;
+        --prose: #2b3240;
         --faint: #5f677a;
         --warning: #8a6100;
         --accent: #0a735f;
@@ -350,6 +354,57 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .doc-page .prose { font-size: 17px; }
+    .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
+    .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
+    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .rail a[aria-current] { color: var(--text); }
+    .rail a[aria-current] .num { color: var(--accent); }
+    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .toc .section-label { margin: 0 0 6px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
+    .toc a:hover { color: var(--accent); }
+    .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    .figure { margin: 32px 0; }
+    .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+    /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
+    .figure img { max-height: 80vh; object-fit: contain; }
+    .figure figcaption { margin-top: 10px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+    .prose blockquote strong:first-child { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted var(--faint); text-underline-offset: 4px; }
+    .term:hover, .term:focus-visible { text-decoration-color: var(--accent); }
+    .term-def { max-width: min(92vw, 420px); margin: auto; padding: 16px 18px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.55; }
+    .term-def::backdrop { background: var(--nav-bg); }
+    /* A wide table or code block that scrolls sideways shows a shade at the edge it can scroll to. */
+    .scroll { background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
+      var(--surface); }
+    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
+    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
+    .series-name { margin: 0 0 8px; font-weight: 600; }
+    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
+    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
+    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
+    .next-list .card { padding: 16px 18px; background: var(--bg); }
+    .next-list .doc-title { font-size: 1.05rem; }
+    .next-list .doc-desc { font-size: 14.5px; }
+    .play-line { margin: 20px 0 0; }
+    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background .15s ease; }
+    .play:hover { background: var(--accent-hover); }
+    .play svg { width: 14px; height: 14px; }
+    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
+    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color .15s ease; }
+    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
+    .afterward .next:hover { border-color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -385,41 +440,68 @@
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-        <li><a href="#the-froxel-technique"><span class="num" aria-hidden="true">01</span><span>The froxel technique</span></a></li>
-        <li><a href="#the-other-half-particles"><span class="num" aria-hidden="true">02</span><span>The other half: particles</span></a></li>
-        <li><a href="#what-a-browser-can-run"><span class="num" aria-hidden="true">03</span><span>What a browser can run</span></a></li>
-        <li><a href="#a-plan-for-a-browser-game"><span class="num" aria-hidden="true">04</span><span>A plan for a browser game</span></a></li>
-        <li><a href="#sources"><span class="num" aria-hidden="true">05</span><span>Sources</span></a></li>
+        <li><a href="#every-aaa-fog-is-a-froxel-volume" data-visits-event="toc-rail"><span class="num" aria-hidden="true">01</span><span>Every AAA fog is a froxel volume</span></a></li>
+        <li><a href="#sprites-survive-as-soft-particles-and-local-density" data-visits-event="toc-rail"><span class="num" aria-hidden="true">02</span><span>Sprites survive as soft particles and local density</span></a></li>
+        <li><a href="#three-browser-designs-two-of-them-on-webgl2" data-visits-event="toc-rail"><span class="num" aria-hidden="true">03</span><span>Three browser designs, two of them on WebGL2</span></a></li>
+        <li><a href="#the-plan-a-half-resolution-march-over-an-analytic-floor" data-visits-event="toc-rail"><span class="num" aria-hidden="true">04</span><span>The plan: a half-resolution march over an analytic floor</span></a></li>
+        <li><a href="#sources" data-visits-event="toc-rail"><span class="num" aria-hidden="true">05</span><span>Sources</span></a></li>
       </ol>
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Oct 7, 2026 · Updated Oct 18, 2026</p>
+        <p class="eyebrow">Oct 7, 2026 · Updated Oct 23, 2026</p>
         <h1>Volumetric ground fog without the sprite wall</h1>
+        <p class="lead">How AAA engines draw ground fog as a frustum-aligned volume instead of sprites, what it costs, where it ghosts, and which of it a browser game can run.</p>
         <ul class="tags">
-          <li>10 min read</li>
+          <li>9 min read</li>
           <li><a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-07-ground-fog-in-aaa-games.md" target="_blank" rel="noopener">Also on GitHub</a></li>
         </ul>
+        <p class="series-line">Part 5 of 7 in <strong>Rendering a browser forest</strong> · Next: <a href="/research/rock-on-steep-terrain-shape-it-cover-it-or-skin-it" data-visits-event="series-rock-on-steep-terrain-shape-it-cover-it-or-skin-it">Rock on steep terrain: shape it, cover it, or skin it</a></p>
       </header>
       <div class="prose">
-<p><strong>Question:</strong> a horror game wants fog that rests on the ground, that the player walks through,
-and that looks like weather rather than a screen effect. Drawn as camera-facing sprites it reads
-as a wall: the terrain cuts each quad along a hard line, the quads&#39; flat bottoms line up into one
-baseline, and a dozen soft blobs overlapping average into a flat sheet. How do the games whose fog
-looks real draw it, what does it cost them, and which of it can a browser game run?</p>
-<p><strong>Short answer:</strong> every current AAA fog is a volume, not a set of sprites. A low-resolution 3D
-texture aligned to the camera&#39;s frustum holds the fog&#39;s density and in-scattered light, a scan
-through its depth slices integrates them, and each screen pixel looks up its own depth in the
-result. Because the fog is integrated along the ray to the pixel&#39;s own depth there is no surface
-for the ground to cut, which is exactly the wall. Density is an analytic height falloff times one
-octave of wind-blown noise; the look comes from the integration, the phase function and temporal
-filtering, not from texture detail. It costs about 1 ms on a PlayStation 4 and 1 to 3 ms on a
-2014 laptop or desktop GPU, and its one known artifact is ghosting from the temporal filter.
-Sprites survive only as local density fed into the volume, or as soft particles for wisps the
-volume is too coarse for. A browser can do the same integral per pixel in a half-resolution
-fragment pass with a dozen steps, on WebGL2 and WebGPU alike; a true froxel grid needs compute
-and is WebGPU only.</p>
-<div class="section-head"><p class="section-label">01</p><h2 id="the-froxel-technique"><a class="anchor" href="#the-froxel-technique">The froxel technique</a></h2></div>
+<p><strong>Question:</strong> fog drawn as camera-facing sprites reads as a wall: the terrain cuts each quad along
+a hard line, and a dozen soft blobs overlapping average into a flat sheet. How do the games whose
+fog looks real draw it, and which of it can a browser game run?</p>
+<p><strong>Short answer:</strong> every current AAA fog is a volume, not a set of sprites: a low-resolution
+<button type="button" class="term" popovertarget="term-1">froxel</button><span class="term-def" id="term-1" popover role="note">A frustum voxel: one cell of a small 3D grid fitted to the camera&#39;s view, finer near the eye than far from it.</span>
+grid that the scene&#39;s lights shine through, integrated for each pixel up to that pixel&#39;s own
+depth, so there is no surface for the ground to cut. A browser can run the same integral in one
+half-resolution fragment pass on WebGL2 and WebGPU alike; only a true froxel grid needs WebGPU.</p>
+<figure class="figure">
+<!-- generated:figure:ground-fog-without-the-wall/crest -->
+<picture>
+<source type="image/avif" srcset="/assets/fig-ground-fog-without-the-wall-crest-480.247897a3.avif 480w, /assets/fig-ground-fog-without-the-wall-crest-720.a34b6d0c.avif 720w, /assets/fig-ground-fog-without-the-wall-crest-960.8a46d06c.avif 960w" sizes="(max-width: 768px) calc(100vw - 48px), 720px" />
+<source type="image/webp" srcset="/assets/fig-ground-fog-without-the-wall-crest-480.0437e804.webp 480w, /assets/fig-ground-fog-without-the-wall-crest-720.3b7973c2.webp 720w, /assets/fig-ground-fog-without-the-wall-crest-960.abb1233f.webp 960w" sizes="(max-width: 768px) calc(100vw - 48px), 720px" />
+<img src="/assets/fig-ground-fog-without-the-wall-crest-720.66d1dd82.jpg" srcset="/assets/fig-ground-fog-without-the-wall-crest-480.efb5d276.jpg 480w, /assets/fig-ground-fog-without-the-wall-crest-720.66d1dd82.jpg 720w, /assets/fig-ground-fog-without-the-wall-crest-960.5713c0e4.jpg 960w" sizes="(max-width: 768px) calc(100vw - 48px), 720px" width="1200" height="675" alt="The crest in Day Hike: bare ground in the foreground, an animal on the ridge, and a line of trees beyond it fading into a low grey mist" decoding="async" />
+</picture>
+<!-- /generated:figure:ground-fog-without-the-wall/crest -->
+<figcaption>Day Hike today draws the cheapest of the three browser designs in section 3, an analytic height fog: mist that thickens toward the ground and with distance, with no edge for the terrain to cut.</figcaption>
+</figure>
+<p><strong>In numbers:</strong></p>
+<ul>
+<li><strong>About 1 ms</strong> on a PlayStation 4, and 1 to 3 ms on a 2014 laptop or desktop GPU, nearly fixed
+by the grid&#39;s size rather than the scene (<a href="#every-aaa-fog-is-a-froxel-volume">section 1</a>).</li>
+<li><strong>One voxel per 8 screen pixels, 64 to 128 depth slices:</strong> the grid can be tiny because fog
+holds only soft, low-frequency light (<a href="#every-aaa-fog-is-a-froxel-volume">section 1</a>).</li>
+<li><strong>One octave of wind-blown noise</strong> times a height falloff is the whole density; the look comes
+from the lighting and the temporal filter (<a href="#every-aaa-fog-is-a-froxel-volume">section 1</a>).</li>
+<li><strong>One known artifact:</strong> ghosting from that temporal filter, which every engine documents
+(<a href="#every-aaa-fog-is-a-froxel-volume">section 1</a>).</li>
+<li><strong>12 to 16 steps at half resolution</strong> is the browser&#39;s version, of the order of 1 to 2 ms on
+an integrated GPU (<a href="#three-browser-designs-two-of-them-on-webgl2">section 3</a>).</li>
+</ul>
+      </div>
+      <nav class="toc" aria-label="In this doc">
+        <p class="section-label">In this doc</p>
+        <ol>
+          <li><a href="#every-aaa-fog-is-a-froxel-volume" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>Every AAA fog is a froxel volume</span></a></li>
+          <li><a href="#sprites-survive-as-soft-particles-and-local-density" data-visits-event="toc"><span class="num" aria-hidden="true">02</span><span>Sprites survive as soft particles and local density</span></a></li>
+          <li><a href="#three-browser-designs-two-of-them-on-webgl2" data-visits-event="toc"><span class="num" aria-hidden="true">03</span><span>Three browser designs, two of them on WebGL2</span></a></li>
+          <li><a href="#the-plan-a-half-resolution-march-over-an-analytic-floor" data-visits-event="toc"><span class="num" aria-hidden="true">04</span><span>The plan: a half-resolution march over an analytic floor</span></a></li>
+        </ol>
+      </nav>
+      <div class="prose">
+<div class="section-head"><p class="section-label">01</p><h2 id="every-aaa-fog-is-a-froxel-volume"><a class="anchor" href="#every-aaa-fog-is-a-froxel-volume">Every AAA fog is a froxel volume</a></h2></div>
 <p><strong>Origin.</strong> Wronski&#39;s volumetric fog for Assassin&#39;s Creed 4 at GDC and SIGGRAPH 2014 <a class="cite" href="#ref-1">[1]</a>, <a class="cite" href="#ref-2">[2]</a>,
 made physically based and unified with every other participating medium by Hillaire at Frostbite
 in 2015 <a class="cite" href="#ref-3">[3]</a>. Unreal&#39;s Volumetric Fog <a class="cite" href="#ref-4">[4]</a>, Godot&#39;s <a class="cite" href="#ref-5">[5]</a>, Flax&#39;s <a class="cite" href="#ref-6">[6]</a> and Unity HDRP&#39;s are the same
@@ -478,7 +560,7 @@ compute <a class="cite" href="#ref-8">[8]</a>. The cost is nearly fixed by the g
 line rather than a risk.</p>
 <p><strong>The limits.</strong> The fog does not shadow itself <a class="cite" href="#ref-4">[4]</a>; it is bounded by a view distance past which
 an analytic fog takes over <a class="cite" href="#ref-4">[4]</a>, <a class="cite" href="#ref-9">[9]</a>; and it is fixed to the camera frustum <a class="cite" href="#ref-4">[4]</a>.</p>
-<div class="section-head"><p class="section-label">02</p><h2 id="the-other-half-particles"><a class="anchor" href="#the-other-half-particles">The other half: particles</a></h2></div>
+<div class="section-head"><p class="section-label">02</p><h2 id="sprites-survive-as-soft-particles-and-local-density"><a class="anchor" href="#sprites-survive-as-soft-particles-and-local-density">Sprites survive as soft particles and local density</a></h2></div>
 <p>The volume is soft by construction. For wisps at the player&#39;s face, smoke and dust, these games
 still draw sprites, and they make the sprites meet the world in two ways.</p>
 <p><strong>Soft particles.</strong> Each sprite pixel compares its own depth with the scene depth behind it and
@@ -494,7 +576,7 @@ of them sorts against the others <a class="cite" href="#ref-7">[7]</a>.</p>
 <p><strong>The old way.</strong> Godot&#39;s own advice for renderers without volumetrics is &quot;specially configured
 QuadMeshes&quot; for ground fog <a class="cite" href="#ref-5">[5]</a>: flat quads lying on the ground with a noise texture, not vertical
 cards facing the camera.</p>
-<div class="section-head"><p class="section-label">03</p><h2 id="what-a-browser-can-run"><a class="anchor" href="#what-a-browser-can-run">What a browser can run</a></h2></div>
+<div class="section-head"><p class="section-label">03</p><h2 id="three-browser-designs-two-of-them-on-webgl2"><a class="anchor" href="#three-browser-designs-two-of-them-on-webgl2">Three browser designs, two of them on WebGL2</a></h2></div>
 <p>WebGL2 has fragment shaders, 3D textures and, with a depth pre-pass or a resolved depth
 attachment, a depth texture; it has no compute shaders and no convenient render-to-3D-slice.
 WebGPU adds compute and storage textures. Three designs, cheapest first.</p>
@@ -518,7 +600,7 @@ lights are many, since each cell is lit once rather than per pixel per step; not
 the march is light-bound.</p>
 <p>In every design the density is one scalar a frame (<code>a</code> in the analytic form, the extinction
 coefficient in the others), which is what a game&#39;s time of day, weather or threat level sets.</p>
-<div class="section-head"><p class="section-label">04</p><h2 id="a-plan-for-a-browser-game"><a class="anchor" href="#a-plan-for-a-browser-game">A plan for a browser game</a></h2></div>
+<div class="section-head"><p class="section-label">04</p><h2 id="the-plan-a-half-resolution-march-over-an-analytic-floor"><a class="anchor" href="#the-plan-a-half-resolution-march-over-an-analytic-floor">The plan: a half-resolution march over an analytic floor</a></h2></div>
 <p>Build the half-resolution march, with the analytic fog as the low tier and as the fallback past
 the march&#39;s range, and convert the near sprites to soft particles for the last metre at the face:</p>
 <ol>
@@ -536,6 +618,35 @@ is the volume&#39;s. Remove any vertical ground-fog cards: the volume is the clo
 </ol>
 <p>What this does not give is the AAA fog&#39;s light shafts through the trees&#39; shadows: that needs the
 march to read the moon&#39;s shadow map, a later step on top of the same pass.</p>
+      </div>
+      <section class="keep-reading" aria-labelledby="next-reads">
+        <h2 id="next-reads" class="section-label">Keep reading</h2>
+        <p class="series-name">Rendering a browser forest · 7 parts</p>
+        <ol class="series-parts">
+          <li><a href="/research/floating-props-on-procedural-terrain" data-visits-event="next-floating-props-on-procedural-terrain">Why props float on procedural terrain</a></li>
+          <li><a href="/research/no-visible-pop-in" data-visits-event="next-no-visible-pop-in">No visible pop-in: dissolving a streamed forest</a></li>
+          <li><a href="/research/grass-and-trail-realism" data-visits-event="next-grass-and-trail-realism">Grass, wind and trails in a browser meadow</a></li>
+          <li><a href="/research/grass-fullness-without-thinning" data-visits-event="next-grass-fullness-without-thinning">Grass fullness without thinning the field</a></li>
+          <li aria-current="true"><span>Volumetric ground fog without the sprite wall</span></li>
+          <li><a href="/research/rock-on-steep-terrain-shape-it-cover-it-or-skin-it" data-visits-event="next-rock-on-steep-terrain-shape-it-cover-it-or-skin-it">Rock on steep terrain: shape it, cover it, or skin it</a></li>
+          <li><a href="/research/soft-shade-bark-and-moss-for-browser-forests" data-visits-event="next-soft-shade-bark-and-moss-for-browser-forests">Soft shade, bark and moss for browser forests</a></li>
+        </ol>
+        <ul class="doc-list next-list" role="list">
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" data-visits-event="next-a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2">A painted look over a photoreal render: WebGPU against WebGL2</a></h3>
+            <p class="doc-meta">11 min read</p>
+            <p class="doc-desc">Laying a painted look, a stroke filter and a palette grade, over a physically based browser render, and the four places WebGPU and WebGL2 part ways doing it.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" data-visits-event="next-scene-depth-for-a-post-process-webgpu-vs-webgl2">Scene depth for a post process: WebGPU against WebGL2</a></h3>
+            <p class="doc-meta">16 min read</p>
+            <p class="doc-desc">Getting per-pixel scene depth to a post process on WebGPU and WebGL2, and the six places the two APIs part ways, from shader uniformity to a lost GPU.</p>
+          </li>
+        </ul>
+        <p class="play-line"><a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
+        <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS) or <a class="external" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">csarko.log</a>.</p>
+      </section>
+      <div class="prose">
 <div class="section-head" data-read-end><p class="section-label">05</p><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <ol class="references">
 <li id="ref-1"><span class="ref-num">[1]</span><div>B. Wronski, &quot;Volumetric fog: unified compute shader-based solution to atmospheric scattering,&quot; presented at SIGGRAPH Advances in Real-Time Rendering, Vancouver, BC, Canada, Aug. 2014. Accessed: Oct. 7, 2026. [Online]. Available: <a class="external" href="https://advances.realtimerendering.com/s2014/wronski/bwronski_volumetric_fog_siggraph2014.pdf" target="_blank" rel="noopener">https://advances.realtimerendering.com/s2014/wronski/bwronski_volumetric_fog_siggraph2014.pdf</a></div></li>
@@ -553,7 +664,6 @@ march to read the moon&#39;s shadow map, a later step on top of the same pass.</
 <li id="ref-13"><span class="ref-num">[13]</span><div>I. Cantlay, &quot;High-speed, off-screen particles,&quot; in GPU Gems 3, ch. 23, NVIDIA, 2007. Accessed: Oct. 7, 2026. [Online]. Available: <a class="external" href="https://developer.nvidia.com/gpugems/gpugems3/part-iv-image-effects/chapter-23-high-speed-screen-particles" target="_blank" rel="noopener">https://developer.nvidia.com/gpugems/gpugems3/part-iv-image-effects/chapter-23-high-speed-screen-particles</a></div></li>
 <li id="ref-14"><span class="ref-num">[14]</span><div>I. Quilez, &quot;Better fog,&quot; iquilezles.org. Accessed: Oct. 7, 2026. [Online]. Available: <a class="external" href="https://iquilezles.org/articles/fog/" target="_blank" rel="noopener">https://iquilezles.org/articles/fog/</a></div></li>
 </ol>
-
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
@@ -561,6 +671,11 @@ march to read the moon&#39;s shadow map, a later step on top of the same pass.</
         <p>Senior software engineer leading distributed systems and AI products.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
+      <nav class="afterward" aria-label="Read next">
+        <a class="next" href="/research/rock-on-steep-terrain-shape-it-cover-it-or-skin-it" data-visits-event="end-rock-on-steep-terrain-shape-it-cover-it-or-skin-it"><span class="section-label">Read next</span><span>Rock on steep terrain: shape it, cover it, or skin it <span aria-hidden="true">→</span></span></a>
+        <a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        <a href="/research">All research</a>
+      </nav>
     </main>
   </div>
 
@@ -573,6 +688,7 @@ march to read the moon&#39;s shadow map, a later step on top of the same pass.</
   <!-- generated:analytics -->
   <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
+  <script defer src="/assets/reading.c3e27b33.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

@@ -18,8 +18,9 @@
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta property="article:published_time" content="2026-09-17" />
-  <meta property="article:modified_time" content="2026-10-18" />
+  <meta property="article:modified_time" content="2026-10-23" />
   <meta property="article:author" content="https://csarko.sh/" />
+  <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Git LFS on a cloud bucket, not GitHub&#39;s storage" />
   <meta name="twitter:description" content="Git LFS is not tied to GitHub. How its endpoint is discovered, three ways to put a cloud bucket behind it, and when to skip LFS entirely." />
@@ -48,10 +49,10 @@
       "headline": "Git LFS on a cloud bucket, not GitHub's storage",
       "description": "Git LFS is not tied to GitHub. How its endpoint is discovered, three ways to put a cloud bucket behind it, and when to skip LFS entirely.",
       "datePublished": "2026-09-17",
-      "dateModified": "2026-10-18",
+      "dateModified": "2026-10-23",
       "url": "https://csarko.sh/research/large-files-out-of-git",
       "mainEntityOfPage": "https://csarko.sh/research/large-files-out-of-git",
-      "wordCount": 2590,
+      "wordCount": 2768,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -127,6 +128,8 @@
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
+      /* A doc's body text: brighter than --muted, which reads as grey at length (2026-10-23). */
+      --prose: #c9ced9;
       --faint: #7d8597;
       /* Content warnings only. Yellow to stand apart from the teal accent. */
       --warning: #f5c451;
@@ -156,6 +159,7 @@
         --border-strong: rgba(10, 11, 14, 0.16);
         --text: #12151c;
         --muted: #4a5263;
+        --prose: #2b3240;
         --faint: #5f677a;
         --warning: #8a6100;
         --accent: #0a735f;
@@ -347,6 +351,57 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .doc-page .prose { font-size: 17px; }
+    .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
+    .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
+    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .rail a[aria-current] { color: var(--text); }
+    .rail a[aria-current] .num { color: var(--accent); }
+    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .toc .section-label { margin: 0 0 6px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
+    .toc a:hover { color: var(--accent); }
+    .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    .figure { margin: 32px 0; }
+    .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+    /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
+    .figure img { max-height: 80vh; object-fit: contain; }
+    .figure figcaption { margin-top: 10px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+    .prose blockquote strong:first-child { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted var(--faint); text-underline-offset: 4px; }
+    .term:hover, .term:focus-visible { text-decoration-color: var(--accent); }
+    .term-def { max-width: min(92vw, 420px); margin: auto; padding: 16px 18px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.55; }
+    .term-def::backdrop { background: var(--nav-bg); }
+    /* A wide table or code block that scrolls sideways shows a shade at the edge it can scroll to. */
+    .scroll { background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
+      var(--surface); }
+    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
+    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
+    .series-name { margin: 0 0 8px; font-weight: 600; }
+    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
+    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
+    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
+    .next-list .card { padding: 16px 18px; background: var(--bg); }
+    .next-list .doc-title { font-size: 1.05rem; }
+    .next-list .doc-desc { font-size: 14.5px; }
+    .play-line { margin: 20px 0 0; }
+    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background .15s ease; }
+    .play:hover { background: var(--accent-hover); }
+    .play svg { width: 14px; height: 14px; }
+    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
+    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color .15s ease; }
+    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
+    .afterward .next:hover { border-color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -382,50 +437,78 @@
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-        <li><a href="#the-answer-in-five-lines"><span class="num" aria-hidden="true">00</span><span>The answer in five lines</span></a></li>
-        <li><a href="#why-this-problem-exists-at-all"><span class="num" aria-hidden="true">01</span><span>Why this problem exists at all</span></a></li>
-        <li><a href="#what-git-lfs-actually-is"><span class="num" aria-hidden="true">02</span><span>What Git LFS actually is</span></a></li>
-        <li><a href="#mechanism-1-your-own-lfs-server-with-a-bucket-behind-it"><span class="num" aria-hidden="true">03</span><span>Mechanism 1: your own LFS server, with a bucket behind it</span></a></li>
-        <li><a href="#mechanism-2-a-standalone-custom-transfer-agent"><span class="num" aria-hidden="true">04</span><span>Mechanism 2: a standalone custom transfer agent</span></a></li>
-        <li><a href="#the-costs-everyone-underestimates"><span class="num" aria-hidden="true">05</span><span>The costs everyone underestimates</span></a></li>
-        <li><a href="#the-alternative-pin-the-bytes-do-not-store-them"><span class="num" aria-hidden="true">06</span><span>The alternative: pin the bytes, do not store them</span></a></li>
-        <li><a href="#choosing"><span class="num" aria-hidden="true">07</span><span>Choosing</span></a></li>
-        <li><a href="#sources"><span class="num" aria-hidden="true">08</span><span>Sources</span></a></li>
+        <li><a href="#git-never-forgets-a-binary-and-every-clone-pays-for-it" data-visits-event="toc-rail"><span class="num" aria-hidden="true">01</span><span>Git never forgets a binary, and every clone pays for it</span></a></li>
+        <li><a href="#lfs-swaps-the-file-for-a-pointer-and-discovers-its-server" data-visits-event="toc-rail"><span class="num" aria-hidden="true">02</span><span>LFS swaps the file for a pointer and discovers its server</span></a></li>
+        <li><a href="#mechanism-1-giftless-an-lfs-server-with-a-bucket-behind-it" data-visits-event="toc-rail"><span class="num" aria-hidden="true">03</span><span>Mechanism 1: Giftless, an LFS server with a bucket behind it</span></a></li>
+        <li><a href="#mechanism-2-a-transfer-agent-that-needs-no-server" data-visits-event="toc-rail"><span class="num" aria-hidden="true">04</span><span>Mechanism 2: a transfer agent that needs no server</span></a></li>
+        <li><a href="#every-mechanism-makes-a-clone-depend-on-infrastructure-you-run" data-visits-event="toc-rail"><span class="num" aria-hidden="true">05</span><span>Every mechanism makes a clone depend on infrastructure you run</span></a></li>
+        <li><a href="#for-build-output-pin-the-bytes-in-a-manifest-instead" data-visits-event="toc-rail"><span class="num" aria-hidden="true">06</span><span>For build output, pin the bytes in a manifest instead</span></a></li>
+        <li><a href="#stay-on-hosted-lfs-unless-you-can-name-the-benefit" data-visits-event="toc-rail"><span class="num" aria-hidden="true">07</span><span>Stay on hosted LFS unless you can name the benefit</span></a></li>
+        <li><a href="#sources" data-visits-event="toc-rail"><span class="num" aria-hidden="true">08</span><span>Sources</span></a></li>
       </ol>
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Sep 17, 2026 · Updated Oct 18, 2026</p>
+        <p class="eyebrow">Sep 17, 2026 · Updated Oct 23, 2026</p>
         <h1>Git LFS on a cloud bucket, not GitHub&#39;s storage</h1>
+        <p class="lead">Git LFS is not tied to GitHub. How its endpoint is discovered, three ways to put a cloud bucket behind it, and when to skip LFS entirely.</p>
         <ul class="tags">
           <li>11 min read</li>
         </ul>
       </header>
       <div class="prose">
-<p><strong>Question:</strong> a repository needs to carry large binary files, models, textures, audio, video. Git
+<p><strong>Question:</strong> a repository needs to carry large binary files: models, textures, audio, video. Git
 LFS is the standard answer, but does it have to mean GitHub&#39;s storage? Can a Google Cloud Storage
 bucket be used instead, or as additional storage alongside it?</p>
-<p><strong>Short answer:</strong> Git LFS is not tied to GitHub. It is a protocol whose server endpoint the client
-<em>discovers</em>, and a GitHub remote resolves to GitHub&#39;s LFS endpoint purely by construction. Point the
-client elsewhere and the bytes go elsewhere. Three mechanisms exist, and the lightest of them needs
-no server at all. But &quot;additional&quot; is the one word that does not work: LFS resolves exactly one
-endpoint per remote and will never write an object to two backends in a single push.</p>
-<p>The more useful question is often whether the files should travel through git at all. Section 6 sets
-out the alternative, which suits any repository whose large files are regenerable build output.</p>
+<p><strong>Short answer:</strong> a bucket can replace GitHub&#39;s storage, but not sit alongside it. Git LFS is
+not tied to GitHub: the client discovers its server endpoint, so pointing it at a bucket-backed LFS server, or at a standalone
+<button type="button" class="term" popovertarget="term-1">custom transfer agent</button><span class="term-def" id="term-1" popover role="note">An ordinary program that Git LFS launches to move the bytes itself, talking to it over standard input and output.</span>
+that needs no server at all, sends the bytes to the bucket. &quot;Additional&quot; is the one word that does
+not work: LFS resolves exactly one endpoint per remote and will never write an object to two
+backends in a single push. And for large files that are regenerable build output, the better
+answer is to skip LFS and pin the bytes from a
+<button type="button" class="term" popovertarget="term-2">manifest</button><span class="term-def" id="term-2" popover role="note">A file the build already reads, recording what each asset is, where it came from and what it hashes to.</span>.</p>
+<figure class="figure">
+<!-- generated:figure:large-files-out-of-git/flow -->
+<img src="/assets/fig-large-files-out-of-git-flow.8496bb27.svg" width="440" height="470" alt="A diagram: the working tree&#39;s real file splits into a pointer, kept in git history, and the bytes, which the Git LFS client sends through an LFS server or a standalone transfer agent to a cloud bucket, stored under their OID" decoding="async" />
+<!-- /generated:figure:large-files-out-of-git/flow -->
+<figcaption>Where each piece sits: git keeps only the small pointer, and the bytes, named by their SHA-256 OID, reach the bucket through an LFS server or a standalone transfer agent. A clone needs both halves.</figcaption>
+</figure>
+<p><strong>In short:</strong></p>
+<ul>
+<li><strong>A pointer of roughly 130 bytes</strong> is all git keeps; the real bytes go to an LFS server, keyed
+by their SHA-256 (<a href="#lfs-swaps-the-file-for-a-pointer-and-discovers-its-server">section 2</a>).</li>
+<li><strong>Four settings move the endpoint:</strong> <code>lfs.url</code>, <code>remote.&lt;name&gt;.lfsurl</code>, a committed
+<code>.lfsconfig</code> and <code>lfs.standalonetransferagent</code>; <code>git lfs env</code> prints the one in use
+(<a href="#lfs-swaps-the-file-for-a-pointer-and-discovers-its-server">section 2</a>).</li>
+<li><strong>Giftless</strong> puts Google Cloud Storage, S3, Azure Blob Storage or local disk behind an LFS
+server, though its published Google Cloud Storage example streams every byte through the server
+(<a href="#mechanism-1-giftless-an-lfs-server-with-a-bucket-behind-it">section 3</a>).</li>
+<li><strong>One endpoint per remote:</strong> a second remote with its own LFS server is not a mirror, and
+keeping the two in step is a backup job you run
+(<a href="#mechanism-1-giftless-an-lfs-server-with-a-bucket-behind-it">section 3</a>).</li>
+<li><strong>No server at all:</strong> a standalone agent speaks newline-delimited JSON with Git LFS and names
+each bucket object by its OID (<a href="#mechanism-2-a-transfer-agent-that-needs-no-server">section 4</a>).</li>
+<li><strong>Regenerable output skips LFS:</strong> the bytes in a bucket, a hash and a location in a manifest,
+and only text in git (<a href="#for-build-output-pin-the-bytes-in-a-manifest-instead">section 6</a>).</li>
+</ul>
 <p>This is written for someone who has never used Git LFS. Sections 1 and 2 are the background;
 everything after that assumes them.</p>
-<div class="section-head"><p class="section-label">00</p><h2 id="the-answer-in-five-lines"><a class="anchor" href="#the-answer-in-five-lines">The answer in five lines</a></h2></div>
-<ol>
-<li>Git history is append-only in practice, so a binary committed once is in every clone forever.</li>
-<li>Git LFS replaces the file in history with a small text pointer and stores the bytes elsewhere.</li>
-<li>Where &quot;elsewhere&quot; is, is configurable: <code>lfs.url</code>, <code>remote.&lt;name&gt;.lfsurl</code>, or a committed
-<code>.lfsconfig</code>.</li>
-<li>A <strong>standalone custom transfer agent</strong> is an ordinary program that moves the bytes itself, with
-no HTTP service to run anywhere.</li>
-<li>For regenerable output, skip LFS: keep the bytes in a bucket, keep a hash and a location in a
-manifest your build already reads, and let git hold only the text.</li>
-</ol>
-<div class="section-head"><p class="section-label">01</p><h2 id="why-this-problem-exists-at-all"><a class="anchor" href="#why-this-problem-exists-at-all">Why this problem exists at all</a></h2></div>
+      </div>
+      <nav class="toc" aria-label="In this doc">
+        <p class="section-label">In this doc</p>
+        <ol>
+          <li><a href="#git-never-forgets-a-binary-and-every-clone-pays-for-it" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>Git never forgets a binary, and every clone pays for it</span></a></li>
+          <li><a href="#lfs-swaps-the-file-for-a-pointer-and-discovers-its-server" data-visits-event="toc"><span class="num" aria-hidden="true">02</span><span>LFS swaps the file for a pointer and discovers its server</span></a></li>
+          <li><a href="#mechanism-1-giftless-an-lfs-server-with-a-bucket-behind-it" data-visits-event="toc"><span class="num" aria-hidden="true">03</span><span>Mechanism 1: Giftless, an LFS server with a bucket behind it</span></a></li>
+          <li><a href="#mechanism-2-a-transfer-agent-that-needs-no-server" data-visits-event="toc"><span class="num" aria-hidden="true">04</span><span>Mechanism 2: a transfer agent that needs no server</span></a></li>
+          <li><a href="#every-mechanism-makes-a-clone-depend-on-infrastructure-you-run" data-visits-event="toc"><span class="num" aria-hidden="true">05</span><span>Every mechanism makes a clone depend on infrastructure you run</span></a></li>
+          <li><a href="#for-build-output-pin-the-bytes-in-a-manifest-instead" data-visits-event="toc"><span class="num" aria-hidden="true">06</span><span>For build output, pin the bytes in a manifest instead</span></a></li>
+          <li><a href="#stay-on-hosted-lfs-unless-you-can-name-the-benefit" data-visits-event="toc"><span class="num" aria-hidden="true">07</span><span>Stay on hosted LFS unless you can name the benefit</span></a></li>
+        </ol>
+      </nav>
+      <div class="prose">
+<div class="section-head"><p class="section-label">01</p><h2 id="git-never-forgets-a-binary-and-every-clone-pays-for-it"><a class="anchor" href="#git-never-forgets-a-binary-and-every-clone-pays-for-it">Git never forgets a binary, and every clone pays for it</a></h2></div>
 <p>Git stores a complete snapshot of every version of every file it has ever been told about, and it
 never forgets. That is the property that makes git trustworthy, and it is also the trap.</p>
 <p>Three consequences follow, and all three surprise people:</p>
@@ -443,7 +526,7 @@ pushed, this stops being a private cleanup and becomes everybody&#39;s problem.<
 successive versions differ in a few lines and compress well against each other. Two exports of the
 same model or texture usually share almost no bytes, so each version is stored at close to full
 size.</p>
-<div class="section-head"><p class="section-label">02</p><h2 id="what-git-lfs-actually-is"><a class="anchor" href="#what-git-lfs-actually-is">What Git LFS actually is</a></h2></div>
+<div class="section-head"><p class="section-label">02</p><h2 id="lfs-swaps-the-file-for-a-pointer-and-discovers-its-server"><a class="anchor" href="#lfs-swaps-the-file-for-a-pointer-and-discovers-its-server">LFS swaps the file for a pointer and discovers its server</a></h2></div>
 <p>Git Large File Storage is the standard mitigation, and the idea is a single substitution.</p>
 <h3 id="2-1-the-pointer"><a class="anchor" href="#2-1-the-pointer">2.1 The pointer</a></h3>
 <p>When a file matches a pattern in <code>.gitattributes</code>, git does not commit the file. It commits a small
@@ -461,7 +544,7 @@ normal.</p>
 appends <code>.git/info/lfs</code> to it, so a GitHub remote resolves to a GitHub LFS endpoint by construction
 rather than by decree. For SSH remotes it runs a helper called <code>git-lfs-authenticate</code>, which lets
 the server hand back a different endpoint entirely <a class="cite" href="#ref-1">[1]</a>.</p>
-<p>Every layer of that is overridable <a class="cite" href="#ref-1">[1]</a>:</p>
+<p>Point the client elsewhere and the bytes go elsewhere. Every layer of that is overridable <a class="cite" href="#ref-1">[1]</a>:</p>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
 <thead>
 <tr>
@@ -495,7 +578,7 @@ cloud-backed implementations typically return a <strong>signed URL</strong>, a t
 client talk straight to the bucket while holding no credentials of its own.</p>
 <p>The component that performs the move is a <strong>transfer adapter</strong>. The built-in one speaks HTTP.
 Section 4 is about replacing it.</p>
-<div class="section-head"><p class="section-label">03</p><h2 id="mechanism-1-your-own-lfs-server-with-a-bucket-behind-it"><a class="anchor" href="#mechanism-1-your-own-lfs-server-with-a-bucket-behind-it">Mechanism 1: your own LFS server, with a bucket behind it</a></h2></div>
+<div class="section-head"><p class="section-label">03</p><h2 id="mechanism-1-giftless-an-lfs-server-with-a-bucket-behind-it"><a class="anchor" href="#mechanism-1-giftless-an-lfs-server-with-a-bucket-behind-it">Mechanism 1: Giftless, an LFS server with a bucket behind it</a></h2></div>
 <p><a class="external" href="https://giftless.datopian.com" target="_blank" rel="noopener">Giftless</a> <a class="cite" href="#ref-2">[2]</a>, from Datopian, is an open-source LFS server built for
 exactly this. It supports four storage backends: Google Cloud Storage, Amazon S3, Azure Blob
 Storage, and local disk <a class="cite" href="#ref-3">[3]</a>. The Google Cloud Storage backend needs a bucket and a service-account key,
@@ -517,7 +600,7 @@ GitHub with GitHub&#39;s LFS and to a second remote with a bucket-backed one.</p
 and to no other. Keeping two copies in step means running something like <code>git lfs fetch --all</code>
 against one remote and pushing the objects to the other, on a schedule you own and monitor. Treat it
 as a backup job that happens to use git plumbing, not as a feature.</p>
-<div class="section-head"><p class="section-label">04</p><h2 id="mechanism-2-a-standalone-custom-transfer-agent"><a class="anchor" href="#mechanism-2-a-standalone-custom-transfer-agent">Mechanism 2: a standalone custom transfer agent</a></h2></div>
+<div class="section-head"><p class="section-label">04</p><h2 id="mechanism-2-a-transfer-agent-that-needs-no-server"><a class="anchor" href="#mechanism-2-a-transfer-agent-that-needs-no-server">Mechanism 2: a transfer agent that needs no server</a></h2></div>
 <p>This is the lightest mechanism, and it removes the server from the picture entirely.</p>
 <p>A <strong>custom transfer agent</strong> is an ordinary executable. Git LFS launches it and talks to it over
 standard input and output in newline-delimited JSON <a class="cite" href="#ref-4">[4]</a>. The agent does the actual moving, so it can
@@ -526,14 +609,14 @@ likes.</p>
 <p>Adding <code>lfs.standalonetransferagent</code> goes one step further: the client stops contacting any LFS API
 server at all <a class="cite" href="#ref-4">[4]</a>. There is nothing to deploy, secure, monitor or pay for. The agent works out by itself
 where each object lives.</p>
-<h3 id="4-1-one-word-two-meanings"><a class="anchor" href="#4-1-one-word-two-meanings">4.1 One word, two meanings</a></h3>
+<h3 id="4-1-two-meanings-of-streaming"><a class="anchor" href="#4-1-two-meanings-of-streaming">4.1 Two meanings of &quot;streaming&quot;</a></h3>
 <p>&quot;Streaming&quot; names two different things, and conflating them produces a design that contradicts
 itself.</p>
 <p>In section 3 it means a server proxying bytes through its own process, which is the thing this
 mechanism exists to avoid. Here it means the agent piping bytes straight between the working file
 and the bucket, rather than staging a whole second copy on local disk first. The second is what you
 want: no server, and no temporary duplicate of a large file.</p>
-<h3 id="4-2-the-protocol"><a class="anchor" href="#4-2-the-protocol">4.2 The protocol</a></h3>
+<h3 id="4-2-the-protocol-newline-delimited-json-in-three-stages"><a class="anchor" href="#4-2-the-protocol-newline-delimited-json-in-three-stages">4.2 The protocol: newline-delimited JSON in three stages</a></h3>
 <p>The exchange has three stages <a class="cite" href="#ref-4">[4]</a>. Git LFS sends the first message of each pair; the agent replies.</p>
 <p><strong>Initialisation</strong>, once per process:</p>
 <div class="scroll" tabindex="0" role="region" aria-label="Code"><pre><code class="language-json">{ &quot;event&quot;: &quot;init&quot;, &quot;operation&quot;: &quot;download&quot;, &quot;remote&quot;: &quot;origin&quot;, &quot;concurrent&quot;: true, &quot;concurrenttransfers&quot;: 3 }
@@ -598,7 +681,7 @@ two levels so no single prefix grows without bound:</p>
 <p>Three useful properties come free. Identical content is stored once, whatever it is called in the
 working tree. Verifying a download is just hashing it and comparing. And an object can never be
 silently replaced by different content, because different content has a different name.</p>
-<h3 id="4-5-what-you-take-on"><a class="anchor" href="#4-5-what-you-take-on">4.5 What you take on</a></h3>
+<h3 id="4-5-the-agent-owns-auth-retries-concurrency-and-integrity"><a class="anchor" href="#4-5-the-agent-owns-auth-retries-concurrency-and-integrity">4.5 The agent owns auth, retries, concurrency and integrity</a></h3>
 <p>Removing the server does not remove the work; it relocates it. The agent now owns:</p>
 <ul>
 <li><strong>Authentication.</strong> Application default credentials for a developer, and workload identity or a
@@ -610,7 +693,7 @@ file into the working tree.</li>
 <li><strong>Distribution.</strong> Every developer and every CI job needs the agent installed and configured. A
 committed <code>.lfsconfig</code> carries the settings but not the binary.</li>
 </ul>
-<div class="section-head"><p class="section-label">05</p><h2 id="the-costs-everyone-underestimates"><a class="anchor" href="#the-costs-everyone-underestimates">The costs everyone underestimates</a></h2></div>
+<div class="section-head"><p class="section-label">05</p><h2 id="every-mechanism-makes-a-clone-depend-on-infrastructure-you-run"><a class="anchor" href="#every-mechanism-makes-a-clone-depend-on-infrastructure-you-run">Every mechanism makes a clone depend on infrastructure you run</a></h2></div>
 <p>These apply to all three mechanisms, and they are the reason section 6 exists.</p>
 <ul>
 <li><strong>A clone now depends on infrastructure you operate.</strong> If the bucket, the credentials or the agent
@@ -626,7 +709,7 @@ deletable, which a hosted LFS service generally does not. But the pointer stays 
 forever, so deleting the object turns an old commit into one that can no longer be checked out.
 That is a deliberate trade, not a cleanup.</li>
 </ul>
-<div class="section-head"><p class="section-label">06</p><h2 id="the-alternative-pin-the-bytes-do-not-store-them"><a class="anchor" href="#the-alternative-pin-the-bytes-do-not-store-them">The alternative: pin the bytes, do not store them</a></h2></div>
+<div class="section-head"><p class="section-label">06</p><h2 id="for-build-output-pin-the-bytes-in-a-manifest-instead"><a class="anchor" href="#for-build-output-pin-the-bytes-in-a-manifest-instead">For build output, pin the bytes in a manifest instead</a></h2></div>
 <p>Every mechanism above answers &quot;how do I move large files through git&quot;. For a repository whose large
 files are build output, the better question is whether they should go through git at all.</p>
 <p><strong>The pattern:</strong> keep the bytes in a bucket, keep a hash and a retrieval location in a manifest file
@@ -644,7 +727,7 @@ commit.</li>
 asset is, where it came from and what it hashes to. Adding a retrieval location extends an
 existing pattern rather than inventing one.</li>
 </ul>
-<h3 id="6-2-the-field-that-is-easy-to-get-wrong"><a class="anchor" href="#6-2-the-field-that-is-easy-to-get-wrong">6.2 The field that is easy to get wrong</a></h3>
+<h3 id="6-2-the-retrieval-location-is-not-the-provenance-url"><a class="anchor" href="#6-2-the-retrieval-location-is-not-the-provenance-url">6.2 The retrieval location is not the provenance URL</a></h3>
 <p>A manifest entry that records provenance already has a URL in it: the page the asset was downloaded
 or licensed from. A retrieval location is a <strong>different</strong> field, and overloading the first one with
 the second quietly destroys attribution. Provenance must keep pointing at the original author, while
@@ -669,7 +752,7 @@ retrieval points at your bucket.</p>
 </tbody></table></div>
 <p>Build output that is neither committed nor fetched, because a command regenerates it locally, needs
 no scheme at all. That is the cheapest answer whenever it is available.</p>
-<div class="section-head"><p class="section-label">07</p><h2 id="choosing"><a class="anchor" href="#choosing">Choosing</a></h2></div>
+<div class="section-head"><p class="section-label">07</p><h2 id="stay-on-hosted-lfs-unless-you-can-name-the-benefit"><a class="anchor" href="#stay-on-hosted-lfs-unless-you-can-name-the-benefit">Stay on hosted LFS unless you can name the benefit</a></h2></div>
 <ul>
 <li><strong>Staying on a hosted LFS service is usually right.</strong> It costs nothing to operate, and the
 included allowances are generous relative to what a repository of source code plus modest assets
@@ -681,6 +764,29 @@ service. It is the least infrastructure that still gives a working <code>git clo
 <li><strong>Reach for the manifest scheme</strong> when the files are generated, iterated on, and large. It is the
 only one of the four where storage behaves like storage, meaning you can delete things.</li>
 </ul>
+      </div>
+      <section class="keep-reading" aria-labelledby="next-reads">
+        <h2 id="next-reads" class="section-label">Keep reading</h2>
+        <ul class="doc-list next-list" role="list">
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/telemetry-without-identifying-anyone" data-visits-event="next-telemetry-without-identifying-anyone">Privacy-first telemetry without user IDs</a></h3>
+            <p class="doc-meta">40 min read</p>
+            <p class="doc-desc">A privacy-first telemetry design for a desktop IDE: counters and coarse dimensions, no IDs, opt-in consent, crash reports, and legal baselines.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/visits-without-cookies" data-visits-event="next-visits-without-cookies">Visits without cookies, and the path they took</a></h3>
+            <p class="doc-meta">15 min read</p>
+            <p class="doc-desc">What a cookieless counter can know, what more a page says without fingerprinting, where the journey hides, and a 3 KB client with a Rust collector.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/a-zero-cost-analytics-dashboard-without-cookies" data-visits-event="next-a-zero-cost-analytics-dashboard-without-cookies">A zero-cost analytics dashboard without cookies</a></h3>
+            <p class="doc-meta">13 min read</p>
+            <p class="doc-desc">Whether a personal site is gaining traction, with no cookies and no monthly bill: the metrics, free sources, one API per app, a daily ledger, and the gotchas.</p>
+          </li>
+        </ul>
+        <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS) or <a class="external" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">csarko.log</a>.</p>
+      </section>
+      <div class="prose">
 <div class="section-head" data-read-end><p class="section-label">08</p><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <p>Nothing described here has been built and run; it is a map of the options, not a report on a
 deployment.</p>
@@ -690,7 +796,6 @@ deployment.</p>
 <li id="ref-3"><span class="ref-num">[3]</span><div>Datopian, &quot;Storage Backends,&quot; Giftless Documentation. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://giftless.readthedocs.io/en/latest/storage-backends.html" target="_blank" rel="noopener">https://giftless.readthedocs.io/en/latest/storage-backends.html</a></div></li>
 <li id="ref-4"><span class="ref-num">[4]</span><div>Git LFS Authors, &quot;Adding Custom Transfer Agents to LFS,&quot; git-lfs, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://github.com/git-lfs/git-lfs/blob/main/docs/custom-transfers.md" target="_blank" rel="noopener">https://github.com/git-lfs/git-lfs/blob/main/docs/custom-transfers.md</a></div></li>
 </ol>
-
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
@@ -698,6 +803,10 @@ deployment.</p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
+      <nav class="afterward" aria-label="Read next">
+        <a class="next" href="/research/telemetry-without-identifying-anyone" data-visits-event="end-telemetry-without-identifying-anyone"><span class="section-label">Read next</span><span>Privacy-first telemetry without user IDs <span aria-hidden="true">→</span></span></a>
+        <a href="/research">All research</a>
+      </nav>
     </main>
   </div>
 
@@ -710,6 +819,7 @@ deployment.</p>
   <!-- generated:analytics -->
   <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
+  <script defer src="/assets/reading.c3e27b33.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

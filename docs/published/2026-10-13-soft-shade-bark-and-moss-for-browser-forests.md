@@ -2,6 +2,7 @@
 description: How AAA games soften and lighten forest shade, texture and shade bark so it stops looking shiny, and grow moss on trunks, sized for a browser frame.
 published: 2026-10-13
 categories: Rendering
+series: Rendering a browser forest
 ---
 # Soft shade, bark and moss for browser forests
 

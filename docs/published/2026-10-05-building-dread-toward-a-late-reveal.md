@@ -2,6 +2,7 @@
 description: How horror games make a late monster reveal feel earned, with traces, sound and pacing, and what to do with a mechanic that punishes looking at the monster.
 published: 2026-10-05
 categories: Game design
+series: Horror craft
 ---
 # Building dread toward a late reveal in horror games
 

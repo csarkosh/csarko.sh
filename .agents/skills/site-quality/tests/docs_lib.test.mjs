@@ -1,7 +1,7 @@
 // Tests for docs_lib.mjs. Run: node --test .agents/skills/site-quality/tests/docs_lib.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { appsPage, buildSite, CATEGORIES, categorySlug, DocError, docPage, IEEE_SINCE, filmsPage, formatDate, gamesPage, indexPage, loadApp, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, sitemap, sortApps, sortDocs, sortFilms, sortGames, standaloneShell, themeBlocks } from '../scripts/docs_lib.mjs';
+import { appsPage, buildSite, CATEGORIES, categorySlug, DocError, docLinks, docPage, feed, IEEE_SINCE, filmsPage, formatDate, gamesPage, indexPage, loadApp, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, sitemap, sortApps, sortDocs, sortFilms, sortGames, standaloneShell, themeBlocks } from '../scripts/docs_lib.mjs';
 
 const FILE = 'docs/published/2026-09-14-example.md';
 const DESC = 'A description that is long enough to pass the seventy character minimum for search.';
@@ -281,7 +281,7 @@ test('docPage has the tags, JSON-LD and markers the checks expect', () => {
   assert.ok(html.includes(`<a class="external" href="${source}" target="_blank" rel="noopener">Also on GitHub</a>`));
   assert.ok(html.includes('<body class="doc-page">\n  <a class="skip-link" href="#top">Skip to content</a>'));
   assert.ok(html.includes('<main id="top" tabindex="-1">'));
-  assert.ok(html.includes('<a href="#one"><span class="num" aria-hidden="true">01</span><span>One</span></a>'));
+  assert.ok(html.includes('<a href="#one" data-visits-event="toc-rail"><span class="num" aria-hidden="true">01</span><span>One</span></a>'));
   // No Sources section, so the author box is the end the visits client's leave beacon reports for the read event.
   assert.ok(html.includes('<section class="author" aria-label="About the author" data-read-end>'));
   for (const marker of ['<!-- generated:head -->\n  <!-- /generated:head -->', '/* generated:fonts */\n    /* /generated:fonts */', '<!-- generated:analytics -->\n  <!-- /generated:analytics -->']) {
@@ -364,7 +364,7 @@ test('buildSite writes every output, deterministically, and nothing extra with n
   const one = buildSite({ sources, indexHtml: INDEX });
   const two = buildSite({ sources: [...sources].reverse(), indexHtml: INDEX });
   // The home page is read only for its theme tokens; since the Notes section went, nothing is written to it.
-  assert.deepEqual([...one.keys()].sort(), ['research/a.html', 'research/b.html', 'research/index.html', 'sitemap.xml']);
+  assert.deepEqual([...one.keys()].sort(), ['research/a.html', 'research/b.html', 'research/feed.xml', 'research/index.html', 'sitemap.xml']);
   assert.deepEqual(Object.fromEntries(one), Object.fromEntries(two));
   const empty = buildSite({ sources: [], indexHtml: INDEX });
   assert.deepEqual([...empty.keys()].sort(), ['sitemap.xml']);
@@ -739,4 +739,84 @@ test('an app with an order leads the list whatever its date, and sections and or
   assert.deepEqual(app('s', ['sections: Keyboard, Config , License']).sections, ['Keyboard', 'Config', 'License']);
   assert.throws(() => app('x', ['order: 0']), /order must be a whole number from 1/);
   assert.throws(() => app('x', ['sections: , ']), /sections names at least one heading/);
+});
+
+// ---------------------------------------------------------------- reading (2026-10-23)
+
+const longDoc = (slug, published, extra = '', body = 'Text.') =>
+  ({ name: `${published}-${slug}.md`, text: `---\ndescription: ${DESC}\npublished: ${published}\n${extra.includes('categories:') ? '' : 'categories: Tooling\n'}${extra}---\n# ${slug} title\n\n${body}\n\n## 1. One\n\nText one.\n\n## 2. Two\n\nText two.\n\n## 3. Three\n\nText three.\n` });
+const load = (s, figures) => loadDoc(s.name, s.text, figures);
+
+test('a paragraph that is one image is a figure, from the doc\'s own files, with alt and caption', () => {
+  const figures = new Map([['fog.png', { width: 1200, height: 675 }], ['chart.svg', { width: 640, height: 360 }]]);
+  const d = load(longDoc('fog', '2026-10-07', '', '![Fog in the trees](fog.png "The fog sits on the ground.")\n\n![A chart](chart.svg "Frame times.")'), figures);
+  assert.ok(d.html.includes('<figure class="figure">\n<!-- generated:figure:fog/fog -->\n<img src="/research/figures/fog-fog.jpg" width="1200" height="675" alt="Fog in the trees" decoding="async" />'));
+  assert.ok(d.html.includes('<figcaption>The fog sits on the ground.</figcaption>'));
+  // Only the first figure loads eagerly; it is often in the first screen.
+  assert.ok(d.html.includes('<img src="/research/figures/fog-chart.svg" width="640" height="360" alt="A chart" loading="lazy" decoding="async" />'));
+  assert.deepEqual(d.firstFigure, { name: 'fog', ext: 'png', width: 1200, height: 675 });
+  const og = docPage(d, themeBlocks(INDEX));
+  assert.ok(og.includes('<meta property="og:image" content="https://csarko.sh/research/figures/fog-fog.jpg" />'));
+  assert.ok(og.includes('<meta property="og:image:height" content="630" />'));
+  const bad = (body, re) => assert.throws(() => load(longDoc('fog', '2026-10-07', '', body), figures), (e) => e instanceof DocError && re.test(e.message));
+  bad('![Fog](missing.png "Caption.")', /must be <name>\.png or <name>\.svg/);
+  bad('![](fog.png "Caption.")', /needs alt text/);
+  bad('![Fog](fog.png)', /needs a caption/);
+  bad('Text ![Fog](fog.png "Caption.") inline.', /a figure must be a paragraph of its own/);
+});
+
+test('a term opens its definition in a popover, and the read time leaves Sources and definitions out', () => {
+  const d = load(longDoc('t', '2026-10-07', '', 'A [froxel](#term "A frustum-aligned voxel.") holds fog.'));
+  assert.ok(d.html.includes('<button type="button" class="term" popovertarget="term-1">froxel</button><span class="term-def" id="term-1" popover role="note">A frustum-aligned voxel.</span>'));
+  assert.ok(d.readWords < d.words);
+  assert.throws(() => load(longDoc('t', '2026-10-07', '', '[froxel](#term)')), /a term needs its definition/);
+});
+
+test('a link to another doc counts as doc-<slug>', () => {
+  const d = load(longDoc('a', '2026-10-07', '', 'See [the fog doc](/research/ground-fog#sources).'));
+  assert.ok(d.html.includes('<a href="/research/ground-fog#sources" data-visits-event="doc-ground-fog">the fog doc</a>'));
+});
+
+test('docPage shows the description under the title, contents under the opening, and Keep reading before Sources', () => {
+  const d = load(longDoc('a', '2026-10-07'));
+  const html = docPage(d, themeBlocks(INDEX));
+  assert.ok(html.includes(`<h1>a title</h1>\n        <p class="lead">${DESC}</p>`));
+  const toc = html.indexOf('<nav class="toc" aria-label="In this doc">');
+  assert.ok(toc > html.indexOf('<p>Text.</p>') && toc < html.indexOf('<div class="section-head">'));
+  assert.ok(html.includes('<a href="#one" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>One</span></a>'));
+  assert.ok(html.indexOf('<section class="keep-reading"') < html.indexOf('<section class="author"'));
+  assert.ok(html.includes('<nav class="afterward" aria-label="Read next">'));
+  assert.ok(html.includes('<link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />'));
+});
+
+test('docLinks: a series in published order, related by front matter or shared category, and games named in the text', () => {
+  const docs = sortDocs([
+    load(longDoc('one', '2026-01-01', 'series: Fog notes\n')),
+    load(longDoc('two', '2026-02-01', 'series: Fog notes\n', 'Play Day Hike.')),
+    load(longDoc('three', '2026-03-01', 'categories: Rendering\n')),
+    load(longDoc('four', '2026-04-01')),
+    load(longDoc('five', '2026-05-01', 'related: three, one\n')),
+  ]);
+  const game = { slug: 'day-hike', title: 'Day Hike', play: 'https://games.csarko.sh/dayhike/' };
+  const links = docLinks(docs, [game]);
+  assert.deepEqual(links.get('one').series.parts.map((d) => d.slug), ['one', 'two']);
+  // A series' own docs are listed apart, so the shared-category picks skip them.
+  assert.deepEqual(links.get('one').related.map((d) => d.slug), ['five', 'four']);
+  assert.deepEqual(links.get('five').related.map((d) => d.slug), ['three', 'one']);
+  assert.deepEqual(links.get('two').games, [game]);
+  assert.deepEqual(links.get('one').games, []);
+  const page = docPage(docs.find((d) => d.slug === 'one'), themeBlocks(INDEX), links.get('one'));
+  assert.ok(page.includes('Part 1 of 2 in <strong>Fog notes</strong> · Next: <a href="/research/two" data-visits-event="series-two">two title</a>'));
+  assert.ok(page.includes('<a class="next" href="/research/two" data-visits-event="end-two">'));
+  assert.throws(() => docLinks([load(longDoc('solo', '2026-01-01', 'series: Lonely\n'))]), /has one doc/);
+  assert.throws(() => docLinks([load(longDoc('x', '2026-01-01', 'related: nope\n'))]), /not a published doc/);
+  assert.throws(() => parseFrontMatter(`---\ndescription: ${DESC}\npublished: 2026-01-01\ncategories: AI\nseries: lowercase\n---\n# T\n`, 'f'), /series must be/);
+});
+
+test('the feed lists every doc, newest first', () => {
+  const docs = sortDocs([load(longDoc('a', '2026-01-01')), load(longDoc('b', '2026-02-01', 'updated: 2026-03-01\n'))]);
+  const xml = feed(docs);
+  assert.ok(xml.startsWith('<?xml version="1.0" encoding="utf-8"?>\n<feed xmlns="http://www.w3.org/2005/Atom">'));
+  assert.ok(xml.includes('<updated>2026-03-01T00:00:00Z</updated>\n  <author>'));
+  assert.ok(xml.indexOf('<id>https://csarko.sh/research/b</id>') < xml.indexOf('<id>https://csarko.sh/research/a</id>'));
 });

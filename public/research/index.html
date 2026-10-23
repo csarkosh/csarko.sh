@@ -17,6 +17,7 @@
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
+  <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Research &amp; notes" />
   <meta name="twitter:description" content="Research notes and specs by Cyrus Sarkosh on game development, generative AI for media, and the software behind them." />
@@ -348,6 +349,8 @@
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
+      /* A doc's body text: brighter than --muted, which reads as grey at length (2026-10-23). */
+      --prose: #c9ced9;
       --faint: #7d8597;
       /* Content warnings only. Yellow to stand apart from the teal accent. */
       --warning: #f5c451;
@@ -377,6 +380,7 @@
         --border-strong: rgba(10, 11, 14, 0.16);
         --text: #12151c;
         --muted: #4a5263;
+        --prose: #2b3240;
         --faint: #5f677a;
         --warning: #8a6100;
         --accent: #0a735f;
@@ -624,26 +628,26 @@
       <h2 id="start-here" class="section-label">Start here</h2>
       <ul class="doc-list start-list" role="list">
         <li class="card" data-categories="rendering">
-          <h3 class="doc-title"><a class="stretch" href="/research/webgpu-vs-webgl2" data-visits-event="start-webgpu-vs-webgl2">WebGPU vs WebGL2: what changes and what does not</a></h3>
-          <p class="doc-meta">Sep 27, 2026 · 26 min read</p>
-          <p class="doc-desc">WebGPU vs WebGL2, measured in a Babylon.js game: 1.3 to 1.5 ms faster per frame at native resolution, 9.9 ms at 4x the pixels, for 2.7 MB of shader translators.</p>
+          <h3 class="doc-title"><a class="stretch" href="/research/ground-fog-without-the-wall" data-visits-event="start-ground-fog-without-the-wall">Volumetric ground fog without the sprite wall</a></h3>
+          <p class="doc-meta">Oct 7, 2026 · 9 min read</p>
+          <p class="doc-desc">How AAA engines draw ground fog as a frustum-aligned volume instead of sprites, what it costs, where it ghosts, and which of it a browser game can run.</p>
           <ul class="tags" aria-label="Categories"><li>Rendering</li></ul>
         </li>
         <li class="card" data-categories="ai film">
           <h3 class="doc-title"><a class="stretch" href="/research/reverse-engineering-an-ai-horror-short" data-visits-event="start-reverse-engineering-an-ai-horror-short">Reverse engineering an AI horror short</a></h3>
           <p class="doc-meta">Sep 26, 2026 · 9 min read</p>
-          <p class="doc-desc">How a viral AI horror short was made, worked out from the pixels alone, then confirmed against the studio&#39;s own posts. With a recipe and a cost table.</p>
+          <p class="doc-desc">A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe.</p>
           <ul class="tags" aria-label="Categories"><li>AI</li><li>Film</li></ul>
         </li>
         <li class="card" data-categories="rendering">
-          <h3 class="doc-title"><a class="stretch" href="/research/photorealistic-water-rendering" data-visits-event="start-photorealistic-water-rendering">Photorealistic water rendering: lakes and oceans</a></h3>
-          <p class="doc-meta">Sep 29, 2026 · 79 min read</p>
-          <p class="doc-desc">Real-time water rendering from the physics up: how lakes, ocean waves, breaking surf and foam look, how games draw them, and what it costs on WebGPU and WebGL2.</p>
+          <h3 class="doc-title"><a class="stretch" href="/research/webgpu-vs-webgl2" data-visits-event="start-webgpu-vs-webgl2">WebGPU vs WebGL2: what changes and what does not</a></h3>
+          <p class="doc-meta">Sep 27, 2026 · 24 min read</p>
+          <p class="doc-desc">WebGPU vs WebGL2, measured in a Babylon.js game: 1.3 to 1.5 ms faster per frame at native resolution, 9.9 ms at 4x the pixels, for 2.7 MB of shader translators.</p>
           <ul class="tags" aria-label="Categories"><li>Rendering</li></ul>
         </li>
         <li class="card" data-categories="ai tooling">
           <h3 class="doc-title"><a class="stretch" href="/research/voice-profile-vs-pangram" data-visits-event="start-voice-profile-vs-pangram">Why a voice profile didn&#39;t get Claude past Substack&#39;s AI check</a></h3>
-          <p class="doc-meta">Sep 24, 2026 · 9 min read</p>
+          <p class="doc-meta">Sep 24, 2026 · 8 min read</p>
           <p class="doc-desc">A Claude draft written to its author&#39;s voice profile scored 100% AI on Substack&#39;s Pangram check. Why, and the workflow that replaced it.</p>
           <ul class="tags" aria-label="Categories"><li>AI</li><li>Tooling</li></ul>
         </li>
@@ -669,37 +673,37 @@
     <ul class="doc-list all-docs" role="list">
       <li class="card" data-categories="film">
         <h3 class="doc-title"><a class="stretch" href="/research/horror-cinematography-shot-by-shot">How Horror Directors Build Dread Shot by Shot</a></h3>
-        <p class="doc-meta">Oct 22, 2026 · 55 min read</p>
+        <p class="doc-meta">Oct 22, 2026 · 40 min read</p>
         <p class="doc-desc">How Hitchcock, Kubrick, Carpenter, Nakata, Aster and Eggers build dread: the three levers, a feeling-to-technique table, 30 director profiles, 168 sources.</p>
         <ul class="tags" aria-label="Categories"><li>Film</li></ul>
       </li>
       <li class="card" data-categories="film">
         <h3 class="doc-title"><a class="stretch" href="/research/horror-sequences-shot-by-shot">23 Horror Sequences Broken Down Shot by Shot</a></h3>
-        <p class="doc-meta">Oct 22, 2026 · 44 min read</p>
+        <p class="doc-meta">Oct 22, 2026 · 36 min read</p>
         <p class="doc-desc">Shot-by-shot breakdowns of 23 horror sequences, from the Psycho shower to Weapons: sizes, moves, durations, cut points, and what each one teaches.</p>
         <ul class="tags" aria-label="Categories"><li>Film</li></ul>
       </li>
       <li class="card" data-categories="rendering">
         <h3 class="doc-title"><a class="stretch" href="/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2">A painted look over a photoreal render: WebGPU against WebGL2</a></h3>
-        <p class="doc-meta">Oct 17, 2026 · 13 min read</p>
+        <p class="doc-meta">Oct 17, 2026 · 11 min read</p>
         <p class="doc-desc">Laying a painted look, a stroke filter and a palette grade, over a physically based browser render, and the four places WebGPU and WebGL2 part ways doing it.</p>
         <ul class="tags" aria-label="Categories"><li>Rendering</li></ul>
       </li>
       <li class="card" data-categories="rendering">
         <h3 class="doc-title"><a class="stretch" href="/research/scene-depth-for-a-post-process-webgpu-vs-webgl2">Scene depth for a post process: WebGPU against WebGL2</a></h3>
-        <p class="doc-meta">Oct 16, 2026 · 17 min read</p>
+        <p class="doc-meta">Oct 16, 2026 · 16 min read</p>
         <p class="doc-desc">Getting per-pixel scene depth to a post process on WebGPU and WebGL2, and the six places the two APIs part ways, from shader uniformity to a lost GPU.</p>
         <ul class="tags" aria-label="Categories"><li>Rendering</li></ul>
       </li>
       <li class="card" data-categories="rendering worlds-and-terrain">
         <h3 class="doc-title"><a class="stretch" href="/research/full-far-field-for-browser-worlds">A full far field: how games fill the distance</a></h3>
-        <p class="doc-meta">Oct 15, 2026 · 17 min read</p>
+        <p class="doc-meta">Oct 15, 2026 · 15 min read</p>
         <p class="doc-desc">How shipped open-world games keep the distance looking full, from far terrain and vegetation to the camera-side tricks that hide the seams, for a browser frame.</p>
         <ul class="tags" aria-label="Categories"><li>Rendering</li><li>Worlds and terrain</li></ul>
       </li>
       <li class="card" data-categories="distributed-systems tooling">
         <h3 class="doc-title"><a class="stretch" href="/research/telemetry-without-identifying-anyone">Privacy-first telemetry without user IDs</a></h3>
-        <p class="doc-meta">Oct 15, 2026 · 49 min read</p>
+        <p class="doc-meta">Oct 15, 2026 · 40 min read</p>
         <p class="doc-desc">A privacy-first telemetry design for a desktop IDE: counters and coarse dimensions, no IDs, opt-in consent, crash reports, and legal baselines.</p>
         <ul class="tags" aria-label="Categories"><li>Distributed systems</li><li>Tooling</li></ul>
       </li>
@@ -711,13 +715,13 @@
       </li>
       <li class="card" data-categories="ai tooling">
         <h3 class="doc-title"><a class="stretch" href="/research/bring-the-agents-back-after-a-reboot">Bring the agents back after a reboot</a></h3>
-        <p class="doc-meta">Oct 14, 2026 · 19 min read</p>
+        <p class="doc-meta">Oct 14, 2026 · 17 min read</p>
         <p class="doc-desc">After a restart nothing survives, but the layout, scrollback and each agent&#39;s conversation can come back on their own; how Claude Code and Codex differ.</p>
         <ul class="tags" aria-label="Categories"><li>AI</li><li>Tooling</li></ul>
       </li>
       <li class="card" data-categories="tooling">
         <h3 class="doc-title"><a class="stretch" href="/research/update-the-ide-keep-the-shells">Update the IDE, keep the shells</a></h3>
-        <p class="doc-meta">Oct 14, 2026 · 20 min read</p>
+        <p class="doc-meta">Oct 14, 2026 · 17 min read</p>
         <p class="doc-desc">Why an IDE update kills the shells and Claude Code agents inside it, which tools keep them, what execve preserves, and how a daemon can swap itself in place.</p>
         <ul class="tags" aria-label="Categories"><li>Tooling</li></ul>
       </li>
@@ -729,109 +733,109 @@
       </li>
       <li class="card" data-categories="tooling">
         <h3 class="doc-title"><a class="stretch" href="/research/check-your-eyes-before-your-theme">Dark mode and headaches: check your eyes first</a></h3>
-        <p class="doc-meta">Oct 13, 2026 · 43 min read</p>
+        <p class="doc-meta">Oct 13, 2026 · 32 min read</p>
         <p class="doc-desc">What the evidence says about dark mode, contrast, line spacing, font size, blue light, flicker, breaks and the eye exam for a developer&#39;s screen headaches.</p>
         <ul class="tags" aria-label="Categories"><li>Tooling</li></ul>
       </li>
       <li class="card" data-categories="rendering">
         <h3 class="doc-title"><a class="stretch" href="/research/soft-shade-bark-and-moss-for-browser-forests">Soft shade, bark and moss for browser forests</a></h3>
-        <p class="doc-meta">Oct 13, 2026 · 21 min read</p>
+        <p class="doc-meta">Oct 13, 2026 · 19 min read</p>
         <p class="doc-desc">How AAA games soften and lighten forest shade, texture and shade bark so it stops looking shiny, and grow moss on trunks, sized for a browser frame.</p>
         <ul class="tags" aria-label="Categories"><li>Rendering</li></ul>
       </li>
       <li class="card" data-categories="rendering worlds-and-terrain">
         <h3 class="doc-title"><a class="stretch" href="/research/rock-on-steep-terrain-shape-it-cover-it-or-skin-it">Rock on steep terrain: shape it, cover it, or skin it</a></h3>
-        <p class="doc-meta">Oct 12, 2026 · 17 min read</p>
+        <p class="doc-meta">Oct 12, 2026 · 16 min read</p>
         <p class="doc-desc">Three ways to put rock on a height field&#39;s steep faces, measured in a browser game: paint and cliff kits, relief in the height field, or a finer displaced skin.</p>
         <ul class="tags" aria-label="Categories"><li>Rendering</li><li>Worlds and terrain</li></ul>
       </li>
       <li class="card" data-categories="rendering">
         <h3 class="doc-title"><a class="stretch" href="/research/a-full-far-ground-without-drawing-it">A full far ground without drawing it</a></h3>
-        <p class="doc-meta">Oct 9, 2026 · 15 min read</p>
+        <p class="doc-meta">Oct 9, 2026 · 13 min read</p>
         <p class="doc-desc">Cheap GPU tricks that make a game&#39;s far ground read as full of grass and cover without drawing blades there: fitted colour, sun-shaded clumps, sparse cards.</p>
         <ul class="tags" aria-label="Categories"><li>Rendering</li></ul>
       </li>
       <li class="card" data-categories="worlds-and-terrain">
         <h3 class="doc-title"><a class="stretch" href="/research/rock-formations-of-the-olympic-peninsula">Rock formations of the Olympic Peninsula, and how games build them</a></h3>
-        <p class="doc-meta">Oct 9, 2026 · 27 min read</p>
+        <p class="doc-meta">Oct 9, 2026 · 20 min read</p>
         <p class="doc-desc">How the Olympic Peninsula&#39;s crags, talus, cirques and sea stacks formed and what they look like, and how AAA games build rock formations that convince.</p>
         <ul class="tags" aria-label="Categories"><li>Worlds and terrain</li></ul>
       </li>
       <li class="card" data-categories="worlds-and-terrain">
         <h3 class="doc-title"><a class="stretch" href="/research/olympic-lakes-for-game-worlds">Olympic Peninsula lakes for game worlds</a></h3>
-        <p class="doc-meta">Oct 8, 2026 · 27 min read</p>
+        <p class="doc-meta">Oct 8, 2026 · 24 min read</p>
         <p class="doc-desc">How the lakes of Washington&#39;s Olympic Peninsula formed, their measured shapes and perched cirque basins, and numeric rules for generating them in a game world.</p>
         <ul class="tags" aria-label="Categories"><li>Worlds and terrain</li></ul>
       </li>
       <li class="card" data-categories="rendering">
         <h3 class="doc-title"><a class="stretch" href="/research/ground-fog-without-the-wall">Volumetric ground fog without the sprite wall</a></h3>
-        <p class="doc-meta">Oct 7, 2026 · 10 min read</p>
+        <p class="doc-meta">Oct 7, 2026 · 9 min read</p>
         <p class="doc-desc">How AAA engines draw ground fog as a frustum-aligned volume instead of sprites, what it costs, where it ghosts, and which of it a browser game can run.</p>
         <ul class="tags" aria-label="Categories"><li>Rendering</li></ul>
       </li>
       <li class="card" data-categories="game-design">
         <h3 class="doc-title"><a class="stretch" href="/research/how-alan-wake-introduces-its-darkness">How Alan Wake introduces its darkness</a></h3>
-        <p class="doc-meta">Oct 6, 2026 · 8 min read</p>
+        <p class="doc-meta">Oct 6, 2026 · 7 min read</p>
         <p class="doc-desc">How Alan Wake and Alan Wake 2 introduce their evil, voice it in whispers and haunt the player with shadows, and what a game can borrow from each.</p>
         <ul class="tags" aria-label="Categories"><li>Game design</li></ul>
       </li>
       <li class="card" data-categories="game-design">
         <h3 class="doc-title"><a class="stretch" href="/research/building-dread-toward-a-late-reveal">Building dread toward a late reveal in horror games</a></h3>
-        <p class="doc-meta">Oct 5, 2026 · 12 min read</p>
+        <p class="doc-meta">Oct 5, 2026 · 10 min read</p>
         <p class="doc-desc">How horror games make a late monster reveal feel earned, with traces, sound and pacing, and what to do with a mechanic that punishes looking at the monster.</p>
         <ul class="tags" aria-label="Categories"><li>Game design</li></ul>
       </li>
       <li class="card" data-categories="worlds-and-terrain">
         <h3 class="doc-title"><a class="stretch" href="/research/olympic-vegetation-for-games">Olympic Peninsula vegetation for game worlds</a></h3>
-        <p class="doc-meta">Oct 4, 2026 · 18 min read</p>
+        <p class="doc-meta">Oct 4, 2026 · 16 min read</p>
         <p class="doc-desc">What grows where on Washington&#39;s Olympic Peninsula, from drift logs to heather, and how to turn it into placement rules and models for a game world.</p>
         <ul class="tags" aria-label="Categories"><li>Worlds and terrain</li></ul>
       </li>
       <li class="card" data-categories="rendering">
         <h3 class="doc-title"><a class="stretch" href="/research/photorealistic-rain-for-browser-games">Photorealistic rain for browser games</a></h3>
-        <p class="doc-meta">Sep 30, 2026 · 84 min read</p>
+        <p class="doc-meta">Sep 30, 2026 · 72 min read</p>
         <p class="doc-desc">A survey of how AAA games render rain, from streaks to wet ground, splashes, canopy drip and lens drops, and how to build it on a browser frame budget.</p>
         <ul class="tags" aria-label="Categories"><li>Rendering</li></ul>
       </li>
       <li class="card" data-categories="game-design film">
         <h3 class="doc-title"><a class="stretch" href="/research/opening-a-game-like-a-film">Opening a game like a film: sixty seconds of drive, radio and dread</a></h3>
-        <p class="doc-meta">Sep 29, 2026 · 23 min read</p>
+        <p class="doc-meta">Sep 29, 2026 · 17 min read</p>
         <p class="doc-desc">How films open on a drive, a call and a wrong note; what makes sixty rendered seconds read as cinema; and what a game must load behind its first minute.</p>
         <ul class="tags" aria-label="Categories"><li>Game design</li><li>Film</li></ul>
       </li>
       <li class="card" data-categories="rendering">
         <h3 class="doc-title"><a class="stretch" href="/research/photorealistic-water-rendering">Photorealistic water rendering: lakes and oceans</a></h3>
-        <p class="doc-meta">Sep 29, 2026 · 79 min read</p>
-        <p class="doc-desc">Real-time water rendering from the physics up: how lakes, ocean waves, breaking surf and foam look, how games draw them, and what it costs on WebGPU and WebGL2.</p>
+        <p class="doc-meta">Sep 29, 2026 · 62 min read</p>
+        <p class="doc-desc">Water reads as real through light more than waves: a mirror past 20 m, FFT seas at 0.1 to 2 ms, baked breakers, and what WebGPU and WebGL2 can afford.</p>
         <ul class="tags" aria-label="Categories"><li>Rendering</li></ul>
       </li>
       <li class="card" data-categories="ai game-design film">
         <h3 class="doc-title"><a class="stretch" href="/research/synthetic-voices-for-a-radio-call">Synthetic voices for a radio call</a></h3>
-        <p class="doc-meta">Sep 29, 2026 · 16 min read</p>
+        <p class="doc-meta">Sep 29, 2026 · 12 min read</p>
         <p class="doc-desc">Text-to-speech for a game&#39;s radio call in 2026: the models that take direction, what gives them away, the radio chain, licences, cost, cloning your own voice.</p>
         <ul class="tags" aria-label="Categories"><li>AI</li><li>Game design</li><li>Film</li></ul>
       </li>
       <li class="card" data-categories="rendering">
         <h3 class="doc-title"><a class="stretch" href="/research/webgpu-vs-webgl2">WebGPU vs WebGL2: what changes and what does not</a></h3>
-        <p class="doc-meta">Sep 27, 2026 · 26 min read</p>
+        <p class="doc-meta">Sep 27, 2026 · 24 min read</p>
         <p class="doc-desc">WebGPU vs WebGL2, measured in a Babylon.js game: 1.3 to 1.5 ms faster per frame at native resolution, 9.9 ms at 4x the pixels, for 2.7 MB of shader translators.</p>
         <ul class="tags" aria-label="Categories"><li>Rendering</li></ul>
       </li>
       <li class="card" data-categories="rendering">
         <h3 class="doc-title"><a class="stretch" href="/research/grass-fullness-without-thinning">Grass fullness without thinning the field</a></h3>
-        <p class="doc-meta">Sep 26, 2026 · 22 min read</p>
+        <p class="doc-meta">Sep 26, 2026 · 18 min read</p>
         <p class="doc-desc">Why near grass reads bare from a first-person eye, what fixing it cost in a Babylon.js game, and the GPU techniques that win the frame back without thinning.</p>
         <ul class="tags" aria-label="Categories"><li>Rendering</li></ul>
       </li>
       <li class="card" data-categories="ai film">
         <h3 class="doc-title"><a class="stretch" href="/research/reverse-engineering-an-ai-horror-short">Reverse engineering an AI horror short</a></h3>
         <p class="doc-meta">Sep 26, 2026 · 9 min read</p>
-        <p class="doc-desc">How a viral AI horror short was made, worked out from the pixels alone, then confirmed against the studio&#39;s own posts. With a recipe and a cost table.</p>
+        <p class="doc-desc">A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe.</p>
         <ul class="tags" aria-label="Categories"><li>AI</li><li>Film</li></ul>
       </li>
       <li class="card" data-categories="ai tooling">
         <h3 class="doc-title"><a class="stretch" href="/research/voice-profile-vs-pangram">Why a voice profile didn&#39;t get Claude past Substack&#39;s AI check</a></h3>
-        <p class="doc-meta">Sep 24, 2026 · 9 min read</p>
+        <p class="doc-meta">Sep 24, 2026 · 8 min read</p>
         <p class="doc-desc">A Claude draft written to its author&#39;s voice profile scored 100% AI on Substack&#39;s Pangram check. Why, and the workflow that replaced it.</p>
         <ul class="tags" aria-label="Categories"><li>AI</li><li>Tooling</li></ul>
       </li>
@@ -843,37 +847,37 @@
       </li>
       <li class="card" data-categories="ai film">
         <h3 class="doc-title"><a class="stretch" href="/research/ai-short-film-generation">AI short films: consistent characters and sets</a></h3>
-        <p class="doc-meta">Sep 16, 2026 · 50 min read</p>
-        <p class="doc-desc">Can 2026 AI video models make a multi-scene short film with the same actor and set in every shot? Where they fail, and the one architecture that holds.</p>
+        <p class="doc-meta">Sep 16, 2026 · 39 min read</p>
+        <p class="doc-desc">2026 AI video can make one convincing short, but no model locks an actor and a room across a series. Where each tool fails, and the 3D-first build that holds.</p>
         <ul class="tags" aria-label="Categories"><li>AI</li><li>Film</li></ul>
       </li>
       <li class="card" data-categories="rendering game-design">
         <h3 class="doc-title"><a class="stretch" href="/research/atmosphere-and-dread-shaders">Atmosphere and dread shaders for horror games</a></h3>
-        <p class="doc-meta">Sep 15, 2026 · 18 min read</p>
-        <p class="doc-desc">How atmospheric and horror games use height fog, grading, film grain and dread-driven effects, and what Babylon.js can do at 60 fps in a browser.</p>
+        <p class="doc-meta">Sep 15, 2026 · 17 min read</p>
+        <p class="doc-desc">Atmospheric games stack height fog, a neutral tone map and grade, and a film finish on photoreal light; Babylon.js does nearly all of it at 60 fps.</p>
         <ul class="tags" aria-label="Categories"><li>Rendering</li><li>Game design</li></ul>
       </li>
       <li class="card" data-categories="rendering">
         <h3 class="doc-title"><a class="stretch" href="/research/grass-and-trail-realism">Grass, wind and trails in a browser meadow</a></h3>
-        <p class="doc-meta">Sep 15, 2026 · 32 min read</p>
-        <p class="doc-desc">Why game grass reads as flat, what shipped meadows do instead, wind as one shared field, and what Babylon.js on WebGL2 can afford at 60 Hz.</p>
+        <p class="doc-meta">Sep 15, 2026 · 29 min read</p>
+        <p class="doc-desc">Flat game grass is a grounding failure, not a triangle count: ground tint, clumping, one wind field and a banded trail fix it in Babylon.js at 60 Hz.</p>
         <ul class="tags" aria-label="Categories"><li>Rendering</li></ul>
       </li>
       <li class="card" data-categories="rendering">
         <h3 class="doc-title"><a class="stretch" href="/research/stylized-shader-looks">Stylized shader looks: how games build a visual identity</a></h3>
         <p class="doc-meta">Sep 14, 2026 · 5 min read</p>
-        <p class="doc-desc">How games use shaders to build a distinct look, from ink outlines and cel lighting to dithering, gradient fog and VHS effects.</p>
+        <p class="doc-desc">Memorable game looks come from one or two strong shader rules applied everywhere: ink outlines, cel bands, dithering, gradient fog or VHS.</p>
         <ul class="tags" aria-label="Categories"><li>Rendering</li></ul>
       </li>
       <li class="card" data-categories="rendering">
         <h3 class="doc-title"><a class="stretch" href="/research/no-visible-pop-in">No visible pop-in: dissolving a streamed forest</a></h3>
-        <p class="doc-meta">Sep 1, 2026 · 16 min read</p>
+        <p class="doc-meta">Sep 1, 2026 · 15 min read</p>
         <p class="doc-desc">Keeping a streamed browser forest from visibly spawning: pixel-size arithmetic, screen-space dissolve bands, and what discard costs in opaque shaders.</p>
         <ul class="tags" aria-label="Categories"><li>Rendering</li></ul>
       </li>
       <li class="card" data-categories="rendering worlds-and-terrain">
         <h3 class="doc-title"><a class="stretch" href="/research/floating-props-on-procedural-terrain">Why props float on procedural terrain</a></h3>
-        <p class="doc-meta">Aug 29, 2026 · 18 min read</p>
+        <p class="doc-meta">Aug 29, 2026 · 17 min read</p>
         <p class="doc-desc">Why trees float on slopes and distant ridges in a procedural world, measured, and the shader and clipmap fixes that grounded them in Babylon.js.</p>
         <ul class="tags" aria-label="Categories"><li>Rendering</li><li>Worlds and terrain</li></ul>
       </li>
@@ -886,7 +890,7 @@
       <li class="card" data-categories="rendering tooling">
         <h3 class="doc-title"><a class="stretch" href="/research/babylon-material-plugin-traps">Babylon.js material plugins: hooks and traps</a></h3>
         <p class="doc-meta">Aug 17, 2026 · 16 min read</p>
-        <p class="doc-desc">Where Babylon.js 9.18 injects material plugin GLSL, what each PBR hook can see, and the silent failures behind preprocessor, comment and bake traps.</p>
+        <p class="doc-desc">Babylon.js 9.18 splices plugin GLSL in after #include expansion, before #if: what each PBR hook sees, and the silent preprocessor, comment and bake traps.</p>
         <ul class="tags" aria-label="Categories"><li>Rendering</li><li>Tooling</li></ul>
       </li>
       <li class="card" data-categories="worlds-and-terrain">
@@ -897,7 +901,7 @@
       </li>
       <li class="card" data-categories="distributed-systems">
         <h3 class="doc-title"><a class="stretch" href="/research/webrtc-signaling-on-cloud-run">Hosting WebRTC signaling on Cloud Run</a></h3>
-        <p class="doc-meta">Jul 29, 2026 · 19 min read</p>
+        <p class="doc-meta">Jul 29, 2026 · 18 min read</p>
         <p class="doc-desc">Hosting a WebRTC signaling server on Google Cloud Run for a browser co-op game, the platform behaviours that broke it, and what a running match survives.</p>
         <ul class="tags" aria-label="Categories"><li>Distributed systems</li></ul>
       </li>

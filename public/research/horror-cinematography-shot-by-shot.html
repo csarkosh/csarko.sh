@@ -20,6 +20,7 @@
   <meta property="article:published_time" content="2026-10-22" />
   <meta property="article:modified_time" content="2026-10-22" />
   <meta property="article:author" content="https://csarko.sh/" />
+  <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="How Horror Directors Build Dread Shot by Shot" />
   <meta name="twitter:description" content="How Hitchcock, Kubrick, Carpenter, Nakata, Aster and Eggers build dread: the three levers, a feeling-to-technique table, 30 director profiles, 168 sources." />
@@ -127,6 +128,8 @@
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
+      /* A doc's body text: brighter than --muted, which reads as grey at length (2026-10-23). */
+      --prose: #c9ced9;
       --faint: #7d8597;
       /* Content warnings only. Yellow to stand apart from the teal accent. */
       --warning: #f5c451;
@@ -156,6 +159,7 @@
         --border-strong: rgba(10, 11, 14, 0.16);
         --text: #12151c;
         --muted: #4a5263;
+        --prose: #2b3240;
         --faint: #5f677a;
         --warning: #8a6100;
         --accent: #0a735f;
@@ -347,6 +351,57 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .doc-page .prose { font-size: 17px; }
+    .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
+    .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
+    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .rail a[aria-current] { color: var(--text); }
+    .rail a[aria-current] .num { color: var(--accent); }
+    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .toc .section-label { margin: 0 0 6px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
+    .toc a:hover { color: var(--accent); }
+    .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    .figure { margin: 32px 0; }
+    .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+    /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
+    .figure img { max-height: 80vh; object-fit: contain; }
+    .figure figcaption { margin-top: 10px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+    .prose blockquote strong:first-child { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted var(--faint); text-underline-offset: 4px; }
+    .term:hover, .term:focus-visible { text-decoration-color: var(--accent); }
+    .term-def { max-width: min(92vw, 420px); margin: auto; padding: 16px 18px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.55; }
+    .term-def::backdrop { background: var(--nav-bg); }
+    /* A wide table or code block that scrolls sideways shows a shade at the edge it can scroll to. */
+    .scroll { background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
+      var(--surface); }
+    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
+    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
+    .series-name { margin: 0 0 8px; font-weight: 600; }
+    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
+    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
+    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
+    .next-list .card { padding: 16px 18px; background: var(--bg); }
+    .next-list .doc-title { font-size: 1.05rem; }
+    .next-list .doc-desc { font-size: 14.5px; }
+    .play-line { margin: 20px 0 0; }
+    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background .15s ease; }
+    .play:hover { background: var(--accent-hover); }
+    .play svg { width: 14px; height: 14px; }
+    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
+    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color .15s ease; }
+    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
+    .afterward .next:hover { border-color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -382,29 +437,47 @@
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-        <li><a href="#how-shots-and-sequences-create-feeling-and-guide-a-story"><span class="num" aria-hidden="true">01</span><span>How shots and sequences create feeling and guide a story</span></a></li>
-        <li><a href="#feeling-to-technique-table-dread-suspense-shock-the-uncanny-and-more"><span class="num" aria-hidden="true">02</span><span>Feeling-to-technique table: dread, suspense, shock, the uncanny and more</span></a></li>
-        <li><a href="#the-sequences-behind-this-page"><span class="num" aria-hidden="true">03</span><span>The sequences behind this page</span></a></li>
-        <li><a href="#classic-directors-hitchcock-lewton-and-tourneur-murnau-clayton-bava-polanski-kubrick-friedkin-carpenter-argento-hooper-scott"><span class="num" aria-hidden="true">04</span><span>Classic directors: Hitchcock, Lewton and Tourneur, Murnau, Clayton, Bava, Polanski, Kubrick, Friedkin, Carpenter, Argento, Hooper, Scott</span></a></li>
-        <li><a href="#japanese-and-korean-directors-nakata-kurosawa-shimizu-miike-na-hong-jin-kim-jee-woon-bong"><span class="num" aria-hidden="true">05</span><span>Japanese and Korean directors: Nakata, Kurosawa, Shimizu, Miike, Na Hong-jin, Kim Jee-woon, Bong</span></a></li>
-        <li><a href="#modern-directors-aster-eggers-peele-mitchell-wan-flanagan-kent-perkins-cregger-and-others"><span class="num" aria-hidden="true">06</span><span>Modern directors: Aster, Eggers, Peele, Mitchell, Wan, Flanagan, Kent, Perkins, Cregger and others</span></a></li>
-        <li><a href="#comparison-table-of-directors-cinematographers-and-editors"><span class="num" aria-hidden="true">07</span><span>Comparison table of directors, cinematographers and editors</span></a></li>
-        <li><a href="#what-the-empirical-evidence-supports-versus-craft-lore"><span class="num" aria-hidden="true">08</span><span>What the empirical evidence supports versus craft lore</span></a></li>
-        <li><a href="#source-caveats-disputed-facts-and-remaining-gaps"><span class="num" aria-hidden="true">09</span><span>Source caveats, disputed facts and remaining gaps</span></a></li>
-        <li><a href="#sources"><span class="num" aria-hidden="true">10</span><span>Sources</span></a></li>
+        <li><a href="#how-shots-and-sequences-create-feeling-and-guide-a-story" data-visits-event="toc-rail"><span class="num" aria-hidden="true">01</span><span>How shots and sequences create feeling and guide a story</span></a></li>
+        <li><a href="#feeling-to-technique-table-dread-suspense-shock-the-uncanny-and-more" data-visits-event="toc-rail"><span class="num" aria-hidden="true">02</span><span>Feeling-to-technique table: dread, suspense, shock, the uncanny and more</span></a></li>
+        <li><a href="#the-sequences-behind-this-page" data-visits-event="toc-rail"><span class="num" aria-hidden="true">03</span><span>The sequences behind this page</span></a></li>
+        <li><a href="#classic-directors-hitchcock-lewton-and-tourneur-murnau-clayton-bava-polanski-kubrick-friedkin-carpenter-argento-hooper-scott" data-visits-event="toc-rail"><span class="num" aria-hidden="true">04</span><span>Classic directors: Hitchcock, Lewton and Tourneur, Murnau, Clayton, Bava, Polanski, Kubrick, Friedkin, Carpenter, Argento, Hooper, Scott</span></a></li>
+        <li><a href="#japanese-and-korean-directors-nakata-kurosawa-shimizu-miike-na-hong-jin-kim-jee-woon-bong" data-visits-event="toc-rail"><span class="num" aria-hidden="true">05</span><span>Japanese and Korean directors: Nakata, Kurosawa, Shimizu, Miike, Na Hong-jin, Kim Jee-woon, Bong</span></a></li>
+        <li><a href="#modern-directors-aster-eggers-peele-mitchell-wan-flanagan-kent-perkins-cregger-and-others" data-visits-event="toc-rail"><span class="num" aria-hidden="true">06</span><span>Modern directors: Aster, Eggers, Peele, Mitchell, Wan, Flanagan, Kent, Perkins, Cregger and others</span></a></li>
+        <li><a href="#comparison-table-of-directors-cinematographers-and-editors" data-visits-event="toc-rail"><span class="num" aria-hidden="true">07</span><span>Comparison table of directors, cinematographers and editors</span></a></li>
+        <li><a href="#what-the-empirical-evidence-supports-versus-craft-lore" data-visits-event="toc-rail"><span class="num" aria-hidden="true">08</span><span>What the empirical evidence supports versus craft lore</span></a></li>
+        <li><a href="#source-caveats-disputed-facts-and-remaining-gaps" data-visits-event="toc-rail"><span class="num" aria-hidden="true">09</span><span>Source caveats, disputed facts and remaining gaps</span></a></li>
+        <li><a href="#sources" data-visits-event="toc-rail"><span class="num" aria-hidden="true">10</span><span>Sources</span></a></li>
       </ol>
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
         <p class="eyebrow">Oct 22, 2026</p>
         <h1>How Horror Directors Build Dread Shot by Shot</h1>
+        <p class="lead">How Hitchcock, Kubrick, Carpenter, Nakata, Aster and Eggers build dread: the three levers, a feeling-to-technique table, 30 director profiles, 168 sources.</p>
         <ul class="tags">
-          <li>55 min read</li>
+          <li>40 min read</li>
         </ul>
+        <p class="series-line">Part 4 of 5 in <strong>Horror craft</strong> · Next: <a href="/research/horror-sequences-shot-by-shot" data-visits-event="series-horror-sequences-shot-by-shot">23 Horror Sequences Broken Down Shot by Shot</a></p>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> How do the most renowned horror directors, classic, Japanese and Korean, and modern, together with their cinematographers and editors, design shot sequences and cinematic composition (shot size, angle, lens, depth of field, aspect ratio, framing, negative space, depth staging, lighting and darkness, camera movement and stillness, point of view, editing rhythm and cut types, and sound with image) to create specific feelings and perspectives in the audience and to guide the story, and which of their methods are general film craft a filmmaker can apply to any film?</p>
-<p><strong>Short answer:</strong> Horror directors build feeling by controlling three things at once: what the audience knows relative to the characters, where the audience&#39;s eye is at each moment, and how long the audience is made to wait. Dread and suspense come from giving the viewer more knowledge than the character, then holding a wide, deep, often static frame until the viewer finds the threat before anyone on screen does: Hitchcock&#39;s bomb under the table, the background figure in Halloween and It Follows, the empty door-space in Longlegs. Shock is the opposite: a long quiet lead-in, then a sub-second cut to a close-up on a loud sting, used so rarely it is never anticipated. Confinement comes from wide lenses placed close and tall or square frames; the uncanny from a familiar space made wrong and a figure that moves the wrong way; presence from a smooth, operator-less camera. Editors converge on one rhythm: a slow, flat cutting baseline for dread, short bursts of fast cutting for violence, and music removed wherever the picture already carries the fear. Measured evidence supports a few of these claims and leaves most lens, angle and framing doctrine as craft lore; several famous production facts remain disputed. The 23 sequences behind these conclusions are broken down on a companion page, <a href="/research/horror-sequences-shot-by-shot">23 Horror Sequences Broken Down Shot by Shot</a>.</p>
+<p><strong>Short answer:</strong> Horror directors build feeling by controlling three things at once: what the audience knows relative to the characters, where the audience&#39;s eye is at each moment, and how long the audience is made to wait. Dread and suspense come from giving the viewer more knowledge than the character, then holding a wide, deep, often static frame until the viewer finds the threat before anyone on screen does: Hitchcock&#39;s bomb under the table, the background figure in Halloween and It Follows, the empty door-space in Longlegs. Shock is the opposite: a long quiet lead-in, then a sub-second cut to a close-up on a loud sting, used so rarely it is never anticipated. Confinement comes from wide lenses placed close and tall or square frames; the uncanny from a familiar space made wrong and a figure that moves the wrong way; presence from a smooth, operator-less camera. Editors converge on one rhythm: a slow, flat cutting baseline for dread, short bursts of fast cutting for violence, and music removed wherever the picture already carries the fear. Measured evidence supports a few of these claims and leaves most lens, angle and framing doctrine as craft lore; several famous production facts remain disputed. The 23 sequences behind these conclusions are broken down on a companion page, <a href="/research/horror-sequences-shot-by-shot" data-visits-event="doc-horror-sequences-shot-by-shot">23 Horror Sequences Broken Down Shot by Shot</a>.</p>
+      </div>
+      <nav class="toc" aria-label="In this doc">
+        <p class="section-label">In this doc</p>
+        <ol>
+          <li><a href="#how-shots-and-sequences-create-feeling-and-guide-a-story" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>How shots and sequences create feeling and guide a story</span></a></li>
+          <li><a href="#feeling-to-technique-table-dread-suspense-shock-the-uncanny-and-more" data-visits-event="toc"><span class="num" aria-hidden="true">02</span><span>Feeling-to-technique table: dread, suspense, shock, the uncanny and more</span></a></li>
+          <li><a href="#the-sequences-behind-this-page" data-visits-event="toc"><span class="num" aria-hidden="true">03</span><span>The sequences behind this page</span></a></li>
+          <li><a href="#classic-directors-hitchcock-lewton-and-tourneur-murnau-clayton-bava-polanski-kubrick-friedkin-carpenter-argento-hooper-scott" data-visits-event="toc"><span class="num" aria-hidden="true">04</span><span>Classic directors: Hitchcock, Lewton and Tourneur, Murnau, Clayton, Bava, Polanski, Kubrick, Friedkin, Carpenter, Argento, Hooper, Scott</span></a></li>
+          <li><a href="#japanese-and-korean-directors-nakata-kurosawa-shimizu-miike-na-hong-jin-kim-jee-woon-bong" data-visits-event="toc"><span class="num" aria-hidden="true">05</span><span>Japanese and Korean directors: Nakata, Kurosawa, Shimizu, Miike, Na Hong-jin, Kim Jee-woon, Bong</span></a></li>
+          <li><a href="#modern-directors-aster-eggers-peele-mitchell-wan-flanagan-kent-perkins-cregger-and-others" data-visits-event="toc"><span class="num" aria-hidden="true">06</span><span>Modern directors: Aster, Eggers, Peele, Mitchell, Wan, Flanagan, Kent, Perkins, Cregger and others</span></a></li>
+          <li><a href="#comparison-table-of-directors-cinematographers-and-editors" data-visits-event="toc"><span class="num" aria-hidden="true">07</span><span>Comparison table of directors, cinematographers and editors</span></a></li>
+          <li><a href="#what-the-empirical-evidence-supports-versus-craft-lore" data-visits-event="toc"><span class="num" aria-hidden="true">08</span><span>What the empirical evidence supports versus craft lore</span></a></li>
+          <li><a href="#source-caveats-disputed-facts-and-remaining-gaps" data-visits-event="toc"><span class="num" aria-hidden="true">09</span><span>Source caveats, disputed facts and remaining gaps</span></a></li>
+        </ol>
+      </nav>
+      <div class="prose">
 <div class="section-head"><p class="section-label">01</p><h2 id="how-shots-and-sequences-create-feeling-and-guide-a-story"><a class="anchor" href="#how-shots-and-sequences-create-feeling-and-guide-a-story">How shots and sequences create feeling and guide a story</a></h2></div>
 <p>A shot frightens or reassures an audience through three levers that every director profiled below manipulates knowingly: the distribution of knowledge between viewer and character, the control of the viewer&#39;s gaze, and the control of time. Hitchcock stated the first lever in its canonical form. A bomb that simply explodes under a table gives the public &quot;fifteen seconds of surprise&quot;; a bomb the public knows about, with a clock in view, turns banal conversation into &quot;fifteen minutes of suspense,&quot; so &quot;whenever possible the public must be informed,&quot; the exception being a twist whose surprise is itself the point <a class="cite" href="#ref-1">[1]</a>, <a class="cite" href="#ref-2">[2]</a>. David Bordwell shows the idea predates Hitchcock (Lessing) and that Hitchcock did not always obey it: Rebecca, Suspicion and Psycho lean on surprise <a class="cite" href="#ref-2">[2]</a>. Bordwell&#39;s vocabulary is the useful one for a working filmmaker: restricted narration confines the audience to what one character knows, which lets you delay the creature&#39;s reveal and build empathy and loss, while unrestricted narration lets the audience &quot;feel apprehension and suspense about what the characters don&#39;t know is happening&quot; <a class="cite" href="#ref-3">[3]</a>. Murray Smith adds the machinery: alignment is produced by spatio-temporal attachment (whom the camera follows) and subjective access (whose feelings we are given), and it is separate from allegiance, our moral evaluation; a viewer &quot;may align with a character but not necessarily ally with them&quot; <a class="cite" href="#ref-4">[4]</a>.</p>
 <p>The second lever is the gaze, and here the craft meets measurement. Viewers of edited film look at the same places at the same time: gaze defaults to screen centre, faces and motion, and synchrony rises about ten frames, roughly 333 ms, after each cut; in Loschky and colleagues&#39; Moonraker experiment the film&#39;s exogenous pull on attention was 1.5 to 6 times stronger than the effect of what viewers understood about the story <a class="cite" href="#ref-5">[5]</a>. Tim Smith&#39;s eye-tracking of a long static take in There Will Be Blood found that blocking and glances steer gaze &quot;as precisely as a rapidly edited sequence of close-up shots,&quot; giving viewers &quot;an illusion of volition&quot; <a class="cite" href="#ref-6">[6]</a>. This is the empirical basis for the horror long take: the audience believes it is scanning freely while staging decides where it looks, so a background entrance can be placed exactly where the gaze is not; every framing device in Section 2 either exploits that default or works against it. Hitchcock&#39;s Rear Window demonstration is the Kuleshov effect in miniature: a close-up of James Stewart smiling at a dog reads as kindly; the identical close-up after a shot of a half-dressed woman reads as &quot;a dirty old man&quot; <a class="cite" href="#ref-7">[7]</a>. Three controlled replications since 2006 confirm that context shots steer how a neutral face is read, and one shows music alone does it <a class="cite" href="#ref-8">[8]</a>, <a class="cite" href="#ref-9">[9]</a>.</p>
@@ -531,7 +604,7 @@
 </tbody></table></div>
 <p>Three points about the table. First, the &quot;dread school&quot; and the &quot;jump-scare school&quot; of the last decade share almost all of their hardware (large-format sensors with wide lenses used close, long takes, practical creatures) and differ in how tension is released: James Wan describes a two-stage machine, &quot;I tried to creep you out at first, create this palpable sense of dread,&quot; then &quot;you&#39;re jumping out of your seat&quot; <a class="cite" href="#ref-84">[84]</a>, while David Robert Mitchell &quot;moved away from jump scares and wanted suspense built from visible danger in the background&quot; <a class="cite" href="#ref-32">[32]</a> and Ari Aster told his editor he was &quot;completely against the &#39;jump-scare&#39; device&quot; <a class="cite" href="#ref-85">[85]</a>. Second, the lens rows depend on each other: Charlie Sarroff explains that large format lets Smile &quot;shoot on extremely wide lenses with minimal distortion,&quot; because on smaller formats &quot;people&#39;s faces become unrealistic, even ghoulish, when in close on wide lenses,&quot; and the extra height of a 2:1 ratio gives the empty headroom the dread row needs <a class="cite" href="#ref-45">[45]</a>. Third, the best-attested audience behaviour for any framing choice is Polanski&#39;s doorway in Rosemary&#39;s Baby: William Fraker framed Ruth Gordon fully visible on the bed, Polanski moved the camera so the jamb hid her, and Fraker understood only when he &quot;saw everyone leaning in their seats, trying to look around the edge of the door frame&quot; <a class="cite" href="#ref-46">[46]</a>. Obstructed negative space produces a physical search, which is Bazin&#39;s and Bordwell&#39;s account of depth staging as induced participation <a class="cite" href="#ref-86">[86]</a>.</p>
 <div class="section-head"><p class="section-label">03</p><h2 id="the-sequences-behind-this-page"><a class="anchor" href="#the-sequences-behind-this-page">The sequences behind this page</a></h2></div>
-<p>The claims above and the profiles below rest on 23 set pieces broken down shot by shot, documented account separated from reconstruction, on the companion page <a href="/research/horror-sequences-shot-by-shot">23 Horror Sequences Broken Down Shot by Shot</a>. In its order they are: the Psycho shower scene and the Arbogast staircase murder; The Birds&#39; schoolhouse jungle gym; Cat People&#39;s walk, bus and pool; Halloween&#39;s Panaglide opening and the Shape in the background; The Shining&#39;s Big Wheel, Room 237 and maze; Alien&#39;s chestburster; Jaws&#39; Alex Kintner beach attack; The Exorcist&#39;s bedroom escalation; The Texas Chain Saw Massacre&#39;s dinner and first kill; Ringu&#39;s Sadako coming through the television; Audition&#39;s sack and final scene; The Wailing&#39;s cross-cut rituals; the sink in A Tale of Two Sisters and the taxi in I Saw the Devil; Get Out&#39;s tea and Sunken Place; The Witch&#39;s hut and final walk; It Follows&#39; opening street shot and hallway pan; Hereditary&#39;s car and its aftermath; Nope&#39;s Gordy&#39;s Home sequence; The Conjuring&#39;s hide-and-clap; Barbarian&#39;s two descents; Weapons&#39; opening run and per-chapter camera; and the five long takes of The Haunting of Hill House&#39;s &quot;Two Storms.&quot;</p>
+<p>The claims above and the profiles below rest on 23 set pieces broken down shot by shot, documented account separated from reconstruction, on the companion page <a href="/research/horror-sequences-shot-by-shot" data-visits-event="doc-horror-sequences-shot-by-shot">23 Horror Sequences Broken Down Shot by Shot</a>. In its order they are: the Psycho shower scene and the Arbogast staircase murder; The Birds&#39; schoolhouse jungle gym; Cat People&#39;s walk, bus and pool; Halloween&#39;s Panaglide opening and the Shape in the background; The Shining&#39;s Big Wheel, Room 237 and maze; Alien&#39;s chestburster; Jaws&#39; Alex Kintner beach attack; The Exorcist&#39;s bedroom escalation; The Texas Chain Saw Massacre&#39;s dinner and first kill; Ringu&#39;s Sadako coming through the television; Audition&#39;s sack and final scene; The Wailing&#39;s cross-cut rituals; the sink in A Tale of Two Sisters and the taxi in I Saw the Devil; Get Out&#39;s tea and Sunken Place; The Witch&#39;s hut and final walk; It Follows&#39; opening street shot and hallway pan; Hereditary&#39;s car and its aftermath; Nope&#39;s Gordy&#39;s Home sequence; The Conjuring&#39;s hide-and-clap; Barbarian&#39;s two descents; Weapons&#39; opening run and per-chapter camera; and the five long takes of The Haunting of Hill House&#39;s &quot;Two Storms.&quot;</p>
 <div class="section-head"><p class="section-label">04</p><h2 id="classic-directors-hitchcock-lewton-and-tourneur-murnau-clayton-bava-polanski-kubrick-friedkin-carpenter-argento-hooper-scott"><a class="anchor" href="#classic-directors-hitchcock-lewton-and-tourneur-murnau-clayton-bava-polanski-kubrick-friedkin-carpenter-argento-hooper-scott">Classic directors: Hitchcock, Lewton and Tourneur, Murnau, Clayton, Bava, Polanski, Kubrick, Friedkin, Carpenter, Argento, Hooper, Scott</a></h2></div>
 <p>Section 7 tabulates each director&#39;s signatures; the profiles here and in the next two sections add the stated intentions and the production facts behind them.</p>
 <p><strong>Alfred Hitchcock (John L. Russell; editor George Tomasini).</strong> The audience should know more than the characters, meaning is made by cutting a face against what it sees, and violence is fragmented montage planned in advance. Psycho was shot almost entirely on 50 mm lenses for a field of view close to human vision <a class="cite" href="#ref-44">[44]</a>. The storyboard legend needs qualifying: Bill Krohn found the &quot;storyboarded to the finest detail&quot; reputation was &quot;to a great degree perpetuated by Hitchcock himself or the publicity arm of the studios,&quot; and Hitchcock told Ebert that &quot;in shooting it you lose perhaps 40 per cent of your original conception&quot; <a class="cite" href="#ref-87">[87]</a>.</p>
@@ -837,6 +910,32 @@
 <p>Several of the production facts behind these profiles are contested in print. Suspiria was not &quot;shot in three-strip Technicolor&quot;; it was shot on Eastman 5254 and printed by dye transfer <a class="cite" href="#ref-100">[100]</a>, <a class="cite" href="#ref-101">[101]</a>. The number and placement of The Exorcist&#39;s subliminal demon frames differ between sources, and no authoritative frame log exists <a class="cite" href="#ref-166">[166]</a>. The Cat People bus is credited variously to Robson, Tourneur and Lewton <a class="cite" href="#ref-167">[167]</a>, <a class="cite" href="#ref-61">[61]</a>. Hitchcock&#39;s storyboard legend is partly studio publicity <a class="cite" href="#ref-87">[87]</a>. Blair Witch&#39;s shooting span is given as eight intensive days and as two weeks <a class="cite" href="#ref-139">[139]</a>. Hill House&#39;s hidden ghosts have no count from the filmmakers, and fan guides disagree <a class="cite" href="#ref-130">[130]</a>. The disputes that belong to particular set pieces (the Psycho shower counts and authorship, the jungle-gym crows, the Alien chestburster&#39;s &quot;one take,&quot; the It Follows hallway pan, Sadako&#39;s reversed walk) are set out on the companion page.</p>
 <p>Some claims rest on excerpts rather than full texts. Nakata&#39;s statement that he watched The Haunting at least five times is relayed through an encyclopaedia summary of a newspaper interview <a class="cite" href="#ref-90">[90]</a>. Several cinematographer interviews were readable only in reprints or summaries, and the Longlegs editor&#39;s and cinematographer&#39;s remarks come from a reprint and a podcast summary <a class="cite" href="#ref-28">[28]</a>, <a class="cite" href="#ref-168">[168]</a>. Wan&#39;s defence that &quot;a great jump scare is really hard to design&quot; is relayed second hand <a class="cite" href="#ref-129">[129]</a>. Hanich&#39;s five fear types are reported through a publisher&#39;s chapter list and a Danish-language summary <a class="cite" href="#ref-25">[25]</a>, <a class="cite" href="#ref-26">[26]</a>; Burch&#39;s six zones through a thesis quoting the French edition <a class="cite" href="#ref-20">[20]</a>; Chion&#39;s four powers of the acousmêtre through summaries without page numbers <a class="cite" href="#ref-19">[19]</a>.</p>
 <p>The remaining gaps are specific. No verbatim statement by Carpenter or Cundey on placing Michael at the edge of frame or in the far background was found; the depth-staging reading is critics&#39;. No primary statement by Kurosawa on camera distance or static takes, or by Shimizu on Kayako&#39;s choreography, was reached. Flanagan&#39;s reasoning about what the Hill House long take does to a viewer, as opposed to how it was made, is not in any reachable text. On the empirical side there is no peer-reviewed horror-specific average-shot-length study by era, no controlled comparison of dread under slow versus fast cutting of the same material, no eye-tracking study that manipulates a horror framing variable (negative space, depth placement of a threat), no study of stillness after movement or of killer-POV versus objective framing, and no physiological study of the jump scare as cut, with sting timing relative to the picture cut; the 2026 review explicitly proposes one <a class="cite" href="#ref-163">[163]</a>. Claims about infrasound and low-frequency rumble are common in blogs and were not sourced to any primary study, so they are omitted.</p>
+      </div>
+      <section class="keep-reading" aria-labelledby="next-reads">
+        <h2 id="next-reads" class="section-label">Keep reading</h2>
+        <p class="series-name">Horror craft · 5 parts</p>
+        <ol class="series-parts">
+          <li><a href="/research/opening-a-game-like-a-film" data-visits-event="next-opening-a-game-like-a-film">Opening a game like a film: sixty seconds of drive, radio and dread</a></li>
+          <li><a href="/research/building-dread-toward-a-late-reveal" data-visits-event="next-building-dread-toward-a-late-reveal">Building dread toward a late reveal in horror games</a></li>
+          <li><a href="/research/how-alan-wake-introduces-its-darkness" data-visits-event="next-how-alan-wake-introduces-its-darkness">How Alan Wake introduces its darkness</a></li>
+          <li aria-current="true"><span>How Horror Directors Build Dread Shot by Shot</span></li>
+          <li><a href="/research/horror-sequences-shot-by-shot" data-visits-event="next-horror-sequences-shot-by-shot">23 Horror Sequences Broken Down Shot by Shot</a></li>
+        </ol>
+        <ul class="doc-list next-list" role="list">
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/synthetic-voices-for-a-radio-call" data-visits-event="next-synthetic-voices-for-a-radio-call">Synthetic voices for a radio call</a></h3>
+            <p class="doc-meta">12 min read</p>
+            <p class="doc-desc">Text-to-speech for a game&#39;s radio call in 2026: the models that take direction, what gives them away, the radio chain, licences, cost, cloning your own voice.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/reverse-engineering-an-ai-horror-short" data-visits-event="next-reverse-engineering-an-ai-horror-short">Reverse engineering an AI horror short</a></h3>
+            <p class="doc-meta">9 min read</p>
+            <p class="doc-desc">A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe.</p>
+          </li>
+        </ul>
+        <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS) or <a class="external" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">csarko.log</a>.</p>
+      </section>
+      <div class="prose">
 <div class="section-head" data-read-end><p class="section-label">10</p><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <ol class="references">
 <li id="ref-1"><span class="ref-num">[1]</span><div>No Film School, &quot;Alfred Hitchcock and François Truffaut explain surprise vs. suspense,&quot; No Film School. Accessed: Oct. 22, 2026. [Online]. Available: <a class="external" href="https://nofilmschool.com/alfred-hitchcock-and-francois-truffaut-explain-surprise-vs-suspense" target="_blank" rel="noopener">https://nofilmschool.com/alfred-hitchcock-and-francois-truffaut-explain-surprise-vs-suspense</a></div></li>
@@ -1008,7 +1107,6 @@
 <li id="ref-167"><span class="ref-num">[167]</span><div>Wikipedia contributors, &quot;Jump scare,&quot; Wikipedia. Accessed: Oct. 22, 2026. [Online]. Available: <a class="external" href="https://en.wikipedia.org/wiki/Jump_scare" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/Jump_scare</a></div></li>
 <li id="ref-168"><span class="ref-num">[168]</span><div>The Cinematography Podcast, &quot;Ep. 283: Andrés Arochi on Longlegs,&quot; camnoir.com. Accessed: Oct. 22, 2026. [Online]. Available: <a class="external" href="https://www.camnoir.com/?p=10901" target="_blank" rel="noopener">https://www.camnoir.com/?p=10901</a></div></li>
 </ol>
-
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
@@ -1016,6 +1114,10 @@
         <p>Senior software engineer leading distributed systems and AI products.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
+      <nav class="afterward" aria-label="Read next">
+        <a class="next" href="/research/horror-sequences-shot-by-shot" data-visits-event="end-horror-sequences-shot-by-shot"><span class="section-label">Read next</span><span>23 Horror Sequences Broken Down Shot by Shot <span aria-hidden="true">→</span></span></a>
+        <a href="/research">All research</a>
+      </nav>
     </main>
   </div>
 
@@ -1028,6 +1130,7 @@
   <!-- generated:analytics -->
   <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
+  <script defer src="/assets/reading.c3e27b33.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

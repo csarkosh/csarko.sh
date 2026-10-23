@@ -3,6 +3,7 @@ description: Why trees float on slopes and distant ridges in a procedural world,
 published: 2026-08-29
 categories: Rendering, Worlds and terrain
 updated: 2026-10-10
+series: Rendering a browser forest
 ---
 # Why props float on procedural terrain
 

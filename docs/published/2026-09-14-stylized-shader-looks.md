@@ -1,9 +1,11 @@
 ---
-description: How games use shaders to build a distinct look, from ink outlines and cel lighting to dithering, gradient fog and VHS effects.
+description: Memorable game looks come from one or two strong shader rules applied everywhere: ink outlines, cel bands, dithering, gradient fog or VHS.
 published: 2026-09-14
 categories: Rendering
-updated: 2026-09-23
+updated: 2026-10-23
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-14-stylized-shader-looks.md
+series: Day Hike's look
+related: a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2, ground-fog-without-the-wall
 ---
 # Stylized shader looks: how games build a visual identity
 
@@ -11,15 +13,38 @@ source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-0
 look, in the way Borderlands' ink outlines make it read as a comic book?
 
 **Short answer:** most memorable looks come from one or two strong rules applied everywhere,
-not from many small effects. Borderlands itself is mostly two things: a post-process pass that
-finds edges in the depth and normal buffers and draws them black, and textures that were
-hand-painted with ink lines already in them. The lighting underneath is fairly conventional.
+not from many small effects. Borderlands itself is mostly two things: a
+[post-process](#term "A full-screen shader run on the finished frame, after the scene has been drawn.")
+pass that finds edges in the
+[depth and normal buffers](#term "Per-pixel images of how far each surface is from the camera and which way it faces, kept beside the colour.")
+and draws them black, and textures that were hand-painted with ink lines already in them. The
+lighting underneath is fairly conventional.
+
+![A grass meadow in Day Hike before a line of tall trees under a grey sky, the far trees fading into mist](meadow.png "Day Hike today keeps its photoreal render and builds the look on top: fog whose colour runs along a gradient with distance fades the far tree line (section 6), and on the medium and high tiers a Kuwahara filter smears the frame into strokes (section 5) before a muted grade.")
+
+**In short:**
+
+- **Edge detection draws Borderlands' ink** in screen space: cheap and it catches every object,
+  but the line width cannot be art-directed
+  ([section 1](#outlines-edge-detection-inverted-hulls-and-ink-wash)).
+- **Two or three flat bands** of light instead of a smooth falloff is the cel look; Team
+  Fortress 2 runs its light through a hand-authored 1D ramp instead
+  ([section 2](#cel-bands-and-warped-diffuse-reshape-the-light)).
+- **Two colours and a dither** make Return of the Obra Dinn, with the pattern pinned to a
+  sphere around the camera so it does not swim
+  ([section 3](#limited-colour-1-bit-dither-and-restricted-palettes)).
+- **One gradient fog shader** carries much of Firewatch's identity, and it is the closest
+  reference for Day Hike ([section 6](#atmosphere-as-the-style-firewatch-s-gradient-fog)).
+- **Film grain, vignette and chromatic aberration** are horror's shorthand for found footage
+  ([section 7](#camera-imitation-vhs-grain-and-fog-as-dread)).
+- **Sanity effects** warp the screen and drain the colour as the character's mind frays
+  ([section 8](#shaders-tied-to-mechanics-paint-scanning-and-sanity)).
 
 Every game below links to its Steam page so you can see the look in the store screenshots and
 trailers. Where a game is not sold on Steam, the link goes to its official site, or to its
 Wikipedia article if it is no longer sold at all.
 
-## 1. Outlines and ink
+## 1. Outlines: edge detection, inverted hulls and ink-wash
 
 - **Post-process edge detection:** [Borderlands](https://store.steampowered.com/app/729040/)
   and [XIII](https://store.steampowered.com/app/1170760/) (the 2003 original, sold as
@@ -35,7 +60,7 @@ Wikipedia article if it is no longer sold at all.
 - **Ink-wash:** [Okami HD](https://store.steampowered.com/app/587620/). Brush-stroke outlines,
   a paper-grain overlay and a faded palette imitate sumi-e painting.
 
-## 2. Stepped or reshaped lighting
+## 2. Cel bands and warped diffuse reshape the light
 
 - **Cel ramps:** [Jet Set Radio](https://en.wikipedia.org/wiki/Jet_Set_Radio) (no longer sold
   on Steam) and [The Legend of Zelda: The Wind Waker](https://en.wikipedia.org/wiki/The_Legend_of_Zelda:_The_Wind_Waker)
@@ -49,7 +74,7 @@ Wikipedia article if it is no longer sold at all.
   own launcher, not Steam). Shadow shapes on faces come from textures, not from the geometry,
   so a nose never casts an ugly shadow.
 
-## 3. Limited colour
+## 3. Limited colour: 1-bit dither and restricted palettes
 
 - **1-bit dithering:** [Return of the Obra Dinn](https://store.steampowered.com/app/653530/).
   Two colours and a dither pattern. Lucas Pope's devlog [3] covers the hard part: a dither
@@ -61,7 +86,7 @@ Wikipedia article if it is no longer sold at all.
   (a white world with red enemies) and [LIMBO](https://store.steampowered.com/app/48000/)
   (greyscale silhouettes).
 
-## 4. Deliberately low fidelity
+## 4. Low fidelity on purpose: PS1 jitter and 3D as pixel art
 
 - **The PS1 look:** [SIGNALIS](https://store.steampowered.com/app/1262350/) and much of the
   indie horror scene. Vertices snapped to a coarse grid so they jitter, textures that warp
@@ -72,7 +97,7 @@ Wikipedia article if it is no longer sold at all.
 - **Low-resolution assets under modern lighting:** [Valheim](https://store.steampowered.com/app/892970/).
   Pixelated textures under volumetric fog and bloom.
 
-## 5. Painterly and illustrative
+## 5. Painterly: line art, hatching and hand-painted textures
 
 - **Moebius-style line art:** [Sable](https://store.steampowered.com/app/757310/). Heavy
   outlines, flat colour and very little shading.
@@ -81,7 +106,7 @@ Wikipedia article if it is no longer sold at all.
 - **Hand-painted textures with simple lighting:** early [World of Warcraft](https://worldofwarcraft.blizzard.com/)
   (Battle.net, not Steam). Most of the look lives in the textures.
 
-## 6. Atmosphere as the style
+## 6. Atmosphere as the style: Firewatch's gradient fog
 
 - **Gradient fog:** [Firewatch](https://store.steampowered.com/app/383870/). This is the
   closest reference for Day Hike. Fog colour comes from a hand-painted gradient chosen by
@@ -95,7 +120,7 @@ Wikipedia article if it is no longer sold at all.
   (its "HD-2D" look) and [TUNIC](https://store.steampowered.com/app/553420/). Strong depth of
   field, bloom and vignette make the world look like a miniature.
 
-## 7. Imitating a camera or recording medium
+## 7. Camera imitation: VHS, grain and fog as dread
 
 - **VHS and camcorder:** [Resident Evil 7 Biohazard](https://store.steampowered.com/app/418370/)
   (its found-footage tapes) and [Outlast](https://store.steampowered.com/app/238320/) (the
@@ -107,7 +132,7 @@ Wikipedia article if it is no longer sold at all.
   and became the series' identity; the [SILENT HILL 2](https://store.steampowered.com/app/2124490/)
   remake keeps it.
 
-## 8. Shaders tied to the mechanics
+## 8. Shaders tied to mechanics: paint, scanning and sanity
 
 - **Painting the world in:** [The Unfinished Swan](https://store.steampowered.com/app/1206430/).
   The world starts pure white, and you reveal it by throwing paint.
@@ -117,7 +142,7 @@ Wikipedia article if it is no longer sold at all.
   (GameCube only) and [Amnesia: The Dark Descent](https://store.steampowered.com/app/57300/).
   The screen warps, colour drains and the image distorts as the character's mind frays.
 
-## What this suggests for Day Hike
+## For Day Hike: gradient fog plus a dread post-process
 
 - **Firewatch-style gradient fog** fits an outdoor hiking game. It can sit on top of
   photoreal rendering instead of replacing it, so it does not fight the world's current

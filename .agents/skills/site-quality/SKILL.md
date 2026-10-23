@@ -54,6 +54,9 @@ Same inputs, same outputs (two builds produce identical hashes).
 | `public/games/index.html` | `docs/games/<slug>.md` via the same `build_docs.mjs` run | The `/games` list, one entry per file: kicker from `status`, the H1 as the name, the body as the copy, `tags` as pills, and `play` as the card's "Play in your browser" link, styled like the old home page Projects card (`repo` is not linked from the card; it only feeds the JSON-LD `url` when there is no `play`). No per-game pages yet. Same theme, fonts, analytics and staleness rules as a doc page. |
 | `public/film/index.html` | `docs/films/<slug>.md` via the same `build_docs.mjs` run | The `/film` list, one card per file: the poster, a kicker of `Short film · <runtime>`, the H1 as the title, the body as the copy, `tags` as pills, an optional `warning` line, and `watch` as the card's "Watch on YouTube" link. Each film is a `VideoObject` in the page's `CollectionPage`. The home page carries no film of its own: the nav's `Film` link is how you get here. |
 | `public/assets/film-<slug>-{200,240,400,480}.<hash>.{avif,webp,jpg}`, `public/film/<slug>.jpg` | `assets/films/<slug>.jpg`, one poster per film, portrait (3:4) | `build_docs.mjs` writes a `<!-- generated:film-poster:<slug> -->` marker holding a plain `<img>` with the `alt` from the front matter; `build_assets.py` swaps in the hashed `<picture>` and reads that `alt` back out, so the Markdown stays the one source of truth. The stable `film/<slug>.jpg` is what the `VideoObject` cites. A film with no source image keeps the plain `<img>`. |
+| `public/research/feed.xml` | `docs/published/` via `build_docs.mjs` | The Atom feed of every doc, newest first; doc pages and `/research` link it as `rel="alternate"`. |
+| `public/assets/fig-<slug>-<name>-<w>.<hash>.{avif,webp,jpg}`, `fig-<slug>-<name>.<hash>.svg`, `public/research/figures/<slug>-<name>.{jpg,svg}` | `assets/research/<slug>/<name>.{png,svg}`, a doc's figures *(2026-10-23)* | `build_docs.mjs` reads each file's size and writes a `<!-- generated:figure:<slug>/<name> -->` marker holding a plain `<img>` with the Markdown's alt; `build_assets.py` swaps in the hashed `<picture>` (an SVG as one `<img>`). The stable JPEG, cut to 1200x630 from the middle, is the doc's share card when its first figure is a PNG. See the `publish-doc` skill's "Figures". |
+| `public/assets/reading.<hash>.js` | `assets/reading.js` | A doc page's own script, written into its `generated:analytics` block after the lib-visits tags: the contents rail's current section, and the `section` event. Whole-line comments stripped before hashing, so its source can explain itself. |
 | `public/sitemap.xml` | `docs/published/`, `docs/games/` and `docs/films/` via `build_docs.mjs` | `/`, `/film`, `/games`, `/research` (no `lastmod` on any of the four), then each doc with its own. Each section's URL appears only while it has content. |
 | `public/assets/portrait-{240,360,480,720}.<hash>.{avif,webp,jpg}` | `assets/portrait-source.jpg` | Responsive LCP image. Desktop 2x loads a ~15 KB AVIF instead of a 100 KB JPEG. |
 | `public/assets/<font>.<hash>.woff2` | `assets/fonts/*.woff2` | Inter + JetBrains Mono variable, latin subset. License: `public/licenses/fonts-OFL.txt`. |
@@ -82,7 +85,7 @@ match its clean URL (`research/x.html` → `https://csarko.sh/research/x`); docs
 the indexable pages, and root-relative links must resolve without a redirect (no
 trailing `/`, no `.html`).
 
-**Performance** — HTML ≤ 50 KB (the research index ≤ 80 KB, since it lists every doc; a doc page ≤ 200 KB); fonts ≤ 100 KB with `font-display: swap`, each
+**Performance** — HTML ≤ 50 KB (the research index ≤ 80 KB, since it lists every doc; a doc page ≤ 225 KB); fonts ≤ 100 KB with `font-display: swap`, each
 with a metric-matched `"<Family> Fallback"` face (`size-adjust` etc. against
 Arial / Courier New, values in `build_assets.py` `FALLBACKS`) listed right after
 it in the font stack — without them the font swap re-wrapped the hero and
@@ -92,7 +95,7 @@ portrait is a `<picture>` with AVIF + WebP, `srcset`/`sizes`/`width`/`height`,
 **no animation on the hero** (it once delayed LCP by ~0.7s); **no third-party
 resources** except origins in `THIRD_PARTY` in `check.py`; scripts must be
 `async`/`defer`; JavaScript ≤ 10 KB (third-party measured with `--live`). Doc
-pages get a 200 KB HTML budget.
+pages get a 225 KB HTML budget.
 
 **Accessibility** — the first element in `<body>` is the skip link, and its
 target has `tabindex="-1"`; alt on every image; in-page links resolve; new-tab
@@ -163,7 +166,7 @@ section means renaming it in `PAGE_LINKS`/`DOCS_NAV` and nowhere else.
 
 [lib-visits](https://github.com/csarkosh/lib-visits) (tag `v0.1.0`), configured only
 in `site.json` (`analytics.provider` is `visits`, `endpoint` is `/v`). The generator
-writes the two `<script>` tags into every page, the hashed self-hosted
+writes the two `<script>` tags into every page (a doc page also gets `reading.js`, below), the hashed self-hosted
 `visits.min.js` and `vitals.min.js`, and the CSP (`script-src 'self'`,
 `connect-src 'self'`: no third-party origin); `check.py` derives its allowlist from
 the same file and verifies all three agree. The scripts are vendored unmodified under
@@ -185,6 +188,11 @@ rename one without a reason the dashboard can absorb. Click events are
 | `play-<slug>` | a game card's "Play in your browser" (`gameList`) |
 | `watch-<slug>` | a film card's "Watch on YouTube" (`filmCard`) |
 | `read-<slug>` | derived, not sent: a doc page whose reader's last leave reached the end (`leave.re`) |
+| `toc`, `toc-rail` | a doc's "In this doc" list and its contents rail *(2026-10-23, as are the rows below)* |
+| `doc-<slug>` | a link in a doc's text to another doc (`renderMarkdown`) |
+| `series-<slug>`, `next-<slug>`, `end-<slug>` | the series line under a doc's title, its Keep reading block, and the Read next link after its author box |
+| `play-<game>` | a doc's Play button, shown when its text names a playable game (the same name as the game card's) |
+| `section` | sent by `reading.js`, not a click: a section that sat across the middle of a visible screen for 5 s, `d: { n, of }`, n 0 for the opening; the dashboard lists it as `section-<n>` |
 
 `read-<slug>` needs no script of ours any more (`engage.js` is gone):
 `docs_lib.mjs` still marks one element per doc `data-read-end`, the Sources
@@ -212,7 +220,7 @@ This is the change most likely to regress everything above. In order:
    does not know, so a new script needs its own hash check and page rule
    there, next to the lib-visits scripts'.
 4. Stay within `BUDGET_SCRIPTS` (10,000 B). The lib-visits scripts already
-   take about 4,063 B of it on a doc page, so anything new displaces something or
+   and `reading.js` take about 5,054 B of it on a doc page, so anything new displaces something or
    comes with a deliberate budget change, agreed with Cyrus.
 5. Run `check.py`, deploy, then `check.py --live --lighthouse --observatory`.
    Performance must stay ≥ 95 and Observatory A+.

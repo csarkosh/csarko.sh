@@ -1,8 +1,11 @@
 ---
-description: How a viral AI horror short was made, worked out from the pixels alone, then confirmed against the studio's own posts. With a recipe and a cost table.
+description: A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe.
 published: 2026-09-26
 categories: AI, Film
 featured: 2
+series: AI short films
+updated: 2026-10-23
+related: horror-sequences-shot-by-shot, horror-cinematography-shot-by-shot
 ---
 # Reverse engineering an AI horror short
 
@@ -11,40 +14,41 @@ woman in a nightgown climbs out of a fifth floor window of a Soviet apartment bl
 the courtyard, appears through the peephole, then climbs in through the living room window. Was it
 generated, with what, and how would someone make one just like it?
 
-**Short answer:** it is an episode of a Russian AI anthology, "Архив Аномалии" (Archive of
-Anomaly) no. 18 part 5, by the two person studio XCVmind [1]. The pixels give the method away
-before the studio does: five image-to-video clips of 6 to 13 seconds, a shared character
-reference, native 24 fps sources slowed in a video editor, a grain overlay, two stock transitions
-and a title card. The studio's public posts confirm the shape of that workflow and name the
-models it rotates through: Hailuo, Kling, Midjourney Video, Sora 2 and Veo [2], [3]. The exact
-model behind this episode cannot be read from the file, because Reddit's transcode strips every
-provenance tag; the studio sells per-scene breakdowns with prompts on a paid Telegram tier [4].
-The same look is reproducible today on the Gemini API with Nano Banana Pro for keyframes and
-Veo 3.1 Fast for motion, for under $15 in generation per finished minute.
+**Short answer:** yes, it was generated. It is episode 18 part 5 of "Архив Аномалии" (Archive of
+Anomaly), a Russian AI anthology by the two person studio XCVmind, made as five
+[image-to-video](#term "A video model that takes a finished still and a prompt, and animates the scene from it.")
+clips from one shared character reference and finished in a video editor. The exact model cannot
+be read from the file, because
+[Reddit's transcode](#term "Reddit's own re-encode of an uploaded video, which drops the original file's creation tags.")
+strips every provenance tag. The same look is reproducible today on the Gemini API, with Nano
+Banana Pro for keyframes and Veo 3.1 Fast for motion, for under $15 in generation per finished
+minute.
+
+![A timeline of the 45 second short: an establishing shot of 2.2 seconds, then four longer clips (window, courtyard, hallway to peephole, room) and a 3 second title card](shots.svg "The short as section 1 reconstructs it: five generated clips and a still title card. Four of the clips are 24 fps sources slowed to about 80 % on a 30 fps timeline.")
+
+**In numbers:**
+
+- **Five clips of 2.2 to 13 seconds** and a 3 second title card make up the 45 seconds
+  ([section 1](#five-clips-and-a-title-card-from-an-xcvmind-anthology)).
+- **No provenance at all:** no C2PA manifest, no XMP, zeroed creation dates and no encoder name
+  but ffmpeg in Reddit's x264 re-encode
+  ([section 1](#five-clips-and-a-title-card-from-an-xcvmind-anthology)).
+- **19 to 21 unique frames a second** in four of the clips: 24 fps sources slowed to about 80 %,
+  which fits Veo, Sora 2, Runway Gen-4, Seedance and Wan 2.5 better than Kling or Hailuo
+  ([section 2](#the-pixels-prove-generation-and-a-24-fps-source-slowed-to-80)).
+- **Seven video models** named by the studio over its channel's history, the best take winning
+  each shot; its per-scene breakdowns with prompts are sold on a paid Telegram tier
+  ([section 3](#the-studio-animates-stills-on-several-models-best-take-wins)).
+- **Around 5,000 rubles** and up to dozens of hours per finished minute, by the studio's own
+  account ([section 3](#the-studio-animates-stills-on-several-models-best-take-wins)).
+- **$14.10** in generation for a 45 second reproduction on the Gemini API, at two takes per shot
+  ([section 4](#a-14-10-recipe-nano-banana-pro-keyframes-veo-3-1-fast-motion)).
 
 This is a companion to [the September survey of consistent characters and sets in AI
 film](/research/ai-short-film-generation). That doc asked whether a series could be locked; this
 one takes one real short apart to see what a working studio actually does.
 
-## 0. The answer in five lines
-
-1. **Generated, not shot.** A formless white shape on the windowsill resolves into a face and a
-   body over two seconds. Candles multiply and move within one continuous take. A door's lock
-   hardware changes count as the camera approaches. None of that happens to a camcorder.
-2. **Image first, then motion.** The studio says so in its own words: upload finished artwork,
-   set a prompt, let the network animate the scene [2]. The blob-to-person opening is what
-   image-to-video does when the still shows a curled figure and the prompt says she rises.
-3. **One character reference across five clips.** Same face, hair and nightgown with the pink
-   bow trim in every shot, including a fisheye close-up. Five independent prompts do not do that;
-   a reference image fed to every generation does.
-4. **The editor did the rest.** A 30 fps timeline, four of five clips slowed to roughly 80 %,
-   a film grain overlay, an RGB scanline glitch and a whip-blur transition, vector title text, an
-   ambience bed with no dialogue. All of it is a preset away in CapCut or DaVinci Resolve.
-5. **The model name is not in the file.** Reddit re-encodes to x264 and drops C2PA, XMP and
-   every creation tag. The clips carry no watermark. The frame cadence fits a 24 fps generator,
-   which narrows the field but does not name one.
-
-## 1. What the short is
+## 1. Five clips and a title card, from an XCVmind anthology
 
 | Segment | Time | Length | Content |
 |---|---|---|---|
@@ -64,14 +68,21 @@ the absence proves nothing about the original export.
 
 A title card search found nothing. The YouTube link, once supplied, gave the real title:
 "Архив Аномалии №018, часть 5" on the XCVmind channel, uploaded about a week before this doc
-[1]. Episode 18 is a five part arc about a mimic entity that copies people, which is why the
+[1]. The studio's public posts confirm the shape of the workflow this doc reads from the pixels
+and name the models it rotates through: Hailuo, Kling, Midjourney Video, Sora 2 and Veo [2], [3].
+Episode 18 is a five part arc about a mimic entity that copies people, which is why the
 woman grins, climbs out of a window and turns up at the door [4].
 
-## 2. What the pixels say
+## 2. The pixels prove generation and a 24 fps source slowed to 80 %
 
 The tells, strongest first. Each was checked on frames extracted at full resolution, on
 per-clip temporal variance maps (the standard deviation of every pixel across a clip, which
 exposes anything that stays still, such as a watermark), and on a frame difference trace.
+
+Three of them settle the first question on their own: a formless white shape on the windowsill
+resolves into a face and a body over two seconds, candles multiply and move within one continuous
+take, and a door's lock hardware changes count as the camera approaches. None of that happens to a
+camcorder.
 
 | Tell | Where | What it means |
 |---|---|---|
@@ -84,6 +95,10 @@ exposes anything that stays still, such as a watermark), and on a frame differen
 | No static region in any corner | All clips | No visible watermark: a paid tier, a crop, or an invisible mark such as SynthID |
 | A 13 second continuous POV push-in with correct fisheye | Hallway to peephole | Either a long generation or an extend feature; the difference trace shows no cut or dissolve |
 
+**One character reference.** The same face, hair and nightgown with the pink bow trim appear in
+every shot, including the fisheye close-up. Five independent prompts do not do that; a reference
+image fed to every generation does.
+
 **Frame cadence.** Counting exactly repeated consecutive frames gives the source rate under the
 30 fps container:
 
@@ -95,14 +110,18 @@ exposes anything that stays still, such as a watermark), and on a frame differen
 
 A native 24 fps output fits Veo, Sora 2, Runway Gen-4, Seedance and Wan 2.5. Kling emits 30 fps
 and Hailuo 25 fps, so those would need a different slowdown to land at the same numbers; they are
-less likely, not excluded.
+less likely, not excluded. The cadence narrows the field; it does not name a model.
+
+**The edit.** A 30 fps timeline, four of the five clips slowed to roughly 80 %, a film grain
+overlay, two stock transitions (an RGB scanline glitch and a whip-blur), vector title text and an
+ambience bed with no dialogue. All of it is a preset away in CapCut or DaVinci Resolve.
 
 **Audio.** A sound design bed with no dialogue; the low band shows no speech formants. The first
 4.5 seconds are a quieter drone that rolls off at 15 kHz, and everything after is broadband
 ambience with transients (footsteps, a door) that rolls off at 17 kHz, the AAC limit of Reddit's
 128 kbps re-encode. Two different sources, laid under each other in the edit.
 
-## 3. What the studio says about its method
+## 3. The studio animates stills on several models, best take wins
 
 XCVmind is an AI film studio co-founded by "misterXCV". It runs the anthology on YouTube and
 TikTok, with a Telegram channel for the films and a second one for announcements and tips
@@ -110,7 +129,8 @@ TikTok, with a Telegram channel for the films and a second one for announcements
 DTF and Pikabu [5], [6], [7], [8], the stated workflow is:
 
 - **Image-to-video is the core method.** Finished artwork goes in with a prompt and the video
-  model animates the scene [2].
+  model animates the scene [2]. The opening, where a shape on the sill becomes a person, is what
+  image-to-video does when the still shows a curled figure and the prompt says she rises.
 - **Several video models run in parallel** and the best take wins per shot. Named over the
   channel's history: Hailuo (MiniMax), Kling including its Omni reference mode and its O1
   video editor, Midjourney Video, Sora 2, Veo 3, Grok Imagine and Seedance. The studio's
@@ -127,7 +147,7 @@ Sora app down in April 2026 and retired the Sora 2 API on 24 September 2026 [9].
 recipe in the studio's older posts is now historical, and its current shots come from Kling,
 Veo, Hailuo or Seedance.
 
-## 4. A reproduction recipe
+## 4. A $14.10 recipe: Nano Banana Pro keyframes, Veo 3.1 Fast motion
 
 The studio's method, restated as steps, with the one stack that a single API key covers.
 
@@ -164,7 +184,7 @@ budget model for stills, Gemini 2.5 Flash Image, is deprecated with a shutdown o
 2026, so the Pro model is the one to build on [11]. Expect two to four hours per finished minute
 at first, most of it choosing takes.
 
-## 5. What could not be verified
+## 5. Unverified: the model, an invisible watermark, the full posts
 
 - **The model behind this episode.** Nothing in the Reddit copy names it. The studio's own
   export, or its paid breakdown, would.

@@ -2,6 +2,7 @@
 description: What grows where on Washington's Olympic Peninsula, from drift logs to heather, and how to turn it into placement rules and models for a game world.
 published: 2026-10-04
 categories: Worlds and terrain
+series: Olympic Peninsula field notes
 ---
 # Olympic Peninsula vegetation for game worlds
 

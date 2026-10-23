@@ -3,6 +3,7 @@ description: What a cookieless counter can know, what more a page says without f
 published: 2026-10-15
 updated: 2026-10-15
 categories: Tooling, Distributed systems
+series: Analytics without cookies
 ---
 # Visits without cookies, and the path they took
 

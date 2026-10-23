@@ -10,6 +10,8 @@ Sources (in .agents/skills/site-quality/assets/):
   apps/<slug>-portrait.png, <slug>-portrait-dark.png
                           optionally a tall version, shown beside the card's text on a desktop
                           (the landscape one shows under the title on a phone)
+  research/<slug>/<name>.{png,svg}   a doc's figures (docs/published/*-<slug>.md names them)
+  reading.js              a doc page's own script: the rail's current section, and section reads
   fonts/*.woff2           self-hosted variable fonts (latin subset)
   vendor/visits.min.js, vendor/vitals.min.js   the lib-visits analytics scripts (see site.json)
 
@@ -22,6 +24,12 @@ Outputs (in public/):
   film/<slug>.jpg                              stable 720px poster, cited by the film's VideoObject
   assets/app-<slug>[-dark]-<w>.<hash>.{avif,webp,jpg}   w = 360, 540, 720, 1080
   apps/<slug>.jpg                              stable 720px preview, the <img> before this runs
+  assets/fig-<slug>-<name>-<w>.<hash>.{avif,webp,jpg}   w = 480, 720, 960, 1440 (no wider than the source)
+  assets/fig-<slug>-<name>.<hash>.svg          an SVG figure, as it is
+  research/figures/<slug>-<name>.{jpg,svg}     stable copy: the <img> before this runs, and the
+                                               doc's share card when its first figure is a PNG
+                                               (a JPEG cut to 1200x630 from the figure's middle)
+  assets/reading.<hash>.js                     on doc pages only
 
 Every file in public/assets/ is named by the first 8 hex chars of its SHA-256, so
 firebase.json can cache that directory for a year (immutable) without ever
@@ -33,6 +41,7 @@ markers in every public/*.html and every page under public/research, /games, /fi
   <!-- generated:portrait --> … <!-- /generated:portrait -->    <picture> markup
   <!-- generated:film-poster:<slug> --> … <!-- /… -->           a film's poster <picture>
   <!-- generated:app-preview:<slug> --> … <!-- /… -->           an app's preview <picture>
+  <!-- generated:figure:<slug>/<name> --> … <!-- /… -->         a doc figure's <picture> (or <img>, an SVG)
   <!-- generated:analytics --> … <!-- /generated:analytics -->  analytics <script>s (visits.js, vitals.js)
 
 It also writes the Content-Security-Policy in firebase.json from CSP below plus
@@ -77,6 +86,12 @@ APP_WIDTHS_PORTRAIT = (240, 480, 720)
 APP_FALLBACK_WIDTH = 360
 # What the stable poster (and the portrait) are written at: big enough to share, small enough to commit.
 STABLE_WIDTH = 720
+# A doc's figure spans the reading measure (a doc's main is 72ch, about 720px) and the screen less
+# the page's padding on a phone. Its stable copy is the share card's width.
+FIGURE_WIDTHS = (480, 720, 960, 1440)
+FIGURE_SIZES = "(max-width: 768px) calc(100vw - 48px), 720px"
+OG_SIZE = (1200, 630)
+DOCS_DIR = "research"
 CONFIG = json.loads((ROOT / ".agents/skills/site-quality/site.json").read_text())
 
 # The site's Content-Security-Policy, before analytics. Order is preserved.
@@ -159,6 +174,9 @@ FILM_BLOCK = re.compile(
 
 APP_BLOCK = re.compile(
     r"([ ]*)(<!-- generated:app-preview:([a-z0-9-]+) -->)(.*?)([ ]*)(<!-- /generated:app-preview:\3 -->)", re.S)
+
+FIGURE_BLOCK = re.compile(
+    r"(<!-- generated:figure:([a-z0-9-]+)/([a-z0-9-]+) -->)(.*?)(<!-- /generated:figure:\2/\3 -->)", re.S)
 
 
 def film_block(m, prefix, film_srcsets, film_picture):
@@ -343,6 +361,69 @@ def main() -> int:
         alt = re.search(r'alt="([^"]*)"', inner)
         return indent + m.group(2) + "\n" + app_picture(slug, prefix, alt.group(1) if alt else "", indent) + "\n" + indent + m.group(6)
 
+    # ---- doc figures, one directory a doc: assets/research/<slug>/<name>.png or .svg
+    figure_sets: dict = {}
+    fig_root = SRC / "research"
+    fig_out = PUBLIC / DOCS_DIR / "figures"
+    stable_figures: set = set()
+    for src_path in sorted(fig_root.glob("*/*")) if fig_root.is_dir() else []:
+        slug, name, ext = src_path.parent.name, src_path.stem, src_path.suffix[1:]
+        if ext not in ("png", "svg"):
+            continue
+        fig_out.mkdir(parents=True, exist_ok=True)
+        key = f"{slug}/{name}"
+        if ext == "svg":
+            data = src_path.read_bytes()
+            figure_sets[key] = {"svg": write_hashed(f"fig-{slug}-{name}", "svg", data, keep)}
+            (fig_out / f"{slug}-{name}.svg").write_bytes(data)
+            stable_figures.add(f"{slug}-{name}.svg")
+            continue
+        image = Image.open(src_path).convert("RGB")
+        ratio = image.height / image.width
+        widths = [w for w in FIGURE_WIDTHS if w <= image.width] or [image.width]
+        sets = {"avif": [], "webp": [], "jpg": []}
+        for w in widths:
+            resized = image.resize((w, round(w * ratio)), Image.Resampling.LANCZOS)
+            for fmt in sets:
+                sets[fmt].append((write_hashed(f"fig-{slug}-{name}-{w}", fmt, encode(resized, fmt), keep), w))
+        figure_sets[key] = sets
+        # The stable copy is the share card's shape, 1200x630, cut from the middle of the figure.
+        cover = max(OG_SIZE[0] / image.width, OG_SIZE[1] / image.height)
+        scaled = image.resize((round(image.width * cover), round(image.height * cover)), Image.Resampling.LANCZOS)
+        left, top = (scaled.width - OG_SIZE[0]) // 2, (scaled.height - OG_SIZE[1]) // 2
+        stable = scaled.crop((left, top, left + OG_SIZE[0], top + OG_SIZE[1]))
+        (fig_out / f"{slug}-{name}.jpg").write_bytes(encode(stable, "jpg"))
+        stable_figures.add(f"{slug}-{name}.jpg")
+    for stale in sorted(fig_out.iterdir()) if fig_out.is_dir() else []:
+        if stale.name not in stable_figures:
+            stale.unlink()
+            print(f"removed public/{DOCS_DIR}/figures/{stale.name}")
+
+    def figure_block(m, prefix):
+        """A doc figure's markup. The alt text, size and loading come from the <img> being replaced,
+        which build_docs.mjs wrote from the Markdown."""
+        key, inner = f"{m.group(2)}/{m.group(3)}", m.group(4)
+        if key not in figure_sets:
+            return m.group(0)
+        attr = lambda name: (re.search(f'{name}="([^"]*)"', inner) or [None, ""])[1]
+        alt, width, height = attr("alt"), attr("width"), attr("height")
+        lazy = ' loading="lazy"' if 'loading="lazy"' in inner else ""
+        sets = figure_sets[key]
+        if "svg" in sets:
+            body = f'<img src="{prefix}assets/{sets["svg"]}" width="{width}" height="{height}" alt="{alt}"{lazy} decoding="async" />'
+        else:
+            ss = {fmt: ", ".join(f"{prefix}assets/{n} {w}w" for n, w in items) for fmt, items in sets.items()}
+            fallback = next((n for n, w in sets["jpg"] if w == 720), sets["jpg"][-1][0])
+            body = ("<picture>\n"
+                    f'<source type="image/avif" srcset="{ss["avif"]}" sizes="{FIGURE_SIZES}" />\n'
+                    f'<source type="image/webp" srcset="{ss["webp"]}" sizes="{FIGURE_SIZES}" />\n'
+                    f'<img src="{prefix}assets/{fallback}" srcset="{ss["jpg"]}" sizes="{FIGURE_SIZES}" width="{width}" height="{height}" alt="{alt}"{lazy} decoding="async" />\n'
+                    "</picture>")
+        return m.group(1) + "\n" + body + "\n" + m.group(5)
+
+    # ---- a doc page's own script, reading.js: whole-line comments stripped, like the vendored ones
+    reading = write_hashed("reading", "js", strip_comments((SRC / "reading.js").read_bytes()), keep)
+
     # ---- fonts
     fonts = [(write_hashed(stem, "woff2", (SRC / "fonts" / f"{stem}.woff2").read_bytes(), keep), family, weights, preload)
              for stem, (family, weights, preload) in FONTS.items()]
@@ -379,11 +460,13 @@ def main() -> int:
         vitals = write_hashed("vitals", "js", strip_comments((SRC / "vendor/vitals.min.js").read_bytes()), keep)
 
     def analytics_block(prefix, slug):
+        # A doc page also loads reading.js, after the visits script whose `visits.send` it calls.
+        own = f'\n  <script defer src="{prefix}assets/{reading}"></script>' if slug else ""
         if not core:
-            return ""
+            return own + "\n  " if own else ""
         return (
             f'\n  <script defer src="{prefix}assets/{core}" data-visits="{conf["endpoint"]}"></script>'
-            f'\n  <script defer src="{prefix}assets/{vitals}"></script>\n  '
+            f'\n  <script defer src="{prefix}assets/{vitals}"></script>{own}\n  '
         )
 
     # ---- Content-Security-Policy in firebase.json
@@ -431,6 +514,7 @@ def main() -> int:
             html = re.sub(f"({start})(.*?)({end})", lambda m: m.group(1) + body + m.group(3), html, flags=re.S)
         html = FILM_BLOCK.sub(lambda m: film_block(m, prefix, film_srcsets, film_picture), html)
         html = APP_BLOCK.sub(lambda m: app_block(m, prefix), html)
+        html = FIGURE_BLOCK.sub(lambda m: figure_block(m, prefix), html)
         if html != before:
             page.write_text(html, encoding="utf-8")
             print(f"rewrote generated blocks in public/{page.relative_to(PUBLIC)}")

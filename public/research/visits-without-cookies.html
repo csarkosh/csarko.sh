@@ -20,6 +20,7 @@
   <meta property="article:published_time" content="2026-10-15" />
   <meta property="article:modified_time" content="2026-10-15" />
   <meta property="article:author" content="https://csarko.sh/" />
+  <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Visits without cookies, and the path they took" />
   <meta name="twitter:description" content="What a cookieless counter can know, what more a page says without fingerprinting, where the journey hides, and a 3 KB client with a Rust collector." />
@@ -127,6 +128,8 @@
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
+      /* A doc's body text: brighter than --muted, which reads as grey at length (2026-10-23). */
+      --prose: #c9ced9;
       --faint: #7d8597;
       /* Content warnings only. Yellow to stand apart from the teal accent. */
       --warning: #f5c451;
@@ -156,6 +159,7 @@
         --border-strong: rgba(10, 11, 14, 0.16);
         --text: #12151c;
         --muted: #4a5263;
+        --prose: #2b3240;
         --faint: #5f677a;
         --warning: #8a6100;
         --accent: #0a735f;
@@ -347,6 +351,57 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .doc-page .prose { font-size: 17px; }
+    .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
+    .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
+    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .rail a[aria-current] { color: var(--text); }
+    .rail a[aria-current] .num { color: var(--accent); }
+    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .toc .section-label { margin: 0 0 6px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
+    .toc a:hover { color: var(--accent); }
+    .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    .figure { margin: 32px 0; }
+    .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+    /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
+    .figure img { max-height: 80vh; object-fit: contain; }
+    .figure figcaption { margin-top: 10px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+    .prose blockquote strong:first-child { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted var(--faint); text-underline-offset: 4px; }
+    .term:hover, .term:focus-visible { text-decoration-color: var(--accent); }
+    .term-def { max-width: min(92vw, 420px); margin: auto; padding: 16px 18px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.55; }
+    .term-def::backdrop { background: var(--nav-bg); }
+    /* A wide table or code block that scrolls sideways shows a shade at the edge it can scroll to. */
+    .scroll { background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
+      var(--surface); }
+    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
+    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
+    .series-name { margin: 0 0 8px; font-weight: 600; }
+    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
+    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
+    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
+    .next-list .card { padding: 16px 18px; background: var(--bg); }
+    .next-list .doc-title { font-size: 1.05rem; }
+    .next-list .doc-desc { font-size: 14.5px; }
+    .play-line { margin: 20px 0 0; }
+    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background .15s ease; }
+    .play:hover { background: var(--accent-hover); }
+    .play svg { width: 14px; height: 14px; }
+    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
+    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color .15s ease; }
+    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
+    .afterward .next:hover { border-color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -382,27 +437,43 @@
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-        <li><a href="#what-a-cookieless-counter-knows-today"><span class="num" aria-hidden="true">01</span><span>What a cookieless counter knows today</span></a></li>
-        <li><a href="#what-the-browser-will-say-without-being-asked-twice"><span class="num" aria-hidden="true">02</span><span>What the browser will say without being asked twice</span></a></li>
-        <li><a href="#the-journey-is-already-in-the-referrer"><span class="num" aria-hidden="true">03</span><span>The journey is already in the referrer</span></a></li>
-        <li><a href="#field-vitals-the-thing-lab-tools-cannot-give"><span class="num" aria-hidden="true">04</span><span>Field vitals, the thing lab tools cannot give</span></a></li>
-        <li><a href="#where-the-line-is"><span class="num" aria-hidden="true">05</span><span>Where the line is</span></a></li>
-        <li><a href="#the-design-that-follows"><span class="num" aria-hidden="true">06</span><span>The design that follows</span></a></li>
-        <li><a href="#what-is-left-open"><span class="num" aria-hidden="true">07</span><span>What is left open</span></a></li>
-        <li><a href="#sources"><span class="num" aria-hidden="true">08</span><span>Sources</span></a></li>
+        <li><a href="#what-a-cookieless-counter-knows-today" data-visits-event="toc-rail"><span class="num" aria-hidden="true">01</span><span>What a cookieless counter knows today</span></a></li>
+        <li><a href="#what-the-browser-will-say-without-being-asked-twice" data-visits-event="toc-rail"><span class="num" aria-hidden="true">02</span><span>What the browser will say without being asked twice</span></a></li>
+        <li><a href="#the-journey-is-already-in-the-referrer" data-visits-event="toc-rail"><span class="num" aria-hidden="true">03</span><span>The journey is already in the referrer</span></a></li>
+        <li><a href="#field-vitals-the-thing-lab-tools-cannot-give" data-visits-event="toc-rail"><span class="num" aria-hidden="true">04</span><span>Field vitals, the thing lab tools cannot give</span></a></li>
+        <li><a href="#where-the-line-is" data-visits-event="toc-rail"><span class="num" aria-hidden="true">05</span><span>Where the line is</span></a></li>
+        <li><a href="#the-design-that-follows" data-visits-event="toc-rail"><span class="num" aria-hidden="true">06</span><span>The design that follows</span></a></li>
+        <li><a href="#what-is-left-open" data-visits-event="toc-rail"><span class="num" aria-hidden="true">07</span><span>What is left open</span></a></li>
+        <li><a href="#sources" data-visits-event="toc-rail"><span class="num" aria-hidden="true">08</span><span>Sources</span></a></li>
       </ol>
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
         <p class="eyebrow">Oct 15, 2026 · Updated Oct 15, 2026</p>
         <h1>Visits without cookies, and the path they took</h1>
+        <p class="lead">What a cookieless counter can know, what more a page says without fingerprinting, where the journey hides, and a 3 KB client with a Rust collector.</p>
         <ul class="tags">
           <li>15 min read</li>
         </ul>
+        <p class="series-line">Part 3 of 3 in <strong>Analytics without cookies</strong> · Previous: <a href="/research/telemetry-without-identifying-anyone" data-visits-event="series-telemetry-without-identifying-anyone">Privacy-first telemetry without user IDs</a></p>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> How does a web analytics counter such as GoatCounter tell visits apart without a cookie; what else can a page report without fingerprinting the visitor; can the path a visit took through a site be reconstructed from that; and what would a replacement look like, if it had to be a few kilobytes in the browser and run anywhere as one binary?</p>
 <p><strong>Short answer:</strong> GoatCounter&#39;s client sends the path, referrer, title, query string and screen width, and the server derives browser, system, country and language from the request itself; a visit is the concatenation of site, User-Agent and IP address held in memory for eight hours and mapped to a random id, with the IP and User-Agent never written to disk <a class="cite" href="#ref-1">[1]</a>, <a class="cite" href="#ref-2">[2]</a>. That is the ceiling of what a counter can know about a person without storing anything in their browser, and it is a day-sized ceiling: nothing links two days. Within it, a page can add a good deal the browser will say unasked: viewport and pixel ratio, the colour scheme and motion preference, touch, timezone, the navigation type, how long the page was visible, how far it was scrolled, and real-user Core Web Vitals, all without touching any API that identifies a device. The journey needs no new data at all: a same-site referrer is the previous page, and GoatCounter discards it. The line past which this stops being a counter is fingerprinting, which the Article 29 Working Party placed inside Article 5(3) of the ePrivacy Directive in 2014 and the EDPB&#39;s 2024 guidelines reaffirm; those guidelines also read the article broadly enough to cover JavaScript sending &quot;targeted information&quot; and, in some cases, an IP address alone, while noting that applicability does not by itself mean consent is required <a class="cite" href="#ref-3">[3]</a>. The design that follows, <code>lib-visits</code>, is a client of 3,068 bytes minified plus an optional 995-byte Web Vitals module, against the 9,373 bytes of <code>count.js</code> served today, and a Rust collector that runs as one static binary and emits decorated events as JSON lines, with the visit as a stateless keyed hash of the day, the address and the User-Agent.</p>
+      </div>
+      <nav class="toc" aria-label="In this doc">
+        <p class="section-label">In this doc</p>
+        <ol>
+          <li><a href="#what-a-cookieless-counter-knows-today" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>What a cookieless counter knows today</span></a></li>
+          <li><a href="#what-the-browser-will-say-without-being-asked-twice" data-visits-event="toc"><span class="num" aria-hidden="true">02</span><span>What the browser will say without being asked twice</span></a></li>
+          <li><a href="#the-journey-is-already-in-the-referrer" data-visits-event="toc"><span class="num" aria-hidden="true">03</span><span>The journey is already in the referrer</span></a></li>
+          <li><a href="#field-vitals-the-thing-lab-tools-cannot-give" data-visits-event="toc"><span class="num" aria-hidden="true">04</span><span>Field vitals, the thing lab tools cannot give</span></a></li>
+          <li><a href="#where-the-line-is" data-visits-event="toc"><span class="num" aria-hidden="true">05</span><span>Where the line is</span></a></li>
+          <li><a href="#the-design-that-follows" data-visits-event="toc"><span class="num" aria-hidden="true">06</span><span>The design that follows</span></a></li>
+          <li><a href="#what-is-left-open" data-visits-event="toc"><span class="num" aria-hidden="true">07</span><span>What is left open</span></a></li>
+        </ol>
+      </nav>
+      <div class="prose">
 <div class="section-head"><p class="section-label">01</p><h2 id="what-a-cookieless-counter-knows-today"><a class="anchor" href="#what-a-cookieless-counter-knows-today">What a cookieless counter knows today</a></h2></div>
 <p>GoatCounter&#39;s <code>count.js</code> is 9,373 bytes unminified and sends one request per hit, a <code>GET</code> whose query string carries <code>p</code> (the path, preferring a same-host <code>&lt;link rel=canonical&gt;</code>), <code>r</code> (the referrer), <code>t</code> (the title), <code>e</code> (an event flag for <code>data-goatcounter-click</code> elements), <code>s</code> (<code>screen.width</code>, the width only), <code>b</code> (a bot code, 150 to 153, for PhantomJS, Nightmare, Selenium and <code>navigator.webdriver</code>), <code>q</code> (<code>location.search</code>, the whole query string) and <code>rnd</code>, a random string &quot;to avoid caching&quot; <a class="cite" href="#ref-4">[4]</a>. It sends with <code>navigator.sendBeacon</code> and falls back to a one-pixel <code>&lt;img&gt;</code>, which the code comments say exists because the beacon &quot;mostly fails due to being blocked by CSP&quot; <a class="cite" href="#ref-4">[4]</a>. It skips prerendered pages, iframes and local hosts, and it reads <code>localStorage</code> once: a <code>skipgc</code> key, set by loading any page with <code>#toggle-goatcounter</code>, silences it in that browser <a class="cite" href="#ref-4">[4]</a>. So even the reference cookieless counter touches storage, for the visitor&#39;s own opt-out.</p>
 <p>Everything else is the server&#39;s. The privacy policy lists what is stored: browsers and systems &quot;based on headers sent by the browser&quot;, locations &quot;based on IP address&quot;, languages, and screen widths, each as a separate per-day aggregate with &quot;no way to link data between them&quot;; pageviews and referrers per hour; and, only if a site turns it on, individual pageviews with a session id, an entry flag, a bot flag and the same derived fields <a class="cite" href="#ref-2">[2]</a>. &quot;Only the end result is stored (browser name and version) and not the source where we retrieved it from (User-Agent header)&quot; <a class="cite" href="#ref-2">[2]</a>.</p>
@@ -481,6 +552,30 @@
 <p><strong>The access-log mode</strong> is why the <code>GET</code> switch exists. A host that runs nginx, Caddy or a CDN can serve the beacon path as a static <code>204</code> and let the access log be the event store, since the log line already holds the time, the address, the User-Agent, the referrer and the query the client sent. The same decoration can then run offline over the log. The cost is stated plainly: the raw log holds the IP until the log is rotated, where the running collector never writes it.</p>
 <div class="section-head"><p class="section-label">07</p><h2 id="what-is-left-open"><a class="anchor" href="#what-is-left-open">What is left open</a></h2></div>
 <p>Whether to honour Global Privacy Control or the deprecated Do Not Track signal by not counting at all: the counting is anonymous, GoatCounter does not, and a site with a developer audience would lose a visible share of its numbers; the library leaves it off and will revisit if a host asks. Whether Safari&#39;s and Firefox&#39;s referrer trimming ever shortens a same-site referrer to its origin, which would cut the journey&#39;s edges; the author has not measured it and the first weeks of data will say. And how much of a site&#39;s traffic the crawler list misses: GoatCounter does &quot;some additional filtering on the backend&quot; <a class="cite" href="#ref-4">[4]</a> beyond the client&#39;s four codes, and a short User-Agent substring list is a floor, not a solution.</p>
+      </div>
+      <section class="keep-reading" aria-labelledby="next-reads">
+        <h2 id="next-reads" class="section-label">Keep reading</h2>
+        <p class="series-name">Analytics without cookies · 3 parts</p>
+        <ol class="series-parts">
+          <li><a href="/research/a-zero-cost-analytics-dashboard-without-cookies" data-visits-event="next-a-zero-cost-analytics-dashboard-without-cookies">A zero-cost analytics dashboard without cookies</a></li>
+          <li><a href="/research/telemetry-without-identifying-anyone" data-visits-event="next-telemetry-without-identifying-anyone">Privacy-first telemetry without user IDs</a></li>
+          <li aria-current="true"><span>Visits without cookies, and the path they took</span></li>
+        </ol>
+        <ul class="doc-list next-list" role="list">
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/large-files-out-of-git" data-visits-event="next-large-files-out-of-git">Git LFS on a cloud bucket, not GitHub&#39;s storage</a></h3>
+            <p class="doc-meta">11 min read</p>
+            <p class="doc-desc">Git LFS is not tied to GitHub. How its endpoint is discovered, three ways to put a cloud bucket behind it, and when to skip LFS entirely.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/bring-the-agents-back-after-a-reboot" data-visits-event="next-bring-the-agents-back-after-a-reboot">Bring the agents back after a reboot</a></h3>
+            <p class="doc-meta">17 min read</p>
+            <p class="doc-desc">After a restart nothing survives, but the layout, scrollback and each agent&#39;s conversation can come back on their own; how Claude Code and Codex differ.</p>
+          </li>
+        </ul>
+        <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS) or <a class="external" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">csarko.log</a>.</p>
+      </section>
+      <div class="prose">
 <div class="section-head" data-read-end><p class="section-label">08</p><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <ol class="references">
 <li id="ref-1"><span class="ref-num">[1]</span><div>GoatCounter, &quot;Sessions and visitors,&quot; GoatCounter documentation. Accessed: Oct. 15, 2026. [Online]. Available: <a class="external" href="https://web.archive.org/web/20260105182243/https://www.goatcounter.com/help/sessions" target="_blank" rel="noopener">https://web.archive.org/web/20260105182243/https://www.goatcounter.com/help/sessions</a></div></li>
@@ -495,7 +590,6 @@
 <li id="ref-10"><span class="ref-num">[10]</span><div>GoogleChrome, &quot;InteractionManager.ts,&quot; GitHub repository GoogleChrome/web-vitals, src/lib/InteractionManager.ts. Accessed: Oct. 15, 2026. [Online]. Available: <a class="external" href="https://github.com/GoogleChrome/web-vitals/blob/main/src/lib/InteractionManager.ts" target="_blank" rel="noopener">https://github.com/GoogleChrome/web-vitals/blob/main/src/lib/InteractionManager.ts</a></div></li>
 <li id="ref-11"><span class="ref-num">[11]</span><div>GoogleChrome, &quot;onINP.ts,&quot; GitHub repository GoogleChrome/web-vitals, src/onINP.ts. Accessed: Oct. 15, 2026. [Online]. Available: <a class="external" href="https://github.com/GoogleChrome/web-vitals/blob/main/src/onINP.ts" target="_blank" rel="noopener">https://github.com/GoogleChrome/web-vitals/blob/main/src/onINP.ts</a></div></li>
 </ol>
-
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
@@ -503,6 +597,10 @@
         <p>Senior software engineer leading distributed systems and AI products.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
+      <nav class="afterward" aria-label="Read next">
+        <a class="next" href="/research/large-files-out-of-git" data-visits-event="end-large-files-out-of-git"><span class="section-label">Read next</span><span>Git LFS on a cloud bucket, not GitHub&#39;s storage <span aria-hidden="true">→</span></span></a>
+        <a href="/research">All research</a>
+      </nav>
     </main>
   </div>
 
@@ -515,6 +613,7 @@
   <!-- generated:analytics -->
   <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
+  <script defer src="/assets/reading.c3e27b33.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

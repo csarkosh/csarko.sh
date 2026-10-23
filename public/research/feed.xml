@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Research &amp; notes · Cyrus Sarkosh</title>
+  <subtitle>Research notes and specs by Cyrus Sarkosh on game development, generative AI for media, and the software behind them.</subtitle>
+  <link href="https://csarko.sh/research" />
+  <link rel="self" href="https://csarko.sh/research/feed.xml" />
+  <id>https://csarko.sh/research</id>
+  <updated>2026-10-23T00:00:00Z</updated>
+  <author><name>Cyrus Sarkosh</name><uri>https://csarko.sh/</uri></author>
+  <entry>
+    <title>How Horror Directors Build Dread Shot by Shot</title>
+    <link href="https://csarko.sh/research/horror-cinematography-shot-by-shot" />
+    <id>https://csarko.sh/research/horror-cinematography-shot-by-shot</id>
+    <published>2026-10-22T00:00:00Z</published>
+    <updated>2026-10-22T00:00:00Z</updated>
+    <summary>How Hitchcock, Kubrick, Carpenter, Nakata, Aster and Eggers build dread: the three levers, a feeling-to-technique table, 30 director profiles, 168 sources.</summary>
+    <category term="Film" />
+  </entry>
+  <entry>
+    <title>23 Horror Sequences Broken Down Shot by Shot</title>
+    <link href="https://csarko.sh/research/horror-sequences-shot-by-shot" />
+    <id>https://csarko.sh/research/horror-sequences-shot-by-shot</id>
+    <published>2026-10-22T00:00:00Z</published>
+    <updated>2026-10-22T00:00:00Z</updated>
+    <summary>Shot-by-shot breakdowns of 23 horror sequences, from the Psycho shower to Weapons: sizes, moves, durations, cut points, and what each one teaches.</summary>
+    <category term="Film" />
+  </entry>
+  <entry>
+    <title>A painted look over a photoreal render: WebGPU against WebGL2</title>
+    <link href="https://csarko.sh/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" />
+    <id>https://csarko.sh/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2</id>
+    <published>2026-10-17T00:00:00Z</published>
+    <updated>2026-10-17T00:00:00Z</updated>
+    <summary>Laying a painted look, a stroke filter and a palette grade, over a physically based browser render, and the four places WebGPU and WebGL2 part ways doing it.</summary>
+    <category term="Rendering" />
+  </entry>
+  <entry>
+    <title>Scene depth for a post process: WebGPU against WebGL2</title>
+    <link href="https://csarko.sh/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" />
+    <id>https://csarko.sh/research/scene-depth-for-a-post-process-webgpu-vs-webgl2</id>
+    <published>2026-10-16T00:00:00Z</published>
+    <updated>2026-10-17T00:00:00Z</updated>
+    <summary>Getting per-pixel scene depth to a post process on WebGPU and WebGL2, and the six places the two APIs part ways, from shader uniformity to a lost GPU.</summary>
+    <category term="Rendering" />
+  </entry>
+  <entry>
+    <title>A full far field: how games fill the distance</title>
+    <link href="https://csarko.sh/research/full-far-field-for-browser-worlds" />
+    <id>https://csarko.sh/research/full-far-field-for-browser-worlds</id>
+    <published>2026-10-15T00:00:00Z</published>
+    <updated>2026-10-15T00:00:00Z</updated>
+    <summary>How shipped open-world games keep the distance looking full, from far terrain and vegetation to the camera-side tricks that hide the seams, for a browser frame.</summary>
+    <category term="Rendering" />
+    <category term="Worlds and terrain" />
+  </entry>
+  <entry>
+    <title>Privacy-first telemetry without user IDs</title>
+    <link href="https://csarko.sh/research/telemetry-without-identifying-anyone" />
+    <id>https://csarko.sh/research/telemetry-without-identifying-anyone</id>
+    <published>2026-10-15T00:00:00Z</published>
+    <updated>2026-10-18T00:00:00Z</updated>
+    <summary>A privacy-first telemetry design for a desktop IDE: counters and coarse dimensions, no IDs, opt-in consent, crash reports, and legal baselines.</summary>
+    <category term="Distributed systems" />
+    <category term="Tooling" />
+  </entry>
+  <entry>
+    <title>Visits without cookies, and the path they took</title>
+    <link href="https://csarko.sh/research/visits-without-cookies" />
+    <id>https://csarko.sh/research/visits-without-cookies</id>
+    <published>2026-10-15T00:00:00Z</published>
+    <updated>2026-10-15T00:00:00Z</updated>
+    <summary>What a cookieless counter can know, what more a page says without fingerprinting, where the journey hides, and a 3 KB client with a Rust collector.</summary>
+    <category term="Distributed systems" />
+    <category term="Tooling" />
+  </entry>
+  <entry>
+    <title>Bring the agents back after a reboot</title>
+    <link href="https://csarko.sh/research/bring-the-agents-back-after-a-reboot" />
+    <id>https://csarko.sh/research/bring-the-agents-back-after-a-reboot</id>
+    <published>2026-10-14T00:00:00Z</published>
+    <updated>2026-10-14T00:00:00Z</updated>
+    <summary>After a restart nothing survives, but the layout, scrollback and each agent&#39;s conversation can come back on their own; how Claude Code and Codex differ.</summary>
+    <category term="AI" />
+    <category term="Tooling" />
+  </entry>
+  <entry>
+    <title>Update the IDE, keep the shells</title>
+    <link href="https://csarko.sh/research/update-the-ide-keep-the-shells" />
+    <id>https://csarko.sh/research/update-the-ide-keep-the-shells</id>
+    <published>2026-10-14T00:00:00Z</published>
+    <updated>2026-10-14T00:00:00Z</updated>
+    <summary>Why an IDE update kills the shells and Claude Code agents inside it, which tools keep them, what execve preserves, and how a daemon can swap itself in place.</summary>
+    <category term="Tooling" />
+  </entry>
+  <entry>
+    <title>A zero-cost analytics dashboard without cookies</title>
+    <link href="https://csarko.sh/research/a-zero-cost-analytics-dashboard-without-cookies" />
+    <id>https://csarko.sh/research/a-zero-cost-analytics-dashboard-without-cookies</id>
+    <published>2026-10-13T00:00:00Z</published>
+    <updated>2026-10-13T00:00:00Z</updated>
+    <summary>Whether a personal site is gaining traction, with no cookies and no monthly bill: the metrics, free sources, one API per app, a daily ledger, and the gotchas.</summary>
+    <category term="Distributed systems" />
+    <category term="Tooling" />
+  </entry>
+  <entry>
+    <title>Dark mode and headaches: check your eyes first</title>
+    <link href="https://csarko.sh/research/check-your-eyes-before-your-theme" />
+    <id>https://csarko.sh/research/check-your-eyes-before-your-theme</id>
+    <published>2026-10-13T00:00:00Z</published>
+    <updated>2026-10-18T00:00:00Z</updated>
+    <summary>What the evidence says about dark mode, contrast, line spacing, font size, blue light, flicker, breaks and the eye exam for a developer&#39;s screen headaches.</summary>
+    <category term="Tooling" />
+  </entry>
+  <entry>
+    <title>Soft shade, bark and moss for browser forests</title>
+    <link href="https://csarko.sh/research/soft-shade-bark-and-moss-for-browser-forests" />
+    <id>https://csarko.sh/research/soft-shade-bark-and-moss-for-browser-forests</id>
+    <published>2026-10-13T00:00:00Z</published>
+    <updated>2026-10-13T00:00:00Z</updated>
+    <summary>How AAA games soften and lighten forest shade, texture and shade bark so it stops looking shiny, and grow moss on trunks, sized for a browser frame.</summary>
+    <category term="Rendering" />
+  </entry>
+  <entry>
+    <title>Rock on steep terrain: shape it, cover it, or skin it</title>
+    <link href="https://csarko.sh/research/rock-on-steep-terrain-shape-it-cover-it-or-skin-it" />
+    <id>https://csarko.sh/research/rock-on-steep-terrain-shape-it-cover-it-or-skin-it</id>
+    <published>2026-10-12T00:00:00Z</published>
+    <updated>2026-10-12T00:00:00Z</updated>
+    <summary>Three ways to put rock on a height field&#39;s steep faces, measured in a browser game: paint and cliff kits, relief in the height field, or a finer displaced skin.</summary>
+    <category term="Rendering" />
+    <category term="Worlds and terrain" />
+  </entry>
+  <entry>
+    <title>A full far ground without drawing it</title>
+    <link href="https://csarko.sh/research/a-full-far-ground-without-drawing-it" />
+    <id>https://csarko.sh/research/a-full-far-ground-without-drawing-it</id>
+    <published>2026-10-09T00:00:00Z</published>
+    <updated>2026-10-09T00:00:00Z</updated>
+    <summary>Cheap GPU tricks that make a game&#39;s far ground read as full of grass and cover without drawing blades there: fitted colour, sun-shaded clumps, sparse cards.</summary>
+    <category term="Rendering" />
+  </entry>
+  <entry>
+    <title>Rock formations of the Olympic Peninsula, and how games build them</title>
+    <link href="https://csarko.sh/research/rock-formations-of-the-olympic-peninsula" />
+    <id>https://csarko.sh/research/rock-formations-of-the-olympic-peninsula</id>
+    <published>2026-10-09T00:00:00Z</published>
+    <updated>2026-10-09T00:00:00Z</updated>
+    <summary>How the Olympic Peninsula&#39;s crags, talus, cirques and sea stacks formed and what they look like, and how AAA games build rock formations that convince.</summary>
+    <category term="Worlds and terrain" />
+  </entry>
+  <entry>
+    <title>Olympic Peninsula lakes for game worlds</title>
+    <link href="https://csarko.sh/research/olympic-lakes-for-game-worlds" />
+    <id>https://csarko.sh/research/olympic-lakes-for-game-worlds</id>
+    <published>2026-10-08T00:00:00Z</published>
+    <updated>2026-10-08T00:00:00Z</updated>
+    <summary>How the lakes of Washington&#39;s Olympic Peninsula formed, their measured shapes and perched cirque basins, and numeric rules for generating them in a game world.</summary>
+    <category term="Worlds and terrain" />
+  </entry>
+  <entry>
+    <title>Volumetric ground fog without the sprite wall</title>
+    <link href="https://csarko.sh/research/ground-fog-without-the-wall" />
+    <id>https://csarko.sh/research/ground-fog-without-the-wall</id>
+    <published>2026-10-07T00:00:00Z</published>
+    <updated>2026-10-23T00:00:00Z</updated>
+    <summary>How AAA engines draw ground fog as a frustum-aligned volume instead of sprites, what it costs, where it ghosts, and which of it a browser game can run.</summary>
+    <category term="Rendering" />
+  </entry>
+  <entry>
+    <title>How Alan Wake introduces its darkness</title>
+    <link href="https://csarko.sh/research/how-alan-wake-introduces-its-darkness" />
+    <id>https://csarko.sh/research/how-alan-wake-introduces-its-darkness</id>
+    <published>2026-10-06T00:00:00Z</published>
+    <updated>2026-10-06T00:00:00Z</updated>
+    <summary>How Alan Wake and Alan Wake 2 introduce their evil, voice it in whispers and haunt the player with shadows, and what a game can borrow from each.</summary>
+    <category term="Game design" />
+  </entry>
+  <entry>
+    <title>Building dread toward a late reveal in horror games</title>
+    <link href="https://csarko.sh/research/building-dread-toward-a-late-reveal" />
+    <id>https://csarko.sh/research/building-dread-toward-a-late-reveal</id>
+    <published>2026-10-05T00:00:00Z</published>
+    <updated>2026-10-05T00:00:00Z</updated>
+    <summary>How horror games make a late monster reveal feel earned, with traces, sound and pacing, and what to do with a mechanic that punishes looking at the monster.</summary>
+    <category term="Game design" />
+  </entry>
+  <entry>
+    <title>Olympic Peninsula vegetation for game worlds</title>
+    <link href="https://csarko.sh/research/olympic-vegetation-for-games" />
+    <id>https://csarko.sh/research/olympic-vegetation-for-games</id>
+    <published>2026-10-04T00:00:00Z</published>
+    <updated>2026-10-04T00:00:00Z</updated>
+    <summary>What grows where on Washington&#39;s Olympic Peninsula, from drift logs to heather, and how to turn it into placement rules and models for a game world.</summary>
+    <category term="Worlds and terrain" />
+  </entry>
+  <entry>
+    <title>Photorealistic rain for browser games</title>
+    <link href="https://csarko.sh/research/photorealistic-rain-for-browser-games" />
+    <id>https://csarko.sh/research/photorealistic-rain-for-browser-games</id>
+    <published>2026-09-30T00:00:00Z</published>
+    <updated>2026-09-30T00:00:00Z</updated>
+    <summary>A survey of how AAA games render rain, from streaks to wet ground, splashes, canopy drip and lens drops, and how to build it on a browser frame budget.</summary>
+    <category term="Rendering" />
+  </entry>
+  <entry>
+    <title>Opening a game like a film: sixty seconds of drive, radio and dread</title>
+    <link href="https://csarko.sh/research/opening-a-game-like-a-film" />
+    <id>https://csarko.sh/research/opening-a-game-like-a-film</id>
+    <published>2026-09-29T00:00:00Z</published>
+    <updated>2026-09-29T00:00:00Z</updated>
+    <summary>How films open on a drive, a call and a wrong note; what makes sixty rendered seconds read as cinema; and what a game must load behind its first minute.</summary>
+    <category term="Game design" />
+    <category term="Film" />
+  </entry>
+  <entry>
+    <title>Photorealistic water rendering: lakes and oceans</title>
+    <link href="https://csarko.sh/research/photorealistic-water-rendering" />
+    <id>https://csarko.sh/research/photorealistic-water-rendering</id>
+    <published>2026-09-29T00:00:00Z</published>
+    <updated>2026-10-23T00:00:00Z</updated>
+    <summary>Water reads as real through light more than waves: a mirror past 20 m, FFT seas at 0.1 to 2 ms, baked breakers, and what WebGPU and WebGL2 can afford.</summary>
+    <category term="Rendering" />
+  </entry>
+  <entry>
+    <title>Synthetic voices for a radio call</title>
+    <link href="https://csarko.sh/research/synthetic-voices-for-a-radio-call" />
+    <id>https://csarko.sh/research/synthetic-voices-for-a-radio-call</id>
+    <published>2026-09-29T00:00:00Z</published>
+    <updated>2026-09-29T00:00:00Z</updated>
+    <summary>Text-to-speech for a game&#39;s radio call in 2026: the models that take direction, what gives them away, the radio chain, licences, cost, cloning your own voice.</summary>
+    <category term="AI" />
+    <category term="Game design" />
+    <category term="Film" />
+  </entry>
+  <entry>
+    <title>WebGPU vs WebGL2: what changes and what does not</title>
+    <link href="https://csarko.sh/research/webgpu-vs-webgl2" />
+    <id>https://csarko.sh/research/webgpu-vs-webgl2</id>
+    <published>2026-09-27T00:00:00Z</published>
+    <updated>2026-10-23T00:00:00Z</updated>
+    <summary>WebGPU vs WebGL2, measured in a Babylon.js game: 1.3 to 1.5 ms faster per frame at native resolution, 9.9 ms at 4x the pixels, for 2.7 MB of shader translators.</summary>
+    <category term="Rendering" />
+  </entry>
+  <entry>
+    <title>Grass fullness without thinning the field</title>
+    <link href="https://csarko.sh/research/grass-fullness-without-thinning" />
+    <id>https://csarko.sh/research/grass-fullness-without-thinning</id>
+    <published>2026-09-26T00:00:00Z</published>
+    <updated>2026-09-26T00:00:00Z</updated>
+    <summary>Why near grass reads bare from a first-person eye, what fixing it cost in a Babylon.js game, and the GPU techniques that win the frame back without thinning.</summary>
+    <category term="Rendering" />
+  </entry>
+  <entry>
+    <title>Reverse engineering an AI horror short</title>
+    <link href="https://csarko.sh/research/reverse-engineering-an-ai-horror-short" />
+    <id>https://csarko.sh/research/reverse-engineering-an-ai-horror-short</id>
+    <published>2026-09-26T00:00:00Z</published>
+    <updated>2026-10-23T00:00:00Z</updated>
+    <summary>A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe.</summary>
+    <category term="AI" />
+    <category term="Film" />
+  </entry>
+  <entry>
+    <title>Why a voice profile didn&#39;t get Claude past Substack&#39;s AI check</title>
+    <link href="https://csarko.sh/research/voice-profile-vs-pangram" />
+    <id>https://csarko.sh/research/voice-profile-vs-pangram</id>
+    <published>2026-09-24T00:00:00Z</published>
+    <updated>2026-09-24T00:00:00Z</updated>
+    <summary>A Claude draft written to its author&#39;s voice profile scored 100% AI on Substack&#39;s Pangram check. Why, and the workflow that replaced it.</summary>
+    <category term="AI" />
+    <category term="Tooling" />
+  </entry>
+  <entry>
+    <title>Git LFS on a cloud bucket, not GitHub&#39;s storage</title>
+    <link href="https://csarko.sh/research/large-files-out-of-git" />
+    <id>https://csarko.sh/research/large-files-out-of-git</id>
+    <published>2026-09-17T00:00:00Z</published>
+    <updated>2026-10-23T00:00:00Z</updated>
+    <summary>Git LFS is not tied to GitHub. How its endpoint is discovered, three ways to put a cloud bucket behind it, and when to skip LFS entirely.</summary>
+    <category term="Distributed systems" />
+    <category term="Tooling" />
+  </entry>
+  <entry>
+    <title>AI short films: consistent characters and sets</title>
+    <link href="https://csarko.sh/research/ai-short-film-generation" />
+    <id>https://csarko.sh/research/ai-short-film-generation</id>
+    <published>2026-09-16T00:00:00Z</published>
+    <updated>2026-10-23T00:00:00Z</updated>
+    <summary>2026 AI video can make one convincing short, but no model locks an actor and a room across a series. Where each tool fails, and the 3D-first build that holds.</summary>
+    <category term="AI" />
+    <category term="Film" />
+  </entry>
+  <entry>
+    <title>Atmosphere and dread shaders for horror games</title>
+    <link href="https://csarko.sh/research/atmosphere-and-dread-shaders" />
+    <id>https://csarko.sh/research/atmosphere-and-dread-shaders</id>
+    <published>2026-09-15T00:00:00Z</published>
+    <updated>2026-10-23T00:00:00Z</updated>
+    <summary>Atmospheric games stack height fog, a neutral tone map and grade, and a film finish on photoreal light; Babylon.js does nearly all of it at 60 fps.</summary>
+    <category term="Rendering" />
+    <category term="Game design" />
+  </entry>
+  <entry>
+    <title>Grass, wind and trails in a browser meadow</title>
+    <link href="https://csarko.sh/research/grass-and-trail-realism" />
+    <id>https://csarko.sh/research/grass-and-trail-realism</id>
+    <published>2026-09-15T00:00:00Z</published>
+    <updated>2026-10-23T00:00:00Z</updated>
+    <summary>Flat game grass is a grounding failure, not a triangle count: ground tint, clumping, one wind field and a banded trail fix it in Babylon.js at 60 Hz.</summary>
+    <category term="Rendering" />
+  </entry>
+  <entry>
+    <title>Stylized shader looks: how games build a visual identity</title>
+    <link href="https://csarko.sh/research/stylized-shader-looks" />
+    <id>https://csarko.sh/research/stylized-shader-looks</id>
+    <published>2026-09-14T00:00:00Z</published>
+    <updated>2026-10-23T00:00:00Z</updated>
+    <summary>Memorable game looks come from one or two strong shader rules applied everywhere: ink outlines, cel bands, dithering, gradient fog or VHS.</summary>
+    <category term="Rendering" />
+  </entry>
+  <entry>
+    <title>No visible pop-in: dissolving a streamed forest</title>
+    <link href="https://csarko.sh/research/no-visible-pop-in" />
+    <id>https://csarko.sh/research/no-visible-pop-in</id>
+    <published>2026-09-01T00:00:00Z</published>
+    <updated>2026-10-10T00:00:00Z</updated>
+    <summary>Keeping a streamed browser forest from visibly spawning: pixel-size arithmetic, screen-space dissolve bands, and what discard costs in opaque shaders.</summary>
+    <category term="Rendering" />
+  </entry>
+  <entry>
+    <title>Why props float on procedural terrain</title>
+    <link href="https://csarko.sh/research/floating-props-on-procedural-terrain" />
+    <id>https://csarko.sh/research/floating-props-on-procedural-terrain</id>
+    <published>2026-08-29T00:00:00Z</published>
+    <updated>2026-10-10T00:00:00Z</updated>
+    <summary>Why trees float on slopes and distant ridges in a procedural world, measured, and the shader and clipmap fixes that grounded them in Babylon.js.</summary>
+    <category term="Rendering" />
+    <category term="Worlds and terrain" />
+  </entry>
+  <entry>
+    <title>Pointer lock fails after Esc: an 8-byte fix</title>
+    <link href="https://csarko.sh/research/pointer-lock-escape-cooldown" />
+    <id>https://csarko.sh/research/pointer-lock-escape-cooldown</id>
+    <published>2026-08-25T00:00:00Z</published>
+    <updated>2026-10-18T00:00:00Z</updated>
+    <summary>Chromium refuses pointer lock for 1.25 s after Esc. What failed in the browser, and how an 8-byte patch to prebuilt Electron removed the cooldown.</summary>
+    <category term="Tooling" />
+  </entry>
+  <entry>
+    <title>Babylon.js material plugins: hooks and traps</title>
+    <link href="https://csarko.sh/research/babylon-material-plugin-traps" />
+    <id>https://csarko.sh/research/babylon-material-plugin-traps</id>
+    <published>2026-08-17T00:00:00Z</published>
+    <updated>2026-10-23T00:00:00Z</updated>
+    <summary>Babylon.js 9.18 splices plugin GLSL in after #include expansion, before #if: what each PBR hook sees, and the silent preprocessor, comment and bake traps.</summary>
+    <category term="Rendering" />
+    <category term="Tooling" />
+  </entry>
+  <entry>
+    <title>An endless world as a pure function</title>
+    <link href="https://csarko.sh/research/procedural-world-as-a-pure-function" />
+    <id>https://csarko.sh/research/procedural-world-as-a-pure-function</id>
+    <published>2026-07-29T00:00:00Z</published>
+    <updated>2026-10-10T00:00:00Z</updated>
+    <summary>Unbounded mountains, a warped coastline, a highway and cliff bands built as pure C² functions with exact derivatives, so every peer builds one world.</summary>
+    <category term="Worlds and terrain" />
+  </entry>
+  <entry>
+    <title>Hosting WebRTC signaling on Cloud Run</title>
+    <link href="https://csarko.sh/research/webrtc-signaling-on-cloud-run" />
+    <id>https://csarko.sh/research/webrtc-signaling-on-cloud-run</id>
+    <published>2026-07-29T00:00:00Z</published>
+    <updated>2026-10-10T00:00:00Z</updated>
+    <summary>Hosting a WebRTC signaling server on Google Cloud Run for a browser co-op game, the platform behaviours that broke it, and what a running match survives.</summary>
+    <category term="Distributed systems" />
+  </entry>
+  <entry>
+    <title>Host-authoritative co-op netcode in the browser</title>
+    <link href="https://csarko.sh/research/browser-coop-netcode" />
+    <id>https://csarko.sh/research/browser-coop-netcode</id>
+    <published>2026-07-25T00:00:00Z</published>
+    <updated>2026-07-25T00:00:00Z</updated>
+    <summary>How Day Hike&#39;s browser co-op stays responsive: a 60 Hz fixed step, redundant inputs, quantized snapshots, prediction, and host-created lobbies.</summary>
+    <category term="Distributed systems" />
+  </entry>
+</feed>

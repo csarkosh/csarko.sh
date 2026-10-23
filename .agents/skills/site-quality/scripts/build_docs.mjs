@@ -21,6 +21,8 @@ const CONTENT = join(ROOT, 'docs/published');
 const GAMES = join(ROOT, 'docs/games');
 const FILMS = join(ROOT, 'docs/films');
 const APPS = join(ROOT, `docs/${APPS_DIR}`);
+// A doc's figures: .agents/skills/site-quality/assets/research/<slug>/<name>.{png,svg}.
+const FIGURES = join(ROOT, '.agents/skills/site-quality/assets/research');
 
 const args = process.argv.slice(2);
 if (!(args.length === 0 || (args.length === 2 && args[0] === '--out'))) {
@@ -34,6 +36,29 @@ const read = (dir) => (existsSync(dir)
     .map((f) => ({ name: f, text: readFileSync(join(dir, f), 'utf8') }))
   : []);
 
+// A figure's pixel size, which its <img> carries so the page does not shift as it loads: a PNG's
+// from its IHDR chunk, an SVG's from its width and height attributes or else its viewBox.
+function figureSize(path) {
+  const data = readFileSync(path);
+  if (path.endsWith('.png')) return { width: data.readUInt32BE(16), height: data.readUInt32BE(20) };
+  const svg = /<svg\b[^>]*>/.exec(data.toString('utf8'))?.[0] ?? '';
+  const attr = (name) => Number(new RegExp(`\\s${name}="([\\d.]+)(?:px)?"`).exec(svg)?.[1]);
+  const box = /viewBox="[\d.-]+[\s,]+[\d.-]+[\s,]+([\d.]+)[\s,]+([\d.]+)"/.exec(svg);
+  const width = attr('width') || Number(box?.[1]);
+  const height = attr('height') || Number(box?.[2]);
+  if (!width || !height) throw new DocError(`${path}: an SVG figure needs width and height, or a viewBox`);
+  return { width: Math.round(width), height: Math.round(height) };
+}
+
+const figures = new Map();
+if (existsSync(FIGURES)) {
+  for (const slug of readdirSync(FIGURES).sort()) {
+    const dir = join(FIGURES, slug);
+    const files = readdirSync(dir).filter((f) => /\.(png|svg)$/.test(f)).sort();
+    figures.set(slug, new Map(files.map((f) => [f, figureSize(join(dir, f))])));
+  }
+}
+
 const sources = read(CONTENT);
 const gameSources = read(GAMES);
 const filmSources = read(FILMS);
@@ -42,7 +67,7 @@ const appSources = read(APPS).filter((s) => !s.name.endsWith('.install.md'));
 
 let files;
 try {
-  files = buildSite({ sources, gameSources, filmSources, appSources, indexHtml: readFileSync(join(PUBLIC, 'index.html'), 'utf8') });
+  files = buildSite({ sources, gameSources, filmSources, appSources, figures, indexHtml: readFileSync(join(PUBLIC, 'index.html'), 'utf8') });
 } catch (e) {
   if (!(e instanceof DocError)) throw e;
   console.error(`error: ${e.message}`);
@@ -68,7 +93,7 @@ if (out === PUBLIC) {
   }
 }
 
-const pages = [...files.keys()].filter((k) => k.startsWith(`${DOCS_DIR}/`) && k !== `${DOCS_DIR}/index.html`).length;
+const pages = [...files.keys()].filter((k) => k.startsWith(`${DOCS_DIR}/`) && k.endsWith(".html") && k !== `${DOCS_DIR}/index.html`).length;
 const where = out === PUBLIC ? 'public/' : out;
 const extra = [files.has('games/index.html') ? `${gameSources.length} game(s)` : null,
   files.has(`${FILM_DIR}/index.html`) ? `${filmSources.length} film(s)` : null,

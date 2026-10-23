@@ -1,36 +1,61 @@
 ---
-description: How atmospheric and horror games use height fog, grading, film grain and dread-driven effects, and what Babylon.js can do at 60 fps in a browser.
+description: Atmospheric games stack height fog, a neutral tone map and grade, and a film finish on photoreal light; Babylon.js does nearly all of it at 60 fps.
 published: 2026-09-15
 categories: Rendering, Game design
-updated: 2026-10-18
+updated: 2026-10-23
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-15-atmosphere-and-dread-shaders.md
+series: Day Hike's look
+related: ground-fog-without-the-wall, a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2, building-dread-toward-a-late-reveal
 ---
 # Atmosphere and dread shaders for horror games
 
 **Question:** the first pass ([Stylized shader looks](/research/stylized-shader-looks))
-surveyed eight ways games build a look out of shaders. The direction chosen from it is
+surveyed eight ways games build a look out of shaders, and the direction chosen from it is
 *closer to photoreal, but artsy and atmospheric*, keeping the game's ominous, eerie theme,
-with the two horror families (imitating a camera or recording medium, and shaders tied to
-the mechanics) carrying the horror layer. What, concretely, do the games that achieve that
-look do, what do state-driven horror effects look like when they are done well, and which
-of it can Babylon.js 9.18 do at 60 fps in a browser?
+with two horror families (imitating a camera or recording medium, and shaders tied to the
+mechanics) carrying the horror layer. What do the games that achieve that look actually do,
+and what do state-driven horror effects look like when they are done well? Which of it can
+Babylon.js 9.18 do at 60 fps in a browser?
 
-**Short answer:** every photoreal-but-atmospheric game in the survey makes the same core
-move: a physically based sky and lighting underneath, an **artist-controlled height fog**
-on top of it, a **neutral tone map followed by a grade**, and a **film treatment** (halation,
+**Short answer:** every photoreal-but-atmospheric game in the survey puts the same three
+layers on a physically based sky and lighting: an artist-controlled
+[height fog](#term "Fog that is thickest near the ground and thins with height, instead of one even density everywhere."),
+a neutral [tone map](#term "The step that squeezes a render's unlimited brightness into the range a screen can show; ACES and AgX are two of them.")
+followed by a grade, and a film treatment
+([halation](#term "The red-orange glow film shows around bright lights: a threshold, a wide blur, a tint and a screen blend, not bloom."),
 luminance-weighted grain, dither) so a dark, foggy image survives 8-bit output. The horror
-games that hold up over hours drive **event rate and severity** from their dread state and
-keep screen distortion as the smallest channel, confined to the edge of the frame. Almost
-all of it is cheap in Babylon: a handful of single-pass post-processes and per-material
-plugin terms. The three things Babylon does not give for free are a fog hook (the fog line
-has to be regex-replaced in the PBR fragment), an AgX or filmic tone map (a custom pass),
-and a volumetric headlamp cone (a cone mesh, not the built-in god-ray pass).
+games that hold up over hours drive how often and how badly events land from their dread
+state, and keep screen distortion the smallest channel, at the edge of the frame. Almost all
+of it is cheap in Babylon; a fog hook, an AgX tone map and a headlamp cone are the three
+pieces it does not give for free.
+
+![A dim fern slope under big trunks in Day Hike's old wood, the far trunks fading into fog](forest.png "Day Hike after its restyle, which took most of direction 1 in section 5: a closed-form height fog tinted toward the sun, an AgX tone map, then one grade pass ending in a triangular dither, so the far trunks fade into grey mist without banding.")
+
+**In numbers:**
+
+- **Three layers on physically based light:** height fog, a neutral tone map then a grade,
+  and a film treatment, in every photoreal-but-atmospheric game surveyed
+  ([section 2](#photoreal-games-get-their-mood-from-fog-a-grade-and-film)).
+- **About 0.5 ms** on async compute buys Ghost of Tsushima its 128×64×64 froxel haze
+  ([section 2](#photoreal-games-get-their-mood-from-fog-a-grade-and-film)).
+- **Half an LSB of triangular noise,** added after the sRGB transform, is what lets INSIDE's
+  dark, foggy image hold in 8-bit
+  ([section 2](#photoreal-games-get-their-mood-from-fog-a-grade-and-film)).
+- **Rate and severity, not amplitude:** Slender: The Arrival's proximity static was lost once
+  encounters became frequent, so the dread scalar should set how often and how badly events
+  land ([section 3](#horror-that-lasts-drives-event-rate-not-screen-warp)).
+- **Three gaps in Babylon.js 9.18:** no fog hook in the PBR shader, no AgX or filmic tone map,
+  and no volume for an eye-mounted headlamp; the rest is single-pass post-processes and
+  per-material plugin terms
+  ([section 4](#babylon-js-9-18-does-nearly-all-of-it-three-pieces-are-custom)).
+- **About 2 ms at 1440p** is the budget for the whole post chain
+  ([section 4](#babylon-js-9-18-does-nearly-all-of-it-three-pieces-are-custom)).
 
 Every game links to its Steam page, or to its official site or Wikipedia where it is not
 on Steam. Sources are listed at the end; anything marked *unverified* was reported
 second-hand and the primary source could not be opened.
 
-## 1. What the shaders did before the restyle
+## 1. Before the restyle, the look was one outline pass and a grade
 
 The pre-restyle "style" was thinner than it looked. All of it was in `client/src/game/`:
 
@@ -61,7 +86,7 @@ grade, which is why it did not read as distinct; and `quality.ts` declared an `s
 for the high tier that nothing in `client/src` consumed. The restyle retired the outline
 pass, `/style` and the `ssao` flag.
 
-## 2. Photoreal, but atmospheric
+## 2. Photoreal games get their mood from fog, a grade and film
 
 ### The games
 
@@ -123,7 +148,7 @@ pass, `/style` and the `ssao` flag.
 Dropped after a look: Kholat, Sons of the Forest and Stray (no technique sources) and The
 Long Dark (painterly; belongs to the first pass).
 
-### The pattern
+### The pattern: five moves
 
 1. **Height fog with a sun-direction colour, instead of one fog colour.** Iñigo Quílez's
    closed-form height fog [9] and a `mix(shadowColour, sunColour, pow(dot(view, sun), k))`
@@ -145,7 +170,7 @@ Long Dark (painterly; belongs to the first pass).
    so silhouettes can be pushed dark against lit mist; a forward PBR equivalent is a plugin
    term that scales ambient down near the fog horizon.
 
-## 3. Horror effects tied to a state or a mechanic
+## 3. Horror that lasts drives event rate, not screen warp
 
 ### The games
 
@@ -283,7 +308,7 @@ guideline's): the scalar that drives the peripheral warp and the aberration also
 through the single "unsettling effects" slider, which scales each toward zero, while the
 audio cues and the authored lighting steps, which move no camera, stay as they are.
 
-## 4. What Babylon.js 9.18 can do
+## 4. Babylon.js 9.18 does nearly all of it; three pieces are custom
 
 Checked against the installed `@babylonjs/core` 9.18.0 source [23], not the docs alone [24], [25], [26].
 
@@ -321,7 +346,7 @@ Constraints that shape the design:
   throws, so on WebGPU a GLSL-only plugin breaks material creation unless the material
   forces GLSL. The restyle stays on WebGL2.
 
-## 5. Candidate directions
+## 5. Four directions, led by a photographed dusk
 
 These are not decisions. They are the shapes the evidence supports.
 

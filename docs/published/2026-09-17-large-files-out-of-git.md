@@ -2,38 +2,47 @@
 description: Git LFS is not tied to GitHub. How its endpoint is discovered, three ways to put a cloud bucket behind it, and when to skip LFS entirely.
 published: 2026-09-17
 categories: Distributed systems, Tooling
-updated: 2026-10-18
+updated: 2026-10-23
 ---
 # Git LFS on a cloud bucket, not GitHub's storage
 
-**Question:** a repository needs to carry large binary files, models, textures, audio, video. Git
+**Question:** a repository needs to carry large binary files: models, textures, audio, video. Git
 LFS is the standard answer, but does it have to mean GitHub's storage? Can a Google Cloud Storage
 bucket be used instead, or as additional storage alongside it?
 
-**Short answer:** Git LFS is not tied to GitHub. It is a protocol whose server endpoint the client
-*discovers*, and a GitHub remote resolves to GitHub's LFS endpoint purely by construction. Point the
-client elsewhere and the bytes go elsewhere. Three mechanisms exist, and the lightest of them needs
-no server at all. But "additional" is the one word that does not work: LFS resolves exactly one
-endpoint per remote and will never write an object to two backends in a single push.
+**Short answer:** a bucket can replace GitHub's storage, but not sit alongside it. Git LFS is
+not tied to GitHub: the client discovers its server endpoint, so pointing it at a bucket-backed LFS server, or at a standalone
+[custom transfer agent](#term "An ordinary program that Git LFS launches to move the bytes itself, talking to it over standard input and output.")
+that needs no server at all, sends the bytes to the bucket. "Additional" is the one word that does
+not work: LFS resolves exactly one endpoint per remote and will never write an object to two
+backends in a single push. And for large files that are regenerable build output, the better
+answer is to skip LFS and pin the bytes from a
+[manifest](#term "A file the build already reads, recording what each asset is, where it came from and what it hashes to.").
 
-The more useful question is often whether the files should travel through git at all. Section 6 sets
-out the alternative, which suits any repository whose large files are regenerable build output.
+![A diagram: the working tree's real file splits into a pointer, kept in git history, and the bytes, which the Git LFS client sends through an LFS server or a standalone transfer agent to a cloud bucket, stored under their OID](flow.svg "Where each piece sits: git keeps only the small pointer, and the bytes, named by their SHA-256 OID, reach the bucket through an LFS server or a standalone transfer agent. A clone needs both halves.")
+
+**In short:**
+
+- **A pointer of roughly 130 bytes** is all git keeps; the real bytes go to an LFS server, keyed
+  by their SHA-256 ([section 2](#lfs-swaps-the-file-for-a-pointer-and-discovers-its-server)).
+- **Four settings move the endpoint:** `lfs.url`, `remote.<name>.lfsurl`, a committed
+  `.lfsconfig` and `lfs.standalonetransferagent`; `git lfs env` prints the one in use
+  ([section 2](#lfs-swaps-the-file-for-a-pointer-and-discovers-its-server)).
+- **Giftless** puts Google Cloud Storage, S3, Azure Blob Storage or local disk behind an LFS
+  server, though its published Google Cloud Storage example streams every byte through the server
+  ([section 3](#mechanism-1-giftless-an-lfs-server-with-a-bucket-behind-it)).
+- **One endpoint per remote:** a second remote with its own LFS server is not a mirror, and
+  keeping the two in step is a backup job you run
+  ([section 3](#mechanism-1-giftless-an-lfs-server-with-a-bucket-behind-it)).
+- **No server at all:** a standalone agent speaks newline-delimited JSON with Git LFS and names
+  each bucket object by its OID ([section 4](#mechanism-2-a-transfer-agent-that-needs-no-server)).
+- **Regenerable output skips LFS:** the bytes in a bucket, a hash and a location in a manifest,
+  and only text in git ([section 6](#for-build-output-pin-the-bytes-in-a-manifest-instead)).
 
 This is written for someone who has never used Git LFS. Sections 1 and 2 are the background;
 everything after that assumes them.
 
-## 0. The answer in five lines
-
-1. Git history is append-only in practice, so a binary committed once is in every clone forever.
-2. Git LFS replaces the file in history with a small text pointer and stores the bytes elsewhere.
-3. Where "elsewhere" is, is configurable: `lfs.url`, `remote.<name>.lfsurl`, or a committed
-   `.lfsconfig`.
-4. A **standalone custom transfer agent** is an ordinary program that moves the bytes itself, with
-   no HTTP service to run anywhere.
-5. For regenerable output, skip LFS: keep the bytes in a bucket, keep a hash and a location in a
-   manifest your build already reads, and let git hold only the text.
-
-## 1. Why this problem exists at all
+## 1. Git never forgets a binary, and every clone pays for it
 
 Git stores a complete snapshot of every version of every file it has ever been told about, and it
 never forgets. That is the property that makes git trustworthy, and it is also the trap.
@@ -54,7 +63,7 @@ successive versions differ in a few lines and compress well against each other. 
 same model or texture usually share almost no bytes, so each version is stored at close to full
 size.
 
-## 2. What Git LFS actually is
+## 2. LFS swaps the file for a pointer and discovers its server
 
 Git Large File Storage is the standard mitigation, and the idea is a single substitution.
 
@@ -81,7 +90,7 @@ appends `.git/info/lfs` to it, so a GitHub remote resolves to a GitHub LFS endpo
 rather than by decree. For SSH remotes it runs a helper called `git-lfs-authenticate`, which lets
 the server hand back a different endpoint entirely [1].
 
-Every layer of that is overridable [1]:
+Point the client elsewhere and the bytes go elsewhere. Every layer of that is overridable [1]:
 
 | Setting | Effect |
 |---|---|
@@ -103,7 +112,7 @@ client talk straight to the bucket while holding no credentials of its own.
 The component that performs the move is a **transfer adapter**. The built-in one speaks HTTP.
 Section 4 is about replacing it.
 
-## 3. Mechanism 1: your own LFS server, with a bucket behind it
+## 3. Mechanism 1: Giftless, an LFS server with a bucket behind it
 
 [Giftless](https://giftless.datopian.com) [2], from Datopian, is an open-source LFS server built for
 exactly this. It supports four storage backends: Google Cloud Storage, Amazon S3, Azure Blob
@@ -132,7 +141,7 @@ and to no other. Keeping two copies in step means running something like `git lf
 against one remote and pushing the objects to the other, on a schedule you own and monitor. Treat it
 as a backup job that happens to use git plumbing, not as a feature.
 
-## 4. Mechanism 2: a standalone custom transfer agent
+## 4. Mechanism 2: a transfer agent that needs no server
 
 This is the lightest mechanism, and it removes the server from the picture entirely.
 
@@ -145,7 +154,7 @@ Adding `lfs.standalonetransferagent` goes one step further: the client stops con
 server at all [4]. There is nothing to deploy, secure, monitor or pay for. The agent works out by itself
 where each object lives.
 
-### 4.1 One word, two meanings
+### 4.1 Two meanings of "streaming"
 
 "Streaming" names two different things, and conflating them produces a design that contradicts
 itself.
@@ -155,7 +164,7 @@ mechanism exists to avoid. Here it means the agent piping bytes straight between
 and the bucket, rather than staging a whole second copy on local disk first. The second is what you
 want: no server, and no temporary duplicate of a large file.
 
-### 4.2 The protocol
+### 4.2 The protocol: newline-delimited JSON in three stages
 
 The exchange has three stages [4]. Git LFS sends the first message of each pair; the agent replies.
 
@@ -222,7 +231,7 @@ Three useful properties come free. Identical content is stored once, whatever it
 working tree. Verifying a download is just hashing it and comparing. And an object can never be
 silently replaced by different content, because different content has a different name.
 
-### 4.5 What you take on
+### 4.5 The agent owns auth, retries, concurrency and integrity
 
 Removing the server does not remove the work; it relocates it. The agent now owns:
 
@@ -235,7 +244,7 @@ Removing the server does not remove the work; it relocates it. The agent now own
 - **Distribution.** Every developer and every CI job needs the agent installed and configured. A
   committed `.lfsconfig` carries the settings but not the binary.
 
-## 5. The costs everyone underestimates
+## 5. Every mechanism makes a clone depend on infrastructure you run
 
 These apply to all three mechanisms, and they are the reason section 6 exists.
 
@@ -252,7 +261,7 @@ These apply to all three mechanisms, and they are the reason section 6 exists.
   forever, so deleting the object turns an old commit into one that can no longer be checked out.
   That is a deliberate trade, not a cleanup.
 
-## 6. The alternative: pin the bytes, do not store them
+## 6. For build output, pin the bytes in a manifest instead
 
 Every mechanism above answers "how do I move large files through git". For a repository whose large
 files are build output, the better question is whether they should go through git at all.
@@ -273,7 +282,7 @@ that the build already reads, and let git hold only the text that describes them
   asset is, where it came from and what it hashes to. Adding a retrieval location extends an
   existing pattern rather than inventing one.
 
-### 6.2 The field that is easy to get wrong
+### 6.2 The retrieval location is not the provenance URL
 
 A manifest entry that records provenance already has a URL in it: the page the asset was downloaded
 or licensed from. A retrieval location is a **different** field, and overloading the first one with
@@ -292,7 +301,7 @@ They are not rivals, and the line between them is simple.
 Build output that is neither committed nor fetched, because a command regenerates it locally, needs
 no scheme at all. That is the cheapest answer whenever it is available.
 
-## 7. Choosing
+## 7. Stay on hosted LFS unless you can name the benefit
 
 - **Staying on a hosted LFS service is usually right.** It costs nothing to operate, and the
   included allowances are generous relative to what a repository of source code plus modest assets

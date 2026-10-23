@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AI short films: consistent characters and sets · Cyrus Sarkosh</title>
-  <meta name="description" content="Can 2026 AI video models make a multi-scene short film with the same actor and set in every shot? Where they fail, and the one architecture that holds." />
+  <meta name="description" content="2026 AI video can make one convincing short, but no model locks an actor and a room across a series. Where each tool fails, and the 3D-first build that holds." />
   <link rel="canonical" href="https://csarko.sh/research/ai-short-film-generation" />
 
   <meta property="og:type" content="article" />
@@ -12,17 +12,18 @@
   <meta property="og:locale" content="en_US" />
   <meta property="og:url" content="https://csarko.sh/research/ai-short-film-generation" />
   <meta property="og:title" content="AI short films: consistent characters and sets" />
-  <meta property="og:description" content="Can 2026 AI video models make a multi-scene short film with the same actor and set in every shot? Where they fail, and the one architecture that holds." />
+  <meta property="og:description" content="2026 AI video can make one convincing short, but no model locks an actor and a room across a series. Where each tool fails, and the 3D-first build that holds." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta property="article:published_time" content="2026-09-16" />
-  <meta property="article:modified_time" content="2026-10-10" />
+  <meta property="article:modified_time" content="2026-10-23" />
   <meta property="article:author" content="https://csarko.sh/" />
+  <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="AI short films: consistent characters and sets" />
-  <meta name="twitter:description" content="Can 2026 AI video models make a multi-scene short film with the same actor and set in every shot? Where they fail, and the one architecture that holds." />
+  <meta name="twitter:description" content="2026 AI video can make one convincing short, but no model locks an actor and a room across a series. Where each tool fails, and the 3D-first build that holds." />
   <meta name="twitter:image" content="https://csarko.sh/og-image.jpg" />
   <meta name="twitter:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
 
@@ -46,12 +47,12 @@
       "@type": "TechArticle",
       "@id": "https://csarko.sh/research/ai-short-film-generation#article",
       "headline": "AI short films: consistent characters and sets",
-      "description": "Can 2026 AI video models make a multi-scene short film with the same actor and set in every shot? Where they fail, and the one architecture that holds.",
+      "description": "2026 AI video can make one convincing short, but no model locks an actor and a room across a series. Where each tool fails, and the 3D-first build that holds.",
       "datePublished": "2026-09-16",
-      "dateModified": "2026-10-10",
+      "dateModified": "2026-10-23",
       "url": "https://csarko.sh/research/ai-short-film-generation",
       "mainEntityOfPage": "https://csarko.sh/research/ai-short-film-generation",
-      "wordCount": 11441,
+      "wordCount": 11443,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -127,6 +128,8 @@
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
+      /* A doc's body text: brighter than --muted, which reads as grey at length (2026-10-23). */
+      --prose: #c9ced9;
       --faint: #7d8597;
       /* Content warnings only. Yellow to stand apart from the teal accent. */
       --warning: #f5c451;
@@ -156,6 +159,7 @@
         --border-strong: rgba(10, 11, 14, 0.16);
         --text: #12151c;
         --muted: #4a5263;
+        --prose: #2b3240;
         --faint: #5f677a;
         --warning: #8a6100;
         --accent: #0a735f;
@@ -347,6 +351,57 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .doc-page .prose { font-size: 17px; }
+    .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
+    .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
+    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .rail a[aria-current] { color: var(--text); }
+    .rail a[aria-current] .num { color: var(--accent); }
+    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .toc .section-label { margin: 0 0 6px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
+    .toc a:hover { color: var(--accent); }
+    .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    .figure { margin: 32px 0; }
+    .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+    /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
+    .figure img { max-height: 80vh; object-fit: contain; }
+    .figure figcaption { margin-top: 10px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+    .prose blockquote strong:first-child { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted var(--faint); text-underline-offset: 4px; }
+    .term:hover, .term:focus-visible { text-decoration-color: var(--accent); }
+    .term-def { max-width: min(92vw, 420px); margin: auto; padding: 16px 18px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.55; }
+    .term-def::backdrop { background: var(--nav-bg); }
+    /* A wide table or code block that scrolls sideways shows a shade at the edge it can scroll to. */
+    .scroll { background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
+      var(--surface); }
+    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
+    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
+    .series-name { margin: 0 0 8px; font-weight: 600; }
+    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
+    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
+    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
+    .next-list .card { padding: 16px 18px; background: var(--bg); }
+    .next-list .doc-title { font-size: 1.05rem; }
+    .next-list .doc-desc { font-size: 14.5px; }
+    .play-line { margin: 20px 0 0; }
+    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background .15s ease; }
+    .play:hover { background: var(--accent-hover); }
+    .play svg { width: 14px; height: 14px; }
+    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
+    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color .15s ease; }
+    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
+    .afterward .next:hover { border-color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -382,27 +437,28 @@
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-        <li><a href="#the-answer-in-six-lines"><span class="num" aria-hidden="true">00</span><span>The answer in six lines</span></a></li>
-        <li><a href="#what-the-three-shorts-actually-are"><span class="num" aria-hidden="true">01</span><span>What the three shorts actually are</span></a></li>
-        <li><a href="#what-the-genre-asks-of-a-generator"><span class="num" aria-hidden="true">02</span><span>What the genre asks of a generator</span></a></li>
-        <li><a href="#the-model-landscape-september-2026"><span class="num" aria-hidden="true">03</span><span>The model landscape, September 2026</span></a></li>
-        <li><a href="#characters-deterministic-identity-across-shots"><span class="num" aria-hidden="true">04</span><span>Characters: deterministic identity across shots</span></a></li>
-        <li><a href="#scenes-deterministic-locations-across-shots"><span class="num" aria-hidden="true">05</span><span>Scenes: deterministic locations across shots</span></a></li>
-        <li><a href="#combining-them-into-a-multi-scene-film"><span class="num" aria-hidden="true">06</span><span>Combining them into a multi-scene film</span></a></li>
-        <li><a href="#readiness-verdict-and-cost"><span class="num" aria-hidden="true">07</span><span>Readiness verdict and cost</span></a></li>
-        <li><a href="#why-it-is-a-dead-end-for-generation"><span class="num" aria-hidden="true">08</span><span>Why it is a dead end for generation</span></a></li>
-        <li><a href="#legal-and-policy-briefly"><span class="num" aria-hidden="true">09</span><span>Legal and policy, briefly</span></a></li>
-        <li><a href="#what-was-not-verified"><span class="num" aria-hidden="true">10</span><span>What was not verified</span></a></li>
-        <li><a href="#sources"><span>Sources</span></a></li>
+        <li><a href="#the-three-benchmark-shorts-are-live-action-not-ai" data-visits-event="toc-rail"><span class="num" aria-hidden="true">01</span><span>The three benchmark shorts are live action, not AI</span></a></li>
+        <li><a href="#the-genre-forgives-flicker-but-needs-the-same-actor-and-room" data-visits-event="toc-rail"><span class="num" aria-hidden="true">02</span><span>The genre forgives flicker but needs the same actor and room</span></a></li>
+        <li><a href="#chinese-models-lead-clips-reach-30-s-and-sora-is-dead" data-visits-event="toc-rail"><span class="num" aria-hidden="true">03</span><span>Chinese models lead, clips reach 30 s, and Sora is dead</span></a></li>
+        <li><a href="#characters-lock-exactly-only-as-a-lora-or-a-3d-asset" data-visits-event="toc-rail"><span class="num" aria-hidden="true">04</span><span>Characters lock exactly only as a LoRA or a 3D asset</span></a></li>
+        <li><a href="#rooms-lock-only-in-a-3d-set-a-splat-or-a-depth-locked-pass" data-visits-event="toc-rail"><span class="num" aria-hidden="true">05</span><span>Rooms lock only in a 3D set, a splat or a depth-locked pass</span></a></li>
+        <li><a href="#three-ways-to-combine-shots-only-the-3d-first-build-repeats" data-visits-event="toc-rail"><span class="num" aria-hidden="true">06</span><span>Three ways to combine shots; only the 3D-first build repeats</span></a></li>
+        <li><a href="#a-45-s-short-costs-40-to-200-hosted-and-keeps-1-take-in-4" data-visits-event="toc-rail"><span class="num" aria-hidden="true">07</span><span>A 45 s short costs $40 to $200 hosted and keeps 1 take in 4</span></a></li>
+        <li><a href="#a-series-is-a-dead-end-for-generation" data-visits-event="toc-rail"><span class="num" aria-hidden="true">08</span><span>A series is a dead end for generation</span></a></li>
+        <li><a href="#legal-and-policy-briefly" data-visits-event="toc-rail"><span class="num" aria-hidden="true">09</span><span>Legal and policy, briefly</span></a></li>
+        <li><a href="#seven-claims-not-checked-against-a-primary-source" data-visits-event="toc-rail"><span class="num" aria-hidden="true">10</span><span>Seven claims not checked against a primary source</span></a></li>
+        <li><a href="#sources" data-visits-event="toc-rail"><span>Sources</span></a></li>
       </ol>
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Sep 16, 2026 · Updated Oct 10, 2026</p>
+        <p class="eyebrow">Sep 16, 2026 · Updated Oct 23, 2026</p>
         <h1>AI short films: consistent characters and sets</h1>
+        <p class="lead">2026 AI video can make one convincing short, but no model locks an actor and a room across a series. Where each tool fails, and the 3D-first build that holds.</p>
         <ul class="tags">
-          <li>50 min read</li>
+          <li>39 min read</li>
         </ul>
+        <p class="series-line">Part 1 of 3 in <strong>AI short films</strong> · Next: <a href="/research/reverse-engineering-an-ai-horror-short" data-visits-event="series-reverse-engineering-an-ai-horror-short">Reverse engineering an AI horror short</a></p>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> how close is AI to generating a multi-scene short film, taking as the benchmark
@@ -410,48 +466,60 @@ Evillica&#39;s analog-horror YouTube Shorts <a class="cite" href="#ref-1">[1]</a
 cuts in under 40 seconds)? And are there techniques by which characters and scenes can be
 generated <em>deterministically</em> and <em>combined</em> into a film, so that episode two has the same
 person in the same room as episode one?</p>
-<p><strong>Short answer:</strong> for a series, no, and it is a dead end for generation rather than a gap the
-next model release closes. A single convincing short is achievable today with a person curating
-several takes per shot. But the two things a series depends on, the same actor and the same
-location in every shot, are exactly what no 2026 video model can lock: reference images hold a
-face &quot;recognisably the same&quot; while costume, props and the room itself drift, and nothing hosted
-is repeatable. The only architecture that makes a multi-scene film both consistent and
-reproducible builds the character and the set as <strong>3D assets</strong>, renders every shot&#39;s structure
-conventionally, and uses AI only as a finishing pass. At that point AI is not generating the
-film; a 3D production is, with a generative filter on top.</p>
-<p>This is a snapshot of the landscape in September 2026. Figures come from vendor documentation,
-model cards, papers and practitioner write-ups accessed that month; section 10 lists what could
-not be verified against a primary source.</p>
-<div class="section-head"><p class="section-label">00</p><h2 id="the-answer-in-six-lines"><a class="anchor" href="#the-answer-in-six-lines">The answer in six lines</a></h2></div>
-<ol>
-<li>The three reference shorts are <strong>live-action</strong>, not AI: one actress, one real apartment,
-practical creatures, a post-production face warp, a VHS grade. The bar is therefore &quot;fake a
-cheap camcorder short with the <em>same</em> actor and flat across episodes&quot;, which is harder for
-generative video than &quot;make an AI-looking short&quot;.</li>
-<li>Per-shot generation of a <em>convincing single short</em> in this look is possible today with a human
-curating 3 to 6 takes per shot, for roughly $40 to $200 hosted or $10 to $25 self-hosted. Keep
-rates are about 25 %; character drift shows after about ten shots <a class="cite" href="#ref-2">[2]</a>; no hosted model repeats a
-clip.</li>
-<li><strong>Characters</strong> can be locked &quot;recognisably the same&quot; by reference images (every 2026 model
-has them, about 0.5 face similarity on the one published cross-vendor table) and locked
-<em>exactly</em> only by a trained LoRA or by owning the character as a 3D asset. A deliberately
-<em>wrong</em> face survives only the latter two: every zero-shot identity mechanism is trained to
-make faces look right.</li>
-<li><strong>Scenes</strong> cannot be locked by any video model: reference images condition on appearance, not
-geometry, and the room is re-invented once the camera turns past roughly a quarter turn. The
-door stays put only in a 3D set, a Gaussian splat, or a depth-locked control pass driven by
-one.</li>
-<li><strong>Determinism</strong> exists at exactly one place in the whole landscape: a 3D scene rendered with a
-fixed seed. Open-weight diffusion is bit-repeatable under a strict recipe on pinned hardware;
-every hosted API says &quot;seed improves similarity&quot; at best. Hosted models were also <em>retired</em>
-three times in 2026 (Sora, Gen-3, Gen-4 Aleph) <a class="cite" href="#ref-3">[3]</a>, <a class="cite" href="#ref-4">[4]</a> with weeks of notice <a class="cite" href="#ref-5">[5]</a>.</li>
-<li>The technique that makes a multi-scene film both deterministic and combinable is to <strong>build
-the character and the set as 3D assets, render every shot&#39;s structure in a path tracer such
-as Blender&#39;s Cycles, let an open-weight model add photographic surface under depth and identity
-lock, add narration and a single VHS pass last, and treat the episode as a reproducible build
-with a lock file.</strong> Hosted models are inserts, not the spine.</li>
-</ol>
-<div class="section-head"><p class="section-label">01</p><h2 id="what-the-three-shorts-actually-are"><a class="anchor" href="#what-the-three-shorts-actually-are">What the three shorts actually are</a></h2></div>
+<p><strong>Short answer:</strong> for a single short, yes: a person curating several takes per shot can make a
+convincing one today. For a series, no, and it is a dead end for generation rather than a gap the
+next model release closes: no 2026 video model can lock the same actor and the same room in every
+shot, and nothing hosted is repeatable. The only architecture that holds builds the character and
+the set as <strong>3D assets</strong>, renders every shot&#39;s structure conventionally and uses AI only as a
+finishing pass, at which point a 3D production, not AI, is making the film.</p>
+<figure class="figure">
+<!-- generated:figure:ai-short-film-generation/pipeline -->
+<img src="/assets/fig-ai-short-film-generation-pipeline.bd2127a6.svg" width="440" height="570" alt="A pipeline of eight stages from top to bottom: character and set, shots, render in Cycles, an optional surface pass, gate, audio and cut, degrade, lock" decoding="async" />
+<!-- /generated:figure:ai-short-film-generation/pipeline -->
+<figcaption>Architecture C, the 3D-first episode build of section 8: the character and set are assets, every shot&#39;s structure is rendered in Cycles with a fixed seed, and only the surface pass is stochastic; with pinned open weights and a seed, even that repeats.</figcaption>
+</figure>
+<p><strong>In numbers:</strong></p>
+<ul>
+<li><strong>About 0.5 face similarity</strong> is what reference images buy on the one cross-vendor table: a
+face recognisably the same, while costume, props and the room drift (<a href="#characters-lock-exactly-only-as-a-lora-or-a-3d-asset">section 4</a>).</li>
+<li><strong>5 to 100 captioned images</strong> train a
+<button type="button" class="term" popovertarget="term-1">LoRA</button><span class="term-def" id="term-1" popover role="note">An add-on to an open model&#39;s weights, trained on images of one character, so the model draws that face as trained, defects included.</span>
+that locks a face exactly; only it or a 3D asset keeps a deliberately wrong face
+(<a href="#characters-lock-exactly-only-as-a-lora-or-a-3d-asset">section 4</a>).</li>
+<li><strong>30° to 45° of pan</strong> is as far as a room holds from one reference image; past that, each
+generation invents the other half differently (<a href="#rooms-lock-only-in-a-3d-set-a-splat-or-a-depth-locked-pass">section 5</a>).</li>
+<li><strong>One bit-exact stage in the whole landscape:</strong> a 3D scene rendered with a fixed seed.
+<button type="button" class="term" popovertarget="term-2">Open-weight</button><span class="term-def" id="term-2" popover role="note">A model whose weights you download and run on your own GPU, rather than call through a vendor&#39;s API.</span>
+diffusion repeats only under a strict recipe on pinned hardware, and no hosted API guarantees
+it (<a href="#three-ways-to-combine-shots-only-the-3d-first-build-repeats">section 6</a>).</li>
+<li><strong>1 take in 4</strong> is kept, and drift shows after about ten shots
+(<a href="#a-45-s-short-costs-40-to-200-hosted-and-keeps-1-take-in-4">section 7</a>).</li>
+<li><strong>$40 to $200</strong> per 45 second episode hosted, $10 to $25 on open weights, $5 to $40 for a 3D
+render with an open-weight restyle once the build exists (<a href="#a-45-s-short-costs-40-to-200-hosted-and-keeps-1-take-in-4">section 7</a>).</li>
+</ul>
+<p>This is a snapshot of the landscape in September 2026, and it dates fast. Character drift after
+about ten shots is a practitioner finding <a class="cite" href="#ref-2">[2]</a>, not a benchmark, and hosted models were retired
+three times in 2026 (Sora, Gen-3, Gen-4 Aleph) <a class="cite" href="#ref-3">[3]</a>, <a class="cite" href="#ref-4">[4]</a>, with weeks of notice <a class="cite" href="#ref-5">[5]</a>. Figures come
+from vendor documentation, model cards, papers and practitioner write-ups accessed that month;
+section 10 lists what could not be verified against a primary source.</p>
+      </div>
+      <nav class="toc" aria-label="In this doc">
+        <p class="section-label">In this doc</p>
+        <ol>
+          <li><a href="#the-three-benchmark-shorts-are-live-action-not-ai" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>The three benchmark shorts are live action, not AI</span></a></li>
+          <li><a href="#the-genre-forgives-flicker-but-needs-the-same-actor-and-room" data-visits-event="toc"><span class="num" aria-hidden="true">02</span><span>The genre forgives flicker but needs the same actor and room</span></a></li>
+          <li><a href="#chinese-models-lead-clips-reach-30-s-and-sora-is-dead" data-visits-event="toc"><span class="num" aria-hidden="true">03</span><span>Chinese models lead, clips reach 30 s, and Sora is dead</span></a></li>
+          <li><a href="#characters-lock-exactly-only-as-a-lora-or-a-3d-asset" data-visits-event="toc"><span class="num" aria-hidden="true">04</span><span>Characters lock exactly only as a LoRA or a 3D asset</span></a></li>
+          <li><a href="#rooms-lock-only-in-a-3d-set-a-splat-or-a-depth-locked-pass" data-visits-event="toc"><span class="num" aria-hidden="true">05</span><span>Rooms lock only in a 3D set, a splat or a depth-locked pass</span></a></li>
+          <li><a href="#three-ways-to-combine-shots-only-the-3d-first-build-repeats" data-visits-event="toc"><span class="num" aria-hidden="true">06</span><span>Three ways to combine shots; only the 3D-first build repeats</span></a></li>
+          <li><a href="#a-45-s-short-costs-40-to-200-hosted-and-keeps-1-take-in-4" data-visits-event="toc"><span class="num" aria-hidden="true">07</span><span>A 45 s short costs $40 to $200 hosted and keeps 1 take in 4</span></a></li>
+          <li><a href="#a-series-is-a-dead-end-for-generation" data-visits-event="toc"><span class="num" aria-hidden="true">08</span><span>A series is a dead end for generation</span></a></li>
+          <li><a href="#legal-and-policy-briefly" data-visits-event="toc"><span class="num" aria-hidden="true">09</span><span>Legal and policy, briefly</span></a></li>
+          <li><a href="#seven-claims-not-checked-against-a-primary-source" data-visits-event="toc"><span class="num" aria-hidden="true">10</span><span>Seven claims not checked against a primary source</span></a></li>
+        </ol>
+      </nav>
+      <div class="prose">
+<div class="section-head"><p class="section-label">01</p><h2 id="the-three-benchmark-shorts-are-live-action-not-ai"><a class="anchor" href="#the-three-benchmark-shorts-are-live-action-not-ai">The three benchmark shorts are live action, not AI</a></h2></div>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
 <thead>
 <tr>
@@ -517,7 +585,9 @@ puppetry and treat AI as &quot;a tool … it should never become the skeleton of
 synthetic-content label appears on any of the three videos; the TikTok &quot;everything is fake&quot;
 caption is a fiction disclaimer. The face warp on Mom is the only element that could plausibly be
 AI-assisted, and nothing public settles it.</p>
-<p>So the question splits:</p>
+<p>The bar is therefore to fake a cheap camcorder short with the <em>same</em> actor and flat across
+episodes, which is harder for generative video than to make an AI-looking short. So the question
+splits:</p>
 <ul>
 <li><strong>Track A:</strong> can generation reproduce a <em>live-action-looking</em> single-actor, single-location
 camcorder short, with the same actor and flat recurring across episodes?</li>
@@ -530,7 +600,7 @@ and emergency-broadcast framings that justify stills and text cards, narration o
 subjects. YouTube&#39;s July 2025 and July 2026 &quot;inauthentic content&quot; rules <a class="cite" href="#ref-11">[11]</a>, <a class="cite" href="#ref-12">[12]</a>, <a class="cite" href="#ref-13">[13]</a> were written against
 exactly that population. The rest of this document is about Track A, because that is where the
 engineering problems are.</p>
-<div class="section-head"><p class="section-label">02</p><h2 id="what-the-genre-asks-of-a-generator"><a class="anchor" href="#what-the-genre-asks-of-a-generator">What the genre asks of a generator</a></h2></div>
+<div class="section-head"><p class="section-label">02</p><h2 id="the-genre-forgives-flicker-but-needs-the-same-actor-and-room"><a class="anchor" href="#the-genre-forgives-flicker-but-needs-the-same-actor-and-room">The genre forgives flicker but needs the same actor and room</a></h2></div>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
 <thead>
 <tr>
@@ -598,7 +668,7 @@ engineering problems are.</p>
 <p>The economic asymmetry underneath: AI cost is per shot and per reroll; live-action cost is per
 setup, and the recurring elements (actress, flat, costume) are free after episode one. A pipeline
 that makes the character and the room <em>assets</em> rather than <em>prompts</em> restores that asymmetry.</p>
-<div class="section-head"><p class="section-label">03</p><h2 id="the-model-landscape-september-2026"><a class="anchor" href="#the-model-landscape-september-2026">The model landscape, September 2026</a></h2></div>
+<div class="section-head"><p class="section-label">03</p><h2 id="chinese-models-lead-clips-reach-30-s-and-sora-is-dead"><a class="anchor" href="#chinese-models-lead-clips-reach-30-s-and-sora-is-dead">Chinese models lead, clips reach 30 s, and Sora is dead</a></h2></div>
 <p>A survey of about 25 models against their primary pages and the Artificial Analysis arena <a class="cite" href="#ref-14">[14]</a> found
 the familiar picture of &quot;Veo 3 vs Sora 2 vs Kling 2.x&quot; obsolete. Six shifts:</p>
 <ol>
@@ -625,7 +695,7 @@ Alibaba&#39;s open ceiling; Wan 2.5, 2.6, 2.7 and 3.0 are API-only despite SEO c
 &quot;fully open&quot; claim has produced no weights. MAGI-2 is Apache-2.0 but needs 8 Hopper GPUs <a class="cite" href="#ref-26">[26]</a>.</li>
 <li><strong>Nobody hosted guarantees determinism</strong> (section 6.4).</li>
 </ol>
-<h3 id="3-1-condensed-table"><a class="anchor" href="#3-1-condensed-table">3.1 Condensed table</a></h3>
+<h3 id="3-1-thirteen-models-in-one-table"><a class="anchor" href="#3-1-thirteen-models-in-one-table">3.1 Thirteen models in one table</a></h3>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
 <thead>
 <tr>
@@ -793,7 +863,7 @@ appears when forbidden); hands, faces and physics, still scored dimensions on VB
 they fail; morphing on held shots (practitioner consensus, not quantified); audio caveats (Kling:
 no native audio with video input); prose-timed cuts on Seedance; extension only at 720p on Veo;
 and non-determinism everywhere hosted.</p>
-<div class="section-head"><p class="section-label">04</p><h2 id="characters-deterministic-identity-across-shots"><a class="anchor" href="#characters-deterministic-identity-across-shots">Characters: deterministic identity across shots</a></h2></div>
+<div class="section-head"><p class="section-label">04</p><h2 id="characters-lock-exactly-only-as-a-lora-or-a-3d-asset"><a class="anchor" href="#characters-lock-exactly-only-as-a-lora-or-a-3d-asset">Characters lock exactly only as a LoRA or a 3D asset</a></h2></div>
 <h3 id="4-1-the-determinism-ladder"><a class="anchor" href="#4-1-the-determinism-ladder">4.1 The determinism ladder</a></h3>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
 <thead>
@@ -962,7 +1032,7 @@ small and the wrongness is carried by posture and framing.</li>
 <p>Routes 1 to 3 give a repeatable wrong face today. Route 4 gives a repeatable <em>normal</em> face and
 will silently fix the wrongness in close-up. Nothing on the market lets you upload a defect and
 have it respected without training.</p>
-<div class="section-head"><p class="section-label">05</p><h2 id="scenes-deterministic-locations-across-shots"><a class="anchor" href="#scenes-deterministic-locations-across-shots">Scenes: deterministic locations across shots</a></h2></div>
+<div class="section-head"><p class="section-label">05</p><h2 id="rooms-lock-only-in-a-3d-set-a-splat-or-a-depth-locked-pass"><a class="anchor" href="#rooms-lock-only-in-a-3d-set-a-splat-or-a-depth-locked-pass">Rooms lock only in a 3D set, a splat or a depth-locked pass</a></h2></div>
 <h3 id="5-1-nothing-in-the-video-model-camp-keeps-the-door-where-it-was"><a class="anchor" href="#5-1-nothing-in-the-video-model-camp-keeps-the-door-where-it-was">5.1 Nothing in the video-model camp keeps the door where it was</a></h3>
 <p>Veo Ingredients, Runway References, Kling Elements (scenes are a first-class element type) <a class="cite" href="#ref-32">[32]</a> and the
 rest condition on an <em>image of the room</em>, not on its geometry. They keep the look, palette and
@@ -1180,7 +1250,7 @@ degrades with the picture.</p>
 <td>Apache / OML / MIT</td>
 </tr>
 </tbody></table></div>
-<div class="section-head"><p class="section-label">06</p><h2 id="combining-them-into-a-multi-scene-film"><a class="anchor" href="#combining-them-into-a-multi-scene-film">Combining them into a multi-scene film</a></h2></div>
+<div class="section-head"><p class="section-label">06</p><h2 id="three-ways-to-combine-shots-only-the-3d-first-build-repeats"><a class="anchor" href="#three-ways-to-combine-shots-only-the-3d-first-build-repeats">Three ways to combine shots; only the 3D-first build repeats</a></h2></div>
 <h3 id="6-1-three-architectures"><a class="anchor" href="#6-1-three-architectures">6.1 Three architectures</a></h3>
 <p><strong>A. Per-shot hosted generation with a reference kit</strong> (what the AI-native niche does). Script
 beats, then a Nano Banana character sheet and location keyframes, then image-to-video per shot on
@@ -1467,7 +1537,7 @@ unified grade, grain, crossfades and loudness; no narration; about $6 per 64 s p
 Krea-2 multi-shot stills with an identity LoRA into LTX Director (seeded stills, hosted video) <a class="cite" href="#ref-98">[98]</a>;
 MoneyPrinterTurbo plus Vanta (fully local possible, the highest determinism, the lowest craft). No
 verifiable write-up of an AI analog-horror pipeline specifically could be found.</p>
-<div class="section-head"><p class="section-label">07</p><h2 id="readiness-verdict-and-cost"><a class="anchor" href="#readiness-verdict-and-cost">Readiness verdict and cost</a></h2></div>
+<div class="section-head"><p class="section-label">07</p><h2 id="a-45-s-short-costs-40-to-200-hosted-and-keeps-1-take-in-4"><a class="anchor" href="#a-45-s-short-costs-40-to-200-hosted-and-keeps-1-take-in-4">A 45 s short costs $40 to $200 hosted and keeps 1 take in 4</a></h2></div>
 <h3 id="7-1-what-has-been-made"><a class="anchor" href="#7-1-what-has-been-made">7.1 What has been made</a></h3>
 <p>Festival tier: the Runway AIFF 2026 Grand Prix winner &quot;A Face Only A Mother Could Love&quot; is 7:50 <a class="cite" href="#ref-112">[112]</a>;
 winners run 3.5 to 11.6 min; the festival requires generative video but no minimum AI percentage <a class="cite" href="#ref-112">[112]</a>;
@@ -1545,7 +1615,7 @@ heavy stitching.</li>
 years</strong>. Of its two blockers, only reproducibility has a known engineering path (open weights,
 a LoRA and 3D structure); performance does not.</li>
 </ul>
-<div class="section-head"><p class="section-label">08</p><h2 id="why-it-is-a-dead-end-for-generation"><a class="anchor" href="#why-it-is-a-dead-end-for-generation">Why it is a dead end for generation</a></h2></div>
+<div class="section-head"><p class="section-label">08</p><h2 id="a-series-is-a-dead-end-for-generation"><a class="anchor" href="#a-series-is-a-dead-end-for-generation">A series is a dead end for generation</a></h2></div>
 <p>The question was whether AI can generate a film like these. For a one-off, the answer in section
 7.4 is yes, with a person curating. For a <em>series</em>, which is what makes a channel like Evillica&#39;s
 work, it is no, and the reason is structural rather than a matter of model quality:</p>
@@ -1562,7 +1632,8 @@ pass, which is architecture C. It can be a good way to make a film, but it is no
 one, and its up-front cost is building the character and the set.</li>
 </ul>
 <h3 id="8-1-what-a-3d-first-episode-build-would-contain"><a class="anchor" href="#8-1-what-a-3d-first-episode-build-would-contain">8.1 What a 3D-first episode build would contain</a></h3>
-<p>For anyone who does take architecture C, these are the stages it needs.</p>
+<p>For anyone who does take architecture C, these are the stages it needs. Hosted models are
+inserts in it, not the spine.</p>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
 <thead>
 <tr>
@@ -1623,7 +1694,7 @@ one, and its up-front cost is building the character and the set.</li>
 the genre&#39;s aesthetic absorbs a clean CG interior and a too-still face, and it is bit-exact end to
 end. The surface stage is an upgrade whose value should be judged against that baseline, not
 assumed.</p>
-<h3 id="8-2-licences"><a class="anchor" href="#8-2-licences">8.2 Licences</a></h3>
+<h3 id="8-2-licences-keep-to-apache-mit-and-bsd"><a class="anchor" href="#8-2-licences-keep-to-apache-mit-and-bsd">8.2 Licences: keep to Apache, MIT and BSD</a></h3>
 <p>Keep to Apache, MIT and BSD wherever a model touches shipped pixels: the Wan 2.2 family (VACE,
 Stand-In, Animate-2, InfiniteTalk), LatentSync <a class="cite" href="#ref-55">[55]</a>, Qwen-Image-Edit-2511 or FLUX.2-klein-4B for
 stills, Infinigen (BSD-3) <a class="cite" href="#ref-62">[62]</a>, ntsc-rs, and Audio2Face-3D <a class="cite" href="#ref-54">[54]</a> (SDK MIT; models under the NVIDIA Open Model
@@ -1664,7 +1735,7 @@ avoid; realistic synthetic scenes need the disclosure label (which does not affe
 C2PA metadata auto-labels <a class="cite" href="#ref-123">[123]</a>; and from 2027-02-01 the Shorts Creator Pool requires 10 M Shorts views
 per trailing 90 days. Practical-plus-post work like Evillica&#39;s needs no label. Veo and Omni carry
 SynthID. Seedance carries live US legal exposure (studio complaints, a Senate letter).</p>
-<div class="section-head"><p class="section-label">10</p><h2 id="what-was-not-verified"><a class="anchor" href="#what-was-not-verified">What was not verified</a></h2></div>
+<div class="section-head"><p class="section-label">10</p><h2 id="seven-claims-not-checked-against-a-primary-source"><a class="anchor" href="#seven-claims-not-checked-against-a-primary-source">Seven claims not checked against a primary source</a></h2></div>
 <p>The ones that matter: the &quot;slow push-in breathing&quot; failure mode is practitioner consensus, not a
 measurement; no public benchmark isolates cross-shot identity, and VBench-2.0&#39;s 2026 tables would
 not render; the MiniMax H3 geographic clause comes from secondary sources; LTX-2.5&#39;s seconds per
@@ -1672,6 +1743,30 @@ clip on one H100 and its run-to-run bit-equality are vendor claims until experim
 and Instagram were unreachable, so community reroll counts come from vendor and course pages; the
 ICT FaceKit licence text was not re-read; and whether the Mom face warp in the reference shorts is
 AI-assisted is unknown.</p>
+      </div>
+      <section class="keep-reading" aria-labelledby="next-reads">
+        <h2 id="next-reads" class="section-label">Keep reading</h2>
+        <p class="series-name">AI short films · 3 parts</p>
+        <ol class="series-parts">
+          <li aria-current="true"><span>AI short films: consistent characters and sets</span></li>
+          <li><a href="/research/reverse-engineering-an-ai-horror-short" data-visits-event="next-reverse-engineering-an-ai-horror-short">Reverse engineering an AI horror short</a></li>
+          <li><a href="/research/synthetic-voices-for-a-radio-call" data-visits-event="next-synthetic-voices-for-a-radio-call">Synthetic voices for a radio call</a></li>
+        </ol>
+        <ul class="doc-list next-list" role="list">
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/horror-sequences-shot-by-shot" data-visits-event="next-horror-sequences-shot-by-shot">23 Horror Sequences Broken Down Shot by Shot</a></h3>
+            <p class="doc-meta">36 min read</p>
+            <p class="doc-desc">Shot-by-shot breakdowns of 23 horror sequences, from the Psycho shower to Weapons: sizes, moves, durations, cut points, and what each one teaches.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/stylized-shader-looks" data-visits-event="next-stylized-shader-looks">Stylized shader looks: how games build a visual identity</a></h3>
+            <p class="doc-meta">5 min read</p>
+            <p class="doc-desc">Memorable game looks come from one or two strong shader rules applied everywhere: ink outlines, cel bands, dithering, gradient fog or VHS.</p>
+          </li>
+        </ul>
+        <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS) or <a class="external" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">csarko.log</a>.</p>
+      </section>
+      <div class="prose">
 <div class="section-head" data-read-end><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <p>Every claim above was checked against these or marked as recalled or unverified.</p>
 <ol class="references">
@@ -1799,7 +1894,6 @@ AI-assisted is unknown.</p>
 <li id="ref-122"><span class="ref-num">[122]</span><div>U.S. Copyright Office, &quot;Copyright and Artificial Intelligence, Part 2: Copyrightability,&quot; Jan. 29, 2025. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://www.copyright.gov/ai/Copyright-and-Artificial-Intelligence-Part-2-Copyrightability-Report.pdf" target="_blank" rel="noopener">https://www.copyright.gov/ai/Copyright-and-Artificial-Intelligence-Part-2-Copyrightability-Report.pdf</a></div></li>
 <li id="ref-123"><span class="ref-num">[123]</span><div>YouTube, &quot;Disclosing use of GenAI content,&quot; YouTube Help. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://support.google.com/youtube/answer/14328491" target="_blank" rel="noopener">https://support.google.com/youtube/answer/14328491</a></div></li>
 </ol>
-
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
@@ -1807,6 +1901,10 @@ AI-assisted is unknown.</p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
+      <nav class="afterward" aria-label="Read next">
+        <a class="next" href="/research/reverse-engineering-an-ai-horror-short" data-visits-event="end-reverse-engineering-an-ai-horror-short"><span class="section-label">Read next</span><span>Reverse engineering an AI horror short <span aria-hidden="true">→</span></span></a>
+        <a href="/research">All research</a>
+      </nav>
     </main>
   </div>
 
@@ -1819,6 +1917,7 @@ AI-assisted is unknown.</p>
   <!-- generated:analytics -->
   <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
+  <script defer src="/assets/reading.c3e27b33.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

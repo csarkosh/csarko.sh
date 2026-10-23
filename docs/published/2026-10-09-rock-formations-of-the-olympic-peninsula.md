@@ -2,6 +2,7 @@
 description: How the Olympic Peninsula's crags, talus, cirques and sea stacks formed and what they look like, and how AAA games build rock formations that convince.
 published: 2026-10-09
 categories: Worlds and terrain
+series: Olympic Peninsula field notes
 ---
 # Rock formations of the Olympic Peninsula, and how games build them
 

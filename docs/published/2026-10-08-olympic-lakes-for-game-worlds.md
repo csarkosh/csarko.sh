@@ -2,6 +2,7 @@
 description: How the lakes of Washington's Olympic Peninsula formed, their measured shapes and perched cirque basins, and numeric rules for generating them in a game world.
 published: 2026-10-08
 categories: Worlds and terrain
+series: Olympic Peninsula field notes
 ---
 # Olympic Peninsula lakes for game worlds
 

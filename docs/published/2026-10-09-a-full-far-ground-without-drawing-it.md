@@ -2,6 +2,7 @@
 description: Cheap GPU tricks that make a game's far ground read as full of grass and cover without drawing blades there: fitted colour, sun-shaded clumps, sparse cards.
 published: 2026-10-09
 categories: Rendering
+series: Filling the distance
 ---
 # A full far ground without drawing it
 

@@ -2,6 +2,7 @@
 description: Whether a personal site is gaining traction, with no cookies and no monthly bill: the metrics, free sources, one API per app, a daily ledger, and the gotchas.
 published: 2026-10-13
 categories: Distributed systems, Tooling
+series: Analytics without cookies
 ---
 # A zero-cost analytics dashboard without cookies
 

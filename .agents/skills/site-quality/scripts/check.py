@@ -53,7 +53,7 @@ BUDGET_ANY_PORTRAIT = 90_000
 BUDGET_SCRIPTS = 10_000  # all JavaScript the page loads, first- and third-party (third-party measured live)
 
 BUDGET_HTML_DOCS_INDEX = 80_000  # the research index lists every doc with its card, about 1.7 KB each; 29 docs crossed BUDGET_HTML on 2026-10-14
-BUDGET_HTML_DOC = 200_000  # a doc page is mostly prose, so long research docs get more room than BUDGET_HTML; the longest, with 146 sources, is 197 KB (55 KB gzipped)
+BUDGET_HTML_DOC = 225_000  # a doc page is mostly prose, so long research docs get more room than BUDGET_HTML; the longest, with 146 sources, was 197 KB (55 KB gzipped) and is 210 KB since every doc page carries its contents list, Keep reading block and their rules (2026-10-23)
 
 BUILD_DOCS = SKILL / "scripts/build_docs.mjs"
 # Where docs are built and served (DOCS_DIR in docs_lib.mjs), and where they used to be: firebase.json
@@ -261,7 +261,7 @@ def resolve_internal(href, public=PUBLIC):
 
 
 _FILLED_BLOCKS = re.compile(
-    r"(<!-- generated:(head|analytics|film-poster:[a-z0-9-]+|app-preview:[a-z0-9-]+) -->).*?(<!-- /generated:\2 -->)"
+    r"(<!-- generated:(head|analytics|film-poster:[a-z0-9-]+|app-preview:[a-z0-9-]+|figure:[a-z0-9-]+/[a-z0-9-]+) -->).*?(<!-- /generated:\2 -->)"
     r"|(/\* generated:fonts \*/).*?(/\* /generated:fonts \*/)", re.S)
 
 
@@ -588,7 +588,7 @@ def accessibility_checks(page, name):
 
 # ------------------------------------------------------------------------- theme
 
-THEME_TEXT = ("--text", "--muted", "--faint", "--accent")
+THEME_TEXT = ("--text", "--prose", "--muted", "--faint", "--accent")
 THEME_SURFACES = ("--bg", "--surface", "--surface-2")
 COLOR_LITERAL = re.compile(r"#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(")
 
@@ -722,7 +722,7 @@ def docs_build_checks():
             builds.append({p.relative_to(out).as_posix(): p.read_text(encoding="utf-8")
                            for p in Path(out).rglob("*") if p.is_file()})
     check(builds[0] == builds[1], "docs build is deterministic (two builds are byte-identical)")
-    committed = {rel: (PUBLIC / rel).read_text(encoding="utf-8") for rel in ("sitemap.xml",)}
+    committed = {rel: (PUBLIC / rel).read_text(encoding="utf-8") for rel in ("sitemap.xml", f"{DOCS_DIR}/feed.xml") if (PUBLIC / rel).exists()}
     for d in (DOCS_DIR, "games", FILM_DIR, APPS_DIR):
         committed |= {f"{d}/{p.name}": p.read_text(encoding="utf-8") for p in (PUBLIC / d).glob("*.html")}
     stale = sorted(rel for rel in set(builds[0]) | set(committed)
@@ -967,6 +967,9 @@ def analytics_checks(pages):
         data = strip_comments((SKILL / f"assets/vendor/{stem}.min.js").read_bytes())
         return f"{stem}.{hashlib.sha256(data).hexdigest()[:8]}.js"
     want_core, want_vitals = want("visits"), want("vitals")
+    # A doc page's own script (assets/reading.js), hashed the same way, on doc pages only.
+    reading_data = strip_comments((SKILL / "assets/reading.js").read_bytes())
+    want_reading = f"reading.{hashlib.sha256(reading_data).hexdigest()[:8]}.js"
     for name, (page, html) in pages.items():
         scripts = [a for a, _ in page.scripts]
         core = [a for a in scripts if "data-visits" in a]
@@ -981,8 +984,13 @@ def analytics_checks(pages):
         check(len(vitals) == 1, f"{name}: one vitals tag ({want_vitals}; {len(vitals)} found, else a stale build)")
         if vitals:
             check("defer" in vitals[0], f"{name}: the vitals tag is deferred")
-        others = [a.get("src") or "(inline)" for a in scripts if a not in core and a not in vitals]
-        check(not others, f"{name}: no scripts besides the two visits tags {others or ''}")
+        reading = [a for a in scripts if a.get("src", "").endswith(f"assets/{want_reading}")]
+        if page_kind(name) == "doc":
+            check(len(reading) == 1 and "defer" in reading[0], f"{name}: one deferred reading tag ({want_reading}; else a stale build)")
+        else:
+            check(not reading, f"{name}: reading.js is for doc pages only")
+        others = [a.get("src") or "(inline)" for a in scripts if a not in core and a not in vitals and a not in reading]
+        check(not others, f"{name}: no scripts besides the two visits tags and a doc's reading.js {others or ''}")
         if page_kind(name) == "doc":
             check(html.count(" data-read-end") == 1, f"{name}: one data-read-end marker")
     _, catch_all = csp_from_config()

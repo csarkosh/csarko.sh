@@ -3,6 +3,7 @@ description: Keeping a streamed browser forest from visibly spawning: pixel-size
 published: 2026-09-01
 categories: Rendering
 updated: 2026-10-10
+series: Rendering a browser forest
 ---
 # No visible pop-in: dissolving a streamed forest
 

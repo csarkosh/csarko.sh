@@ -3,6 +3,7 @@ description: Hosting a WebRTC signaling server on Google Cloud Run for a browser
 published: 2026-07-29
 categories: Distributed systems
 updated: 2026-10-10
+series: Day Hike netcode
 ---
 # Hosting WebRTC signaling on Cloud Run
 

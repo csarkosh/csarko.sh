@@ -20,6 +20,7 @@
   <meta property="article:published_time" content="2026-10-15" />
   <meta property="article:modified_time" content="2026-10-18" />
   <meta property="article:author" content="https://csarko.sh/" />
+  <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Privacy-first telemetry without user IDs" />
   <meta name="twitter:description" content="A privacy-first telemetry design for a desktop IDE: counters and coarse dimensions, no IDs, opt-in consent, crash reports, and legal baselines." />
@@ -130,6 +131,8 @@
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
+      /* A doc's body text: brighter than --muted, which reads as grey at length (2026-10-23). */
+      --prose: #c9ced9;
       --faint: #7d8597;
       /* Content warnings only. Yellow to stand apart from the teal accent. */
       --warning: #f5c451;
@@ -159,6 +162,7 @@
         --border-strong: rgba(10, 11, 14, 0.16);
         --text: #12151c;
         --muted: #4a5263;
+        --prose: #2b3240;
         --faint: #5f677a;
         --warning: #8a6100;
         --accent: #0a735f;
@@ -350,6 +354,57 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .doc-page .prose { font-size: 17px; }
+    .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
+    .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
+    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .rail a[aria-current] { color: var(--text); }
+    .rail a[aria-current] .num { color: var(--accent); }
+    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .toc .section-label { margin: 0 0 6px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
+    .toc a:hover { color: var(--accent); }
+    .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    .figure { margin: 32px 0; }
+    .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+    /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
+    .figure img { max-height: 80vh; object-fit: contain; }
+    .figure figcaption { margin-top: 10px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+    .prose blockquote strong:first-child { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted var(--faint); text-underline-offset: 4px; }
+    .term:hover, .term:focus-visible { text-decoration-color: var(--accent); }
+    .term-def { max-width: min(92vw, 420px); margin: auto; padding: 16px 18px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.55; }
+    .term-def::backdrop { background: var(--nav-bg); }
+    /* A wide table or code block that scrolls sideways shows a shade at the edge it can scroll to. */
+    .scroll { background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
+      var(--surface); }
+    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
+    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
+    .series-name { margin: 0 0 8px; font-weight: 600; }
+    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
+    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
+    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
+    .next-list .card { padding: 16px 18px; background: var(--bg); }
+    .next-list .doc-title { font-size: 1.05rem; }
+    .next-list .doc-desc { font-size: 14.5px; }
+    .play-line { margin: 20px 0 0; }
+    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background .15s ease; }
+    .play:hover { background: var(--accent-hover); }
+    .play svg { width: 14px; height: 14px; }
+    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
+    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color .15s ease; }
+    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
+    .afterward .next:hover { border-color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -385,29 +440,47 @@
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-        <li><a href="#four-coarse-dimensions-and-a-bag-of-counters-answer-every-traction-question"><span>Four coarse dimensions and a bag of counters answer every traction question</span></a></li>
-        <li><a href="#client-regulated-counting-beats-hashing-for-an-installed-app"><span>Client-regulated counting beats hashing for an installed app</span></a></li>
-        <li><a href="#every-silent-opt-out-default-drew-a-backlash-opt-in-projects-have-had-none"><span>Every silent opt-out default drew a backlash; opt-in projects have had none</span></a></li>
-        <li><a href="#consent-ux-a-no-default-prompt-two-switches-and-an-opt-out-that-stops-all-traffic"><span>Consent UX: a no-default prompt, two switches, and an opt-out that stops all traffic</span></a></li>
-        <li><a href="#crash-reports-build-identity-and-addresses-never-memory-or-free-text"><span>Crash reports: build identity and addresses, never memory or free text</span></a></li>
-        <li><a href="#legal-baselines-the-momentary-ip-is-the-only-personal-data-if-the-design-holds"><span>Legal baselines: the momentary IP is the only personal data if the design holds</span></a></li>
-        <li><a href="#the-telemetry-page-nine-items-that-trusted-projects-all-publish"><span>The telemetry page: nine items that trusted projects all publish</span></a></li>
-        <li><a href="#recommended-design-for-arkos"><span>Recommended design for Arkos</span></a></li>
-        <li><a href="#conclusion"><span>Conclusion</span></a></li>
-        <li><a href="#sources"><span>Sources</span></a></li>
+        <li><a href="#four-coarse-dimensions-and-a-bag-of-counters-answer-every-traction-question" data-visits-event="toc-rail"><span>Four coarse dimensions and a bag of counters answer every traction question</span></a></li>
+        <li><a href="#client-regulated-counting-beats-hashing-for-an-installed-app" data-visits-event="toc-rail"><span>Client-regulated counting beats hashing for an installed app</span></a></li>
+        <li><a href="#every-silent-opt-out-default-drew-a-backlash-opt-in-projects-have-had-none" data-visits-event="toc-rail"><span>Every silent opt-out default drew a backlash; opt-in projects have had none</span></a></li>
+        <li><a href="#consent-ux-a-no-default-prompt-two-switches-and-an-opt-out-that-stops-all-traffic" data-visits-event="toc-rail"><span>Consent UX: a no-default prompt, two switches, and an opt-out that stops all traffic</span></a></li>
+        <li><a href="#crash-reports-build-identity-and-addresses-never-memory-or-free-text" data-visits-event="toc-rail"><span>Crash reports: build identity and addresses, never memory or free text</span></a></li>
+        <li><a href="#legal-baselines-the-momentary-ip-is-the-only-personal-data-if-the-design-holds" data-visits-event="toc-rail"><span>Legal baselines: the momentary IP is the only personal data if the design holds</span></a></li>
+        <li><a href="#the-telemetry-page-nine-items-that-trusted-projects-all-publish" data-visits-event="toc-rail"><span>The telemetry page: nine items that trusted projects all publish</span></a></li>
+        <li><a href="#recommended-design-for-arkos" data-visits-event="toc-rail"><span>Recommended design for Arkos</span></a></li>
+        <li><a href="#conclusion" data-visits-event="toc-rail"><span>Conclusion</span></a></li>
+        <li><a href="#sources" data-visits-event="toc-rail"><span>Sources</span></a></li>
       </ol>
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
         <p class="eyebrow">Oct 15, 2026 · Updated Oct 18, 2026</p>
         <h1>Privacy-first telemetry without user IDs</h1>
+        <p class="lead">A privacy-first telemetry design for a desktop IDE: counters and coarse dimensions, no IDs, opt-in consent, crash reports, and legal baselines.</p>
         <ul class="tags">
-          <li>49 min read</li>
+          <li>40 min read</li>
           <li><a class="external" href="https://github.com/csarkosh/ide-arkos" target="_blank" rel="noopener">Also on GitHub</a></li>
         </ul>
+        <p class="series-line">Part 2 of 3 in <strong>Analytics without cookies</strong> · Next: <a href="/research/visits-without-cookies" data-visits-event="series-visits-without-cookies">Visits without cookies, and the path they took</a></p>
       </header>
       <div class="prose">
 <p>Arkos can learn how many machines run it, how often they come back, which features and which coding agents get used, and which releases crash and where, without ever receiving a file name, path, project name, hostname, username or persistent identifier. The evidence from Go&#39;s transparent telemetry, Chromium&#39;s Omaha updater, Homebrew and Firefox&#39;s retired install census converges on one shape: <strong>four coarse dimensions (app version, macOS major version, CPU architecture, install channel) plus a bag of named integer counters</strong>, with active-user and retention arithmetic carried by two client-reported numbers, &quot;days since last report&quot; and &quot;days since last active&quot;, instead of by any ID. Crash reports shrink to a build identity, instruction addresses with the loaded-image table, a fault classification and a few environment facts, with symbolication done on the maintainer&#39;s server from archived dSYMs. <strong>Every developer tool that shipped default-on telemetry without a notice before the first send drew a backlash</strong> (Homebrew 2016, .NET 2016, Audacity 2021, Go 2023, Fedora 2023), while the projects that chose opt-in have had none; EU ePrivacy guidance treats locally generated information sent home as &quot;gaining access&quot; to the device, so anything beyond the bare update check needs consent or a strong necessity argument. The recommended design is Go&#39;s <code>local</code> default plus a one-time invitation, Omaha-style identifier-free roll calls, a typed allowlist wire format checked into the repository, per-incident crash consent that shows the exact bytes, a first-party endpoint that never writes IP addresses, published aggregates with a cell floor of ten, and a telemetry page built from the nine items that Go, Homebrew, KDE, Mozilla and GitHub CLI all publish. Its cost is a small, self-selected sample and a symbolication pipeline the maintainer must run; both are cheaper than the trust the alternatives have cost other projects.</p>
+      </div>
+      <nav class="toc" aria-label="In this doc">
+        <p class="section-label">In this doc</p>
+        <ol>
+          <li><a href="#four-coarse-dimensions-and-a-bag-of-counters-answer-every-traction-question" data-visits-event="toc"><span>Four coarse dimensions and a bag of counters answer every traction question</span></a></li>
+          <li><a href="#client-regulated-counting-beats-hashing-for-an-installed-app" data-visits-event="toc"><span>Client-regulated counting beats hashing for an installed app</span></a></li>
+          <li><a href="#every-silent-opt-out-default-drew-a-backlash-opt-in-projects-have-had-none" data-visits-event="toc"><span>Every silent opt-out default drew a backlash; opt-in projects have had none</span></a></li>
+          <li><a href="#consent-ux-a-no-default-prompt-two-switches-and-an-opt-out-that-stops-all-traffic" data-visits-event="toc"><span>Consent UX: a no-default prompt, two switches, and an opt-out that stops all traffic</span></a></li>
+          <li><a href="#crash-reports-build-identity-and-addresses-never-memory-or-free-text" data-visits-event="toc"><span>Crash reports: build identity and addresses, never memory or free text</span></a></li>
+          <li><a href="#legal-baselines-the-momentary-ip-is-the-only-personal-data-if-the-design-holds" data-visits-event="toc"><span>Legal baselines: the momentary IP is the only personal data if the design holds</span></a></li>
+          <li><a href="#the-telemetry-page-nine-items-that-trusted-projects-all-publish" data-visits-event="toc"><span>The telemetry page: nine items that trusted projects all publish</span></a></li>
+          <li><a href="#recommended-design-for-arkos" data-visits-event="toc"><span>Recommended design for Arkos</span></a></li>
+          <li><a href="#conclusion" data-visits-event="toc"><span>Conclusion</span></a></li>
+        </ol>
+      </nav>
+      <div class="prose">
 <div class="section-head"><h2 id="four-coarse-dimensions-and-a-bag-of-counters-answer-every-traction-question"><a class="anchor" href="#four-coarse-dimensions-and-a-bag-of-counters-answer-every-traction-question">Four coarse dimensions and a bag of counters answer every traction question</a></h2></div>
 <p>The tools that measure usage without identifiers all arrived at the same data model. Go telemetry stores &quot;only counter names and 64-bit totals, with no event log or trace&quot;, keyed by program, version, toolchain version, GOOS, GOARCH and week start, so every report inherently carries program, version, OS and architecture dimensions and nothing finer <a class="cite" href="#ref-1">[1]</a>. Its privacy page describes the collected classes as event counters, stack traces restricted to the toolchain&#39;s own functions, and &quot;Your operating system, CPU architecture, and name and version of the Go tool being executed&quot;, and states the files &quot;do not contain personal or other identifying information about you or your system&quot; <a class="cite" href="#ref-2">[2]</a>. Homebrew&#39;s payload for install and build-error events carries the package name, non-private tap name, selected install options, whether the install was requested or pulled in as a dependency, CPU architecture, OS name or major version and Homebrew version; the install prefix is reported only as default or <code>custom-prefix</code>, command events carry command and option names &quot;with option values removed&quot;, build-error events &quot;do not include build logs or exception details&quot;, and the payload has no user identifier or IP-address field <a class="cite" href="#ref-3">[3]</a>. Firefox&#39;s legacy Active Daily Installs request &quot;does not contain the telemetry client_id or any other persistent identifiers&quot;; it carried app ID, version, build ID, locale, update channel, OS version, distribution and &quot;Number of full days since last ping&quot; as the only time-based signal <a class="cite" href="#ref-4">[4]</a>.</p>
 <p>The arithmetic that turns those fields into traction metrics needs no ID at all. Chromium&#39;s Omaha updater protocol is explicitly &quot;anonymous, but allows servers to compute the number of unique active or update-checking devices&quot; through client-regulated counting: the client sends <code>ad</code>, &quot;The date that the previous active report took place on, or &#39;-1&#39; if this is the first active report&quot;, and <code>rd</code>, the date of the previous roll call, and the server keeps only the first request per client in the window it is measuring <a class="cite" href="#ref-5">[5]</a>. Firefox&#39;s census worked the same way: for each day, Mozilla added up requests whose days-since-last-ping indicated a first-ever request (a new install) or a last request before the analysis window, which yields new installs, returning installs and daily, weekly and monthly actives from one integer <a class="cite" href="#ref-4">[4]</a>. Go derives active-user estimates from the <code>LastWeek</code> field over longer periods, and produces histograms (its example is a build-cache miss-rate histogram) and breakdowns by GOOS, GOARCH, Go version and program version from counters alone <a class="cite" href="#ref-1">[1]</a>. Omaha even buckets the install date on the client, storing <code>X - X % 7</code> so the server learns an install week, never a day, &quot;to limit privacy risk&quot; <a class="cite" href="#ref-5">[5]</a>.</p>
@@ -735,6 +808,30 @@
 <div class="section-head"><h2 id="conclusion"><a class="anchor" href="#conclusion">Conclusion</a></h2></div>
 <p>The research reframes the question. The risk in developer-tool telemetry was never the counting; it was identifiers, third-party endpoints, free-form payloads and silent defaults, and each of those is a design choice with a shipping alternative. Go proved that a toolchain can run telemetry with no IDs, no IP retention and public raw data; Omaha proved that unique actives and retention need only two integers the client already knows; Bun proved a crash report fits in 150 bytes when symbols stay on the server; and Apple, Firefox and Signal proved that users accept a crash dialog that shows its bytes. Put together, Arkos can have install counts, actives, retention, feature and agent mix, and symbolicated crash stacks while its telemetry page states, truthfully, that it has never received a file name, a path, a prompt or an identity.</p>
 <p>The decision that remains is political rather than technical: whether to accept a small opt-in sample in exchange for never having to defend a default. Every project in the record that chose the default paid for it, some with forks, and the one that reversed in time (Go) now reports no backlash and a steady stream of real bugs from a few thousand volunteers. For a one-maintainer project whose users are the exact population that wrote the Go and Rust threads, the <code>local</code> default plus a visible invitation is not the cautious choice; it is the one that gets the data.</p>
+      </div>
+      <section class="keep-reading" aria-labelledby="next-reads">
+        <h2 id="next-reads" class="section-label">Keep reading</h2>
+        <p class="series-name">Analytics without cookies · 3 parts</p>
+        <ol class="series-parts">
+          <li><a href="/research/a-zero-cost-analytics-dashboard-without-cookies" data-visits-event="next-a-zero-cost-analytics-dashboard-without-cookies">A zero-cost analytics dashboard without cookies</a></li>
+          <li aria-current="true"><span>Privacy-first telemetry without user IDs</span></li>
+          <li><a href="/research/visits-without-cookies" data-visits-event="next-visits-without-cookies">Visits without cookies, and the path they took</a></li>
+        </ol>
+        <ul class="doc-list next-list" role="list">
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/large-files-out-of-git" data-visits-event="next-large-files-out-of-git">Git LFS on a cloud bucket, not GitHub&#39;s storage</a></h3>
+            <p class="doc-meta">11 min read</p>
+            <p class="doc-desc">Git LFS is not tied to GitHub. How its endpoint is discovered, three ways to put a cloud bucket behind it, and when to skip LFS entirely.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/bring-the-agents-back-after-a-reboot" data-visits-event="next-bring-the-agents-back-after-a-reboot">Bring the agents back after a reboot</a></h3>
+            <p class="doc-meta">17 min read</p>
+            <p class="doc-desc">After a restart nothing survives, but the layout, scrollback and each agent&#39;s conversation can come back on their own; how Claude Code and Codex differ.</p>
+          </li>
+        </ul>
+        <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS) or <a class="external" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">csarko.log</a>.</p>
+      </section>
+      <div class="prose">
 <div class="section-head" data-read-end><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <ol class="references">
 <li id="ref-1"><span class="ref-num">[1]</span><div>R. Cox, &quot;The Design of Transparent Telemetry,&quot; research!rsc. Accessed: Oct. 15, 2026. [Online]. Available: <a class="external" href="https://research.swtch.com/telemetry-design" target="_blank" rel="noopener">https://research.swtch.com/telemetry-design</a></div></li>
@@ -857,7 +954,6 @@
 <li id="ref-118"><span class="ref-num">[118]</span><div>Astro Contributors, &quot;Documenting the telemetry env var (roadmap discussion #405),&quot; GitHub. Accessed: Oct. 15, 2026. [Online]. Available: <a class="external" href="https://github.com/withastro/roadmap/discussions/405" target="_blank" rel="noopener">https://github.com/withastro/roadmap/discussions/405</a></div></li>
 <li id="ref-119"><span class="ref-num">[119]</span><div>Mozilla, &quot;Protected data access,&quot; Mozilla Crash Stats. Accessed: Oct. 15, 2026. [Online]. Available: <a class="external" href="https://crash-stats.mozilla.org/documentation/protected_data_access/" target="_blank" rel="noopener">https://crash-stats.mozilla.org/documentation/protected_data_access/</a></div></li>
 </ol>
-
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
@@ -865,6 +961,10 @@
         <p>Senior software engineer leading distributed systems and AI products.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
+      <nav class="afterward" aria-label="Read next">
+        <a class="next" href="/research/visits-without-cookies" data-visits-event="end-visits-without-cookies"><span class="section-label">Read next</span><span>Visits without cookies, and the path they took <span aria-hidden="true">→</span></span></a>
+        <a href="/research">All research</a>
+      </nav>
     </main>
   </div>
 
@@ -877,6 +977,7 @@
   <!-- generated:analytics -->
   <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
+  <script defer src="/assets/reading.c3e27b33.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

@@ -2,6 +2,7 @@
 description: Shot-by-shot breakdowns of 23 horror sequences, from the Psycho shower to Weapons: sizes, moves, durations, cut points, and what each one teaches.
 published: 2026-10-22
 categories: Film
+series: Horror craft
 ---
 # 23 Horror Sequences Broken Down Shot by Shot
 

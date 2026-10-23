@@ -73,16 +73,101 @@ published: <YYYY-MM-DD, the doc's original date>
 categories: <one to three of the list below, comma-separated, spelled exactly>
 updated: <YYYY-MM-DD, only when revising a published doc>
 featured: <1, 2, 3…, only for a doc in /research's Start here row>
+series: <the run of docs it belongs to, only if it has one; see "Series and Keep reading">
+related: <2 to 4 doc slugs for its Keep reading block, only to hand-pick them>
 source: <https://github.com/… URL of the original, only if that repo is public>
 ---
 # <Title>
 ```
 
-The build refuses: em-dashes (use commas, colons or semicolons), images, links
-that aren't `https://`, `#anchor` or `/root-relative`, skipped heading levels,
-and more than one `# ` title. Fix the copy, not the build. Number `## ` sections
-(`## 1. Outlines`) when the doc is a list of approaches; the number shows as a
-label.
+The build refuses: em-dashes (use commas, colons or semicolons), an image that is
+not a figure (below), links that aren't `https://`, `#anchor` or `/root-relative`,
+skipped heading levels, and more than one `# ` title. Fix the copy, not the build.
+Number `## ` sections (`## 1. Outlines`) when the doc is a list of approaches; the
+number shows as a label.
+
+## Write for the skim
+
+*(2026-10-23, from the site's own visit data and published reading research: NN/g's
+eyetracking and scanning studies, Chartbeat's engaged-time data, Wikipedia's link and
+preview tests.)* Real visitors
+spend a median of about 16 seconds on a doc; most flick to the end without reading, and
+Google visitors decide from the first screen. The first two screens get about 74% of all
+viewing time (NN/g). So a doc is written to pay off a 15 to 120 second skim, and every
+fact still stays on the page: nothing is gated, collapsed or cut to make it shorter.
+
+What the page does by itself: the `description` shows under the title (so write it as
+the doc's one-line result, not a topic), an "In this doc" list follows the opening, a
+Keep reading block (its series, related docs, Play Day Hike when the text names the
+game, the feed) comes before Sources and a Read next link after the author box, and the
+read time counts the words before Sources. What the doc has to do:
+
+1. **Open with the answer.** `**Question:**` in at most three sentences, then
+   `**Short answer:**`, a verdict of 2 to 4 sentences that says the finding plainly. A
+   searcher who never heard of Day Hike should get the answer before Day Hike comes up.
+2. **Then the figure**, if the doc has one (below): one real result in the first two
+   screens.
+3. **Then `**In numbers:**`** (or `**In short:**`): 3 to 6 bullets, each opening with a
+   **bold** number or fact from the body and ending with a link to the section that proves
+   it, `([section 2](#heading-id))`. No other summary section: no "answer in five lines".
+4. **Headings say the finding.** A scanner reads about the first two words of a heading,
+   so lead with the result, the number or the technique's name: "Device loss under GPU
+   saturation", not "Gotchas"; "1.3 to 1.5 ms per frame, and where it comes from", not
+   "Results". The contents list is built from them, so together they read as the argument.
+5. **Define the jargon in place.** `[froxel](#term "A frustum voxel: one cell of …")`
+   draws the word as a button whose definition opens on a tap (a popover, no script; the
+   definition is in the HTML, so it is public and searchable). One to three in the
+   opening, where a newcomer meets them.
+6. **Callouts stay visible.** A `>` blockquote whose first words are bold
+   (`> **Takeaway:** …`) draws as a boxed callout with that label. Never put core content
+   in anything collapsed.
+7. **Citations stay in the body.** References are numbered by first citation, so no `[n]`
+   in the opening, a caption or a definition: one cited earlier than its number breaks the
+   build.
+
+## Figures
+
+A doc may carry figures *(2026-10-23)*: a paragraph that is one image and nothing else,
+
+```markdown
+![What the picture shows, for a screen reader](fog.png "The point the picture makes, in one or two sentences.")
+```
+
+with the file at `.agents/skills/site-quality/assets/research/<slug>/fog.png` (PNG) or
+`.svg`. Both the alt text and the caption are required; the caption states the point,
+it does not just name the picture. `build_assets.py` turns a PNG into hashed AVIF, WebP
+and JPEG at up to 1440px (and a 1200x630 JPEG cut from its middle, which becomes the doc's share card
+when it is the first figure); an SVG is served as it is. The first figure loads at once,
+the rest lazily. Prefer a real result over decoration: Day Hike's stills
+(`~/Projects/game-dayhike/branding/previews/`, shot by its `npm run previews`), a chart
+of the doc's own measurements, a diagram of the system it describes. A caption that says
+how Day Hike draws something is checked against the game's source first. An SVG is
+hand-written, without scripts or external references, sized by `viewBox` plus `width`
+and `height`, with an inline `<style>` in the site's dark colours and a
+`@media (prefers-color-scheme: light)` block for the light ones, and every number in it
+from the doc.
+
+## Series and Keep reading
+
+`series: <Name>` *(2026-10-23)* puts a doc in a run of docs read in published order: the
+title shows "Part 2 of 5 in <Name> · Next: …", and Keep reading lists every part. A
+series needs two or more docs (the build refuses one of one); the name is 3 to 40
+letters, digits, spaces or apostrophes, starting with a capital, spelled the same on
+every doc. The series now: WebGPU against WebGL2; Rendering a browser forest; Filling the
+distance; Day Hike's look; Olympic Peninsula field notes; Horror craft; AI short films;
+Arkos IDE notes; Analytics without cookies; Day Hike netcode. A new doc joins one when
+it continues that work, and a new series starts when a second doc would join it.
+
+Keep reading also offers docs to read next: `related: slug-a, slug-b` hand-picks 2 to 4
+(the build refuses a slug that is not a published doc), else the build picks the three
+sharing the most categories, newest first (two, beside a series). Hand-pick when the
+best next read is in another category.
+
+Every link the page adds counts in the visits log, so the dashboard shows which ones are
+followed: `toc` and `toc-rail` (the contents), `doc-<slug>` (a link in the text to
+another doc), `series-<slug>`, `next-<slug>` (Keep reading), `end-<slug>` (Read next) and
+`play-<game>`, plus `section-<n>` from `reading.js` when a section has been on screen for
+5 seconds (n 0 is the opening).
 
 ### Categories
 
@@ -114,7 +199,9 @@ visitor from LinkedIn or the home page meets the strongest work before the newes
 it with `featured: <n>`, lowest first; two docs cannot share a number, and the build refuses
 one that is not a whole number from 1. Keep it to about five. The row's cards still appear in the
 full list below, which the chips filter alone. Featuring a doc is not a revision: leave
-`updated` alone. Pick by the admin dashboard's What they read and Search cards, not by date.
+`updated` alone. Pick by the admin dashboard's What they read and Search cards, not by date,
+and lead with docs that reward a short visit *(2026-10-23: ground fog and the AI horror short,
+9 and 10 minutes, kept readers longest; a 26 or 79 minute doc is a poor first card)*.
 Each card's click counts as `start-<slug>`.
 
 To **update** a doc, edit its file and set `updated`. To **remove** one, delete
@@ -180,6 +267,8 @@ Every entry is an online source and ends the same way. The templates:
 Read `doc-desktop.png`, `doc-desktop-light.png`, `doc-mobile.png` and
 `doc-mobile-light.png` (the newest doc; for an older one use
 `preview.sh --serve` and open it), plus `desktop.png` for the home section.
+Check the first two phone screens in particular: the title, the description, the
+verdict and, if the doc has one, the figure should be there.
 The desktop shots are 1440×4000, so a long doc's bottom is cut off in
 `doc-desktop*.png`; use `preview.sh --serve` to check the end of a long doc.
 `check.py` must pass. A title longer than 65 characters only warns.

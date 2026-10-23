@@ -2,6 +2,7 @@
 description: Text-to-speech for a game's radio call in 2026: the models that take direction, what gives them away, the radio chain, licences, cost, cloning your own voice.
 published: 2026-09-29
 categories: AI, Film, Game design
+series: AI short films
 ---
 # Synthetic voices for a radio call
 

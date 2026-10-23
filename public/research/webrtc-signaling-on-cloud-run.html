@@ -20,6 +20,7 @@
   <meta property="article:published_time" content="2026-07-29" />
   <meta property="article:modified_time" content="2026-10-10" />
   <meta property="article:author" content="https://csarko.sh/" />
+  <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Hosting WebRTC signaling on Cloud Run" />
   <meta name="twitter:description" content="Hosting a WebRTC signaling server on Google Cloud Run for a browser co-op game, the platform behaviours that broke it, and what a running match survives." />
@@ -127,6 +128,8 @@
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
+      /* A doc's body text: brighter than --muted, which reads as grey at length (2026-10-23). */
+      --prose: #c9ced9;
       --faint: #7d8597;
       /* Content warnings only. Yellow to stand apart from the teal accent. */
       --warning: #f5c451;
@@ -156,6 +159,7 @@
         --border-strong: rgba(10, 11, 14, 0.16);
         --text: #12151c;
         --muted: #4a5263;
+        --prose: #2b3240;
         --faint: #5f677a;
         --warning: #8a6100;
         --accent: #0a735f;
@@ -347,6 +351,57 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .doc-page .prose { font-size: 17px; }
+    .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
+    .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
+    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .rail a[aria-current] { color: var(--text); }
+    .rail a[aria-current] .num { color: var(--accent); }
+    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .toc .section-label { margin: 0 0 6px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
+    .toc a:hover { color: var(--accent); }
+    .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    .figure { margin: 32px 0; }
+    .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+    /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
+    .figure img { max-height: 80vh; object-fit: contain; }
+    .figure figcaption { margin-top: 10px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+    .prose blockquote strong:first-child { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted var(--faint); text-underline-offset: 4px; }
+    .term:hover, .term:focus-visible { text-decoration-color: var(--accent); }
+    .term-def { max-width: min(92vw, 420px); margin: auto; padding: 16px 18px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.55; }
+    .term-def::backdrop { background: var(--nav-bg); }
+    /* A wide table or code block that scrolls sideways shows a shade at the edge it can scroll to. */
+    .scroll { background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
+      var(--surface); }
+    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
+    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
+    .series-name { margin: 0 0 8px; font-weight: 600; }
+    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
+    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
+    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
+    .next-list .card { padding: 16px 18px; background: var(--bg); }
+    .next-list .doc-title { font-size: 1.05rem; }
+    .next-list .doc-desc { font-size: 14.5px; }
+    .play-line { margin: 20px 0 0; }
+    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background .15s ease; }
+    .play:hover { background: var(--accent-hover); }
+    .play svg { width: 14px; height: 14px; }
+    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
+    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color .15s ease; }
+    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
+    .afterward .next:hover { border-color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -382,23 +437,25 @@
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-        <li><a href="#why-a-server-that-only-introduces-peers-still-needs-care"><span class="num" aria-hidden="true">01</span><span>Why a server that &quot;only introduces peers&quot; still needs care</span></a></li>
-        <li><a href="#two-origins-instead-of-a-load-balancer"><span class="num" aria-hidden="true">02</span><span>Two origins instead of a load balancer</span></a></li>
-        <li><a href="#cloud-run-behaviours-that-broke-it"><span class="num" aria-hidden="true">03</span><span>Cloud Run behaviours that broke it</span></a></li>
-        <li><a href="#what-a-dropped-signaling-socket-costs-a-match"><span class="num" aria-hidden="true">04</span><span>What a dropped signaling socket costs a match</span></a></li>
-        <li><a href="#a-revision-swap-runs-two-registries"><span class="num" aria-hidden="true">05</span><span>A revision swap runs two registries</span></a></li>
-        <li><a href="#deploy-traps-pointer-files-and-the-wrong-signaling-url"><span class="num" aria-hidden="true">06</span><span>Deploy traps: pointer files and the wrong signaling URL</span></a></li>
-        <li><a href="#known-limits"><span class="num" aria-hidden="true">07</span><span>Known limits</span></a></li>
-        <li><a href="#sources"><span>Sources</span></a></li>
+        <li><a href="#why-a-server-that-only-introduces-peers-still-needs-care" data-visits-event="toc-rail"><span class="num" aria-hidden="true">01</span><span>Why a server that &quot;only introduces peers&quot; still needs care</span></a></li>
+        <li><a href="#two-origins-instead-of-a-load-balancer" data-visits-event="toc-rail"><span class="num" aria-hidden="true">02</span><span>Two origins instead of a load balancer</span></a></li>
+        <li><a href="#cloud-run-behaviours-that-broke-it" data-visits-event="toc-rail"><span class="num" aria-hidden="true">03</span><span>Cloud Run behaviours that broke it</span></a></li>
+        <li><a href="#what-a-dropped-signaling-socket-costs-a-match" data-visits-event="toc-rail"><span class="num" aria-hidden="true">04</span><span>What a dropped signaling socket costs a match</span></a></li>
+        <li><a href="#a-revision-swap-runs-two-registries" data-visits-event="toc-rail"><span class="num" aria-hidden="true">05</span><span>A revision swap runs two registries</span></a></li>
+        <li><a href="#deploy-traps-pointer-files-and-the-wrong-signaling-url" data-visits-event="toc-rail"><span class="num" aria-hidden="true">06</span><span>Deploy traps: pointer files and the wrong signaling URL</span></a></li>
+        <li><a href="#known-limits" data-visits-event="toc-rail"><span class="num" aria-hidden="true">07</span><span>Known limits</span></a></li>
+        <li><a href="#sources" data-visits-event="toc-rail"><span>Sources</span></a></li>
       </ol>
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
         <p class="eyebrow">Jul 29, 2026 · Updated Oct 10, 2026</p>
         <h1>Hosting WebRTC signaling on Cloud Run</h1>
+        <p class="lead">Hosting a WebRTC signaling server on Google Cloud Run for a browser co-op game, the platform behaviours that broke it, and what a running match survives.</p>
         <ul class="tags">
-          <li>19 min read</li>
+          <li>18 min read</li>
         </ul>
+        <p class="series-line">Part 2 of 2 in <strong>Day Hike netcode</strong> · Previous: <a href="/research/browser-coop-netcode" data-visits-event="series-browser-coop-netcode">Host-authoritative co-op netcode in the browser</a></p>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> Day Hike&#39;s co-op runs peer to peer over WebRTC, so its server only has to
@@ -419,8 +476,22 @@ removed from the host&#39;s game and has to rejoin. That is a deliberate trade: 
 some outside signal that a player whose phone died is gone, and the signaling server&#39;s view
 of the lobby is the only one it has.</p>
 <p>How the game itself stays in sync between peers (the fixed step, inputs, snapshots and lag
-compensation) is covered in <a href="/research/browser-coop-netcode">Browser co-op netcode</a>. This
+compensation) is covered in <a href="/research/browser-coop-netcode" data-visits-event="doc-browser-coop-netcode">Browser co-op netcode</a>. This
 article is only about the server that gets peers connected, and the platform under it.</p>
+      </div>
+      <nav class="toc" aria-label="In this doc">
+        <p class="section-label">In this doc</p>
+        <ol>
+          <li><a href="#why-a-server-that-only-introduces-peers-still-needs-care" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>Why a server that &quot;only introduces peers&quot; still needs care</span></a></li>
+          <li><a href="#two-origins-instead-of-a-load-balancer" data-visits-event="toc"><span class="num" aria-hidden="true">02</span><span>Two origins instead of a load balancer</span></a></li>
+          <li><a href="#cloud-run-behaviours-that-broke-it" data-visits-event="toc"><span class="num" aria-hidden="true">03</span><span>Cloud Run behaviours that broke it</span></a></li>
+          <li><a href="#what-a-dropped-signaling-socket-costs-a-match" data-visits-event="toc"><span class="num" aria-hidden="true">04</span><span>What a dropped signaling socket costs a match</span></a></li>
+          <li><a href="#a-revision-swap-runs-two-registries" data-visits-event="toc"><span class="num" aria-hidden="true">05</span><span>A revision swap runs two registries</span></a></li>
+          <li><a href="#deploy-traps-pointer-files-and-the-wrong-signaling-url" data-visits-event="toc"><span class="num" aria-hidden="true">06</span><span>Deploy traps: pointer files and the wrong signaling URL</span></a></li>
+          <li><a href="#known-limits" data-visits-event="toc"><span class="num" aria-hidden="true">07</span><span>Known limits</span></a></li>
+        </ol>
+      </nav>
+      <div class="prose">
 <div class="section-head"><p class="section-label">01</p><h2 id="why-a-server-that-only-introduces-peers-still-needs-care"><a class="anchor" href="#why-a-server-that-only-introduces-peers-still-needs-care">Why a server that &quot;only introduces peers&quot; still needs care</a></h2></div>
 <p>Signaling is the part of WebRTC the standard leaves to you: before two browsers can open a
 data channel, something has to carry the offer, the answer and the ICE candidates between
@@ -610,7 +681,7 @@ socket is only noticed when the heartbeat gives up). Departures are keyed on soc
 identity, not peer id, so that late close is ignored instead of stranding a healthy room <a class="cite" href="#ref-8">[8]</a>.</li>
 </ol>
 <p>Signaling errors that only concern joining (the room is full, the host is away) are ignored
-once a player&#39;s data channel is up; <a href="/research/browser-coop-netcode">Browser co-op netcode</a>
+once a player&#39;s data channel is up; <a href="/research/browser-coop-netcode" data-visits-event="doc-browser-coop-netcode">Browser co-op netcode</a>
 covers that policy.</p>
 <h3 id="followers-are-removed-when-their-socket-drops"><a class="anchor" href="#followers-are-removed-when-their-socket-drops">Followers are removed when their socket drops</a></h3>
 <p>The grace window is the host&#39;s alone. A follower whose signaling socket closes without a
@@ -776,6 +847,30 @@ the game and has to rejoin (section 4).</li>
 <li><strong>A host reload ends the lobby.</strong> Reclaim is scoped to a page load, so a host who
 refreshes is a new peer, and the lobby ends for everyone.</li>
 </ul>
+      </div>
+      <section class="keep-reading" aria-labelledby="next-reads">
+        <h2 id="next-reads" class="section-label">Keep reading</h2>
+        <p class="series-name">Day Hike netcode · 2 parts</p>
+        <ol class="series-parts">
+          <li><a href="/research/browser-coop-netcode" data-visits-event="next-browser-coop-netcode">Host-authoritative co-op netcode in the browser</a></li>
+          <li aria-current="true"><span>Hosting WebRTC signaling on Cloud Run</span></li>
+        </ol>
+        <ul class="doc-list next-list" role="list">
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/telemetry-without-identifying-anyone" data-visits-event="next-telemetry-without-identifying-anyone">Privacy-first telemetry without user IDs</a></h3>
+            <p class="doc-meta">40 min read</p>
+            <p class="doc-desc">A privacy-first telemetry design for a desktop IDE: counters and coarse dimensions, no IDs, opt-in consent, crash reports, and legal baselines.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/visits-without-cookies" data-visits-event="next-visits-without-cookies">Visits without cookies, and the path they took</a></h3>
+            <p class="doc-meta">15 min read</p>
+            <p class="doc-desc">What a cookieless counter can know, what more a page says without fingerprinting, where the journey hides, and a 3 KB client with a Rust collector.</p>
+          </li>
+        </ul>
+        <p class="play-line"><a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
+        <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS) or <a class="external" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">csarko.log</a>.</p>
+      </section>
+      <div class="prose">
 <div class="section-head" data-read-end><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <ol class="references">
 <li id="ref-1"><span class="ref-num">[1]</span><div>C. Sarkosh, &quot;lobby.ts,&quot; game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/client/src/net/lobby.ts" target="_blank" rel="noopener">https://github.com/csarkosh/game-dayhike/blob/main/client/src/net/lobby.ts</a></div></li>
@@ -793,7 +888,6 @@ refreshes is a new peer, and the lobby ends for everyone.</li>
 <li id="ref-13"><span class="ref-num">[13]</span><div>C. Sarkosh, &quot;buildClient.mjs,&quot; game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/tools/deploy/lib/buildClient.mjs" target="_blank" rel="noopener">https://github.com/csarkosh/game-dayhike/blob/main/tools/deploy/lib/buildClient.mjs</a></div></li>
 <li id="ref-14"><span class="ref-num">[14]</span><div>C. Sarkosh, &quot;verify.mjs,&quot; game-dayhike, GitHub repository. Accessed: Oct. 10, 2026. [Online]. Available: <a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/tools/deploy/verify.mjs" target="_blank" rel="noopener">https://github.com/csarkosh/game-dayhike/blob/main/tools/deploy/verify.mjs</a></div></li>
 </ol>
-
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
@@ -801,6 +895,11 @@ refreshes is a new peer, and the lobby ends for everyone.</li>
         <p>Senior software engineer leading distributed systems and AI products.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
+      <nav class="afterward" aria-label="Read next">
+        <a class="next" href="/research/telemetry-without-identifying-anyone" data-visits-event="end-telemetry-without-identifying-anyone"><span class="section-label">Read next</span><span>Privacy-first telemetry without user IDs <span aria-hidden="true">→</span></span></a>
+        <a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        <a href="/research">All research</a>
+      </nav>
     </main>
   </div>
 
@@ -813,6 +912,7 @@ refreshes is a new peer, and the lobby ends for everyone.</li>
   <!-- generated:analytics -->
   <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
+  <script defer src="/assets/reading.c3e27b33.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

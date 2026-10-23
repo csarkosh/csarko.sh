@@ -20,6 +20,7 @@
   <meta property="article:published_time" content="2026-10-05" />
   <meta property="article:modified_time" content="2026-10-05" />
   <meta property="article:author" content="https://csarko.sh/" />
+  <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Building dread toward a late reveal in horror games" />
   <meta name="twitter:description" content="How horror games make a late monster reveal feel earned, with traces, sound and pacing, and what to do with a mechanic that punishes looking at the monster." />
@@ -127,6 +128,8 @@
       --border-strong: rgba(255, 255, 255, 0.14);
       --text: #e8eaf0;
       --muted: #a0a8b8;
+      /* A doc's body text: brighter than --muted, which reads as grey at length (2026-10-23). */
+      --prose: #c9ced9;
       --faint: #7d8597;
       /* Content warnings only. Yellow to stand apart from the teal accent. */
       --warning: #f5c451;
@@ -156,6 +159,7 @@
         --border-strong: rgba(10, 11, 14, 0.16);
         --text: #12151c;
         --muted: #4a5263;
+        --prose: #2b3240;
         --faint: #5f677a;
         --warning: #8a6100;
         --accent: #0a735f;
@@ -347,6 +351,57 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
     }
+    .doc-page .prose { font-size: 17px; }
+    .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
+    .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
+    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .rail a[aria-current] { color: var(--text); }
+    .rail a[aria-current] .num { color: var(--accent); }
+    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .toc .section-label { margin: 0 0 6px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
+    .toc a:hover { color: var(--accent); }
+    .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    .figure { margin: 32px 0; }
+    .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+    /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
+    .figure img { max-height: 80vh; object-fit: contain; }
+    .figure figcaption { margin-top: 10px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+    .prose blockquote strong:first-child { display: block; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .term { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted var(--faint); text-underline-offset: 4px; }
+    .term:hover, .term:focus-visible { text-decoration-color: var(--accent); }
+    .term-def { max-width: min(92vw, 420px); margin: auto; padding: 16px 18px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.55; }
+    .term-def::backdrop { background: var(--nav-bg); }
+    /* A wide table or code block that scrolls sideways shows a shade at the edge it can scroll to. */
+    .scroll { background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
+      var(--surface); }
+    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
+    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
+    .series-name { margin: 0 0 8px; font-weight: 600; }
+    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
+    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
+    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
+    .next-list .card { padding: 16px 18px; background: var(--bg); }
+    .next-list .doc-title { font-size: 1.05rem; }
+    .next-list .doc-desc { font-size: 14.5px; }
+    .play-line { margin: 20px 0 0; }
+    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background .15s ease; }
+    .play:hover { background: var(--accent-hover); }
+    .play svg { width: 14px; height: 14px; }
+    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
+    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color .15s ease; }
+    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
+    .afterward .next:hover { border-color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -382,25 +437,27 @@
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-        <li><a href="#start-in-the-ordinary-because-a-peak-needs-contrast"><span class="num" aria-hidden="true">01</span><span>Start in the ordinary, because a peak needs contrast</span></a></li>
-        <li><a href="#build-the-monster-in-the-player-s-head"><span class="num" aria-hidden="true">02</span><span>Build the monster in the player&#39;s head</span></a></li>
-        <li><a href="#show-the-traces-before-the-monster"><span class="num" aria-hidden="true">03</span><span>Show the traces before the monster</span></a></li>
-        <li><a href="#lead-with-sound-and-take-sound-away"><span class="num" aria-hidden="true">04</span><span>Lead with sound, and take sound away</span></a></li>
-        <li><a href="#tie-escalation-to-progress-then-pace-the-chase-in-waves"><span class="num" aria-hidden="true">05</span><span>Tie escalation to progress, then pace the chase in waves</span></a></li>
-        <li><a href="#dread-in-co-op"><span class="num" aria-hidden="true">06</span><span>Dread in co-op</span></a></li>
-        <li><a href="#when-looking-at-the-monster-is-the-mechanic"><span class="num" aria-hidden="true">07</span><span>When looking at the monster is the mechanic</span></a></li>
-        <li><a href="#the-effect-itself"><span class="num" aria-hidden="true">08</span><span>The effect itself</span></a></li>
-        <li><a href="#a-recipe-for-a-short-journey-with-a-late-reveal"><span class="num" aria-hidden="true">09</span><span>A recipe for a short journey with a late reveal</span></a></li>
-        <li><a href="#sources"><span class="num" aria-hidden="true">10</span><span>Sources</span></a></li>
+        <li><a href="#start-in-the-ordinary-because-a-peak-needs-contrast" data-visits-event="toc-rail"><span class="num" aria-hidden="true">01</span><span>Start in the ordinary, because a peak needs contrast</span></a></li>
+        <li><a href="#build-the-monster-in-the-player-s-head" data-visits-event="toc-rail"><span class="num" aria-hidden="true">02</span><span>Build the monster in the player&#39;s head</span></a></li>
+        <li><a href="#show-the-traces-before-the-monster" data-visits-event="toc-rail"><span class="num" aria-hidden="true">03</span><span>Show the traces before the monster</span></a></li>
+        <li><a href="#lead-with-sound-and-take-sound-away" data-visits-event="toc-rail"><span class="num" aria-hidden="true">04</span><span>Lead with sound, and take sound away</span></a></li>
+        <li><a href="#tie-escalation-to-progress-then-pace-the-chase-in-waves" data-visits-event="toc-rail"><span class="num" aria-hidden="true">05</span><span>Tie escalation to progress, then pace the chase in waves</span></a></li>
+        <li><a href="#dread-in-co-op" data-visits-event="toc-rail"><span class="num" aria-hidden="true">06</span><span>Dread in co-op</span></a></li>
+        <li><a href="#when-looking-at-the-monster-is-the-mechanic" data-visits-event="toc-rail"><span class="num" aria-hidden="true">07</span><span>When looking at the monster is the mechanic</span></a></li>
+        <li><a href="#the-effect-itself" data-visits-event="toc-rail"><span class="num" aria-hidden="true">08</span><span>The effect itself</span></a></li>
+        <li><a href="#a-recipe-for-a-short-journey-with-a-late-reveal" data-visits-event="toc-rail"><span class="num" aria-hidden="true">09</span><span>A recipe for a short journey with a late reveal</span></a></li>
+        <li><a href="#sources" data-visits-event="toc-rail"><span class="num" aria-hidden="true">10</span><span>Sources</span></a></li>
       </ol>
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
         <p class="eyebrow">Oct 5, 2026</p>
         <h1>Building dread toward a late reveal in horror games</h1>
+        <p class="lead">How horror games make a late monster reveal feel earned, with traces, sound and pacing, and what to do with a mechanic that punishes looking at the monster.</p>
         <ul class="tags">
-          <li>12 min read</li>
+          <li>10 min read</li>
         </ul>
+        <p class="series-line">Part 2 of 5 in <strong>Horror craft</strong> · Next: <a href="/research/how-alan-wake-introduces-its-darkness" data-visits-event="series-how-alan-wake-introduces-its-darkness">How Alan Wake introduces its darkness</a></p>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> a short horror game is a walk to a place where the monster appears and a
@@ -420,6 +477,22 @@ players more frightened without it. Looking can cost the player hearing, sight o
 information, and it can last after they look away, without ending the game. The picture
 and the sound that carry that cost have well-worn recipes and one hard limit: a pulse over
 the whole screen has to stay under three flashes a second.</p>
+      </div>
+      <nav class="toc" aria-label="In this doc">
+        <p class="section-label">In this doc</p>
+        <ol>
+          <li><a href="#start-in-the-ordinary-because-a-peak-needs-contrast" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>Start in the ordinary, because a peak needs contrast</span></a></li>
+          <li><a href="#build-the-monster-in-the-player-s-head" data-visits-event="toc"><span class="num" aria-hidden="true">02</span><span>Build the monster in the player&#39;s head</span></a></li>
+          <li><a href="#show-the-traces-before-the-monster" data-visits-event="toc"><span class="num" aria-hidden="true">03</span><span>Show the traces before the monster</span></a></li>
+          <li><a href="#lead-with-sound-and-take-sound-away" data-visits-event="toc"><span class="num" aria-hidden="true">04</span><span>Lead with sound, and take sound away</span></a></li>
+          <li><a href="#tie-escalation-to-progress-then-pace-the-chase-in-waves" data-visits-event="toc"><span class="num" aria-hidden="true">05</span><span>Tie escalation to progress, then pace the chase in waves</span></a></li>
+          <li><a href="#dread-in-co-op" data-visits-event="toc"><span class="num" aria-hidden="true">06</span><span>Dread in co-op</span></a></li>
+          <li><a href="#when-looking-at-the-monster-is-the-mechanic" data-visits-event="toc"><span class="num" aria-hidden="true">07</span><span>When looking at the monster is the mechanic</span></a></li>
+          <li><a href="#the-effect-itself" data-visits-event="toc"><span class="num" aria-hidden="true">08</span><span>The effect itself</span></a></li>
+          <li><a href="#a-recipe-for-a-short-journey-with-a-late-reveal" data-visits-event="toc"><span class="num" aria-hidden="true">09</span><span>A recipe for a short journey with a late reveal</span></a></li>
+        </ol>
+      </nav>
+      <div class="prose">
 <div class="section-head"><p class="section-label">01</p><h2 id="start-in-the-ordinary-because-a-peak-needs-contrast"><a class="anchor" href="#start-in-the-ordinary-because-a-peak-needs-contrast">Start in the ordinary, because a peak needs contrast</a></h2></div>
 <p>Thomas Grip of Frictional Games, who made Amnesia and SOMA, lists the habits horror games
 should drop. Two apply directly. Most games open in a strange situation, yet &quot;much of the
@@ -586,6 +659,32 @@ linger after.</li>
 </ol>
 <p>Items 2, 3, 4, 7 and 8 are sound and code alone. Item 5 needs props. Items 6 and 9 need
 the monster&#39;s behaviour to change.</p>
+      </div>
+      <section class="keep-reading" aria-labelledby="next-reads">
+        <h2 id="next-reads" class="section-label">Keep reading</h2>
+        <p class="series-name">Horror craft · 5 parts</p>
+        <ol class="series-parts">
+          <li><a href="/research/opening-a-game-like-a-film" data-visits-event="next-opening-a-game-like-a-film">Opening a game like a film: sixty seconds of drive, radio and dread</a></li>
+          <li aria-current="true"><span>Building dread toward a late reveal in horror games</span></li>
+          <li><a href="/research/how-alan-wake-introduces-its-darkness" data-visits-event="next-how-alan-wake-introduces-its-darkness">How Alan Wake introduces its darkness</a></li>
+          <li><a href="/research/horror-cinematography-shot-by-shot" data-visits-event="next-horror-cinematography-shot-by-shot">How Horror Directors Build Dread Shot by Shot</a></li>
+          <li><a href="/research/horror-sequences-shot-by-shot" data-visits-event="next-horror-sequences-shot-by-shot">23 Horror Sequences Broken Down Shot by Shot</a></li>
+        </ol>
+        <ul class="doc-list next-list" role="list">
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/synthetic-voices-for-a-radio-call" data-visits-event="next-synthetic-voices-for-a-radio-call">Synthetic voices for a radio call</a></h3>
+            <p class="doc-meta">12 min read</p>
+            <p class="doc-desc">Text-to-speech for a game&#39;s radio call in 2026: the models that take direction, what gives them away, the radio chain, licences, cost, cloning your own voice.</p>
+          </li>
+          <li class="card">
+            <h3 class="doc-title"><a class="stretch" href="/research/atmosphere-and-dread-shaders" data-visits-event="next-atmosphere-and-dread-shaders">Atmosphere and dread shaders for horror games</a></h3>
+            <p class="doc-meta">17 min read</p>
+            <p class="doc-desc">Atmospheric games stack height fog, a neutral tone map and grade, and a film finish on photoreal light; Babylon.js does nearly all of it at 60 fps.</p>
+          </li>
+        </ul>
+        <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS) or <a class="external" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">csarko.log</a>.</p>
+      </section>
+      <div class="prose">
 <div class="section-head" data-read-end><p class="section-label">10</p><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <ol class="references">
 <li id="ref-1"><span class="ref-num">[1]</span><div>T. Grip, &quot;10 ways to evolve horror games,&quot; In the Games of Madness, Frictional Games, Apr. 26, 2012. Accessed: Oct. 5, 2026. [Online]. Available: <a class="external" href="https://frictionalgames.blogspot.com/2012/04/10-ways-to-evolve-horror-games.html" target="_blank" rel="noopener">https://frictionalgames.blogspot.com/2012/04/10-ways-to-evolve-horror-games.html</a></div></li>
@@ -608,7 +707,6 @@ the monster&#39;s behaviour to change.</p>
 <li id="ref-18"><span class="ref-num">[18]</span><div>D. Partis, &quot;Headphones required: Senua&#39;s Saga: Hellblade II&#39;s binaural audio is like nothing you&#39;ve ever heard,&quot; Xbox Wire, May 17, 2024. Accessed: Oct. 5, 2026. [Online]. Available: <a class="external" href="https://news.xbox.com/en-us/2024/05/17/hellblade-2-audio-design-is-like-nothing-youve-ever-heard/" target="_blank" rel="noopener">https://news.xbox.com/en-us/2024/05/17/hellblade-2-audio-design-is-like-nothing-youve-ever-heard/</a></div></li>
 <li id="ref-19"><span class="ref-num">[19]</span><div>W3C, &quot;Understanding SC 2.3.1: three flashes or below threshold,&quot; WCAG 2.2 Understanding Docs. Accessed: Oct. 5, 2026. [Online]. Available: <a class="external" href="https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html" target="_blank" rel="noopener">https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html</a></div></li>
 </ol>
-
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
@@ -616,6 +714,10 @@ the monster&#39;s behaviour to change.</p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
         <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
+      <nav class="afterward" aria-label="Read next">
+        <a class="next" href="/research/how-alan-wake-introduces-its-darkness" data-visits-event="end-how-alan-wake-introduces-its-darkness"><span class="section-label">Read next</span><span>How Alan Wake introduces its darkness <span aria-hidden="true">→</span></span></a>
+        <a href="/research">All research</a>
+      </nav>
     </main>
   </div>
 
@@ -628,6 +730,7 @@ the monster&#39;s behaviour to change.</p>
   <!-- generated:analytics -->
   <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
+  <script defer src="/assets/reading.c3e27b33.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

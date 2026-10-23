@@ -1,8 +1,10 @@
 ---
-description: Can 2026 AI video models make a multi-scene short film with the same actor and set in every shot? Where they fail, and the one architecture that holds.
+description: 2026 AI video can make one convincing short, but no model locks an actor and a room across a series. Where each tool fails, and the 3D-first build that holds.
 published: 2026-09-16
 categories: AI, Film
-updated: 2026-10-10
+updated: 2026-10-23
+related: horror-sequences-shot-by-shot, stylized-shader-looks
+series: AI short films
 ---
 # AI short films: consistent characters and sets
 
@@ -12,50 +14,41 @@ cuts in under 40 seconds)? And are there techniques by which characters and scen
 generated *deterministically* and *combined* into a film, so that episode two has the same
 person in the same room as episode one?
 
-**Short answer:** for a series, no, and it is a dead end for generation rather than a gap the
-next model release closes. A single convincing short is achievable today with a person curating
-several takes per shot. But the two things a series depends on, the same actor and the same
-location in every shot, are exactly what no 2026 video model can lock: reference images hold a
-face "recognisably the same" while costume, props and the room itself drift, and nothing hosted
-is repeatable. The only architecture that makes a multi-scene film both consistent and
-reproducible builds the character and the set as **3D assets**, renders every shot's structure
-conventionally, and uses AI only as a finishing pass. At that point AI is not generating the
-film; a 3D production is, with a generative filter on top.
+**Short answer:** for a single short, yes: a person curating several takes per shot can make a
+convincing one today. For a series, no, and it is a dead end for generation rather than a gap the
+next model release closes: no 2026 video model can lock the same actor and the same room in every
+shot, and nothing hosted is repeatable. The only architecture that holds builds the character and
+the set as **3D assets**, renders every shot's structure conventionally and uses AI only as a
+finishing pass, at which point a 3D production, not AI, is making the film.
 
-This is a snapshot of the landscape in September 2026. Figures come from vendor documentation,
-model cards, papers and practitioner write-ups accessed that month; section 10 lists what could
-not be verified against a primary source.
+![A pipeline of eight stages from top to bottom: character and set, shots, render in Cycles, an optional surface pass, gate, audio and cut, degrade, lock](pipeline.svg "Architecture C, the 3D-first episode build of section 8: the character and set are assets, every shot's structure is rendered in Cycles with a fixed seed, and only the surface pass is stochastic; with pinned open weights and a seed, even that repeats.")
 
-## 0. The answer in six lines
+**In numbers:**
 
-1. The three reference shorts are **live-action**, not AI: one actress, one real apartment,
-   practical creatures, a post-production face warp, a VHS grade. The bar is therefore "fake a
-   cheap camcorder short with the *same* actor and flat across episodes", which is harder for
-   generative video than "make an AI-looking short".
-2. Per-shot generation of a *convincing single short* in this look is possible today with a human
-   curating 3 to 6 takes per shot, for roughly $40 to $200 hosted or $10 to $25 self-hosted. Keep
-   rates are about 25 %; character drift shows after about ten shots [2]; no hosted model repeats a
-   clip.
-3. **Characters** can be locked "recognisably the same" by reference images (every 2026 model
-   has them, about 0.5 face similarity on the one published cross-vendor table) and locked
-   *exactly* only by a trained LoRA or by owning the character as a 3D asset. A deliberately
-   *wrong* face survives only the latter two: every zero-shot identity mechanism is trained to
-   make faces look right.
-4. **Scenes** cannot be locked by any video model: reference images condition on appearance, not
-   geometry, and the room is re-invented once the camera turns past roughly a quarter turn. The
-   door stays put only in a 3D set, a Gaussian splat, or a depth-locked control pass driven by
-   one.
-5. **Determinism** exists at exactly one place in the whole landscape: a 3D scene rendered with a
-   fixed seed. Open-weight diffusion is bit-repeatable under a strict recipe on pinned hardware;
-   every hosted API says "seed improves similarity" at best. Hosted models were also *retired*
-   three times in 2026 (Sora, Gen-3, Gen-4 Aleph) [3], [4] with weeks of notice [5].
-6. The technique that makes a multi-scene film both deterministic and combinable is to **build
-   the character and the set as 3D assets, render every shot's structure in a path tracer such
-   as Blender's Cycles, let an open-weight model add photographic surface under depth and identity
-   lock, add narration and a single VHS pass last, and treat the episode as a reproducible build
-   with a lock file.** Hosted models are inserts, not the spine.
+- **About 0.5 face similarity** is what reference images buy on the one cross-vendor table: a
+  face recognisably the same, while costume, props and the room drift ([section 4](#characters-lock-exactly-only-as-a-lora-or-a-3d-asset)).
+- **5 to 100 captioned images** train a
+  [LoRA](#term "An add-on to an open model's weights, trained on images of one character, so the model draws that face as trained, defects included.")
+  that locks a face exactly; only it or a 3D asset keeps a deliberately wrong face
+  ([section 4](#characters-lock-exactly-only-as-a-lora-or-a-3d-asset)).
+- **30° to 45° of pan** is as far as a room holds from one reference image; past that, each
+  generation invents the other half differently ([section 5](#rooms-lock-only-in-a-3d-set-a-splat-or-a-depth-locked-pass)).
+- **One bit-exact stage in the whole landscape:** a 3D scene rendered with a fixed seed.
+  [Open-weight](#term "A model whose weights you download and run on your own GPU, rather than call through a vendor's API.")
+  diffusion repeats only under a strict recipe on pinned hardware, and no hosted API guarantees
+  it ([section 6](#three-ways-to-combine-shots-only-the-3d-first-build-repeats)).
+- **1 take in 4** is kept, and drift shows after about ten shots
+  ([section 7](#a-45-s-short-costs-40-to-200-hosted-and-keeps-1-take-in-4)).
+- **$40 to $200** per 45 second episode hosted, $10 to $25 on open weights, $5 to $40 for a 3D
+  render with an open-weight restyle once the build exists ([section 7](#a-45-s-short-costs-40-to-200-hosted-and-keeps-1-take-in-4)).
 
-## 1. What the three shorts actually are
+This is a snapshot of the landscape in September 2026, and it dates fast. Character drift after
+about ten shots is a practitioner finding [2], not a benchmark, and hosted models were retired
+three times in 2026 (Sora, Gen-3, Gen-4 Aleph) [3], [4], with weeks of notice [5]. Figures come
+from vendor documentation, model cards, papers and practitioner write-ups accessed that month;
+section 10 lists what could not be verified against a primary source.
+
+## 1. The three benchmark shorts are live action, not AI
 
 | Short | ID | Uploaded | Length | Views | Cuts (ffmpeg scene > 0.3) | Held shots |
 |---|---|---|---|---|---|---|
@@ -89,7 +82,9 @@ synthetic-content label appears on any of the three videos; the TikTok "everythi
 caption is a fiction disclaimer. The face warp on Mom is the only element that could plausibly be
 AI-assisted, and nothing public settles it.
 
-So the question splits:
+The bar is therefore to fake a cheap camcorder short with the *same* actor and flat across
+episodes, which is harder for generative video than to make an AI-looking short. So the question
+splits:
 
 - **Track A:** can generation reproduce a *live-action-looking* single-actor, single-location
   camcorder short, with the same actor and flat recurring across episodes?
@@ -103,7 +98,7 @@ subjects. YouTube's July 2025 and July 2026 "inauthentic content" rules [11], [1
 exactly that population. The rest of this document is about Track A, because that is where the
 engineering problems are.
 
-## 2. What the genre asks of a generator
+## 2. The genre forgives flicker but needs the same actor and room
 
 | Convention | Helps or hurts generation | Why |
 |---|---|---|
@@ -123,7 +118,7 @@ The economic asymmetry underneath: AI cost is per shot and per reroll; live-acti
 setup, and the recurring elements (actress, flat, costume) are free after episode one. A pipeline
 that makes the character and the room *assets* rather than *prompts* restores that asymmetry.
 
-## 3. The model landscape, September 2026
+## 3. Chinese models lead, clips reach 30 s, and Sora is dead
 
 A survey of about 25 models against their primary pages and the Artificial Analysis arena [14] found
 the familiar picture of "Veo 3 vs Sora 2 vs Kling 2.x" obsolete. Six shifts:
@@ -151,7 +146,7 @@ the familiar picture of "Veo 3 vs Sora 2 vs Kling 2.x" obsolete. Six shifts:
    "fully open" claim has produced no weights. MAGI-2 is Apache-2.0 but needs 8 Hopper GPUs [26].
 6. **Nobody hosted guarantees determinism** (section 6.4).
 
-### 3.1 Condensed table
+### 3.1 Thirteen models in one table
 
 | Model | Version, date | Clip / extend | Audio | References | Multi-shot in one call | Seed wording | Price | Weights |
 |---|---|---|---|---|---|---|---|---|
@@ -181,7 +176,7 @@ they fail; morphing on held shots (practitioner consensus, not quantified); audi
 no native audio with video input); prose-timed cuts on Seedance; extension only at 720p on Veo;
 and non-determinism everywhere hosted.
 
-## 4. Characters: deterministic identity across shots
+## 4. Characters lock exactly only as a LoRA or a 3D asset
 
 ### 4.1 The determinism ladder
 
@@ -333,7 +328,7 @@ Routes 1 to 3 give a repeatable wrong face today. Route 4 gives a repeatable *no
 will silently fix the wrongness in close-up. Nothing on the market lets you upload a defect and
 have it respected without training.
 
-## 5. Scenes: deterministic locations across shots
+## 5. Rooms lock only in a 3D set, a splat or a depth-locked pass
 
 ### 5.1 Nothing in the video-model camp keeps the door where it was
 
@@ -436,7 +431,7 @@ degrades with the picture.
 | Blender set + depth-locked AI pass | **yes** (depth edges pinned) | seed-locked, with PyTorch caveats [69] | render-lit, model-mooded | Apache / LTX |
 | Camera-control re-shoot | moderate moves; hallucinates the unseen | seed-locked open | inherited | Apache / OML / MIT |
 
-## 6. Combining them into a multi-scene film
+## 6. Three ways to combine shots; only the 3D-first build repeats
 
 ### 6.1 Three architectures
 
@@ -605,7 +600,7 @@ Krea-2 multi-shot stills with an identity LoRA into LTX Director (seeded stills,
 MoneyPrinterTurbo plus Vanta (fully local possible, the highest determinism, the lowest craft). No
 verifiable write-up of an AI analog-horror pipeline specifically could be found.
 
-## 7. Readiness verdict and cost
+## 7. A 45 s short costs $40 to $200 hosted and keeps 1 take in 4
 
 ### 7.1 What has been made
 
@@ -666,7 +661,7 @@ A sober forecast:
   years**. Of its two blockers, only reproducibility has a known engineering path (open weights,
   a LoRA and 3D structure); performance does not.
 
-## 8. Why it is a dead end for generation
+## 8. A series is a dead end for generation
 
 The question was whether AI can generate a film like these. For a one-off, the answer in section
 7.4 is yes, with a person curating. For a *series*, which is what makes a channel like Evillica's
@@ -685,7 +680,8 @@ work, it is no, and the reason is structural rather than a matter of model quali
 
 ### 8.1 What a 3D-first episode build would contain
 
-For anyone who does take architecture C, these are the stages it needs.
+For anyone who does take architecture C, these are the stages it needs. Hosted models are
+inserts in it, not the spine.
 
 | Stage | What it produces |
 |---|---|
@@ -707,7 +703,7 @@ the genre's aesthetic absorbs a clean CG interior and a too-still face, and it i
 end. The surface stage is an upgrade whose value should be judged against that baseline, not
 assumed.
 
-### 8.2 Licences
+### 8.2 Licences: keep to Apache, MIT and BSD
 
 Keep to Apache, MIT and BSD wherever a model touches shipped pixels: the Wan 2.2 family (VACE,
 Stand-In, Animate-2, InfiniteTalk), LatentSync [55], Qwen-Image-Edit-2511 or FLUX.2-klein-4B for
@@ -754,7 +750,7 @@ C2PA metadata auto-labels [123]; and from 2027-02-01 the Shorts Creator Pool req
 per trailing 90 days. Practical-plus-post work like Evillica's needs no label. Veo and Omni carry
 SynthID. Seedance carries live US legal exposure (studio complaints, a Senate letter).
 
-## 10. What was not verified
+## 10. Seven claims not checked against a primary source
 
 The ones that matter: the "slow push-in breathing" failure mode is practitioner consensus, not a
 measurement; no public benchmark isolates cross-shot identity, and VBench-2.0's 2026 tables would

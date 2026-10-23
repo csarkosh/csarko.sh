@@ -2,6 +2,7 @@
 description: How shipped open-world games keep the distance looking full, from far terrain and vegetation to the camera-side tricks that hide the seams, for a browser frame.
 published: 2026-10-15
 categories: Rendering, Worlds and terrain
+series: Filling the distance
 ---
 # A full far field: how games fill the distance
 

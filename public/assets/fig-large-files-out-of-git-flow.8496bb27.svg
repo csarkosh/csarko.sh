@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 470" width="440" height="470" role="img" aria-labelledby="t">
+  <title id="t">Git LFS on a bucket: the working tree's file becomes a pointer in git history and bytes that the Git LFS client sends, through an LFS server or a standalone transfer agent, to a cloud bucket named by OID</title>
+  <style>
+    text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 14px; fill: #e8eaf0; }
+    .h { font-weight: 600; }
+    .sec { fill: #a0a8b8; font-size: 13px; }
+    .acc { fill: #7dd3c0; font-size: 13px; }
+    .box { fill: none; stroke: #3a3f4b; stroke-width: 1.5; }
+    .hot { fill: none; stroke: #7dd3c0; stroke-width: 1.5; }
+    .ln { fill: none; stroke: #a0a8b8; stroke-width: 1.5; }
+    .hd { fill: #a0a8b8; }
+    @media (prefers-color-scheme: light) {
+      text { fill: #12151c; }
+      .sec { fill: #4a5263; }
+      .acc { fill: #0a735f; }
+      .box { stroke: #c9ced6; }
+      .hot { stroke: #0a735f; }
+      .ln { stroke: #4a5263; }
+      .hd { fill: #4a5263; }
+    }
+  </style>
+
+  <rect class="box" x="16" y="12" width="408" height="52" rx="8"/>
+  <text class="h" x="32" y="34">Working tree</text>
+  <text class="sec" x="32" y="53">the real file: a model, a texture, audio, video</text>
+
+  <line class="ln" x1="110" y1="64" x2="110" y2="122"/>
+  <polygon class="hd" points="104,120 116,120 110,130"/>
+  <text class="sec" x="120" y="92">a pointer:</text>
+  <text class="sec" x="120" y="108">size and SHA-256</text>
+
+  <line class="ln" x1="330" y1="64" x2="330" y2="122"/>
+  <polygon class="hd" points="324,120 336,120 330,130"/>
+  <text class="sec" x="340" y="92">the bytes,</text>
+  <text class="sec" x="340" y="108">keyed by OID</text>
+
+  <rect class="box" x="16" y="130" width="188" height="72" rx="8"/>
+  <text class="h" x="30" y="152">Git history</text>
+  <text class="sec" x="30" y="171">pointer, ~130 bytes,</text>
+  <text class="sec" x="30" y="189">in every clone</text>
+
+  <rect class="box" x="236" y="130" width="188" height="72" rx="8"/>
+  <text class="h" x="250" y="152">Git LFS client</text>
+  <text class="sec" x="250" y="171">endpoint from lfs.url,</text>
+  <text class="sec" x="250" y="189">.lfsconfig or the remote</text>
+
+  <polyline class="ln" points="270,202 270,232 110,232 110,268"/>
+  <polygon class="hd" points="104,266 116,266 110,276"/>
+  <text class="sec" x="120" y="254">batch API</text>
+
+  <line class="ln" x1="380" y1="202" x2="380" y2="268"/>
+  <polygon class="hd" points="374,266 386,266 380,276"/>
+  <text class="sec" x="370" y="254" text-anchor="end">JSON, stdin and stdout</text>
+
+  <rect class="box" x="16" y="276" width="188" height="72" rx="8"/>
+  <text class="h" x="30" y="298">LFS server</text>
+  <text class="sec" x="30" y="317">mechanism 1:</text>
+  <text class="sec" x="30" y="335">Giftless</text>
+
+  <rect class="box" x="236" y="276" width="188" height="72" rx="8"/>
+  <text class="h" x="250" y="298">Transfer agent</text>
+  <text class="sec" x="250" y="317">mechanism 2:</text>
+  <text class="sec" x="250" y="335">standalone, no server</text>
+
+  <line class="ln" x1="110" y1="348" x2="110" y2="390"/>
+  <polygon class="hd" points="104,388 116,388 110,398"/>
+  <text class="sec" x="120" y="368">signed URL</text>
+  <text class="sec" x="120" y="384">or streaming</text>
+
+  <line class="ln" x1="330" y1="348" x2="330" y2="390"/>
+  <polygon class="hd" points="324,388 336,388 330,398"/>
+  <text class="sec" x="340" y="376">by OID</text>
+
+  <rect class="hot" x="16" y="398" width="408" height="60" rx="8"/>
+  <text class="h" x="32" y="421">Cloud bucket</text>
+  <text class="acc" x="32" y="443">gs://&lt;bucket&gt;/lfs/&lt;oid[0:2]&gt;/&lt;oid[2:4]&gt;/&lt;oid&gt;</text>
+</svg>

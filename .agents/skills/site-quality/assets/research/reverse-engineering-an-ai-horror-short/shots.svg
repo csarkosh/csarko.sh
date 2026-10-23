@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 440" width="440" height="440" role="img" aria-labelledby="t">
+  <title id="t">The 45 second short as six segments: establishing 0.0 to 2.2 s, window 2.4 to 12.8 s, courtyard 12.9 to 18.4 s, hallway to peephole 19.3 to 32.2 s, room 33.7 to 41.9 s, title card 42 to 45 s</title>
+  <style>
+    text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 15px; fill: #e8eaf0; }
+    .title { font-size: 17px; font-weight: 600; }
+    .sec { fill: #a0a8b8; }
+    .slow { fill: #7dd3c0; }
+    .native { fill: #a0a8b8; }
+    .still { fill: none; stroke: #a0a8b8; stroke-width: 1.5; }
+    .track { fill: none; stroke: #3a3f4b; stroke-width: 1; }
+    .axis { stroke: #3a3f4b; stroke-width: 1.5; }
+    @media (prefers-color-scheme: light) {
+      text { fill: #12151c; }
+      .sec { fill: #4a5263; }
+      .slow { fill: #0a735f; }
+      .native { fill: #4a5263; }
+      .still { stroke: #4a5263; }
+      .track, .axis { stroke: #c9ced6; }
+    }
+  </style>
+  <text class="title" x="16" y="28">Five generated clips and a title card</text>
+
+  <rect class="slow" x="16" y="44" width="14" height="14" rx="3"/>
+  <text x="36" y="56">Slowed to about 80 %</text>
+  <rect class="native" x="204" y="44" width="14" height="14" rx="3"/>
+  <text x="224" y="56">Native 24 fps</text>
+  <rect class="still" x="334.75" y="44.75" width="12.5" height="12.5" rx="3"/>
+  <text x="354" y="56">Still</text>
+
+  <!-- x = 16 + seconds * 9.0667 -->
+  <text x="16" y="92">Establishing <tspan class="sec">0.0 to 2.2 s</tspan></text>
+  <rect class="track" x="16" y="100" width="408" height="22" rx="3"/>
+  <rect class="native" x="16" y="100" width="19.9" height="22" rx="3"/>
+
+  <text x="16" y="146">Window <tspan class="sec">2.4 to 12.8 s</tspan></text>
+  <rect class="track" x="16" y="154" width="408" height="22" rx="3"/>
+  <rect class="slow" x="37.8" y="154" width="94.3" height="22" rx="3"/>
+
+  <text x="16" y="200">Courtyard <tspan class="sec">12.9 to 18.4 s</tspan></text>
+  <rect class="track" x="16" y="208" width="408" height="22" rx="3"/>
+  <rect class="slow" x="133" y="208" width="49.9" height="22" rx="3"/>
+
+  <text x="16" y="254">Hallway to peephole <tspan class="sec">19.3 to 32.2 s, no cut</tspan></text>
+  <rect class="track" x="16" y="262" width="408" height="22" rx="3"/>
+  <rect class="slow" x="191" y="262" width="116.9" height="22" rx="3"/>
+
+  <text x="16" y="308">Room <tspan class="sec">33.7 to 41.9 s</tspan></text>
+  <rect class="track" x="16" y="316" width="408" height="22" rx="3"/>
+  <rect class="slow" x="321.5" y="316" width="74.4" height="22" rx="3"/>
+
+  <text x="16" y="362">Title card <tspan class="sec">42 to 45 s</tspan></text>
+  <rect class="track" x="16" y="370" width="408" height="22" rx="3"/>
+  <rect class="still" x="397.55" y="370.75" width="25.7" height="20.5" rx="3"/>
+
+  <line class="axis" x1="16" y1="404" x2="424" y2="404"/>
+  <line class="axis" x1="16.75" y1="404" x2="16.75" y2="410"/>
+  <line class="axis" x1="152" y1="404" x2="152" y2="410"/>
+  <line class="axis" x1="288" y1="404" x2="288" y2="410"/>
+  <line class="axis" x1="423.25" y1="404" x2="423.25" y2="410"/>
+  <text class="sec" x="16" y="428">0 s</text>
+  <text class="sec" x="152" y="428" text-anchor="middle">15 s</text>
+  <text class="sec" x="288" y="428" text-anchor="middle">30 s</text>
+  <text class="sec" x="424" y="428" text-anchor="end">45 s</text>
+</svg>

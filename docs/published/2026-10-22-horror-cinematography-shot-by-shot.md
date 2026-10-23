@@ -2,6 +2,7 @@
 description: How Hitchcock, Kubrick, Carpenter, Nakata, Aster and Eggers build dread: the three levers, a feeling-to-technique table, 30 director profiles, 168 sources.
 published: 2026-10-22
 categories: Film
+series: Horror craft
 ---
 # How Horror Directors Build Dread Shot by Shot
 

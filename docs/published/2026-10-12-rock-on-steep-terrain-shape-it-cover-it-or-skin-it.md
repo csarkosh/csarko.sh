@@ -2,6 +2,7 @@
 description: Three ways to put rock on a height field's steep faces, measured in a browser game: paint and cliff kits, relief in the height field, or a finer displaced skin.
 published: 2026-10-12
 categories: Rendering, Worlds and terrain
+series: Rendering a browser forest
 ---
 # Rock on steep terrain: shape it, cover it, or skin it
 

@@ -4,6 +4,7 @@ published: 2026-10-15
 categories: Tooling, Distributed systems
 source: https://github.com/csarkosh/ide-arkos
 updated: 2026-10-18
+series: Analytics without cookies
 ---
 # Privacy-first telemetry without user IDs
 

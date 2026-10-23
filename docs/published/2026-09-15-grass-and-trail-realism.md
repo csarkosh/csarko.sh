@@ -1,41 +1,58 @@
 ---
-description: Why game grass reads as flat, what shipped meadows do instead, wind as one shared field, and what Babylon.js on WebGL2 can afford at 60 Hz.
+description: Flat game grass is a grounding failure, not a triangle count: ground tint, clumping, one wind field and a banded trail fix it in Babylon.js at 60 Hz.
 published: 2026-09-15
 categories: Rendering
-updated: 2026-10-10
+updated: 2026-10-23
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-15-grass-and-trail-realism.md
+series: Rendering a browser forest
+related: grass-fullness-without-thinning, babylon-material-plugin-traps, olympic-vegetation-for-games
 ---
 # Grass, wind and trails in a browser meadow
 
-**Question:** Day Hike's grass and trails read as flat and game-like. The goal is grass that
-looks fuller, has volume and moves with a wind the rest of the world shares, and a trail that
-reads as trodden ground rather than a stripe of another texture, all inside a 60 Hz frame
-budget. What do modern games do to get there, which of it is a grounding problem and which a
-geometry problem, and how much of it can Babylon.js 9.18 on WebGL2 do in 16.7 ms?
+**Question:** grass and trails in a browser game can read as flat and game-like, as Day
+Hike's did. The goal is grass that looks fuller, has volume and moves with a wind the rest of
+the world shares, and a trail that reads as trodden ground rather than a stripe of another
+texture, all inside a 60 Hz frame budget. What do modern games do to get there, which of it is
+a grounding problem and which a geometry problem, and how much of it can Babylon.js 9.18 on
+WebGL2 do in 16.7 ms?
 
-**Short answer:** "flat and game-like" is mostly a *grounding* failure, not a triangle-count
-failure, and most of the fix is cheap. Every shipped meadow in this survey does four things
-Day Hike does not: it tints the grass to the ground it stands on (The Witcher 3's pigment map,
-Horizon's world-data colourisation), it darkens root to tip and varies height and colour *per
-clump* rather than per instance (Ghost of Tsushima's Voronoi clumps), it lights the field as
-one rounded mass instead of N flipping cards (Horizon flattens the view-space normal), and it
-lets low sun through the blades. Wind that reads as *wind* is one global vector whose strength
-is modulated by noise travelling downwind, with a permanent lean the oscillation rides on,
-sampled by grass, bushes, trees, particles and sound alike; Day Hike's is three zero-mean sines
-phased on a fixed axis, with trees rigid and mist ignoring it, so it reads as vibration. A real
-trail is a bench cut into the hill with a four-band edge whose width varies along its length;
-Day Hike's is a constant-width smoothstep with the grass cut off in a soft ring, and the hard
-grass ring and the hard texture edge reinforce each other. In Babylon nearly all of the fix is
-vertex-stage plugin work, per-instance attributes written in a rebuild that already runs, and
-fragment arithmetic inside a branch that already exists. The one structural change worth its
-risk is opaque blade clumps for the nearest 10 to 20 m, because the binding frame cost is
-alpha-tested fill, not triangles, and opaque geometry gives early depth rejection back.
+**Short answer:** "flat and game-like" is mostly a
+[grounding](#term "Making grass look as if it grows out of the ground under it: tinted by that ground, darker at the root, shadowed where blade meets soil.")
+failure, not a triangle-count failure, and most of the fix is cheap: tint the grass to its
+ground, darken it root to tip, vary it per clump, light the field as one mass and let low sun
+through the blades. Wind reads as wind when it is one shared field that leans and travels
+downwind, and a trail reads as trodden when it is a
+[bench](#term "A trail tread cut into the hillside: it sits a little below the uphill turf, with a short soil face above it.")
+with a ragged four-band edge. The one structural change worth its risk is opaque blade clumps
+for the nearest 10 to 20 m, because the binding frame cost is
+[alpha-tested](#term "Drawn on flat cards whose see-through texels are thrown away pixel by pixel, which switches off the GPU's early depth rejection for the whole draw.")
+fill, not triangles, and opaque geometry gives early depth rejection back.
+
+![Day Hike's trailhead: a dirt path leading into a misty forest through dark grass, with an information kiosk on the right](trailhead.png "Day Hike's trailhead today: the trail is painted as four bands with a ragged edge that wear noise widens and darkens along its length, and on the medium and high tiers the near grass is opaque blade clumps rather than cards.")
+
+**In numbers:**
+
+- **7 causes** make grass read flat, and the fixes for the first five are vertex work and
+  per-instance data, nearly free ([section 2](#seven-causes-of-the-flat-read-cheapest-first)).
+- **20 to 36 triangles** is Horizon Zero Dawn's nearest grass: the fidelity is not in the
+  triangle count ([section 3](#shipped-meadows-tint-clump-and-flatten-not-add-triangles)).
+- **One global wind vector** whose strength is modulated by noise travelling downwind, with a
+  permanent lean the sway rides on, sampled by grass, bushes, trees, particles and sound alike
+  ([section 4](#wind-that-reads-as-wind-is-one-shared-field)).
+- **Four bands** from the centre out: a 40 to 75 cm compacted core, a loose margin, trampled
+  vegetation, then a ragged boundary at full growth
+  ([section 5](#a-real-trail-is-a-sunken-bench-with-four-ragged-bands)).
+- **4 to 6 M fragment invocations,** not 0.97 M triangles, are what the grass costs a frame:
+  a fill-rate problem wearing a geometry costume
+  ([section 7](#grass-costs-fill-not-triangles-the-60-hz-arithmetic)).
+- **−1 to −3 ms on fill** is the expected net of opaque blade clumps, against +0.2 to +0.5 ms
+  of vertex work ([section 7](#grass-costs-fill-not-triangles-the-60-hz-arithmetic)).
 
 The game is public in [game-dayhike](https://github.com/csarkosh/game-dayhike). Sources are
 listed at the end; anything marked *unverified* comes from a secondary write-up of a talk
 whose slides could not be read.
 
-## 1. What the grass, the wind and the trail are today
+## 1. The starting point: cards, three sines and a painted stripe
 
 **Grass** is ground clutter: two card-based tuft models, 0.32 and 0.40 m tall, alpha-masked and
 double-sided, 290 triangles at the near level of detail and 130 at the far, scattered on a 3 m
@@ -81,7 +98,13 @@ chain. That scene pass is a post-process render target, and a Babylon `PostProce
 one sample [1], so **medium and high have no multisampling today** even though the engine is created
 with `antialias` on; only the low tier, which has no chain, gets it.
 
-## 2. Why it reads flat
+## 2. Seven causes of the flat read, cheapest first
+
+Every shipped meadow in this survey does four things Day Hike does not: it tints the grass to
+the ground it stands on (The Witcher 3's pigment map, Horizon's world-data colourisation), it
+darkens root to tip and varies height and colour *per clump* rather than per instance (Ghost of
+Tsushima's Voronoi clumps), it lights the field as one rounded mass instead of N flipping cards
+(Horizon flattens the view-space normal), and it lets low sun through the blades.
 
 Mapping the survey against section 1, the game-like read has seven causes, in order of how much
 each costs to fix:
@@ -118,7 +141,7 @@ with early depth rejection off. That is why the fixes for causes 1 to 5 are near
 vertex work and per-instance data, and why the one geometry change that matters is the one that
 removes the `discard`.
 
-## 3. How shipped games make grass full and alive
+## 3. Shipped meadows tint, clump and flatten, not add triangles
 
 ### The games
 
@@ -202,7 +225,7 @@ removes the `discard`.
 9. **Interaction**: a bend around the players, and a decayed top-down render target if trampling
    memory is ever wanted.
 
-## 4. Wind as one field
+## 4. Wind that reads as wind is one shared field
 
 The games that read as windy share one architecture, and it is the thing Day Hike's wind lacks.
 
@@ -248,7 +271,7 @@ into a tunable would move the
 A storm is then a parameter, not a feature: base speed up, gust amplitude up, lean angle up, the
 audio oscillator deeper, all from one record the weather preset owns.
 
-## 5. Trails through grass
+## 5. A real trail is a sunken bench with four ragged bands
 
 ### What a real trail edge looks like
 
@@ -342,9 +365,11 @@ The meta-lesson from three shipped systems and one modding decade: **the ground 
 scatter must consume the same field.** Day Hike's trail paint and grass gate already both read the
 trail distance; the work is making them agree about the four bands rather than one.
 
-## 6. What Babylon.js 9.18 can do, and what it costs
+## 6. Babylon.js 9.18 on WebGL2: plugin work, plus opaque blades
 
-Claims below were checked against the installed engine, not the documentation alone.
+Claims below were checked against the installed engine, not the documentation alone. In
+Babylon nearly all of the fix is vertex-stage plugin work, per-instance attributes written in a
+rebuild that already runs, and fragment arithmetic inside a branch that already exists.
 
 ### Geometry without compute
 
@@ -436,7 +461,7 @@ simulation's ground height does not, feet float by the sink depth. A few centime
 view bob; more than that means the bench belongs in the simulated terrain field, which does move
 the level id.
 
-## 7. The 60 Hz contract: arithmetic and measurement
+## 7. Grass costs fill, not triangles: the 60 Hz arithmetic
 
 **What today costs.** Grass tufts contribute about 686 k triangles a frame and the carpet 206 k,
 about 0.97 M with bushes and flowers. That is 58 M triangles a second at 60 Hz, which is nothing.
@@ -469,7 +494,7 @@ viewpoints:
 Sample at the high tier natively and at the low tier's 1.5× hardware scaling, because a fill
 conclusion inverts with pixel count. The 95th percentile is the stutter tell.
 
-## 8. Candidate directions
+## 8. Four packages: ground, wind, trail, then blades
 
 Four packages, ordered by payoff per risk. They compose.
 
@@ -502,7 +527,7 @@ The recommended order is A and B together, since they share the plugin and the p
 attribute, then C, then D behind its gate. A and B alone should move the read from "flat and
 game-like" to "grounded and windy"; D is what makes it "full".
 
-## 9. Traps
+## 9. Traps: one discard turns off early-Z for the whole draw
 
 - A `discard` anywhere in a fragment shader disables early depth rejection for the whole draw. No
   new fragment feature may add one to an opaque material, and blades must stay opaque.
