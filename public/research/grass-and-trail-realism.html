@@ -52,7 +52,7 @@
       "dateModified": "2026-10-23",
       "url": "https://csarko.sh/research/grass-and-trail-realism",
       "mainEntityOfPage": "https://csarko.sh/research/grass-and-trail-realism",
-      "wordCount": 7729,
+      "wordCount": 7781,
       "inLanguage": "en",
       "image": "https://csarko.sh/research/figures/grass-and-trail-realism-trailhead.jpg",
       "author": {
@@ -489,7 +489,7 @@ fill, not triangles, and opaque geometry gives early depth rejection back.</p>
 <img src="/assets/fig-grass-and-trail-realism-trailhead-720.97493203.jpg" srcset="/assets/fig-grass-and-trail-realism-trailhead-480.ded0bdb1.jpg 480w, /assets/fig-grass-and-trail-realism-trailhead-720.97493203.jpg 720w, /assets/fig-grass-and-trail-realism-trailhead-960.8884f34a.jpg 960w" sizes="(max-width: 768px) calc(100vw - 48px), 720px" width="1200" height="675" alt="Day Hike&#39;s trailhead: a dirt path leading into a misty forest through dark grass, with an information kiosk on the right" decoding="async" />
 </picture>
 <!-- /generated:figure:grass-and-trail-realism/trailhead -->
-<figcaption>Day Hike&#39;s trailhead today: the trail is painted as four bands with a ragged edge that wear noise widens and darkens along its length, and on the medium and high tiers the near grass is opaque blade clumps rather than cards.</figcaption>
+<figcaption>Day Hike&#39;s trailhead as of October 2026, a month after this doc: the trail is painted as four bands with a ragged edge that wear noise widens and darkens along its length, and on the medium and high tiers the near grass is opaque blade clumps rather than cards.</figcaption>
 </figure>
 <p><strong>In numbers:</strong></p>
 <ul>
@@ -529,6 +529,8 @@ whose slides could not be read.</p>
       </nav>
       <div class="prose">
 <div class="section-head"><p class="section-label">01</p><h2 id="the-starting-point-cards-three-sines-and-a-painted-stripe"><a class="anchor" href="#the-starting-point-cards-three-sines-and-a-painted-stripe">The starting point: cards, three sines and a painted stripe</a></h2></div>
+<p>This section describes Day Hike as of Sep 15, 2026, when this doc was written; the game has
+changed since.</p>
 <p><strong>Grass</strong> is ground clutter: two card-based tuft models, 0.32 and 0.40 m tall, alpha-masked and
 double-sided, 290 triangles at the near level of detail and 130 at the far, scattered on a 3 m
 lattice out to 110 m with a 4,400-instance budget that is effectively a tuft in every cell.
@@ -566,7 +568,7 @@ or trampled grass, no litter or pebbles at the edge, and no variation of width o
 trail&#39;s length. The bed is the ground: the trail follows the terrain and is not cut into it.</p>
 <p><strong>The frame</strong> on the high tier renders into a full-resolution scene pass and then the grade
 chain. That scene pass is a post-process render target, and a Babylon <code>PostProcess</code> defaults to
-one sample <a class="cite" href="#ref-1">[1]</a>, so <strong>medium and high have no multisampling today</strong> even though the engine is created
+one sample <a class="cite" href="#ref-1">[1]</a>, so <strong>as of Sep 15, 2026, medium and high have no multisampling</strong> even though the engine is created
 with <code>antialias</code> on; only the low tier, which has no chain, gets it.</p>
 <div class="section-head"><p class="section-label">02</p><h2 id="seven-causes-of-the-flat-read-cheapest-first"><a class="anchor" href="#seven-causes-of-the-flat-read-cheapest-first">Seven causes of the flat read, cheapest first</a></h2></div>
 <p>Every shipped meadow in this survey does four things Day Hike does not: it tints the grass to
@@ -829,14 +831,14 @@ rebuild that already runs, and fragment arithmetic inside a branch that already 
 no mesh-level integration, so blade lists cannot be generated on the GPU the Tsushima way. The
 path that fits is a <strong>static blade-clump mesh</strong>: 16 to 32 blades of 5 to 7 triangles each with one
 extra static <code>vec4</code> per vertex (blade index, height fraction, per-blade random, side),
-thin-instanced on the existing 0.7 m meadow lattice <strong>for the near band only</strong>, with today&#39;s card
-tufts kept beyond. A material plugin can declare the attribute through <code>getAttributes</code> exactly as
+thin-instanced on the existing 0.7 m meadow lattice <strong>for the near band only</strong>, with the card
+tufts of Sep 15, 2026 kept beyond. A material plugin can declare the attribute through <code>getAttributes</code> exactly as
 the existing distance-fade and ground-conform plugins do <a class="cite" href="#ref-40">[40]</a>, <a class="cite" href="#ref-41">[41]</a>. A 24-blade clump at 6 triangles is 144
-triangles, half of today&#39;s 290-triangle near tuft.</p>
+triangles, half of the 290-triangle near tuft of Sep 15, 2026.</p>
 <p>A thin instance cannot be narrower than its 64-byte matrix, since the stride is hard-coded and
 the count is derived from the matrix buffer <a class="cite" href="#ref-42">[42]</a>, so per-instance cost is 64 bytes plus 16 for the fade
 bands plus 16 for one new <code>vec4</code> carrying tint, height and hash: 96 bytes, the same order as
-today. <code>gl_InstanceID</code> is available <a class="cite" href="#ref-43">[43]</a> but is <strong>not stable across the 3 m rebuild</strong>, so per-clump
+on Sep 15, 2026. <code>gl_InstanceID</code> is available <a class="cite" href="#ref-43">[43]</a> but is <strong>not stable across the 3 m rebuild</strong>, so per-clump
 randomness must hash the instance&#39;s world position, which is already in scope at the vertex hook,
 or ride the attribute.</p>
 <p>The clump footprint must stay under the fade ramp&#39;s 4.24 m floor, because the whole instance
@@ -945,7 +947,7 @@ simulation&#39;s ground height does not, feet float by the sink depth. A few cen
 view bob; more than that means the bench belongs in the simulated terrain field, which does move
 the level id.</p>
 <div class="section-head"><p class="section-label">07</p><h2 id="grass-costs-fill-not-triangles-the-60-hz-arithmetic"><a class="anchor" href="#grass-costs-fill-not-triangles-the-60-hz-arithmetic">Grass costs fill, not triangles: the 60 Hz arithmetic</a></h2></div>
-<p><strong>What today costs.</strong> Grass tufts contribute about 686 k triangles a frame and the carpet 206 k,
+<p><strong>What it costs as of Sep 15, 2026.</strong> Grass tufts contribute about 686 k triangles a frame and the carpet 206 k,
 about 0.97 M with bushes and flowers. That is 58 M triangles a second at 60 Hz, which is nothing.
 Fill is the cost: in an open meadow grass covers the bottom 55 to 65 % of a 1080p frame, about
 1.2 M pixels, at three to five layers of cards, so 4 to 6 M PBR fragment invocations of which
@@ -954,7 +956,7 @@ On the integrated GPUs the low and medium tiers target, that is 2 to 5 ms, consi
 repo&#39;s own +9.6 ms meadow and roughly 4 ms receiver measurements. Grass is a fill-rate problem
 wearing a geometry costume.</p>
 <p><strong>What blade clumps would cost.</strong> 3,000 clumps × 24 blades × 6 triangles is 432 k triangles, fewer
-than today&#39;s tufts, and about 360 k vertices through the PBR vertex shader plus the plugin, so 0.2
+than the tufts of Sep 15, 2026, and about 360 k vertices through the PBR vertex shader plus the plugin, so 0.2
 to 0.5 ms. The fill picture flips: no <code>discard</code>, early-Z on, a nearest-first buffer so later layers
 are depth-rejected, and each blade covering a fraction of the pixels its card covered. Expected
 net: roughly neutral on triangles, <strong>−1 to −3 ms on fill, +0.2 to +0.5 ms on vertex work</strong>, plus

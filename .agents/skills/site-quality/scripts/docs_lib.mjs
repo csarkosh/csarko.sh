@@ -43,6 +43,23 @@ export const categorySlug = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, 
 // and a converted one is held to the same rules (renderMarkdown checks any doc whose Sources
 // section is a numbered list).
 export const IEEE_SINCE = '2026-09-23';
+// Docs published from this date say when their "now" was (Cyrus, 2026-10-23): a paragraph that
+// says today, now, currently and the like must carry "as of <date>", so a doc never claims a state
+// of the game, a tool or a market that has since moved on. Quotes, code and Sources are exempt.
+export const DATED_SINCE = '2026-10-24';
+const UNDATED = /\b(today|now|currently|nowadays|at the moment|at present|these days|so far|not yet|no longer)\b/i;
+
+/** The paragraphs of a doc's prose before Sources that speak of the present without a date. */
+export function undatedParagraphs(body) {
+  const prose = body.split(/^##\s+(?:\d+\.\s+)?Sources\s*$/im)[0].replace(/^```[\s\S]*?^```/gm, '');
+  return prose.split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter((p) => p && !p.startsWith('#'))
+    .filter((p) => {
+      const plain = p.replace(/`[^`]*`/g, '').replace(/"[^"]*"/g, '').replace(/\]\([^)]*\)/g, ']');
+      return UNDATED.test(plain) && !/\bas of\b/i.test(plain);
+    });
+}
 const GAME_FIELDS = { description: true, status: true, tags: true, play: false, repo: false, released: false };
 // An app is software to download or use: "page" is its own page (on apps.csarko.sh), "platforms"
 // what it runs on, "license" joins the status in the card's kicker when the app is open source,
@@ -527,6 +544,12 @@ export function loadDoc(name, text, figures = new Map()) {
   const { meta, body } = parseFrontMatter(text, file);
   if (meta.published !== date) {
     throw new DocError(`${file}: file name says ${date} but front matter says published: ${meta.published}`);
+  }
+  if (meta.published >= DATED_SINCE) {
+    const undated = undatedParagraphs(body);
+    if (undated.length) {
+      throw new DocError(`${file}: ${undated.length} paragraph(s) speak of the present without a date; say "as of ${formatDate(meta.published)}" (see publish-doc, "Date the present"):\n${undated.map((p) => `  ${p.slice(0, 100).replace(/\s+/g, ' ')}…`).join('\n')}`);
+    }
   }
   return {
     slug,

@@ -25,7 +25,7 @@ cascade fits even on WebGL2, and in WebGPU compute drawing the water costs more 
 it; for a still lake the mirror is the picture, and nobody has published what a mirrored render
 costs in a browser.
 
-![Day Hike's tarn from its west shore: lily pads on dark water in the middle distance, a green margin and grey rocks in front, and a forest of tall conifers behind in mist](tarn.png "A tarn added to Day Hike since this survey, when the game had no lake: lilies on dark water under the forest. Its material takes its attenuation in each colour from the lakes measured in section 2, set between the clear high lake and the brown lowland one by how murky the lake is.")
+![Day Hike's tarn from its west shore: lily pads on dark water in the middle distance, a green margin and grey rocks in front, and a forest of tall conifers behind in mist](tarn.png "A tarn added to Day Hike in October 2026, after this survey found no lake: lilies on dark water under the forest. Its material takes its attenuation in each colour from the lakes measured in section 2, set between the clear high lake and the brown lowland one by how murky the lake is.")
 
 **In numbers:**
 
@@ -66,13 +66,16 @@ that are large and concave where real ones would be, small where real ones would
 where they break. The water system is meant to be reused, in later maps and in other games, so
 the survey covers water at arm's length as well as from a kilometre away.
 
+This section describes Day Hike as of Sep 29, 2026, when this survey was written; the game has
+changed since.
+
 Day Hike's world is a procedural coast and forest modelled on Washington's Olympic Peninsula:
 the Pacific west of the start, sand bays between headlands, sea stacks, a highway along the
 shore, and a trail that climbs a peak. The player is on foot at eye height; there are no boats
 and no swimming, so water is always looked at from land, from a few metres to a few kilometres
 away.
 
-| | What is drawn now |
+| | What was drawn as of Sep 29, 2026 |
 |---|---|
 | The sea | A flat plane at sea level: four camera-following rings of 128 by 128 cells, with cells of 8, 16, 32 and 64 m, 106,496 triangles, reaching 8,192 m |
 | Its material | One PBR material, roughness 0.12, alpha blended, with one 256 px procedural normal map that scrolls at 0.36 and 0.26 m/s. Nothing else moves |
@@ -91,13 +94,13 @@ leaves water perhaps 1 to 2 ms there and well under 1 ms on the low tier.
 
 Three properties of the world matter as much as the renderer:
 
-- **No player can reach the sea.** An invisible wall runs along the highway, which lies
+- **No player can reach the sea, as of Sep 29, 2026.** An invisible wall runs along the highway, which lies
   between the forest and the beach. The nearest a player gets to the waterline is about 62 m
   on a headland and up to 141 m in a bay. The surf is seen from the road, from the trail and
   from the summit, never from the wet sand. That is a fact of this map and not of the water
   system: later maps, and other games built on it, will put a player at the waterline, so
   nothing below is ruled out because of the distance.
-- **There is no lake.** The largest inland water is the pond above. A lake 50 to 300 m across
+- **There is no lake, as of Sep 29, 2026.** The largest inland water is the pond above. A lake 50 to 300 m across
   is a new stage in the terrain function, which changes the world every player must agree on;
   and on a hillside of gradient 0.25, a level rim 300 m across stands about 38 m proud of the
   slope on one side, so it has to sit in flatter ground or a cut.
@@ -450,7 +453,7 @@ forest take the high frequencies first.
 
 ## 4. The Olympic coast: long sand flats, steep pocket beaches, stacks
 
-![Day Hike's beach below the road: a broad sweep of wet grey sand with darker patches and a bleached log in front, a forested headland on the left, and a lone sea stack off the shore to the right, all in fog](beach.png "Day Hike's beach below the road, with a sea stack off it in fog. Below the water's wet line the game now darkens the ground to 0.4 of its dry colour and makes it glossy: section 2.4's soaked sand.")
+![Day Hike's beach below the road: a broad sweep of wet grey sand with darker patches and a bleached log in front, a forested headland on the left, and a lone sea stack off the shore to the right, all in fog](beach.png "Day Hike's beach below the road, with a sea stack off it in fog. As of October 2026, below the water's wet line the game darkens the ground to 0.4 of its dry colour and makes it glossy: section 2.4's soaked sand.")
 
 ### 4.1 Two kinds of beach, each with two slopes
 
@@ -732,7 +735,7 @@ artist's decision everywhere we looked.
 | Fold detection: foam where the horizontal displacement folds the surface over itself [86], [87] | White fringes on the steepest crests | They flash and vanish with each crest; nothing at a beach |
 | A foam buffer that persists: fed by the folds, carried by the flow, faded each frame [105] | Whitecaps that leave drifting streaks | One decay rate for every patch |
 | Coverage as a statistic: the chance that a pixel's crests are folded, from the mean and variance of the fold measure [106] | The right grey-white sheen on a distant sea | No memory: the paper says it "does not handle their decay". It also ignores masking, "which is important at grazing angles" |
-| A band by depth [93] | A white rim at the waterline | It does not move, and its width changes with the beach's slope. It is what Day Hike has now |
+| A band by depth [93] | A white rim at the waterline | It does not move, and its width changes with the beach's slope. It is what Day Hike has as of Sep 29, 2026 |
 | Foam tied to each wave's breaking phase [87], [94], [97] | A line that breaks, then spreads, as each wave arrives | Drawn on a surface: the bore's tumbling volume is still a texture |
 
 Unity's foam then ages: a lifetime value erodes a foam texture from solid white into lace,
@@ -970,7 +973,7 @@ Costs are the published ones from sections 6 to 8, on the hardware their sources
 
 | Option | Against real water | Cost | Needs |
 |---|---|---|---|
-| A band by depth, as now | Does not move | Nothing | Nothing |
+| A band by depth, as of Sep 29, 2026 | Does not move | Nothing | Nothing |
 | Foam where the surface folds, kept in a buffer that fades | Whitecaps offshore that leave streaks. One fade rate stands in for section 3.5's life of a patch | 0.16 ms in Crest on a GTX 1070 | A render target that persists, moved with the camera |
 | Foam from each wave's breaking phase, aged by a second value | The line that breaks, spreads and thins to lace. The aging is what section 3.5 asks for | Not separated in any source | The shore waves of section 9.2 |
 | Coverage as a statistic at a distance | The right fraction of white in a far pixel | Part of the water's shading | Mipmapped moments of the fold measure |
@@ -981,7 +984,7 @@ Costs are the published ones from sections 6 to 8, on the hardware their sources
 | Option | Against real water | Cost | Needs |
 |---|---|---|---|
 | The sky alone, from a probe, taken from 20 to 30° above the horizon on rough water | Right for the open sea in any wind, where the coast is not mirrored at all (section 2.2). Wrong for a lake | One cube map read | Nothing new |
-| A march through the frame's depth, in the water's shader | Stacks and headlands in a calm sea. On a lake it loses the treetops above the frame | About 1.0 ms at 1280 by 800 on an Apple M5 for 24 steps | The scene's depth and colour, which no material can read today |
+| A march through the frame's depth, in the water's shader | Stacks and headlands in a calm sea. On a lake it loses the treetops above the frame | About 1.0 ms at 1280 by 800 on an Apple M5 for 24 steps | The scene's depth and colour, which no material can read as of Sep 29, 2026 |
 | Projecting pixels across the water plane | Sharp and exact for a flat lake; the same blind spot | 0.3 to 0.4 ms on consoles at quarter resolution; under 1 ms on a 2018 phone at 256 px | WebGPU compute. Not possible on WebGL2 |
 | A second, mirrored render of a short list: sky, terrain, tree impostors | The whole mirror, treetops included. What a still lake needs | Not measured in any browser. In Unreal, from 15 % to 79 % of the frame, by how much is drawn | A render target, and either an oblique projection or a clipped variant of each material drawn |
 
@@ -1029,7 +1032,7 @@ a murky one, to the cover and the margin.
 
 | Option | Against the real thing | Cost | Needs |
 |---|---|---|---|
-| A quiet bed near the lake, by hour and season: chorus frogs on spring nights, wind in sedges | The pond's soundscape | One looping source | A loop option in the game's audio, which has none yet |
+| A quiet bed near the lake, by hour and season: chorus frogs on spring nights, wind in sedges | The pond's soundscape | One looping source | A loop option in the game's audio, which has none as of Sep 29, 2026 |
 | Single insect passes close to the head, on an HRTF panner | The whine as it is heard: one insect within arm's reach, swelling and crossing between the ears | Four convolutions while the source moves; milliseconds not measured | Recordings, or an oscillator near 475 Hz with harmonics |
 | Surf as a line source that rises and falls with the sets, with thuds on the plunges | Section 3.6 | A few looping and one-shot sources | The shore waves' phase, as Hellblade II used it |
 
@@ -1085,8 +1088,8 @@ waves, and Sledgehammer's on the sea of Call of Duty: WWII.
 Three questions in this survey were about the world and not the renderer. We have answered
 them, and each answer changes which of section 9's options are worth their cost.
 
-1. **The water is built as if the player can reach it.** Nobody reaches Day Hike's beach
-   today, but the water is a system to be reused, in later maps and in other games, where
+1. **The water is built as if the player can reach it.** As of Sep 29, 2026, nobody reaches
+   Day Hike's beach, but the water is a system to be reused, in later maps and in other games, where
    the player will stand in the swash. So the last 20 m of the beach are in scope: the
    swash sheet and its mirror on the wet sand, foam thinning to lace, refraction of the bed,
    a fine mesh at the waterline, and with them a shallow-water simulation. What reads from
@@ -1099,7 +1102,7 @@ them, and each answer changes which of section 9's options are worth their cost.
 3. **Lakes sit low and high.** A lowland lake with marsh at an end is murky, with algae at
    its margin; a lake high on the mountain is clear to its bed. One lake material serves
    both, with the measured attenuation of section 2.3 as its setting. Either needs a basin
-   the terrain does not make today, in ground flat enough to hold a level rim.
+   the terrain does not make as of Sep 29, 2026, in ground flat enough to hold a level rim.
 
 The sea bed and the lakes are part of the world every player must agree on, so the second
 and third change the world, and are best made together.

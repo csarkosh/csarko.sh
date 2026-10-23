@@ -1,7 +1,7 @@
 // Tests for docs_lib.mjs. Run: node --test .agents/skills/site-quality/tests/docs_lib.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { appsPage, buildSite, CATEGORIES, categorySlug, DocError, docLinks, docPage, feed, IEEE_SINCE, filmsPage, formatDate, gamesPage, indexPage, loadApp, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, sitemap, sortApps, sortDocs, sortFilms, sortGames, standaloneShell, themeBlocks } from '../scripts/docs_lib.mjs';
+import { appsPage, buildSite, CATEGORIES, categorySlug, DATED_SINCE, DocError, docLinks, docPage, feed, IEEE_SINCE, undatedParagraphs, filmsPage, formatDate, gamesPage, indexPage, loadApp, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, sitemap, sortApps, sortDocs, sortFilms, sortGames, standaloneShell, themeBlocks } from '../scripts/docs_lib.mjs';
 
 const FILE = 'docs/published/2026-09-14-example.md';
 const DESC = 'A description that is long enough to pass the seventy character minimum for search.';
@@ -819,4 +819,13 @@ test('the feed lists every doc, newest first', () => {
   assert.ok(xml.startsWith('<?xml version="1.0" encoding="utf-8"?>\n<feed xmlns="http://www.w3.org/2005/Atom">'));
   assert.ok(xml.includes('<updated>2026-03-01T00:00:00Z</updated>\n  <author>'));
   assert.ok(xml.indexOf('<id>https://csarko.sh/research/b</id>') < xml.indexOf('<id>https://csarko.sh/research/a</id>'));
+});
+
+test('a doc from DATED_SINCE says when its present was', () => {
+  assert.deepEqual(undatedParagraphs('The game has no lake today.\n\nAs of Oct 24, 2026, the game has no lake.\n\nIt said "we have none now" [1].\n\n`now()` returns ms.\n\n## Sources\n\n1. Now and then.'),
+    ['The game has no lake today.']);
+  assert.throws(() => load(longDoc('d', DATED_SINCE, '', 'Day Hike currently draws an analytic fog.')), (e) => e instanceof DocError && /without a date; say "as of Oct 24, 2026"/.test(e.message));
+  assert.doesNotThrow(() => load(longDoc('d', DATED_SINCE, '', 'As of Oct 24, 2026, Day Hike draws an analytic fog.')));
+  // Docs before it build as they are.
+  assert.doesNotThrow(() => load(longDoc('d', '2026-10-23', '', 'Day Hike currently draws an analytic fog.')));
 });

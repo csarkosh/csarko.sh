@@ -29,7 +29,7 @@ state, and keep screen distortion the smallest channel, at the edge of the frame
 of it is cheap in Babylon; a fog hook, an AgX tone map and a headlamp cone are the three
 pieces it does not give for free.
 
-![A dim fern slope under big trunks in Day Hike's old wood, the far trunks fading into fog](forest.png "Day Hike after its restyle, which took most of direction 1 in section 5: a closed-form height fog tinted toward the sun, an AgX tone map, then one grade pass ending in a triangular dither, so the far trunks fade into grey mist without banding.")
+![A dim fern slope under big trunks in Day Hike's old wood, the far trunks fading into fog](forest.png "Day Hike as of October 2026, after its restyle, which took most of direction 1 in section 5: a closed-form height fog tinted toward the sun, an AgX tone map, then one grade pass ending in a triangular dither, so the far trunks fade into grey mist without banding.")
 
 **In numbers:**
 
@@ -344,7 +344,7 @@ Constraints that shape the design:
   real. All three traps are already recorded in the shader files.
 - `MaterialPluginBase.isCompatible` accepts GLSL only, and adding an incompatible plugin
   throws, so on WebGPU a GLSL-only plugin breaks material creation unless the material
-  forces GLSL. The restyle stays on WebGL2.
+  forces GLSL. As of Sep 15, 2026, the restyle stays on WebGL2.
 
 ## 5. Four directions, led by a photographed dusk
 

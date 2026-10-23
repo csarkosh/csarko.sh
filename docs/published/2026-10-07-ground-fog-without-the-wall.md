@@ -19,7 +19,7 @@ grid that the scene's lights shine through, integrated for each pixel up to that
 depth, so there is no surface for the ground to cut. A browser can run the same integral in one
 half-resolution fragment pass on WebGL2 and WebGPU alike; only a true froxel grid needs WebGPU.
 
-![The crest in Day Hike: bare ground in the foreground, an animal on the ridge, and a line of trees beyond it fading into a low grey mist](crest.png "Day Hike today draws the cheapest of the three browser designs in section 3, an analytic height fog: mist that thickens toward the ground and with distance, with no edge for the terrain to cut.")
+![The crest in Day Hike: bare ground in the foreground, an animal on the ridge, and a line of trees beyond it fading into a low grey mist](crest.png "As of October 2026, Day Hike draws the cheapest of the three browser designs in section 3, an analytic height fog: mist that thickens toward the ground and with distance, with no edge for the terrain to cut.")
 
 **In numbers:**
 

@@ -52,7 +52,7 @@
       "dateModified": "2026-10-23",
       "url": "https://csarko.sh/research/photorealistic-water-rendering",
       "mainEntityOfPage": "https://csarko.sh/research/photorealistic-water-rendering",
-      "wordCount": 18320,
+      "wordCount": 18380,
       "inLanguage": "en",
       "image": "https://csarko.sh/research/figures/photorealistic-water-rendering-tarn.jpg",
       "author": {
@@ -485,7 +485,7 @@ costs in a browser.</p>
 <img src="/assets/fig-photorealistic-water-rendering-tarn-720.431b3fe6.jpg" srcset="/assets/fig-photorealistic-water-rendering-tarn-480.64b71376.jpg 480w, /assets/fig-photorealistic-water-rendering-tarn-720.431b3fe6.jpg 720w, /assets/fig-photorealistic-water-rendering-tarn-960.7e3303ca.jpg 960w" sizes="(max-width: 768px) calc(100vw - 48px), 720px" width="1200" height="675" alt="Day Hike&#39;s tarn from its west shore: lily pads on dark water in the middle distance, a green margin and grey rocks in front, and a forest of tall conifers behind in mist" decoding="async" />
 </picture>
 <!-- /generated:figure:photorealistic-water-rendering/tarn -->
-<figcaption>A tarn added to Day Hike since this survey, when the game had no lake: lilies on dark water under the forest. Its material takes its attenuation in each colour from the lakes measured in section 2, set between the clear high lake and the brown lowland one by how murky the lake is.</figcaption>
+<figcaption>A tarn added to Day Hike in October 2026, after this survey found no lake: lilies on dark water under the forest. Its material takes its attenuation in each colour from the lakes measured in section 2, set between the clear high lake and the brown lowland one by how murky the lake is.</figcaption>
 </figure>
 <p><strong>In numbers:</strong></p>
 <ul>
@@ -541,6 +541,8 @@ forest lake, murky with algae at its margin and insects over it, and an ocean co
 that are large and concave where real ones would be, small where real ones would be, and white
 where they break. The water system is meant to be reused, in later maps and in other games, so
 the survey covers water at arm&#39;s length as well as from a kilometre away.</p>
+<p>This section describes Day Hike as of Sep 29, 2026, when this survey was written; the game has
+changed since.</p>
 <p>Day Hike&#39;s world is a procedural coast and forest modelled on Washington&#39;s Olympic Peninsula:
 the Pacific west of the start, sand bays between headlands, sea stacks, a highway along the
 shore, and a trail that climbs a peak. The player is on foot at eye height; there are no boats
@@ -550,7 +552,7 @@ away.</p>
 <thead>
 <tr>
 <th></th>
-<th>What is drawn now</th>
+<th>What was drawn as of Sep 29, 2026</th>
 </tr>
 </thead>
 <tbody><tr>
@@ -590,13 +592,13 @@ the frame is limited by the GPU: about 20 ms on an Apple M4 at 1080p on the high
 leaves water perhaps 1 to 2 ms there and well under 1 ms on the low tier.</p>
 <p>Three properties of the world matter as much as the renderer:</p>
 <ul>
-<li><strong>No player can reach the sea.</strong> An invisible wall runs along the highway, which lies
+<li><strong>No player can reach the sea, as of Sep 29, 2026.</strong> An invisible wall runs along the highway, which lies
 between the forest and the beach. The nearest a player gets to the waterline is about 62 m
 on a headland and up to 141 m in a bay. The surf is seen from the road, from the trail and
 from the summit, never from the wet sand. That is a fact of this map and not of the water
 system: later maps, and other games built on it, will put a player at the waterline, so
 nothing below is ruled out because of the distance.</li>
-<li><strong>There is no lake.</strong> The largest inland water is the pond above. A lake 50 to 300 m across
+<li><strong>There is no lake, as of Sep 29, 2026.</strong> The largest inland water is the pond above. A lake 50 to 300 m across
 is a new stage in the terrain function, which changes the world every player must agree on;
 and on a hillside of gradient 0.25, a level rim 300 m across stands about 38 m proud of the
 slope on one side, so it has to sit in flatter ground or a cut.</li>
@@ -1125,7 +1127,7 @@ forest take the high frequencies first.</p>
 <img src="/assets/fig-photorealistic-water-rendering-beach-720.3231570d.jpg" srcset="/assets/fig-photorealistic-water-rendering-beach-480.05354abf.jpg 480w, /assets/fig-photorealistic-water-rendering-beach-720.3231570d.jpg 720w, /assets/fig-photorealistic-water-rendering-beach-960.c1f93ab1.jpg 960w" sizes="(max-width: 768px) calc(100vw - 48px), 720px" width="1200" height="675" alt="Day Hike&#39;s beach below the road: a broad sweep of wet grey sand with darker patches and a bleached log in front, a forested headland on the left, and a lone sea stack off the shore to the right, all in fog" loading="lazy" decoding="async" />
 </picture>
 <!-- /generated:figure:photorealistic-water-rendering/beach -->
-<figcaption>Day Hike&#39;s beach below the road, with a sea stack off it in fog. Below the water&#39;s wet line the game now darkens the ground to 0.4 of its dry colour and makes it glossy: section 2.4&#39;s soaked sand.</figcaption>
+<figcaption>Day Hike&#39;s beach below the road, with a sea stack off it in fog. As of October 2026, below the water&#39;s wet line the game darkens the ground to 0.4 of its dry colour and makes it glossy: section 2.4&#39;s soaked sand.</figcaption>
 </figure>
 <h3 id="4-1-two-kinds-of-beach-each-with-two-slopes"><a class="anchor" href="#4-1-two-kinds-of-beach-each-with-two-slopes">4.1 Two kinds of beach, each with two slopes</a></h3>
 <p>The National Park Service mapped 174 beaches on the Olympic coast. Sand beaches are the
@@ -1541,7 +1543,7 @@ artist&#39;s decision everywhere we looked.</p>
 <tr>
 <td>A band by depth <a class="cite" href="#ref-93">[93]</a></td>
 <td>A white rim at the waterline</td>
-<td>It does not move, and its width changes with the beach&#39;s slope. It is what Day Hike has now</td>
+<td>It does not move, and its width changes with the beach&#39;s slope. It is what Day Hike has as of Sep 29, 2026</td>
 </tr>
 <tr>
 <td>Foam tied to each wave&#39;s breaking phase <a class="cite" href="#ref-87">[87]</a>, <a class="cite" href="#ref-94">[94]</a>, <a class="cite" href="#ref-97">[97]</a></td>
@@ -1971,7 +1973,7 @@ the feature on and off are the measure to trust there.</p>
 </tr>
 </thead>
 <tbody><tr>
-<td>A band by depth, as now</td>
+<td>A band by depth, as of Sep 29, 2026</td>
 <td>Does not move</td>
 <td>Nothing</td>
 <td>Nothing</td>
@@ -2021,7 +2023,7 @@ the feature on and off are the measure to trust there.</p>
 <td>A march through the frame&#39;s depth, in the water&#39;s shader</td>
 <td>Stacks and headlands in a calm sea. On a lake it loses the treetops above the frame</td>
 <td>About 1.0 ms at 1280 by 800 on an Apple M5 for 24 steps</td>
-<td>The scene&#39;s depth and colour, which no material can read today</td>
+<td>The scene&#39;s depth and colour, which no material can read as of Sep 29, 2026</td>
 </tr>
 <tr>
 <td>Projecting pixels across the water plane</td>
@@ -2165,7 +2167,7 @@ a murky one, to the cover and the margin.</p>
 <td>A quiet bed near the lake, by hour and season: chorus frogs on spring nights, wind in sedges</td>
 <td>The pond&#39;s soundscape</td>
 <td>One looping source</td>
-<td>A loop option in the game&#39;s audio, which has none yet</td>
+<td>A loop option in the game&#39;s audio, which has none as of Sep 29, 2026</td>
 </tr>
 <tr>
 <td>Single insect passes close to the head, on an HRTF panner</td>
@@ -2226,8 +2228,8 @@ waves, and Sledgehammer&#39;s on the sea of Call of Duty: WWII.</p>
 <p>Three questions in this survey were about the world and not the renderer. We have answered
 them, and each answer changes which of section 9&#39;s options are worth their cost.</p>
 <ol>
-<li><strong>The water is built as if the player can reach it.</strong> Nobody reaches Day Hike&#39;s beach
-today, but the water is a system to be reused, in later maps and in other games, where
+<li><strong>The water is built as if the player can reach it.</strong> As of Sep 29, 2026, nobody reaches
+Day Hike&#39;s beach, but the water is a system to be reused, in later maps and in other games, where
 the player will stand in the swash. So the last 20 m of the beach are in scope: the
 swash sheet and its mirror on the wet sand, foam thinning to lace, refraction of the bed,
 a fine mesh at the waterline, and with them a shallow-water simulation. What reads from
@@ -2240,7 +2242,7 @@ stay, and keep their lines of spilling white water.</li>
 <li><strong>Lakes sit low and high.</strong> A lowland lake with marsh at an end is murky, with algae at
 its margin; a lake high on the mountain is clear to its bed. One lake material serves
 both, with the measured attenuation of section 2.3 as its setting. Either needs a basin
-the terrain does not make today, in ground flat enough to hold a level rim.</li>
+the terrain does not make as of Sep 29, 2026, in ground flat enough to hold a level rim.</li>
 </ol>
 <p>The sea bed and the lakes are part of the world every player must agree on, so the second
 and third change the world, and are best made together.</p>

@@ -229,7 +229,10 @@ three from the command line):
   doc" list, claim headings, figures (`assets/research/<slug>/`), tap-to-open term definitions,
   a Keep reading block (its `series:`, `related:` docs, Play Day Hike) before Sources, Read next
   after the author box, and an Atom feed at `/research/feed.xml`; the `publish-doc` skill's
-  "Write for the skim" has the rules. **Every doc carries `categories:`**
+  "Write for the skim" has the rules. **A doc dates its present** *(Cyrus, 2026-10-23)*: never a
+  bare "today", "now" or "currently", always "as of <published date>", so its wording never goes
+  stale as the game moves on (publish-doc, "Date the present"; the build refuses it from
+  2026-10-24). **Every doc carries `categories:`**
   *(Cyrus, 2026-10-13)*: one to three of the fixed set in `docs_lib.mjs`
   (`CATEGORIES`: Distributed systems, AI, Rendering, Worlds and terrain, Game design,
   Film, Tooling), which are the filter chips above the list on `/research` (multi-select,

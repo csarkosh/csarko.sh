@@ -28,7 +28,7 @@ for the nearest 10 to 20 m, because the binding frame cost is
 [alpha-tested](#term "Drawn on flat cards whose see-through texels are thrown away pixel by pixel, which switches off the GPU's early depth rejection for the whole draw.")
 fill, not triangles, and opaque geometry gives early depth rejection back.
 
-![Day Hike's trailhead: a dirt path leading into a misty forest through dark grass, with an information kiosk on the right](trailhead.png "Day Hike's trailhead today: the trail is painted as four bands with a ragged edge that wear noise widens and darkens along its length, and on the medium and high tiers the near grass is opaque blade clumps rather than cards.")
+![Day Hike's trailhead: a dirt path leading into a misty forest through dark grass, with an information kiosk on the right](trailhead.png "Day Hike's trailhead as of October 2026, a month after this doc: the trail is painted as four bands with a ragged edge that wear noise widens and darkens along its length, and on the medium and high tiers the near grass is opaque blade clumps rather than cards.")
 
 **In numbers:**
 
@@ -53,6 +53,9 @@ listed at the end; anything marked *unverified* comes from a secondary write-up 
 whose slides could not be read.
 
 ## 1. The starting point: cards, three sines and a painted stripe
+
+This section describes Day Hike as of Sep 15, 2026, when this doc was written; the game has
+changed since.
 
 **Grass** is ground clutter: two card-based tuft models, 0.32 and 0.40 m tall, alpha-masked and
 double-sided, 290 triangles at the near level of detail and 130 at the far, scattered on a 3 m
@@ -95,7 +98,7 @@ trail's length. The bed is the ground: the trail follows the terrain and is not 
 
 **The frame** on the high tier renders into a full-resolution scene pass and then the grade
 chain. That scene pass is a post-process render target, and a Babylon `PostProcess` defaults to
-one sample [1], so **medium and high have no multisampling today** even though the engine is created
+one sample [1], so **as of Sep 15, 2026, medium and high have no multisampling** even though the engine is created
 with `antialias` on; only the low tier, which has no chain, gets it.
 
 ## 2. Seven causes of the flat read, cheapest first
@@ -377,15 +380,15 @@ WebGL2 has no compute, and Babylon's transform feedback (it exists, and GPU part
 no mesh-level integration, so blade lists cannot be generated on the GPU the Tsushima way. The
 path that fits is a **static blade-clump mesh**: 16 to 32 blades of 5 to 7 triangles each with one
 extra static `vec4` per vertex (blade index, height fraction, per-blade random, side),
-thin-instanced on the existing 0.7 m meadow lattice **for the near band only**, with today's card
-tufts kept beyond. A material plugin can declare the attribute through `getAttributes` exactly as
+thin-instanced on the existing 0.7 m meadow lattice **for the near band only**, with the card
+tufts of Sep 15, 2026 kept beyond. A material plugin can declare the attribute through `getAttributes` exactly as
 the existing distance-fade and ground-conform plugins do [40], [41]. A 24-blade clump at 6 triangles is 144
-triangles, half of today's 290-triangle near tuft.
+triangles, half of the 290-triangle near tuft of Sep 15, 2026.
 
 A thin instance cannot be narrower than its 64-byte matrix, since the stride is hard-coded and
 the count is derived from the matrix buffer [42], so per-instance cost is 64 bytes plus 16 for the fade
 bands plus 16 for one new `vec4` carrying tint, height and hash: 96 bytes, the same order as
-today. `gl_InstanceID` is available [43] but is **not stable across the 3 m rebuild**, so per-clump
+on Sep 15, 2026. `gl_InstanceID` is available [43] but is **not stable across the 3 m rebuild**, so per-clump
 randomness must hash the instance's world position, which is already in scope at the vertex hook,
 or ride the attribute.
 
@@ -463,7 +466,7 @@ the level id.
 
 ## 7. Grass costs fill, not triangles: the 60 Hz arithmetic
 
-**What today costs.** Grass tufts contribute about 686 k triangles a frame and the carpet 206 k,
+**What it costs as of Sep 15, 2026.** Grass tufts contribute about 686 k triangles a frame and the carpet 206 k,
 about 0.97 M with bushes and flowers. That is 58 M triangles a second at 60 Hz, which is nothing.
 Fill is the cost: in an open meadow grass covers the bottom 55 to 65 % of a 1080p frame, about
 1.2 M pixels, at three to five layers of cards, so 4 to 6 M PBR fragment invocations of which
@@ -473,7 +476,7 @@ repo's own +9.6 ms meadow and roughly 4 ms receiver measurements. Grass is a fil
 wearing a geometry costume.
 
 **What blade clumps would cost.** 3,000 clumps × 24 blades × 6 triangles is 432 k triangles, fewer
-than today's tufts, and about 360 k vertices through the PBR vertex shader plus the plugin, so 0.2
+than the tufts of Sep 15, 2026, and about 360 k vertices through the PBR vertex shader plus the plugin, so 0.2
 to 0.5 ms. The fill picture flips: no `discard`, early-Z on, a nearest-first buffer so later layers
 are depth-rejected, and each blade covering a fraction of the pixels its card covered. Expected
 net: roughly neutral on triangles, **−1 to −3 ms on fill, +0.2 to +0.5 ms on vertex work**, plus

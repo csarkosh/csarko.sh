@@ -125,6 +125,31 @@ read time counts the words before Sources. What the doc has to do:
    in the opening, a caption or a definition: one cited earlier than its number breaks the
    build.
 
+## Date the present
+
+*(Cyrus, 2026-10-23: "I don't want to keep going back and using outdated wording.")* A doc
+describes a moving target: Day Hike changes weekly, and so do models, prices, browsers and
+engines. So a doc never says "today", "now", "currently", "so far", "not yet" or "no longer" on
+its own; it says when: **"as of <the doc's published date>"**, in the site's format, `as of Sep 29,
+2026`. Then nothing in it goes stale; it was true on that date, and a reader can see the date.
+
+- **Once per passage is enough.** A section that describes the game's state opens with
+  "This section describes Day Hike as of Sep 29, 2026, when this survey was written; the game has
+  changed since." and can then speak in the present tense. A lone sentence carries its own
+  ("As of Sep 15, 2026, the restyle stays on WebGL2."). A table column says so in its header
+  ("What was drawn as of Sep 29, 2026").
+- **The date is the published date,** not the day you happen to edit: the doc reports what was
+  true when it was written. A revision that adds a newer fact dates that fact with the revision's
+  own date, `as of <updated>`, and leaves the older ones as they were.
+- **A figure shot later says when.** A still taken after the doc was written gets its month in
+  the caption ("As of October 2026, Day Hike draws …").
+- **Not stale, just dated.** When the game moves on, the doc does not need rewording; it needs
+  a new doc, or a dated addition, if the change matters.
+
+The build enforces it for docs published from 2026-10-24 (`DATED_SINCE` in `docs_lib.mjs`): a
+paragraph that says any of those words without "as of" fails the build. Quotes, code and Sources
+are exempt. Older docs build as they are; when you revise one, date its present the same way.
+
 ## Figures
 
 A doc may carry figures *(2026-10-23)*: a paragraph that is one image and nothing else,

@@ -20,7 +20,7 @@ pass that finds edges in the
 and draws them black, and textures that were hand-painted with ink lines already in them. The
 lighting underneath is fairly conventional.
 
-![A grass meadow in Day Hike before a line of tall trees under a grey sky, the far trees fading into mist](meadow.png "Day Hike today keeps its photoreal render and builds the look on top: fog whose colour runs along a gradient with distance fades the far tree line (section 6), and on the medium and high tiers a Kuwahara filter smears the frame into strokes (section 5) before a muted grade.")
+![A grass meadow in Day Hike before a line of tall trees under a grey sky, the far trees fading into mist](meadow.png "As of October 2026, Day Hike keeps its photoreal render and builds the look on top: fog whose colour runs along a gradient with distance fades the far tree line (section 6), and on the medium and high tiers a Kuwahara filter smears the frame into strokes (section 5) before a muted grade.")
 
 **In short:**
 
