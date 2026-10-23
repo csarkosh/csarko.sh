@@ -10,7 +10,7 @@ const adminAuth = { enabled: true, async verify(token) { return token === TOKEN 
 const calls = [];
 const queries = {
   async kpis() { return { app: "csarko.sh", kpis: [] }; },
-  async visits(days) { calls.push(["visits", days]); return { days }; },
+  async visits(days, tz) { calls.push(["visits", days, tz]); return { days }; },
   async pages(days) { return { days }; },
   async referrers(days) { return { days }; },
   async events(days) { return { days }; },
@@ -73,6 +73,10 @@ test("the routes", async () => {
   assert.deepEqual(q.body, { days: 30 });
   assert.deepEqual((await call(server, "GET", "/admin/query/visits", auth())).body, { days: 7 }, "default range");
   assert.equal((await call(server, "GET", "/admin/query/visits?days=14", auth())).status, 400);
+  assert.deepEqual(calls.at(-1), ["visits", 7, "UTC"], "no tz is UTC");
+  assert.equal((await call(server, "GET", "/admin/query/visits?days=7&tz=America%2FLos_Angeles", auth())).status, 200);
+  assert.deepEqual(calls.at(-1), ["visits", 7, "America/Los_Angeles"], "the reader's zone reaches the query");
+  assert.equal((await call(server, "GET", "/admin/query/visits?days=7&tz=Mars%2FOlympus", auth())).status, 400);
   assert.equal((await call(server, "GET", "/admin/query/nope", auth())).status, 404);
   assert.equal((await call(server, "GET", "/admin/query/Visits", auth())).status, 404);
   assert.equal((await call(server, "POST", "/admin/query/visits", auth())).status, 405);

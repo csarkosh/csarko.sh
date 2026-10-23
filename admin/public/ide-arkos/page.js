@@ -16,7 +16,7 @@
 
 import { accountMenu, requireSession } from '/auth.js';
 import { ago, bars, columns, compact, delta, el, errorLine, folded, loading, pct, shortDay, table, tile } from '/charts.js';
-import { RANGES, loadApps, preview, source } from '/data.js';
+import { RANGES, loadApps, preview, source, utcMidnightHere, viewerZone, viewerZoneName } from '/data.js';
 
 const SLUG = 'ide-arkos';
 const root = document.getElementById('top');
@@ -476,10 +476,10 @@ function crashesCard([crashes], days) {
 
 // ---------------------------------------------------------------- recent sessions
 
-const NY_CLOCK = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+const CLOCK = new Intl.DateTimeFormat('en-US', { timeZone: viewerZone, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
 function wallClock(ms, now) {
   if (!Number.isFinite(ms)) return '';
-  const p = Object.fromEntries(NY_CLOCK.formatToParts(ms).filter((x) => x.type !== 'literal').map((x) => [x.type, x.value]));
+  const p = Object.fromEntries(CLOCK.formatToParts(ms).filter((x) => x.type !== 'literal').map((x) => [x.type, x.value]));
   const date = now - ms > 6 * 86_400_000 ? ` ${p.day} ${p.month}` : '';
   return `${p.weekday}${date} ${p.hour}:${p.minute} ${str(p.dayPeriod).toLowerCase()}`;
 }
@@ -563,7 +563,7 @@ function sessionsCard([sessions]) {
 // ---------------------------------------------------------------- the cards
 
 const CARDS = [
-  { id: 'installs', title: 'Macs running Arkos', queries: ['installs'], sub: (d) => `Every copy checks for updates once a day, and that check is all this card counts: it needs no consent and carries no id. A Mac is counted once in ${d === 1 ? 'today so far (UTC), against yesterday' : `the last ${d} UTC days`} from its check’s days since the last one. Versions, macOS and processor count each Mac once.`, render: installsCard, skeleton: { tiles: 4, chart: true } },
+  { id: 'installs', title: 'Macs running Arkos', queries: ['installs'], sub: (d) => `Every copy checks for updates once a day, and that check is all this card counts: it needs no consent and carries no id. A Mac is counted once in ${d === 1 ? 'today so far (UTC), against yesterday' : `the last ${d} UTC days`} from its check’s days since the last one. A UTC day rolls at ${utcMidnightHere()} here; each Mac’s once-a-day check is counted on its UTC day, so these days cannot be re-cut to ${viewerZoneName}. Versions, macOS and processor count each Mac once.`, render: installsCard, skeleton: { tiles: 4, chart: true } },
   { id: 'paths', title: 'Paths through a session', queries: ['journey'], sub: () => `What people do after a launch, in order: each column is the next step, each band the sessions that went from one step to the next. Each column shows its six most common steps; Other gathers the rest. Restored tabs count as part of the launch; Ended is where a session stopped. ${OPT_IN}`, render: pathsCard, skeleton: { chart: true, lines: 2 } },
   { id: 'milestones', title: 'How far sessions get', queries: ['journey'], sub: () => 'The share of sessions that reached each milestone at any point, and the median time from the launch to the first time, for all sessions and for first sessions (a copy’s first run with usage reports on).', render: milestonesCard, skeleton: { lines: 7 } },
   { id: 'next', title: 'What comes next', queries: ['journey'], sub: () => 'For the most common steps, what people did right after, as a share of the sessions that took the step. A step often followed by Ended, an error or a help page is a place to smooth.', render: nextCard, skeleton: { lines: 8 } },
@@ -572,7 +572,7 @@ const CARDS = [
   { id: 'friction', title: 'Friction', half: true, queries: ['journey'], sub: () => 'What went wrong where people saw it, and sessions lost to a crash or a force quit.', render: frictionCard, skeleton: { tiles: 3, lines: 4 } },
   { id: 'return', title: 'Coming back', queries: ['journey'], sub: () => 'How long since a copy’s previous session, and the sessions of each install week in the weeks after it. No id is kept: both come from what each report says about its own copy.', render: returnCard, skeleton: { lines: 6 } },
   { id: 'crashes', title: 'Crashes', queries: ['crashes'], sub: () => 'Crash reports people agreed to send, grouped by where the panic happened, with the offsets to symbolicate against the release’s dSYM. Lost sessions are the runs that ended without a quit, reported or not.', render: crashesCard, skeleton: { tiles: 3, lines: 5 } },
-  { id: 'sessions', title: 'Recent sessions', queries: ['sessions'], sub: () => 'The newest sessions in full, newest first: each step at its time since the launch, how long the window was in front on each surface, and how it ended. Times are New York’s; a session is reported after it ends, so it started its length before it arrived.', render: sessionsCard, skeleton: { lines: 6 } },
+  { id: 'sessions', title: 'Recent sessions', queries: ['sessions'], sub: () => `The newest sessions in full, newest first: each step at its time since the launch, how long the window was in front on each surface, and how it ended. Times are in ${viewerZoneName}; a session is reported after it ends, so it started its length before it arrived.`, render: sessionsCard, skeleton: { lines: 6 } },
 ];
 
 // ---------------------------------------------------------------- the page

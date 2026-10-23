@@ -51,10 +51,13 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
       return Boolean(bigquery && dataset);
     },
 
-    async visits(range) {
-      const live = await run("visits", win(range));
-      const rows = wantsHistory(range.prevStart) ? [...live, ...(await hist("history-visits", win(range)))] : live;
-      // Every UTC date the window touches, zeros included: the dashboard lines the
+    // Visits a day, the days cut in `tz` (the reader's zone). The collector's visit hash rolls at
+    // UTC midnight, so in any other zone a browser on the site across that moment is two visits on
+    // one day; GoatCounter's history is hourly, so it re-cuts exactly in a whole-hour zone.
+    async visits(range, tz = "UTC") {
+      const live = await run("visits", { ...win(range), tz });
+      const rows = wantsHistory(range.prevStart) ? [...live, ...(await hist("history-visits", { ...win(range), tz }))] : live;
+      // Every date the window touches in `tz`, zeros included: the dashboard lines the
       // previous window up with the current one by index, and both span the same dates.
       // Readers come from lib-visits' rows alone (GoatCounter kept no engaged time), so a window
       // that reaches before the cutover counts them since the cutover (`readersSince`), and a day
@@ -65,8 +68,9 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
         for (const r of rows) if (r.win === w) byDay.set(r.day, (byDay.get(r.day) ?? 0) + Number(r.visits));
         for (const r of live) if (r.win === w) readersByDay.set(r.day, (readersByDay.get(r.day) ?? 0) + Number(r.readers ?? 0));
         const since = wantsHistory(from) ? historyUntil : null;
-        const readersOf = (day) => readersByDay.get(day) ?? (since && day < since.slice(0, 10) ? null : 0);
-        const perDay = utcDates(from, to).map((day) => ({ day, visits: byDay.get(day) ?? 0, readers: readersOf(day), pageviews: null }));
+        const sinceDay = since ? zoneDate(Date.parse(since), tz) : null;
+        const readersOf = (day) => readersByDay.get(day) ?? (sinceDay && day < sinceDay ? null : 0);
+        const perDay = zoneDates(from, to, tz).map((day) => ({ day, visits: byDay.get(day) ?? 0, readers: readersOf(day), pageviews: null }));
         const counted = perDay.filter((d) => d.readers !== null);
         return {
           visits: perDay.reduce((n, d) => n + d.visits, 0),
@@ -282,9 +286,25 @@ export function sumBy(rows, key, field, ...more) {
 
 /** The UTC dates (`YYYY-MM-DD`) that the instants [from, to) touch, oldest first. */
 export function utcDates(from, to) {
+  return zoneDates(from, to, "UTC");
+}
+
+/** The calendar date (`YYYY-MM-DD`) of an instant in `tz`. */
+export function zoneDate(ms, tz) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(ms);
+}
+
+/** The dates (`YYYY-MM-DD`) in `tz` that the instants [from, to) touch, oldest first. */
+export function zoneDates(from, to, tz) {
+  const first = zoneDate(Date.parse(from), tz);
+  const last = zoneDate(Date.parse(to) - 1, tz);
   const out = [];
-  for (let t = Date.parse(`${from.slice(0, 10)}T00:00:00Z`); t < Date.parse(to); t += 86_400_000) out.push(new Date(t).toISOString().slice(0, 10));
-  return out;
+  // Walked as UTC dates: only the labels are wanted, and a UTC day is always 24 hours.
+  for (let t = Date.parse(`${first}T00:00:00Z`); ; t += 86_400_000) {
+    const day = new Date(t).toISOString().slice(0, 10);
+    out.push(day);
+    if (day >= last) return out;
+  }
 }
 
 /** BigQuery wraps dates, timestamps and big numbers in objects with `value`; the API wants plain values. */

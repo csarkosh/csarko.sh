@@ -76,9 +76,13 @@ trend, and the health dot.
 - The Day Hike API serves the same shape: sessions, matches started, clean sessions %
   and lobbies open now (spec 1.5).
 
-## `GET <api>/admin/query/<name>?days=1|7|30|90` (csarko.sh)
+## `GET <api>/admin/query/<name>?days=1|7|30|90&tz=<zone>` (csarko.sh)
 
-`days` defaults to 7; any other value is a 400. Query names are exactly these nine.
+`days` defaults to 7; any other value is a 400. `tz` is the reader's IANA zone, which the page
+takes from its browser and sends on every request (and on `/admin/kpis`, for the apps whose
+card has days in it); absent it is `UTC`, and a name that is not a zone is a 400. Only `visits`
+cuts days, so only it reads `tz`; every other answer is instants, which the page shows on the
+reader's clock *(2026-10-22: the owner reads the page away from New York)*. Query names are exactly these nine.
 The sample files are `admin/public/sample/csarko.sh/<name>.json`, each for `days=7`
 (the preview tiles that week for the other ranges).
 
@@ -100,9 +104,11 @@ rows only: a range that reaches before the cutover carries `readersSince` (the c
 `VISITS_HISTORY_UNTIL`) and counts readers from then, and a day wholly before it has
 `"readers": null`. `readersSince` is `null` otherwise.
 
-`perDay` has one entry per day, oldest first, the same length in both ranges. `dayLabel` is
-always `"utc"`: the days are UTC days (the collector's daily visit hash rolls at UTC midnight,
-so a day cannot be re-cut to another zone), and the card should say so. With `days=1` the
+`perDay` has one entry per day, oldest first, the same length in both ranges. The days are the
+reader's (`tz`), and `dayLabel` names the zone they were cut in: the `tz` as sent, or `"utc"`
+for UTC. The collector's daily visit hash rolls at UTC midnight, so in any other zone a browser
+on the site across that moment is two visits on one day; the card says when that is. The
+GoatCounter history is hourly, so it is re-cut exactly in a whole-hour zone. With `days=1` the
 answer also carries `"label": "last 24 hours"`, since the range is the last 24 hours, not a
 calendar day; the other ranges carry no `label`. `current` and `previous` are `null` with
 `notConfigured.visits = "VISITS_DATASET"`.
@@ -235,7 +241,8 @@ Nine lists of `{ name, visitors }`, most visited first. `themes` is the visitor'
 }
 ```
 
-The range is `days` whole UTC days ending on `to`, the last day Google has finished
+The range is `days` whole Search Console days (Google's dates, in Pacific Time whatever the
+page's `tz`) ending on `to`, the last day Google has finished
 counting (the day before Search Console's first incomplete day, usually two or three days
 back), not today; `previous` is the equal range before `from`. So `days=1` is that one
 finished day. `ctr` is a ratio in [0, 1]. `position` is `null` on a day, or in `totals`, with no

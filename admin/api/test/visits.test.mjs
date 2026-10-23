@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createCache } from "../src/cache.mjs";
-import { createVisits, journeyOf, stitchJourneys, sumBy, plainRow, utcDates } from "../src/collectors/visits.mjs";
+import { createVisits, journeyOf, stitchJourneys, sumBy, plainRow, utcDates, zoneDates } from "../src/collectors/visits.mjs";
 import { UpstreamError } from "../src/http.mjs";
 
 const rows = JSON.parse(readFileSync(new URL("./fixtures/visits-rows.json", import.meta.url), "utf8"));
@@ -40,8 +40,19 @@ test("visits sums live and history rows by day and window, and a row without a v
   assert.deepEqual(r.previous.perDay.map((d) => [d.day, d.visits]), [["2026-10-10", 3], ["2026-10-11", 4], ["2026-10-12", 0]]);
   assert.equal(r.previous.visits, 7);
   assert.deepEqual(calls.map((c) => c.name), ["visits", "history-visits"]);
-  assert.deepEqual(calls[0].params, { start: range.start, end: range.end, prev_start: range.prevStart, prev_end: range.prevEnd });
+  assert.deepEqual(calls[0].params, { start: range.start, end: range.end, prev_start: range.prevStart, prev_end: range.prevEnd, tz: "UTC" }, "UTC when no zone is asked for");
   assert.deepEqual(calls[1].params, { ...calls[0].params, until: "2026-10-14T00:00:00Z" });
+});
+
+test("visits cuts its days in the reader's zone: the queries get it, and the dates and the cutover's day are that zone's", async () => {
+  const { v, calls } = make();
+  const r = await v.visits(range, "America/Los_Angeles");
+  assert.equal(calls[0].params.tz, "America/Los_Angeles");
+  assert.equal(calls[1].params.tz, "America/Los_Angeles", "the history is re-cut too");
+  // 2026-10-13T00:00Z is 5 pm on the 12th in Los Angeles, and the window ends 4:59 pm on the 15th.
+  assert.deepEqual(r.current.perDay.map((d) => d.day), ["2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15"]);
+  // The cutover, 2026-10-14T00:00Z, falls on the 13th there: days before it have no readers.
+  assert.deepEqual(r.current.perDay.map((d) => d.readers === null), [true, false, false, false]);
 });
 
 test("history is asked for by each query's own lower bound, as instants", async () => {
@@ -143,6 +154,13 @@ test("utcDates covers every date an hour-aligned window touches, so both windows
   assert.deepEqual(utcDates("2026-10-13T00:00:00Z", "2026-10-16T00:00:00Z"), ["2026-10-13", "2026-10-14", "2026-10-15"]);
   assert.equal(utcDates("2026-10-08T14:00:00Z", "2026-10-15T14:00:00Z").length, 8);
   assert.equal(utcDates("2026-10-01T14:00:00Z", "2026-10-08T14:00:00Z").length, 8);
+});
+
+test("zoneDates names the dates a window touches in a zone, across a DST change too", () => {
+  assert.deepEqual(zoneDates("2026-10-13T00:00:00Z", "2026-10-16T00:00:00Z", "UTC"), utcDates("2026-10-13T00:00:00Z", "2026-10-16T00:00:00Z"));
+  assert.deepEqual(zoneDates("2026-10-13T07:00:00Z", "2026-10-14T07:00:00Z", "America/Los_Angeles"), ["2026-10-13"], "a Los Angeles midnight to midnight is one day");
+  assert.deepEqual(zoneDates("2026-11-01T07:00:00Z", "2026-11-02T08:00:00Z", "America/Los_Angeles"), ["2026-11-01"], "the 25-hour day DST ends on");
+  assert.deepEqual(zoneDates("2026-10-22T03:00:00Z", "2026-10-22T05:00:00Z", "Asia/Kolkata"), ["2026-10-22"]);
 });
 
 const journeyRow = (over = {}) => ({

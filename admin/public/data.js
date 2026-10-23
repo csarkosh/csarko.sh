@@ -16,6 +16,32 @@ export const RANGES = [
 export const params = new URLSearchParams(location.search);
 export const preview = params.has('preview');
 
+/** The reader's IANA zone, the browser's own: every API cuts its days in it and every clock on the pages shows it. */
+export const viewerZone = (() => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
+})();
+
+/** The zone in words for the pages' copy: "Pacific Time", "Eastern Time", "UTC". */
+export const viewerZoneName = (() => {
+  if (viewerZone === 'UTC') return 'UTC';
+  try {
+    return new Intl.DateTimeFormat('en-US', { timeZone: viewerZone, timeZoneName: 'longGeneric' }).formatToParts(Date.now()).find((p) => p.type === 'timeZoneName')?.value || viewerZone;
+  } catch {
+    return viewerZone;
+  }
+})();
+
+/** The hour UTC midnight falls on in the reader's zone, "5 pm", for the copy that says when a UTC day rolls. */
+export function utcMidnightHere(now = Date.now()) {
+  const d = new Date(now);
+  const midnight = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
+  return new Intl.DateTimeFormat('en-US', { timeZone: viewerZone, hour: 'numeric', minute: '2-digit' }).format(midnight).replace(':00', '').toLowerCase();
+}
+
 export async function loadApps() {
   const response = await fetch('/apps.json', { cache: 'no-cache' });
   if (!response.ok) throw new Error(`apps.json: ${response.status}`);
@@ -102,7 +128,7 @@ function sampleRange(name, data, days) {
   return data;
 }
 
-/** A source: kpis(app), query(app, name, days, extra), manual(app, key, value). `extra` adds query parameters (Arkos's `who`); the sample ignores it. */
+/** A source: kpis(app), query(app, name, days, extra), manual(app, key, value). Every live request carries `tz` (viewerZone); `extra` adds query parameters (Arkos's `who`); the sample ignores both. */
 export function source() {
   if (preview) {
     return {
@@ -123,8 +149,8 @@ export function source() {
   }
   return {
     kind: 'live',
-    kpis: (app) => readJson(`${app.api}/admin/kpis`),
-    query: (app, name, days, extra = {}) => readJson(`${app.api}/admin/query/${encodeURIComponent(name)}?${new URLSearchParams({ days, ...extra })}`),
+    kpis: (app) => readJson(`${app.api}/admin/kpis?${new URLSearchParams({ tz: viewerZone })}`),
+    query: (app, name, days, extra = {}) => readJson(`${app.api}/admin/query/${encodeURIComponent(name)}?${new URLSearchParams({ days, tz: viewerZone, ...extra })}`),
     manual: (app, key, value) => readJson(`${app.api}/admin/manual/${encodeURIComponent(key)}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

@@ -115,14 +115,14 @@ export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, h
   }
 
   const queries = {
-    // `dayLabel` says which day the perDay rows are cut on (UTC: the collector's daily hash rolls
-    // then, so a day cannot be re-cut), and days=1 is the last 24 hours, not a calendar day.
-    async visits(days) {
+    // The perDay rows are cut on the reader's days (`tz`, the page's zone; `dayLabel` names it,
+    // "utc" for UTC), and days=1 is the last 24 hours, not a calendar day.
+    async visits(days, tz = "UTC") {
       const range = hourlyRange(days, now());
-      const head = { days, from: range.start, to: range.end, dayLabel: "utc", ...(days === 1 ? { label: "last 24 hours" } : {}) };
+      const head = { days, from: range.start, to: range.end, dayLabel: tz === "UTC" ? "utc" : tz, ...(days === 1 ? { label: "last 24 hours" } : {}) };
       const empty = requireVisits();
       if (empty) return { ...head, current: null, previous: null, ...empty };
-      const { current, previous } = await visits.visits(range);
+      const { current, previous } = await visits.visits(range, tz);
       return { ...head, current, previous };
     },
 

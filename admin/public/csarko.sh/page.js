@@ -13,7 +13,7 @@
 
 import { accountMenu, requireSession } from '/auth.js';
 import { ago, bars, columns, compact, delta, el, errorLine, folded, loading, pct, shortDay, status, table, tile } from '/charts.js';
-import { RANGES, loadApps, preview, source } from '/data.js';
+import { RANGES, loadApps, preview, source, utcMidnightHere, viewerZone, viewerZoneName } from '/data.js';
 
 const SLUG = 'csarko.sh';
 const root = document.getElementById('top');
@@ -180,12 +180,12 @@ const sourceName = (src) => (src?.kind === 'external' ? hostName(src.host) || 'E
 const ARROW_SVG = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const arrow = () => { const a = el('li', { class: 'j-arrow', 'aria-hidden': 'true' }); a.innerHTML = ARROW_SVG; return a; };
 
-const NY_CLOCK = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
-/** The visit's start on a New York wall clock, "Wed 3:41 pm"; with the date once the weekday alone is ambiguous, "Wed 8 Oct 3:41 pm". */
+const CLOCK = new Intl.DateTimeFormat('en-US', { timeZone: viewerZone, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+/** The visit's start on the reader's wall clock, "Wed 3:41 pm"; with the date once the weekday alone is ambiguous, "Wed 8 Oct 3:41 pm". */
 function wallClock(iso, now) {
   const ms = Date.parse(str(iso));
   if (!Number.isFinite(ms)) return '';
-  const p = Object.fromEntries(NY_CLOCK.formatToParts(ms).filter((x) => x.type !== 'literal').map((x) => [x.type, x.value]));
+  const p = Object.fromEntries(CLOCK.formatToParts(ms).filter((x) => x.type !== 'literal').map((x) => [x.type, x.value]));
   const date = now - ms > 6 * 86_400_000 ? ` ${p.day} ${p.month}` : '';
   return `${p.weekday}${date} ${p.hour}:${p.minute} ${str(p.dayPeriod).toLowerCase()}`;
 }
@@ -499,21 +499,22 @@ function audienceCard([audience]) {
 const GOATCOUNTER_NOTE = "Before the cutover, counts are GoatCounter's, a browser once per page per session.";
 /**
  * The Visitors card's sub: the range (the API's own `label` when it sends one, "last 24 hours"
- * for a day), and that a visit's day is UTC (`dayLabel`), which rolls at 8 pm New York in summer.
+ * for a day), and which days the counts are cut on (`dayLabel`, the reader's zone the page sent,
+ * or "utc" from an API that cut them in UTC), with the visit id's roll at UTC midnight.
  */
 function visitorsSub(d, visits) {
   const label = typeof visits?.label === 'string' && visits.label ? `the ${visits.label.replace(/^the /, '')}` : rangeText(d);
   const dayNote = visits?.dayLabel && visits.dayLabel !== 'utc'
-    ? `A visit is one browser on one day (${visits.dayLabel}); nothing is stored in it.`
-    : "A visit is one browser on one UTC day, which rolls at 8 pm New York in summer and 7 pm in winter; nothing is stored in it.";
+    ? `Days are ${visits.dayLabel === viewerZone ? viewerZoneName : visits.dayLabel} days. A visit is one browser until UTC midnight (${utcMidnightHere()} here), so one on the site across it counts twice that day; nothing is stored in it.`
+    : `Days are UTC days, which roll at ${utcMidnightHere()} here. A visit is one browser on one UTC day; nothing is stored in it.`;
   return `Visits ${label}, against ${previousText(d)}. ${dayNote} ${GOATCOUNTER_NOTE}`;
 }
 
 /** The Search card's sub: the day the range ends on, Google's last finished one, since Search Console runs behind. */
 function searchSub(d, search) {
   return search?.to
-    ? `Through ${shortDay(search.to)}, the last day Google has finished counting; Search Console runs 2 to 3 days behind.`
-    : 'Google Search Console runs 2 to 3 days behind.';
+    ? `Through ${shortDay(search.to)}, the last day Google has finished counting; Search Console runs 2 to 3 days behind, and its days are Pacific Time's, whatever zone this page is read in.`
+    : "Google Search Console runs 2 to 3 days behind, and its days are Pacific Time's.";
 }
 
 /** Each card: its queries, its copy, how it renders, and the skeleton that stands in for it while the queries run. */

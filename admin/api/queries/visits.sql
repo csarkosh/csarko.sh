@@ -1,4 +1,5 @@
--- Visits a day for the current window [start, end) and the previous one [prev_start, start).
+-- Visits a day for the current window [start, end) and the previous one [prev_start, start), the
+-- days cut in @tz, the reader's IANA zone (UTC when the page sends none).
 -- A visit is the collector's daily hash; a row without one (no address resolved) counts by its page id.
 -- The deploy script's and depth check's beacons (/deploy-check, /depth-check) are left out, and so
 -- is every page load (id) that any of its rows calls a bot: Lighthouse's view said bot=false while
@@ -41,7 +42,7 @@ readers AS (
 )
 SELECT
   IF(v.ts >= TIMESTAMP(@start), 'current', 'previous') AS win,
-  DATE(v.ts) AS day,
+  DATE(v.ts, @tz) AS day,
   COUNT(DISTINCT v.visit) AS visits,
   COUNT(DISTINCT r.visit) AS readers
 FROM views AS v LEFT JOIN readers AS r ON r.visit = v.visit

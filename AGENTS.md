@@ -315,7 +315,7 @@ anything related to the admin pages in this repo:
   is the one documented exception to "no third-party request": the popup flow talks to
   Google's Identity Toolkit, and the CSP allows exactly that. An app is tracked by one
   entry in `apps.json` and two routes on its API, `GET /admin/kpis` and
-  `GET /admin/query/<name>?days=N` (the contract is `admin/CONTRACT.md`). GitHub metrics
+  `GET /admin/query/<name>?days=N` (the contract is `admin/CONTRACT.md`); the page sends every request its reader's zone as `tz`, and every day and clock on it is that zone's *(2026-10-22)*, except where the data's own day cannot be re-cut (Arkos's once-a-day checks, Search Console's Pacific dates), which the cards label. GitHub metrics
   cover **every public, non-fork repository of the account** (`GITHUB_OWNER`, found by
   listing it, which can only name public ones; *all of them rather than a fixed list,
   Cyrus 2026-10-13*), never a private one.

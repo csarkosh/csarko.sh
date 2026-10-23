@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseDays, isAllowedOrigin, preflightHeaders } from "../src/http.mjs";
+import { parseDays, parseTz, isAllowedOrigin, preflightHeaders } from "../src/http.mjs";
 import { parseManualValue } from "../src/app.mjs";
 import { readConfig, parseServiceAccountKey, secret } from "../src/config.mjs";
 
@@ -9,6 +9,13 @@ test("days is absent (7) or one of the four ranges; anything else is refused", (
   assert.equal(parseDays(""), 7);
   for (const d of ["1", "7", "30", "90"]) assert.equal(parseDays(d), Number(d));
   for (const d of ["0", "2", "14", "365", "-7", "7.5", "abc", "7; drop", "007"]) assert.equal(parseDays(d), null, d);
+});
+
+test("tz is absent (UTC) or a zone this runtime knows; anything else is refused before Intl sees it", () => {
+  assert.equal(parseTz(null), "UTC");
+  assert.equal(parseTz(""), "UTC");
+  for (const tz of ["America/Los_Angeles", "America/New_York", "UTC", "Europe/London", "America/Argentina/Buenos_Aires", "Etc/GMT+8"]) assert.equal(parseTz(tz), tz);
+  for (const tz of ["Mars/Olympus", "America/Los Angeles", "'; drop", "../etc", "a".repeat(80), "America/Los_Angeles/X/Y"]) assert.equal(parseTz(tz), null, tz);
 });
 
 test("a missing origin passes, a listed one passes, anything else is refused", () => {

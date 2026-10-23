@@ -99,3 +99,21 @@ export function parseDays(raw) {
   const days = Number(raw);
   return DAYS.has(days) ? days : null;
 }
+
+/**
+ * The `tz` query parameter, the reader's IANA zone (the page sends its browser's), which the
+ * visits query cuts its days in: absent means UTC, as before the page sent one; a name that is
+ * not a zone this runtime knows is a 400 (null here). The shape is checked before Intl sees it,
+ * so nothing but a short zone-like string reaches BigQuery as a parameter.
+ */
+export function parseTz(raw) {
+  if (raw === null || raw === undefined || raw === "") return "UTC";
+  if (raw.length > 64 || !/^[A-Za-z][A-Za-z0-9_+-]*(\/[A-Za-z0-9_+-]+){0,2}$/.test(raw)) return null;
+  try {
+    // Checked, then given back as sent: Intl may canonicalize it, and `dayLabel` should be the page's own.
+    new Intl.DateTimeFormat("en-US", { timeZone: raw });
+    return raw;
+  } catch {
+    return null;
+  }
+}

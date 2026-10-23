@@ -171,6 +171,7 @@ test("the visits queries have the contract's shapes", async () => {
   assert.equal(visits.dayLabel, "utc");
   assert.equal(visits.label, undefined, "only days=1 carries a label");
   assert.equal((await q.visits(1)).label, "last 24 hours");
+  assert.equal((await q.visits(7, "America/Los_Angeles")).dayLabel, "America/Los_Angeles", "the zone the days were cut in");
 
   const pages = await q.pages(7);
   assert.deepEqual(pages.rows.map((r) => [r.path, r.inSitemap]), [["/", true], ["/research/stylized-shader-looks", true], ["/games", true], ["/docs/old-slug", false], ["/wp-login.php", false]]);

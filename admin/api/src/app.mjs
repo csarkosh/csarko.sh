@@ -6,7 +6,7 @@
  *                                      Google's frontend answers that exact path itself
  *                                      with its own 404 (seen 2026-10-13), never the app.
  *   GET  /admin/kpis                   the index card
- *   GET  /admin/query/<name>?days=N    one of the eight saved queries
+ *   GET  /admin/query/<name>?days=N[&tz=Zone]   one of the saved queries; `tz` the reader's zone, UTC when absent
  *   POST /admin/manual/<key>           { value } appended to the hand-entered series
  *   POST /admin/snapshot               the daily ledger write (admin token or the scheduler's OIDC token)
  *   GET  /arkos/admin/kpis             Arkos IDE's index card
@@ -26,7 +26,7 @@
  */
 
 import { bearerOf, audiencesFor } from "./auth.mjs";
-import { answer, fail, failureOf, readBody, parseDays, isAllowedOrigin, corsHeaders, preflightHeaders } from "./http.mjs";
+import { answer, fail, failureOf, readBody, parseDays, parseTz, isAllowedOrigin, corsHeaders, preflightHeaders } from "./http.mjs";
 import { clientIpOf } from "./limiter.mjs";
 import { isQueryName, isManualKey } from "./queries.mjs";
 import { isArkosQueryName, parseWho } from "./arkos-queries.mjs";
@@ -100,7 +100,9 @@ export function createApp({ config, queries, arkos = null, limiter, adminAuth, o
       if (req.method !== "GET") return fail(res, 405, "method not allowed", { ...cors, allow: "GET, OPTIONS" });
       const days = parseDays(search.get("days"));
       if (days === null) return fail(res, 400, "days must be 1, 7, 30 or 90", cors);
-      return answer(res, 200, await queries[query[1]](days), cors);
+      const tz = parseTz(search.get("tz"));
+      if (tz === null) return fail(res, 400, "tz must be an IANA time zone", cors);
+      return answer(res, 200, await queries[query[1]](days, tz), cors);
     }
 
     const manual = /^\/admin\/manual\/([a-z]+)$/.exec(path);
