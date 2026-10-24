@@ -53,7 +53,7 @@ BUDGET_ANY_PORTRAIT = 90_000
 BUDGET_SCRIPTS = 10_000  # all JavaScript the page loads, first- and third-party (third-party measured live)
 
 BUDGET_HTML_DOCS_INDEX = 80_000  # the research index lists every doc with its card, about 1.7 KB each; 29 docs crossed BUDGET_HTML on 2026-10-14
-BUDGET_HTML_DOC = 225_000  # a doc page is mostly prose, so long research docs get more room than BUDGET_HTML; the longest, with 146 sources, was 197 KB (55 KB gzipped) and is 210 KB since every doc page carries its contents list, Keep reading block and their rules (2026-10-23)
+BUDGET_HTML_DOC = 260_000  # a doc page is mostly prose, so long research docs get more room than BUDGET_HTML; the longest, with 146 sources, was 197 KB (55 KB gzipped) and is 210 KB since every doc page carries its contents list, Keep reading block and their rules (2026-10-23); the horror sound doc, 21,000 words and 191 sources, is 251 KB (70 KB gzipped) (2026-10-24)
 
 BUILD_DOCS = SKILL / "scripts/build_docs.mjs"
 # Where docs are built and served (DOCS_DIR in docs_lib.mjs), and where they used to be: firebase.json
