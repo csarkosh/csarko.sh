@@ -8,6 +8,16 @@
   <updated>2026-10-24T00:00:00Z</updated>
   <author><name>Cyrus Sarkosh</name><uri>https://csarko.sh/</uri></author>
   <entry>
+    <title>How Codex embeds its browser, and what a Rust IDE can copy</title>
+    <link href="https://csarko.sh/research/how-codex-embeds-its-browser" />
+    <id>https://csarko.sh/research/how-codex-embeds-its-browser</id>
+    <published>2026-10-24T00:00:00Z</published>
+    <updated>2026-10-24T00:00:00Z</updated>
+    <summary>Codex&#39;s browser pane is an Electron webview guest of its own Chromium, driven over CDP by a plugin; a Rust IDE gets there with WKWebView, not by docking Chrome.</summary>
+    <category term="AI" />
+    <category term="Tooling" />
+  </entry>
+  <entry>
     <title>Five Ways Horror Directors Steer the Eye</title>
     <link href="https://csarko.sh/research/how-horror-directors-steer-the-eye" />
     <id>https://csarko.sh/research/how-horror-directors-steer-the-eye</id>

@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 430" width="640" height="430" role="img" aria-labelledby="t">
+  <title id="t">The Codex browser pane as the logs show it: an Electron main process, a renderer holding the browser sidebar webview guest, the bundled browser plugin reaching the guest over a Unix socket with CDP commands, and a second route to the user's Chrome through the extension and native messaging</title>
+  <style>
+    text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 14px; fill: #e8eaf0; }
+    .title { font-size: 16px; font-weight: 600; }
+    .h { font-weight: 600; }
+    .sec { fill: #a0a8b8; font-size: 13px; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; fill: #a0a8b8; }
+    .box { fill: none; stroke: #3a3f4b; stroke-width: 1.5; }
+    .outer { fill: none; stroke: #3a3f4b; stroke-width: 1.5; stroke-dasharray: 4 4; }
+    .hot { fill: none; stroke: #7dd3c0; stroke-width: 1.5; }
+    .hh { fill: #7dd3c0; }
+    .ln { stroke: #a0a8b8; stroke-width: 1.5; fill: none; }
+    .hd { fill: #a0a8b8; }
+    @media (prefers-color-scheme: light) {
+      text { fill: #12151c; }
+      .sec, .mono { fill: #4a5263; }
+      .box, .outer { stroke: #c9ced6; }
+      .hot { stroke: #0a735f; }
+      .hh { fill: #0a735f; }
+      .ln { stroke: #4a5263; }
+      .hd { fill: #4a5263; }
+    }
+  </style>
+  <text class="title" x="16" y="26">The Codex browser pane, as its logs show it</text>
+
+  <!-- The Electron app -->
+  <rect class="outer" x="16" y="44" width="608" height="200" rx="10"/>
+  <text class="sec" x="30" y="64">The Codex app: Electron, with its own Chromium</text>
+
+  <rect class="box" x="30" y="78" width="180" height="150" rx="8"/>
+  <text class="h" x="44" y="100">Main process</text>
+  <text class="sec" x="44" y="120">electron-message-handler</text>
+  <text class="sec" x="44" y="140">did-attach-webview</text>
+  <text class="sec" x="44" y="160">IAB_LIFECYCLE</text>
+  <text class="sec" x="44" y="180">in_app_browser flag</text>
+
+  <rect class="box" x="236" y="78" width="372" height="150" rx="8"/>
+  <text class="h" x="250" y="100">Renderer: the app's window</text>
+  <rect class="hot" x="250" y="112" width="344" height="104" rx="8"/>
+  <text class="h hh" x="264" y="134">browser sidebar webview, the pane</text>
+  <text class="sec" x="264" y="154">a guest page of the same Chromium</text>
+  <text class="mono" x="264" y="176">guestWebContentsId=2</text>
+  <text class="mono" x="264" y="196">hostKind=hidden-browser-use</text>
+
+  <line class="ln" x1="210" y1="153" x2="236" y2="153"/>
+  <polygon class="hd" points="229,148 236,153 229,158"/>
+
+  <!-- The plugin -->
+  <rect class="box" x="30" y="282" width="300" height="120" rx="8"/>
+  <text class="h" x="44" y="304">browser@openai-bundled</text>
+  <text class="sec" x="44" y="324">the IAB (in-app browser) API</text>
+  <text class="mono" x="44" y="346">/tmp/codex-browser-use/.sock</text>
+  <text class="sec" x="44" y="366">a native pipe that checks the</text>
+  <text class="sec" x="44" y="384">caller's process ancestry</text>
+
+  <!-- CDP arrow from plugin up to the guest -->
+  <path class="ln" d="M 180 282 L 180 262 L 422 262 L 422 232"/>
+  <polygon class="hd" points="417,239 422,232 427,239"/>
+  <text class="sec" x="190" y="257">CDP:</text>
+  <text class="mono" x="228" y="257">Page.navigate  Runtime.evaluate  Network.enable</text>
+
+  <!-- Chrome route -->
+  <rect class="box" x="356" y="282" width="252" height="120" rx="8"/>
+  <text class="h" x="370" y="304">The user's Chrome</text>
+  <text class="sec" x="370" y="324">a second route, not the pane</text>
+  <text class="sec" x="370" y="346">chrome@openai-bundled</text>
+  <text class="sec" x="370" y="366">the ChatGPT extension and</text>
+  <text class="sec" x="370" y="384">native messaging</text>
+
+  <line class="ln" x1="330" y1="342" x2="356" y2="342"/>
+  <polygon class="hd" points="349,337 356,342 349,347"/>
+
+  <text class="sec" x="16" y="422">Names from issues #30178, #33514 and #47270 on openai/codex, read Oct 24, 2026.</text>
+</svg>
