@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Scene depth for a post process: WebGPU against WebGL2 · Cyrus Sarkosh</title>
-  <meta name="description" content="Getting per-pixel scene depth to a post process on WebGPU and WebGL2, and the six places the two APIs part ways, from shader uniformity to a lost GPU." />
+  <meta name="description" content="Scene depth for a post process on WebGPU and WebGL2: one prepass works on both, six API differences bite, and a 6 s frame, not the depth, lost the GPU." />
   <link rel="canonical" href="https://csarko.sh/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" />
 
   <meta property="og:type" content="article" />
@@ -12,18 +12,18 @@
   <meta property="og:locale" content="en_US" />
   <meta property="og:url" content="https://csarko.sh/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" />
   <meta property="og:title" content="Scene depth for a post process: WebGPU against WebGL2" />
-  <meta property="og:description" content="Getting per-pixel scene depth to a post process on WebGPU and WebGL2, and the six places the two APIs part ways, from shader uniformity to a lost GPU." />
+  <meta property="og:description" content="Scene depth for a post process on WebGPU and WebGL2: one prepass works on both, six API differences bite, and a 6 s frame, not the depth, lost the GPU." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta property="article:published_time" content="2026-10-16" />
-  <meta property="article:modified_time" content="2026-10-17" />
+  <meta property="article:modified_time" content="2026-10-24" />
   <meta property="article:author" content="https://csarko.sh/" />
   <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Scene depth for a post process: WebGPU against WebGL2" />
-  <meta name="twitter:description" content="Getting per-pixel scene depth to a post process on WebGPU and WebGL2, and the six places the two APIs part ways, from shader uniformity to a lost GPU." />
+  <meta name="twitter:description" content="Scene depth for a post process on WebGPU and WebGL2: one prepass works on both, six API differences bite, and a 6 s frame, not the depth, lost the GPU." />
   <meta name="twitter:image" content="https://csarko.sh/og-image.jpg" />
   <meta name="twitter:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
 
@@ -47,12 +47,12 @@
       "@type": "TechArticle",
       "@id": "https://csarko.sh/research/scene-depth-for-a-post-process-webgpu-vs-webgl2#article",
       "headline": "Scene depth for a post process: WebGPU against WebGL2",
-      "description": "Getting per-pixel scene depth to a post process on WebGPU and WebGL2, and the six places the two APIs part ways, from shader uniformity to a lost GPU.",
+      "description": "Scene depth for a post process on WebGPU and WebGL2: one prepass works on both, six API differences bite, and a 6 s frame, not the depth, lost the GPU.",
       "datePublished": "2026-10-16",
-      "dateModified": "2026-10-17",
+      "dateModified": "2026-10-24",
       "url": "https://csarko.sh/research/scene-depth-for-a-post-process-webgpu-vs-webgl2",
       "mainEntityOfPage": "https://csarko.sh/research/scene-depth-for-a-post-process-webgpu-vs-webgl2",
-      "wordCount": 4022,
+      "wordCount": 4147,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -440,24 +440,24 @@
     <aside class="rail" aria-label="Contents">
       <p class="section-label">Contents</p>
       <ol>
-        <li><a href="#three-places-a-depth-can-come-from" data-visits-event="toc-rail"><span class="num" aria-hidden="true">01</span><span>Three places a depth can come from</span></a></li>
-        <li><a href="#a-branch-the-glsl-accepted-and-the-wgsl-refused" data-visits-event="toc-rail"><span class="num" aria-hidden="true">02</span><span>A branch the GLSL accepted and the WGSL refused</span></a></li>
-        <li><a href="#a-draw-that-leaves-a-target-alone" data-visits-event="toc-rail"><span class="num" aria-hidden="true">03</span><span>A draw that leaves a target alone</span></a></li>
-        <li><a href="#multisampling-several-targets-at-once" data-visits-event="toc-rail"><span class="num" aria-hidden="true">04</span><span>Multisampling several targets at once</span></a></li>
-        <li><a href="#which-float-a-sampler-may-filter" data-visits-event="toc-rail"><span class="num" aria-hidden="true">05</span><span>Which float a sampler may filter</span></a></li>
-        <li><a href="#losing-the-gpu" data-visits-event="toc-rail"><span class="num" aria-hidden="true">06</span><span>Losing the GPU</span></a></li>
-        <li><a href="#three-traps-that-were-the-same-on-both" data-visits-event="toc-rail"><span class="num" aria-hidden="true">07</span><span>Three traps that were the same on both</span></a></li>
-        <li><a href="#what-a-new-shader-variant-costs-to-ship" data-visits-event="toc-rail"><span class="num" aria-hidden="true">08</span><span>What a new shader variant costs to ship</span></a></li>
-        <li><a href="#what-was-not-measured" data-visits-event="toc-rail"><span class="num" aria-hidden="true">09</span><span>What was not measured</span></a></li>
-        <li><a href="#update-2026-10-17-what-lost-the-gpu" data-visits-event="toc-rail"><span class="num" aria-hidden="true">10</span><span>Update (2026-10-17): what lost the GPU</span></a></li>
+        <li><a href="#three-sources-of-depth-the-prepass-draws-the-scene-once" data-visits-event="toc-rail"><span class="num" aria-hidden="true">01</span><span>Three sources of depth; the prepass draws the scene once</span></a></li>
+        <li><a href="#wgsl-refuses-a-texture-read-after-a-per-pixel-branch" data-visits-event="toc-rail"><span class="num" aria-hidden="true">02</span><span>WGSL refuses a texture read after a per-pixel branch</span></a></li>
+        <li><a href="#leaving-a-target-alone-one-call-on-webgl2-a-second-pipeline-on-webgpu" data-visits-event="toc-rail"><span class="num" aria-hidden="true">03</span><span>Leaving a target alone: one call on WebGL2, a second pipeline on WebGPU</span></a></li>
+        <li><a href="#multisampled-targets-a-blit-each-on-webgl2-a-resolve-target-on-webgpu" data-visits-event="toc-rail"><span class="num" aria-hidden="true">04</span><span>Multisampled targets: a blit each on WebGL2, a resolve target on WebGPU</span></a></li>
+        <li><a href="#a-32-bit-float-depth-filters-only-with-an-extension-or-a-feature" data-visits-event="toc-rail"><span class="num" aria-hidden="true">05</span><span>A 32-bit float depth filters only with an extension or a feature</span></a></li>
+        <li><a href="#a-lost-device-on-webgpu-can-take-webgl2-with-it" data-visits-event="toc-rail"><span class="num" aria-hidden="true">06</span><span>A lost device on WebGPU can take WebGL2 with it</span></a></li>
+        <li><a href="#three-prepass-traps-were-the-engine-s-on-both-apis" data-visits-event="toc-rail"><span class="num" aria-hidden="true">07</span><span>Three prepass traps were the engine&#39;s, on both APIs</span></a></li>
+        <li><a href="#a-new-define-is-a-new-wgsl-translation-to-ship" data-visits-event="toc-rail"><span class="num" aria-hidden="true">08</span><span>A new define is a new WGSL translation to ship</span></a></li>
+        <li><a href="#not-measured-the-prepass-s-frame-cost" data-visits-event="toc-rail"><span class="num" aria-hidden="true">09</span><span>Not measured: the prepass&#39;s frame cost</span></a></li>
+        <li><a href="#update-2026-10-17-a-6-s-frame-lost-the-gpu-not-the-depth-read" data-visits-event="toc-rail"><span class="num" aria-hidden="true">10</span><span>Update (2026-10-17): a 6 s frame lost the GPU, not the depth read</span></a></li>
         <li><a href="#sources" data-visits-event="toc-rail"><span>Sources</span></a></li>
       </ol>
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Oct 16, 2026 · Updated Oct 17, 2026</p>
+        <p class="eyebrow">Oct 16, 2026 · Updated Oct 24, 2026</p>
         <h1>Scene depth for a post process: WebGPU against WebGL2</h1>
-        <p class="lead">Getting per-pixel scene depth to a post process on WebGPU and WebGL2, and the six places the two APIs part ways, from shader uniformity to a lost GPU.</p>
+        <p class="lead">Scene depth for a post process on WebGPU and WebGL2: one prepass works on both, six API differences bite, and a 6 s frame, not the depth, lost the GPU.</p>
         <ul class="tags">
           <li>16 min read</li>
           <li><a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-16-scene-depth-webgpu-vs-webgl2.md" target="_blank" rel="noopener">Also on GitHub</a></li>
@@ -465,36 +465,47 @@
         <p class="series-line">Part 2 of 3 in <strong>WebGPU against WebGL2</strong> · Next: <a href="/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" data-visits-event="series-a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2">A painted look over a photoreal render: WebGPU against WebGL2</a></p>
       </header>
       <div class="prose">
-<p><strong>Question:</strong> A screen-space effect that needs to know how far away each pixel is,
-a depth-aware blur, a fog, an outline, an ambient occlusion, has to get the scene&#39;s
-depth into a texture the post process can read. On WebGL2 that has been done one of
-two or three ways for a decade. A renderer that runs on WebGPU as well, which in a
-browser engine such as Babylon.js is one flag away, finds that the same job meets
-the two APIs&#39; differences one after another. Which of them bite, which are the
-engine&#39;s rather than the API&#39;s, and what does a lost GPU look like on each?</p>
-<p><strong>Short answer:</strong> the depth itself comes from the same three places on both APIs: a
-second pass over the scene with a depth-only shader, the scene&#39;s own depth buffer,
-or the scene drawn once into several targets with depth as one of them. The third
-is the right one for a game that is bound by its draw count, and it is what we
-shipped. On the way the two APIs parted in six places. WGSL&#39;s uniformity analysis
-refuses a shader that samples a texture after a branch on a per-pixel value, which
-GLSL compiles without a word, and the fix is an explicit sample level <a class="cite" href="#ref-1">[1]</a>. A draw
-that leaves one of several targets untouched is a framebuffer state on WebGL2
-(<code>drawBuffers</code>) and a pipeline&#39;s colour write mask on WebGPU, so one call in the
-engine becomes two different objects <a class="cite" href="#ref-2">[2]</a>, <a class="cite" href="#ref-3">[3]</a>. Multisampling several targets is a
-blit per attachment on one and a resolve target per attachment on the other <a class="cite" href="#ref-4">[4]</a>,
-<a class="cite" href="#ref-5">[5]</a>. The depth&#39;s own varying counts against a device limit WebGPU is asked for up
-front, which one material already filled <a class="cite" href="#ref-6">[6]</a>. A 32-bit float texture is filterable
-on WebGL2 only with an extension and on WebGPU only with a device feature, and WebGPU
-makes the mismatch a validation error rather than a wrong result <a class="cite" href="#ref-7">[7]</a>, <a class="cite" href="#ref-8">[8]</a>. And losing the GPU is a lost context on
-WebGL2 but a lost device on WebGPU, which when the browser&#39;s GPU process goes
-takes WebGL2 down with it <a class="cite" href="#ref-9">[9]</a>, <a class="cite" href="#ref-10">[10]</a>. Three more traps were the engine&#39;s and the same
-on both: a prepass that reads the wrong camera&#39;s post-process chain and switches
-itself off, one that rewrites the scene&#39;s image-processing flag every frame, and one
-that takes up every render target the scene draws, impostor bakes among them.</p>
-<p>The worked example is Day Hike, a first-person hiking game in Babylon.js 9.18, public at
+<p><strong>Question:</strong> a screen-space effect that needs each pixel&#39;s distance, a depth-aware blur, a fog,
+an outline, an ambient occlusion, has to get the scene&#39;s depth into a texture a post process can
+read. On a browser engine that runs on WebGPU as well as WebGL2, which of the two APIs&#39; differences
+does that job meet, which are the engine&#39;s, and what does a lost GPU look like on each?</p>
+<p><strong>Short answer:</strong> draw the scene once into several targets with depth as one of them, a
+<button type="button" class="term" popovertarget="term-1">prepass</button><span class="term-def" id="term-1" popover role="note">The scene drawn once into several render targets at the same time: colour in the first, and extra data such as camera-space depth in the others, written by the materials&#39; own shaders.</span>:
+it takes the same path on both APIs and suits a game bound by its draw count. The APIs then part
+in six places, the first met being WGSL&#39;s
+<button type="button" class="term" popovertarget="term-2">uniformity analysis</button><span class="term-def" id="term-2" popover role="note">A compile-time check in WebGPU&#39;s shading language that every pixel of a 2 by 2 quad reaches a texture read that takes derivatives together. GLSL leaves the same case undefined and silent.</span>,
+which refuses a texture read after a per-pixel branch that GLSL compiles without a word; an
+explicit sample level fixes it on both. The device losses that followed were not the depth at
+all: a single frame of about 6 s of GPU work, drawn while pipelines were still being created,
+took down Chrome&#39;s GPU process and WebGL2 with it, and holding such frames ended the losses.</p>
+<figure class="figure">
+<!-- generated:figure:scene-depth-for-a-post-process-webgpu-vs-webgl2/frame-gpu-time -->
+<img src="/assets/fig-scene-depth-for-a-post-process-webgpu-vs-webgl2-frame-gpu-time.a3a95af9.svg" width="440" height="318" alt="A bar chart of GPU time for one frame: 1.3 s for the whole frame, 5.5 s with pipelines pending in the previous build, 4 to 7 s with pipelines pending and the prepass, against a dashed line at 6 s" decoding="async" />
+<!-- /generated:figure:scene-depth-for-a-post-process-webgpu-vs-webgl2/frame-gpu-time -->
+<figcaption>On a Mac whose GPU Day Hike&#39;s high tier saturates, a frame drawn while its pipelines were pending left out the ground and trees and cost several times the whole frame; every device loss followed one of about 6 s or more, and holding those frames gave 0 losses in 18 runs.</figcaption>
+</figure>
+<p><strong>In numbers:</strong></p>
+<ul>
+<li><strong>One draw of the scene</strong> instead of two: the prepass writes depth from the materials&#39; own
+shaders, so every vertex plugin and alpha test holds in it
+(<a href="#three-sources-of-depth-the-prepass-draws-the-scene-once">section 1</a>).</li>
+<li><strong>One explicit level</strong>, <code>textureLod(sampler, uv, 0.0)</code>, fixes the shader WGSL refused and GLSL
+drew (<a href="#wgsl-refuses-a-texture-read-after-a-per-pixel-branch">section 2</a>).</li>
+<li><strong>22 inter-stage variables:</strong> the depth&#39;s varying pushed one material past the 21 the WebGPU
+device was asked for; the Apple M4 offers 28
+(<a href="#leaving-a-target-alone-one-call-on-webgl2-a-second-pipeline-on-webgpu">section 3</a>).</li>
+<li><strong>Two pipelines per material state</strong> on WebGPU, where WebGL2 sets <code>drawBuffers</code> between draws
+for free (<a href="#leaving-a-target-alone-one-call-on-webgl2-a-second-pipeline-on-webgpu">section 3</a>).</li>
+<li><strong>About 6 s of GPU work in one frame</strong> came before every device loss; frames with pipelines
+pending took 4 to 7 s against 1.3 s for the whole frame
+(<a href="#update-2026-10-17-a-6-s-frame-lost-the-gpu-not-the-depth-read">section 10</a>).</li>
+<li><strong>0 losses in 18 runs</strong> once such frames were held, from about half of 60 s runs before
+(<a href="#update-2026-10-17-a-6-s-frame-lost-the-gpu-not-the-depth-read">section 10</a>).</li>
+</ul>
+<p>In Babylon.js, rendering with WebGPU instead of WebGL2 is one flag away. The worked example
+is Day Hike, a first-person hiking game in Babylon.js 9.18, public at
 <a class="external" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener">game-dayhike</a> and playable at
-<a class="external" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener">games.csarko.sh/dayhike</a>. Its high tier draws with
+<a class="external" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener">games.csarko.sh/dayhike</a>. As of Oct 16, 2026, its high tier draws with
 WebGPU in Chrome and Edge and everything else draws with WebGL2
 (<a href="/research/webgpu-vs-webgl2" data-visits-event="doc-webgpu-vs-webgl2">WebGPU vs WebGL2: what changes and what does not</a>).
 The post process in question softens the far field, part of the work in
@@ -507,44 +518,46 @@ WebGPU through Metal and WebGL2 through ANGLE&#39;s Metal backend.</p>
       <nav class="toc" aria-label="In this doc">
         <p class="section-label">In this doc</p>
         <ol>
-          <li><a href="#three-places-a-depth-can-come-from" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>Three places a depth can come from</span></a></li>
-          <li><a href="#a-branch-the-glsl-accepted-and-the-wgsl-refused" data-visits-event="toc"><span class="num" aria-hidden="true">02</span><span>A branch the GLSL accepted and the WGSL refused</span></a></li>
-          <li><a href="#a-draw-that-leaves-a-target-alone" data-visits-event="toc"><span class="num" aria-hidden="true">03</span><span>A draw that leaves a target alone</span></a></li>
-          <li><a href="#multisampling-several-targets-at-once" data-visits-event="toc"><span class="num" aria-hidden="true">04</span><span>Multisampling several targets at once</span></a></li>
-          <li><a href="#which-float-a-sampler-may-filter" data-visits-event="toc"><span class="num" aria-hidden="true">05</span><span>Which float a sampler may filter</span></a></li>
-          <li><a href="#losing-the-gpu" data-visits-event="toc"><span class="num" aria-hidden="true">06</span><span>Losing the GPU</span></a></li>
-          <li><a href="#three-traps-that-were-the-same-on-both" data-visits-event="toc"><span class="num" aria-hidden="true">07</span><span>Three traps that were the same on both</span></a></li>
-          <li><a href="#what-a-new-shader-variant-costs-to-ship" data-visits-event="toc"><span class="num" aria-hidden="true">08</span><span>What a new shader variant costs to ship</span></a></li>
-          <li><a href="#what-was-not-measured" data-visits-event="toc"><span class="num" aria-hidden="true">09</span><span>What was not measured</span></a></li>
-          <li><a href="#update-2026-10-17-what-lost-the-gpu" data-visits-event="toc"><span class="num" aria-hidden="true">10</span><span>Update (2026-10-17): what lost the GPU</span></a></li>
+          <li><a href="#three-sources-of-depth-the-prepass-draws-the-scene-once" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>Three sources of depth; the prepass draws the scene once</span></a></li>
+          <li><a href="#wgsl-refuses-a-texture-read-after-a-per-pixel-branch" data-visits-event="toc"><span class="num" aria-hidden="true">02</span><span>WGSL refuses a texture read after a per-pixel branch</span></a></li>
+          <li><a href="#leaving-a-target-alone-one-call-on-webgl2-a-second-pipeline-on-webgpu" data-visits-event="toc"><span class="num" aria-hidden="true">03</span><span>Leaving a target alone: one call on WebGL2, a second pipeline on WebGPU</span></a></li>
+          <li><a href="#multisampled-targets-a-blit-each-on-webgl2-a-resolve-target-on-webgpu" data-visits-event="toc"><span class="num" aria-hidden="true">04</span><span>Multisampled targets: a blit each on WebGL2, a resolve target on WebGPU</span></a></li>
+          <li><a href="#a-32-bit-float-depth-filters-only-with-an-extension-or-a-feature" data-visits-event="toc"><span class="num" aria-hidden="true">05</span><span>A 32-bit float depth filters only with an extension or a feature</span></a></li>
+          <li><a href="#a-lost-device-on-webgpu-can-take-webgl2-with-it" data-visits-event="toc"><span class="num" aria-hidden="true">06</span><span>A lost device on WebGPU can take WebGL2 with it</span></a></li>
+          <li><a href="#three-prepass-traps-were-the-engine-s-on-both-apis" data-visits-event="toc"><span class="num" aria-hidden="true">07</span><span>Three prepass traps were the engine&#39;s, on both APIs</span></a></li>
+          <li><a href="#a-new-define-is-a-new-wgsl-translation-to-ship" data-visits-event="toc"><span class="num" aria-hidden="true">08</span><span>A new define is a new WGSL translation to ship</span></a></li>
+          <li><a href="#not-measured-the-prepass-s-frame-cost" data-visits-event="toc"><span class="num" aria-hidden="true">09</span><span>Not measured: the prepass&#39;s frame cost</span></a></li>
+          <li><a href="#update-2026-10-17-a-6-s-frame-lost-the-gpu-not-the-depth-read" data-visits-event="toc"><span class="num" aria-hidden="true">10</span><span>Update (2026-10-17): a 6 s frame lost the GPU, not the depth read</span></a></li>
         </ol>
       </nav>
       <div class="prose">
-<div class="section-head"><p class="section-label">01</p><h2 id="three-places-a-depth-can-come-from"><a class="anchor" href="#three-places-a-depth-can-come-from">Three places a depth can come from</a></h2></div>
-<p>Every renderer that wants a depth texture for a post process has the same three
-options, and the choice is the same on both APIs.</p>
+<div class="section-head"><p class="section-label">01</p><h2 id="three-sources-of-depth-the-prepass-draws-the-scene-once"><a class="anchor" href="#three-sources-of-depth-the-prepass-draws-the-scene-once">Three sources of depth; the prepass draws the scene once</a></h2></div>
+<p>On WebGL2 this has been done one of two or three ways for a decade. Every renderer that
+wants a depth texture for a post process has the same three options, and the choice is the
+same on both APIs.</p>
 <p><strong>A second pass with a depth-only shader.</strong> Babylon&#39;s <code>DepthRenderer</code> draws the scene
 again into a target of its own, with a shader that writes <code>vViewPos.z</code> and nothing
-else <a class="cite" href="#ref-11">[11]</a>. It needs nothing of the materials and works everywhere, and that is also
+else <a class="cite" href="#ref-1">[1]</a>. It needs nothing of the materials and works everywhere, and that is also
 its flaw: it draws every mesh again, and with its own vertex stage, so anything a
 material plugin did to the geometry (cards turned to face the camera, grass bent by
 wind, far cover widened with distance) is missing from its depth. A scene that draws
 several hundred thin-instanced buckets a frame pays for all of them twice.</p>
 <p><strong>The scene&#39;s own depth buffer.</strong> If the scene is multisampled, which an alpha-tested
 world wants, the depth attachment cannot be read: WebGL2 cannot blit a multisampled
-depth renderbuffer into a texture a sampler reads <a class="cite" href="#ref-4">[4]</a>, and WebGPU allows no resolve
-target on a depth attachment <a class="cite" href="#ref-5">[5]</a>. A single-sampled scene gives the depth away for free
+depth renderbuffer into a texture a sampler reads <a class="cite" href="#ref-2">[2]</a>, and WebGPU allows no resolve
+target on a depth attachment <a class="cite" href="#ref-3">[3]</a>. A single-sampled scene gives the depth away for free
 and the edges with it.</p>
 <p><strong>The scene drawn once into several targets.</strong> Babylon&#39;s <code>PrePassRenderer</code> draws the
 scene into a multiple render target, the materials&#39; own shaders writing colour to the
 first attachment and whatever was asked for, here camera-space depth, to the others
-<a class="cite" href="#ref-12">[12]</a>. Every vertex plugin and every alpha test holds in the depth, nothing is drawn
+<a class="cite" href="#ref-4">[4]</a>. Every vertex plugin and every alpha test holds in the depth, nothing is drawn
 twice, and both APIs take the same path. A post process asks for the depth by
 declaring it in a configuration the prepass reads when it updates, the prepass&#39;s
 targets become the first post process&#39;s input, and the multisampling moves to them.</p>
-<p>Day Hike built the first and shipped the third. The rest of this note is what the
+<p>Day Hike built the first and shipped the third, which is the right one for a game bound by
+its draw count. The rest of this note is what the
 third asked of each API, and what the first revealed on the way.</p>
-<div class="section-head"><p class="section-label">02</p><h2 id="a-branch-the-glsl-accepted-and-the-wgsl-refused"><a class="anchor" href="#a-branch-the-glsl-accepted-and-the-wgsl-refused">A branch the GLSL accepted and the WGSL refused</a></h2></div>
+<div class="section-head"><p class="section-label">02</p><h2 id="wgsl-refuses-a-texture-read-after-a-per-pixel-branch"><a class="anchor" href="#wgsl-refuses-a-texture-read-after-a-per-pixel-branch">WGSL refuses a texture read after a per-pixel branch</a></h2></div>
 <p>The blur leaves early where its radius is under a fifth of a texel, which is most of
 the frame, and samples its rings only past that:</p>
 <div class="scroll" tabindex="0" role="region" aria-label="Code"><pre><code class="language-glsl">float r = smoothstep(soft.x, soft.y, d) * soft.z;
@@ -558,37 +571,37 @@ note: control flow depends on possibly non-uniform value
 note: return value of &#39;textureSample&#39; may be non-uniform
   let x_24 : vec4&lt;f32&gt; = textureSample(depthSamplerTexture, depthSamplerSampler, x_22);
 </code></pre></div>
-<p>This is WGSL&#39;s uniformity analysis <a class="cite" href="#ref-1">[1]</a>. An implicit-level sample needs screen-space
+<p>This is WGSL&#39;s uniformity analysis <a class="cite" href="#ref-5">[5]</a>. An implicit-level sample needs screen-space
 derivatives, derivatives need every invocation in a quad to reach the same call, and
 a branch on a value read from a texture cannot promise that; so the compiler rejects
 the program rather than leave the result undefined. GLSL ES 3.00 has the same hazard
 and makes it the author&#39;s problem: a derivative taken inside non-uniform control flow
-is undefined, the driver returns something, and nothing is reported <a class="cite" href="#ref-13">[13]</a>. The same
+is undefined, the driver returns something, and nothing is reported <a class="cite" href="#ref-6">[6]</a>. The same
 text is a silent undefined value on one API and a compile error on the other.</p>
 <p>The fix is the same on both. Every read goes to an explicit level,
 <code>textureLod(sampler, uv, 0.0)</code>, which the translator turns into <code>textureSampleLevel</code>,
-a builtin the analysis leaves alone because it takes no derivative <a class="cite" href="#ref-1">[1]</a>. The early
+a builtin the analysis leaves alone because it takes no derivative <a class="cite" href="#ref-5">[5]</a>. The early
 leave stays. The lesson generalises: on WebGPU, sample at an explicit level in any
 post process that branches on what it reads, which is every depth-aware one.</p>
 <p>Where the error surfaces depends on where the translation happens. Babylon turns GLSL
 into WGSL through SPIR-V and Tint, at run time or ahead of it into a map the build
-ships <a class="cite" href="#ref-14">[14]</a>, so a shader that fails does so the first time that stage is translated:
+ships <a class="cite" href="#ref-7">[7]</a>, so a shader that fails does so the first time that stage is translated:
 on a machine without the shipped map, the first time the page opens. What the failure
 did to the page is the subject of section 6.</p>
-<div class="section-head"><p class="section-label">03</p><h2 id="a-draw-that-leaves-a-target-alone"><a class="anchor" href="#a-draw-that-leaves-a-target-alone">A draw that leaves a target alone</a></h2></div>
+<div class="section-head"><p class="section-label">03</p><h2 id="leaving-a-target-alone-one-call-on-webgl2-a-second-pipeline-on-webgpu"><a class="anchor" href="#leaving-a-target-alone-one-call-on-webgl2-a-second-pipeline-on-webgpu">Leaving a target alone: one call on WebGL2, a second pipeline on WebGPU</a></h2></div>
 <p>The prepass compiles every capable material with as many outputs as there are
 targets. A material that cannot write them all, in Babylon any <code>ShaderMaterial</code>, is
 drawn with only the first target enabled, and the renderer tells the engine so through
 one call, <code>bindAttachments</code>, that the two engines answer differently:</p>
 <ul>
-<li><strong>WebGL2</strong> calls <code>gl.drawBuffers([COLOR_ATTACHMENT0, NONE])</code> <a class="cite" href="#ref-2">[2]</a>. The framebuffer
+<li><strong>WebGL2</strong> calls <code>gl.drawBuffers([COLOR_ATTACHMENT0, NONE])</code> <a class="cite" href="#ref-8">[8]</a>. The framebuffer
 keeps its attachments; the draw writes the first and leaves the second as it was.
 It is a state of the framebuffer, set between draws, and costs nothing.</li>
 <li><strong>WebGPU</strong> has no such call. A render pass&#39;s colour attachments are fixed when the
 pass begins, and a fragment stage must declare an output for every target it writes
-<a class="cite" href="#ref-3">[3]</a>. Babylon&#39;s engine keeps the attachment list on its pipeline cache and bakes it
+<a class="cite" href="#ref-9">[9]</a>. Babylon&#39;s engine keeps the attachment list on its pipeline cache and bakes it
 into the render pipeline as a colour write mask of zero for the targets the draw
-leaves alone <a class="cite" href="#ref-15">[15]</a>. The target stays bound, the shader writes nothing to it, and the
+leaves alone <a class="cite" href="#ref-10">[10]</a>. The target stays bound, the shader writes nothing to it, and the
 pipeline is a different pipeline from the one that writes both, so a scene with
 such materials carries two pipelines per material state instead of one.</li>
 </ul>
@@ -601,7 +614,7 @@ gl_FragColor=finalColor;
 #endif
 </code></pre></div>
 <p>On WebGL2 <code>gl_FragColor</code> and <code>gl_FragData[0]</code> are the same output and both lines run;
-on WebGPU only the prepass block writes <a class="cite" href="#ref-16">[16]</a>. Anything a material plugin does to the
+on WebGPU only the prepass block writes <a class="cite" href="#ref-11">[11]</a>. Anything a material plugin does to the
 final colour after the prepass block lands on one API and not the other. Day Hike&#39;s
 plugins all write before it, at the hook above the block, so the two engines draw the
 same colour; it is the kind of line to know about before the first &quot;WebGPU looks
@@ -612,13 +625,13 @@ the sky dome does not write needs a special case.</p>
 <p>The depth itself costs a varying. Every capable material&#39;s vertex stage gains a
 <code>vViewPos</code> output for the prepass to write the depth from, and on WebGPU that output
 counts against <code>maxInterStageShaderVariables</code>, a device limit a renderer asks for up
-front <a class="cite" href="#ref-6">[6]</a>. Day Hike&#39;s giant trees&#39; faded material already filled the 21 it asked for
+front <a class="cite" href="#ref-12">[12]</a>. Day Hike&#39;s giant trees&#39; faded material already filled the 21 it asked for
 on the high tier (three shadow cascades, a two-sided fragment reading <code>front_facing</code>),
 and its pipeline failed with <code>Total fragment input variables count (22 = 21 (user-defined) + 1 (front_facing) exceeds the maximum (21)</code>, an uncaptured error that
 rebuilt the renderer on WebGL2 once more. The limit the device is asked for rose to 22;
 the Apple M4 adapter offers 28. WebGL2 has the same ceiling in <code>MAX_VARYING_VECTORS</code>,
-but counts vectors the compiler packs scalars into and raised no error here <a class="cite" href="#ref-17">[17]</a>.</p>
-<div class="section-head"><p class="section-label">04</p><h2 id="multisampling-several-targets-at-once"><a class="anchor" href="#multisampling-several-targets-at-once">Multisampling several targets at once</a></h2></div>
+but counts vectors the compiler packs scalars into and raised no error here <a class="cite" href="#ref-13">[13]</a>.</p>
+<div class="section-head"><p class="section-label">04</p><h2 id="multisampled-targets-a-blit-each-on-webgl2-a-resolve-target-on-webgpu"><a class="anchor" href="#multisampled-targets-a-blit-each-on-webgl2-a-resolve-target-on-webgpu">Multisampled targets: a blit each on WebGL2, a resolve target on WebGPU</a></h2></div>
 <p>The scene is drawn at 4 samples a pixel. With one target that is a multisampled
 renderbuffer resolved into a texture on WebGL2, or a multisampled texture with a
 <code>resolveTarget</code> on WebGPU, and the post process reads the resolved texture. With two
@@ -626,43 +639,43 @@ targets each needs its own:</p>
 <ul>
 <li><strong>WebGL2</strong> attaches a multisampled renderbuffer per colour attachment and, at the end
 of the pass, blits each into its texture with <code>blitFramebuffer</code>, one read and one draw
-binding per attachment <a class="cite" href="#ref-4">[4]</a>.</li>
+binding per attachment <a class="cite" href="#ref-2">[2]</a>.</li>
 <li><strong>WebGPU</strong> gives each colour attachment of the render pass a multisampled texture and a
-<code>resolveTarget</code>, and the resolve is part of ending the pass <a class="cite" href="#ref-5">[5]</a>.</li>
+<code>resolveTarget</code>, and the resolve is part of ending the pass <a class="cite" href="#ref-3">[3]</a>.</li>
 </ul>
-<p>Babylon hides both behind one setter on the multiple render target <a class="cite" href="#ref-18">[18]</a>. The engine
+<p>Babylon hides both behind one setter on the multiple render target <a class="cite" href="#ref-14">[14]</a>. The engine
 sets that instead of the first post process&#39;s own sample count, which with the prepass
 in front of it would multisample a target nothing draws into. The depth target resolves
 along with the colour, which averages the depth across a pixel&#39;s samples at an edge;
 for a gate that asks only whether a neighbour is much nearer, that is fine, and it is
 the same on both APIs.</p>
-<div class="section-head"><p class="section-label">05</p><h2 id="which-float-a-sampler-may-filter"><a class="anchor" href="#which-float-a-sampler-may-filter">Which float a sampler may filter</a></h2></div>
+<div class="section-head"><p class="section-label">05</p><h2 id="a-32-bit-float-depth-filters-only-with-an-extension-or-a-feature"><a class="anchor" href="#a-32-bit-float-depth-filters-only-with-an-extension-or-a-feature">A 32-bit float depth filters only with an extension or a feature</a></h2></div>
 <p>The prepass stores its depth in a 32-bit float texture where the engine can filter
 one, otherwise in a 16-bit float. Both APIs render to both; what they let a sampler
 do with them differs:</p>
 <ul>
 <li><strong>WebGL2</strong> filters a 32-bit float texture only with <code>OES_texture_float_linear</code>;
 without it a linear sampler on one returns an incomplete texture&#39;s value, and no
-error <a class="cite" href="#ref-7">[7]</a>.</li>
+error <a class="cite" href="#ref-15">[15]</a>.</li>
 <li><strong>WebGPU</strong> makes filtering a validation matter. A 32-bit float texture has the sample
 type <code>unfilterable-float</code> unless the device was requested with the
 <code>float32-filterable</code> feature, and binding it to a filtering sampler is a pipeline
-error <a class="cite" href="#ref-8">[8]</a>. Babylon&#39;s WebGPU engine checks the texture&#39;s type against the device when
+error <a class="cite" href="#ref-16">[16]</a>. Babylon&#39;s WebGPU engine checks the texture&#39;s type against the device when
 it builds the bind group layout and, where the texture cannot be filtered, demotes
 the sampler to <code>non-filtering</code> and the binding to <code>unfilterable-float</code> on its own
-<a class="cite" href="#ref-15">[15]</a>.</li>
+<a class="cite" href="#ref-10">[10]</a>.</li>
 </ul>
 <p>The blur reads the depth at the texel&#39;s centre at an explicit level, so it never needs
 filtering and the demotion costs it nothing. A pass that did bilinear reads of a 32-bit
 depth would run the same shader text on both APIs and get filtered depth on one and
 point-sampled depth on the other.</p>
-<div class="section-head"><p class="section-label">06</p><h2 id="losing-the-gpu"><a class="anchor" href="#losing-the-gpu">Losing the GPU</a></h2></div>
+<div class="section-head"><p class="section-label">06</p><h2 id="a-lost-device-on-webgpu-can-take-webgl2-with-it"><a class="anchor" href="#a-lost-device-on-webgpu-can-take-webgl2-with-it">A lost device on WebGPU can take WebGL2 with it</a></h2></div>
 <p>Three of the first nine runs on WebGPU lost the device, about 25 s after the page
 opened, and each time the renderer the engine rebuilt lost it again some 20 s later;
 after the second loss the page could not make a WebGL2 context either, since the
 browser&#39;s GPU process had gone with the device. Chrome&#39;s own log carried one line
 before each loss, <code>A valid external Instance reference no longer exists</code>, and nothing
-from Dawn&#39;s validation layer <a class="cite" href="#ref-19">[19]</a>. The losses came with a depth texture bound and read
+from Dawn&#39;s validation layer <a class="cite" href="#ref-17">[17]</a>. The losses came with a depth texture bound and read
 by the post process, twice from the depth renderer&#39;s target and once from the
 prepass&#39;s; a pass that bound the depth and read a constant instead never lost it, nor
 did the depth pass drawing with no post process reading it, nor any of six later runs
@@ -674,11 +687,11 @@ found the day after, and the depth texture was a bystander (section 10).</p>
 <ul>
 <li><strong>WebGL2</strong> raises <code>webglcontextlost</code> on the canvas, and <code>webglcontextrestored</code> when
 the browser has a context again; the application is expected to handle both and
-rebuild its resources <a class="cite" href="#ref-9">[9]</a>. The GPU process is usually still there, and a new context
+rebuild its resources <a class="cite" href="#ref-18">[18]</a>. The GPU process is usually still there, and a new context
 on a new canvas works.</li>
 <li><strong>WebGPU</strong> resolves the device&#39;s <code>lost</code> promise with a reason and a message, the
 device and everything made from it stop working, and the application requests a new
-adapter and device <a class="cite" href="#ref-10">[10]</a>. When the GPU process itself went down, every API it hosted
+adapter and device <a class="cite" href="#ref-19">[19]</a>. When the GPU process itself went down, every API it hosted
 goes with it, WebGL2 included, until the browser restarts it.</li>
 </ul>
 <p>Day Hike&#39;s failure path rebuilds the renderer on a fresh canvas, once on WebGPU again
@@ -694,7 +707,7 @@ an engine change.</p>
 on both engines because every run after the first nine, among them a full set of
 seven stills at 75 s each, drew with the prepass and lost nothing, and a lost device
 is an event the game&#39;s telemetry carries with its reason. It returned the day after, on WebGPU, and section 10 has the cause.</p>
-<div class="section-head"><p class="section-label">07</p><h2 id="three-traps-that-were-the-same-on-both"><a class="anchor" href="#three-traps-that-were-the-same-on-both">Three traps that were the same on both</a></h2></div>
+<div class="section-head"><p class="section-label">07</p><h2 id="three-prepass-traps-were-the-engine-s-on-both-apis"><a class="anchor" href="#three-prepass-traps-were-the-engine-s-on-both-apis">Three prepass traps were the engine&#39;s, on both APIs</a></h2></div>
 <p>Not every difference met was the API&#39;s. Three were the engine&#39;s, the same on WebGPU
 and WebGL2, and they took longer to find than the API differences did, because a
 prepass that is silently off draws the same frame on both engines, with no depth in it.</p>
@@ -702,51 +715,51 @@ prepass that is silently off draws the same frame on both engines, with no depth
 <li><strong>The prepass reads the chain from the scene&#39;s active camera.</strong> It decides what it
 draws for by walking the active camera&#39;s post processes when it updates, which is at
 the first draw after anything marks it dirty: a pass attached or detached, its own
-creation <a class="cite" href="#ref-12">[12]</a>. The first draw of a frame is as often a render target&#39;s, a mirror or
+creation <a class="cite" href="#ref-4">[4]</a>. The first draw of a frame is as often a render target&#39;s, a mirror or
 an impostor bake, whose own camera is the active one while it draws and has no chain.
 The prepass then finds nothing, switches itself off, and does not look again until
 something marks it dirty. The fix is to run its update with the chain&#39;s camera
 active.</li>
 <li><strong>The prepass writes the image-processing flag every frame.</strong> It sets the scene&#39;s
 image processing to run in a post process only when it finds the engine&#39;s own
-image-processing pass in the chain <a class="cite" href="#ref-12">[12]</a>. A renderer with a grade pass of its own gets
+image-processing pass in the chain <a class="cite" href="#ref-4">[4]</a>. A renderer with a grade pass of its own gets
 the flag set false, every lit material tone-maps in its shader, and the grade pass
 tone-maps the frame again. The fix is to pin the flag.</li>
 <li><strong>The prepass takes up every render target the scene draws.</strong> The first time a
 render target clears, the prepass gives it a prepass target of its own and updates,
-which re-reads every material&#39;s defines <a class="cite" href="#ref-12">[12]</a>. A renderer that bakes impostors into
+which re-reads every material&#39;s defines <a class="cite" href="#ref-4">[4]</a>. A renderer that bakes impostors into
 render targets during play gets a re-read with each bake, the bake catches its
 materials mid-recompile and keeps nothing, and the far trees stand as bare poles,
 on both APIs alike. The fix is to opt every render target of one&#39;s own out of the
 prepass (<code>noPrePassRenderer</code>), so it draws for the scene&#39;s camera alone.</li>
 </ul>
-<div class="section-head"><p class="section-label">08</p><h2 id="what-a-new-shader-variant-costs-to-ship"><a class="anchor" href="#what-a-new-shader-variant-costs-to-ship">What a new shader variant costs to ship</a></h2></div>
+<div class="section-head"><p class="section-label">08</p><h2 id="a-new-define-is-a-new-wgsl-translation-to-ship"><a class="anchor" href="#a-new-define-is-a-new-wgsl-translation-to-ship">A new define is a new WGSL translation to ship</a></h2></div>
 <p>Turning the prepass on compiles every capable material with a new define. On WebGL2
 that is a recompile the browser does the first time it draws each material, from the
 GLSL the page already has. On WebGPU each stage must be translated to WGSL, and a
 renderer that wants a first visit never to wait on the translator ships the
 translations: Day Hike builds a map of them from a recorded corpus, one per quality
-tier <a class="cite" href="#ref-14">[14]</a>, and a new define on every material is a new stage for every material, so
+tier <a class="cite" href="#ref-7">[7]</a>, and a new define on every material is a new stage for every material, so
 the corpus is recorded again before the map is built. Where the map is missing, the
 page translates at run time and its render pipelines land one by one, so a still of
 the meadow shot at 55 s on WebGPU showed the trees as bare poles with their crowns&#39;
 pipelines still to come, and the same still at 110 s showed them whole; on WebGL2 the
 same page at 55 s was complete. The difference is not the engine&#39;s speed. It is where
 the translation happens, and WebGPU moves it to the author.</p>
-<div class="section-head"><p class="section-label">09</p><h2 id="what-was-not-measured"><a class="anchor" href="#what-was-not-measured">What was not measured</a></h2></div>
+<div class="section-head"><p class="section-label">09</p><h2 id="not-measured-the-prepass-s-frame-cost"><a class="anchor" href="#not-measured-the-prepass-s-frame-cost">Not measured: the prepass&#39;s frame cost</a></h2></div>
 <p>No frame times were taken for the prepass against the depth renderer or against no
 softening, on either API; the prepass was chosen on what it does not do, a second
 pass, and on the correctness of its depth, not on a measurement. The device loss had
 no reproduction when this was written; section 10 has one. What remains for the next
 measurement is the cost of the second target and its resolve at 4 samples on each API.</p>
-<div class="section-head"><p class="section-label">10</p><h2 id="update-2026-10-17-what-lost-the-gpu"><a class="anchor" href="#update-2026-10-17-what-lost-the-gpu">Update (2026-10-17): what lost the GPU</a></h2></div>
+<div class="section-head"><p class="section-label">10</p><h2 id="update-2026-10-17-a-6-s-frame-lost-the-gpu-not-the-depth-read"><a class="anchor" href="#update-2026-10-17-a-6-s-frame-lost-the-gpu-not-the-depth-read">Update (2026-10-17): a 6 s frame lost the GPU, not the depth read</a></h2></div>
 <p>The loss returned the day after the softening shipped, on a Mac whose GPU the
 renderer&#39;s high tier saturates (about 0.8 s a frame with every draw in), in about
 half of 60 s runs, and this time it was reproduced and traced. A probe on the page&#39;s
 queue, a <code>GPUQueue.onSubmittedWorkDone</code> after every submit with the render passes
 each carried, put every loss after a single frame of about 6 s or more of GPU work;
 Chrome&#39;s log had the browser&#39;s compositor lose its own Dawn device first, <code>While calling [Device].ImportSharedTextureMemory</code>, then the GPU process restart, and the
-page&#39;s device go with it, which is the one line section 6 quotes <a class="cite" href="#ref-19">[19]</a>. The depth
+page&#39;s device go with it, which is the one line section 6 quotes <a class="cite" href="#ref-17">[17]</a>. The depth
 texture was a bystander. The frames that reached 6 s were the ones drawn while
 pipelines were still being created asynchronously, with the meshes whose pipelines
 were pending left out: with the ground and the trees missing, the grass, the far
@@ -794,25 +807,25 @@ ground. With the frames held, the same machine lost the device in none of 18 run
       <div class="prose">
 <div class="section-head" data-read-end><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <ol class="references">
-<li id="ref-1"><span class="ref-num">[1]</span><div>A. Baker, M. O. Derin, and D. Neto, Eds., &quot;WebGPU Shading Language,&quot; section &quot;Uniformity,&quot; W3C Candidate Recommendation Draft. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://www.w3.org/TR/WGSL/#uniformity" target="_blank" rel="noopener">https://www.w3.org/TR/WGSL/#uniformity</a></div></li>
-<li id="ref-2"><span class="ref-num">[2]</span><div>MDN contributors, &quot;WebGL2RenderingContext: drawBuffers() method,&quot; MDN Web Docs, Mozilla. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext/drawBuffers" target="_blank" rel="noopener">https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext/drawBuffers</a></div></li>
-<li id="ref-3"><span class="ref-num">[3]</span><div>K. Ninomiya, B. Jones, and J. Blandy, Eds., &quot;WebGPU,&quot; section &quot;GPUFragmentState,&quot; W3C Candidate Recommendation Draft. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://www.w3.org/TR/webgpu/#fragment-state" target="_blank" rel="noopener">https://www.w3.org/TR/webgpu/#fragment-state</a></div></li>
-<li id="ref-4"><span class="ref-num">[4]</span><div>MDN contributors, &quot;WebGL2RenderingContext: blitFramebuffer() method,&quot; MDN Web Docs, Mozilla. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext/blitFramebuffer" target="_blank" rel="noopener">https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext/blitFramebuffer</a></div></li>
-<li id="ref-5"><span class="ref-num">[5]</span><div>K. Ninomiya, B. Jones, and J. Blandy, Eds., &quot;WebGPU,&quot; section &quot;GPURenderPassColorAttachment,&quot; W3C Candidate Recommendation Draft. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://www.w3.org/TR/webgpu/#color-attachments" target="_blank" rel="noopener">https://www.w3.org/TR/webgpu/#color-attachments</a></div></li>
-<li id="ref-6"><span class="ref-num">[6]</span><div>K. Ninomiya, B. Jones, and J. Blandy, Eds., &quot;WebGPU,&quot; section &quot;Limits,&quot; W3C Candidate Recommendation Draft. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://www.w3.org/TR/webgpu/#limits" target="_blank" rel="noopener">https://www.w3.org/TR/webgpu/#limits</a></div></li>
-<li id="ref-7"><span class="ref-num">[7]</span><div>Khronos WebGL Working Group, &quot;OES_texture_float_linear,&quot; WebGL extension registry, Khronos Group. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://registry.khronos.org/webgl/extensions/OES_texture_float_linear/" target="_blank" rel="noopener">https://registry.khronos.org/webgl/extensions/OES_texture_float_linear/</a></div></li>
-<li id="ref-8"><span class="ref-num">[8]</span><div>K. Ninomiya, B. Jones, and J. Blandy, Eds., &quot;WebGPU,&quot; section &quot;Texture format capabilities,&quot; W3C Candidate Recommendation Draft. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://www.w3.org/TR/webgpu/#texture-format-caps" target="_blank" rel="noopener">https://www.w3.org/TR/webgpu/#texture-format-caps</a></div></li>
-<li id="ref-9"><span class="ref-num">[9]</span><div>MDN contributors, &quot;HTMLCanvasElement: webglcontextlost event,&quot; MDN Web Docs, Mozilla. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/webglcontextlost_event" target="_blank" rel="noopener">https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/webglcontextlost_event</a></div></li>
-<li id="ref-10"><span class="ref-num">[10]</span><div>MDN contributors, &quot;GPUDevice: lost property,&quot; MDN Web Docs, Mozilla. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://developer.mozilla.org/en-US/docs/Web/API/GPUDevice/lost" target="_blank" rel="noopener">https://developer.mozilla.org/en-US/docs/Web/API/GPUDevice/lost</a></div></li>
-<li id="ref-11"><span class="ref-num">[11]</span><div>Babylon.js Authors, &quot;depthRenderer.ts,&quot; Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Rendering/depthRenderer.ts" target="_blank" rel="noopener">https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Rendering/depthRenderer.ts</a></div></li>
-<li id="ref-12"><span class="ref-num">[12]</span><div>Babylon.js Authors, &quot;prePassRenderer.ts,&quot; Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Rendering/prePassRenderer.ts" target="_blank" rel="noopener">https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Rendering/prePassRenderer.ts</a></div></li>
-<li id="ref-13"><span class="ref-num">[13]</span><div>Khronos Group, &quot;The OpenGL ES Shading Language, version 3.00,&quot; section 8.9, &quot;Fragment processing functions.&quot; Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://registry.khronos.org/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf" target="_blank" rel="noopener">https://registry.khronos.org/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf</a></div></li>
-<li id="ref-14"><span class="ref-num">[14]</span><div>C. Sarkosh, &quot;WGSL map per tier: design,&quot; game-dayhike design doc, GitHub repository. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-01-wgsl-map-per-tier-design.md" target="_blank" rel="noopener">https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-01-wgsl-map-per-tier-design.md</a></div></li>
-<li id="ref-15"><span class="ref-num">[15]</span><div>Babylon.js Authors, &quot;webgpuCacheRenderPipeline.ts,&quot; Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Engines/WebGPU/webgpuCacheRenderPipeline.ts" target="_blank" rel="noopener">https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Engines/WebGPU/webgpuCacheRenderPipeline.ts</a></div></li>
-<li id="ref-16"><span class="ref-num">[16]</span><div>Babylon.js Authors, &quot;pbr.fragment.fx,&quot; Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Shaders/pbr.fragment.fx" target="_blank" rel="noopener">https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Shaders/pbr.fragment.fx</a></div></li>
-<li id="ref-17"><span class="ref-num">[17]</span><div>MDN contributors, &quot;WebGLRenderingContext: getParameter() method,&quot; MDN Web Docs, Mozilla. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/getParameter" target="_blank" rel="noopener">https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/getParameter</a></div></li>
-<li id="ref-18"><span class="ref-num">[18]</span><div>Babylon.js Authors, &quot;multiRenderTarget.ts,&quot; Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Materials/Textures/multiRenderTarget.ts" target="_blank" rel="noopener">https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Materials/Textures/multiRenderTarget.ts</a></div></li>
-<li id="ref-19"><span class="ref-num">[19]</span><div>Dawn Authors, &quot;Dawn, a WebGPU implementation,&quot; README, GitHub repository. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://github.com/google/dawn" target="_blank" rel="noopener">https://github.com/google/dawn</a></div></li>
+<li id="ref-1"><span class="ref-num">[1]</span><div>Babylon.js Authors, &quot;depthRenderer.ts,&quot; Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Rendering/depthRenderer.ts" target="_blank" rel="noopener">https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Rendering/depthRenderer.ts</a></div></li>
+<li id="ref-2"><span class="ref-num">[2]</span><div>MDN contributors, &quot;WebGL2RenderingContext: blitFramebuffer() method,&quot; MDN Web Docs, Mozilla. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext/blitFramebuffer" target="_blank" rel="noopener">https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext/blitFramebuffer</a></div></li>
+<li id="ref-3"><span class="ref-num">[3]</span><div>K. Ninomiya, B. Jones, and J. Blandy, Eds., &quot;WebGPU,&quot; section &quot;GPURenderPassColorAttachment,&quot; W3C Candidate Recommendation Draft. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://www.w3.org/TR/webgpu/#color-attachments" target="_blank" rel="noopener">https://www.w3.org/TR/webgpu/#color-attachments</a></div></li>
+<li id="ref-4"><span class="ref-num">[4]</span><div>Babylon.js Authors, &quot;prePassRenderer.ts,&quot; Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Rendering/prePassRenderer.ts" target="_blank" rel="noopener">https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Rendering/prePassRenderer.ts</a></div></li>
+<li id="ref-5"><span class="ref-num">[5]</span><div>A. Baker, M. O. Derin, and D. Neto, Eds., &quot;WebGPU Shading Language,&quot; section &quot;Uniformity,&quot; W3C Candidate Recommendation Draft. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://www.w3.org/TR/WGSL/#uniformity" target="_blank" rel="noopener">https://www.w3.org/TR/WGSL/#uniformity</a></div></li>
+<li id="ref-6"><span class="ref-num">[6]</span><div>Khronos Group, &quot;The OpenGL ES Shading Language, version 3.00,&quot; section 8.9, &quot;Fragment processing functions.&quot; Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://registry.khronos.org/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf" target="_blank" rel="noopener">https://registry.khronos.org/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf</a></div></li>
+<li id="ref-7"><span class="ref-num">[7]</span><div>C. Sarkosh, &quot;WGSL map per tier: design,&quot; game-dayhike design doc, GitHub repository. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-01-wgsl-map-per-tier-design.md" target="_blank" rel="noopener">https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-01-wgsl-map-per-tier-design.md</a></div></li>
+<li id="ref-8"><span class="ref-num">[8]</span><div>MDN contributors, &quot;WebGL2RenderingContext: drawBuffers() method,&quot; MDN Web Docs, Mozilla. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext/drawBuffers" target="_blank" rel="noopener">https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext/drawBuffers</a></div></li>
+<li id="ref-9"><span class="ref-num">[9]</span><div>K. Ninomiya, B. Jones, and J. Blandy, Eds., &quot;WebGPU,&quot; section &quot;GPUFragmentState,&quot; W3C Candidate Recommendation Draft. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://www.w3.org/TR/webgpu/#fragment-state" target="_blank" rel="noopener">https://www.w3.org/TR/webgpu/#fragment-state</a></div></li>
+<li id="ref-10"><span class="ref-num">[10]</span><div>Babylon.js Authors, &quot;webgpuCacheRenderPipeline.ts,&quot; Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Engines/WebGPU/webgpuCacheRenderPipeline.ts" target="_blank" rel="noopener">https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Engines/WebGPU/webgpuCacheRenderPipeline.ts</a></div></li>
+<li id="ref-11"><span class="ref-num">[11]</span><div>Babylon.js Authors, &quot;pbr.fragment.fx,&quot; Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Shaders/pbr.fragment.fx" target="_blank" rel="noopener">https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Shaders/pbr.fragment.fx</a></div></li>
+<li id="ref-12"><span class="ref-num">[12]</span><div>K. Ninomiya, B. Jones, and J. Blandy, Eds., &quot;WebGPU,&quot; section &quot;Limits,&quot; W3C Candidate Recommendation Draft. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://www.w3.org/TR/webgpu/#limits" target="_blank" rel="noopener">https://www.w3.org/TR/webgpu/#limits</a></div></li>
+<li id="ref-13"><span class="ref-num">[13]</span><div>MDN contributors, &quot;WebGLRenderingContext: getParameter() method,&quot; MDN Web Docs, Mozilla. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/getParameter" target="_blank" rel="noopener">https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/getParameter</a></div></li>
+<li id="ref-14"><span class="ref-num">[14]</span><div>Babylon.js Authors, &quot;multiRenderTarget.ts,&quot; Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Materials/Textures/multiRenderTarget.ts" target="_blank" rel="noopener">https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Materials/Textures/multiRenderTarget.ts</a></div></li>
+<li id="ref-15"><span class="ref-num">[15]</span><div>Khronos WebGL Working Group, &quot;OES_texture_float_linear,&quot; WebGL extension registry, Khronos Group. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://registry.khronos.org/webgl/extensions/OES_texture_float_linear/" target="_blank" rel="noopener">https://registry.khronos.org/webgl/extensions/OES_texture_float_linear/</a></div></li>
+<li id="ref-16"><span class="ref-num">[16]</span><div>K. Ninomiya, B. Jones, and J. Blandy, Eds., &quot;WebGPU,&quot; section &quot;Texture format capabilities,&quot; W3C Candidate Recommendation Draft. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://www.w3.org/TR/webgpu/#texture-format-caps" target="_blank" rel="noopener">https://www.w3.org/TR/webgpu/#texture-format-caps</a></div></li>
+<li id="ref-17"><span class="ref-num">[17]</span><div>Dawn Authors, &quot;Dawn, a WebGPU implementation,&quot; README, GitHub repository. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://github.com/google/dawn" target="_blank" rel="noopener">https://github.com/google/dawn</a></div></li>
+<li id="ref-18"><span class="ref-num">[18]</span><div>MDN contributors, &quot;HTMLCanvasElement: webglcontextlost event,&quot; MDN Web Docs, Mozilla. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/webglcontextlost_event" target="_blank" rel="noopener">https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/webglcontextlost_event</a></div></li>
+<li id="ref-19"><span class="ref-num">[19]</span><div>MDN contributors, &quot;GPUDevice: lost property,&quot; MDN Web Docs, Mozilla. Accessed: Oct. 16, 2026. [Online]. Available: <a class="external" href="https://developer.mozilla.org/en-US/docs/Web/API/GPUDevice/lost" target="_blank" rel="noopener">https://developer.mozilla.org/en-US/docs/Web/API/GPUDevice/lost</a></div></li>
 </ol>
       </div>
       <section class="author" aria-label="About the author">

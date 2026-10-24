@@ -50,8 +50,8 @@
     <link href="https://csarko.sh/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" />
     <id>https://csarko.sh/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2</id>
     <published>2026-10-17T00:00:00Z</published>
-    <updated>2026-10-17T00:00:00Z</updated>
-    <summary>Laying a painted look, a stroke filter and a palette grade, over a physically based browser render, and the four places WebGPU and WebGL2 part ways doing it.</summary>
+    <updated>2026-10-24T00:00:00Z</updated>
+    <summary>A painterly post chain on WebGPU and WebGL2: the same look on both, but a stroke filter written with sector arrays cost 12.5 ms on WebGPU against 2.1 ms.</summary>
     <category term="Rendering" />
   </entry>
   <entry>
@@ -59,8 +59,8 @@
     <link href="https://csarko.sh/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" />
     <id>https://csarko.sh/research/scene-depth-for-a-post-process-webgpu-vs-webgl2</id>
     <published>2026-10-16T00:00:00Z</published>
-    <updated>2026-10-17T00:00:00Z</updated>
-    <summary>Getting per-pixel scene depth to a post process on WebGPU and WebGL2, and the six places the two APIs part ways, from shader uniformity to a lost GPU.</summary>
+    <updated>2026-10-24T00:00:00Z</updated>
+    <summary>Scene depth for a post process on WebGPU and WebGL2: one prepass works on both, six API differences bite, and a 6 s frame, not the depth, lost the GPU.</summary>
     <category term="Rendering" />
   </entry>
   <entry>

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 324" width="440" height="324" role="img" aria-labelledby="t">
+  <title id="t">Frame time with the stroke filter, Apple M4, Chrome 157, 1200 by 675, display cap off. WebGL2: 18.1 ms with no filter, 20.2 ms with sector arrays, 20.4 ms with named sums. WebGPU: 13.0 ms with no filter, 25.5 ms with sector arrays, 15.3 ms with named sums.</title>
+  <style>
+    text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 14px; fill: #e8eaf0; }
+    .title { font-size: 16px; font-weight: 600; }
+    .sec { fill: #a0a8b8; }
+    .bad { font-weight: 600; fill: #f5c451; }
+    .good { font-weight: 600; fill: #7dd3c0; }
+    .none { fill: #a0a8b8; }
+    .arr { fill: #f5c451; }
+    .named { fill: #7dd3c0; }
+    .axis { stroke: #3a3f4b; stroke-width: 1.5; }
+    @media (prefers-color-scheme: light) {
+      text { fill: #12151c; }
+      .sec, .none { fill: #4a5263; }
+      .bad, .arr { fill: #8a6100; }
+      .good, .named { fill: #0a735f; }
+      .axis { stroke: #c9ced6; }
+    }
+  </style>
+  <text class="title" x="16" y="28">Frame time with the stroke filter, lower is faster</text>
+  <text class="sec" x="16" y="50">Apple M4, Chrome 157, 1200 by 675, display cap off</text>
+
+  <rect class="none" x="16" y="66" width="14" height="14" rx="3"/>
+  <text x="36" y="78">No filter</text>
+  <rect class="arr" x="118" y="66" width="14" height="14" rx="3"/>
+  <text x="138" y="78">Sector arrays</text>
+  <rect class="named" x="252" y="66" width="14" height="14" rx="3"/>
+  <text x="272" y="78">Named sums</text>
+
+  <text class="sec" x="16" y="118">WebGL2 (ANGLE, Metal)</text>
+  <text class="good" x="424" y="118" text-anchor="end">about 2 ms either way</text>
+  <rect class="none" x="16" y="128" width="163" height="20" rx="3"/>
+  <text x="187" y="143">18.1 ms</text>
+  <rect class="arr" x="16" y="152" width="182" height="20" rx="3"/>
+  <text x="206" y="167">20.2 ms (+2.1)</text>
+  <rect class="named" x="16" y="176" width="184" height="20" rx="3"/>
+  <text x="208" y="191">20.4 ms (+2.3)</text>
+
+  <text class="sec" x="16" y="232">WebGPU (Dawn, Metal)</text>
+  <text class="bad" x="424" y="232" text-anchor="end">arrays cost 6x</text>
+  <rect class="none" x="16" y="242" width="117" height="20" rx="3"/>
+  <text x="141" y="257">13.0 ms</text>
+  <rect class="arr" x="16" y="266" width="230" height="20" rx="3"/>
+  <text x="254" y="281">25.5 ms (+12.5)</text>
+  <rect class="named" x="16" y="290" width="138" height="20" rx="3"/>
+  <text x="162" y="305">15.3 ms (+2.3)</text>
+
+  <line class="axis" x1="16" y1="124" x2="16" y2="200"/>
+  <line class="axis" x1="16" y1="238" x2="16" y2="314"/>
+</svg>
