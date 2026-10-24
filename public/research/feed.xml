@@ -5,7 +5,7 @@
   <link href="https://csarko.sh/research" />
   <link rel="self" href="https://csarko.sh/research/feed.xml" />
   <id>https://csarko.sh/research</id>
-  <updated>2026-10-23T00:00:00Z</updated>
+  <updated>2026-10-24T00:00:00Z</updated>
   <author><name>Cyrus Sarkosh</name><uri>https://csarko.sh/</uri></author>
   <entry>
     <title>Five Ways Horror Directors Steer the Eye</title>
@@ -33,6 +33,17 @@
     <updated>2026-10-22T00:00:00Z</updated>
     <summary>Shot-by-shot breakdowns of 23 horror sequences, from the Psycho shower to Weapons: sizes, moves, durations, cut points, and what each one teaches.</summary>
     <category term="Film" />
+  </entry>
+  <entry>
+    <title>Parallel GPU browser rigs: AWS, GCP and Modal</title>
+    <link href="https://csarko.sh/research/parallel-gpu-browser-rigs" />
+    <id>https://csarko.sh/research/parallel-gpu-browser-rigs</id>
+    <published>2026-10-22T00:00:00Z</published>
+    <updated>2026-10-24T00:00:00Z</updated>
+    <summary>Ten stopped AWS Windows GPU machines run a round of browser GPU benchmarks in under two hours; GCP allows one GPU, and Modal&#39;s Chrome falls back to software.</summary>
+    <category term="Distributed systems" />
+    <category term="Rendering" />
+    <category term="Tooling" />
   </entry>
   <entry>
     <title>A painted look over a photoreal render: WebGPU against WebGL2</title>
