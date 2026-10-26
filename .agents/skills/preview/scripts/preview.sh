@@ -6,8 +6,8 @@
 #   preview.sh            open public/index.html in Chrome (file://)
 #   preview.sh --serve    serve public/ on http://localhost:4173 (Firebase-style clean URLs) and open it
 #   preview.sh --stop     stop a server started with --serve
-#   preview.sh --shots    write desktop + mobile screenshots, dark and light, of the home page, /film,
-#                         /games and the newest doc, to /tmp/csarko-sh-preview/
+#   preview.sh --shots    write desktop + mobile screenshots, dark and light, of the home page,
+#                         /projects, /research and the newest doc, to /tmp/csarko-sh-preview/
 #
 # Flags combine, e.g. `preview.sh --shots` alone does not open Chrome.
 
@@ -58,9 +58,7 @@ if (( SHOTS )); then
 
   NEWEST="$("$CHECK" --newest-doc)"
   SHOTS_LIST=("|/")                                   # <file prefix>|<path>
-  [[ -f "$PUBLIC/apps/index.html" ]] && SHOTS_LIST+=("apps-|/apps")
-  [[ -f "$PUBLIC/film/index.html" ]] && SHOTS_LIST+=("film-|/film")
-  [[ -f "$PUBLIC/games/index.html" ]] && SHOTS_LIST+=("games-|/games")
+  [[ -f "$PUBLIC/projects/index.html" ]] && SHOTS_LIST+=("projects-|/projects")
   [[ -n "$NEWEST" ]] && SHOTS_LIST+=("doc-|/${NEWEST%.html}")
 
   for entry in "${SHOTS_LIST[@]}"; do
@@ -112,5 +110,5 @@ if (( SERVE )); then
   open -a "Google Chrome" "http://localhost:$PORT/"
 elif (( ! SHOTS )); then
   open -a "Google Chrome" "$PUBLIC/index.html"
-  echo "opened $PUBLIC/index.html in Chrome (links to /film, /games and /research need --serve)"
+  echo "opened $PUBLIC/index.html in Chrome (links to /projects and /research need --serve)"
 fi

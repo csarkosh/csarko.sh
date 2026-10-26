@@ -8,7 +8,7 @@
 #   apps/deploy.sh
 #
 # Exit status is non-zero if the build or a guard fails, the deploy fails, a page is not served
-# byte for byte, or "/" stops redirecting to https://csarko.sh/apps.
+# byte for byte, or "/" stops redirecting to https://csarko.sh/projects.
 
 set -euo pipefail
 
@@ -68,7 +68,7 @@ verify() {
   done
   local where
   where="$(curl -s -o /dev/null -m 20 -w '%{http_code} %{redirect_url}' "$url/")"
-  [[ "$where" == "301 https://csarko.sh/apps" ]] && echo "✓ $url/ redirects to https://csarko.sh/apps" || { echo "✗ $url/ answered $where"; return 1; }
+  [[ "$where" == "301 https://csarko.sh/projects" ]] && echo "✓ $url/ redirects to https://csarko.sh/projects" || { echo "✗ $url/ answered $where"; return 1; }
 }
 
 echo

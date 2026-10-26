@@ -14,7 +14,7 @@
  *   favicon.*, apple-touch-icon   the site's icons
  *   robots.txt, sitemap.xml       this host's own, listing the app pages
  * The page's generated:fonts and generated:head blocks are filled the way build_assets.py fills a
- * csarko.sh page's. "/" is not a page: firebase.json redirects it to https://csarko.sh/apps.
+ * csarko.sh page's. "/" is not a page: firebase.json redirects it to https://csarko.sh/projects.
  * A new release of an app reaches its buttons when this runs again (apps/deploy.sh).
  */
 

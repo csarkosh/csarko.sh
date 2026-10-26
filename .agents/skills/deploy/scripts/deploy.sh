@@ -36,7 +36,7 @@ command -v npx >/dev/null || die "npx not found — install Node 20 or later"
 # public site (spam). Links go to LinkedIn, GitHub, Substack and YouTube instead.
 # Docs, games, films and apps are scanned too, in their Markdown source and as built pages.
 shopt -s nullglob
-SCAN=(public/*.html public/research/*.html public/games/*.html public/film/*.html public/apps/*.html
+SCAN=(public/*.html public/research/*.html public/projects/*.html
       docs/published/*.md docs/games/*.md docs/films/*.md docs/apps/*.md)
 shopt -u nullglob
 if grep -nEio 'mailto:[^"]*|[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}' "${SCAN[@]}"; then
@@ -76,12 +76,10 @@ fi
 
 npx -y firebase-tools deploy --only "hosting:$SITE" --project "$PROJECT" --non-interactive
 
-# Pages to prove live: the home page, /apps, /film, /games, the research index and the newest doc, each against its local file.
+# Pages to prove live: the home page, /projects, the research index and the newest doc, each against its local file.
 NEWEST="$(.agents/skills/site-quality/scripts/check.py --newest-doc)"
 VERIFY=("/|public/index.html")
-[[ -f public/apps/index.html ]] && VERIFY+=("/apps|public/apps/index.html")
-[[ -f public/film/index.html ]] && VERIFY+=("/film|public/film/index.html")
-[[ -f public/games/index.html ]] && VERIFY+=("/games|public/games/index.html")
+[[ -f public/projects/index.html ]] && VERIFY+=("/projects|public/projects/index.html")
 [[ -f public/research/index.html ]] && VERIFY+=("/research|public/research/index.html")
 [[ -n "$NEWEST" ]] && VERIFY+=("/${NEWEST%.html}|public/$NEWEST")
 

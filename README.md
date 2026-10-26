@@ -2,7 +2,7 @@
 
 The source code behind my portfolio site **→ [csarko.sh](https://csarko.sh)**.
 
-A hand-written home page plus a games list at [csarko.sh/games](https://csarko.sh/games), short films at [csarko.sh/film](https://csarko.sh/film) and research docs at [csarko.sh/research](https://csarko.sh/research), all built from Markdown: no framework, fully agent-managed. Beside it, a private analytics dashboard at admin.csarko.sh that costs nothing to run and sets no cookies; the design is written up in [A zero-cost analytics dashboard without cookies](https://csarko.sh/research/a-zero-cost-analytics-dashboard-without-cookies).
+A hand-written home page plus projects (games, apps and short films) at [csarko.sh/projects](https://csarko.sh/projects) and research docs at [csarko.sh/research](https://csarko.sh/research), all built from Markdown: no framework, fully agent-managed. Beside it, a private analytics dashboard at admin.csarko.sh that costs nothing to run and sets no cookies; the design is written up in [A zero-cost analytics dashboard without cookies](https://csarko.sh/research/a-zero-cost-analytics-dashboard-without-cookies).
 
 ## What's here
 
@@ -38,11 +38,11 @@ admin/deploy.sh             # publish the admin site (the API deploys with gclou
 
 ```bash
 .agents/skills/preview/scripts/preview.sh           # open in Chrome
-.agents/skills/preview/scripts/preview.sh --serve   # serve on http://localhost:4173 with clean URLs (needed for /games and /research)
+.agents/skills/preview/scripts/preview.sh --serve   # serve on http://localhost:4173 with clean URLs (needed for /projects and /research)
 .agents/skills/preview/scripts/preview.sh --shots   # desktop + mobile screenshots in /tmp
 ```
 
-Or just open `public/index.html` in a browser (its /games and /research links need --serve).
+Or just open `public/index.html` in a browser (its /projects and /research links need --serve).
 
 ## Deploy
 

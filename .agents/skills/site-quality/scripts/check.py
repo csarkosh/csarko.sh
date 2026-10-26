@@ -59,10 +59,11 @@ BUILD_DOCS = SKILL / "scripts/build_docs.mjs"
 # Where docs are built and served (DOCS_DIR in docs_lib.mjs), and where they used to be: firebase.json
 # 301s /docs and /docs/<slug> to their /research URLs, and --live checks that it still does.
 DOCS_DIR = "research"
-# /film, built from docs/films/ with its posters in public/film/ (docs_lib.mjs, build_assets.py).
-FILM_DIR = "film"
-# /apps, built from docs/apps/ (docs_lib.mjs); each card links out to the app's page on apps.csarko.sh.
-APPS_DIR = "apps"
+# /projects, built from docs/games/, docs/apps/ and docs/films/ with each card's stable picture in
+# public/projects/ (docs_lib.mjs, build_assets.py). It replaced /games, /apps and /film on
+# 2026-10-26, and firebase.json 301s those here; --live checks that it still does.
+PROJECTS_DIR = "projects"
+LEGACY_PROJECT_DIRS = ("games", "apps", "film")
 LEGACY_DOCS_DIR = "docs"
 
 REQUIRED_HEADERS = {
@@ -231,8 +232,7 @@ def parse_csp(value):
 
 def page_kind(rel):
     return {"index.html": "home", "404.html": "404", f"{DOCS_DIR}/index.html": "docs-index",
-            "games/index.html": "games-index", f"{FILM_DIR}/index.html": "film-index",
-            f"{APPS_DIR}/index.html": "apps-index"}.get(rel, "doc")
+            f"{PROJECTS_DIR}/index.html": "projects-index"}.get(rel, "doc")
 
 
 def canonical_for(rel):
@@ -287,9 +287,7 @@ def newest_doc(public=PUBLIC):
 
 def indexable_pages(public=PUBLIC):
     return (["index.html"]
-            + sorted(f"{APPS_DIR}/{p.name}" for p in (public / APPS_DIR).glob("*.html"))
-            + sorted(f"{FILM_DIR}/{p.name}" for p in (public / FILM_DIR).glob("*.html"))
-            + sorted(f"games/{p.name}" for p in (public / "games").glob("*.html"))
+            + sorted(f"{PROJECTS_DIR}/{p.name}" for p in (public / PROJECTS_DIR).glob("*.html"))
             + sorted(f"{DOCS_DIR}/{p.name}" for p in (public / DOCS_DIR).glob("*.html")))
 
 
@@ -387,8 +385,8 @@ def jsonld_checks(page, kind, canonical):
     items = (node("BreadcrumbList") or {}).get("itemListElement", [])
     check(items and items[0].get("item") == CANONICAL and items[-1].get("item") == canonical,
           f"JSON-LD BreadcrumbList runs from {CANONICAL} to {canonical}")
-    if kind in ("docs-index", "games-index", "film-index", "apps-index"):
-        what = {"docs-index": "doc", "games-index": "game", "apps-index": "app"}.get(kind, "film")
+    if kind in ("docs-index", "projects-index"):
+        what = {"docs-index": "doc"}.get(kind, "project")
         collection = node("CollectionPage") or {}
         listed = collection.get("mainEntity", {}).get("itemListElement", [])
         check(collection.get("url") == canonical and listed, f"JSON-LD CollectionPage lists {len(listed)} {what}(s)")
@@ -556,8 +554,7 @@ def performance_checks(page, html, name):
     check(not bad, f"public/assets/ names match content hashes {bad or ''}")
     referenced = set()
     for other in [*PUBLIC.glob("*.html"), *(PUBLIC / DOCS_DIR).glob("*.html"),
-                  *(PUBLIC / "games").glob("*.html"), *(PUBLIC / FILM_DIR).glob("*.html"),
-                  *(PUBLIC / APPS_DIR).glob("*.html")]:
+                  *(PUBLIC / PROJECTS_DIR).glob("*.html")]:
         referenced |= set(re.findall(r"assets/([A-Za-z0-9._-]+)", other.read_text(encoding="utf-8")))
     unused = sorted(f.name for f in (PUBLIC / "assets").glob("*") if f.name not in referenced)
     (warn if unused else ok)(f"unreferenced files in public/assets/: {unused or 'none'}")
@@ -708,7 +705,7 @@ def internal_link_checks(pages):
 def docs_build_checks():
     """Build the docs twice into temp dirs. The builds must match each other (deterministic)
     and the committed files (fresh), ignoring the blocks build_assets.py fills afterwards."""
-    print("docs build (docs/published + docs/games + docs/films + docs/apps → public/)")
+    print("docs build (docs/published + docs/games + docs/apps + docs/films → public/)")
     if not shutil.which("node"):
         fail("node not found: install Node 18+ (build_docs.mjs builds the docs pages)")
         return
@@ -723,11 +720,11 @@ def docs_build_checks():
                            for p in Path(out).rglob("*") if p.is_file()})
     check(builds[0] == builds[1], "docs build is deterministic (two builds are byte-identical)")
     committed = {rel: (PUBLIC / rel).read_text(encoding="utf-8") for rel in ("sitemap.xml", f"{DOCS_DIR}/feed.xml") if (PUBLIC / rel).exists()}
-    for d in (DOCS_DIR, "games", FILM_DIR, APPS_DIR):
+    for d in (DOCS_DIR, PROJECTS_DIR, *LEGACY_PROJECT_DIRS):
         committed |= {f"{d}/{p.name}": p.read_text(encoding="utf-8") for p in (PUBLIC / d).glob("*.html")}
     stale = sorted(rel for rel in set(builds[0]) | set(committed)
                    if blank_generated(builds[0].get(rel, "")) != blank_generated(committed.get(rel, "")))
-    check(not stale, f"public/ matches docs/published/, docs/games/, docs/films/ and docs/apps/ {stale or ''}"
+    check(not stale, f"public/ matches docs/published/, docs/games/, docs/apps/ and docs/films/ {stale or ''}"
           + (" — run generate-assets.sh" if stale else ""))
 
 
@@ -741,7 +738,7 @@ def layout_checks():
     if not Path(CHROME).exists():
         warn("Google Chrome not found — layout checks skipped")
         return
-    targets = ["index.html"] + [rel for rel in (f"{APPS_DIR}/index.html", f"{FILM_DIR}/index.html", "games/index.html", f"{DOCS_DIR}/index.html", newest_doc())
+    targets = ["index.html"] + [rel for rel in (f"{PROJECTS_DIR}/index.html", f"{DOCS_DIR}/index.html", newest_doc())
                                 if rel and (PUBLIC / rel).exists()]
     frames = [{"key": f"{rel} {w}px", "width": w, "src": (PUBLIC / rel).as_uri()} for rel in targets for w in LAYOUT_WIDTHS]
     with tempfile.TemporaryDirectory() as tmp:
@@ -852,14 +849,14 @@ def live_checks(base):
         s, h, _ = fetch(f"{base}/assets/{asset.name}")
         check(s == 200 and "immutable" in h.get("cache-control", ""), f"/assets/{asset.name} -> {s}, {h.get('cache-control')}")
 
-    built = [rel for rel in indexable_pages() if rel.startswith((f"{DOCS_DIR}/", "games/", f"{FILM_DIR}/", f"{APPS_DIR}/"))]
+    built = [rel for rel in indexable_pages() if rel.startswith((f"{DOCS_DIR}/", f"{PROJECTS_DIR}/"))]
     for rel in built:
         path = canonical_for(rel)[len(SITE):]
         s, h, _ = fetch(base + path)
         same_csp = h.get("content-security-policy") == catch_all.get("Content-Security-Policy")
         check(s == 200 and same_csp, f"{path} -> {s}, CSP {'matches' if same_csp else 'differs from'} firebase.json")
     # cleanUrls redirects the trailing slash; check each directory that has an index page.
-    for d in (DOCS_DIR, "games", FILM_DIR, APPS_DIR):
+    for d in (DOCS_DIR, PROJECTS_DIR):
         if any(rel.startswith(f"{d}/") for rel in built):
             s, h, _ = fetch(f"{base}/{d}/")
             check(s in (301, 308) and h.get("location", "").endswith(f"/{d}"),
@@ -869,6 +866,11 @@ def live_checks(base):
         clean = canonical_for(newest)[len(SITE):]
         s, h, _ = fetch(base + clean + ".html")
         check(s in (301, 308) and h.get("location", "").endswith(clean), f"{clean}.html -> {s} {h.get('location', '')}")
+    # /games, /apps and /film became /projects; old links and search results still use them.
+    if any(rel.startswith(f"{PROJECTS_DIR}/") for rel in built):
+        for d in LEGACY_PROJECT_DIRS:
+            s, h, _ = fetch(f"{base}/{d}")
+            check(s == 301 and h.get("location", "").split("?")[0].endswith(f"/{PROJECTS_DIR}"), f"/{d} -> {s} {h.get('location', '')}")
     # The docs moved from /docs to /research; links and search results still point at the old URLs.
     if any(rel.startswith(f"{DOCS_DIR}/") for rel in built):
         old = [f"/{LEGACY_DOCS_DIR}"] + ([f"/{LEGACY_DOCS_DIR}/{Path(newest).stem}"] if newest else [])
@@ -894,12 +896,12 @@ def live_checks(base):
 
 
 def lighthouse(base):
-    # Audit the home page, /film and the newest doc, each once per theme (0 = dark, 1 = light).
-    # /film is here because it is the one page built around an image.
+    # Audit the home page, /projects and the newest doc, each once per theme (0 = dark, 1 = light).
+    # /projects is here because it is the one page built around images.
     base = base.rstrip("/")
     newest = newest_doc()
     urls = ([base + "/"]
-            + ([f"{base}/{FILM_DIR}"] if (PUBLIC / FILM_DIR / "index.html").exists() else [])
+            + ([f"{base}/{PROJECTS_DIR}"] if (PUBLIC / PROJECTS_DIR / "index.html").exists() else [])
             + ([base + canonical_for(newest)[len(SITE):]] if newest else []))
     for url in urls:
         for theme, scheme in (("dark", 0), ("light", 1)):

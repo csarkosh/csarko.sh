@@ -5,7 +5,7 @@ build_assets.py — deterministically build the site's hashed static assets.
 Sources (in .agents/skills/site-quality/assets/):
   portrait-source.jpg     the full-resolution portrait
   films/<slug>.jpg        one poster per film in docs/films/, portrait (9:16)
-  apps/<slug>.png         one preview per app in docs/apps/ that names an alt, landscape;
+  apps/<slug>.png         one preview per game or app (docs/games/, docs/apps/) that names an alt, landscape;
   apps/<slug>-dark.png    optionally its dark-theme version;
   apps/<slug>-portrait.png, <slug>-portrait-dark.png
                           optionally a tall version, shown beside the card's text on a desktop
@@ -21,9 +21,9 @@ Outputs (in public/):
   assets/<font>.<hash>.woff2
   assets/visits.<hash>.js, assets/vitals.<hash>.js   (the vendored files without their provenance line)
   portrait.jpg                                 stable 720px URL for JSON-LD / sharing
-  film/<slug>.jpg                              stable 720px poster, cited by the film's VideoObject
+  projects/<slug>.jpg                          stable 720px poster, cited by the film's VideoObject
   assets/app-<slug>[-dark]-<w>.<hash>.{avif,webp,jpg}   w = 360, 540, 720, 1080
-  apps/<slug>.jpg                              stable 720px preview, the <img> before this runs
+  projects/<slug>.jpg                          stable 720px preview, the <img> before this runs
   assets/fig-<slug>-<name>-<w>.<hash>.{avif,webp,jpg}   w = 480, 720, 960, 1440 (no wider than the source)
   assets/fig-<slug>-<name>.<hash>.svg          an SVG figure, as it is
   research/figures/<slug>-<name>.{jpg,svg}     stable copy: the <img> before this runs, and the
@@ -34,13 +34,13 @@ Outputs (in public/):
 Every file in public/assets/ is named by the first 8 hex chars of its SHA-256, so
 firebase.json can cache that directory for a year (immutable) without ever
 serving a stale file. The HTML references are rewritten between generated
-markers in every public/*.html and every page under public/research, /games, /film and /apps that has them:
+markers in every public/*.html and every page under public/research and /projects that has them:
 
   <!-- generated:head -->  …  <!-- /generated:head -->          font preload
   /* generated:fonts */    …  /* /generated:fonts */            @font-face rules
   <!-- generated:portrait --> … <!-- /generated:portrait -->    <picture> markup
   <!-- generated:film-poster:<slug> --> … <!-- /… -->           a film's poster <picture>
-  <!-- generated:app-preview:<slug> --> … <!-- /… -->           an app's preview <picture>
+  <!-- generated:app-preview:<slug> --> … <!-- /… -->           a game's or an app's preview <picture>
   <!-- generated:figure:<slug>/<name> --> … <!-- /… -->         a doc figure's <picture> (or <img>, an SVG)
   <!-- generated:analytics --> … <!-- /generated:analytics -->  analytics <script>s (visits.js, vitals.js)
 
@@ -68,8 +68,12 @@ WIDTHS = (240, 360, 480, 720)
 SIZES = "(max-width: 640px) 120px, 230px"
 FALLBACK_WIDTH = 480
 # A film poster is 240px wide in its card, 200px once the card stacks on a phone, so these are
-# those two sizes and their 2x. FILM_DIR mirrors docs_lib.mjs, which builds the pages.
-FILM_DIR = "film"
+# those two sizes and their 2x. PROJECTS_DIR mirrors docs_lib.mjs, which builds the page: a film's
+# poster and a preview each have a stable copy there, by slug (the slugs are unique across kinds).
+PROJECTS_DIR = "projects"
+# Where those stable copies lived until /film and /apps became /projects (2026-10-26): emptied and
+# removed, since firebase.json now 301s both paths.
+LEGACY_DIRS = ("film", "apps")
 FILM_WIDTHS = (200, 240, 400, 480)
 FILM_SIZES = "(max-width: 640px) 200px, 240px"
 FILM_FALLBACK_WIDTH = 240
@@ -78,7 +82,7 @@ FILM_FALLBACK_WIDTH = 240
 APP_WIDTHS = (360, 540, 720, 1080)
 APP_SIZES = "(max-width: 640px) calc(100vw - 94px), 360px"
 # With a portrait version: the landscape one on a phone (under the title, full width), the
-# portrait one beside the text in a 240px frame otherwise (APPS_CSS in docs_lib.mjs).
+# portrait one beside the text in a 240px frame otherwise (PROJECTS_CSS in docs_lib.mjs).
 PHONE = "(max-width: 640px)"
 APP_SIZES_PHONE = "calc(100vw - 94px)"
 APP_SIZES_PORTRAIT = "240px"
@@ -236,13 +240,8 @@ def main() -> int:
                 if fmt == "jpg" and w == FILM_FALLBACK_WIDTH:
                     film_fallback[slug] = (name, w, round(w * poster_ratio))
         stable = poster.resize((STABLE_WIDTH, round(STABLE_WIDTH * poster_ratio)), Image.Resampling.LANCZOS)
-        (PUBLIC / FILM_DIR).mkdir(parents=True, exist_ok=True)
-        (PUBLIC / FILM_DIR / f"{slug}.jpg").write_bytes(encode(stable, "jpg"))
-    # A film that is gone leaves its stable poster behind, which nothing would ever overwrite.
-    for stale_poster in sorted((PUBLIC / FILM_DIR).glob("*.jpg")) if (PUBLIC / FILM_DIR).is_dir() else []:
-        if stale_poster.stem not in film_srcsets:
-            stale_poster.unlink()
-            print(f"removed public/{FILM_DIR}/{stale_poster.name}")
+        (PUBLIC / PROJECTS_DIR).mkdir(parents=True, exist_ok=True)
+        (PUBLIC / PROJECTS_DIR / f"{slug}.jpg").write_bytes(encode(stable, "jpg"))
 
     def picture(prefix):
         ss = {fmt: ", ".join(prefix + s for s in items) for fmt, items in srcsets.items()}
@@ -304,12 +303,19 @@ def main() -> int:
                         app_fallback[slug] = (hashed, w, round(w * ratio))
             if variant == "light":
                 stable = image.resize((STABLE_WIDTH, round(STABLE_WIDTH * ratio)), Image.Resampling.LANCZOS)
-                (PUBLIC / "apps").mkdir(parents=True, exist_ok=True)
-                (PUBLIC / "apps" / f"{slug}.jpg").write_bytes(encode(stable, "jpg"))
-    for stale in sorted((PUBLIC / "apps").glob("*.jpg")) if (PUBLIC / "apps").is_dir() else []:
-        if stale.stem not in app_srcsets:
+                (PUBLIC / PROJECTS_DIR).mkdir(parents=True, exist_ok=True)
+                (PUBLIC / PROJECTS_DIR / f"{slug}.jpg").write_bytes(encode(stable, "jpg"))
+    # A project that is gone leaves its stable picture behind, which nothing would ever overwrite.
+    for stale in sorted((PUBLIC / PROJECTS_DIR).glob("*.jpg")) if (PUBLIC / PROJECTS_DIR).is_dir() else []:
+        if stale.stem not in film_srcsets and stale.stem not in app_srcsets:
             stale.unlink()
-            print(f"removed public/apps/{stale.name}")
+            print(f"removed public/{PROJECTS_DIR}/{stale.name}")
+    for legacy in LEGACY_DIRS:
+        for stale in sorted((PUBLIC / legacy).glob("*.jpg")) if (PUBLIC / legacy).is_dir() else []:
+            stale.unlink()
+            print(f"removed public/{legacy}/{stale.name}")
+        if (PUBLIC / legacy).is_dir() and not any((PUBLIC / legacy).iterdir()):
+            (PUBLIC / legacy).rmdir()
 
     def app_picture(slug, prefix, alt, indent):
         """An app's preview <picture>. With a portrait version it carries class="portrait" (the
@@ -495,8 +501,8 @@ def main() -> int:
     # ---- rewrite generated blocks in every page that has them
     # index.html uses relative paths (so the file:// preview works). 404.html is
     # served for missing URLs at any depth, and the built pages live a directory
-    # down under /research, /games, /film and /apps, so their paths must be root-relative.
-    built = [q for d in ("research", "games", FILM_DIR, "apps") if (PUBLIC / d).is_dir()
+    # down under /research and /projects, so their paths must be root-relative.
+    built = [q for d in ("research", PROJECTS_DIR) if (PUBLIC / d).is_dir()
              for q in sorted((PUBLIC / d).glob("*.html"))]
     for page in sorted(PUBLIC.glob("*.html")) + built:
         prefix = "" if page == PUBLIC / "index.html" else "/"
@@ -524,8 +530,8 @@ def main() -> int:
         print(f"  assets/{name:44} {size:>7,} B")
     print(f"  portrait.jpg{'':39} {(PUBLIC / 'portrait.jpg').stat().st_size:>7,} B")
     for slug in sorted(film_srcsets):
-        f = PUBLIC / FILM_DIR / f"{slug}.jpg"
-        print(f"  {FILM_DIR}/{slug}.jpg{'':{max(1, 44 - len(FILM_DIR) - len(slug) - 5)}} {f.stat().st_size:>7,} B")
+        f = PUBLIC / PROJECTS_DIR / f"{slug}.jpg"
+        print(f"  {PROJECTS_DIR}/{slug}.jpg{'':{max(1, 44 - len(PROJECTS_DIR) - len(slug) - 5)}} {f.stat().st_size:>7,} B")
     return 0
 
 

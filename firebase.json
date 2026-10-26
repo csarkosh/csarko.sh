@@ -20,6 +20,36 @@
           "source": "/docs/:slug*",
           "destination": "/research/:slug",
           "type": 301
+        },
+        {
+          "source": "/apps",
+          "destination": "/projects",
+          "type": 301
+        },
+        {
+          "source": "/apps/:file*",
+          "destination": "/projects/:file",
+          "type": 301
+        },
+        {
+          "source": "/film",
+          "destination": "/projects",
+          "type": 301
+        },
+        {
+          "source": "/film/:file*",
+          "destination": "/projects/:file",
+          "type": 301
+        },
+        {
+          "source": "/games",
+          "destination": "/projects",
+          "type": 301
+        },
+        {
+          "source": "/games/:file*",
+          "destination": "/projects",
+          "type": 301
         }
       ],
       "rewrites": [
@@ -180,7 +210,7 @@
       "redirects": [
         {
           "source": "/",
-          "destination": "https://csarko.sh/apps",
+          "destination": "https://csarko.sh/projects",
           "type": 301
         }
       ],

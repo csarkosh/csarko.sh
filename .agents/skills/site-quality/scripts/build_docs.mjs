@@ -1,19 +1,19 @@
 #!/usr/bin/env node
-// build_docs.mjs — build csarko.sh's docs pages from docs/published/*.md, /games from
-// docs/games/*.md, /film from docs/films/*.md and /apps from docs/apps/*.md.
+// build_docs.mjs — build csarko.sh's docs pages from docs/published/*.md, and /projects from
+// docs/games/*.md, docs/apps/*.md and docs/films/*.md.
 //
 //   node build_docs.mjs              write into public/ (generate-assets.sh runs this first)
 //   node build_docs.mjs --out <dir>  write the same files under <dir> and leave the repo alone (check.py uses this)
 //
-// Writes public/research/<slug>.html, public/research/index.html, public/film/index.html,
-// public/games/index.html, public/apps/index.html and public/sitemap.xml; public/index.html is only read, for its theme
+// Writes public/research/<slug>.html, public/research/index.html, public/projects/index.html
+// and public/sitemap.xml; public/index.html is only read, for its theme
 // tokens. Doc pages carry empty generated:head,
 // generated:fonts and generated:analytics markers, which build_assets.py fills next.
 // The logic lives in docs_lib.mjs; this file only reads and writes.
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { APPS_DIR, buildSite, DocError, DOCS_DIR, FILM_DIR } from './docs_lib.mjs';
+import { APPS_DIR, buildSite, DocError, DOCS_DIR, PROJECTS_DIR } from './docs_lib.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
 const PUBLIC = join(ROOT, 'public');
@@ -80,7 +80,8 @@ for (const [rel, content] of files) {
 }
 
 if (out === PUBLIC) {
-  for (const dir of [DOCS_DIR, 'games', FILM_DIR, APPS_DIR]) {
+  // games/, film/ and apps/ are the old list pages (until 2026-10-26), now folded into projects/.
+  for (const dir of [DOCS_DIR, PROJECTS_DIR, 'games', 'film', 'apps']) {
     const built = join(PUBLIC, dir);
     if (!existsSync(built)) continue;
     for (const f of readdirSync(built)) {
@@ -95,7 +96,7 @@ if (out === PUBLIC) {
 
 const pages = [...files.keys()].filter((k) => k.startsWith(`${DOCS_DIR}/`) && k.endsWith(".html") && k !== `${DOCS_DIR}/index.html`).length;
 const where = out === PUBLIC ? 'public/' : out;
-const extra = [files.has('games/index.html') ? `${gameSources.length} game(s)` : null,
-  files.has(`${FILM_DIR}/index.html`) ? `${filmSources.length} film(s)` : null,
-  files.has(`${APPS_DIR}/index.html`) ? `${appSources.length} app(s)` : null].filter(Boolean);
+const extra = files.has(`${PROJECTS_DIR}/index.html`)
+  ? [`${gameSources.length + appSources.length + filmSources.length} project(s)`]
+  : [];
 console.log(`docs: ${pages} page(s)${extra.length ? ` + ${extra.join(' + ')}` : ''} → ${where}`);

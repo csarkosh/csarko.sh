@@ -21,7 +21,7 @@ description: >-
 
 Targets: **Lighthouse SEO / Accessibility / Best Practices 100 and Performance
 ≥ 95, Mozilla Observatory A+, no layout breakage from 320px to 1440px.** They
-apply to the home page and to every generated page: `/film`, `/games`, `/research` and each doc.
+apply to the home page and to every generated page: `/projects`, `/research` and each doc.
 
 ## Scripts
 

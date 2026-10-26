@@ -7,12 +7,15 @@ alt: One visit, start to finish: arrived from a Google search, read three pages 
 license: GPL-3.0
 repo: https://github.com/csarkosh/lib-visits
 released: 2026-10-15
-tags: Rust, JavaScript, Analytics
+tags: Rust, JavaScript, Analytics, Claude Code
+order: 3
 ---
 # lib-visits
 
-Visits and journeys for your site, with no cookies, no stored ID and no fingerprinting. One script
-of 3,068 bytes on the page and one static binary on the server, which writes what it sees as JSON
-lines: where a visit came from, each page it read, how long and how far, and where it went next.
+When my analytics host went down, I researched with Claude [what a cookieless counter can
+know](/research/visits-without-cookies), then built lib-visits with Claude Code, from design doc to
+first release in one day. A 3 KB script and a small Rust collector count visits and the path each
+one took, with no cookies, no stored ID and no fingerprinting.
 
-It runs anywhere a binary runs, and the events go wherever you keep logs. It counts csarko.sh.
+It counts csarko.sh. Its events land in BigQuery as JSON lines, so Claude can answer which pages
+people read and where they came from, straight from the command line.

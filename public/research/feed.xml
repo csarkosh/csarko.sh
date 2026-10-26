@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
   <title>Research &amp; notes · Cyrus Sarkosh</title>
-  <subtitle>Research notes and specs by Cyrus Sarkosh on game development, generative AI for media, and the software behind them.</subtitle>
+  <subtitle>Deep research by Cyrus Sarkosh, done with Claude for his games, apps and films, and published free for anyone working on the same problems.</subtitle>
   <link href="https://csarko.sh/research" />
   <link rel="self" href="https://csarko.sh/research/feed.xml" />
   <id>https://csarko.sh/research</id>

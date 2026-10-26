@@ -60,19 +60,22 @@ export function undatedParagraphs(body) {
       return UNDATED.test(plain) && !/\bas of\b/i.test(plain);
     });
 }
-const GAME_FIELDS = { description: true, status: true, tags: true, play: false, repo: false, released: false };
+// Games, apps and films share one list, /projects (Cyrus, 2026-10-26). "order" places a project
+// in it, 1 first, across all three kinds; "alt" on a game describes its card's preview, which
+// comes from the same place as an app's (assets/apps/<slug>.png).
+const GAME_FIELDS = { description: true, status: true, tags: true, play: false, repo: false, released: false, order: false, alt: false };
 // An app is software to download or use: "page" is its own page (on apps.csarko.sh), "platforms"
 // what it runs on, "license" joins the status in the card's kicker when the app is open source,
 // and "alt" describes its card's preview image (assets/apps/<slug>.png, and <slug>-dark.png for
 // the dark theme if it has one), which the card shows only when alt is given. "link" names the
 // card's link to the page ("Download and docs" unless it says otherwise, e.g. "Install and docs").
-// "order" puts an app ahead of the others (1 first); "sections" names the README's H2 sections
+// "order" places it on /projects (1 first); "sections" names the README's H2 sections
 // its page keeps, in the README's words, when the whole README is not the page.
 const APP_FIELDS = { description: true, status: true, page: true, platforms: true, tags: true, license: false, repo: false, released: false, alt: false, link: false, order: false, sections: false };
 // A film is a video hosted on YouTube: the page carries its poster and links out, so every field
-// here is needed to build the card and its VideoObject. "alt" describes the poster. There is no
-// per-film warning: the page's standing notice speaks for the whole list.
-const FILM_FIELDS = { description: true, watch: true, released: true, runtime: true, alt: true, tags: true };
+// here but "order" is needed to build the card and its VideoObject. "alt" describes the poster.
+// There is no warning field: every film card carries the same notice (FILM_NOTICE).
+const FILM_FIELDS = { description: true, watch: true, released: true, runtime: true, alt: true, tags: true, order: false };
 
 // Either shape YouTube serves a video at; the 11-character id is what the embed and poster need.
 const WATCH_URL = /^https:\/\/(?:www\.)?youtube\.com\/(?:shorts\/|watch\?v=)([A-Za-z0-9_-]{11})$/;
@@ -165,7 +168,15 @@ export function parseGameFrontMatter(text, file) {
   }
   const tags = meta.tags.split(',').map((tag) => tag.trim()).filter(Boolean);
   if (!tags.length || tags.length > 5) throw new DocError(`${file}: tags must be 1 to 5 comma-separated names`);
-  return { meta: { ...meta, tags }, body };
+  return { meta: { ...meta, tags, order: parseOrder(meta, file) }, body };
+}
+
+// A project's place on /projects: a whole number from 1, or undefined to follow the ordered ones.
+function parseOrder(meta, file) {
+  if (meta.order === undefined) return undefined;
+  const order = Number(meta.order);
+  if (!Number.isInteger(order) || order < 1) throw new DocError(`${file}: order must be a whole number from 1`);
+  return order;
 }
 
 export function parseAppFrontMatter(text, file) {
@@ -182,11 +193,7 @@ export function parseAppFrontMatter(text, file) {
   }
   const tags = meta.tags.split(',').map((tag) => tag.trim()).filter(Boolean);
   if (!tags.length || tags.length > 5) throw new DocError(`${file}: tags must be 1 to 5 comma-separated names`);
-  let order;
-  if (meta.order !== undefined) {
-    order = Number(meta.order);
-    if (!Number.isInteger(order) || order < 1) throw new DocError(`${file}: order must be a whole number from 1`);
-  }
+  const order = parseOrder(meta, file);
   const sections = meta.sections === undefined ? undefined : meta.sections.split(',').map((s) => s.trim()).filter(Boolean);
   if (sections !== undefined && !sections.length) throw new DocError(`${file}: sections names at least one heading`);
   return { meta: { ...meta, tags, order, sections }, body };
@@ -208,6 +215,7 @@ export function parseFilmFrontMatter(text, file) {
     meta: {
       ...meta,
       tags,
+      order: parseOrder(meta, file),
       videoId: watch[1],
       // ISO 8601, which is the only duration schema.org reads.
       duration: `PT${Number(minutes) ? `${Number(minutes)}M` : ''}${Number(seconds)}S`,
@@ -483,7 +491,7 @@ export function loadGame(name, text) {
   if (slug === 'index') throw new DocError(`${file}: "index" is reserved for the games index page`);
   if (text.includes('—')) throw new DocError(`${file}: contains an em-dash; use a comma, colon or semicolon`);
   const { meta, body } = parseGameFrontMatter(text, file);
-  return { slug, ...meta, kicker: STATUSES[meta.status], ...renderMarkdown(body, file) };
+  return { kind: 'game', slug, ...meta, kicker: STATUSES[meta.status], ...renderMarkdown(body, file) };
 }
 
 export function parseAppFileName(name) {
@@ -504,7 +512,7 @@ export function loadApp(name, text) {
   if (text.includes('—')) throw new DocError(`${file}: contains an em-dash; use a comma, colon or semicolon`);
   const { meta, body } = parseAppFrontMatter(text, file);
   const kicker = `${APP_STATUSES[meta.status]}${meta.license ? ` · Open source, ${meta.license}` : ''}`;
-  return { slug, ...meta, kicker, ...renderMarkdown(body, file) };
+  return { kind: 'app', slug, ...meta, kicker, ...renderMarkdown(body, file) };
 }
 
 export function parseFilmFileName(name) {
@@ -525,10 +533,11 @@ export function loadFilm(name, text) {
   if (text.includes('—')) throw new DocError(`${file}: contains an em-dash; use a comma, colon or semicolon`);
   const { meta, body } = parseFilmFrontMatter(text, file);
   return {
+    kind: 'film',
     slug,
     // The stable poster URL, written by build_assets.py from the source in the site-quality skill's
     // assets/films/. The hashed variants live in /assets; this one is what JSON-LD and sharing cite.
-    poster: `/${FILM_DIR}/${slug}.jpg`,
+    poster: `/${PROJECTS_DIR}/${slug}.jpg`,
     kicker: `${FILM_KICKER} · ${meta.runtime}`,
     ...meta,
     ...renderMarkdown(body, file),
@@ -572,57 +581,39 @@ const OG_IMAGE = `${SITE}/og-image.jpg`;
 const OG_IMAGE_ALT = 'Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait';
 const LINKEDIN = 'https://www.linkedin.com/in/csarkosh';
 const INDEX_TITLE = 'Research & notes';
-// The home page's section and heading link for the docs, which live at /research.
-const INDEX_DESCRIPTION = 'Research notes and specs by Cyrus Sarkosh on game development, generative AI for media, and the software behind them.';
-const INDEX_LEAD = 'Research notes and specs from what I build and explore: game development, generative AI for media, and the software behind them.';
+// The research index's search description (also the feed's subtitle) and its lead (Cyrus,
+// 2026-10-26: the docs are deep research done with Claude for his projects, shared for anyone).
+const INDEX_DESCRIPTION = 'Deep research by Cyrus Sarkosh, done with Claude for his games, apps and films, and published free for anyone working on the same problems.';
+const INDEX_LEAD = 'Deep research I have done with Claude while building my projects, from rendering and netcode to horror craft and AI film, shared here so anyone working on the same problems can use it.';
 // What the nav and the breadcrumb call /research. The page's own heading is INDEX_TITLE: a trail is
 // read sideways, in one line, so it wants the shorter word.
 const DOCS_NAV = 'Research';
-// GAMES_TITLE names the page in the nav, the breadcrumb and the share card; GAMES_HEADING is the
-// <title> and the h1, which want the words a searcher would type.
-const GAMES_TITLE = 'Games';
-// The films live at /film, built from docs/films/. FILM_TITLE names the page in the nav, the
-// breadcrumb and the home page's section; FILM_HEADING is the h1. The <title> is its own line,
-// since "Short films" alone is too short to read as a search result.
-export const FILM_DIR = 'film';
-const FILM_TITLE = 'Film';
-const FILM_HEADING = 'Short films';
-const FILM_PAGE_TITLE = 'Short films: experiments in stable AI generation';
-const FILM_DESCRIPTION = 'Short films by Cyrus Sarkosh, experiments in getting AI video generation to hold the same actor and the same room from shot to shot.';
-const FILM_LEAD = 'An experiment in how far AI generation can be pushed toward a film that stays stable: same actor, same room, multi-shot.';
-// The page's standing notice, and the only content warning on the page: it speaks for the whole
-// list, so a visitor meets the genre before any card, each of which is a link, is one tap away.
+// Games, apps and films share one page, /projects (Cyrus, 2026-10-26; they were /games, /apps and
+// /film until then, and firebase.json 301s those here). Their sources stay apart, in docs/games/,
+// docs/apps/ and docs/films/, since each kind has its own fields. PROJECTS_TITLE names the page in
+// the nav, the breadcrumb and the share card; PROJECTS_HEADING is the <title> and the h1.
+export const PROJECTS_DIR = 'projects';
+const PROJECTS_TITLE = 'Projects';
+const PROJECTS_HEADING = 'Games, apps and films, built with AI';
+const PROJECTS_DESCRIPTION = 'Projects by Cyrus Sarkosh, built with Claude Code: a co-op horror game for the browser, an IDE for AI agents, web analytics, an AI short film and a Mac app.';
+const PROJECTS_LEAD = 'What I have built with AI, the work I am proudest of first. Nearly all of it was written with Claude Code, and each card says how AI shaped it.';
+// Every film card carries this notice under its title: horror is the genre, so a visitor meets it
+// before the poster, and the card is a link one tap away.
 const FILM_NOTICE = 'Contains horror imagery that some viewers may find disturbing.';
 // A film's kicker, with its runtime after it, so the card says what it is before you read the title.
 const FILM_KICKER = 'Short film';
-// The apps live at /apps, built from docs/apps/; each card links out to the app's own page on
-// apps.csarko.sh (APPS_HOST), which carries the downloads and the documentation.
+// The apps' sources are docs/apps/ (apps/build.mjs reads them too); each card links out to the
+// app's own page on apps.csarko.sh (APPS_HOST), which carries the downloads and the documentation.
 export const APPS_DIR = 'apps';
 export const APPS_HOST = 'https://apps.csarko.sh';
-const APPS_TITLE = 'Apps';
-const APPS_HEADING = 'Apps and libraries';
-const APPS_DESCRIPTION = 'Apps and libraries by Cyrus Sarkosh to download and run yourself: what each one does, where to get it, and how to set it up.';
-const APPS_LEAD = 'Software I have released for anyone to run: what each one does, with its downloads and documentation one click away.';
-const GAMES_HEADING = 'Games, playable in your browser';
-const GAMES_DESCRIPTION = 'Games by Cyrus Sarkosh that run in a browser with no install: what is playable now, and what is being built.';
-const GAMES_LEAD = 'What I have built and what I am building now. Each one runs in a browser, with no install and no account.';
 
 export const sortDocs = (docs) =>
   [...docs].sort((a, b) => (a.published === b.published ? (a.slug < b.slug ? -1 : 1) : a.published < b.published ? 1 : -1));
 
-// What is still being built leads, since that is the current work; released games follow, newest
-// first. Ties break on slug so the order never depends on the order the directory was read in.
-export const sortGames = (games) =>
-  [...games].sort((a, b) => {
-    if (!a.released !== !b.released) return a.released ? 1 : -1;
-    if (a.released !== b.released) return a.released < b.released ? 1 : -1;
-    return a.slug < b.slug ? -1 : 1;
-  });
-
-// An app with an order comes first, lowest first; then released apps, newest first, then what
-// is still being built; ties break on slug.
-export const sortApps = (apps) =>
-  [...apps].sort((a, b) => {
+// The order Cyrus gives (order: 1 first) leads; the rest follow, released newest first, then
+// what is still being built; ties break on slug, so the order never depends on the directory read.
+export const sortProjects = (projects) =>
+  [...projects].sort((a, b) => {
     const oa = a.order ?? Infinity;
     const ob = b.order ?? Infinity;
     if (oa !== ob) return oa - ob;
@@ -630,11 +621,6 @@ export const sortApps = (apps) =>
     if (a.released !== b.released) return a.released < b.released ? 1 : -1;
     return a.slug < b.slug ? -1 : 1;
   });
-
-// Newest release first: a film is finished when it ships, so there is no "in development" to lead
-// with as there is for games. Ties break on slug, so the order never depends on the directory read.
-export const sortFilms = (films) =>
-  [...films].sort((a, b) => (a.released === b.released ? (a.slug < b.slug ? -1 : 1) : a.released < b.released ? 1 : -1));
 
 // Doc pages reuse the home page's colors exactly: both token blocks are copied out of index.html.
 export function themeBlocks(indexHtml) {
@@ -709,8 +695,6 @@ const DOCS_CSS = `
        Docs pages carry only page links, so these two rules are here to keep the copies in step. */
     .nav .heading-link a { color: var(--faint); }
     .nav .nav-divider { width: 1px; height: 16px; background: var(--border-strong); }
-    /* Film is the first page link to go, once the four no longer fit (the home page has the same rule). */
-    @media (max-width: 359px) { .nav .collapse-first { display: none; } }
 
     /* The trail sits under the nav and scrolls away with the page: only the nav is sticky, so
        scroll-padding-top above stays the nav's own height. Its .wrap is the site's, so the first
@@ -794,56 +778,15 @@ const DOCS_CSS = `
     .card:hover, .card:focus-within { border-color: var(--accent-border); transform: translateY(-2px); background: var(--surface-hover); }
     /* ::before, not ::after: an external link already uses ::after for its ↗ mark. */
     .card .stretch::before { content: ""; position: absolute; inset: 0; border-radius: var(--radius); }
-    .card .tags, .card .game-desc a, .card .film-desc a, .card .app-desc a { position: relative; z-index: 1; }
+    .card .tags, .card .project-desc a { position: relative; z-index: 1; }
 
-    .doc-list, .game-list, .film-list, .app-list { display: grid; gap: 14px; list-style: none; margin: 0; padding: 0; }
+    .doc-list, .project-list { display: grid; gap: 14px; list-style: none; margin: 0; padding: 0; }
     .doc-list .doc-title { margin: 0 0 4px; font-size: 1.2rem; line-height: 1.35; letter-spacing: -0.015em; font-weight: 600; }
     .doc-list .doc-title a { transition: color .15s ease; }
     .doc-list li:hover .doc-title a, .doc-list .doc-title a:focus-visible { color: var(--accent); }
     .doc-meta { margin: 0 0 6px; font-family: var(--mono); font-size: 12px; color: var(--faint); }
     .doc-desc { margin: 0; color: var(--muted); max-width: 78ch; }
     .doc-list .tags { margin-top: 14px; }
-    /* A film card is the same card turned on its side: the poster leads, the text sits beside it. */
-    .film-card { flex-direction: row; align-items: flex-start; gap: 22px; }
-    .film-poster { flex: none; width: 240px; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); line-height: 0; }
-    .film-poster img { width: 100%; height: auto; display: block; }
-    .film-body { display: flex; flex-direction: column; min-width: 0; }
-    .film-kicker { margin: 0 0 10px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
-    .film-title { margin: 0 0 10px; font-size: 1.4rem; line-height: 1.3; letter-spacing: -0.02em; font-weight: 600; }
-    .film-desc { max-width: 78ch; }
-    .film-desc p { margin: 0 0 12px; }
-    .film-desc p:last-child { margin-bottom: 0; }
-    .film-list .tags { margin-top: 16px; }
-    /* The page's standing notice, under the lead: every card is a link, so a visitor has to meet
-       the genre before any film is one tap away. It is the only warning on the page. A rule down
-       the side so it reads as a notice. The yellow token, bold; the icon inherits the color. */
-    .film-notice { display: flex; align-items: flex-start; gap: 8px; margin: 20px 0 0; padding-left: 14px; border-left: 2px solid var(--warning); color: var(--warning); font-size: 14px; font-weight: 600; line-height: 1.5; }
-    .film-notice svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
-    /* On a phone the card stacks, and the kicker and title lead: the name of the film should land
-       before the poster, not under it, because a thumbnail alone says nothing about which film it
-       is. display:contents lifts the body's children into the card's own flex flow so they can be
-       ordered around the poster; the card's gap goes with it, so spacing is back on the margins. */
-    @media (max-width: 640px) {
-      .film-card { flex-direction: column; gap: 0; }
-      .film-body { display: contents; }
-      .film-kicker { order: 1; }
-      .film-title { order: 2; margin-bottom: 14px; }
-      .film-poster { order: 3; width: 200px; align-self: flex-start; margin-bottom: 18px; }
-      .film-desc { order: 4; }
-      .film-list .tags { order: 5; }
-      .film-card .card-link { order: 6; }
-    }
-
-    .game-kicker, .app-kicker { margin: 0 0 10px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
-    .game-title, .app-title { margin: 0 0 10px; font-size: 1.4rem; line-height: 1.3; letter-spacing: -0.02em; font-weight: 600; }
-    .game-desc, .app-desc { max-width: 78ch; }
-    .game-desc p, .app-desc p { margin: 0 0 12px; }
-    .game-desc p:last-child, .app-desc p:last-child { margin-bottom: 0; }
-    .game-list .tags, .app-list .tags { margin-top: 16px; }
-    /* The home page's .card-link ("Play in your browser"), here as the card's own link. */
-    .card-link { align-self: flex-start; margin-top: 18px; font-size: 14px; font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
-    .card-link svg { width: 14px; height: 14px; transition: transform .18s ease; }
-    .card:hover .card-link svg { transform: translate(2px, -2px); }
 
     footer { border-top: 1px solid var(--border); padding-block: 28px 40px; color: var(--faint); font-size: 13px; }
     footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
@@ -887,26 +830,45 @@ const START_CSS = `
     .start-list .doc-title { font-size: 1.05rem; }
     .start-list .doc-desc { font-size: 14px; }`;
 
-// Only /apps carries the preview card's rules (every page carries DOCS_CSS, and the longest doc
-// sits close to its HTML budget). The card lays out as a film's: the image beside the text, and on
-// a phone the kicker and title first, then the image, then the rest. An app with a portrait
-// version (build_assets.py marks its <picture>) shows it beside the text in a 240px frame, and
-// the landscape one under the title on a phone.
-const APPS_CSS = `
-    .app-card { flex-direction: row; align-items: flex-start; gap: 24px; }
-    .app-preview { flex: none; width: 360px; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); line-height: 0; }
-    .app-preview img { width: 100%; height: auto; display: block; }
-    @media (min-width: 641px) { .app-card:has(.portrait) .app-preview { width: 240px; } }
-    .app-body { display: flex; flex-direction: column; min-width: 0; }
+// Only /projects carries the cards' rules (every page carries DOCS_CSS, and the longest doc sits
+// close to its HTML budget). A card with a picture (a game's or an app's preview, a film's poster)
+// lays it beside the text. On a phone the kicker and title come first, then the picture, then the
+// rest, since a picture alone does not say which project it is (Cyrus, 2026-09-19): the body is
+// display:contents there, so its parts can be ordered around the picture, and the markup order
+// stays picture-then-text. A preview with a portrait version (build_assets.py marks its <picture>)
+// shows that beside the text in a 240px frame, and the landscape one under the title on a phone.
+const PROJECTS_CSS = `
+    .project-card { flex-direction: row; align-items: flex-start; gap: 24px; }
+    .project-media { flex: none; width: 360px; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); line-height: 0; }
+    .project-media img { width: 100%; height: auto; display: block; }
+    .project-media.film-poster { width: 240px; }
+    @media (min-width: 641px) { .project-card:has(.portrait) .project-media { width: 240px; } }
+    .project-body { display: flex; flex-direction: column; min-width: 0; }
+    .project-kicker { margin: 0 0 10px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    .project-title { margin: 0 0 10px; font-size: 1.4rem; line-height: 1.3; letter-spacing: -0.02em; font-weight: 600; }
+    .project-desc { max-width: 78ch; }
+    .project-desc p { margin: 0 0 12px; }
+    .project-desc p:last-child { margin-bottom: 0; }
+    .project-list .tags { margin-top: 16px; }
+    /* A film's content warning, under its title: bold, in the --warning yellow, with an icon that
+       inherits the color and a rule down the side so it reads as a notice. */
+    .film-notice { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 14px; padding-left: 14px; border-left: 2px solid var(--warning); color: var(--warning); font-size: 14px; font-weight: 600; line-height: 1.5; }
+    .film-notice svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
+    /* The home page's .card-link ("Play in your browser"), here as the card's own link. */
+    .card-link { align-self: flex-start; margin-top: 18px; font-size: 14px; font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
+    .card-link svg { width: 14px; height: 14px; transition: transform .18s ease; }
+    .card:hover .card-link svg { transform: translate(2px, -2px); }
     @media (max-width: 640px) {
-      .app-card { flex-direction: column; gap: 0; }
-      .app-card .app-body { display: contents; }
-      .app-card .app-kicker { order: 1; }
-      .app-card .app-title { order: 2; margin-bottom: 14px; }
-      .app-card .app-preview { order: 3; width: 100%; margin-bottom: 18px; }
-      .app-card .app-desc { order: 4; }
-      .app-card .tags { order: 5; }
-      .app-card .card-link { order: 6; }
+      .project-card { flex-direction: column; gap: 0; }
+      .project-card .project-body { display: contents; }
+      .project-card .project-kicker { order: 1; }
+      .project-card .project-title { order: 2; margin-bottom: 14px; }
+      .project-card .film-notice { order: 3; }
+      .project-card .project-media { order: 4; width: 100%; margin-bottom: 18px; }
+      .project-card .project-media.film-poster { width: 200px; align-self: flex-start; }
+      .project-card .project-desc { order: 5; }
+      .project-card .tags { order: 6; }
+      .project-card .card-link { order: 7; }
     }`;
 
 // Only pages with IEEE references carry these rules, so adding them changed no other page.
@@ -972,13 +934,12 @@ ${DOCS_CSS}${extraCss}
 }
 
 // The page links, in the order the whole site uses them (see public/index.html, which carries the
-// same four after its heading links). Film carries the collapse-first class: below 360px, where the
-// four no longer fit, it is the first page link to go; the home page's heading links still go
-// before it, at 640px (Cyrus, 2026-10-15). `current` marks the page you are already on. There is no
-// Home link: the wordmark to their left is it, on every page. The third value is the visits
-// event (lib-visits' client, visits.min.js, binds every data-visits-event), a stable identifier that outlives a
-// rename of the label or the URL; the home page's nav carries the same three names.
-const PAGE_LINKS = [[`/${APPS_DIR}`, APPS_TITLE, 'nav-apps'], [`/${FILM_DIR}`, FILM_TITLE, 'nav-film', true], ['/games', GAMES_TITLE, 'nav-games'], [`/${DOCS_DIR}`, DOCS_NAV, 'nav-research']];
+// same two after its heading links). `current` marks the page you are already on. There is no Home
+// link: the wordmark to their left is it, on every page. The third value is the visits event
+// (lib-visits' client, visits.min.js, binds every data-visits-event), a stable identifier that
+// outlives a rename of the label or the URL; the home page's nav carries the same names. Until
+// 2026-10-26 there were four: Apps, Film and Games (nav-apps, nav-film, nav-games) before Research.
+const PAGE_LINKS = [[`/${PROJECTS_DIR}`, PROJECTS_TITLE, 'nav-projects'], [`/${DOCS_DIR}`, DOCS_NAV, 'nav-research']];
 
 // The link to the page you are on reloads it, which is not a navigation, so it counts nothing.
 // `origin` is empty on csarko.sh and the site's URL on a page served from another host.
@@ -987,8 +948,8 @@ const nav = (current, origin = '') => `  <a class="skip-link" href="#top">Skip t
     <div class="wrap">
       <a class="wordmark" href="${origin}/">csarko<span>.sh</span></a>
       <ul>
-${PAGE_LINKS.map(([href, label, event, collapse]) =>
-    `        <li${collapse ? ' class="collapse-first"' : ''}><a href="${origin}${href}"${href === current ? ' aria-current="page"' : ` data-visits-event="${event}"`}${collapse ? ' data-collapsible="true"' : ''}>${label}</a></li>`).join('\n')}
+${PAGE_LINKS.map(([href, label, event]) =>
+    `        <li><a href="${origin}${href}"${href === current ? ' aria-current="page"' : ` data-visits-event="${event}"`}>${label}</a></li>`).join('\n')}
       </ul>
     </div>
   </nav>`;
@@ -1007,7 +968,7 @@ const FOOTER = `  <footer>
 
 // The whole card is the click target, through the title link's ::after overlay rather than an
 // <a> around everything: that keeps the link's accessible name the title alone, and leaves room
-// for a second link inside a card (see gameList).
+// for a second link inside a card.
 // Each card names its categories (the same words as the chips) and carries them as tokens
 // in data-categories, which the filter's CSS matches on.
 // `event` names a card's click in the visits log (the Start here row's start-<slug>).
@@ -1299,96 +1260,124 @@ ${docList(docs, featured.length ? 3 : 2, '    ', { cls: 'all-docs' })}
 ${FOOTER}`;
 }
 
-function gameList(games, pad) {
-  const items = games.map((game) => {
-    // The title is not a link: "Play in your browser" says where it goes, which a repeated title
-    // never does, and it is stretched over the card, as on the old home page Projects card. The
-    // click counts as "play-<slug>" in the visits log: a visitor who went on to play.
-    const play = game.play
-      ? `${pad}    <a class="card-link stretch" href="${escapeHtml(game.play)}" target="_blank" rel="noopener" data-visits-event="play-${game.slug}">Play in your browser ${EXTERNAL_ARROW}</a>\n`
-      : '';
-    return `${pad}  <li class="card">
-${pad}    <p class="game-kicker">${escapeHtml(game.kicker)}</p>
-${pad}    <h2 class="game-title">${game.titleHtml}</h2>
-${pad}    <div class="game-desc prose">
-${game.html}${pad}    </div>
-${pad}    <ul class="tags" role="list">${game.tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>
-${play}${pad}  </li>`;
-  });
-  return `${pad}<ul class="game-list" role="list">\n${items.join('\n')}\n${pad}</ul>`;
-}
+const tagList = (tags) => `<ul class="tags" role="list">${tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>`;
 
-// An app's preview, as the markers build_assets.py fills with the hashed <picture> (light, and dark
-// when assets/apps/<slug>-dark.png exists), the way a film's poster is filled. Until it runs, the
-// plain <img> is the stable copy build_assets.py writes to public/apps/<slug>.jpg.
-const appPreview = (app, pad) => `${pad}<div class="app-preview">
-${pad}  <!-- generated:app-preview:${app.slug} -->
-${pad}  <img src="/${APPS_DIR}/${app.slug}.jpg" alt="${escapeHtml(app.alt)}" loading="lazy" decoding="async" />
-${pad}  <!-- /generated:app-preview:${app.slug} -->
+// A game's or an app's preview, as the markers build_assets.py fills with the hashed <picture>
+// (light, and dark when assets/apps/<slug>-dark.png exists), the way a film's poster is filled.
+// Until it runs, the plain <img> is the stable copy build_assets.py writes to
+// public/projects/<slug>.jpg.
+const preview = (project, pad) => `${pad}<div class="project-media">
+${pad}  <!-- generated:app-preview:${project.slug} -->
+${pad}  <img src="/${PROJECTS_DIR}/${project.slug}.jpg" alt="${escapeHtml(project.alt)}" loading="lazy" decoding="async" />
+${pad}  <!-- /generated:app-preview:${project.slug} -->
 ${pad}</div>`;
 
-// An app's card: the whole card links to the app's own page, which carries the downloads and the
-// docs. The click counts as "app-<slug>": a visitor who went on to look at the app. With a preview,
-// the card lays out as a film's does: the image beside the text, under the title on a phone.
-function appList(apps, pad) {
-  const items = apps.map((app) => `${pad}  <li class="card${app.alt ? ' app-card' : ''}">
-${app.alt ? `${appPreview(app, `${pad}    `)}
-` : ''}${pad}    <div class="app-body">
-${pad}      <p class="app-kicker">${escapeHtml(app.kicker)}</p>
-${pad}      <h2 class="app-title">${app.titleHtml}</h2>
-${pad}      <div class="app-desc prose">
-${app.html}${pad}      </div>
-${pad}      <ul class="tags" role="list">${app.tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>
-${pad}      <a class="card-link stretch" href="${escapeHtml(app.page)}" data-visits-event="app-${app.slug}">${escapeHtml(app.link ?? 'Download and docs')} ${EXTERNAL_ARROW}</a>
-${pad}    </div>
-${pad}  </li>`);
-  return `${pad}<ul class="app-list" role="list">\n${items.join('\n')}\n${pad}</ul>`;
+// The poster, as the markers build_assets.py fills with the hashed <picture> (see the portrait on
+// the home page). Until it runs, and in any copy of the page that never goes through it, the plain
+// <img> inside is already the right image at the right shape, and it carries the alt text the
+// Markdown gave: build_assets.py reads that attribute back out rather than parsing the front matter.
+const filmPoster = (film, pad) => `${pad}<div class="project-media film-poster">
+${pad}  <!-- generated:film-poster:${film.slug} -->
+${pad}  <img src="${film.poster}" width="1080" height="1920" alt="${escapeHtml(film.alt)}" loading="lazy" decoding="async" />
+${pad}  <!-- /generated:film-poster:${film.slug} -->
+${pad}</div>`;
+
+// A card's one link, stretched over the whole card, so the card is the click target. The title is
+// not a link: the link's words say where it goes, which a repeated title never does. Each counts
+// in the visits log under the name it had on its old page: play-<slug> (a visitor who went on to
+// play), app-<slug> (to the app's own page, which carries the downloads and the docs) and
+// watch-<slug> (to the film on YouTube).
+function cardLink(project) {
+  if (project.kind === 'game') {
+    return project.play
+      ? `<a class="card-link stretch" href="${escapeHtml(project.play)}" target="_blank" rel="noopener" data-visits-event="play-${project.slug}">Play in your browser ${EXTERNAL_ARROW}</a>`
+      : '';
+  }
+  if (project.kind === 'app') {
+    return `<a class="card-link stretch" href="${escapeHtml(project.page)}" data-visits-event="app-${project.slug}">${escapeHtml(project.link ?? 'Download and docs')} ${EXTERNAL_ARROW}</a>`;
+  }
+  return `<a class="card-link stretch" href="${escapeHtml(project.watch)}" target="_blank" rel="noopener" data-visits-event="watch-${project.slug}">Watch on YouTube ${EXTERNAL_ARROW}</a>`;
 }
 
-export function appsPage(apps, theme) {
-  const url = `${SITE}/${APPS_DIR}`;
-  const trail = [HOME_CRUMB, [APPS_TITLE, url]];
+// One card, whatever the kind: its picture (a film's poster, or a game's or an app's preview when
+// it has an alt), the kicker (a game's status, an app's status and licence, a film's runtime), the
+// title, a film's content warning, the copy, the tags and the link. Its id is the slug, so
+// /projects#<slug> lands on it.
+function projectCard(project, pad) {
+  const media = project.kind === 'film' ? filmPoster(project, `${pad}  `) : project.alt ? preview(project, `${pad}  `) : '';
+  const link = cardLink(project);
+  const notice = project.kind === 'film' ? `${pad}    <p class="film-notice">${WARNING_ICON}${escapeHtml(FILM_NOTICE)}</p>\n` : '';
+  return `${pad}<li class="card${media ? ' project-card' : ''}" id="${project.slug}">
+${media ? `${media}\n` : ''}${pad}  <div class="project-body">
+${pad}    <p class="project-kicker">${escapeHtml(project.kicker)}</p>
+${pad}    <h2 class="project-title">${project.titleHtml}</h2>
+${notice}${pad}    <div class="project-desc prose">
+${project.html}${pad}    </div>
+${pad}    ${tagList(project.tags)}
+${link ? `${pad}    ${link}\n` : ''}${pad}  </div>
+${pad}</li>`;
+}
+
+// Each project's node in the page's ItemList, typed by its kind.
+function projectItem(project) {
+  const common = { name: project.title, description: project.description, author: PERSON_NODE };
+  if (project.kind === 'game') {
+    return { '@type': 'VideoGame', ...common, url: project.play ?? project.repo ?? `${SITE}/${PROJECTS_DIR}`, gamePlatform: 'Web browser' };
+  }
+  if (project.kind === 'app') {
+    return {
+      '@type': 'SoftwareApplication',
+      ...common,
+      url: project.page,
+      applicationCategory: 'DeveloperApplication',
+      operatingSystem: project.platforms,
+      ...(project.license ? { license: project.license } : {}),
+    };
+  }
+  return {
+    '@type': 'VideoObject',
+    ...common,
+    thumbnailUrl: `${SITE}${project.poster}`,
+    uploadDate: project.released,
+    duration: project.duration,
+    url: project.watch,
+    embedUrl: `https://www.youtube.com/embed/${project.videoId}`,
+  };
+}
+
+export function projectsPage(projects, theme) {
+  const url = `${SITE}/${PROJECTS_DIR}`;
+  const trail = [HOME_CRUMB, [PROJECTS_TITLE, url]];
   const graph = [
     {
       '@type': 'CollectionPage',
       '@id': `${url}#page`,
       url,
-      name: APPS_TITLE,
-      description: APPS_DESCRIPTION,
+      name: PROJECTS_TITLE,
+      description: PROJECTS_DESCRIPTION,
       isPartOf: { '@id': WEBSITE },
       about: { '@id': PERSON },
       mainEntity: {
         '@type': 'ItemList',
-        itemListElement: apps.map((app, i) => ({
-          '@type': 'ListItem',
-          position: i + 1,
-          item: {
-            '@type': 'SoftwareApplication',
-            name: app.title,
-            description: app.description,
-            url: app.page,
-            applicationCategory: 'DeveloperApplication',
-            operatingSystem: app.platforms,
-            ...(app.license ? { license: app.license } : {}),
-            author: PERSON_NODE,
-          },
-        })),
+        itemListElement: projects.map((project, i) => ({ '@type': 'ListItem', position: i + 1, item: projectItem(project) })),
       },
     },
     breadcrumbs(trail),
   ];
-  return `${head({ title: `${APPS_HEADING} · Cyrus Sarkosh`, ogTitle: APPS_TITLE, description: APPS_DESCRIPTION, canonical: url, ogType: 'website', extraCss: APPS_CSS, graph, theme })}
+  return `${head({ title: `${PROJECTS_HEADING} · Cyrus Sarkosh`, ogTitle: PROJECTS_TITLE, description: PROJECTS_DESCRIPTION, canonical: url, ogType: 'website', extraCss: PROJECTS_CSS, graph, theme })}
 <body>
-${nav(`/${APPS_DIR}`)}
+${nav(`/${PROJECTS_DIR}`)}
 ${crumbs(trail)}
 
   <main id="top" class="wrap docs-index" tabindex="-1">
     <header class="doc-header">
-      <p class="eyebrow">${APPS_TITLE}</p>
-      <h1>${escapeHtml(APPS_HEADING)}</h1>
-      <p class="lead">${escapeHtml(APPS_LEAD)}</p>
+      <p class="eyebrow">${PROJECTS_TITLE}</p>
+      <h1>${escapeHtml(PROJECTS_HEADING)}</h1>
+      <p class="lead">${escapeHtml(PROJECTS_LEAD)}</p>
     </header>
-${appList(apps, '    ')}
+    <ul class="project-list" role="list">
+${projects.map((project) => projectCard(project, '      ')).join('\n')}
+    </ul>
   </main>
 
 ${FOOTER}`;
@@ -1429,138 +1418,12 @@ ${main}
 `;
 }
 
-export function gamesPage(games, theme) {
-  const url = `${SITE}/games`;
-  const trail = [HOME_CRUMB, [GAMES_TITLE, url]];
-  const graph = [
-    {
-      '@type': 'CollectionPage',
-      '@id': `${url}#page`,
-      url,
-      name: GAMES_TITLE,
-      description: GAMES_DESCRIPTION,
-      isPartOf: { '@id': WEBSITE },
-      about: { '@id': PERSON },
-      mainEntity: {
-        '@type': 'ItemList',
-        itemListElement: games.map((game, i) => ({
-          '@type': 'ListItem',
-          position: i + 1,
-          item: {
-            '@type': 'VideoGame',
-            name: game.title,
-            description: game.description,
-            url: game.play ?? game.repo ?? url,
-            gamePlatform: 'Web browser',
-            author: PERSON_NODE,
-          },
-        })),
-      },
-    },
-    breadcrumbs(trail),
-  ];
-  return `${head({ title: `${GAMES_HEADING} · Cyrus Sarkosh`, ogTitle: GAMES_TITLE, description: GAMES_DESCRIPTION, canonical: url, ogType: 'website', graph, theme })}
-<body>
-${nav('/games')}
-${crumbs(trail)}
-
-  <main id="top" class="wrap docs-index" tabindex="-1">
-    <header class="doc-header">
-      <p class="eyebrow">${GAMES_TITLE}</p>
-      <h1>${escapeHtml(GAMES_HEADING)}</h1>
-      <p class="lead">${escapeHtml(GAMES_LEAD)}</p>
-    </header>
-${gameList(games, '    ')}
-  </main>
-
-${FOOTER}`;
-}
-
-// The poster, as the markers build_assets.py fills with the hashed <picture> (see the portrait on
-// the home page). Until it runs, and in any copy of the page that never goes through it, the plain
-// <img> inside is already the right image at the right shape, and it carries the alt text the
-// Markdown gave: build_assets.py reads that attribute back out rather than parsing the front matter.
-const filmPoster = (film, pad) => `${pad}<div class="film-poster">
-${pad}  <!-- generated:film-poster:${film.slug} -->
-${pad}  <img src="${film.poster}" width="1080" height="1920" alt="${escapeHtml(film.alt)}" loading="lazy" decoding="async" />
-${pad}  <!-- /generated:film-poster:${film.slug} -->
-${pad}</div>`;
-
-function filmCard(film, pad) {
-  return `${pad}<li class="card film-card">
-${filmPoster(film, `${pad}  `)}
-${pad}  <div class="film-body">
-${pad}    <p class="film-kicker">${escapeHtml(film.kicker)}</p>
-${pad}    <h2 class="film-title">${film.titleHtml}</h2>
-${pad}    <div class="film-desc prose">
-${film.html}${pad}    </div>
-${pad}    <ul class="tags" role="list">${film.tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>
-${pad}    <a class="card-link stretch" href="${escapeHtml(film.watch)}" target="_blank" rel="noopener" data-visits-event="watch-${film.slug}">Watch on YouTube ${EXTERNAL_ARROW}</a>
-${pad}  </div>
-${pad}</li>`;
-}
-
-export function filmsPage(films, theme) {
-  const url = `${SITE}/${FILM_DIR}`;
-  const trail = [HOME_CRUMB, [FILM_TITLE, url]];
-  const graph = [
-    {
-      '@type': 'CollectionPage',
-      '@id': `${url}#page`,
-      url,
-      name: FILM_TITLE,
-      description: FILM_DESCRIPTION,
-      isPartOf: { '@id': WEBSITE },
-      about: { '@id': PERSON },
-      mainEntity: {
-        '@type': 'ItemList',
-        itemListElement: films.map((film, i) => ({
-          '@type': 'ListItem',
-          position: i + 1,
-          item: {
-            '@type': 'VideoObject',
-            name: film.title,
-            description: film.description,
-            thumbnailUrl: `${SITE}${film.poster}`,
-            uploadDate: film.released,
-            duration: film.duration,
-            url: film.watch,
-            embedUrl: `https://www.youtube.com/embed/${film.videoId}`,
-            author: PERSON_NODE,
-          },
-        })),
-      },
-    },
-    breadcrumbs(trail),
-  ];
-  return `${head({ title: `${FILM_PAGE_TITLE} · Cyrus Sarkosh`, ogTitle: FILM_TITLE, description: FILM_DESCRIPTION, canonical: url, ogType: 'website', graph, theme })}
-<body>
-${nav(`/${FILM_DIR}`)}
-${crumbs(trail)}
-
-  <main id="top" class="wrap docs-index" tabindex="-1">
-    <header class="doc-header">
-      <p class="eyebrow">${FILM_TITLE}</p>
-      <h1>${escapeHtml(FILM_HEADING)}</h1>
-      <p class="lead">${escapeHtml(FILM_LEAD)}</p>
-      <p class="film-notice">${WARNING_ICON}${escapeHtml(FILM_NOTICE)}</p>
-    </header>
-    <ul class="film-list" role="list">
-${films.map((film) => filmCard(film, '      ')).join('\n')}
-    </ul>
-  </main>
-
-${FOOTER}`;
-}
-
-export function sitemap(docs, games = [], films = [], apps = []) {
-  // /, /apps, /film, /games and /research get no <lastmod>: a home-page-only edit never moves it, so it
-  // was unreliable. Each doc keeps its own (updated, else published), which is a real content date.
+export function sitemap(docs, projects = []) {
+  // /, /projects and /research get no <lastmod>: a home-page-only edit never moves it, so it was
+  // unreliable. Each doc keeps its own (updated, else published), which is a real content date.
   const entries = [
     [`${SITE}/`, null],
-    ...(apps.length ? [[`${SITE}/${APPS_DIR}`, null]] : []),
-    ...(films.length ? [[`${SITE}/${FILM_DIR}`, null]] : []),
-    ...(games.length ? [[`${SITE}/games`, null]] : []),
+    ...(projects.length ? [[`${SITE}/${PROJECTS_DIR}`, null]] : []),
     ...(docs.length ? [[`${SITE}/${DOCS_DIR}`, null]] : []),
     ...docs.map((d) => [d.url, d.modified]),
   ];
@@ -1647,9 +1510,12 @@ export function docLinks(docs, games = []) {
 // reads them from the site-quality skill's assets/research/<slug>/.
 export function buildSite({ sources, gameSources = [], filmSources = [], appSources = [], indexHtml, figures = new Map() }) {
   const docs = sortDocs(sources.map(({ name, text }) => loadDoc(name, text, figures.get(parseDocFileName(name).slug))));
-  const games = sortGames(gameSources.map(({ name, text }) => loadGame(name, text)));
-  const films = sortFilms(filmSources.map(({ name, text }) => loadFilm(name, text)));
-  const apps = sortApps(appSources.map(({ name, text }) => loadApp(name, text)));
+  const projects = sortProjects([
+    ...gameSources.map(({ name, text }) => loadGame(name, text)),
+    ...appSources.map(({ name, text }) => loadApp(name, text)),
+    ...filmSources.map(({ name, text }) => loadFilm(name, text)),
+  ]);
+  const games = projects.filter((p) => p.kind === 'game');
   // The date lives in the file name, so the directory no longer keeps slugs unique: two dates can
   // claim one URL, and the second page would silently overwrite the first.
   const bySlug = new Map();
@@ -1665,6 +1531,18 @@ export function buildSite({ sources, gameSources = [], filmSources = [], appSour
     if (byFeatured.has(doc.featured)) throw new DocError(`docs/published/: ${byFeatured.get(doc.featured)} and ${doc.slug} are both featured: ${doc.featured}`);
     byFeatured.set(doc.featured, doc.slug);
   }
+  // Every project shares one page, so a slug is its card's #anchor and its picture's
+  // /projects/<slug>.jpg across all three folders, and an order is one place in one list.
+  const source = (p) => `docs/${{ game: 'games', app: APPS_DIR, film: 'films' }[p.kind]}/${p.slug}.md`;
+  const projectSlugs = new Map();
+  const projectOrders = new Map();
+  for (const p of projects) {
+    if (projectSlugs.has(p.slug)) throw new DocError(`${projectSlugs.get(p.slug)} and ${source(p)} share the slug "${p.slug}" on /${PROJECTS_DIR}`);
+    projectSlugs.set(p.slug, source(p));
+    if (p.order === undefined) continue;
+    if (projectOrders.has(p.order)) throw new DocError(`${projectOrders.get(p.order)} and ${source(p)} both have order: ${p.order}`);
+    projectOrders.set(p.order, source(p));
+  }
   const theme = themeBlocks(indexHtml);
   const files = new Map();
   const links = docLinks(docs, games);
@@ -1673,9 +1551,7 @@ export function buildSite({ sources, gameSources = [], filmSources = [], appSour
     files.set(`${DOCS_DIR}/index.html`, indexPage(docs, theme));
     files.set(`${DOCS_DIR}/feed.xml`, feed(docs));
   }
-  if (games.length) files.set('games/index.html', gamesPage(games, theme));
-  if (films.length) files.set(`${FILM_DIR}/index.html`, filmsPage(films, theme));
-  if (apps.length) files.set(`${APPS_DIR}/index.html`, appsPage(apps, theme));
-  files.set('sitemap.xml', sitemap(docs, games, films, apps));
+  if (projects.length) files.set(`${PROJECTS_DIR}/index.html`, projectsPage(projects, theme));
+  files.set('sitemap.xml', sitemap(docs, projects));
   return files;
 }

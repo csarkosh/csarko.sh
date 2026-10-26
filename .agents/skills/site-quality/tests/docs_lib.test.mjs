@@ -1,7 +1,7 @@
 // Tests for docs_lib.mjs. Run: node --test .agents/skills/site-quality/tests/docs_lib.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { appsPage, buildSite, CATEGORIES, categorySlug, DATED_SINCE, DocError, docLinks, docPage, feed, IEEE_SINCE, undatedParagraphs, filmsPage, formatDate, gamesPage, indexPage, loadApp, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, readingMinutes, renderMarkdown, sitemap, sortApps, sortDocs, sortFilms, sortGames, standaloneShell, themeBlocks } from '../scripts/docs_lib.mjs';
+import { buildSite, CATEGORIES, categorySlug, DATED_SINCE, DocError, docLinks, docPage, feed, IEEE_SINCE, undatedParagraphs, formatDate, indexPage, loadApp, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, projectsPage, readingMinutes, renderMarkdown, sitemap, sortDocs, sortProjects, standaloneShell, themeBlocks } from '../scripts/docs_lib.mjs';
 
 const FILE = 'docs/published/2026-09-14-example.md';
 const DESC = 'A description that is long enough to pass the seventy character minimum for search.';
@@ -425,62 +425,33 @@ test('loadGame refuses front matter it cannot trust', () => {
     (e) => e instanceof DocError && /em-dash/.test(e.message));
 });
 
-test('sortGames leads with what is still being built, then released newest first', () => {
-  const games = [
-    game('old', ['released: 2024-01-01']),
-    game('building'),
-    game('new', ['released: 2026-01-01']),
-    game('also-building'),
-  ];
-  assert.deepEqual(sortGames(games).map((g) => g.slug), ['also-building', 'building', 'new', 'old']);
-});
-
-test('gamesPage lists every game with VideoGame JSON-LD and marks itself current', () => {
-  const html = gamesPage(sortGames([game('day-hike', ['play: https://games.csarko.sh/dayhike/', 'repo: https://github.com/csarkosh/game-dayhike'])]), themeBlocks(INDEX));
-  assert.ok(html.includes('<link rel="canonical" href="https://csarko.sh/games" />'));
-  assert.ok(html.includes('<meta property="og:type" content="website" />'));
-  assert.ok(html.includes('<li><a href="/games" aria-current="page">Games</a></li>'));
-  // Every other page link counts a nav-<page> click; the one you are on reloads, so it does not.
-  assert.ok(html.includes('<li><a href="/research" data-visits-event="nav-research">Research</a></li>'));
-  assert.ok(html.includes('<li class="collapse-first"><a href="/film" data-visits-event="nav-film" data-collapsible="true">Film</a></li>'));
-  assert.ok(html.includes('<li><a href="/apps" data-visits-event="nav-apps">Apps</a></li>'));
-  assert.ok(html.indexOf('href="/apps"') < html.indexOf('href="/film"'), 'Apps leads the page links');
-  assert.ok(html.includes('<p class="game-kicker">Playable now · No install</p>'));
+test('a game card: its kicker, tags and play link, stretched over the card, and VideoGame JSON-LD', () => {
+  const html = projectsPage([game('day-hike', ['play: https://games.csarko.sh/dayhike/', 'repo: https://github.com/csarkosh/game-dayhike'])], themeBlocks(INDEX));
+  assert.ok(html.includes('<p class="project-kicker">Playable now · No install</p>'));
   assert.ok(html.includes('<ul class="tags" role="list"><li>TypeScript</li><li>Babylon.js</li></ul>'));
-  // The play link is the card's own, stretched over it, styled as the home page's card link; the
-  // repo is not linked from the card.
-  assert.ok(html.includes('<li class="card">'));
+  // No alt, no preview: a plain card. Its id is the slug, so /projects#day-hike lands on it.
+  assert.ok(html.includes('<li class="card" id="day-hike">'));
   assert.ok(html.includes('<a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play in your browser <svg'));
-  assert.ok(!html.includes('github.com/csarkosh/game-dayhike'));
-  const page = jsonLd(html).find((n) => n['@type'] === 'CollectionPage');
-  assert.equal(page.url, 'https://csarko.sh/games');
-  const [first] = page.mainEntity.itemListElement;
+  assert.ok(!html.includes('github.com/csarkosh/game-dayhike'), 'the repo is not linked from the card');
+  const [first] = jsonLd(html).find((n) => n['@type'] === 'CollectionPage').mainEntity.itemListElement;
   assert.equal(first.item['@type'], 'VideoGame');
   assert.equal(first.item.url, 'https://games.csarko.sh/dayhike/');
   assert.equal(first.item.gamePlatform, 'Web browser');
-  const crumbs = jsonLd(html).find((n) => n['@type'] === 'BreadcrumbList');
-  assert.equal(crumbs.itemListElement.at(-1).item, 'https://csarko.sh/games');
 });
 
-test('a game with only a repo gets no link on its card', () => {
-  const html = gamesPage([game('x', ['repo: https://github.com/csarkosh/x'])], themeBlocks(INDEX));
-  assert.ok(!html.includes('View on GitHub'));
+test('a game with only a repo, or no links, gets no card link and falls back to the page URL in JSON-LD', () => {
+  assert.ok(!projectsPage([game('x', ['repo: https://github.com/csarkosh/x'])], themeBlocks(INDEX)).includes('class="card-link'));
+  const html = projectsPage([game('secret')], themeBlocks(INDEX));
   assert.ok(!html.includes('class="card-link'));
+  assert.equal(jsonLd(html).find((n) => n['@type'] === 'CollectionPage').mainEntity.itemListElement[0].item.url, 'https://csarko.sh/projects');
 });
 
-test('a game with no links renders no card link and falls back to the page URL in JSON-LD', () => {
-  const html = gamesPage([game('secret')], themeBlocks(INDEX));
-  assert.ok(!html.includes('class="card-link'));
-  const page = jsonLd(html).find((n) => n['@type'] === 'CollectionPage');
-  assert.equal(page.mainEntity.itemListElement[0].item.url, 'https://csarko.sh/games');
-});
-
-test('sitemap carries /games before /research, both without a lastmod', () => {
-  const xml = sitemap([doc('a', '2026-01-01')], [game('day-hike')]);
-  assert.deepEqual([...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]),
-    ['https://csarko.sh/', 'https://csarko.sh/games', 'https://csarko.sh/research', 'https://csarko.sh/research/a']);
-  assert.ok(!/<loc>https:\/\/csarko\.sh\/games<\/loc>\n\s*<lastmod>/.test(xml));
-  assert.ok(!sitemap([doc('a', '2026-01-01')]).includes('/games'));
+test('a game with an alt gets a preview the asset build fills, as an app does', () => {
+  const html = projectsPage([game('day-hike', ['alt: Postcards from the trail', 'order: 1'])], themeBlocks(INDEX));
+  assert.ok(html.includes('<li class="card project-card" id="day-hike">'));
+  assert.ok(html.includes('<!-- generated:app-preview:day-hike -->\n'));
+  assert.ok(html.includes('<img src="/projects/day-hike.jpg" alt="Postcards from the trail" loading="lazy" decoding="async" />'));
+  assert.throws(() => game('x', ['order: 0']), /order must be a whole number from 1/);
 });
 
 // Reads the visible trail back out of a page as [name, href], with href undefined on the crumb
@@ -499,7 +470,7 @@ test('every generated page carries a trail its BreadcrumbList repeats exactly', 
   const cases = [
     [docPage(doc('shader-looks', '2026-09-14'), theme), [['Home', '/'], ['Research', '/research'], ['shader-looks title', undefined]]],
     [indexPage([doc('a', '2026-01-01')], theme), [['Home', '/'], ['Research', undefined]]],
-    [gamesPage([game('day-hike')], theme), [['Home', '/'], ['Games', undefined]]],
+    [projectsPage([game('day-hike')], theme), [['Home', '/'], ['Projects', undefined]]],
   ];
   for (const [html, expected] of cases) {
     assert.deepEqual(trail(html), expected);
@@ -522,12 +493,25 @@ test('a crumb escapes its title and names the same page the nav marks current', 
   assert.ok(indexPage([doc('a', '2026-01-01')], theme).includes('<li><a href="/research" aria-current="page">Research</a></li>'));
 });
 
-test('buildSite writes the games index only when a game exists', () => {
+test('buildSite writes /projects from games, apps and films together, only when one exists', () => {
   const sources = [src('a', '2026-01-01')];
-  const withGames = buildSite({ sources, gameSources: [gameSrc('day-hike')], indexHtml: INDEX });
-  assert.ok(withGames.has('games/index.html'));
-  assert.ok(withGames.get('sitemap.xml').includes('https://csarko.sh/games'));
-  assert.ok(!buildSite({ sources, indexHtml: INDEX }).has('games/index.html'));
+  for (const extra of [{ gameSources: [gameSrc('day-hike')] }, { appSources: [appSrc('lib-visits')] }, { filmSources: [filmSrc('hallway')] }]) {
+    const files = buildSite({ sources, ...extra, indexHtml: INDEX });
+    assert.deepEqual([...files.keys()].filter((k) => !k.startsWith('research/')).sort(), ['projects/index.html', 'sitemap.xml']);
+    assert.ok(files.get('sitemap.xml').includes('<loc>https://csarko.sh/projects</loc>'));
+  }
+  const all = buildSite({ sources, gameSources: [gameSrc('day-hike')], appSources: [appSrc('lib-visits')], filmSources: [filmSrc('hallway')], indexHtml: INDEX });
+  assert.equal((all.get('projects/index.html').match(/<li class="card/g) ?? []).length, 3);
+  // The home page is read for its theme, never written.
+  assert.ok(!all.has('index.html'));
+  assert.ok(!buildSite({ sources, indexHtml: INDEX }).has('projects/index.html'));
+});
+
+test('buildSite refuses two projects sharing a slug or an order across the three folders', () => {
+  assert.throws(() => buildSite({ sources: [], gameSources: [gameSrc('x')], appSources: [appSrc('x')], indexHtml: INDEX }),
+    /docs\/games\/x\.md and docs\/apps\/x\.md share the slug "x"/);
+  assert.throws(() => buildSite({ sources: [], gameSources: [gameSrc('g', ['order: 1'])], filmSources: [filmSrc('f', ['order: 1'])], indexHtml: INDEX }),
+    /docs\/films\/f\.md and docs\/games\/g\.md both have order: 1/);
 });
 
 // ---------------------------------------------------------------- films
@@ -563,7 +547,7 @@ test('loadFilm reads the front matter, derives the video id, kicker and ISO dura
   assert.equal(f.runtime, '0:16');
   assert.equal(f.duration, 'PT16S');
   assert.equal(f.kicker, 'Short film · 0:16');
-  assert.equal(f.poster, '/film/hallway.jpg');
+  assert.equal(f.poster, '/projects/hallway.jpg');
   assert.deepEqual(f.tags, ['Analog horror', 'Photo puppetry']);
   assert.ok(f.html.includes('<p>The story.</p>'));
   // A minute or more reads as minutes and seconds in both places.
@@ -594,76 +578,38 @@ test('loadFilm refuses front matter it cannot trust', () => {
     (e) => e instanceof DocError && /needs "alt"/.test(e.message));
 });
 
-test('sortFilms puts the newest release first, ties broken by slug', () => {
-  const films = [film('b', ['released: 2026-01-01']), film('a', ['released: 2026-01-01']), film('new', ['released: 2026-09-17'])];
-  assert.deepEqual(sortFilms(films).map((f) => f.slug), ['new', 'a', 'b']);
-});
-
-test('filmsPage cards the poster, links out to YouTube and lists VideoObject JSON-LD', () => {
-  const html = filmsPage(sortFilms([film('hallway')]), themeBlocks(INDEX));
-  assert.ok(html.includes('<link rel="canonical" href="https://csarko.sh/film" />'));
-  assert.ok(html.includes('<li class="collapse-first"><a href="/film" aria-current="page" data-collapsible="true">Film</a></li>'));
-  // Film leads the page links on every page of the site.
-  assert.ok(html.indexOf('href="/film"') < html.indexOf('href="/games"'));
-  assert.ok(html.includes('<p class="film-kicker">Short film · 0:16</p>'));
+test('a film card: the poster, the warning under the title, a YouTube link and VideoObject JSON-LD', () => {
+  const html = projectsPage([film('hallway')], themeBlocks(INDEX));
+  assert.ok(html.includes('<li class="card project-card" id="hallway">'));
+  assert.ok(html.includes('<p class="project-kicker">Short film · 0:16</p>'));
   assert.ok(html.includes('<ul class="tags" role="list"><li>Analog horror</li><li>Photo puppetry</li></ul>'));
   assert.ok(html.includes('<a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener" data-visits-event="watch-hallway">Watch on YouTube <svg'));
   // The poster is a marker build_assets.py fills, carrying a usable img and its alt until it does.
+  assert.ok(html.includes('<div class="project-media film-poster">'));
   assert.ok(html.includes('<!-- generated:film-poster:hallway -->'));
   assert.ok(html.includes('alt="A woman in a dim hallway."'));
-  assert.ok(html.includes('src="/film/hallway.jpg"'));
-  const page = jsonLd(html).find((n) => n['@type'] === 'CollectionPage');
-  assert.equal(page.url, 'https://csarko.sh/film');
-  const [first] = page.mainEntity.itemListElement;
+  assert.ok(html.includes('src="/projects/hallway.jpg"'));
+  const [first] = jsonLd(html).find((n) => n['@type'] === 'CollectionPage').mainEntity.itemListElement;
   assert.equal(first.item['@type'], 'VideoObject');
   assert.equal(first.item.url, WATCH);
   assert.equal(first.item.embedUrl, 'https://www.youtube.com/embed/jBh7F1knRAA');
-  assert.equal(first.item.thumbnailUrl, 'https://csarko.sh/film/hallway.jpg');
+  assert.equal(first.item.thumbnailUrl, 'https://csarko.sh/projects/hallway.jpg');
   assert.equal(first.item.uploadDate, '2026-09-17');
   assert.equal(first.item.duration, 'PT16S');
-  const crumbs = jsonLd(html).find((n) => n['@type'] === 'BreadcrumbList');
-  assert.equal(crumbs.itemListElement.at(-1).item, 'https://csarko.sh/film');
 });
 
-test('sitemap carries /film first, then /games and /research, none with a lastmod', () => {
-  const xml = sitemap([doc('a', '2026-01-01')], [game('day-hike')], [film('hallway')]);
-  assert.deepEqual([...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]),
-    ['https://csarko.sh/', 'https://csarko.sh/film', 'https://csarko.sh/games',
-      'https://csarko.sh/research', 'https://csarko.sh/research/a']);
-  assert.ok(!sitemap([doc('a', '2026-01-01')], [game('day-hike')]).includes('/film'));
-});
-
-test('buildSite writes the film index only when a film exists, and never touches the home page', () => {
-  const sources = [src('a', '2026-01-01')];
-  const withFilms = buildSite({ sources, filmSources: [filmSrc('hallway')], indexHtml: INDEX });
-  assert.ok(withFilms.has('film/index.html'));
-  assert.ok(withFilms.get('sitemap.xml').includes('https://csarko.sh/film'));
-  // The films are a page of their own: the home page links to it and is not written at all.
-  assert.ok(!withFilms.has('index.html'));
-  assert.ok(!buildSite({ sources, indexHtml: INDEX }).has('film/index.html'));
-});
-
-test('the film page carries a trail its BreadcrumbList repeats exactly', () => {
-  const html = filmsPage([film('hallway')], themeBlocks(INDEX));
-  assert.deepEqual(trail(html), [['Home', '/'], ['Film', undefined]]);
-  assert.deepEqual(crumbNames(html), ['Home', 'Film']);
-});
-
-test('a film carries no warning of its own; the field is not even accepted', () => {
-  assert.throws(() => film('hallway', ['warning: Contains horror imagery.']), /unknown front matter key "warning"/);
-  assert.ok(!filmsPage([film('hallway')], themeBlocks(INDEX)).includes('film-warning'));
-});
-
-test('the page carries the standing notice, which is the only warning on it', () => {
+test('every film card carries the horror notice under its title, and no other card does', () => {
   const notice = 'Contains horror imagery that some viewers may find disturbing.';
-  const html = filmsPage([film('hallway')], themeBlocks(INDEX));
-  assert.ok(html.includes(`<p class="film-notice"><svg`));
+  assert.throws(() => film('hallway', ['warning: Contains horror imagery.']), /unknown front matter key "warning"/);
+  const html = projectsPage([game('day-hike'), film('hallway')], themeBlocks(INDEX));
+  assert.equal((html.match(/<p class="film-notice">/g) ?? []).length, 1);
   assert.ok(html.includes(`${notice}</p>`));
   // The icon is decorative, so the sentence itself has to carry the meaning.
   assert.ok(/<p class="film-notice"><svg[^>]*aria-hidden="true"/.test(html));
-  // It sits under the lead, above the list, so it is read before any card is tapped.
-  assert.ok(html.indexOf('class="film-notice"') > html.indexOf('class="lead"'));
-  assert.ok(html.indexOf('class="film-notice"') < html.indexOf('class="film-list"'));
+  // After the film's title and before its copy and its link.
+  const card = html.slice(html.indexOf('id="hallway"'));
+  assert.ok(card.indexOf('class="project-title"') < card.indexOf('class="film-notice"'));
+  assert.ok(card.indexOf('class="film-notice"') < card.indexOf('class="project-desc'));
 });
 
 const APP_DESC = 'A library to count visits and journeys without cookies, as a small script and a static collector.';
@@ -685,28 +631,14 @@ test('loadApp builds the kicker from status and license, and checks its fields',
   assert.throws(() => loadApp('2026-10-15-x.md', appSrc('x').text), /carries no date/);
 });
 
-test('sortApps puts released apps first, newest first', () => {
-  const apps = sortApps([app('b'), app('a', ['released: 2026-01-01']), app('c', ['released: 2026-10-15'])]);
-  assert.deepEqual(apps.map((a) => a.slug), ['c', 'a', 'b']);
-});
-
-test('appsPage cards each app, links out to its page and marks itself current', () => {
-  const html = appsPage([app('lib-visits', ['license: GPL-3.0'])], themeBlocks(INDEX));
-  assert.ok(html.includes('<link rel="canonical" href="https://csarko.sh/apps" />'));
-  assert.ok(html.includes('<li><a href="/apps" aria-current="page">Apps</a></li>'));
-  assert.ok(html.includes('<p class="app-kicker">Released · Open source, GPL-3.0</p>'));
+test('an app card links out to its page, with SoftwareApplication JSON-LD', () => {
+  const html = projectsPage([app('lib-visits', ['license: GPL-3.0'])], themeBlocks(INDEX));
+  assert.ok(html.includes('<p class="project-kicker">Released · Open source, GPL-3.0</p>'));
   assert.ok(html.includes('<a class="card-link stretch" href="https://apps.csarko.sh/lib-visits" data-visits-event="app-lib-visits">Download and docs <svg'));
-  const page = jsonLd(html).find((n) => n['@type'] === 'CollectionPage');
-  assert.equal(page.mainEntity.itemListElement[0].item['@type'], 'SoftwareApplication');
-  assert.equal(page.mainEntity.itemListElement[0].item.license, 'GPL-3.0');
-  assert.deepEqual(jsonLd(html).find((n) => n['@type'] === 'BreadcrumbList').itemListElement.map((i) => i.name), ['Home', 'Apps']);
-});
-
-test('the sitemap and the site build carry /apps when there is an app', () => {
-  assert.ok(sitemap([], [], [], [app('lib-visits')]).includes('<loc>https://csarko.sh/apps</loc>'));
-  assert.ok(!sitemap([], [], [], []).includes('/apps'));
-  const files = buildSite({ sources: [], appSources: [appSrc('lib-visits')], indexHtml: INDEX });
-  assert.ok(files.has('apps/index.html'));
+  const [first] = jsonLd(html).find((n) => n['@type'] === 'CollectionPage').mainEntity.itemListElement;
+  assert.equal(first.item['@type'], 'SoftwareApplication');
+  assert.equal(first.item.license, 'GPL-3.0');
+  assert.equal(first.item.operatingSystem, 'Linux, macOS');
 });
 
 test('standaloneShell wears none of the site\'s chrome: its own bar, its own footer, one credit', () => {
@@ -722,23 +654,61 @@ test('standaloneShell wears none of the site\'s chrome: its own bar, its own foo
   assert.ok(!html.includes('<title>x: a thing · Cyrus Sarkosh</title>'), 'the title is the app\'s alone');
 });
 
-test('an app with an alt gets a preview the asset build fills, laid out as a film card', () => {
-  const html = appsPage([app('app-macstats', ['alt: The menu bar']), app('tool')], themeBlocks(INDEX));
-  assert.ok(html.includes('<li class="card app-card">'));
+test('an app with an alt gets a preview the asset build fills; one without gets a plain card', () => {
+  const html = projectsPage([app('app-macstats', ['alt: The menu bar']), app('tool')], themeBlocks(INDEX));
+  assert.ok(html.includes('<li class="card project-card" id="app-macstats">'));
   assert.ok(html.includes('<!-- generated:app-preview:app-macstats -->\n'));
-  assert.ok(html.includes('<img src="/apps/app-macstats.jpg" alt="The menu bar" loading="lazy" decoding="async" />'));
+  assert.ok(html.includes('<img src="/projects/app-macstats.jpg" alt="The menu bar" loading="lazy" decoding="async" />'));
   assert.ok(!html.includes('generated:app-preview:tool'), 'no alt, no preview');
+  assert.ok(html.includes('<li class="card" id="tool">'));
   assert.equal((html.match(/>Download and docs <svg/g) ?? []).length, 2, 'the default link');
-  assert.ok(appsPage([app('m', ['link: Install and docs'])], themeBlocks(INDEX)).includes('data-visits-event="app-m">Install and docs <svg'));
-  assert.equal(jsonLd(html).find((n) => n['@type'] === 'CollectionPage').mainEntity.itemListElement[0].item.operatingSystem, 'Linux, macOS');
-});
-
-test('an app with an order leads the list whatever its date, and sections and order are checked', () => {
-  const apps = sortApps([app('a', ['released: 2026-10-15']), app('z', ['released: 2026-01-01', 'order: 1']), app('m', ['order: 2'])]);
-  assert.deepEqual(apps.map((x) => x.slug), ['z', 'm', 'a']);
+  assert.ok(projectsPage([app('m', ['link: Install and docs'])], themeBlocks(INDEX)).includes('data-visits-event="app-m">Install and docs <svg'));
   assert.deepEqual(app('s', ['sections: Keyboard, Config , License']).sections, ['Keyboard', 'Config', 'License']);
   assert.throws(() => app('x', ['order: 0']), /order must be a whole number from 1/);
   assert.throws(() => app('x', ['sections: , ']), /sections names at least one heading/);
+});
+
+// ---------------------------------------------------------------- projects (2026-10-26)
+
+test('sortProjects: the given order leads across kinds, then released newest first, then the rest', () => {
+  const projects = sortProjects([
+    app('a', ['released: 2026-10-15']),
+    film('f', ['order: 2']),
+    game('g', ['order: 1']),
+    app('z', ['released: 2026-01-01']),
+    game('building'),
+    app('m', ['order: 3']),
+  ]);
+  assert.deepEqual(projects.map((p) => p.slug), ['g', 'f', 'm', 'a', 'z', 'building']);
+});
+
+test('projectsPage: one page for every kind, in the order given, marked current in the nav', () => {
+  const projects = sortProjects([app('lib-visits', ['order: 2']), game('day-hike', ['order: 1']), film('hallway', ['order: 3'])]);
+  const html = projectsPage(projects, themeBlocks(INDEX));
+  assert.ok(html.includes('<link rel="canonical" href="https://csarko.sh/projects" />'));
+  assert.ok(html.includes('<meta property="og:type" content="website" />'));
+  assert.ok(html.includes('<title>Games, apps and films, built with AI · Cyrus Sarkosh</title>'));
+  assert.ok(html.includes('<p class="eyebrow">Projects</p>'));
+  // The two page links, Projects then Research; the one you are on reloads, so it counts nothing.
+  assert.ok(html.includes('<li><a href="/projects" aria-current="page">Projects</a></li>'));
+  assert.ok(html.includes('<li><a href="/research" data-visits-event="nav-research">Research</a></li>'));
+  assert.ok(html.indexOf('href="/projects"') < html.indexOf('href="/research"'));
+  for (const old of ['/games', '/apps', '/film']) assert.ok(!html.includes(`href="${old}"`), `no link to ${old}`);
+  assert.ok(html.indexOf('id="day-hike"') < html.indexOf('id="lib-visits"') && html.indexOf('id="lib-visits"') < html.indexOf('id="hallway"'));
+  const page = jsonLd(html).find((n) => n['@type'] === 'CollectionPage');
+  assert.equal(page.url, 'https://csarko.sh/projects');
+  assert.deepEqual(page.mainEntity.itemListElement.map((i) => [i.position, i.item['@type']]), [[1, 'VideoGame'], [2, 'SoftwareApplication'], [3, 'VideoObject']]);
+  assert.equal(jsonLd(html).find((n) => n['@type'] === 'BreadcrumbList').itemListElement.at(-1).item, 'https://csarko.sh/projects');
+  // A card's copy can link to research; the link is lifted above the card's stretched link.
+  assert.ok(html.includes('.card .tags, .card .project-desc a { position: relative; z-index: 1; }'));
+});
+
+test('sitemap carries /projects before /research, neither with a lastmod', () => {
+  const xml = sitemap([doc('a', '2026-01-01')], [game('day-hike')]);
+  assert.deepEqual([...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]),
+    ['https://csarko.sh/', 'https://csarko.sh/projects', 'https://csarko.sh/research', 'https://csarko.sh/research/a']);
+  assert.ok(!/<loc>https:\/\/csarko\.sh\/projects<\/loc>\n\s*<lastmod>/.test(xml));
+  assert.ok(!sitemap([doc('a', '2026-01-01')]).includes('/projects'));
 });
 
 // ---------------------------------------------------------------- reading (2026-10-23)

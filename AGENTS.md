@@ -2,9 +2,9 @@
 
 Cyrus Sarkosh's portfolio site, live at **https://csarko.sh**. A home page (who
 he is, where he's worked, the games he builds, his skills, and how to reach him),
-apps at **https://csarko.sh/apps** (each with its own page on
-**https://apps.csarko.sh**), a games list at **https://csarko.sh/games**, short films at
-**https://csarko.sh/film** and research docs at
+his games, apps and short films on one page at **https://csarko.sh/projects** (each app with its
+own page on **https://apps.csarko.sh**; `/games`, `/apps` and `/film` were separate pages until
+2026-10-26 and now 301 there) and research docs at
 **https://csarko.sh/research** (served at `/docs` until 2026-09-17; those URLs
 now 301 there). No framework and no CI; the one build step,
 `generate-assets.sh`, also turns `docs/published/*.md`, `docs/games/*.md`,
@@ -22,14 +22,14 @@ now 301 there). No framework and no CI; the one build step,
 | `public/licenses/fonts-OFL.txt` | Font licenses. |
 | `public/robots.txt` | Crawl rules. |
 | `docs/published/<YYYY-MM-DD>-<slug>.md` | **Published docs, source of truth.** Markdown with front matter, one file per doc, named for its `published:` date (the build fails if the two disagree). The URL is the slug alone: `/research/<slug>`, no date. The repo is public, so committing a file here publishes it; use the `publish-doc` skill. |
-| `docs/films/<slug>.md` | **The films, source of truth.** One file per short film, named for the slug alone (a date prefix is refused; `released:` in the front matter is the date). Front matter also carries `watch` (the YouTube URL), `runtime`, `alt` (the poster's alt text), `tags` and an optional `warning` (a content warning, shown on the card). Its poster is committed at `.agents/skills/site-quality/assets/films/<slug>.jpg`. The repo is public, so committing a file here publishes it. |
-| `docs/apps/<slug>.md` | **The apps, source of truth** *(added 2026-10-15)*. One file per app, named for the slug alone. Front matter: `description`, `status` (`released` or `in-development`), `page` (the app's page, `https://apps.csarko.sh/<slug>` for one hosted there), `platforms` (what it runs on, for the JSON-LD), `tags`, and optional `license` (joins the status in the card's kicker), `repo`, `released`, `link` (the card link's words, "Download and docs" by default; MacStats says "Install and docs"), `order` (a whole number from 1; an app with one leads the list, lowest first: Arkos IDE is 1, Cyrus 2026-10-15), `sections` (the README's `## ` headings the app's page keeps, comma-separated in the README's words, when the whole README is not the page; none of the apps sets it now, since Arkos IDE's README moved its guide and contributor sections into `docs/`, Cyrus 2026-10-16) and `alt`. A sibling `docs/apps/<slug>.install.md` is the page's own `## Install` section for a README that has none (Arkos IDE's Homebrew cask), placed ahead of the first kept section with the release's download buttons under it. **With `alt`, the card carries a preview** *(Cyrus, 2026-10-15, like `/film`'s posters)*: the source is `.agents/skills/site-quality/assets/apps/<slug>.png`, plus `<slug>-dark.png` for the dark theme if there is one, and `build_assets.py` emits the hashed AVIF/WebP/JPEG (a transparent source is laid on the card's background). With a `<slug>-portrait.png` (and `-portrait-dark.png`) beside them, the card shows that tall version beside its text on a desktop, in a 240px frame, and the landscape one under the title on a phone *(Cyrus, 2026-10-15: a wide picture is hard to read beside the text, a tall one wastes a phone's width)*. lib-visits' four are its README hero and the vertical version (`journey-{light,dark}.png`, `journey-vertical-{light,dark}.png`, from lib-visits' `scripts/readme-image.sh`); Arkos IDE's are its composed dark hero and `hero-portrait-dark.png` alone, as `ide-arkos.png` and `ide-arkos-portrait.png` (ide-arkos' `scripts/shoot.sh`, which takes only dark stills, Cyrus 2026-10-17); MacStats' is its `docs/previews/menubar.png`. The body is the card's copy. The repo is public, so committing a file here publishes it. |
-| `apps/` | **`https://apps.csarko.sh`** *(added 2026-10-15)*: each app's own page, `apps.csarko.sh/<slug>`, a third Firebase Hosting site `csarko-sh-apps`; its `/` 301s to `https://csarko.sh/apps`, as `games.csarko.sh` goes to `/games`. `apps/build.mjs` makes each page from the app's README on GitHub (default branch) and its **latest release**, whose assets become the download buttons. **An app's page is standalone** *(Cyrus, 2026-10-15)*: the site's head, tokens and fonts, but none of its chrome (no nav, trail or wordmark), the way `games.csarko.sh/dayhike` is the game's own page; its bar carries the app's name, a Download or Install link, GitHub and the version, and its footer credits Cyrus once (`standaloneShell` in `docs_lib.mjs`, `apps/product.mjs`); `apps/public/` is its git-ignored output. The README's HTML (a `<h1>` title, `<p align>` paragraphs, a `<picture>` hero, a `<picture>` on its own inside a section as a figure, a table of picture-and-text panels) is drawn by the page itself; HTML it does not know fails the build. An app without download assets (MacStats builds on your Mac) gets its release named under its `## Install` section instead of buttons. `node apps/build.mjs --local <slug>=<checkout>` builds from a local README, to look before pushing. **Run `apps/deploy.sh` after an app's README changes or it releases**: the buttons name the release that was latest at build time. No script on this host (no analytics: the collector takes `https://csarko.sh` only). Tests: `node --test apps/test/*.test.mjs`. |
-| `docs/games/<slug>.md` | **The games, source of truth.** Markdown with front matter, one file per game, named for the slug alone: a game is not a dated log entry, so a date prefix is refused (`released:` in the front matter is the date). The repo is public, so committing a file here publishes it. |
-| `public/research/`, `public/games/`, `public/film/`, `public/apps/`, `public/sitemap.xml` | **Generated** from `docs/published/`, `docs/games/`, `docs/films/` and `docs/apps/` by `build_docs.mjs` (run by `generate-assets.sh`). `public/film/<slug>.jpg` is each film's stable poster, written by `build_assets.py`. |
+| `docs/films/<slug>.md` | **The films, source of truth.** One file per short film, named for the slug alone (a date prefix is refused; `released:` in the front matter is the date). Front matter also carries `watch` (the YouTube URL), `runtime`, `alt` (the poster's alt text), `tags` and an optional `order` (its place on `/projects`; there is no `warning` field, every film card carries the same notice). Its poster is committed at `.agents/skills/site-quality/assets/films/<slug>.jpg`. The repo is public, so committing a file here publishes it. |
+| `docs/apps/<slug>.md` | **The apps, source of truth** *(added 2026-10-15)*. One file per app, named for the slug alone. Front matter: `description`, `status` (`released` or `in-development`), `page` (the app's page, `https://apps.csarko.sh/<slug>` for one hosted there), `platforms` (what it runs on, for the JSON-LD), `tags`, and optional `license` (joins the status in the card's kicker), `repo`, `released`, `link` (the card link's words, "Download and docs" by default; MacStats says "Install and docs"), `order` (a whole number from 1: its place on `/projects`, shared with the games and films; see "Projects" below), `sections` (the README's `## ` headings the app's page keeps, comma-separated in the README's words, when the whole README is not the page; none of the apps sets it now, since Arkos IDE's README moved its guide and contributor sections into `docs/`, Cyrus 2026-10-16) and `alt`. A sibling `docs/apps/<slug>.install.md` is the page's own `## Install` section for a README that has none (Arkos IDE's Homebrew cask), placed ahead of the first kept section with the release's download buttons under it. **With `alt`, the card carries a preview** *(Cyrus, 2026-10-15, like `/film`'s posters)*: the source is `.agents/skills/site-quality/assets/apps/<slug>.png`, plus `<slug>-dark.png` for the dark theme if there is one, and `build_assets.py` emits the hashed AVIF/WebP/JPEG (a transparent source is laid on the card's background). With a `<slug>-portrait.png` (and `-portrait-dark.png`) beside them, the card shows that tall version beside its text on a desktop, in a 240px frame, and the landscape one under the title on a phone *(Cyrus, 2026-10-15: a wide picture is hard to read beside the text, a tall one wastes a phone's width)*. lib-visits' four are its README hero and the vertical version (`journey-{light,dark}.png`, `journey-vertical-{light,dark}.png`, from lib-visits' `scripts/readme-image.sh`); Arkos IDE's are its composed dark hero and `hero-portrait-dark.png` alone, as `ide-arkos.png` and `ide-arkos-portrait.png` (ide-arkos' `scripts/shoot.sh`, which takes only dark stills, Cyrus 2026-10-17); MacStats' is its `docs/previews/menubar.png`. The body is the card's copy. The repo is public, so committing a file here publishes it. |
+| `apps/` | **`https://apps.csarko.sh`** *(added 2026-10-15)*: each app's own page, `apps.csarko.sh/<slug>`, a third Firebase Hosting site `csarko-sh-apps`; its `/` 301s to `https://csarko.sh/projects` (`games.csarko.sh` goes to `/games`, set in the game's own repo, which then 301s to `/projects`). `apps/build.mjs` makes each page from the app's README on GitHub (default branch) and its **latest release**, whose assets become the download buttons. **An app's page is standalone** *(Cyrus, 2026-10-15)*: the site's head, tokens and fonts, but none of its chrome (no nav, trail or wordmark), the way `games.csarko.sh/dayhike` is the game's own page; its bar carries the app's name, a Download or Install link, GitHub and the version, and its footer credits Cyrus once (`standaloneShell` in `docs_lib.mjs`, `apps/product.mjs`); `apps/public/` is its git-ignored output. The README's HTML (a `<h1>` title, `<p align>` paragraphs, a `<picture>` hero, a `<picture>` on its own inside a section as a figure, a table of picture-and-text panels) is drawn by the page itself; HTML it does not know fails the build. An app without download assets (MacStats builds on your Mac) gets its release named under its `## Install` section instead of buttons. `node apps/build.mjs --local <slug>=<checkout>` builds from a local README, to look before pushing. **Run `apps/deploy.sh` after an app's README changes or it releases**: the buttons name the release that was latest at build time. No script on this host (no analytics: the collector takes `https://csarko.sh` only). Tests: `node --test apps/test/*.test.mjs`. |
+| `docs/games/<slug>.md` | **The games, source of truth.** Markdown with front matter, one file per game, named for the slug alone: a game is not a dated log entry, so a date prefix is refused (`released:` in the front matter is the date). Optional `order` (its place on `/projects`) and `alt` (its card's preview, from `.agents/skills/site-quality/assets/apps/<slug>.png` like an app's; Day Hike has none, Cyrus 2026-10-26: its card will carry a trailer once he makes one). The repo is public, so committing a file here publishes it. |
+| `public/research/`, `public/projects/`, `public/sitemap.xml` | **Generated** from `docs/published/`, `docs/games/`, `docs/films/` and `docs/apps/` by `build_docs.mjs` (run by `generate-assets.sh`). `public/projects/<slug>.jpg` is each film's stable poster and each preview's stable copy, written by `build_assets.py`. |
 | `docs/superpowers/` | Internal design specs and implementation plans. **Never published** (unlike its siblings `docs/published/`, `docs/games/`, `docs/films/` and `docs/apps/`, which are). |
 | `docs/substack/posts.json` | The log of csarko.log posts made with the `substack-post` skill: date, Substack URL, title and the doc slugs each covered. Not a page: the build reads only the three content folders. |
-| `firebase.json`, `.firebaserc` | Firebase Hosting config: publish `public/`, cache headers, and the 301 redirects from the old `/docs` URLs to `/research` (keep them: old links and search results still use them). |
+| `firebase.json`, `.firebaserc` | Firebase Hosting config: publish `public/`, cache headers, and the 301 redirects from the old `/docs` URLs to `/research` and from `/games`, `/apps` and `/film` (and the pictures under the last two) to `/projects` (keep them: old links and search results still use them). |
 | `admin/` | **The private dashboard, `https://admin.csarko.sh`** *(designed and approved 2026-10-12; spec: `docs/superpowers/specs/2026-10-12-admin-dashboard-design.md`)*. `admin/public/` is the shell (the index of tracked apps, `/csarko.sh/` the site's own dashboard, `/ide-arkos/` Arkos IDE's *(added 2026-10-17, spec `docs/superpowers/specs/2026-10-17-arkos-admin-dashboard-design.md`: the Macs from its daily update check, and the user journey from its opt-in usage reports, which is the point of the page, Cyrus: "so we can see how it's being used and optimize it"; served by `csarko-admin` under `/arkos`; Cyrus dogfoods Arkos, so his own Macs (`ch = dogfood` from `~/.config/arkos/dogfood`, or rows the collector marks `s.own` from his addresses) are counted apart, and the page's Whose row shows Users, You or Both (the default since 2026-10-19))*, `theme.css`, `auth.js`, `charts.js`), a second Firebase Hosting site `csarko-sh-admin`; `admin/api/` is the Cloud Run service `csarko-admin` that reads the visits data in BigQuery, Search Console, YouTube, GitHub and the daily Firestore snapshots; `admin/public/game-dayhike/` is **pulled at deploy** from the game's repo (git-ignored). See "Admin pages" below for the standing rule. |
 | `_infra/` | Terraform for the hosting, DNS, the apps site, and the admin site and API. Same shape as `~/Projects/game-dayhike/_infra` (project `fps-csarko`). |
 | `.agents/skills/` | Agent skills: `preview`, `deploy`, `site-quality`, `publish-doc` and `substack-post`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
@@ -39,8 +39,8 @@ now 301 there). No framework and no CI; the one build step,
 ## Workflows
 
 - **See a change:** `.agents/skills/preview/scripts/preview.sh` (opens the home page
-  from disk; use `--serve` for `/apps`, `/film`, `/games`, `/research` and their links) or `--shots` for
-  desktop + mobile screenshots of the home page, `/apps`, `/film`, `/games` and the newest doc, in
+  from disk; use `--serve` for `/projects`, `/research` and their links) or `--shots` for
+  desktop + mobile screenshots of the home page, `/projects` and the newest doc, in
   both the dark and light themes, in `/tmp/csarko-sh-preview/`. After any visual
   edit, look at the screenshots in both themes before calling it done.
 - **Publish a doc:** the `publish-doc` skill.
@@ -51,7 +51,7 @@ now 301 there). No framework and no CI; the one build step,
   (`/research/voice-profile-vs-pangram`). His voice profile is
   `~/.config/csarko-sh/voice.md`: outside the repo, never committed.
 - **Ship a change:** `.agents/skills/deploy/scripts/deploy.sh`. It verifies the
-  deployed home page, `/apps`, `/film`, `/games`, `/research` and newest doc byte-for-byte on both
+  deployed home page, `/projects`, `/research` and newest doc byte-for-byte on both
   the web.app URL and csarko.sh. `--preview` gives a 7-day shareable channel
   instead.
 - **Change infrastructure:** `terraform -chdir=_infra plan`, then `apply`. Never
@@ -196,14 +196,14 @@ three from the command line):
   research docs are reached through the nav's `Research` link, and the home page
   no longer lists any (its `generated:docs` block and `homeSection()` are gone).
   **The Projects and Skills sections were dropped** on 2026-10-08 at his request: Projects (Day Hike, `game-dayhike`,
-  `electron-gamepatch` and the `csarko.sh` card) is covered by `/games` and the
+  `electron-gamepatch` and the `csarko.sh` card) is covered by the `/projects` page and the
   hero's Building tile, and Skills by the Experience section's tech tags. Don't
   bring any of the three back unasked. If a card about the code ever returns: `game-dayhike`
   is **GPL-3.0** *(licence added 2026-10-13 at Cyrus's request; it had none before, and was
   a "Public repo" rather than "Open source" until then)*, and **the asset pipeline is being
   commercialized**: it is not in that repo and is never described as open source or as part
-  of it. The public list of the games is **`/games`** (nav: `Games`), built
-  from `docs/games/*.md`, one file per game.
+  of it. The public list of the games is **`/projects`** (nav: `Projects`), built
+  from `docs/games/*.md` with the apps and films, one file per game.
 - **The blog is "csarko.log"** at `https://csarko.substack.com/`. It has no
   published posts yet; Cyrus will publish once Day Hike is ready to publicize.
   Posts that introduce the research docs go through the `substack-post` skill
@@ -211,17 +211,19 @@ three from the command line):
 - **Docs** *(added 2026-09-15)*: research notes and specs at `/research`
   (*moved from `/docs`, 2026-09-17; the old URLs 301 to the new ones*; the nav
   calls the page `Research`; the page's own H1 is "Research & notes" and its eyebrow
-  "Research", *renamed from "Research & docs" / "Docs", 2026-09-16; the eyebrow
+  "Research"; its lead and search description say the docs are deep research Cyrus did with
+  Claude for his projects, shared for anyone working on the same problems *(Cyrus, 2026-10-26;
+  `INDEX_LEAD` and `INDEX_DESCRIPTION` in `docs_lib.mjs`)*, *renamed from "Research & docs" / "Docs", 2026-09-16; the eyebrow
   was briefly "Notes"*. Only the URL moved: the sources stay in `docs/published/`
   and the code still calls them docs; the home page has no section for them
   since 2026-10-09), copied
   into `docs/published/` as `<YYYY-MM-DD>-<slug>.md` (the published copy is the
   source of truth; the URL is the slug, without the date). The page copy rules
   apply (no email, phone or em-dashes): the build rejects em-dashes in
-  `docs/published/`, `docs/games/` and `docs/films/` alike, and `deploy.sh` rejects email
+  `docs/published/`, `docs/games/`, `docs/apps/` and `docs/films/` alike, and `deploy.sh` rejects email
   addresses and phone numbers (its scan covers `public/*.html`, `public/research/*.html`,
-  `public/games/*.html`, `public/film/*.html`, `docs/published/*.md`, `docs/games/*.md`
-  and `docs/films/*.md`). Docs
+  `public/projects/*.html`, `docs/published/*.md`, `docs/games/*.md`, `docs/films/*.md`
+  and `docs/apps/*.md`). Docs
   from private repositories such as `magicpixel.ai` need Cyrus's OK per doc, and
   never describe the commercial asset pipeline. Launched with
   `stylized-shader-looks`, from `game-dayhike`. **A doc page is built for the skim**
@@ -239,40 +241,43 @@ three from the command line):
   OR across chips, "All" a reset button, no script: the list filters through CSS
   `:has()`) and the tags on each card. The build refuses a doc without them or with a
   name outside the set; the `publish-doc` skill says which to give a doc.
-- **Film** *(added 2026-09-17)*: short films at **`/film`** (nav: `Film`, second
-  among the page links after `Apps` since 2026-10-15, and the first link to collapse when the bar
-  narrows to below 360px, the first page link to go (Cyrus: it has little to show yet; the home
-  page's section links still go before it, at 640px); no heading link, since the home page
-  has no film section; the page's H1 is "Short films on YouTube",
-  its eyebrow "Film"), built from `docs/films/*.md`, one file per film. Each card
-  carries the film's poster, a `Short film · <runtime>` kicker, its title, its
-  copy, tags, and a "Watch on YouTube"
-  link out to the video (*the warning was added 2026-09-17: horror is the genre, so a viewer
-  should know before clicking*). The poster leads on desktop, beside the text; **on a phone
-  the kicker and title come first and the poster sits under them** *(Cyrus, 2026-09-19)*, since
-  a thumbnail alone does not say which film it is. That reorder is CSS only (the body is
-  `display: contents` inside the 640px media query in `docs_lib.mjs`, so the parts can be
-  ordered around the poster), and the markup order stays poster-then-text. **One warning, on the page, not on the cards**
-  *(Cyrus, 2026-09-17, revised the same day)*: the page carries a standing notice,
-  "Contains horror imagery that some viewers may find disturbing.", under the lead
-  and above the list, because every card is a link and a phone reaches one before
-  it reaches the copy. It is bold and in the `--warning` yellow with an icon, and
-  it is `FILM_NOTICE` in `docs_lib.mjs`. **A film has no `warning:` field**: the
-  per-card warning was tried first, then dropped because the standing notice
-  already covers the whole list, and the front matter key is now rejected outright
-  rather than silently ignored. The page's JSON-LD lists each
-  film as a `VideoObject`. **The home page carries no film section** *(one was
-  tried on 2026-09-17 and removed the same day, at Cyrus's request; the home
-  page's sections stayed `01`-`05` as they were)*: the nav's `Film` link is the
-  only way in, as it is for `/games`. The films live on his YouTube channel
-  **https://www.youtube.com/@csarkosh**, which the home page links from the hero
-  chips, the Contact chips and the JSON-LD `sameAs`. **Posters are self-hosted**:
-  the source frame is committed under the site-quality skill's `assets/films/`
-  and `build_assets.py` emits the hashed AVIF/WebP/JPEG set, so the page still
-  makes no third-party request. Launched with `who-is-standing-in-my-hallway`.
+- **Projects** *(Cyrus, 2026-10-26)*: the games, apps and short films on one page at
+  **`/projects`** (nav: `Projects`, then `Research`; the page's eyebrow "Projects", its H1 "Games,
+  apps and films, built with AI"). Until that day they were three pages, `/apps`, `/film` and
+  `/games`, each in the nav; those URLs, and the stable pictures under `/apps/` and `/film/`, now
+  301 to `/projects` (`firebase.json`; `check.py --live` checks it). The sources stay in their own
+  folders (`docs/games/`, `docs/apps/`, `docs/films/`), since each kind has its own fields; a slug
+  is unique across all three (it is the card's `#anchor` and its picture's
+  `/projects/<slug>.jpg`). **The order is Cyrus's, most proud first**: each source's `order:`
+  (1 first, unique across the three folders, the build refuses a repeat), as of 2026-10-26 Day
+  Hike 1, Arkos IDE 2, lib-visits 3, the film 4, MacStats 5; a project without one follows,
+  released newest first. **Each card's copy says how AI built it or is part of it** *(Cyrus,
+  2026-10-26)*: claims come from the project's own repo (its commits are co-authored by Claude, its
+  README), and a card may link the research doc behind it. The front matter `description` stays a
+  plain statement of what the project is: an app's is its apps.csarko.sh page's lead and title too.
+  Each card carries its kind's kicker (a game's status, an app's status and licence, `Short film ·
+  <runtime>`), title, copy, tags and one link stretched over the card: "Play in your browser"
+  (`play-<slug>`), the app's page (`app-<slug>`) or "Watch on YouTube" (`watch-<slug>`). A card
+  with a picture (a film's poster; a game's or an app's preview when it has an `alt`) lays it
+  beside the text on a desktop; **on a phone the kicker and title come first and the picture sits
+  under them** *(Cyrus, 2026-09-19, from the film page)*, since a picture alone does not say which
+  project it is. That reorder is CSS only (`PROJECTS_CSS` in `docs_lib.mjs`: the body is
+  `display: contents` inside the 640px media query), and the markup order stays
+  picture-then-text. **A film card carries the horror notice under its title**, "Contains horror
+  imagery that some viewers may find disturbing." (`FILM_NOTICE`, bold, `--warning` yellow, with an
+  icon), before the poster on a phone, since the card is a link one tap away. On `/film` it was one
+  standing notice under the page's lead (2026-09-17); with films beside games and apps it moved to
+  the film's own card. **A film has no `warning:` field**; the key is rejected outright. The page's
+  JSON-LD lists each project as a `VideoGame`, `SoftwareApplication` or `VideoObject`. **The home
+  page carries no projects section** (the old one was dropped 2026-10-08; don't bring it back
+  unasked): the nav's `Projects` link is the way in. The films live on his YouTube channel
+  **https://www.youtube.com/@csarkosh**, which the home page links from the hero chips, the Contact
+  chips and the JSON-LD `sameAs`. **Pictures are self-hosted**: a poster's source frame is under
+  the site-quality skill's `assets/films/`, a preview's under `assets/apps/`, and
+  `build_assets.py` emits the hashed AVIF/WebP/JPEG set, so the page makes no third-party request.
 - **Breadcrumbs** *(added 2026-09-15)*: every generated page carries a trail
   under the nav (`Home › Research › <title>` on a doc, `Home › Research` on
-  `/research`, `Home › Apps` on `/apps`, `Home › Games` on `/games`, `Home › Film` on `/film`); the home page, `404.html`
+  `/research`, `Home › Projects` on `/projects`); the home page, `404.html`
   and the standalone app pages on apps.csarko.sh carry none.
   A doc page's eyebrow is therefore the date alone, not `Research · <date>`. The
   trail and the page's `BreadcrumbList` JSON-LD are one array in `docs_lib.mjs`
@@ -403,9 +408,10 @@ dropped because its host went down and took the numbers with it.)*
 - **Events** *(unchanged from 2026-10-12, when they were added for the admin dashboard)*:
   clicks out to LinkedIn, GitHub, Substack and YouTube count as `out-linkedin`,
   `out-github`, `out-substack`, `out-youtube` (hero chips, Contact buttons and the Filming
-  tile's link in `index.html`); the nav's page links count `nav-film`, `nav-games`,
-  `nav-research` in both navs (never on the page you are on); a game card's "Play in your
-  browser" counts `play-<slug>` and a film card's "Watch on YouTube" counts `watch-<slug>`
+  tile's link in `index.html`); the nav's page links count `nav-projects` and
+  `nav-research` in both navs (never on the page you are on; `nav-apps`, `nav-film` and
+  `nav-games` until 2026-10-26, when those pages became `/projects`); a game card's "Play in your
+  browser" counts `play-<slug>`, an app card's link `app-<slug>` and a film card's "Watch on YouTube" `watch-<slug>`
   (`docs_lib.mjs`); on `/research`, a Start here card counts `start-<slug>` and a category chip
   `filter-<category>` (`filter-all` for All; a click that clears a chip counts too) *(2026-10-18,
   to see what the index's visitors do before they leave)*. All are `data-visits-event` attributes. `read-<slug>` needs no script of
