@@ -175,8 +175,10 @@ three from the command line):
   **No metrics, customer names, or accomplishment bullets** (ARR, merchant counts,
   call volumes, ~20x, McDonald's, Unilever…). Those details live in the résumé only.
   GEM's and Voice AI's lines name the work a Staff loop asks about (the LLM
-  pipeline and its evals, the AI agents, the pivot to AI) without numbers
-  *(2026-10-08)*.
+  pipeline and its evals, the AI agents, AI order-taking) without numbers
+  *(2026-10-08)*. He did not lead Voice AI's pivot to AI: he led AI order-taking
+  from prototype to first production traffic and on to peak scale *(2026-10-26)*.
+  Say "prototype", never "demoware".
 - **The hero tiles are a "Now" snapshot**, deliberately about him rather than
   DoorDash metrics: **Leading / Working / Building / Filming** *(2026-10-08:
   "Leading" added first: "Zero-to-one AI products, hands-on from the first
