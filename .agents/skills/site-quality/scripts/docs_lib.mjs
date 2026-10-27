@@ -800,7 +800,7 @@ const DOCS_CSS = `
     }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
-      .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
+      .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg, .card-source { transition: none; }
     }`;
 
 // Only the research index carries the filter's rules (it is the one page with the chips, and
@@ -855,9 +855,14 @@ const PROJECTS_CSS = `
     .film-notice { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 14px; padding-left: 14px; border-left: 2px solid var(--warning); color: var(--warning); font-size: 14px; font-weight: 600; line-height: 1.5; }
     .film-notice svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
     /* The home page's .card-link ("Play in your browser"), here as the card's own link. */
-    .card-link { align-self: flex-start; margin-top: 18px; font-size: 14px; font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
+    .card-links { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; margin-top: 18px; }
+    .card-link { font-size: 14px; font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
     .card-link svg { width: 14px; height: 14px; transition: transform .18s ease; }
     .card:hover .card-link svg { transform: translate(2px, -2px); }
+    /* The repo link: lifted above the card's overlay, quieter than the card's own link. */
+    .card-source { position: relative; z-index: 1; font-size: 14px; font-weight: 500; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; transition: color .15s ease, text-decoration-color .15s ease; }
+    .card-source:hover, .card-source:focus-visible { color: var(--accent); text-decoration-color: var(--accent); }
+    .card-source svg { width: 14px; height: 14px; }
     @media (max-width: 640px) {
       .project-card { flex-direction: column; gap: 0; }
       .project-card .project-body { display: contents; }
@@ -868,7 +873,7 @@ const PROJECTS_CSS = `
       .project-card .project-media.film-poster { width: 200px; align-self: flex-start; }
       .project-card .project-desc { order: 5; }
       .project-card .tags { order: 6; }
-      .project-card .card-link { order: 7; }
+      .project-card .card-links { order: 7; }
     }`;
 
 // Only pages with IEEE references carry these rules, so adding them changed no other page.
@@ -1299,13 +1304,23 @@ function cardLink(project) {
   return `<a class="card-link stretch" href="${escapeHtml(project.watch)}" target="_blank" rel="noopener" data-visits-event="watch-${project.slug}">Watch on YouTube ${EXTERNAL_ARROW}</a>`;
 }
 
+// A second, smaller link beside it to the code, for a project with a public repo (Cyrus, 2026-10-26:
+// the cards should show the work to engineers reading them). It sits above the stretched link's
+// overlay, so it stays its own click target, and counts as source-<slug>.
+function sourceLink(project) {
+  return project.repo
+    ? `<a class="card-source" href="${escapeHtml(project.repo)}" target="_blank" rel="noopener" data-visits-event="source-${project.slug}">Source on GitHub ${EXTERNAL_ARROW}</a>`
+    : '';
+}
+
 // One card, whatever the kind: its picture (a film's poster, or a game's or an app's preview when
 // it has an alt), the kicker (a game's status, an app's status and licence, a film's runtime), the
 // title, a film's content warning, the copy, the tags and the link. Its id is the slug, so
 // /projects#<slug> lands on it.
 function projectCard(project, pad) {
   const media = project.kind === 'film' ? filmPoster(project, `${pad}  `) : project.alt ? preview(project, `${pad}  `) : '';
-  const link = cardLink(project);
+  const links = [cardLink(project), sourceLink(project)].filter(Boolean);
+  const link = links.length ? `<div class="card-links">${links.join(' ')}</div>` : '';
   const notice = project.kind === 'film' ? `${pad}    <p class="film-notice">${WARNING_ICON}${escapeHtml(FILM_NOTICE)}</p>\n` : '';
   return `${pad}<li class="card${media ? ' project-card' : ''}" id="${project.slug}">
 ${media ? `${media}\n` : ''}${pad}  <div class="project-body">

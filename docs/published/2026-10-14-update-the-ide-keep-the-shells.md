@@ -4,6 +4,7 @@ published: 2026-10-14
 categories: Tooling
 source: https://github.com/csarkosh/ide-sarkos/blob/main/docs/superpowers/specs/2026-10-14-update-in-place-design.md
 series: Arkos IDE notes
+featured: 3
 ---
 # Update the IDE, keep the shells
 

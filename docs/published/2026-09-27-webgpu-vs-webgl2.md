@@ -3,7 +3,6 @@ description: WebGPU vs WebGL2, measured in a Babylon.js game: 1.3 to 1.5 ms fast
 published: 2026-09-27
 categories: Rendering
 updated: 2026-10-23
-featured: 3
 series: WebGPU against WebGL2
 related: babylon-material-plugin-traps, grass-fullness-without-thinning
 ---

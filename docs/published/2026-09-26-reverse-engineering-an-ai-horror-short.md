@@ -2,7 +2,6 @@
 description: A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe.
 published: 2026-09-26
 categories: AI, Film
-featured: 2
 series: AI short films
 updated: 2026-10-23
 related: horror-sequences-shot-by-shot, horror-cinematography-shot-by-shot

@@ -178,7 +178,10 @@ three from the command line):
   pipeline and its evals, the AI agents, AI order-taking) without numbers
   *(2026-10-08)*. He did not lead Voice AI's pivot to AI: he led AI order-taking
   from prototype to first production traffic and on to peak scale *(2026-10-26)*.
-  Say "prototype", never "demoware".
+  Say "prototype", never "demoware". **No "Founding engineer"** in GEM's or Voice AI's line *(2026-10-26,
+  from a review of ~170 recruiter messages: it drew seed-stage founding pitches, while the target is
+  Staff-level IC roles at large companies)*: they open "Engineering lead for …" and name the scope
+  (technical direction, team growth, design reviews, on-call and SLOs), still without numbers.
 - **The hero tiles are a "Now" snapshot**, deliberately about him rather than
   DoorDash metrics: **Leading / Working / Building / Filming** *(2026-10-08:
   "Leading" added first: "Zero-to-one AI products, hands-on from the first
@@ -259,7 +262,10 @@ three from the command line):
   plain statement of what the project is: an app's is its apps.csarko.sh page's lead and title too.
   Each card carries its kind's kicker (a game's status, an app's status and licence, `Short film ·
   <runtime>`), title, copy, tags and one link stretched over the card: "Play in your browser"
-  (`play-<slug>`), the app's page (`app-<slug>`) or "Watch on YouTube" (`watch-<slug>`). A card
+  (`play-<slug>`), the app's page (`app-<slug>`) or "Watch on YouTube" (`watch-<slug>`). A project
+  with a public `repo` also gets a smaller "Source on GitHub" link beside it (`source-<slug>`),
+  lifted above the card's overlay *(Cyrus, 2026-10-26: recruiters and interviewers should reach the
+  code from the card)*. A card
   with a picture (a film's poster; a game's or an app's preview when it has an `alt`) lays it
   beside the text on a desktop; **on a phone the kicker and title come first and the picture sits
   under them** *(Cyrus, 2026-09-19, from the film page)*, since a picture alone does not say which
@@ -413,7 +419,8 @@ dropped because its host went down and took the numbers with it.)*
   tile's link in `index.html`); the nav's page links count `nav-projects` and
   `nav-research` in both navs (never on the page you are on; `nav-apps`, `nav-film` and
   `nav-games` until 2026-10-26, when those pages became `/projects`); a game card's "Play in your
-  browser" counts `play-<slug>`, an app card's link `app-<slug>` and a film card's "Watch on YouTube" `watch-<slug>`
+  browser" counts `play-<slug>`, an app card's link `app-<slug>`, a film card's "Watch on YouTube" `watch-<slug>`
+  and a card's "Source on GitHub" `source-<slug>` *(2026-10-26)*
   (`docs_lib.mjs`); on `/research`, a Start here card counts `start-<slug>` and a category chip
   `filter-<category>` (`filter-all` for All; a click that clears a chip counts too) *(2026-10-18,
   to see what the index's visitors do before they leave)*. All are `data-visits-event` attributes. `read-<slug>` needs no script of

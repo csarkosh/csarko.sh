@@ -432,17 +432,21 @@ test('a game card: its kicker, tags and play link, stretched over the card, and 
   // No alt, no preview: a plain card. Its id is the slug, so /projects#day-hike lands on it.
   assert.ok(html.includes('<li class="card" id="day-hike">'));
   assert.ok(html.includes('<a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play in your browser <svg'));
-  assert.ok(!html.includes('github.com/csarkosh/game-dayhike'), 'the repo is not linked from the card');
+  // The repo gets its own smaller link beside it, above the overlay (2026-10-26).
+  assert.ok(html.includes('<a class="card-source" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener" data-visits-event="source-day-hike">Source on GitHub <svg'));
+  assert.ok(html.includes('<div class="card-links"><a class="card-link stretch"'), 'the card link leads the row');
   const [first] = jsonLd(html).find((n) => n['@type'] === 'CollectionPage').mainEntity.itemListElement;
   assert.equal(first.item['@type'], 'VideoGame');
   assert.equal(first.item.url, 'https://games.csarko.sh/dayhike/');
   assert.equal(first.item.gamePlatform, 'Web browser');
 });
 
-test('a game with only a repo, or no links, gets no card link and falls back to the page URL in JSON-LD', () => {
-  assert.ok(!projectsPage([game('x', ['repo: https://github.com/csarkosh/x'])], themeBlocks(INDEX)).includes('class="card-link'));
+test('a game with only a repo gets only the source link; with no links, none, and the page URL in JSON-LD', () => {
+  const repoOnly = projectsPage([game('x', ['repo: https://github.com/csarkosh/x'])], themeBlocks(INDEX));
+  assert.ok(!repoOnly.includes('class="card-link stretch'));
+  assert.ok(repoOnly.includes('<div class="card-links"><a class="card-source" href="https://github.com/csarkosh/x"'));
   const html = projectsPage([game('secret')], themeBlocks(INDEX));
-  assert.ok(!html.includes('class="card-link'));
+  assert.ok(!html.includes('class="card-link') && !html.includes('class="card-source'), 'no links row at all');
   assert.equal(jsonLd(html).find((n) => n['@type'] === 'CollectionPage').mainEntity.itemListElement[0].item.url, 'https://csarko.sh/projects');
 });
 

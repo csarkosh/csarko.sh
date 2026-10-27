@@ -551,7 +551,7 @@
     }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
-      .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
+      .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg, .card-source { transition: none; }
     }
     .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
     .chip { position: relative; display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; padding: 5px 12px; border-radius: 999px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); cursor: pointer; transition: border-color .15s ease, color .15s ease, background .15s ease; }
@@ -606,35 +606,35 @@
     <section class="start-here" aria-labelledby="start-here">
       <h2 id="start-here" class="section-label">Start here</h2>
       <ul class="doc-list start-list" role="list">
-        <li class="card" data-categories="rendering">
-          <h3 class="doc-title"><a class="stretch" href="/research/ground-fog-without-the-wall" data-visits-event="start-ground-fog-without-the-wall">Volumetric ground fog without the sprite wall</a></h3>
-          <p class="doc-meta">Oct 7, 2026 · 9 min read</p>
-          <p class="doc-desc">How AAA engines draw ground fog as a frustum-aligned volume instead of sprites, what it costs, where it ghosts, and which of it a browser game can run.</p>
-          <ul class="tags" aria-label="Categories"><li>Rendering</li></ul>
-        </li>
-        <li class="card" data-categories="ai film">
-          <h3 class="doc-title"><a class="stretch" href="/research/reverse-engineering-an-ai-horror-short" data-visits-event="start-reverse-engineering-an-ai-horror-short">Reverse engineering an AI horror short</a></h3>
-          <p class="doc-meta">Sep 26, 2026 · 9 min read</p>
-          <p class="doc-desc">A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe.</p>
-          <ul class="tags" aria-label="Categories"><li>AI</li><li>Film</li></ul>
-        </li>
-        <li class="card" data-categories="rendering">
-          <h3 class="doc-title"><a class="stretch" href="/research/webgpu-vs-webgl2" data-visits-event="start-webgpu-vs-webgl2">WebGPU vs WebGL2: what changes and what does not</a></h3>
-          <p class="doc-meta">Sep 27, 2026 · 24 min read</p>
-          <p class="doc-desc">WebGPU vs WebGL2, measured in a Babylon.js game: 1.3 to 1.5 ms faster per frame at native resolution, 9.9 ms at 4x the pixels, for 2.7 MB of shader translators.</p>
-          <ul class="tags" aria-label="Categories"><li>Rendering</li></ul>
+        <li class="card" data-categories="ai tooling">
+          <h3 class="doc-title"><a class="stretch" href="/research/how-codex-embeds-its-browser" data-visits-event="start-how-codex-embeds-its-browser">How Codex embeds its browser, and what a Rust IDE can copy</a></h3>
+          <p class="doc-meta">Oct 24, 2026 · 9 min read</p>
+          <p class="doc-desc">Codex&#39;s browser pane is an Electron webview guest of its own Chromium, driven over CDP by a plugin; a Rust IDE gets there with WKWebView, not by docking Chrome.</p>
+          <ul class="tags" aria-label="Categories"><li>AI</li><li>Tooling</li></ul>
         </li>
         <li class="card" data-categories="ai tooling">
-          <h3 class="doc-title"><a class="stretch" href="/research/voice-profile-vs-pangram" data-visits-event="start-voice-profile-vs-pangram">Why a voice profile didn&#39;t get Claude past Substack&#39;s AI check</a></h3>
-          <p class="doc-meta">Sep 24, 2026 · 8 min read</p>
-          <p class="doc-desc">A Claude draft written to its author&#39;s voice profile scored 100% AI on Substack&#39;s Pangram check. Why, and the workflow that replaced it.</p>
+          <h3 class="doc-title"><a class="stretch" href="/research/bring-the-agents-back-after-a-reboot" data-visits-event="start-bring-the-agents-back-after-a-reboot">Bring the agents back after a reboot</a></h3>
+          <p class="doc-meta">Oct 14, 2026 · 17 min read</p>
+          <p class="doc-desc">After a restart nothing survives, but the layout, scrollback and each agent&#39;s conversation can come back on their own; how Claude Code and Codex differ.</p>
           <ul class="tags" aria-label="Categories"><li>AI</li><li>Tooling</li></ul>
+        </li>
+        <li class="card" data-categories="tooling">
+          <h3 class="doc-title"><a class="stretch" href="/research/update-the-ide-keep-the-shells" data-visits-event="start-update-the-ide-keep-the-shells">Update the IDE, keep the shells</a></h3>
+          <p class="doc-meta">Oct 14, 2026 · 17 min read</p>
+          <p class="doc-desc">Why an IDE update kills the shells and Claude Code agents inside it, which tools keep them, what execve preserves, and how a daemon can swap itself in place.</p>
+          <ul class="tags" aria-label="Categories"><li>Tooling</li></ul>
         </li>
         <li class="card" data-categories="distributed-systems">
           <h3 class="doc-title"><a class="stretch" href="/research/browser-coop-netcode" data-visits-event="start-browser-coop-netcode">Host-authoritative co-op netcode in the browser</a></h3>
           <p class="doc-meta">Jul 25, 2026 · 15 min read</p>
           <p class="doc-desc">How Day Hike&#39;s browser co-op stays responsive: a 60 Hz fixed step, redundant inputs, quantized snapshots, prediction, and host-created lobbies.</p>
           <ul class="tags" aria-label="Categories"><li>Distributed systems</li></ul>
+        </li>
+        <li class="card" data-categories="rendering">
+          <h3 class="doc-title"><a class="stretch" href="/research/ground-fog-without-the-wall" data-visits-event="start-ground-fog-without-the-wall">Volumetric ground fog without the sprite wall</a></h3>
+          <p class="doc-meta">Oct 7, 2026 · 9 min read</p>
+          <p class="doc-desc">How AAA engines draw ground fog as a frustum-aligned volume instead of sprites, what it costs, where it ghosts, and which of it a browser game can run.</p>
+          <ul class="tags" aria-label="Categories"><li>Rendering</li></ul>
         </li>
       </ul>
     </section>

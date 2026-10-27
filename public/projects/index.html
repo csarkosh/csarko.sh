@@ -380,7 +380,7 @@
     }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
-      .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
+      .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg, .card-source { transition: none; }
     }
     .project-card { flex-direction: row; align-items: flex-start; gap: 24px; }
     .project-media { flex: none; width: 360px; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); line-height: 0; }
@@ -399,9 +399,14 @@
     .film-notice { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 14px; padding-left: 14px; border-left: 2px solid var(--warning); color: var(--warning); font-size: 14px; font-weight: 600; line-height: 1.5; }
     .film-notice svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
     /* The home page's .card-link ("Play in your browser"), here as the card's own link. */
-    .card-link { align-self: flex-start; margin-top: 18px; font-size: 14px; font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
+    .card-links { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; margin-top: 18px; }
+    .card-link { font-size: 14px; font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
     .card-link svg { width: 14px; height: 14px; transition: transform .18s ease; }
     .card:hover .card-link svg { transform: translate(2px, -2px); }
+    /* The repo link: lifted above the card's overlay, quieter than the card's own link. */
+    .card-source { position: relative; z-index: 1; font-size: 14px; font-weight: 500; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; transition: color .15s ease, text-decoration-color .15s ease; }
+    .card-source:hover, .card-source:focus-visible { color: var(--accent); text-decoration-color: var(--accent); }
+    .card-source svg { width: 14px; height: 14px; }
     @media (max-width: 640px) {
       .project-card { flex-direction: column; gap: 0; }
       .project-card .project-body { display: contents; }
@@ -412,7 +417,7 @@
       .project-card .project-media.film-poster { width: 200px; align-self: flex-start; }
       .project-card .project-desc { order: 5; }
       .project-card .tags { order: 6; }
-      .project-card .card-link { order: 7; }
+      .project-card .card-links { order: 7; }
     }
   </style>
 </head>
@@ -457,7 +462,7 @@ to how horror directors build dread, and <a href="/research">publish what I find
 those docs shaped what you see on the trail.</p>
           </div>
           <ul class="tags" role="list"><li>TypeScript</li><li>Babylon.js</li><li>WebRTC</li><li>Claude Code</li></ul>
-          <a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+          <div class="card-links"><a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-source" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener" data-visits-event="source-day-hike">Source on GitHub <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
         </div>
       </li>
       <li class="card project-card" id="ide-arkos">
@@ -486,7 +491,7 @@ Arkos itself. The hardest parts started as research with Claude, such as
 <a href="/research/update-the-ide-keep-the-shells" data-visits-event="doc-update-the-ide-keep-the-shells">keeping the shells alive through an update</a>.</p>
           </div>
           <ul class="tags" role="list"><li>Rust</li><li>GPUI</li><li>macOS</li><li>Claude Code</li></ul>
-          <a class="card-link stretch" href="https://apps.csarko.sh/ide-arkos" data-visits-event="app-ide-arkos">Install and docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+          <div class="card-links"><a class="card-link stretch" href="https://apps.csarko.sh/ide-arkos" data-visits-event="app-ide-arkos">Install and docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-source" href="https://github.com/csarkosh/ide-arkos" target="_blank" rel="noopener" data-visits-event="source-ide-arkos">Source on GitHub <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
         </div>
       </li>
       <li class="card project-card" id="lib-visits">
@@ -518,7 +523,7 @@ one took, with no cookies, no stored ID and no fingerprinting.</p>
 people read and where they came from, straight from the command line.</p>
           </div>
           <ul class="tags" role="list"><li>Rust</li><li>JavaScript</li><li>Analytics</li><li>Claude Code</li></ul>
-          <a class="card-link stretch" href="https://apps.csarko.sh/lib-visits" data-visits-event="app-lib-visits">Download and docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+          <div class="card-links"><a class="card-link stretch" href="https://apps.csarko.sh/lib-visits" data-visits-event="app-lib-visits">Download and docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-source" href="https://github.com/csarkosh/lib-visits" target="_blank" rel="noopener" data-visits-event="source-lib-visits">Source on GitHub <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
         </div>
       </li>
       <li class="card project-card" id="who-is-standing-in-my-hallway">
@@ -542,7 +547,7 @@ apart and animated across frames, then finished with a VHS pass.</p>
 generation can go toward a film that keeps the same actor and the same room from shot to shot.</p>
           </div>
           <ul class="tags" role="list"><li>Analog horror</li><li>Found footage</li><li>AI generated</li></ul>
-          <a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener" data-visits-event="watch-who-is-standing-in-my-hallway">Watch on YouTube <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+          <div class="card-links"><a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener" data-visits-event="watch-who-is-standing-in-my-hallway">Watch on YouTube <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
         </div>
       </li>
       <li class="card project-card" id="app-macstats">
@@ -566,7 +571,7 @@ draws any menu bar item to an image, so an agent can read and see what it change
 took the panel screenshots in its README.</p>
           </div>
           <ul class="tags" role="list"><li>Swift</li><li>AppKit</li><li>macOS</li><li>Claude Code</li></ul>
-          <a class="card-link stretch" href="https://apps.csarko.sh/app-macstats" data-visits-event="app-app-macstats">Install and docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+          <div class="card-links"><a class="card-link stretch" href="https://apps.csarko.sh/app-macstats" data-visits-event="app-app-macstats">Install and docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-source" href="https://github.com/csarkosh/app-macstats" target="_blank" rel="noopener" data-visits-event="source-app-macstats">Source on GitHub <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
         </div>
       </li>
     </ul>

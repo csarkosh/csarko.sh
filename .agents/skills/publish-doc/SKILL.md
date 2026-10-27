@@ -227,6 +227,9 @@ full list below, which the chips filter alone. Featuring a doc is not a revision
 `updated` alone. Pick by the admin dashboard's What they read and Search cards, not by date,
 and lead with docs that reward a short visit *(2026-10-23: ground fog and the AI horror short,
 9 and 10 minutes, kept readers longest; a 26 or 79 minute doc is a poor first card)*.
+*(2026-10-26, for Staff roles at AI companies: the row leads with the agent and infrastructure docs,
+How Codex embeds its browser (9 min) first, then the two Arkos reboot and update docs, the netcode
+doc and ground fog; the 40-minute telemetry doc stays out of the row.)*
 Each card's click counts as `start-<slug>`.
 
 To **update** a doc, edit its file and set `updated`. To **remove** one, delete
