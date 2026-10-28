@@ -178,7 +178,8 @@ three from the command line):
   pipeline and its evals, the AI agents, AI order-taking) without numbers
   *(2026-10-08)*. He did not lead Voice AI's pivot to AI: he led AI order-taking
   from prototype to first production traffic and on to peak scale *(2026-10-26)*.
-  Say "prototype", never "demoware". **No "Founding engineer"** in GEM's or Voice AI's line *(2026-10-26,
+  Say "prototype", never "demoware". GEM is **Guest Experience Management** *(Cyrus, 2026-10-26; DoorDash's
+  public product page uses the same name)*, never "Guest Reputation Management". **No "Founding engineer"** in GEM's or Voice AI's line *(2026-10-26,
   from a review of ~170 recruiter messages: it drew seed-stage founding pitches, while the target is
   Staff-level IC roles at large companies)*: they open "Engineering lead for …" and name the scope
   (technical direction, team growth, design reviews, on-call and SLOs), still without numbers.
