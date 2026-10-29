@@ -108,9 +108,10 @@ Scheduler job, Firestore and the budget. The image is built from this directory'
 gcloud run deploy csarko-admin --source admin/api --region us-west1 --project csarko-sh
 ```
 
-`admin/deploy.sh` runs that when `admin/api/` changed. Do not pass `--set-env-vars` or
-`--update-secrets` on that command: the environment is Terraform's, and a value set by
-hand would be a diff on the next plan. A Dockerfile rather than buildpacks so the Node
+Run it by hand from the repo's root after anything under `admin/api/` changes: `admin/deploy.sh`
+publishes only the Hosting site (the pages under `admin/public/`) and never deploys the API.
+Do not pass `--set-env-vars` or `--update-secrets` on that command: the environment is
+Terraform's, and a value set by hand would be a diff on the next plan. A Dockerfile rather than buildpacks so the Node
 version, the dependency set and the user are pinned in the repo instead of inferred.
 
 ## Layout

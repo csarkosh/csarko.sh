@@ -200,8 +200,8 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 /* Cards: the site's card, as a section rather than a link. */
 .grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; }
 .card { grid-column: span 12; position: relative; display: flex; flex-direction: column; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
-.card.half { grid-column: span 6; }
-.card.third { grid-column: span 4; }
+/* Every card spans the page, one under another (Cyrus, 2026-10-29: side-by-side cards sized
+   badly). The old .half and .third classes, which Day Hike's bundle may still set, change nothing. */
 .card > h2, .card .card-title { margin: 0 0 4px; font-size: 1.2rem; line-height: 1.35; letter-spacing: -0.015em; font-weight: 600; }
 .card .card-title a { transition: color .15s ease; }
 .card .card-title a:hover { color: var(--accent); }
@@ -458,9 +458,6 @@ footer { border-top: 1px solid var(--border); padding-block: 28px 40px; color: v
 footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
 footer .mono { font-family: var(--mono); }
 
-@media (max-width: 900px) {
-  .card.half, .card.third { grid-column: span 12; }
-}
 @media (max-width: 640px) {
   .nav ul { gap: 14px; }
   .nav ul a { font-size: 13.5px; }

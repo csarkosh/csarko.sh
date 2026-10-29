@@ -13,7 +13,7 @@
 
 import { accountMenu, requireSession } from '/auth.js';
 import { ago, bars, columns, compact, delta, el, errorLine, folded, loading, pct, shortDay, status, table, tile } from '/charts.js';
-import { RANGES, loadApps, preview, source, utcMidnightHere, viewerZone, viewerZoneName } from '/data.js';
+import { RANGES, loadApps, preview, readRange, readToggles, source, utcMidnightHere, viewerZone, viewerZoneName, writeRange, writeToggles } from '/data.js';
 
 const SLUG = 'csarko.sh';
 const root = document.getElementById('top');
@@ -23,7 +23,7 @@ const account = document.getElementById('account');
 
 const data = source();
 let app = null;
-let range = 7;
+let range = readRange();
 let generation = 0;
 
 const rangeText = (days) => (days === 1 ? 'the last 24 hours' : `the last ${days} days`);
@@ -290,13 +290,17 @@ const JOURNEY_FILTERS = [
   { id: 'click', label: 'Only with a click', on: false, keep: (j) => j.exit?.kind === 'click' },
 ];
 const JOURNEYS_SHOWN = 8;
+// The row's state lives in the address as ?journeys=<ids on> (none: `none`), left out at the defaults.
+const JOURNEY_IDS = JOURNEY_FILTERS.map((f) => f.id);
+const JOURNEY_DEFAULTS = JOURNEY_FILTERS.filter((f) => f.on).map((f) => f.id);
 
 function journeysCard([journeys]) {
   if (!journeys.rows) return [notConfigured(missing(journeys, 'visits'))];
   const rows = journeys.rows;
   if (!rows.length) return [...errorLines(journeys), el('p', { class: 'empty' }, 'No visits in this range yet. Journeys start at the cutover to lib-visits, 2026-10-15.')];
   const now = Date.now();
-  const state = Object.fromEntries(JOURNEY_FILTERS.map((f) => [f.id, f.on]));
+  const on = readToggles('journeys', JOURNEY_IDS, JOURNEY_DEFAULTS);
+  const state = Object.fromEntries(JOURNEY_FILTERS.map((f) => [f.id, on.has(f.id)]));
   const hidden = el('span', { class: 'j-hidden', role: 'status' });
   const host = el('div', { class: 'j-list' });
   const list = (items) => el('ol', { class: 'journeys', role: 'list' }, ...items.map((j) => journey(j, now)));
@@ -314,6 +318,7 @@ function journeysCard([journeys]) {
     b.addEventListener('click', () => {
       state[f.id] = !state[f.id];
       b.setAttribute('aria-pressed', String(state[f.id]));
+      writeToggles('journeys', new Set(JOURNEY_IDS.filter((id) => state[id])), JOURNEY_DEFAULTS);
       render();
     });
     return b;
@@ -520,20 +525,20 @@ function searchSub(d, search) {
 /** Each card: its queries, its copy, how it renders, and the skeleton that stands in for it while the queries run. */
 const CARDS = [
   { id: 'visitors', title: 'Visitors', queries: ['visits'], sub: visitorsSub, render: visitorsCard, skeleton: { tiles: 2, chart: true } },
-  { id: 'referrers', title: 'Where they come from', half: true, queries: ['referrers'], sub: () => `Visitors by where the visit started; the raw referrers and the tagged links folded below. ${GOATCOUNTER_NOTE}`, render: referrersCard, skeleton: { lines: 6 } },
-  { id: 'pages', title: 'What they read', half: true, queries: ['pages'], sub: () => `Pages by visitors; the paths that hit the 404 page folded below. ${GOATCOUNTER_NOTE}`, render: pagesCard, skeleton: { lines: 6 } },
+  { id: 'referrers', title: 'Where they come from', queries: ['referrers'], sub: () => `Visitors by where the visit started; the raw referrers and the tagged links folded below. ${GOATCOUNTER_NOTE}`, render: referrersCard, skeleton: { lines: 6 } },
+  { id: 'pages', title: 'What they read', queries: ['pages'], sub: () => `Pages by visitors; the paths that hit the 404 page folded below. ${GOATCOUNTER_NOTE}`, render: pagesCard, skeleton: { lines: 6 } },
   { id: 'events', title: 'Where they go next', queries: ['events', 'visits'], sub: () => `Clicks out to a profile, to play, to watch, and docs read to the end. ${GOATCOUNTER_NOTE}`, render: eventsCard, skeleton: { tiles: 3, lines: 4 } },
   { id: 'journeys', title: 'Journeys', queries: ['journeys'], sub: () => 'The most recent visits, newest first, each from where it came to how it left: every page with when it was reached, how far it was scrolled, how long it was visible and on screen, its LCP, and the click that ended the visit. From lib-visits, so since the cutover only.', render: journeysCard, skeleton: { lines: 6 } },
   { id: 'search', title: 'Search', queries: ['search'], sub: searchSub, render: searchCard, skeleton: { tiles: 4, chart: true } },
   { id: 'reach', title: 'Reach', queries: ['reach'], sub: () => 'YouTube, GitHub, Hacker News and Substack: exposure beyond the site. A section reads Not configured until its credential is in Secret Manager.', render: reachCard, skeleton: { tiles: 3, lines: 4 } },
-  { id: 'health', title: 'Health', half: true, queries: ['health'], sub: () => '', render: healthCard, skeleton: { tiles: 4, lines: 1 } },
-  { id: 'audience', title: 'Audience', half: true, queries: ['audience'], sub: () => '', render: audienceCard, skeleton: { lines: 5 } },
+  { id: 'health', title: 'Health', queries: ['health'], sub: () => '', render: healthCard, skeleton: { tiles: 4, lines: 1 } },
+  { id: 'audience', title: 'Audience', queries: ['audience'], sub: () => '', render: audienceCard, skeleton: { lines: 5 } },
 ];
 
 // ---------------------------------------------------------------- the page
 
 function cardShell(def) {
-  return el('section', { class: `card${def.half ? ' half' : ''}`, id: `card-${def.id}`, 'aria-labelledby': `title-${def.id}` },
+  return el('section', { class: 'card', id: `card-${def.id}`, 'aria-labelledby': `title-${def.id}` },
     el('h2', { id: `title-${def.id}` }, def.title),
     el('p', { class: 'sub' }, def.sub(range)),
     loading(def.skeleton));
@@ -581,6 +586,7 @@ function rangeButtons() {
     b.addEventListener('click', () => {
       if (range === r.days) return;
       range = r.days;
+      writeRange(range);
       for (const other of buttons) other.setAttribute('aria-pressed', String(other === b));
       load();
     });

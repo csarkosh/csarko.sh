@@ -16,7 +16,7 @@
 
 import { accountMenu, requireSession } from '/auth.js';
 import { ago, bars, columns, compact, delta, el, errorLine, folded, loading, pct, shortDay, table, tile } from '/charts.js';
-import { RANGES, loadApps, preview, source, utcMidnightHere, viewerZone, viewerZoneName } from '/data.js';
+import { RANGES, loadApps, preview, readParam, readRange, readToggles, source, utcMidnightHere, viewerZone, viewerZoneName, writeParam, writeRange, writeToggles } from '/data.js';
 
 const SLUG = 'ide-arkos';
 const root = document.getElementById('top');
@@ -28,13 +28,13 @@ const account = document.getElementById('account');
 
 const data = source();
 let app = null;
-let range = 7;
+let range = readRange();
 const WHOS = [
   { who: 'users', label: 'Users', note: 'Everyone but you. Your Macs are kept out: they say dogfood (an empty ~/.config/arkos/dogfood), or their rows came from your home addresses.' },
   { who: 'me', label: 'You', note: 'Only your own Macs: the ones that say dogfood, and rows from your home addresses.' },
   { who: 'all', label: 'Both', note: 'Everyone, you included.' },
 ];
-const whoAsked = new URLSearchParams(location.search).get('who');
+const whoAsked = readParam('who');
 let who = WHOS.some((w) => w.who === whoAsked) ? whoAsked : 'all';
 let generation = 0;
 // Seven cards read the one journey answer: each query is asked once per range and whose use.
@@ -272,7 +272,8 @@ function pathRows(paths) {
 function pathsCard([journey]) {
   if (!journey.paths) return [notConfigured(missing(journey, 'visits'))];
   if (!num(journey.sessions)) return noSessions(journey);
-  let showFirst = false;
+  // ?paths=first keeps the row on first sessions across a refresh.
+  let showFirst = readParam('paths') === 'first';
   const host = el('div');
   const render = () => {
     const paths = showFirst ? journey.paths.first : journey.paths;
@@ -295,6 +296,7 @@ function pathsCard([journey]) {
     const b = el('button', { type: 'button', 'aria-pressed': String(first === showFirst) }, text);
     b.addEventListener('click', () => {
       showFirst = first;
+      writeParam('paths', first ? 'first' : null);
       for (const other of buttons) other.setAttribute('aria-pressed', String(other === b));
       render();
     });
@@ -534,7 +536,10 @@ function sessionsCard([sessions]) {
   if (!sessions.rows) return [notConfigured(missing(sessions, 'visits'))];
   if (!sessions.rows.length) return noSessions(sessions);
   const now = Date.now();
-  const state = Object.fromEntries(SESSION_FILTERS.map((f) => [f.id, false]));
+  // ?sessions=<ids on> keeps the row across a refresh; every toggle is off by default.
+  const ids = SESSION_FILTERS.map((f) => f.id);
+  const on = readToggles('sessions', ids, []);
+  const state = Object.fromEntries(ids.map((id) => [id, on.has(id)]));
   const hidden = el('span', { class: 'j-hidden', role: 'status' });
   const host = el('div', { class: 'j-list' });
   const list = (items) => el('ol', { class: 'journeys', role: 'list' }, ...items.map((s) => session(s, now)));
@@ -548,10 +553,11 @@ function sessionsCard([sessions]) {
     ].filter(Boolean));
   };
   const buttons = SESSION_FILTERS.map((f) => {
-    const b = el('button', { type: 'button', 'aria-pressed': 'false' }, f.label);
+    const b = el('button', { type: 'button', 'aria-pressed': String(state[f.id]) }, f.label);
     b.addEventListener('click', () => {
       state[f.id] = !state[f.id];
       b.setAttribute('aria-pressed', String(state[f.id]));
+      writeToggles('sessions', new Set(ids.filter((id) => state[id])), []);
       render();
     });
     return b;
@@ -568,8 +574,8 @@ const CARDS = [
   { id: 'milestones', title: 'How far sessions get', queries: ['journey'], sub: () => 'The share of sessions that reached each milestone at any point, and the median time from the launch to the first time, for all sessions and for first sessions (a copy’s first run with usage reports on).', render: milestonesCard, skeleton: { lines: 7 } },
   { id: 'next', title: 'What comes next', queries: ['journey'], sub: () => 'For the most common steps, what people did right after, as a share of the sessions that took the step. A step often followed by Ended, an error or a help page is a place to smooth.', render: nextCard, skeleton: { lines: 8 } },
   { id: 'features', title: 'What gets used', queries: ['journey'], sub: () => 'Features by the sessions that used them, and how tabs get opened: by the palette, a shortcut or a click, which says whether the shortcuts are found.', render: featuresCard, skeleton: { lines: 8 } },
-  { id: 'time', title: 'Time', half: true, queries: ['journey'], sub: () => 'Hours the window was in front, by surface; how long sessions run; how they end.', render: timeCard, skeleton: { lines: 6 } },
-  { id: 'friction', title: 'Friction', half: true, queries: ['journey'], sub: () => 'What went wrong where people saw it, and sessions lost to a crash or a force quit.', render: frictionCard, skeleton: { tiles: 3, lines: 4 } },
+  { id: 'time', title: 'Time', queries: ['journey'], sub: () => 'Hours the window was in front, by surface; how long sessions run; how they end.', render: timeCard, skeleton: { lines: 6 } },
+  { id: 'friction', title: 'Friction', queries: ['journey'], sub: () => 'What went wrong where people saw it, and sessions lost to a crash or a force quit.', render: frictionCard, skeleton: { tiles: 3, lines: 4 } },
   { id: 'return', title: 'Coming back', queries: ['journey'], sub: () => 'How long since a copy’s previous session, and the sessions of each install week in the weeks after it. No id is kept: both come from what each report says about its own copy.', render: returnCard, skeleton: { lines: 6 } },
   { id: 'crashes', title: 'Crashes', queries: ['crashes'], sub: () => 'Crash reports people agreed to send, grouped by where the panic happened, with the offsets to symbolicate against the release’s dSYM. Lost sessions are the runs that ended without a quit, reported or not.', render: crashesCard, skeleton: { tiles: 3, lines: 5 } },
   { id: 'sessions', title: 'Recent sessions', queries: ['sessions'], sub: () => `The newest sessions in full, newest first: each step at its time since the launch, how long the window was in front on each surface, and how it ended. Times are in ${viewerZoneName}; a session is reported after it ends, so it started its length before it arrived.`, render: sessionsCard, skeleton: { lines: 6 } },
@@ -578,7 +584,7 @@ const CARDS = [
 // ---------------------------------------------------------------- the page
 
 function cardShell(def) {
-  return el('section', { class: `card${def.half ? ' half' : ''}`, id: `card-${def.id}`, 'aria-labelledby': `title-${def.id}` },
+  return el('section', { class: 'card', id: `card-${def.id}`, 'aria-labelledby': `title-${def.id}` },
     el('h2', { id: `title-${def.id}` }, def.title),
     el('p', { class: 'sub' }, def.sub(range)),
     loading(def.skeleton));
@@ -624,6 +630,7 @@ function rangeButtons() {
     b.addEventListener('click', () => {
       if (range === r.days) return;
       range = r.days;
+      writeRange(range);
       for (const other of buttons) other.setAttribute('aria-pressed', String(other === b));
       load();
     });
@@ -641,10 +648,7 @@ function whoButtons() {
       who = w.who;
       for (const other of buttons) other.setAttribute('aria-pressed', String(other === b));
       note();
-      const url = new URL(location.href);
-      if (who === 'all') url.searchParams.delete('who');
-      else url.searchParams.set('who', who);
-      history.replaceState(null, '', url);
+      writeParam('who', who === 'all' ? null : who);
       load();
     });
     return b;

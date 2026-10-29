@@ -16,6 +16,45 @@ export const RANGES = [
 export const params = new URLSearchParams(location.search);
 export const preview = params.has('preview');
 
+/**
+ * The chips keep their state in the address (Cyrus, 2026-10-29), so a refresh or a shared link
+ * opens on the same view: `?range=30`, `?who=me`, and one parameter a card's filter row. A row at
+ * its default leaves its parameter out; the other parameters (`preview` among them) are kept.
+ */
+export function readParam(name) {
+  return new URLSearchParams(location.search).get(name);
+}
+export function writeParam(name, value) {
+  const url = new URL(location.href);
+  if (value === null || value === undefined) url.searchParams.delete(name);
+  else url.searchParams.set(name, value);
+  // Commas stay commas, so a list reads as one (`sessions=first,lost`); the values are ids. A
+  // bare flag stays bare (`?preview`, not `?preview=`): no chip writes an empty value.
+  const search = url.search.replace(/%2C/gi, ',').replace(/=(?=&|$)/g, '');
+  history.replaceState(history.state, '', url.pathname + search + url.hash);
+}
+
+/** The range the address names, else the default. */
+export function readRange(fallback = 7) {
+  const days = Number(readParam('range'));
+  return RANGES.some((r) => r.days === days) ? days : fallback;
+}
+export const writeRange = (days, fallback = 7) => writeParam('range', days === fallback ? null : String(days));
+
+/**
+ * A filter row's toggles from the address: the ids it names (`none` for no toggle on), or the
+ * row's defaults when it names none. Ids it does not know are dropped.
+ */
+export function readToggles(name, ids, defaults) {
+  const raw = readParam(name);
+  if (raw === null) return new Set(defaults);
+  return new Set(raw.split(',').filter((id) => ids.includes(id)));
+}
+export function writeToggles(name, on, defaults) {
+  const same = on.size === defaults.length && defaults.every((id) => on.has(id));
+  writeParam(name, same ? null : [...on].join(',') || 'none');
+}
+
 /** The reader's IANA zone, the browser's own: every API cuts its days in it and every clock on the pages shows it. */
 export const viewerZone = (() => {
   try {
