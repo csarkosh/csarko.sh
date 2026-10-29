@@ -1,7 +1,7 @@
 // Tests for docs_lib.mjs. Run: node --test .agents/skills/site-quality/tests/docs_lib.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSite, CATEGORIES, categorySlug, DATED_SINCE, DocError, docLinks, docPage, feed, IEEE_SINCE, undatedParagraphs, formatDate, indexPage, loadApp, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, projectsPage, readingMinutes, renderMarkdown, sitemap, sortDocs, sortProjects, standaloneShell, themeBlocks } from '../scripts/docs_lib.mjs';
+import { buildSite, PROJECT_KINDS, CATEGORIES, categorySlug, DATED_SINCE, DocError, docLinks, docPage, feed, IEEE_SINCE, undatedParagraphs, formatDate, indexPage, loadApp, loadDoc, loadFilm, loadGame, parseDocFileName, parseFilmFileName, parseFrontMatter, parseGameFileName, projectsPage, readingMinutes, renderMarkdown, sitemap, sortDocs, sortProjects, standaloneShell, themeBlocks } from '../scripts/docs_lib.mjs';
 
 const FILE = 'docs/published/2026-09-14-example.md';
 const DESC = 'A description that is long enough to pass the seventy character minimum for search.';
@@ -430,7 +430,7 @@ test('a game card: its kicker, tags and play link, stretched over the card, and 
   assert.ok(html.includes('<p class="project-kicker">Playable now · No install</p>'));
   assert.ok(html.includes('<ul class="tags" role="list"><li>TypeScript</li><li>Babylon.js</li></ul>'));
   // No alt, no preview: a plain card. Its id is the slug, so /projects#day-hike lands on it.
-  assert.ok(html.includes('<li class="card" id="day-hike">'));
+  assert.ok(html.includes('<li class="card" id="day-hike" data-kind="games">'));
   assert.ok(html.includes('<a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play in your browser <svg'));
   // The repo gets its own smaller link beside it, above the overlay (2026-10-26).
   assert.ok(html.includes('<a class="card-source" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener" data-visits-event="source-day-hike">Source on GitHub <svg'));
@@ -452,7 +452,7 @@ test('a game with only a repo gets only the source link; with no links, none, an
 
 test('a game with an alt gets a preview the asset build fills, as an app does', () => {
   const html = projectsPage([game('day-hike', ['alt: Postcards from the trail', 'order: 1'])], themeBlocks(INDEX));
-  assert.ok(html.includes('<li class="card project-card" id="day-hike">'));
+  assert.ok(html.includes('<li class="card project-card" id="day-hike" data-kind="games">'));
   assert.ok(html.includes('<!-- generated:app-preview:day-hike -->\n'));
   assert.ok(html.includes('<img src="/projects/day-hike.jpg" alt="Postcards from the trail" loading="lazy" decoding="async" />'));
   assert.throws(() => game('x', ['order: 0']), /order must be a whole number from 1/);
@@ -524,7 +524,7 @@ const WATCH = 'https://www.youtube.com/shorts/jBh7F1knRAA';
 const filmSrc = (slug, lines = [], body = 'The story.') => {
   const keys = lines.map((l) => l.split(':')[0]);
   const base = [['watch', WATCH], ['released', '2026-09-17'], ['runtime', '0:16'],
-    ['alt', 'A woman in a dim hallway.'], ['tags', 'Analog horror, Photo puppetry']]
+    ['alt', 'A woman in a dim hallway.'], ['tags', 'Analog horror, Photo puppetry'], ['model', 'Video model: Veo 3.1']]
     .filter(([k]) => !keys.includes(k)).map(([k, v]) => `${k}: ${v}`);
   return { name: `${slug}.md`, text: `---\ndescription: ${DESC}\n${[...base, ...lines].map((l) => `${l}\n`).join('')}---\n# ${slug} title\n\n${body}\n` };
 };
@@ -584,9 +584,9 @@ test('loadFilm refuses front matter it cannot trust', () => {
 
 test('a film card: the poster, the warning under the title, a YouTube link and VideoObject JSON-LD', () => {
   const html = projectsPage([film('hallway')], themeBlocks(INDEX));
-  assert.ok(html.includes('<li class="card project-card" id="hallway">'));
+  assert.ok(html.includes('<li class="card project-card" id="hallway" data-kind="film">'));
   assert.ok(html.includes('<p class="project-kicker">Short film · 0:16</p>'));
-  assert.ok(html.includes('<ul class="tags" role="list"><li>Analog horror</li><li>Photo puppetry</li></ul>'));
+  assert.ok(html.includes('<ul class="tags" role="list"><li class="tag-model">Video model: Veo 3.1</li><li>Analog horror</li><li>Photo puppetry</li></ul>'));
   assert.ok(html.includes('<a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener" data-visits-event="watch-hallway">Watch on YouTube <svg'));
   // The poster is a marker build_assets.py fills, carrying a usable img and its alt until it does.
   assert.ok(html.includes('<div class="project-media film-poster">'));
@@ -660,11 +660,11 @@ test('standaloneShell wears none of the site\'s chrome: its own bar, its own foo
 
 test('an app with an alt gets a preview the asset build fills; one without gets a plain card', () => {
   const html = projectsPage([app('app-macstats', ['alt: The menu bar']), app('tool')], themeBlocks(INDEX));
-  assert.ok(html.includes('<li class="card project-card" id="app-macstats">'));
+  assert.ok(html.includes('<li class="card project-card" id="app-macstats" data-kind="apps">'));
   assert.ok(html.includes('<!-- generated:app-preview:app-macstats -->\n'));
   assert.ok(html.includes('<img src="/projects/app-macstats.jpg" alt="The menu bar" loading="lazy" decoding="async" />'));
   assert.ok(!html.includes('generated:app-preview:tool'), 'no alt, no preview');
-  assert.ok(html.includes('<li class="card" id="tool">'));
+  assert.ok(html.includes('<li class="card" id="tool" data-kind="apps">'));
   assert.equal((html.match(/>Download and docs <svg/g) ?? []).length, 2, 'the default link');
   assert.ok(projectsPage([app('m', ['link: Install and docs'])], themeBlocks(INDEX)).includes('data-visits-event="app-m">Install and docs <svg'));
   assert.deepEqual(app('s', ['sections: Keyboard, Config , License']).sections, ['Keyboard', 'Config', 'License']);
@@ -802,4 +802,36 @@ test('a doc from DATED_SINCE says when its present was', () => {
   assert.doesNotThrow(() => load(longDoc('d', DATED_SINCE, '', 'As of Oct 24, 2026, Day Hike draws an analytic fog.')));
   // Docs before it build as they are.
   assert.doesNotThrow(() => load(longDoc('d', '2026-10-23', '', 'Day Hike currently draws an analytic fog.')));
+});
+
+// ---------------------------------------------------------------- 2026-10-29: model tags, kind chips
+
+test('a film names its main AI model as the first tag, lit, and nothing else does', () => {
+  const html = projectsPage([film('hallway', ['model: Image model: Qwen-Image-Edit']), game('day-hike')], themeBlocks(INDEX));
+  assert.ok(html.includes('<ul class="tags" role="list"><li class="tag-model">Image model: Qwen-Image-Edit</li><li>Analog horror</li>'));
+  assert.equal((html.match(/class="tag-model"/g) ?? []).length, 1);
+  assert.ok(html.includes('.tags li.tag-model {'));
+});
+
+test('a film must say its model the way the tag reads', () => {
+  for (const bad of ['model: Veo 3.1', 'model: Audio model: X', 'model: Video model: ', `model: Video model: ${'x'.repeat(41)}`]) {
+    rejectsFilm('x', [bad], /model must read "Video model: <name>" or "Image model: <name>"|front matter needs "model"/);
+  }
+  assert.equal(film('x', ['model: Video model: Veo 3.1']).model, 'Video model: Veo 3.1');
+});
+
+test('/projects carries Apps, Film and Games chips with counts, All as a reset, and a CSS rule a kind', () => {
+  assert.deepEqual(PROJECT_KINDS.map(([v, l]) => [v, l]), [['apps', 'Apps'], ['film', 'Film'], ['games', 'Games']]);
+  const html = projectsPage([game('day-hike'), app('lib-visits'), film('a'), film('b')], themeBlocks(INDEX));
+  assert.ok(html.includes('<form class="filters" aria-label="Filter by kind">'));
+  assert.ok(html.includes('<button type="reset" class="chip all" data-visits-event="filter-all">All <small>4</small></button>'));
+  for (const [value, label, count] of [['apps', 'Apps', 1], ['film', 'Film', 2], ['games', 'Games', 1]]) {
+    assert.ok(html.includes(`<label class="chip"><input type="checkbox" name="kind" value="${value}" id="kind-${value}" data-visits-event="filter-${value}" />${label} <small>${count}</small></label>`), label);
+    assert.ok(html.includes(`.docs-index:has(#kind-${value}:checked) .project-list > li[data-kind~="${value}"] { display: flex; }`), label);
+  }
+  assert.ok(html.includes('.docs-index:has(.filters input:checked) .project-list > li { display: none; }'));
+  assert.ok(html.includes('id="day-hike" data-kind="games"'));
+  assert.ok(html.includes('id="lib-visits" data-kind="apps"'));
+  assert.ok(html.includes('id="a" data-kind="film"'));
+  assert.ok(html.indexOf('<form class="filters"') < html.indexOf('<ul class="project-list"'), 'the chips sit above the cards');
 });

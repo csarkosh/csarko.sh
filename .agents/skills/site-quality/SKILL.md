@@ -57,6 +57,7 @@ Same inputs, same outputs (two builds produce identical hashes).
 | `public/research/feed.xml` | `docs/published/` via `build_docs.mjs` | The Atom feed of every doc, newest first; doc pages and `/research` link it as `rel="alternate"`. |
 | `public/assets/fig-<slug>-<name>-<w>.<hash>.{avif,webp,jpg}`, `fig-<slug>-<name>.<hash>.svg`, `public/research/figures/<slug>-<name>.{jpg,svg}` | `assets/research/<slug>/<name>.{png,svg}`, a doc's figures *(2026-10-23)* | `build_docs.mjs` reads each file's size and writes a `<!-- generated:figure:<slug>/<name> -->` marker holding a plain `<img>` with the Markdown's alt; `build_assets.py` swaps in the hashed `<picture>` (an SVG as one `<img>`). The stable JPEG, cut to 1200x630 from the middle, is the doc's share card when its first figure is a PNG. See the `publish-doc` skill's "Figures". |
 | `public/assets/reading.<hash>.js` | `assets/reading.js` | A doc page's own script, written into its `generated:analytics` block after the lib-visits tags: the contents rail's current section, and the `section` event. Whole-line comments stripped before hashing, so its source can explain itself. |
+| `public/assets/filters.<hash>.js` | `assets/filters.js` | `/projects`' and `/research`'s own script *(2026-10-29)*, in the same block: a link's `?filter=a,b` (the chips' values) checks those chips on load, and each chip change writes the checked ones back into the address bar, keeping other parameters such as `?ref=`. The chips still filter through CSS alone; without the script a filter link just opens unfiltered. About 790 B. |
 | `public/sitemap.xml` | `docs/published/`, `docs/games/` and `docs/films/` via `build_docs.mjs` | `/`, `/film`, `/games`, `/research` (no `lastmod` on any of the four), then each doc with its own. Each section's URL appears only while it has content. |
 | `public/assets/portrait-{240,360,480,720}.<hash>.{avif,webp,jpg}` | `assets/portrait-source.jpg` | Responsive LCP image. Desktop 2x loads a ~15 KB AVIF instead of a 100 KB JPEG. |
 | `public/assets/<font>.<hash>.woff2` | `assets/fonts/*.woff2` | Inter + JetBrains Mono variable, latin subset. License: `public/licenses/fonts-OFL.txt`. |
@@ -166,7 +167,7 @@ section means renaming it in `PAGE_LINKS`/`DOCS_NAV` and nowhere else.
 
 [lib-visits](https://github.com/csarkosh/lib-visits) (tag `v0.1.0`), configured only
 in `site.json` (`analytics.provider` is `visits`, `endpoint` is `/v`). The generator
-writes the two `<script>` tags into every page (a doc page also gets `reading.js`, below), the hashed self-hosted
+writes the two `<script>` tags into every page (a doc page also gets `reading.js`, below, and `/projects` and `/research` get `filters.js`), the hashed self-hosted
 `visits.min.js` and `vitals.min.js`, and the CSP (`script-src 'self'`,
 `connect-src 'self'`: no third-party origin); `check.py` derives its allowlist from
 the same file and verifies all three agree. The scripts are vendored unmodified under

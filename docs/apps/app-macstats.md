@@ -9,7 +9,7 @@ repo: https://github.com/csarkosh/app-macstats
 released: 2026-10-07
 alt: The top of a Mac's screen: the menu bar with CPU, GPU, RAM, Temp and Disk free beside the clock, and the CPU panel open under its item
 tags: Swift, AppKit, macOS, Claude Code
-order: 5
+order: 6
 ---
 # MacStats
 

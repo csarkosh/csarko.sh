@@ -75,7 +75,12 @@ const APP_FIELDS = { description: true, status: true, page: true, platforms: tru
 // A film is a video hosted on YouTube: the page carries its poster and links out, so every field
 // here but "order" is needed to build the card and its VideoObject. "alt" describes the poster.
 // There is no warning field: every film card carries the same notice (FILM_NOTICE).
-const FILM_FIELDS = { description: true, watch: true, released: true, runtime: true, alt: true, tags: true, order: false };
+const FILM_FIELDS = { description: true, watch: true, released: true, runtime: true, alt: true, tags: true, model: true, order: false };
+// A film's main AI model, shown as the first tag on its card (Cyrus, 2026-10-29), written the way
+// the tag reads: "Video model: Veo 3.1", or "Image model: ..." for a film animated from stills with
+// no video model. Only the one model may be named in public (film-generation's AGENTS.md, "What the
+// public may know"): never a second model, a tool or the pipeline.
+const FILM_MODEL = /^(Video|Image) model: (\S.{0,39})$/;
 
 // Either shape YouTube serves a video at; the 11-character id is what the embed and poster need.
 const WATCH_URL = /^https:\/\/(?:www\.)?youtube\.com\/(?:shorts\/|watch\?v=)([A-Za-z0-9_-]{11})$/;
@@ -210,6 +215,7 @@ export function parseFilmFrontMatter(text, file) {
   if (!isDate(meta.released)) throw new DocError(`${file}: released must be a real YYYY-MM-DD date`);
   const tags = meta.tags.split(',').map((tag) => tag.trim()).filter(Boolean);
   if (!tags.length || tags.length > 5) throw new DocError(`${file}: tags must be 1 to 5 comma-separated names`);
+  if (!FILM_MODEL.test(meta.model)) throw new DocError(`${file}: model must read "Video model: <name>" or "Image model: <name>"`);
   const [, minutes, seconds] = runtime;
   return {
     meta: {
@@ -595,11 +601,16 @@ const DOCS_NAV = 'Research';
 export const PROJECTS_DIR = 'projects';
 const PROJECTS_TITLE = 'Projects';
 const PROJECTS_HEADING = 'Games, apps and films, built with AI';
-const PROJECTS_DESCRIPTION = 'Projects by Cyrus Sarkosh, built with Claude Code: a co-op horror game for the browser, an IDE for AI agents, web analytics, an AI short film and a Mac app.';
+const PROJECTS_DESCRIPTION = 'Projects by Cyrus Sarkosh, built with Claude Code: a co-op horror game for the browser, an IDE for AI agents, web analytics, two AI short films and a Mac app.';
 const PROJECTS_LEAD = 'What I have built with AI, the work I am proudest of first. Nearly all of it was written with Claude Code, and each card says how AI shaped it.';
 // Every film card carries this notice under its title: horror is the genre, so a visitor meets it
 // before the poster, and the card is a link one tap away.
 const FILM_NOTICE = 'Contains horror imagery that some viewers may find disturbing.';
+// The chips above /projects (Cyrus, 2026-10-29), in his order: [value, label, kind]. The value is
+// the link's word too (/projects?filter=film,games, read by filters.js) and the old pages' redirect
+// target (/film -> /projects?filter=film), so it is a stable identifier, like an event name.
+export const PROJECT_KINDS = [['apps', 'Apps', 'app'], ['film', 'Film', 'film'], ['games', 'Games', 'game']];
+const kindValue = (kind) => PROJECT_KINDS.find(([, , k]) => k === kind)[0];
 // A film's kicker, with its runtime after it, so the card says what it is before you read the title.
 const FILM_KICKER = 'Short film';
 // The apps' sources are docs/apps/ (apps/build.mjs reads them too); each card links out to the
@@ -808,7 +819,10 @@ const DOCS_CSS = `
 // button, and no script: a doc shows while it carries any checked category; with nothing
 // checked every doc shows and All is lit. One rule per category, built from CATEGORIES, so a
 // new category gets its chip and its rule together.
-const FILTER_CSS = `
+// The chips' rules for one list: `list` is the filtered <ul>, `values` the chips' values, and a
+// card shows while its data-<attr> carries any checked value. /projects uses the same rules with
+// its kinds (Cyrus, 2026-10-29); a link's ?filter= checks the chips through filters.js.
+const filterCss = (list, prefix, attr, values) => `
     .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
     .chip { position: relative; display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; padding: 5px 12px; border-radius: 999px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); cursor: pointer; transition: border-color .15s ease, color .15s ease, background .15s ease; }
     .chip small { font-size: 11px; color: var(--muted); } /* --faint fails 4.5:1 on a lit chip's accent tint (4.35, Lighthouse) */
@@ -816,9 +830,10 @@ const FILTER_CSS = `
     .chip input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
     .chip:has(input:checked), .filters:not(:has(input:checked)) .chip.all { color: var(--text); background: var(--accent-soft); border-color: var(--accent-border); font-weight: 500; }
     .chip:has(input:focus-visible), .chip.all:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-    .docs-index:has(.filters input:checked) .all-docs > li { display: none; }
-    ${CATEGORIES.map((c) => `.docs-index:has(#cat-${categorySlug(c)}:checked) .all-docs > li[data-categories~="${categorySlug(c)}"] { display: flex; }`).join('\n    ')}
+    .docs-index:has(.filters input:checked) ${list} > li { display: none; }
+    ${values.map((v) => `.docs-index:has(#${prefix}-${v}:checked) ${list} > li[data-${attr}~="${v}"] { display: flex; }`).join('\n    ')}
     @media (prefers-reduced-motion: reduce) { .chip { transition: none; } }`;
+const FILTER_CSS = filterCss('.all-docs', 'cat', 'categories', CATEGORIES.map(categorySlug));
 
 // The Start here row: the featured docs, smaller cards side by side, above the full list, which
 // the chips filter alone (the rules above match .all-docs).
@@ -850,6 +865,9 @@ const PROJECTS_CSS = `
     .project-desc p { margin: 0 0 12px; }
     .project-desc p:last-child { margin-bottom: 0; }
     .project-list .tags { margin-top: 16px; }
+    /* A film's main AI model leads its tags, in the accent like a lit chip, so it reads as the answer
+       to "made with what?" rather than one more genre tag. */
+    .tags li.tag-model { color: var(--text); background: var(--accent-soft); border-color: var(--accent-border); font-weight: 500; }
     /* A film's content warning, under its title: bold, in the --warning yellow, with an icon that
        inherits the color and a rule down the side so it reads as a notice. */
     .film-notice { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 14px; padding-left: 14px; border-left: 2px solid var(--warning); color: var(--warning); font-size: 14px; font-weight: 600; line-height: 1.5; }
@@ -1265,7 +1283,16 @@ ${docList(docs, featured.length ? 3 : 2, '    ', { cls: 'all-docs' })}
 ${FOOTER}`;
 }
 
-const tagList = (tags) => `<ul class="tags" role="list">${tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>`;
+const tagList = (tags, model) => `<ul class="tags" role="list">${model ? `<li class="tag-model">${escapeHtml(model)}</li>` : ''}${tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>`;
+
+// The chips above /projects: All, then one a kind with its count, the way /research's are built.
+function projectFilters(projects, pad) {
+  const chips = PROJECT_KINDS.map(([value, label, kind]) => `${pad}  <label class="chip"><input type="checkbox" name="kind" value="${value}" id="kind-${value}" data-visits-event="filter-${value}" />${escapeHtml(label)} <small>${projects.filter((p) => p.kind === kind).length}</small></label>`);
+  return `${pad}<form class="filters" aria-label="Filter by kind">
+${pad}  <button type="reset" class="chip all" data-visits-event="filter-all">All <small>${projects.length}</small></button>
+${chips.join('\n')}
+${pad}</form>`;
+}
 
 // A game's or an app's preview, as the markers build_assets.py fills with the hashed <picture>
 // (light, and dark when assets/apps/<slug>-dark.png exists), the way a film's poster is filled.
@@ -1322,13 +1349,13 @@ function projectCard(project, pad) {
   const links = [cardLink(project), sourceLink(project)].filter(Boolean);
   const link = links.length ? `<div class="card-links">${links.join(' ')}</div>` : '';
   const notice = project.kind === 'film' ? `${pad}    <p class="film-notice">${WARNING_ICON}${escapeHtml(FILM_NOTICE)}</p>\n` : '';
-  return `${pad}<li class="card${media ? ' project-card' : ''}" id="${project.slug}">
+  return `${pad}<li class="card${media ? ' project-card' : ''}" id="${project.slug}" data-kind="${kindValue(project.kind)}">
 ${media ? `${media}\n` : ''}${pad}  <div class="project-body">
 ${pad}    <p class="project-kicker">${escapeHtml(project.kicker)}</p>
 ${pad}    <h2 class="project-title">${project.titleHtml}</h2>
 ${notice}${pad}    <div class="project-desc prose">
 ${project.html}${pad}    </div>
-${pad}    ${tagList(project.tags)}
+${pad}    ${tagList(project.tags, project.model)}
 ${link ? `${pad}    ${link}\n` : ''}${pad}  </div>
 ${pad}</li>`;
 }
@@ -1379,7 +1406,7 @@ export function projectsPage(projects, theme) {
     },
     breadcrumbs(trail),
   ];
-  return `${head({ title: `${PROJECTS_HEADING} · Cyrus Sarkosh`, ogTitle: PROJECTS_TITLE, description: PROJECTS_DESCRIPTION, canonical: url, ogType: 'website', extraCss: PROJECTS_CSS, graph, theme })}
+  return `${head({ title: `${PROJECTS_HEADING} · Cyrus Sarkosh`, ogTitle: PROJECTS_TITLE, description: PROJECTS_DESCRIPTION, canonical: url, ogType: 'website', extraCss: filterCss('.project-list', 'kind', 'kind', PROJECT_KINDS.map(([v]) => v)) + PROJECTS_CSS, graph, theme })}
 <body>
 ${nav(`/${PROJECTS_DIR}`)}
 ${crumbs(trail)}
@@ -1390,6 +1417,7 @@ ${crumbs(trail)}
       <h1>${escapeHtml(PROJECTS_HEADING)}</h1>
       <p class="lead">${escapeHtml(PROJECTS_LEAD)}</p>
     </header>
+${projectFilters(projects, '    ')}
     <ul class="project-list" role="list">
 ${projects.map((project) => projectCard(project, '      ')).join('\n')}
     </ul>

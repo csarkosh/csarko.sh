@@ -19,3 +19,9 @@ test("no public file would shadow the beacon path", () => {
     assert.throws(() => readFileSync(new URL(`../../../../public/${name}`, import.meta.url)), `public/${name} exists`);
   }
 });
+
+test("the old project pages land on /projects with their own kind's chip checked", () => {
+  for (const kind of ["apps", "film", "games"]) {
+    assert.ok(site.redirects.some((r) => r.source === `/${kind}` && r.destination === `/projects?filter=${kind}` && r.type === 301), kind);
+  }
+});

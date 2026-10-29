@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Games, apps and films, built with AI · Cyrus Sarkosh</title>
-  <meta name="description" content="Projects by Cyrus Sarkosh, built with Claude Code: a co-op horror game for the browser, an IDE for AI agents, web analytics, an AI short film and a Mac app." />
+  <meta name="description" content="Projects by Cyrus Sarkosh, built with Claude Code: a co-op horror game for the browser, an IDE for AI agents, web analytics, two AI short films and a Mac app." />
   <link rel="canonical" href="https://csarko.sh/projects" />
 
   <meta property="og:type" content="website" />
@@ -12,14 +12,14 @@
   <meta property="og:locale" content="en_US" />
   <meta property="og:url" content="https://csarko.sh/projects" />
   <meta property="og:title" content="Projects" />
-  <meta property="og:description" content="Projects by Cyrus Sarkosh, built with Claude Code: a co-op horror game for the browser, an IDE for AI agents, web analytics, an AI short film and a Mac app." />
+  <meta property="og:description" content="Projects by Cyrus Sarkosh, built with Claude Code: a co-op horror game for the browser, an IDE for AI agents, web analytics, two AI short films and a Mac app." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Projects" />
-  <meta name="twitter:description" content="Projects by Cyrus Sarkosh, built with Claude Code: a co-op horror game for the browser, an IDE for AI agents, web analytics, an AI short film and a Mac app." />
+  <meta name="twitter:description" content="Projects by Cyrus Sarkosh, built with Claude Code: a co-op horror game for the browser, an IDE for AI agents, web analytics, two AI short films and a Mac app." />
   <meta name="twitter:image" content="https://csarko.sh/og-image.jpg" />
   <meta name="twitter:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
 
@@ -44,7 +44,7 @@
       "@id": "https://csarko.sh/projects#page",
       "url": "https://csarko.sh/projects",
       "name": "Projects",
-      "description": "Projects by Cyrus Sarkosh, built with Claude Code: a co-op horror game for the browser, an IDE for AI agents, web analytics, an AI short film and a Mac app.",
+      "description": "Projects by Cyrus Sarkosh, built with Claude Code: a co-op horror game for the browser, an IDE for AI agents, web analytics, two AI short films and a Mac app.",
       "isPartOf": {
         "@id": "https://csarko.sh/#website"
       },
@@ -114,6 +114,26 @@
             "position": 4,
             "item": {
               "@type": "VideoObject",
+              "name": "The Last Trail",
+              "description": "A 56 second horror short. A woman carries her father's ashes up his old trail, and on his ranger radio a voice that sounds like him answers.",
+              "author": {
+                "@type": "Person",
+                "@id": "https://csarko.sh/#person",
+                "name": "Cyrus Sarkosh",
+                "url": "https://csarko.sh/"
+              },
+              "thumbnailUrl": "https://csarko.sh/projects/the-last-trail.jpg",
+              "uploadDate": "2026-10-29",
+              "duration": "PT56S",
+              "url": "https://www.youtube.com/shorts/C1XsDuJE4MQ",
+              "embedUrl": "https://www.youtube.com/embed/C1XsDuJE4MQ"
+            }
+          },
+          {
+            "@type": "ListItem",
+            "position": 5,
+            "item": {
+              "@type": "VideoObject",
               "name": "Who is standing in my hallway?",
               "description": "A 16 second analog horror short. A woman alone in a dark apartment calls out to whoever is standing at the end of the hallway, and gets an answer.",
               "author": {
@@ -131,7 +151,7 @@
           },
           {
             "@type": "ListItem",
-            "position": 5,
+            "position": 6,
             "item": {
               "@type": "SoftwareApplication",
               "name": "MacStats",
@@ -382,6 +402,18 @@
       html { scroll-behavior: auto; }
       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg, .card-source { transition: none; }
     }
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
+    .chip { position: relative; display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; padding: 5px 12px; border-radius: 999px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); cursor: pointer; transition: border-color .15s ease, color .15s ease, background .15s ease; }
+    .chip small { font-size: 11px; color: var(--muted); } /* --faint fails 4.5:1 on a lit chip's accent tint (4.35, Lighthouse) */
+    .chip:hover { color: var(--text); border-color: var(--border-strong); }
+    .chip input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+    .chip:has(input:checked), .filters:not(:has(input:checked)) .chip.all { color: var(--text); background: var(--accent-soft); border-color: var(--accent-border); font-weight: 500; }
+    .chip:has(input:focus-visible), .chip.all:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .docs-index:has(.filters input:checked) .project-list > li { display: none; }
+    .docs-index:has(#kind-apps:checked) .project-list > li[data-kind~="apps"] { display: flex; }
+    .docs-index:has(#kind-film:checked) .project-list > li[data-kind~="film"] { display: flex; }
+    .docs-index:has(#kind-games:checked) .project-list > li[data-kind~="games"] { display: flex; }
+    @media (prefers-reduced-motion: reduce) { .chip { transition: none; } }
     .project-card { flex-direction: row; align-items: flex-start; gap: 24px; }
     .project-media { flex: none; width: 360px; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); line-height: 0; }
     .project-media img { width: 100%; height: auto; display: block; }
@@ -394,6 +426,9 @@
     .project-desc p { margin: 0 0 12px; }
     .project-desc p:last-child { margin-bottom: 0; }
     .project-list .tags { margin-top: 16px; }
+    /* A film's main AI model leads its tags, in the accent like a lit chip, so it reads as the answer
+       to "made with what?" rather than one more genre tag. */
+    .tags li.tag-model { color: var(--text); background: var(--accent-soft); border-color: var(--accent-border); font-weight: 500; }
     /* A film's content warning, under its title: bold, in the --warning yellow, with an icon that
        inherits the color and a rule down the side so it reads as a notice. */
     .film-notice { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 14px; padding-left: 14px; border-left: 2px solid var(--warning); color: var(--warning); font-size: 14px; font-weight: 600; line-height: 1.5; }
@@ -447,8 +482,14 @@
       <h1>Games, apps and films, built with AI</h1>
       <p class="lead">What I have built with AI, the work I am proudest of first. Nearly all of it was written with Claude Code, and each card says how AI shaped it.</p>
     </header>
+    <form class="filters" aria-label="Filter by kind">
+      <button type="reset" class="chip all" data-visits-event="filter-all">All <small>6</small></button>
+      <label class="chip"><input type="checkbox" name="kind" value="apps" id="kind-apps" data-visits-event="filter-apps" />Apps <small>3</small></label>
+      <label class="chip"><input type="checkbox" name="kind" value="film" id="kind-film" data-visits-event="filter-film" />Film <small>2</small></label>
+      <label class="chip"><input type="checkbox" name="kind" value="games" id="kind-games" data-visits-event="filter-games" />Games <small>1</small></label>
+    </form>
     <ul class="project-list" role="list">
-      <li class="card" id="day-hike">
+      <li class="card" id="day-hike" data-kind="games">
         <div class="project-body">
           <p class="project-kicker">Playable now · No install</p>
           <h2 class="project-title">Day Hike</h2>
@@ -465,7 +506,7 @@ those docs shaped what you see on the trail.</p>
           <div class="card-links"><a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-source" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener" data-visits-event="source-day-hike">Source on GitHub <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
         </div>
       </li>
-      <li class="card project-card" id="ide-arkos">
+      <li class="card project-card" id="ide-arkos" data-kind="apps">
         <div class="project-media">
           <!-- generated:app-preview:ide-arkos -->
           <picture class="portrait">
@@ -494,7 +535,7 @@ Arkos itself. The hardest parts started as research with Claude, such as
           <div class="card-links"><a class="card-link stretch" href="https://apps.csarko.sh/ide-arkos" data-visits-event="app-ide-arkos">Install and docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-source" href="https://github.com/csarkosh/ide-arkos" target="_blank" rel="noopener" data-visits-event="source-ide-arkos">Source on GitHub <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
         </div>
       </li>
-      <li class="card project-card" id="lib-visits">
+      <li class="card project-card" id="lib-visits" data-kind="apps">
         <div class="project-media">
           <!-- generated:app-preview:lib-visits -->
           <picture class="portrait">
@@ -526,7 +567,31 @@ people read and where they came from, straight from the command line.</p>
           <div class="card-links"><a class="card-link stretch" href="https://apps.csarko.sh/lib-visits" data-visits-event="app-lib-visits">Download and docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-source" href="https://github.com/csarkosh/lib-visits" target="_blank" rel="noopener" data-visits-event="source-lib-visits">Source on GitHub <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
         </div>
       </li>
-      <li class="card project-card" id="who-is-standing-in-my-hallway">
+      <li class="card project-card" id="the-last-trail" data-kind="film">
+        <div class="project-media film-poster">
+          <!-- generated:film-poster:the-last-trail -->
+          <picture>
+            <source type="image/avif" srcset="/assets/film-the-last-trail-200.3197090a.avif 200w, /assets/film-the-last-trail-240.fb76a9d8.avif 240w, /assets/film-the-last-trail-400.80028675.avif 400w, /assets/film-the-last-trail-480.03b38421.avif 480w" sizes="(max-width: 640px) 200px, 240px" />
+            <source type="image/webp" srcset="/assets/film-the-last-trail-200.a6c21861.webp 200w, /assets/film-the-last-trail-240.23ae271f.webp 240w, /assets/film-the-last-trail-400.7e83da90.webp 400w, /assets/film-the-last-trail-480.9b2b1241.webp 480w" sizes="(max-width: 640px) 200px, 240px" />
+            <img src="/assets/film-the-last-trail-240.bc390bfd.jpg" srcset="/assets/film-the-last-trail-200.dada878c.jpg 200w, /assets/film-the-last-trail-240.bc390bfd.jpg 240w, /assets/film-the-last-trail-400.02c9e91f.jpg 400w, /assets/film-the-last-trail-480.17b0d9bc.jpg 480w" sizes="(max-width: 640px) 200px, 240px" width="240" height="320" alt="A woman in a red jacket in dark woods at dusk, holding a ranger radio with a green light, looking down at it." loading="lazy" decoding="async" />
+          </picture>
+          <!-- /generated:film-poster:the-last-trail -->
+        </div>
+        <div class="project-body">
+          <p class="project-kicker">Short film · 0:56</p>
+          <h2 class="project-title">The Last Trail</h2>
+          <p class="film-notice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>Contains horror imagery that some viewers may find disturbing.</p>
+          <div class="project-desc prose">
+<p>A 56 second horror short about grief. A woman carries her late father&#39;s ashes up his old trail,
+and on his ranger radio a voice that sounds like him starts giving her directions.</p>
+<p>Made with AI, most of its shots with Veo 3.1. The story and the camera follow research I did into
+<a href="/research/horror-cinematography-shot-by-shot" data-visits-event="doc-horror-cinematography-shot-by-shot">how horror directors build dread shot by shot</a>.</p>
+          </div>
+          <ul class="tags" role="list"><li class="tag-model">Video model: Veo 3.1</li><li>Horror</li><li>Short film</li><li>AI generated</li></ul>
+          <div class="card-links"><a class="card-link stretch" href="https://www.youtube.com/shorts/C1XsDuJE4MQ" target="_blank" rel="noopener" data-visits-event="watch-the-last-trail">Watch on YouTube <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
+        </div>
+      </li>
+      <li class="card project-card" id="who-is-standing-in-my-hallway" data-kind="film">
         <div class="project-media film-poster">
           <!-- generated:film-poster:who-is-standing-in-my-hallway -->
           <picture>
@@ -546,11 +611,11 @@ apart and animated across frames, then finished with a VHS pass.</p>
 <p>It tests a question I first <a href="/research/ai-short-film-generation" data-visits-event="doc-ai-short-film-generation">researched with Claude</a>: how far AI
 generation can go toward a film that keeps the same actor and the same room from shot to shot.</p>
           </div>
-          <ul class="tags" role="list"><li>Analog horror</li><li>Found footage</li><li>AI generated</li></ul>
+          <ul class="tags" role="list"><li class="tag-model">Image model: Qwen-Image-Edit</li><li>Analog horror</li><li>Found footage</li><li>AI generated</li></ul>
           <div class="card-links"><a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener" data-visits-event="watch-who-is-standing-in-my-hallway">Watch on YouTube <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
         </div>
       </li>
-      <li class="card project-card" id="app-macstats">
+      <li class="card project-card" id="app-macstats" data-kind="apps">
         <div class="project-media">
           <!-- generated:app-preview:app-macstats -->
           <picture>
@@ -586,6 +651,7 @@ took the panel screenshots in its README.</p>
   <!-- generated:analytics -->
   <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
+  <script defer src="/assets/filters.c06594a7.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

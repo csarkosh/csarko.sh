@@ -12,6 +12,7 @@ Sources (in .agents/skills/site-quality/assets/):
                           (the landscape one shows under the title on a phone)
   research/<slug>/<name>.{png,svg}   a doc's figures (docs/published/*-<slug>.md names them)
   reading.js              a doc page's own script: the rail's current section, and section reads
+  filters.js              /projects' and /research's script: a link's ?filter= checks the chips
   fonts/*.woff2           self-hosted variable fonts (latin subset)
   vendor/visits.min.js, vendor/vitals.min.js   the lib-visits analytics scripts (see site.json)
 
@@ -30,6 +31,7 @@ Outputs (in public/):
                                                doc's share card when its first figure is a PNG
                                                (a JPEG cut to 1200x630 from the figure's middle)
   assets/reading.<hash>.js                     on doc pages only
+  assets/filters.<hash>.js                     on /projects and /research only
 
 Every file in public/assets/ is named by the first 8 hex chars of its SHA-256, so
 firebase.json can cache that directory for a year (immutable) without ever
@@ -429,6 +431,8 @@ def main() -> int:
 
     # ---- a doc page's own script, reading.js: whole-line comments stripped, like the vendored ones
     reading = write_hashed("reading", "js", strip_comments((SRC / "reading.js").read_bytes()), keep)
+    # ---- the two list pages' script, filters.js: a link's ?filter= checks the chips
+    filters = write_hashed("filters", "js", strip_comments((SRC / "filters.js").read_bytes()), keep)
 
     # ---- fonts
     fonts = [(write_hashed(stem, "woff2", (SRC / "fonts" / f"{stem}.woff2").read_bytes(), keep), family, weights, preload)
@@ -465,9 +469,12 @@ def main() -> int:
         core = write_hashed("visits", "js", strip_comments((SRC / "vendor/visits.min.js").read_bytes()), keep)
         vitals = write_hashed("vitals", "js", strip_comments((SRC / "vendor/vitals.min.js").read_bytes()), keep)
 
-    def analytics_block(prefix, slug):
-        # A doc page also loads reading.js, after the visits script whose `visits.send` it calls.
+    def analytics_block(prefix, slug, lists=False):
+        # A doc page also loads reading.js, after the visits script whose `visits.send` it calls;
+        # /projects and /research load filters.js, which reads the link's ?filter= for the chips.
         own = f'\n  <script defer src="{prefix}assets/{reading}"></script>' if slug else ""
+        if lists:
+            own += f'\n  <script defer src="{prefix}assets/{filters}"></script>'
         if not core:
             return own + "\n  " if own else ""
         return (
@@ -508,11 +515,12 @@ def main() -> int:
         prefix = "" if page == PUBLIC / "index.html" else "/"
         # A doc page is public/research/<slug>.html; the research index and the other lists are not docs.
         slug = page.stem if page.parent == PUBLIC / "research" and page.name != "index.html" else None
+        lists = page in (PUBLIC / "research" / "index.html", PUBLIC / PROJECTS_DIR / "index.html")
         blocks = {
             (r"<!-- generated:head -->", r"<!-- /generated:head -->"): "\n" + preloads(prefix) + "\n  ",
             (r"/\* generated:fonts \*/", r"/\* /generated:fonts \*/"): "\n" + font_faces(prefix) + "\n    ",
             (r"<!-- generated:portrait -->", r"<!-- /generated:portrait -->"): "\n        " + picture(prefix) + "\n        ",
-            (r"<!-- generated:analytics -->", r"<!-- /generated:analytics -->"): analytics_block(prefix, slug),
+            (r"<!-- generated:analytics -->", r"<!-- /generated:analytics -->"): analytics_block(prefix, slug, lists),
         }
         html = page.read_text(encoding="utf-8")
         before = html

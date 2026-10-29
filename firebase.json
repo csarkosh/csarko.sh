@@ -23,7 +23,7 @@
         },
         {
           "source": "/apps",
-          "destination": "/projects",
+          "destination": "/projects?filter=apps",
           "type": 301
         },
         {
@@ -33,7 +33,7 @@
         },
         {
           "source": "/film",
-          "destination": "/projects",
+          "destination": "/projects?filter=film",
           "type": 301
         },
         {
@@ -43,7 +43,7 @@
         },
         {
           "source": "/games",
-          "destination": "/projects",
+          "destination": "/projects?filter=games",
           "type": 301
         },
         {

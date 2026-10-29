@@ -870,7 +870,8 @@ def live_checks(base):
     if any(rel.startswith(f"{PROJECTS_DIR}/") for rel in built):
         for d in LEGACY_PROJECT_DIRS:
             s, h, _ = fetch(f"{base}/{d}")
-            check(s == 301 and h.get("location", "").split("?")[0].endswith(f"/{PROJECTS_DIR}"), f"/{d} -> {s} {h.get('location', '')}")
+            # Each lands with its own kind's chip checked (Cyrus, 2026-10-29).
+            check(s == 301 and h.get("location", "").endswith(f"/{PROJECTS_DIR}?filter={d}"), f"/{d} -> {s} {h.get('location', '')}")
     # The docs moved from /docs to /research; links and search results still point at the old URLs.
     if any(rel.startswith(f"{DOCS_DIR}/") for rel in built):
         old = [f"/{LEGACY_DOCS_DIR}"] + ([f"/{LEGACY_DOCS_DIR}/{Path(newest).stem}"] if newest else [])
@@ -972,6 +973,9 @@ def analytics_checks(pages):
     # A doc page's own script (assets/reading.js), hashed the same way, on doc pages only.
     reading_data = strip_comments((SKILL / "assets/reading.js").read_bytes())
     want_reading = f"reading.{hashlib.sha256(reading_data).hexdigest()[:8]}.js"
+    # The two list pages' own script (assets/filters.js: a link's ?filter= checks the chips).
+    filters_data = strip_comments((SKILL / "assets/filters.js").read_bytes())
+    want_filters = f"filters.{hashlib.sha256(filters_data).hexdigest()[:8]}.js"
     for name, (page, html) in pages.items():
         scripts = [a for a, _ in page.scripts]
         core = [a for a in scripts if "data-visits" in a]
@@ -991,8 +995,14 @@ def analytics_checks(pages):
             check(len(reading) == 1 and "defer" in reading[0], f"{name}: one deferred reading tag ({want_reading}; else a stale build)")
         else:
             check(not reading, f"{name}: reading.js is for doc pages only")
-        others = [a.get("src") or "(inline)" for a in scripts if a not in core and a not in vitals and a not in reading]
-        check(not others, f"{name}: no scripts besides the two visits tags and a doc's reading.js {others or ''}")
+        filters = [a for a in scripts if a.get("src", "").endswith(f"assets/{want_filters}")]
+        if page_kind(name) in ("docs-index", "projects-index"):
+            check(len(filters) == 1 and "defer" in filters[0], f"{name}: one deferred filters tag ({want_filters}; else a stale build)")
+            check('<form class="filters"' in html, f"{name}: the filter chips the filters tag reads")
+        else:
+            check(not filters, f"{name}: filters.js is for /projects and /research only")
+        others = [a.get("src") or "(inline)" for a in scripts if a not in core and a not in vitals and a not in reading and a not in filters]
+        check(not others, f"{name}: no scripts besides the two visits tags, a doc's reading.js and a list's filters.js {others or ''}")
         if page_kind(name) == "doc":
             check(html.count(" data-read-end") == 1, f"{name}: one data-read-end marker")
     _, catch_all = csp_from_config()
