@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 250" width="440" height="250" role="img" aria-labelledby="t">
+  <title id="t">Working time from code commit to live for one shader change: 4 h 27 min as it ran on Oct 28, 2026, about 1 h 50 min for the same steps one after another on a quiet machine, 25 to 35 min under the recommended pipeline</title>
+  <style>
+    text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 14px; fill: #e8eaf0; }
+    .title { font-size: 16px; font-weight: 600; }
+    .sec { fill: #a0a8b8; }
+    .bar { fill: #a0a8b8; }
+    .pick { fill: #7dd3c0; }
+    .range { fill: #7dd3c0; fill-opacity: 0.45; }
+    .pickt { font-weight: 600; fill: #7dd3c0; }
+    .axis { stroke: #3a3f4b; stroke-width: 1.5; }
+    @media (prefers-color-scheme: light) {
+      text { fill: #12151c; }
+      .sec, .bar { fill: #4a5263; }
+      .pick, .range, .pickt { fill: #0a735f; }
+      .axis { stroke: #c9ced6; }
+    }
+  </style>
+  <text class="title" x="16" y="28">Code commit to live, one shader change</text>
+  <text class="sec" x="16" y="50">Working time, not counting the overnight wait for approval</text>
+
+  <!-- Scale: 270 min = 300 px, bars start at x = 16. -->
+  <text class="sec" x="16" y="84">As it ran, Oct 28, 2026</text>
+  <rect class="bar" x="16" y="92" width="297" height="20" rx="3"/>
+  <text x="321" y="107">4 h 27 min</text>
+
+  <text class="sec" x="16" y="142">The same steps, serial, on a quiet machine</text>
+  <rect class="bar" x="16" y="150" width="122" height="20" rx="3"/>
+  <text x="146" y="165">about 1 h 50 min</text>
+
+  <text class="pickt" x="16" y="200">Recommended: side by side</text>
+  <rect class="pick" x="16" y="208" width="28" height="20" rx="3"/>
+  <rect class="range" x="46" y="208" width="9" height="20" rx="2"/>
+  <text class="pickt" x="63" y="223">25 to 35 min</text>
+
+  <line class="axis" x1="16" y1="88" x2="16" y2="234"/>
+</svg>
