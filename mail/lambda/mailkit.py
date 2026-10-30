@@ -107,7 +107,7 @@ def _split(raw: bytes):
             headers[-1][1] += eol + line
             continue
         name, colon, value = line.partition(b":")
-        if colon and name and b" " not in name.strip():
+        if colon and name and b" " not in name.strip() and name.isascii():
             headers.append([name.decode("ascii", "replace").strip(), value])
         else:
             headers.append([None, line])
@@ -196,13 +196,18 @@ def build_forward(raw: bytes, *, alias_local: str, base_domain: str, owner: str,
     original_from = _raw_value(headers, "from")
     original_to = _raw_value(headers, "to")
     original_reply_to = _raw_value(headers, "reply-to")
+    original_cc = _raw_value(headers, "cc")
+    message_id = _MSGID.search(_raw_value(headers, "message-id") or b"")
+    references = _raw_value(headers, "references")
 
     kept = []
     for n, value in headers:
         lower = (n or "").lower()
         if n is not None and (lower in _FORWARD_DROP or lower.startswith(_FORWARD_DROP_PREFIXES)):
             continue
-        if lower in ("from", "to", "reply-to"):
+        # Cc and Bcc go too: kept, Gmail's Reply-all would write to them straight from the
+        # owner's own address. References is rebuilt below.
+        if lower in ("from", "to", "reply-to", "cc", "bcc", "references"):
             continue
         kept.append([n, value])
 
@@ -220,6 +225,16 @@ def build_forward(raw: bytes, *, alias_local: str, base_domain: str, owner: str,
         added.append(["X-Original-To", b" " + original_to])
     if original_reply_to is not None:
         added.append(["X-Original-Reply-To", b" " + original_reply_to])
+    if original_cc is not None:
+        added.append(["X-Original-Cc", b" " + original_cc])
+    # SES replaces Message-ID (and Date) on every send, so the owner's provider never sees the
+    # stranger's own id. Adding it to References is what lets the owner's reply, and so the
+    # reply the stranger receives, thread under the stranger's message.
+    if message_id:
+        refs = (references + eol + b" " if references else b"") + message_id.group(0)
+        added.append(["References", b" " + refs])
+    elif references is not None:
+        added.append(["References", b" " + references])
     return _join(added + kept, eol, body)
 
 

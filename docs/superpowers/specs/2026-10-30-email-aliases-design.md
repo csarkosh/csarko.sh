@@ -178,8 +178,12 @@ For each envelope recipient `<local>@csarko.sh` that is not a reverse alias:
      filters and the eye can sort by alias.
    - `Return-Path:`, `DKIM-Signature:`, and the original `Received:` chain are removed. The
      original signature would fail after the `From:` change anyway and some receivers penalise a
-     broken one. The body, attachments and every other header (`Subject`, `Date`, `Message-ID`,
-     `In-Reply-To`, `References`, `List-*`) are untouched, so threading in Gmail works.
+     broken one. `Cc:` and `Bcc:` are removed too (kept as `X-Original-Cc`): left in, Gmail's
+     Reply-all would write to them straight from the owner's address. The body, attachments and
+     every other header (`Subject`, `In-Reply-To`, `List-*`) are untouched. **SES replaces
+     `Message-ID` and `Date` on every message it sends** (found in the final review), so the
+     original `Message-ID` is appended to `References`: that is what lets the owner's reply, and
+     so the reply the stranger receives, thread under the stranger's message.
    - The send goes to the owner address only, with the `mail` configuration set.
 
    A forward that SES refuses (sandbox, quota, a 40 MB message) is logged and the index row
@@ -208,7 +212,9 @@ When a message arrives for `reply.<token>@csarko.sh`:
    address from the token, `Subject`, `In-Reply-To` and `References` are copied, the MIME body
    and attachments are copied as-is, and a new `Message-ID` at `csarko.sh` is minted. Every
    other header from Gmail is dropped: `Received:`, `X-Google-*`, `X-Gm-*`, the original
-   `Message-ID`, `DKIM-Signature`, `Return-Path`. The body is not inspected; if Cyrus types his
+   `Message-ID`, `DKIM-Signature`, `Return-Path`, and from `In-Reply-To` and `References` any id
+   minted by the owner's provider; `Date` is restated in UTC. (SES then replaces the new
+   `Message-ID` with its own, which is the id the stranger sees.) The body is not inspected; if Cyrus types his
    Gmail address into the body, that is his to not do.
 3. **Send as the alias** through SES with the `mail` configuration set, and index it under the
    alias with direction `out` and the raw copy at `s3://<bucket>/sent/...`.

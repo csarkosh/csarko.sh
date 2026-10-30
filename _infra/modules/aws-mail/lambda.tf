@@ -67,6 +67,13 @@ data "aws_iam_policy_document" "lambda" {
       values   = ["*@${var.domain}"]
     }
   }
+
+  # Notices to the owner (a forward or a reply that failed) and the on-failure destination.
+  statement {
+    sid       = "TellTheOwner"
+    actions   = ["sns:Publish"]
+    resources = [aws_sns_topic.events.arn]
+  }
 }
 
 resource "aws_iam_role_policy" "lambda" {
@@ -83,8 +90,10 @@ resource "aws_lambda_function" "inbound" {
   handler          = "inbound.handler"
   filename         = data.archive_file.inbound.output_path
   source_code_hash = data.archive_file.inbound.output_base64sha256
-  memory_size      = 256
-  timeout          = 60
+  # A 30 MB message is built and base64-encoded a few times over (inbound.MAX_FORWARD_BYTES);
+  # 256 MB ran out of memory on it in the review. Billed by the millisecond, so idle is free.
+  memory_size = 1024
+  timeout     = 60
 
   environment {
     variables = {
@@ -94,10 +103,26 @@ resource "aws_lambda_function" "inbound" {
       MAIL_TABLE          = aws_dynamodb_table.mail.name
       MAIL_CONFIG_SET     = aws_sesv2_configuration_set.this.configuration_set_name
       MAIL_RETENTION_DAYS = tostring(var.retention_days)
+      MAIL_EVENTS_TOPIC   = aws_sns_topic.events.arn
     }
   }
 
   depends_on = [aws_cloudwatch_log_group.inbound, aws_iam_role_policy.lambda]
+}
+
+# An invocation that still fails after Lambda's two retries (it should not: the handler records
+# and reports every failure it can catch) is sent to the owner's topic rather than dropped.
+resource "aws_lambda_function_event_invoke_config" "inbound" {
+  function_name          = aws_lambda_function.inbound.function_name
+  maximum_retry_attempts = 2
+
+  destination_config {
+    on_failure {
+      destination = aws_sns_topic.events.arn
+    }
+  }
+
+  depends_on = [aws_iam_role_policy.lambda]
 }
 
 resource "aws_lambda_permission" "ses" {

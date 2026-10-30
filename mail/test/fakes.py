@@ -104,6 +104,15 @@ class FakeS3:
         return {}
 
 
+class FakeSNS:
+    def __init__(self):
+        self.published = []
+
+    def publish(self, TopicArn, Subject, Message):
+        self.published.append({"TopicArn": TopicArn, "Subject": Subject, "Message": Message})
+        return {"MessageId": f"sns-{len(self.published)}"}
+
+
 class FakeSES:
     """sesv2: records send_email calls; `fail_with(code)` makes the next sends raise."""
 

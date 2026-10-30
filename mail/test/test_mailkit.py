@@ -122,7 +122,9 @@ class BuildForward(unittest.TestCase):
 
     def test_thread_headers_and_body_untouched(self):
         orig, m = parse(FIX["reply-to"]), parse(build_forward(FIX["reply-to"], **self.ARGS))
-        for h in ("Message-ID", "In-Reply-To", "References", "Date", "Subject"):
+        # (SES replaces Message-ID and Date when it sends; References gains the original id,
+        # FinalReview.test_forward_adds_the_original_message_id_to_references.)
+        for h in ("Message-ID", "In-Reply-To", "Date", "Subject"):
             self.assertEqual(m[h], orig[h], h)
         self.assertEqual(m.get_payload(), orig.get_payload())
 
@@ -212,6 +214,35 @@ class BuildReply(unittest.TestCase):
 
     def test_each_reply_gets_its_own_message_id(self):
         self.assertNotEqual(self.built()[1]["Message-ID"], self.built()[1]["Message-ID"])
+
+
+class FinalReview(unittest.TestCase):
+    """Findings of the whole-branch review (2026-10-30)."""
+
+    ARGS = BuildForward.ARGS
+
+    def test_forward_moves_cc_and_bcc_out_of_reply_all(self):
+        raw = FIX["plain"].replace(b"To: hello@csarko.sh\n", b"To: hello@csarko.sh\nCc: c@example.org,\n d@example.org\nBcc: e@example.org\n")
+        m = parse(build_forward(raw, **self.ARGS))
+        self.assertIsNone(m["Cc"])
+        self.assertIsNone(m["Bcc"])
+        self.assertEqual(m["X-Original-Cc"], "c@example.org, d@example.org")
+
+    def test_forward_adds_the_original_message_id_to_references(self):
+        # SES replaces Message-ID on send, so Gmail's reply can only name the stranger's message
+        # through References.
+        self.assertEqual(parse(build_forward(FIX["plain"], **self.ARGS))["References"], "<plain-1@example.com>")
+        self.assertEqual(parse(build_forward(FIX["reply-to"], **self.ARGS))["References"],
+                         "<root@example.com> <plain-0@example.com> <plain-2@example.com>")
+
+    def test_forward_without_a_message_id_adds_no_references(self):
+        raw = FIX["plain"].replace(b"Message-ID: <plain-1@example.com>\n", b"")
+        self.assertIsNone(parse(build_forward(raw, **self.ARGS))["References"])
+
+    def test_a_non_ascii_header_name_passes_through(self):
+        raw = FIX["plain"].replace(b"Subject:", "Fo\u00f6: bar\nSubject:".encode())
+        out = build_forward(raw, **self.ARGS)
+        self.assertIn("Fo\u00f6: bar".encode(), out)
 
 
 class Hardening(unittest.TestCase):

@@ -14,7 +14,7 @@ sys.path.insert(0, str(HERE.parent / "lambda"))
 sys.path.insert(0, str(HERE))
 
 import inbound  # noqa: E402
-from fakes import FakeS3, FakeSES, FakeTable  # noqa: E402
+from fakes import FakeS3, FakeSES, FakeSNS, FakeTable  # noqa: E402
 from inbound import Settings, handler  # noqa: E402
 from store import Store  # noqa: E402
 
@@ -51,11 +51,11 @@ class Base(unittest.TestCase):
     RAW = "plain"
 
     def setUp(self):
-        self.table, self.s3, self.ses = FakeTable(), FakeS3(), FakeSES()
+        self.table, self.s3, self.ses, self.sns = FakeTable(), FakeS3(), FakeSES(), FakeSNS()
         self.store = Store("mail", "csarko-sh-mail", dynamodb=self.table, s3=self.s3, now=lambda: NOW)
         self.settings = Settings(domain="csarko.sh", owner=OWNER, bucket="csarko-sh-mail", table="mail",
-                                 config_set="mail", retention_days=365)
-        inbound._deps = (self.store, self.ses, self.settings)
+                                 config_set="mail", retention_days=365, events_topic="arn:aws:sns:us-east-2:1:mail-events")
+        inbound._deps = (self.store, self.ses, self.sns, self.settings)
         self.logs = []
         inbound._log = self.logs.append
 
@@ -134,6 +134,60 @@ class Forward(Base):
         self.assertNotIn(OWNER, text)
         self.assertNotIn("Hello there", text)
         self.assertIn('"action": "forward"', text)
+
+
+class FinalReview(Base):
+    """Findings of the whole-branch review (2026-10-30)."""
+
+    def test_a_message_too_large_to_forward_is_recorded_not_sent(self):
+        limit, inbound.MAX_FORWARD_BYTES = inbound.MAX_FORWARD_BYTES, 1000
+        try:
+            out = self.deliver("big1", "ada@example.com", ["hello@csarko.sh"], raw=FIX["plain"] + b"x" * 2000)
+        finally:
+            inbound.MAX_FORWARD_BYTES = limit
+        self.assertFalse(out["results"][0]["sent"])
+        self.assertEqual(self.ses.calls, [])
+        self.assertIn("too large to forward", self.store.message_by_id("big1")["error"])
+        self.assertEqual(len(self.sns.published), 1)  # the owner hears about it
+
+    def test_the_forward_limit_leaves_room_under_the_lambdas_memory(self):
+        self.assertLessEqual(inbound.MAX_FORWARD_BYTES, 30 * 1024 * 1024)
+
+    def test_a_recipient_that_fails_is_recorded_and_the_rest_continue(self):
+        out = self.deliver("u1", "ada@example.com", ["jos\u00e9@csarko.sh", "hello@csarko.sh"])
+        self.assertEqual([r["action"] for r in out["results"]], ["error", "forward"])
+        self.assertTrue(out["results"][1]["sent"])
+        rows = [r for r in self.table.items.values() if r.get("message_id") == "u1" and "error" in (r.get("flags") or [])]
+        self.assertEqual(len(rows), 1)
+        self.assertNotIn(OWNER, json.dumps(self.sns.published))
+        self.assertEqual(len(self.sns.published), 1)
+
+    def test_a_failed_reply_tells_the_owner(self):
+        token = self.store.token_for("hello", "ada@example.com")
+        self.ses.fail_with("MessageRejected", "Email address is not verified: ada@example.com")
+        self.deliver("rf1", OWNER, [f"reply.{token}@csarko.sh"], raw=FIX["gmail-reply"])
+        self.assertEqual(len(self.sns.published), 1)
+        note = self.sns.published[0]
+        self.assertEqual(note["TopicArn"], "arn:aws:sns:us-east-2:1:mail-events")
+        self.assertIn("hello@csarko.sh", note["Message"])
+        self.assertIn("MessageRejected", note["Message"])
+        self.assertNotIn("ada@example.com", note["Message"])
+
+    def test_a_blocked_alias_stores_nothing(self):
+        self.store.set_state("spammy", "block")
+        self.deliver("b1", "x@example.com", ["spammy@csarko.sh"])
+        self.assertNotIn("raw/b1", self.s3.objects)
+
+    def test_raw_is_kept_while_any_recipient_still_points_at_it(self):
+        self.store.set_state("spammy", "block")
+        self.deliver("b2", "x@example.com", ["spammy@csarko.sh", "hello@csarko.sh"])
+        self.assertIn("raw/b2", self.s3.objects)
+        self.assertEqual(self.store.message_by_id("b2")["s3_key"], "raw/b2")
+
+    def test_raw_is_kept_when_a_reply_and_an_alias_share_a_message(self):
+        token = self.store.token_for("hello", "ada@example.com")
+        self.deliver("rb1", OWNER, [f"reply.{token}@csarko.sh", "notes@csarko.sh"], raw=FIX["gmail-reply"])
+        self.assertIn("raw/rb1", self.s3.objects)  # notes@ forwarded it and its row points here
 
 
 class PolicyPaths(Base):

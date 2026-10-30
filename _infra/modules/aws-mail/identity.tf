@@ -25,9 +25,11 @@ resource "aws_sesv2_email_identity" "domain" {
 }
 
 resource "aws_sesv2_email_identity_mail_from_attributes" "domain" {
-  email_identity         = aws_sesv2_email_identity.domain.email_identity
-  mail_from_domain       = "bounce.${var.domain}"
-  behavior_on_mx_failure = "REJECT_MESSAGE"
+  email_identity   = aws_sesv2_email_identity.domain.email_identity
+  mail_from_domain = "bounce.${var.domain}"
+  # If the bounce. MX ever fails to verify (the first minutes after apply, or a DNS hiccup), send
+  # with SES's own MAIL FROM rather than refuse: DKIM alone still aligns for DMARC.
+  behavior_on_mx_failure = "USE_DEFAULT_VALUE"
 }
 
 resource "aws_sesv2_email_identity" "owner" {
