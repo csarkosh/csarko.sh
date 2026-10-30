@@ -7,8 +7,8 @@
 (() => {
   var form = document.querySelector('form.filters');
   if (!form) return;
-  // /research's chips are checkboxes (several at once); /projects' are radios (one at a time), so a
-  // link naming several opens on the first of them that the page has.
+  // The chips are radios on both pages (one at a time, Cyrus 2026-10-29), so a link naming several
+  // opens on the first of them that the page has; the checkbox path stays for a multi-select row.
   var boxes = [].slice.call(form.querySelectorAll('input[type=checkbox], input[type=radio]'));
   var params = () => new URLSearchParams(location.search);
   var want = (params().get('filter') || '').split(/[\s,]+/);

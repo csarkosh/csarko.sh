@@ -255,10 +255,12 @@ three from the command line):
   2026-10-24). **Every doc carries `categories:`**
   *(Cyrus, 2026-10-13)*: one to three of the fixed set in `docs_lib.mjs`
   (`CATEGORIES`: Distributed systems, AI, Rendering, Worlds and terrain, Game design,
-  Film, Tooling), which are the filter chips above the list on `/research` (multi-select,
-  OR across chips, "All" a reset button; the list filters through CSS `:has()`) and the tags
-  on each card. **A filter is a link** *(Cyrus, 2026-10-29)*: `/research?filter=ai,rendering`
-  (the chips' values, the category slugs) opens with those chips checked, and checking a chip
+  Film, Tooling), which are the filter chips above the list on `/research` (**single select**
+  since 2026-10-29, Cyrus, as on `/projects`: radios, "All" a reset button; the list filters
+  through CSS `:has()`) and the tags on each card. **No Start here row** *(Cyrus, 2026-10-29;
+  it led the page from 2026-10-18)*: every doc is in the one list, and the build refuses a
+  `featured:` field. **A filter is a link** *(Cyrus, 2026-10-29)*: `/research?filter=ai`
+  (the chips' values, the category slugs; a link naming several opens on the first) opens with that chip checked, and checking a chip
   writes it into the address bar; that is `assets/filters.js`, the list pages' one script, so
   without it the chips still filter and a link just opens unfiltered. The build refuses a doc without them or with a
   name outside the set; the `publish-doc` skill says which to give a doc.
@@ -268,7 +270,7 @@ three from the command line):
   `/games`, each in the nav; those URLs, and the stable pictures under `/apps/` and `/film/`, now
   301 to `/projects` (`firebase.json`; `check.py --live` checks it). **Chips above the cards**
   *(Cyrus, 2026-10-29)*: All, Apps, Film, Games (`PROJECT_KINDS` in `docs_lib.mjs`), **single
-  select** (radios: a kind replaces the last, All clears it; `/research`'s stay multi-select), each
+  select** (radios: a kind replaces the last, All clears it; `/research`'s are the same), each
   card carrying `data-kind`; a link pre-applies one, `/projects?filter=film` (a link naming several
   opens on the first), through the same `filters.js`, and `/film`, `/games` and `/apps`
   301 to their own filter (so `games.csarko.sh`, via `/games`, lands on Games). A chip counts
@@ -453,7 +455,7 @@ dropped because its host went down and took the numbers with it.)*
   `nav-games` until 2026-10-26, when those pages became `/projects`); a game card's "Play in your
   browser" counts `play-<slug>`, an app card's link `app-<slug>`, a film card's "Watch on YouTube" `watch-<slug>`
   and a card's "Source on GitHub" `source-<slug>` *(2026-10-26)*
-  (`docs_lib.mjs`); on `/research`, a Start here card counts `start-<slug>` and a category chip
+  (`docs_lib.mjs`); on `/research`, a category chip
   `filter-<category>` (`filter-all` for All; a click that clears a chip counts too) *(2026-10-18,
   to see what the index's visitors do before they leave)*, and on `/projects` a kind chip
   `filter-apps`, `filter-film` or `filter-games` *(2026-10-29)*. All are `data-visits-event` attributes. `read-<slug>` needs no script of

@@ -4,7 +4,6 @@ published: 2026-10-14
 categories: Tooling, AI
 source: https://github.com/csarkosh/ide-sarkos/blob/main/docs/superpowers/specs/2026-10-14-update-in-place-design.md
 series: Arkos IDE notes
-featured: 2
 ---
 # Bring the agents back after a reboot
 

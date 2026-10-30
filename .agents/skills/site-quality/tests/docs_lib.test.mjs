@@ -323,28 +323,18 @@ test('indexPage carries one filter chip a category with its count, All as a rese
   for (const c of CATEGORIES) {
     const slug = categorySlug(c);
     const count = c === 'Tooling' ? 2 : 0;
-    assert.ok(html.includes(`<label class="chip"><input type="checkbox" name="category" value="${slug}" id="cat-${slug}" data-visits-event="filter-${slug}" />${c} <small>${count}</small></label>`), c);
+    assert.ok(html.includes(`<label class="chip"><input type="radio" name="category" value="${slug}" id="cat-${slug}" data-visits-event="filter-${slug}" />${c} <small>${count}</small></label>`), c);
     assert.ok(html.includes(`.docs-index:has(#cat-${slug}:checked) .all-docs > li[data-categories~="${slug}"] { display: flex; }`), `${c} rule`);
   }
   assert.ok(html.includes('.docs-index:has(.filters input:checked) .all-docs > li { display: none; }'));
   assert.ok(!/<script(?![^>]*\b(src=|type="application\/ld\+json"))/.test(html), 'no inline script does the filtering');
 });
 
-test('featured docs lead in a Start here row, lowest first, outside the filtered list, each click named', () => {
-  const docs = sortDocs([doc('a', '2026-01-01', 'featured: 2\n'), doc('b', '2026-03-01'), doc('c', '2026-02-01', 'featured: 1\n')]);
-  const html = indexPage(docs, themeBlocks(INDEX));
-  const start = /<section class="start-here"[\s\S]*?<\/section>/.exec(html)[0];
-  assert.ok(start.includes('<h2 id="start-here" class="section-label">Start here</h2>'));
-  assert.ok(start.includes('<ul class="doc-list start-list" role="list">'));
-  assert.deepEqual([...start.matchAll(/href="\/research\/([a-z]+)" data-visits-event="start-([a-z]+)"/g)].map((m) => [m[1], m[2]]), [['c', 'c'], ['a', 'a']]);
-  assert.ok(html.indexOf('</section>') < html.indexOf('<form class="filters"'), 'the row sits above the chips');
-  assert.ok(html.includes('<h2 class="section-label">All research</h2>'));
-  assert.deepEqual([...html.matchAll(/<ul class="doc-list all-docs"[\s\S]*?<\/ul>\n {4}<\/main>|<h3 class="doc-title"><a class="stretch" href="\/research\/([a-z]+)">/g)].filter((m) => m[1]).map((m) => m[1]), ['b', 'c', 'a'], 'every doc stays in the full list, a level down');
-  assert.ok(html.includes('.start-list {'));
-  assert.ok(!indexPage(sortDocs([doc('a', '2026-01-01')]), themeBlocks(INDEX)).includes('start-here'), 'no featured docs, no row');
-  assert.throws(() => doc('d', '2026-01-01', 'featured: 0\n'), /featured must be a whole number from 1/);
-  const twice = [src('a', '2026-01-01', 'featured: 1\n'), src('b', '2026-02-01', 'featured: 1\n')];
-  assert.throws(() => buildSite({ sources: twice, indexHtml: INDEX }), /both featured: 1/);
+test('the research index has no Start here row; every doc is in the one filtered list, and featured is refused', () => {
+  const html = indexPage(sortDocs([doc('a', '2026-01-01'), doc('b', '2026-03-01')]), themeBlocks(INDEX));
+  assert.ok(!html.includes('start-here') && !html.includes('Start here') && !html.includes('start-list'));
+  assert.deepEqual([...html.matchAll(/<h2 class="doc-title"><a class="stretch" href="\/research\/([a-z]+)">/g)].map((m) => m[1]), ['b', 'a'], 'each doc a card in the one list, a level under the page title');
+  assert.throws(() => doc('d', '2026-01-01', 'featured: 1\n'), /unknown front matter key "featured"/);
 });
 
 test('sitemap lists home, the index and every doc, with lastmod only on docs', () => {

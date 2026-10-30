@@ -22,11 +22,10 @@ export const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ENTI
 // ---------------------------------------------------------------- front matter
 
 // key -> required?
-// "featured" puts a doc in the research index's Start here row (Cyrus, 2026-10-18), lowest first.
 // "series" names the run of docs it belongs to (two or more share the name, read in published
 // order), and "related" the slugs its Keep reading block offers, in that order; without it the
 // build picks by shared category (2026-10-23, so no doc ends in a dead end).
-const FIELDS = { description: true, published: true, categories: true, updated: false, source: false, featured: false, series: false, related: false };
+const FIELDS = { description: true, published: true, categories: true, updated: false, source: false, series: false, related: false };
 const MAX_RELATED = 4;
 const SERIES_NAME = /^[A-Z][A-Za-z0-9' ]{2,39}$/;
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -138,11 +137,6 @@ export function parseFrontMatter(text, file) {
   if (new Set(names).size !== names.length) throw new DocError(`${file}: a category is listed twice`);
   if (names.length > MAX_CATEGORIES) throw new DocError(`${file}: ${names.length} categories; at most ${MAX_CATEGORIES}`);
   meta.categories = CATEGORIES.filter((c) => names.includes(c));
-  if (meta.featured !== undefined) {
-    const featured = Number(meta.featured);
-    if (!Number.isInteger(featured) || featured < 1) throw new DocError(`${file}: featured must be a whole number from 1`);
-    meta.featured = featured;
-  }
   if (meta.series !== undefined && !SERIES_NAME.test(meta.series)) {
     throw new DocError(`${file}: series must be 3 to 40 letters, digits, spaces or apostrophes, starting with a capital`);
   }
@@ -835,16 +829,6 @@ const filterCss = (list, prefix, attr, values) => `
     @media (prefers-reduced-motion: reduce) { .chip { transition: none; } }`;
 const FILTER_CSS = filterCss('.all-docs', 'cat', 'categories', CATEGORIES.map(categorySlug));
 
-// The Start here row: the featured docs, smaller cards side by side, above the full list, which
-// the chips filter alone (the rules above match .all-docs).
-const START_CSS = `
-    .start-here { margin: 0 0 44px; }
-    .docs-index h2.section-label { margin: 0 0 14px; }
-    .start-list { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
-    .start-list .card { padding: 18px; }
-    .start-list .doc-title { font-size: 1.05rem; }
-    .start-list .doc-desc { font-size: 14px; }`;
-
 // Only /projects carries the cards' rules (every page carries DOCS_CSS, and the longest doc sits
 // close to its HTML budget). A card with a picture (a game's or an app's preview, a film's poster)
 // lays it beside the text. On a phone the kicker and title come first, then the picture, then the
@@ -1006,14 +990,15 @@ ${pad}  </li>`);
 }
 
 /**
- * The category filters above the list (Cyrus, 2026-10-13): one chip a category, a checkbox
- * each, and "All", a reset button, lit while nothing is checked. No script: the list is
- * filtered by the :has() rules in DOCS_CSS, and a checked chip shows every doc that carries
- * its category (OR across chips). Each chip says how many docs it would show.
+ * The category filters above the list (Cyrus, 2026-10-13): one chip a category and "All", a
+ * reset button, lit while nothing is checked. Single select since 2026-10-29 (Cyrus), as on
+ * /projects: radios sharing a name, so a category replaces the last. No script: the list is
+ * filtered by the :has() rules in DOCS_CSS, and a checked chip shows every doc that carries its
+ * category. Each chip says how many docs it would show.
  */
 function filters(docs, pad) {
   const count = (c) => docs.filter((d) => d.categories.includes(c)).length;
-  const chips = CATEGORIES.map((c) => `${pad}  <label class="chip"><input type="checkbox" name="category" value="${categorySlug(c)}" id="cat-${categorySlug(c)}" data-visits-event="filter-${categorySlug(c)}" />${escapeHtml(c)} <small>${count(c)}</small></label>`);
+  const chips = CATEGORIES.map((c) => `${pad}  <label class="chip"><input type="radio" name="category" value="${categorySlug(c)}" id="cat-${categorySlug(c)}" data-visits-event="filter-${categorySlug(c)}" />${escapeHtml(c)} <small>${count(c)}</small></label>`);
   return `${pad}<form class="filters" aria-label="Filter by category">
 ${pad}  <button type="reset" class="chip all" data-visits-event="filter-all">All <small>${docs.length}</small></button>
 ${chips.join('\n')}
@@ -1254,18 +1239,7 @@ export function indexPage(docs, theme) {
     },
     breadcrumbs(trail),
   ];
-  // The featured docs lead in their own row; with any, the full list gets a heading of its own
-  // and its cards step down a level under it.
-  const featured = docs.filter((d) => d.featured !== undefined).sort((a, b) => a.featured - b.featured);
-  const start = featured.length
-    ? `    <section class="start-here" aria-labelledby="start-here">
-      <h2 id="start-here" class="section-label">Start here</h2>
-${docList(featured, 3, '      ', { cls: 'start-list', event: 'start' })}
-    </section>
-    <h2 class="section-label">All research</h2>
-`
-    : '';
-  return `${head({ title: `${INDEX_TITLE} · Cyrus Sarkosh`, ogTitle: INDEX_TITLE, description: INDEX_DESCRIPTION, canonical: url, ogType: 'website', extraMeta: FEED_LINK, extraCss: FILTER_CSS + (featured.length ? START_CSS : ''), graph, theme })}
+  return `${head({ title: `${INDEX_TITLE} · Cyrus Sarkosh`, ogTitle: INDEX_TITLE, description: INDEX_DESCRIPTION, canonical: url, ogType: 'website', extraMeta: FEED_LINK, extraCss: FILTER_CSS, graph, theme })}
 <body>
 ${nav(`/${DOCS_DIR}`)}
 ${crumbs(trail)}
@@ -1276,8 +1250,8 @@ ${crumbs(trail)}
       <h1>${escapeHtml(INDEX_TITLE)}</h1>
       <p class="lead">${escapeHtml(INDEX_LEAD)}</p>
     </header>
-${start}${filters(docs, '    ')}
-${docList(docs, featured.length ? 3 : 2, '    ', { cls: 'all-docs' })}
+${filters(docs, '    ')}
+${docList(docs, 2, '    ', { cls: 'all-docs' })}
   </main>
 
 ${FOOTER}`;
@@ -1570,11 +1544,6 @@ export function buildSite({ sources, gameSources = [], filmSources = [], appSour
       throw new DocError(`docs/published/: ${bySlug.get(doc.slug)} and ${name} both build /${DOCS_DIR}/${doc.slug}`);
     }
     bySlug.set(doc.slug, name);
-  }
-  const byFeatured = new Map();
-  for (const doc of docs.filter((d) => d.featured !== undefined)) {
-    if (byFeatured.has(doc.featured)) throw new DocError(`docs/published/: ${byFeatured.get(doc.featured)} and ${doc.slug} are both featured: ${doc.featured}`);
-    byFeatured.set(doc.featured, doc.slug);
   }
   // Every project shares one page, so a slug is its card's #anchor and its picture's
   // /projects/<slug>.jpg across all three folders, and an order is one place in one list.
