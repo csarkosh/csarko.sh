@@ -645,10 +645,11 @@ export function accountMenu(host, { account, preview })
 // The nav's account, rendered into `host` (the nav's `<div class="account" id="account">`
 // that every page's chrome carries): a round button (aria-expanded, aria-controls), the
 // account's initials on the accent when someone is signed in and a profile mark otherwise,
-// that toggles a menu with the Live or Sample badge, the name, the email and a Sign out
-// button. A page calls it from onReady with the account, or once with { preview: true }
-// under ?preview, where the menu says nobody is signed in and has no Sign out. Closes on
-// Escape, on a click elsewhere, and on Sign out.
+// that toggles a menu with the name, the email, then the Billing link (/finance/, with
+// ?preview kept) and a Sign out button, every line on one left edge. A page calls it from
+// onReady with the account, or once with { preview: true } under ?preview, where the menu
+// says nobody is signed in and has no Sign out. Closes on Escape, on a click elsewhere, and
+// on Sign out. An apps.json entry with `listed: false` (Billing) gets no card on the index.
 ```
 
 Persistence is `browserLocalPersistence` (localStorage, no cookie); the provider is

@@ -319,9 +319,12 @@ anything related to the admin pages in this repo:
   not 4.5:1 *(Cyrus, 2026-10-29)*; `check.py --admin` holds both. No em-dashes, no email address or
   phone number.
 - **One chrome, every page** *(Cyrus, 2026-10-13)*. The nav holds the wordmark and, at
-  the right, the account: a round profile button whose menu is the Live or Sample badge,
-  the signed-in email and Sign out (`auth.js`, `accountMenu`; the shell renders it, every
-  page calls it). It carries no app links: the trail under the nav, `Admin › <app>` in the
+  the right, the account: a round profile button whose menu is the signed-in name and
+  email, then **Billing** (the cloud-spend page, `/finance/`, which is the account's own
+  page and not an app, so it is `listed: false` in `apps.json` and the index shows no card
+  for it) and Sign out, every line on the same left edge and no Live or Sample badge
+  *(Cyrus, 2026-10-29; the badge was there from 2026-10-13)* (`auth.js`, `accountMenu`; the
+  shell renders it, every page calls it). It carries no app links: the trail under the nav, `Admin › <app>` in the
   research page's style (`.crumbs`), is the way back to the index, which carries none. An
   app's page (Day Hike's, built in its own repo) wears the same markup, nav, trail and page
   head included, with a `generated:head` block that `admin/build.mjs` fills after

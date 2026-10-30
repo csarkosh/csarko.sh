@@ -162,7 +162,7 @@ main:focus { outline: none; }
 .wordmark small { font-size: 15px; font-weight: 400; color: var(--muted); margin-left: 8px; }
 /* The account, at the nav's right (Cyrus, 2026-10-13: in place of the app links, which the
    trail covers): a round profile button that opens a small menu with the signed-in email,
-   the Live or Sample badge, and Sign out. The menu is a plain element toggled by the
+   the Billing link and Sign out. The menu is a plain element toggled by the
    button (aria-expanded), closed by Escape or a click elsewhere (`auth.js`, accountMenu). */
 .account { position: relative; display: flex; align-items: center; }
 .avatar { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border-strong); transition: color .15s ease, border-color .15s ease; }
@@ -178,7 +178,12 @@ main:focus { outline: none; }
 .menu[hidden] { display: none; }
 .menu .email { font-family: var(--mono); font-size: 12.5px; color: var(--text); overflow-wrap: anywhere; margin: 0; }
 .menu .note { font-size: 13px; }
-.menu .btn { justify-self: start; }
+/* The menu's rows after the account: Billing, then Sign out, each a plain line on the same left
+   edge as the name and email (no button chrome), under a rule. */
+.menu .items { display: grid; border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px; }
+.menu .item { display: block; width: 100%; padding: 7px 0; margin: 0; border: 0; background: none; color: var(--text); font: inherit; font-size: 14px; line-height: 1.4; text-align: left; text-decoration: none; cursor: pointer; transition: color .15s ease; }
+.menu .item:hover, .menu .item:focus-visible { color: var(--accent); }
+.menu .item[aria-current="page"] { color: var(--accent); font-weight: 600; }
 
 /* Page head: the site's eyebrow, title and lead. */
 main { min-height: calc(100vh - 60px); padding-block: 56px 96px; }
