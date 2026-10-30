@@ -42,10 +42,15 @@ export function createPricesBucket({ bucket, projectId = null, storage = null, l
     },
     /** Replaces the object with `json`, public-readable by the bucket's own policy, cached five minutes. */
     async write(json) {
-      await (await file()).save(JSON.stringify(json, null, 1), {
-        contentType: "application/json",
-        metadata: { cacheControl: "public, max-age=300" },
-      });
+      try {
+        await (await file()).save(JSON.stringify(json, null, 1), {
+          contentType: "application/json",
+          metadata: { cacheControl: "public, max-age=300" },
+        });
+      } catch (error) {
+        log.error?.(`donate: writing gs://${name}/${PRICES_OBJECT} failed`, error);
+        throw error;
+      }
     },
   };
 }

@@ -1,12 +1,17 @@
 /**
  * The monthly step of the donate site: once last month's bill is in, turn its pool into four prices
  * (a share each) and a custom one, make a Stripe payment link for every door and tier, and publish
- * the result as the one JSON object the pages read. It is idempotent: every Stripe create carries
- * a key named for the month, door and tier, so a rerun after a failure gets back what the first
- * run made, and nothing is written to the bucket until every create has succeeded. Last month's
- * links and prices are retired only after the new ones exist, so a visitor never meets a dead link;
- * a retirement that fails is logged and left for a person, because the new prices are already live.
- * A door shipped mid-month gets its links at the month's current prices and touches nothing else.
+ * the result as the one JSON object the pages read. It is safe to rerun at any hour. A Stripe
+ * idempotency key lives only 24 hours and the snapshot runs about 24 hours apart, so the keys are
+ * only the second guard: before creating anything the step looks for what an earlier run made, a
+ * product by its `metadata[donate]` and tier, a price by its `lookup_key` (`donate:<month>:<tier>`,
+ * which also carries the pool the price was cut from, so a rerun after the data moved publishes the
+ * pool Stripe holds), a link by its month, door and tier. Nothing is written to the bucket until
+ * every create has succeeded. A run that writes a month retires nothing: the bucket's object is
+ * cached five minutes, so the previous month's links must outlive that. The first later run that
+ * finds the month done sweeps instead, deactivating the links and archiving the prices of any
+ * other month, each failure logged and left for the next day. A door shipped mid-month gets its
+ * links at the month's current prices and touches nothing else.
  */
 
 import { cents } from "../finance/rows.mjs";
@@ -29,30 +34,40 @@ export function createDonateStep({ writer, bucket, now = Date.now, log = console
     const existing = await writer.listProducts();
     const products = {};
     for (const t of [...TIERS, CUSTOM]) {
-      const found = existing.find((p) => p.active !== false && p.metadata?.tier === t.key);
-      products[t.key] = found
-        ? need(found.id, `product id for ${t.key}`)
-        : need((await writer.createProduct({ name: t.name, tier: t.key, key: `donate:product:${t.key}` })).id, `product id for ${t.key}`);
+      const found = existing.find((p) => p.active !== false && p.metadata?.donate === "1" && p.metadata?.tier === t.key);
+      const id = found ? found.id : (await writer.createProduct({ name: t.name, tier: t.key, key: `donate:product:${t.key}` }))?.id;
+      products[t.key] = need(id, `product id for ${t.key}`);
     }
     return products;
   }
 
-  async function pricesFor(month, pool) {
+  /** The month's prices: those already in Stripe reused, the rest created at the pool they were cut from. */
+  async function pricesFor(month, monthlyRows) {
+    const existing = new Map((await writer.listPrices()).filter((p) => typeof p.lookup_key === "string").map((p) => [p.lookup_key, p]));
+    const lookupOf = (tier) => `donate:${month}:${tier}`;
+    const foundPools = TIER_KEYS.map((t) => Number(existing.get(lookupOf(t))?.metadata?.pool)).filter((n) => Number.isFinite(n));
+    const pool = foundPools.length > 0 ? foundPools[0] : cents(poolOf(monthlyRows, month));
     const products = await productsOf();
+    const metadataOf = (tier) => ({ donate: "1", month, tier, pool: String(pool) });
+
     const tiers = [];
     for (const p of pricesOf(pool)) {
-      const priceId = need((await writer.createPrice({ product: products[p.tier], usd: p.usd, key: `donate:price:${month}:${p.tier}` })).id, `price id for ${p.tier}`);
-      tiers.push({ ...p, priceId });
+      const found = existing.get(lookupOf(p.tier));
+      const id = found ? found.id : (await writer.createPrice({ product: products[p.tier], usd: p.usd, key: `donate:price:${month}:${p.tier}`, lookupKey: lookupOf(p.tier), metadata: metadataOf(p.tier) }))?.id;
+      tiers.push({ ...p, priceId: need(id, `price id for ${p.tier}`) });
     }
-    const customId = need((await writer.createCustomPrice({ product: products[CUSTOM.key], minimumUsd: CUSTOM.minimumUsd, key: `donate:price:${month}:${CUSTOM.key}` })).id, "custom price id");
-    return { tiers, custom: { priceId: customId, minimumUsd: CUSTOM.minimumUsd }, products };
+    const foundOwn = existing.get(lookupOf(CUSTOM.key));
+    const ownId = foundOwn ? foundOwn.id : (await writer.createCustomPrice({ product: products[CUSTOM.key], minimumUsd: CUSTOM.minimumUsd, key: `donate:price:${month}:${CUSTOM.key}`, lookupKey: lookupOf(CUSTOM.key), metadata: metadataOf(CUSTOM.key) }))?.id;
+    return { pool, tiers, custom: { priceId: need(ownId, "custom price id"), minimumUsd: CUSTOM.minimumUsd }, products };
   }
 
-  async function linksFor(door, month, tiers, custom) {
+  /** A door's five links: the active ones already made for this month reused, the rest created. */
+  async function linksFor(door, month, tiers, custom, existing) {
     const priceIds = { ...Object.fromEntries(tiers.map((t) => [t.tier, t.priceId])), [CUSTOM.key]: custom.priceId };
     const links = {};
     for (const tier of TIER_KEYS) {
-      const link = await writer.createLink({
+      const found = existing.find((l) => l.metadata?.month === month && l.metadata?.door === door && l.metadata?.tier === tier);
+      const link = found ?? await writer.createLink({
         priceId: priceIds[tier], door, tier, month, share: SHARES[tier] ?? 0,
         redirectUrl: `${DONATE_URL}/thanks?door=${door}`,
         key: `donate:link:${month}:${door}:${tier}`,
@@ -62,51 +77,58 @@ export function createDonateStep({ writer, bucket, now = Date.now, log = console
     return { links };
   }
 
-  /** Last month's links deactivated and prices archived; each failure logged, none fatal. */
-  async function retire(old) {
-    const attempt = async (what, fn) => {
-      try {
-        await fn();
-      } catch (error) {
-        log.error(`donate: retiring ${what} failed`, error);
+  /** Other months' links deactivated and prices archived; each failure logged, none fatal. */
+  async function sweep(month) {
+    const swept = { links: 0, prices: 0 };
+    try {
+      const attempt = async (what, fn, counter) => {
+        try {
+          await fn();
+          swept[counter] += 1;
+        } catch (error) {
+          log.error(`donate: retiring ${what} failed`, error);
+        }
+      };
+      for (const l of await writer.listLinks()) {
+        if (l.metadata?.donate === "1" && l.metadata?.month !== month) await attempt(`link ${l.id}`, () => writer.deactivateLink(l.id), "links");
       }
-    };
-    for (const door of Object.values(old.doors ?? {})) {
-      for (const link of Object.values(door.links ?? {})) if (link?.id) await attempt(`link ${link.id}`, () => writer.deactivateLink(link.id));
+      for (const p of await writer.listPrices()) {
+        if (typeof p.lookup_key === "string" && p.lookup_key.startsWith("donate:") && !p.lookup_key.startsWith(`donate:${month}:`)) await attempt(`price ${p.id}`, () => writer.archivePrice(p.id), "prices");
+      }
+    } catch (error) {
+      log.error("donate: listing last month's objects to retire failed", error);
     }
-    for (const t of old.tiers ?? []) if (t?.priceId) await attempt(`price ${t.priceId}`, () => writer.archivePrice(t.priceId));
-    if (old.custom?.priceId) await attempt(`price ${old.custom.priceId}`, () => writer.archivePrice(old.custom.priceId));
+    return swept;
   }
 
   return {
     get configured() {
       return Boolean(writer?.configured && bucket?.configured);
     },
-    async run({ monthlyRows, failed, today }) {
+    async run({ monthlyRows, failed = [], today }) {
       const current = await bucket.read();
       const d = decide({
         today, failed,
         current: current ? { month: current.month, doors: Object.keys(current.doors ?? {}) } : null,
         doors: shippedDoors().map((x) => x.door),
       });
-      if (!d.run) return { ran: false, reason: d.reason, record: recordOf(current) };
-
-      let base;
-      if (d.newMonth) {
-        const pool = cents(poolOf(monthlyRows, d.month));
-        base = { pool, ...(await pricesFor(d.month, pool)) };
-      } else {
-        base = { pool: current.pool, tiers: current.tiers, custom: current.custom, products: current.products };
+      if (!d.run) {
+        const out = { ran: false, reason: d.reason, record: recordOf(current) };
+        if (d.reason === "done" && current) out.swept = await sweep(current.month);
+        return out;
       }
+
+      const base = d.newMonth
+        ? await pricesFor(d.month, monthlyRows)
+        : { pool: current.pool, tiers: current.tiers, custom: current.custom, products: current.products };
+      const existingLinks = d.pending.length > 0 ? await writer.listLinks() : [];
       const doors = d.newMonth ? {} : { ...current.doors };
-      for (const door of d.pending) doors[door] = await linksFor(door, d.month, base.tiers, base.custom);
+      for (const door of d.pending) doors[door] = await linksFor(door, d.month, base.tiers, base.custom, existingLinks);
 
       const next = {
-        month: d.month, pool: base.pool, at: new Date(now()).toISOString(),
+        month: d.month, pool: base.pool, at: d.newMonth ? new Date(now()).toISOString() : current.at,
         tiers: base.tiers, custom: base.custom, products: base.products, doors,
       };
-      if (!d.newMonth) { next.month = current.month; next.at = current.at; }
-      if (d.newMonth && current !== null) await retire(current);
       await bucket.write(next);
       return { ran: true, reason: d.reason, record: recordOf(next) };
     },
