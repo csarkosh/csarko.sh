@@ -10,7 +10,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "lambda"))
 
-from mailkit import Recipient, build_forward, parse_recipient, policy, summary  # noqa: E402
+from mailkit import Recipient, build_forward, build_reply, is_owner, mint_token, parse_recipient, policy, summary  # noqa: E402
 
 FIX = {p.stem: p.read_bytes() for p in (HERE / "fixtures").glob("*.eml")}
 OK = {"spam": "PASS", "virus": "PASS", "spf": "PASS", "dkim": "PASS", "dmarc": "PASS"}
@@ -145,6 +145,72 @@ class BuildForward(unittest.TestCase):
         out = build_forward(raw, **self.ARGS)
         out.decode("ascii")  # headers we write stay 7-bit
         self.assertEqual(parse(out)["From"].addresses[0].display_name, "Adá via csarko.sh")
+
+
+class Tokens(unittest.TestCase):
+    def test_shape(self):
+        t = mint_token()
+        self.assertRegex(t, r"^[a-z2-7]{12}$")
+        self.assertNotEqual(t, mint_token())
+
+    def test_a_minted_token_parses_as_a_reverse_alias(self):
+        t = mint_token()
+        self.assertEqual(parse_recipient(f"reply.{t}@csarko.sh", "csarko.sh"), Recipient("reverse", t, "csarko.sh"))
+
+
+class IsOwner(unittest.TestCase):
+    MAIL = {"source": "owner@example.net"}
+    PASS = {"dmarcVerdict": {"status": "PASS"}}
+
+    def test_all_three_conditions(self):
+        self.assertTrue(is_owner(self.MAIL, self.PASS, FIX["gmail-reply"], "owner@example.net"))
+
+    def test_case_does_not_matter(self):
+        self.assertTrue(is_owner({"source": "Owner@Example.NET"}, self.PASS, FIX["gmail-reply"], "OWNER@example.net"))
+
+    def test_dmarc_fail_is_not_owner(self):
+        self.assertFalse(is_owner(self.MAIL, {"dmarcVerdict": {"status": "FAIL"}}, FIX["gmail-reply"], "owner@example.net"))
+
+    def test_missing_dmarc_verdict_is_not_owner(self):
+        self.assertFalse(is_owner(self.MAIL, {}, FIX["gmail-reply"], "owner@example.net"))
+
+    def test_envelope_mismatch_is_not_owner(self):
+        self.assertFalse(is_owner({"source": "bounce@example.com"}, self.PASS, FIX["gmail-reply"], "owner@example.net"))
+
+    def test_header_mismatch_is_not_owner(self):
+        self.assertFalse(is_owner(self.MAIL, self.PASS, FIX["plain"], "owner@example.net"))
+
+
+class BuildReply(unittest.TestCase):
+    def built(self, name=None):
+        raw = build_reply(FIX["gmail-reply"], alias_local="hello", domain="csarko.sh", alias_name=name, external="ada@example.com")
+        return raw, parse(raw)
+
+    def test_from_and_to(self):
+        _, m = self.built()
+        self.assertEqual((m["From"], m["To"]), ("hello@csarko.sh", "ada@example.com"))
+        self.assertEqual(self.built("Tips")[1]["From"], "Tips <hello@csarko.sh>")
+
+    def test_gmail_headers_gone(self):
+        raw, m = self.built()
+        leaked = [k for k in m.keys() if k.lower().startswith(("x-", "received", "dkim", "return-path", "cc", "bcc", "reply-to"))]
+        self.assertEqual(leaked, [])
+        self.assertTrue(m["Message-ID"].endswith("@csarko.sh>"))
+        header_block = raw[: raw.index(b"\n\n")]
+        for needle in (b"owner@example.net", b"gmail", b"google", b"friend@example.org"):
+            self.assertNotIn(needle, header_block.lower())
+
+    def test_thread_and_body_kept(self):
+        orig = parse(FIX["gmail-reply"])
+        raw, m = self.built()
+        for h in ("Subject", "In-Reply-To", "References", "Date", "Content-Type"):
+            self.assertEqual(m[h], orig[h], h)
+        self.assertEqual(payloads(m), payloads(orig))
+        src = FIX["gmail-reply"]
+        self.assertTrue(raw.endswith(src[src.index(b"\n\n"):]))
+
+    def test_each_reply_gets_its_own_message_id(self):
+        self.assertNotEqual(self.built()[1]["Message-ID"], self.built()[1]["Message-ID"])
 
 
 if __name__ == "__main__":

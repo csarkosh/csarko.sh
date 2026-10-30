@@ -9,6 +9,8 @@ is not a package.
 import email.policy
 import email.utils
 import re
+import secrets
+import uuid
 from dataclasses import dataclass
 from email.parser import BytesHeaderParser
 from typing import Literal, Optional
@@ -187,4 +189,44 @@ def build_forward(raw: bytes, *, alias_local: str, base_domain: str, owner: str,
         added.append(["X-Original-To", b" " + original_to])
     if original_reply_to is not None:
         added.append(["X-Original-Reply-To", b" " + original_reply_to])
+    return _join(added + kept, eol, body)
+
+
+# ---------------------------------------------------------------------------------------------
+# Reverse aliases (spec section 5.2).
+
+_TOKEN_ALPHABET = "abcdefghijklmnopqrstuvwxyz234567"
+
+# The only headers of the owner's reply that survive into the message the stranger receives.
+_REPLY_KEEP = ("subject", "in-reply-to", "references", "date", "mime-version", "content-type", "content-transfer-encoding")
+
+
+def mint_token() -> str:
+    """12 characters of the lower-case base32 alphabet: 60 bits, never guessed."""
+    return "".join(secrets.choice(_TOKEN_ALPHABET) for _ in range(12))
+
+
+def is_owner(mail: dict, receipt: dict, raw: bytes, owner: str) -> bool:
+    """Only the owner may send through a reverse alias: the SMTP envelope sender and the From
+    header must both be the owner's address, and SES must have found the message DMARC-aligned
+    for the owner's domain (Gmail signs everything it sends, so its own replies always pass)."""
+    owner = owner.strip().lower()
+    envelope = str(mail.get("source", "")).strip().lower()
+    header = _address(_parsed_headers(raw)["From"])[1]
+    dmarc = (receipt.get("dmarcVerdict") or {}).get("status")
+    return envelope == owner and header == owner and dmarc == "PASS"
+
+
+def build_reply(raw: bytes, *, alias_local: str, domain: str, alias_name: Optional[str], external: str) -> bytes:
+    """The message the stranger receives when the owner replies to a reverse alias: rebuilt from
+    an allow-list of headers, so nothing of the owner's mailbox (Received, X-Google-*, X-Gm-*,
+    DKIM, Cc, the original Message-ID) survives. The body is passed through byte for byte."""
+    headers, eol, body = _split(raw)
+    kept = [[n, value] for n, value in headers if n is not None and n.lower() in _REPLY_KEEP]
+    sender = f"{alias_local}@{domain}"
+    added = [
+        _header("From", email.utils.formataddr((alias_name, sender), charset="utf-8") if alias_name else sender),
+        _header("To", external),
+        _header("Message-ID", f"<{uuid.uuid4().hex}@{domain}>"),
+    ]
     return _join(added + kept, eol, body)

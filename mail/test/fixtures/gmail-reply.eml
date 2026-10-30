@@ -1,0 +1,37 @@
+Received: by 2002:a05:6000:1a8e:b0:3a1:2b3c:4d5e with SMTP id f14csp123456wrq;
+        Thu, 30 Oct 2026 12:10:00 -0700 (PDT)
+Received: from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])
+        by mx.google.com with SMTPS id a1sor123456qkb.1
+Received: from [192.168.1.20] by smtp.gmail.com with ESMTPSA id x1sm1;
+        Thu, 30 Oct 2026 12:10:00 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=example.net; s=20230601;
+ h=to:subject:message-id:date:from:in-reply-to:references:mime-version; bh=CCCC; b=DDDD
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=1e100.net; s=20230601; b=EEEE
+X-Gm-Message-State: AOJu0YzFakeStateValue
+X-Google-Smtp-Source: AGHT+IFakeSource
+Return-Path: <owner@example.net>
+MIME-Version: 1.0
+References: <root@example.com> <plain-1@example.com>
+In-Reply-To: <plain-1@example.com>
+From: Owner <owner@example.net>
+Date: Thu, 30 Oct 2026 15:10:00 -0400
+Message-ID: <CAFakeGmailId123@mail.gmail.com>
+Subject: Re: Hello there
+To: reply.abc234def567@csarko.sh
+Cc: friend@example.org
+Content-Type: multipart/alternative; boundary="000000000000abcdef0123456789"
+
+--000000000000abcdef0123456789
+Content-Type: text/plain; charset="UTF-8"
+
+It works, thanks!
+
+On Thu, Oct 30, 2026 at 8:00 AM Ada Example via csarko.sh <hello@csarko.sh> wrote:
+> Just checking this address works.
+
+--000000000000abcdef0123456789
+Content-Type: text/html; charset="UTF-8"
+
+<div dir="ltr">It works, thanks!</div>
+
+--000000000000abcdef0123456789--
