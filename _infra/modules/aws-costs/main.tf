@@ -40,10 +40,23 @@ data "aws_iam_policy_document" "trust" {
       identifiers = ["accounts.google.com"]
     }
 
+    # A service account's ID token sets `azp` (to the account's unique id), and when `azp`
+    # is set AWS reads the Google keys the hybrid-app way: `accounts.google.com:aud` is the
+    # token's `azp`, and the token's `aud` (the audience it was minted for) is
+    # `accounts.google.com:oaud` (IAM and AWS STS condition context keys, "Available keys
+    # for AWS OIDC federation"). The first apply had `aud` = the audience and STS refused
+    # every exchange with "Not authorized to perform sts:AssumeRoleWithWebIdentity"
+    # (2026-10-29); this is the mapping that matches.
+    condition {
+      test     = "StringEquals"
+      variable = "accounts.google.com:oaud"
+      values   = [var.audience]
+    }
+
     condition {
       test     = "StringEquals"
       variable = "accounts.google.com:aud"
-      values   = [var.audience]
+      values   = [var.service_account_unique_id]
     }
 
     condition {

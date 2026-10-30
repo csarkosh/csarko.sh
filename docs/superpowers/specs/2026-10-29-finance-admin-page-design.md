@@ -159,9 +159,10 @@ queries' do.
   already there for DNS) with one policy, `ce:GetCostAndUsage` and `ce:GetCostForecast`, that
   trusts the Cloud Run service account through web identity federation
   (`sts:AssumeRoleWithWebIdentity`, provider `accounts.google.com`, the conditions
-  `accounts.google.com:aud` equal to the audience the token is minted for,
-  `https://admin.csarko.sh/aws-costs`, and `accounts.google.com:sub` equal to the service
-  account's unique id; *as built 2026-10-29*, `_infra/modules/aws-costs/`). The API mints a Google
+  `accounts.google.com:oaud` equal to the audience the token is minted for,
+  `https://admin.csarko.sh/aws-costs`, and `accounts.google.com:aud` and `:sub` equal to the
+  service account's unique id, since a service account's token sets `azp` and AWS then reads
+  `aud` as that field; *as built 2026-10-29*, `_infra/modules/aws-costs/`). The API mints a Google
   ID token for its own service account from the metadata server and exchanges it; nothing
   long-lived is stored, and Secret Manager stays as it is. A fallback for local preview is an
   `AWS_PROFILE` on the developer's Mac, never a key in a secret.
