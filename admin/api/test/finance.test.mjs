@@ -367,8 +367,9 @@ test("fal series: a fall is the earlier day's spend, a rise a purchase, a skippe
 /* ---- projects ---- */
 
 test("projects: the four in order, and the rule table over every provider", () => {
-  assert.deepEqual(PROJECT_KEYS, ["films", "dayhike", "site", "other"]);
-  assert.deepEqual(PROJECTS.map((p) => p.label), ["Films", "Day Hike", "csarko.sh and admin", "Other"]);
+  assert.deepEqual(PROJECT_KEYS, ["films", "dayhike", "site", "commercial", "other"]);
+  assert.deepEqual(PROJECTS.map((p) => p.label), ["Films", "Day Hike", "csarko.sh and admin", "Commercial", "Other"]);
+  assert.equal(projectOf({ provider: "gcp", where: "magicpixel-487014" }), "other", "nothing is routed to commercial yet");
   const aws = (line, service = "EC2 - Other") => awsRows([{ month: "2026-10", service, line, amount: 1 }])[0];
   assert.equal(projectOf(aws("Route53-Domains", "Amazon Registrar")), "site");
   assert.equal(projectOf(aws("HostedZone", "Amazon Route 53")), "site");
@@ -402,6 +403,7 @@ test("projects: the four in order, and the rule table over every provider", () =
       { key: "films", label: "Films", byMonth: [0, 0, 155.93] },
       { key: "dayhike", label: "Day Hike", byMonth: [0, 0, 33.74] },
       { key: "site", label: "csarko.sh and admin", byMonth: [0, 1, 19.76] },
+      { key: "commercial", label: "Commercial", byMonth: [0, 0, 0] },
       { key: "other", label: "Other", byMonth: [0, 0, 10.96] },
     ],
     partial: ["2026-08", "2026-09"],
