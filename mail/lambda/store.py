@@ -108,7 +108,9 @@ class Store:
 
     # -- the message index -----------------------------------------------------------------------
     def index_message(self, local: str, message_id: str, *, direction: str, summary: dict, s3_key: str,
-                      verdicts: Optional[dict], forwarded: bool, flags: list) -> None:
+                      verdicts: Optional[dict], forwarded: bool, flags: list) -> str:
+        """Write one index row; returns its sort key, so the caller can update it without
+        reading it back through the eventually consistent by-id index."""
         now = self.now()
         iso = now.isoformat(timespec="seconds")
         item = {
@@ -120,6 +122,7 @@ class Store:
             "verdicts": verdicts,
         }
         self.table.put_item(Item={k: v for k, v in item.items() if v is not None})
+        return item["sk"]
 
     def mark_forwarded(self, local: str, sk: str, forwarded: bool, error: Optional[str]) -> None:
         if error is None:

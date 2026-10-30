@@ -119,28 +119,36 @@ def _join(headers, eol: bytes, body: bytes) -> bytes:
     return eol.join(lines) + body
 
 
-def _values(raw: bytes, name: str) -> list:
-    """Every value of one header, decoded from RFC 2047 and cleaned of control characters.
+def _raw_values(raw: bytes, name: str) -> list:
+    """Every value of one header exactly as sent (unfolded, control characters made spaces),
+    with no RFC 2047 decoding. Addresses are parsed from these: an encoded word must never be
+    able to turn into an address, or we would read a different sender than SES's DMARC check.
 
     The permissive compat32 parser is used on purpose: the default policy raises while merely
-    reading an address header whose display name decodes to a line break, which would crash
-    the Lambda on one hostile message."""
+    reading an address header whose display name decodes to a line break."""
     message = BytesHeaderParser(policy=email.policy.compat32).parsebytes(raw)
-    out = []
-    for value in message.get_all(name) or []:
-        try:
-            text = str(email.header.make_header(email.header.decode_header(str(value))))
-        except (UnicodeError, ValueError, LookupError, email.errors.HeaderParseError):
-            text = str(value)
-        out.append(_clean(text))
-    return out
+    return [_clean(str(value)) for value in message.get_all(name) or []]
+
+
+def _decode(text: str) -> str:
+    """RFC 2047 decoding of display text (a name, a subject), cleaned for reuse in a header."""
+    try:
+        text = str(email.header.make_header(email.header.decode_header(text)))
+    except (UnicodeError, ValueError, LookupError, email.errors.HeaderParseError):
+        pass
+    return _clean(text)
+
+
+def _values(raw: bytes, name: str) -> list:
+    """Every value of an unstructured header (Subject, Date, Message-ID), decoded."""
+    return [_decode(value) for value in _raw_values(raw, name)]
 
 
 def _address(values: list) -> tuple:
-    """(display name, lower-cased address) of the first address in the first value."""
+    """(decoded display name, lower-cased address) of the first address in the first raw value."""
     pairs = email.utils.getaddresses(values[:1]) if values else []
     name, addr = pairs[0] if pairs else ("", "")
-    return _clean(name), addr.lower()
+    return _decode(name), addr.lower()
 
 
 def _addresses(values: list) -> list:
@@ -149,8 +157,8 @@ def _addresses(values: list) -> list:
 
 def summary(raw: bytes) -> dict:
     """The fields the message index keeps (spec section 6)."""
-    name, addr = _address(_values(raw, "From"))
-    reply_to = _values(raw, "Reply-To")
+    name, addr = _address(_raw_values(raw, "From"))
+    reply_to = _raw_values(raw, "Reply-To")
 
     def first(header):
         found = _values(raw, header)
@@ -159,7 +167,7 @@ def summary(raw: bytes) -> dict:
     return {
         "from": addr,
         "from_name": name,
-        "to": _addresses(_values(raw, "To")),
+        "to": _addresses(_raw_values(raw, "To")),
         "subject": first("Subject"),
         "date": first("Date"),
         "message_id": first("Message-ID"),
@@ -184,7 +192,7 @@ def build_forward(raw: bytes, *, alias_local: str, base_domain: str, owner: str,
     provider), Reply-To is the reverse alias, To is the owner, and the original sender and route
     are kept only in X- headers. Every other header and the whole body are untouched."""
     headers, eol, body = _split(raw)
-    name, addr = _address(_values(raw, "From"))
+    name, addr = _address(_raw_values(raw, "From"))
     original_from = _raw_value(headers, "from")
     original_to = _raw_value(headers, "to")
     original_reply_to = _raw_value(headers, "reply-to")
@@ -235,9 +243,11 @@ def is_owner(mail: dict, receipt: dict, raw: bytes, owner: str) -> bool:
     for the owner's domain (Gmail signs everything it sends, so its own replies always pass)."""
     owner = owner.strip().lower()
     envelope = str(mail.get("source", "")).strip().lower()
-    froms = _values(raw, "From")
+    froms = _raw_values(raw, "From")
     if len(froms) != 1 or len(_addresses(froms)) != 1:
         return False  # SES's DMARC check and our parser must be reading the same, single From
+    if "=?" in froms[0] or "(" in froms[0]:
+        return False  # no encoded words or comments: nothing that two parsers could read apart
     header = _addresses(froms)[0]
     dmarc = (receipt.get("dmarcVerdict") or {}).get("status")
     return envelope == owner and header == owner and dmarc == "PASS"

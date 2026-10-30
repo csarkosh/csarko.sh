@@ -250,6 +250,22 @@ class Hardening(unittest.TestCase):
         raw = FIX["gmail-reply"].replace(b"From: Owner <owner@example.net>", b"From: Owner <owner@example.net>\nFrom: Ada <ada@example.com>")
         self.assertFalse(is_owner({"source": "owner@example.net"}, {"dmarcVerdict": {"status": "PASS"}}, raw, "owner@example.net"))
 
+    def test_an_encoded_word_cannot_impersonate_the_owners_address(self):
+        # SES checks DMARC for evil.example (the real address); decoding before parsing would
+        # make us read the owner's address out of the display name.
+        for forged in (b'From: "=?utf-8?q?owner=40example.net?=" <attacker@evil.example>',
+                       b"From: =?utf-8?q?owner=40example.net?= <attacker@evil.example>",
+                       b"From: owner@example.net (=?utf-8?q?x?=) <attacker@evil.example>",
+                       b"From: =?utf-8?q?owner=40example.net?=",
+                       b"From: =?utf-8?q?Owner_=3Cowner=40example.net=3E?="):
+            raw = FIX["gmail-reply"].replace(b"From: Owner <owner@example.net>", forged)
+            self.assertFalse(is_owner({"source": "owner@example.net"}, {"dmarcVerdict": {"status": "PASS"}}, raw, "owner@example.net"), forged)
+
+    def test_summary_reads_the_real_address_not_the_encoded_name(self):
+        raw = FIX["plain"].replace(b'From: "Ada Example" <ada@example.com>', b'From: "=?utf-8?q?boss=40csarko.sh?=" <ada@example.com>')
+        s = summary(raw)
+        self.assertEqual((s["from"], s["from_name"]), ("ada@example.com", "boss@csarko.sh"))
+
     def test_a_from_with_two_addresses_is_not_the_owner(self):
         raw = FIX["gmail-reply"].replace(b"From: Owner <owner@example.net>", b"From: Owner <owner@example.net>, Ada <ada@example.com>")
         self.assertFalse(is_owner({"source": "owner@example.net"}, {"dmarcVerdict": {"status": "PASS"}}, raw, "owner@example.net"))
