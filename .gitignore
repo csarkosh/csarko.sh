@@ -31,3 +31,6 @@ apps/public/
 
 # aws-mail packages the Lambda here at plan time.
 _infra/modules/aws-mail/.build/
+
+# donate.csarko.sh is built from the prices JSON (donate/build.mjs); nothing in it is a source.
+donate/public/

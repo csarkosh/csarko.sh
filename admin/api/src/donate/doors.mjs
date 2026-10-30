@@ -62,7 +62,9 @@ export const DOORS = [
     lead: "The Last Trail is free to watch. If it got under your skin, cover a slice of the compute that makes the next one.",
     captions: FILM_CAPTIONS, thanks: "Tokens received. The next take is on you.",
     back: { label: "Back to the film", href: "https://www.youtube.com/shorts/C1XsDuJE4MQ" },
-    picture: { source: "films/the-last-trail.jpg", focusY: 0.3 },
+    // The poster is a portrait, 720 by 960: at 0.42 the 16:9 crop runs from the brows to the
+    // radio's lit LED, so her eyes and the radio are both in frame (0.3 lost the radio).
+    picture: { source: "films/the-last-trail.jpg", focusY: 0.42 },
   },
   {
     door: "hallway", slug: "who-is-standing-in-my-hallway", name: "Who is standing in my hallway?", kind: "film", shipped: true, path: "/hallway",

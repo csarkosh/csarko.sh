@@ -37,7 +37,7 @@ test("the doors: seven, their URLs and sources, Day Hike not shipped", () => {
   assert.equal(doorOf("ide-arkos").door, "arkos");
   assert.equal(doorOf("nope"), null);
   assert.equal(doorByKey("all").picture.source, "donate/body-of-work.png");
-  assert.equal(doorByKey("last-trail").picture.focusY, 0.3);
+  assert.equal(doorByKey("last-trail").picture.focusY, 0.42);
   assert.equal(doorByKey("dayhike").picture, null);
   for (const d of DOORS) {
     assert.equal(d.captions.length, 4, d.door);

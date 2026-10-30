@@ -1,0 +1,196 @@
+{
+ "month": "2026-10",
+ "pool": 288,
+ "at": "2026-11-03T10:00:12.000Z",
+ "tiers": [
+  {
+   "tier": "prompt",
+   "name": "A prompt",
+   "share": 0.01,
+   "label": "about 1%",
+   "usd": 3,
+   "priceId": "price_test_2026-10_prompt"
+  },
+  {
+   "tier": "context",
+   "name": "A long context window",
+   "share": 0.03,
+   "label": "about 3%",
+   "usd": 9,
+   "priceId": "price_test_2026-10_context"
+  },
+  {
+   "tier": "run",
+   "name": "A whole agent run",
+   "share": 0.1,
+   "label": "about 10%",
+   "usd": 29,
+   "priceId": "price_test_2026-10_run"
+  },
+  {
+   "tier": "finetune",
+   "name": "A fine-tune",
+   "share": 0.3,
+   "label": "about 30%",
+   "usd": 87,
+   "priceId": "price_test_2026-10_finetune"
+  }
+ ],
+ "custom": {
+  "priceId": "price_test_2026-10_own",
+  "minimumUsd": 1
+ },
+ "products": {
+  "prompt": "prod_test_prompt",
+  "context": "prod_test_context",
+  "run": "prod_test_run",
+  "finetune": "prod_test_finetune",
+  "own": "prod_test_own"
+ },
+ "doors": {
+  "arkos": {
+   "links": {
+    "prompt": {
+     "id": "plink_test_arkos_prompt",
+     "url": "https://buy.stripe.com/test_arkos_prompt"
+    },
+    "context": {
+     "id": "plink_test_arkos_context",
+     "url": "https://buy.stripe.com/test_arkos_context"
+    },
+    "run": {
+     "id": "plink_test_arkos_run",
+     "url": "https://buy.stripe.com/test_arkos_run"
+    },
+    "finetune": {
+     "id": "plink_test_arkos_finetune",
+     "url": "https://buy.stripe.com/test_arkos_finetune"
+    },
+    "own": {
+     "id": "plink_test_arkos_own",
+     "url": "https://buy.stripe.com/test_arkos_own"
+    }
+   }
+  },
+  "macstats": {
+   "links": {
+    "prompt": {
+     "id": "plink_test_macstats_prompt",
+     "url": "https://buy.stripe.com/test_macstats_prompt"
+    },
+    "context": {
+     "id": "plink_test_macstats_context",
+     "url": "https://buy.stripe.com/test_macstats_context"
+    },
+    "run": {
+     "id": "plink_test_macstats_run",
+     "url": "https://buy.stripe.com/test_macstats_run"
+    },
+    "finetune": {
+     "id": "plink_test_macstats_finetune",
+     "url": "https://buy.stripe.com/test_macstats_finetune"
+    },
+    "own": {
+     "id": "plink_test_macstats_own",
+     "url": "https://buy.stripe.com/test_macstats_own"
+    }
+   }
+  },
+  "visits": {
+   "links": {
+    "prompt": {
+     "id": "plink_test_visits_prompt",
+     "url": "https://buy.stripe.com/test_visits_prompt"
+    },
+    "context": {
+     "id": "plink_test_visits_context",
+     "url": "https://buy.stripe.com/test_visits_context"
+    },
+    "run": {
+     "id": "plink_test_visits_run",
+     "url": "https://buy.stripe.com/test_visits_run"
+    },
+    "finetune": {
+     "id": "plink_test_visits_finetune",
+     "url": "https://buy.stripe.com/test_visits_finetune"
+    },
+    "own": {
+     "id": "plink_test_visits_own",
+     "url": "https://buy.stripe.com/test_visits_own"
+    }
+   }
+  },
+  "last-trail": {
+   "links": {
+    "prompt": {
+     "id": "plink_test_last-trail_prompt",
+     "url": "https://buy.stripe.com/test_last-trail_prompt"
+    },
+    "context": {
+     "id": "plink_test_last-trail_context",
+     "url": "https://buy.stripe.com/test_last-trail_context"
+    },
+    "run": {
+     "id": "plink_test_last-trail_run",
+     "url": "https://buy.stripe.com/test_last-trail_run"
+    },
+    "finetune": {
+     "id": "plink_test_last-trail_finetune",
+     "url": "https://buy.stripe.com/test_last-trail_finetune"
+    },
+    "own": {
+     "id": "plink_test_last-trail_own",
+     "url": "https://buy.stripe.com/test_last-trail_own"
+    }
+   }
+  },
+  "hallway": {
+   "links": {
+    "prompt": {
+     "id": "plink_test_hallway_prompt",
+     "url": "https://buy.stripe.com/test_hallway_prompt"
+    },
+    "context": {
+     "id": "plink_test_hallway_context",
+     "url": "https://buy.stripe.com/test_hallway_context"
+    },
+    "run": {
+     "id": "plink_test_hallway_run",
+     "url": "https://buy.stripe.com/test_hallway_run"
+    },
+    "finetune": {
+     "id": "plink_test_hallway_finetune",
+     "url": "https://buy.stripe.com/test_hallway_finetune"
+    },
+    "own": {
+     "id": "plink_test_hallway_own",
+     "url": "https://buy.stripe.com/test_hallway_own"
+    }
+   }
+  },
+  "all": {
+   "links": {
+    "prompt": {
+     "id": "plink_test_all_prompt",
+     "url": "https://buy.stripe.com/test_all_prompt"
+    },
+    "context": {
+     "id": "plink_test_all_context",
+     "url": "https://buy.stripe.com/test_all_context"
+    },
+    "run": {
+     "id": "plink_test_all_run",
+     "url": "https://buy.stripe.com/test_all_run"
+    },
+    "finetune": {
+     "id": "plink_test_all_finetune",
+     "url": "https://buy.stripe.com/test_all_finetune"
+    },
+    "own": {
+     "id": "plink_test_all_own",
+     "url": "https://buy.stripe.com/test_all_own"
+    }
+   }
+  }
+ }
+}
