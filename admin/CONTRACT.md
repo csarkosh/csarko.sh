@@ -493,44 +493,71 @@ crash reports and sessions by `ver`.
 ## Finance: `GET <api>/finance/admin/kpis` and `/finance/admin/query/<name>?range=month|last|90|13m`
 
 The cloud spend page (`docs/superpowers/specs/2026-10-29-finance-admin-page-design.md`), served
-by `csarko-admin` under the prefix `/finance`, as Arkos's is under `/arkos`. Three sources: AWS
+by `csarko-admin` under the prefix `/finance`, as Arkos's is under `/arkos`. Five sources: AWS
 Cost Explorer (read once a day by the snapshot job, never on a request: each call costs $0.01),
-the GCP billing export in BigQuery (`csarko-sh.billing`, rows from 2026-10-29 on), and GitHub's
-usage endpoint (from the snapshot too). Every amount is US dollars net of credits, a number,
-rounded to cents; a day is the provider's own UTC billing day, which the page says. `range` is
-`month` (the current calendar month), `last` (the previous one), `90` (the current month and the
-two before) or `13m` (thirteen months); `daily` and `idle` ignore it. A part whose source is
-missing is `null` with `notConfigured: { "<part>": "<ENV NAME>" }` (`aws` → `AWS_COST_ROLE_ARN`,
-`gcp` → `BILLING_DATASET`, `github` → `GITHUB_TOKEN`); one that failed is `null` with `errors`.
-The `providers` keys are `aws`, `gcp` and `github`; the categories and their fixed order are
-`compute`, `serverless`, `hosting`, `loadBalancing`, `storage`, `ai`, `dns`, `domains`, `ci`,
-`tax`, `other` (`admin/api/src/finance/categories.mjs`; each is `idle`, `activity` or `fixed`).
+the GCP billing export in BigQuery (`csarko-sh.billing`, read live; Google backfilled it to
+2026-08-01), GitHub's usage endpoint (from the snapshot), **Modal** (the workspace billing
+report, per app per day, written into the snapshot by a daily Cloud Run job, since Modal has no
+REST billing endpoint), and **fal** (its prepaid credit balance read once a day from
+`/account/billing`, so a day's spend is the balance's fall and a rise is a credit purchase;
+fal's per-model report is enterprise-only). Beside the providers, the **film ledgers**: every
+paid call the film pipeline makes is priced and written to `<film>/ledger.json`
+(`~/Projects/film-generation`, on the external SSD), synced to the bucket `csarko-sh-film-ledgers`;
+they attribute cost per film and per model, and carry no dates.
+
+Every amount is US dollars net of credits, a number, rounded to cents; a day is the provider's
+own UTC billing day, which the page says. `range` is `month` (the current calendar month),
+`last` (the previous one), `90` (the current month and the two before) or `13m` (thirteen
+months); `daily`, `idle` and `films` ignore it. A part whose source is missing is `null` with
+`notConfigured: { "<part>": "<ENV NAME>" }` (`aws` → `AWS_COST_ROLE_ARN`, `gcp` → `BILLING_DATASET`,
+`github` → `GITHUB_TOKEN`, `modal` → `MODAL_TOKEN_ID` (the job's secret; the API reports it from
+the snapshot), `fal` → `FAL_ADMIN_KEY`, `ledgers` → `FILM_LEDGERS_BUCKET`); one that failed is `null`
+with `errors`. The `providers` keys, in this fixed order, are `aws`, `gcp`, `github`, `modal`, `fal`
+(labels AWS, Google Cloud, GitHub, Modal, fal). The categories and their fixed order are `compute`,
+`serverless`, `hosting`, `loadBalancing`, `storage`, `ai`, `dns`, `domains`, `ci`, `tax`, `other`
+(`admin/api/src/finance/categories.mjs`; each is `idle`, `activity` or `fixed`): a Modal app is
+`compute` (its `where` the app name), fal is `ai`. **There is no spend goal** (Cyrus, 2026-10-30:
+the films drive the cost on purpose); the idle run-rate is reported as a fact, not judged.
+
+Projects, the second axis (`projects` query): every line is also one of `films` (Vertex AI in
+`fps-csarko`, Modal apps named `cinema-*`, every fal line), `dayhike` (everything else in
+`fps-csarko`, every AWS line but the domains and the `csarko.sh` zone, Modal apps named
+`dayhike-*`, GitHub lines on `game-dayhike`), `site` (project `csarko-sh`, the `csarko.sh` domain
+and zone, GitHub lines on `csarko.sh`) or `other` (`admin/api/src/finance/projects.mjs`).
 
 ### `kpis`
 
-The index card: `monthToDate`, `idleRunRate` (`good: "down"`, the goal in its `label`),
-`last30`, `forecast`; trends from the daily snapshots; health `good` when the idle run-rate is
-at or under the goal and no day of the last 7 is over three times its trailing median,
-`warning` when the run-rate is over the goal, `critical` when a day of the last 7 is over $20
-with no compute or AI line to explain it.
+The index card: `monthToDate`, `idleRunRate` (`good: "down"`), `last30`, `forecast`; trends
+from the daily snapshots; health `good` when every configured source answered in the latest
+snapshot, `warning` when one failed or a day of the last 7 is over three times its trailing
+median with no compute or AI line to explain it, `critical` when such a day is over $100.
 
 ### `summary`
 
 ```json
 {
-  "at": "2026-10-29T23:10:00Z", "month": "2026-10", "goalUsd": 5,
-  "total": { "mtd": 140.56, "forecast": 151.2, "lastMonth": 24.9, "idleRunRate": 1.05 },
+  "at": "2026-10-29T23:10:00Z", "month": "2026-10",
+  "total": { "mtd": 244.13, "forecast": 260.4, "lastMonth": 136.9, "idleRunRate": 1.05 },
   "providers": [
     { "provider": "aws", "label": "AWS", "mtd": 31.63, "forecast": 33.1, "lastMonth": 88.93, "lastDay": "2026-10-29" },
     { "provider": "gcp", "label": "Google Cloud", "mtd": 108.93, "forecast": 118.1, "lastMonth": 19.62, "lastDay": "2026-10-28" },
-    { "provider": "github", "label": "GitHub", "mtd": 0, "forecast": 0, "lastMonth": 0, "lastDay": "2026-10-29", "gross": 73.48 }
+    { "provider": "github", "label": "GitHub", "mtd": 0, "forecast": 0, "lastMonth": 0, "lastDay": "2026-10-29", "gross": 73.48 },
+    { "provider": "modal", "label": "Modal", "mtd": 49.94, "forecast": 49.94, "lastMonth": 43.49, "lastDay": "2026-10-24", "gross": 79.94, "credits": 30 },
+    { "provider": "fal", "label": "fal", "mtd": 53.63, "forecast": 55.2, "lastMonth": 0.72, "lastDay": "2026-10-29", "balance": 46.37 }
   ]
 }
 ```
 
 With `range=last` the month is the previous one and `forecast` is `null`. A provider's `mtd`
 is `null` when it is not configured; `total.*` sums what is there. `github.gross` is what the
-month would cost on private repositories.
+month would cost on private repositories; `modal.gross` is the usage before the plan's
+included credits (`credits`, $30 a month on Starter) and `mtd` is what is charged (each Modal
+line, in every query, carries its share of the month's net, so the apps, days, categories and
+projects add up to `mtd`; `activity.modalGpu` alone shows the usage); `fal.balance`
+is the prepaid credit left, and a fal month's `mtd` is the balance's fall over the month (a
+purchase is not spend). fal's `lastDay` is the day before the latest reading: the fall between
+two readings is the earlier day's spend. `forecast` for Modal is its net to date, for fal its
+run-rate over the days with a reading; like GitHub's, both count only beside AWS's or GCP's.
 
 ### `categories`
 
@@ -555,7 +582,7 @@ so the categories table gains a row.
 
 ```json
 {
-  "runRate": 1.05, "goalUsd": 5, "asOf": "2026-10-29",
+  "runRate": 1.05, "asOf": "2026-10-29",
   "lines": [
     { "provider": "aws", "line": "USE1-EBS:SnapshotUsage", "category": "storage", "where": "us-east-1", "perDay": 0.0097, "perMonth": 0.29, "stoppedOn": null },
     { "provider": "gcp", "line": "Cloud Load Balancer Forwarding Rule Minimum Global", "category": "loadBalancing", "where": "magicpixel-487014", "perDay": 0, "perMonth": 0, "stoppedOn": "2026-10-28" }
@@ -573,7 +600,7 @@ the last day it billed. `where` is the AWS region or the GCP project id.
 ```json
 {
   "days": [
-    { "day": "2026-10-26", "aws": 0.57, "gcp": 26.15, "github": 0, "total": 26.72, "median14": 1.1, "flagged": true,
+    { "day": "2026-10-26", "aws": 0.57, "gcp": 26.15, "github": 0, "modal": 12.4, "fal": 3.1, "total": 42.22, "median14": 1.1, "flagged": true,
       "top": { "provider": "gcp", "line": "Veo 3 Fast 720p Audio Video Generation", "amount": 24.4 } }
   ]
 }
@@ -592,12 +619,15 @@ billed, `null` for a provider not configured). `median14` is the median of the 1
     { "key": "egressGiB", "label": "Hosting egress", "quantity": 134.96, "unit": "GiB", "cost": 18.76, "unitPrice": 0.139, "per": "a GiB" },
     { "key": "cloudRunCpuHours", "label": "Cloud Run CPU", "quantity": 118.1, "unit": "h", "cost": 3.43, "unitPrice": 0.029, "per": "an hour, after the free tier" },
     { "key": "ciMinutes", "label": "CI minutes", "quantity": 9602, "unit": "min", "cost": 0, "gross": 73.48, "unitPrice": 0.006, "per": "a Linux minute if private" },
-    { "key": "aiGenerations", "label": "AI generations", "quantity": 648, "unit": "", "cost": 64.8, "unitPrice": 0.1, "per": "a clip" }
+    { "key": "aiGenerations", "label": "AI generations", "quantity": 648, "unit": "", "cost": 64.8, "unitPrice": 0.1, "per": "a clip" },
+    { "key": "modalGpu", "label": "Modal GPU", "quantity": null, "unit": "", "cost": 79.94, "unitPrice": null, "per": "" , "apps": [ { "app": "cinema-spike", "cost": 67.28 }, { "app": "dayhike-record", "cost": 6.64 } ] },
+    { "key": "falGenerations", "label": "fal generations", "quantity": null, "unit": "", "cost": 53.63, "unitPrice": null, "per": "" }
   ]
 }
 ```
 
-Five items always, in this order, for the range; `quantity` and `cost` are `null` when the
+Seven items always, in this order, for the range (`modalGpu` carries its apps by cost,
+largest first, since Modal's report has no quantities; fal's balance has none either); `quantity` and `cost` are `null` when the
 source is not configured, `unitPrice` is `cost / quantity` (null when the quantity is 0).
 
 ### `sources`
@@ -607,10 +637,52 @@ source is not configured, `unitPrice` is `cost / quantity` (null when the quanti
   "sources": [
     { "key": "aws", "label": "AWS Cost Explorer", "configured": true, "lastDay": "2026-10-29", "snapshotAt": "2026-10-30T10:00:00Z", "callsThisMonth": 4, "callCostUsd": 0.04, "note": "Two calls a day from the snapshot job, $0.01 each." },
     { "key": "gcp", "label": "Google Cloud billing export", "configured": true, "lastDay": "2026-10-28", "snapshotAt": null, "callsThisMonth": null, "callCostUsd": null, "note": "BigQuery, read live; rows from 2026-10-29 on." },
-    { "key": "github", "label": "GitHub usage", "configured": true, "lastDay": "2026-10-29", "snapshotAt": "2026-10-30T10:00:00Z", "callsThisMonth": null, "callCostUsd": null, "note": "From the snapshot; public repositories bill $0." }
+    { "key": "github", "label": "GitHub usage", "configured": true, "lastDay": "2026-10-29", "snapshotAt": "2026-10-30T10:00:00Z", "callsThisMonth": null, "callCostUsd": null, "note": "From the snapshot; public repositories bill $0." },
+    { "key": "modal", "label": "Modal billing report", "configured": true, "lastDay": "2026-10-24", "snapshotAt": "2026-10-30T10:02:00Z", "callsThisMonth": null, "callCostUsd": null, "note": "The workspace report, per app per day, written by the daily job." },
+    { "key": "fal", "label": "fal credit balance", "configured": true, "lastDay": "2026-10-29", "snapshotAt": "2026-10-30T10:00:00Z", "callsThisMonth": null, "callCostUsd": null, "note": "The balance once a day; a day's spend is its fall." },
+    { "key": "ledgers", "label": "Film ledgers", "configured": true, "lastDay": null, "snapshotAt": "2026-10-29T21:40:00Z", "callsThisMonth": null, "callCostUsd": null, "note": "8 ledgers in the bucket; the time is the newest file's." }
   ]
 }
 ```
+
+### `projects`
+
+```json
+{
+  "months": ["2026-08", "2026-09", "2026-10"],
+  "projects": [
+    { "key": "films", "label": "Films", "byMonth": [0, 90.1, 230.7] },
+    { "key": "dayhike", "label": "Day Hike", "byMonth": [5.9, 12.4, 45.8] },
+    { "key": "site", "label": "csarko.sh and admin", "byMonth": [0.1, 76.5, 1.2] },
+    { "key": "other", "label": "Other", "byMonth": [16.4, 17.9, 16.5] }
+  ],
+  "partial": ["2026-08"]
+}
+```
+
+The same months as `categories`, every project present, `byMonth` aligned (0 where nothing
+billed), `partial` as in `categories`.
+
+### `films`
+
+```json
+{
+  "asOf": "2026-10-29T21:40:00Z",
+  "films": [
+    { "key": "last-trail", "label": "The Last Trail", "total": 146.75, "capUsd": 150,
+      "byProvider": { "modal": 36.2, "fal": 28.1, "gcp": 82.45 },
+      "byModel": [ { "model": "veo-3.1-fast-generate-001", "provider": "gcp", "usd": 82.45, "calls": 41, "seconds": 328 } ] }
+  ]
+}
+```
+
+One entry a ledger file in the bucket, largest total first; `label` from a fixed map of the
+film slugs (`admin/api/src/finance/films.mjs`: `last-trail` is The Last Trail, `ranger-radio`
+its earlier cut, `rowan-*` the pipeline spikes) and the slug itself otherwise; `capUsd` from
+the ledger when it carries one, else the pipeline's default of 150. A ledger row's provider:
+a note naming `vertex` or a model naming Veo is `gcp`, a model naming Seedance, Nano Banana
+or ElevenLabs is `fal`, everything else ran on Modal. `null` with `notConfigured.ledgers` when
+the bucket is not set; an empty bucket is `films: []`.
 
 ## Auth: what `/auth.js` exports
 

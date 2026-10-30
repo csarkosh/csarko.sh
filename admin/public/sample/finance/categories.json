@@ -1,12 +1,12 @@
 {
   "months": ["2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"],
   "categories": [
-    { "key": "compute", "label": "Compute", "kind": "activity", "byMonth": [0, 0, 0, 0, 0, 6.31, 0, 0, 0, 0, 0, 7.7, 26.44] },
+    { "key": "compute", "label": "Compute", "kind": "activity", "byMonth": [0, 0, 0, 0, 0, 6.31, 0, 0, 0, 0, 0, 51.19, 76.5] },
     { "key": "serverless", "label": "Serverless", "kind": "activity", "byMonth": [3.94, 3.81, 3.94, 3.94, 3.56, 3.94, 3.81, 3.94, 3.81, 3.94, 3.94, 3.81, 3.43] },
     { "key": "hosting", "label": "Hosting and bandwidth", "kind": "activity", "byMonth": [0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.13, 19.01] },
     { "key": "loadBalancing", "label": "Load balancing", "kind": "idle", "byMonth": [18.88, 18.27, 18.88, 18.88, 17.05, 18.88, 18.27, 18.88, 18.27, 18.88, 18.88, 18.27, 10.96] },
     { "key": "storage", "label": "Storage", "kind": "idle", "byMonth": [8.37, 8.1, 8.37, 8.37, 7.56, 8.37, 8.1, 8.37, 8.1, 8.37, 8.37, 8.22, 7.4] },
-    { "key": "ai", "label": "AI generation", "kind": "activity", "byMonth": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 64.8] },
+    { "key": "ai", "label": "AI generation", "kind": "activity", "byMonth": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.72, 118.43] },
     { "key": "dns", "label": "DNS, keys and secrets", "kind": "idle", "byMonth": [2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.16] },
     { "key": "domains", "label": "Domains", "kind": "fixed", "byMonth": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 76, 0] },
     { "key": "ci", "label": "CI", "kind": "activity", "byMonth": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },

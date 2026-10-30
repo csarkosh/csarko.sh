@@ -66,17 +66,17 @@ export function categoriesTable(rows, months, { exportFrom = GCP_EXPORT_FROM } =
   };
 }
 
-/** `{ aws, gcp, github }`: each provider's total for `month` over monthly rows (unrounded; a provider with no rows is 0). */
+/** `{ aws, gcp, github, modal, fal }`: each provider's total for `month` over monthly rows (unrounded; a provider with no rows is 0). */
 export function monthTotals(rows, month) {
   const out = Object.fromEntries(PROVIDERS.map((p) => [p, 0]));
   for (const r of rows) if (r.month === month) out[r.provider] += r.amount;
   return out;
 }
 
-/** GitHub's gross for `month`: what the repositories would have cost if private. */
-export function monthGross(rows, month) {
+/** A provider's gross for `month`: GitHub's what the repositories would have cost if private, Modal's the usage before the plan's included credits. */
+export function monthGross(rows, month, provider = "github") {
   let n = 0;
-  for (const r of rows) if (r.month === month && r.provider === "github") n += r.gross ?? 0;
+  for (const r of rows) if (r.month === month && r.provider === provider) n += r.gross ?? 0;
   return n;
 }
 

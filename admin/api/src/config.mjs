@@ -71,15 +71,19 @@ export function readConfig(env = process.env, log = console) {
     psiKey: secret(env.PSI_KEY),
     // The finance page: the AWS role the service assumes by web identity federation (no key
     // stored) and the Google ID token's audience it trusts, the local escape hatch, the GCP
-    // billing export's dataset and table, and the idle goal in dollars a month.
+    // billing export's dataset and table, the film ledgers' bucket, and whether the Modal job
+    // exists (Terraform sets MODAL_CONFIGURED=1 with it; the job writes the snapshot itself).
+    // There is no spend goal (Cyrus, 2026-10-30).
     finance: {
       awsRoleArn: text(env.AWS_COST_ROLE_ARN),
       awsAudience: text(env.AWS_COST_AUDIENCE),
       awsLocal: env.AWS_COST_LOCAL === "1",
       billingDataset: text(env.BILLING_DATASET, ""),
       billingTable: text(env.BILLING_TABLE, ""),
-      goalUsd: Number(text(env.FINANCE_GOAL_USD, "5")),
+      ledgersBucket: text(env.FILM_LEDGERS_BUCKET),
+      modalConfigured: env.MODAL_CONFIGURED === "1",
     },
+    fal: { adminKey: secret(env.FAL_ADMIN_KEY) },
     siteUrl,
     sitemapUrl: text(env.SITEMAP_URL, `${siteUrl}/sitemap.xml`),
     hostingSite: text(env.HOSTING_SITE, "csarko-sh"),

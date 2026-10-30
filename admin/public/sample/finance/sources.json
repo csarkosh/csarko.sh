@@ -1,16 +1,10 @@
 {
   "sources": [
-    {
-      "key": "aws",
-      "label": "AWS Cost Explorer",
-      "configured": true,
-      "lastDay": "2026-10-27",
-      "snapshotAt": "2026-10-28T10:00:00Z",
-      "callsThisMonth": 84,
-      "callCostUsd": 0.84,
-      "note": "Two calls a day from the snapshot job, $0.01 each; a third for the forecast until the 28th."
-    },
-    { "key": "gcp", "label": "Google Cloud billing export", "configured": true, "lastDay": "2026-10-27", "snapshotAt": null, "callsThisMonth": null, "callCostUsd": null, "note": "BigQuery, read live; rows from 2026-10-29 on." },
-    { "key": "github", "label": "GitHub usage", "configured": true, "lastDay": "2026-10-27", "snapshotAt": "2026-10-28T10:00:00Z", "callsThisMonth": null, "callCostUsd": null, "note": "From the snapshot; public repositories bill $0." }
+    { "key": "aws", "label": "AWS Cost Explorer", "configured": true, "lastDay": "2026-10-27", "snapshotAt": "2026-10-28T10:00:00Z", "callsThisMonth": 12, "callCostUsd": 0.12, "note": "Two calls a day from the snapshot job, $0.01 each; a third for the forecast until the 28th." },
+    { "key": "gcp", "label": "Google Cloud billing export", "configured": true, "lastDay": "2026-10-27", "snapshotAt": null, "callsThisMonth": null, "callCostUsd": null, "note": "BigQuery, read live; rows from 2026-10-02 on." },
+    { "key": "github", "label": "GitHub usage", "configured": true, "lastDay": "2026-10-27", "snapshotAt": "2026-10-28T10:00:00Z", "callsThisMonth": null, "callCostUsd": null, "note": "From the snapshot; public repositories bill $0." },
+    { "key": "modal", "label": "Modal billing report", "configured": true, "lastDay": "2026-10-24", "snapshotAt": "2026-10-28T10:02:00Z", "callsThisMonth": null, "callCostUsd": null, "note": "The workspace report, per app per day, written by the daily job." },
+    { "key": "fal", "label": "fal credit balance", "configured": true, "lastDay": "2026-10-27", "snapshotAt": "2026-10-28T10:00:00Z", "callsThisMonth": null, "callCostUsd": null, "note": "The balance once a day; a day's spend is its fall." },
+    { "key": "ledgers", "label": "Film ledgers", "configured": true, "lastDay": null, "snapshotAt": "2026-10-28T20:32:39Z", "callsThisMonth": null, "callCostUsd": null, "note": "8 ledgers in the bucket; the time is the newest file's." }
   ]
 }

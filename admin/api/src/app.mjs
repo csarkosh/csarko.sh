@@ -12,7 +12,7 @@
  *   GET  /arkos/admin/kpis             Arkos IDE's index card
  *   GET  /arkos/admin/query/<name>?days=N[&who=users|me|all]   one of Arkos's four queries
  *   GET  /finance/admin/kpis           the finance page's index card
- *   GET  /finance/admin/query/<name>?range=month|last|90|13m   one of the six finance queries
+ *   GET  /finance/admin/query/<name>?range=month|last|90|13m   one of the eight finance queries
  *
  * Arkos IDE is served under the prefix `/arkos`, and the finance page under
  * `/finance`, so that each one's `api` in apps.json is `<service>/<prefix>`
@@ -149,7 +149,7 @@ export function createApp({ config, queries, arkos = null, finance = null, limit
     return fail(res, 404, "not found", cors);
   }
 
-  /** The finance page's two routes, `path` with the prefix taken off: the index card and the six queries, each taking `range`. */
+  /** The finance page's two routes, `path` with the prefix taken off: the index card and the eight queries, each taking `range`. */
   async function routeFinance(req, res, path, search, cors) {
     if (path === "/admin/kpis") {
       if (req.method !== "GET") return fail(res, 405, "method not allowed", { ...cors, allow: "GET, OPTIONS" });

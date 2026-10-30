@@ -1,5 +1,5 @@
 /**
- * What activity bought (spec section 4, card 5): five items for a range, each a quantity, its
+ * What activity bought (spec section 4, card 5): seven items for a range, each a quantity, its
  * cost and the unit price, so the next session can be budgeted. Pure over monthly line rows
  * (rows.mjs) restricted to the range's months.
  *
@@ -8,6 +8,8 @@
  *   cloudRunCpuHours  Cloud Run CPU hours (the CPU SKUs' seconds) against every serverless dollar
  *   ciMinutes         GitHub Actions minutes; cost is the net, `gross` what private repos would pay
  *   aiGenerations     Vertex AI and Gemini usage, counted in the SKU's own unit
+ *   modalGpu          Modal's usage (before the plan's credits) with its apps by cost; the report has no quantities
+ *   falGenerations    fal's spend from the balance's fall; no quantity either
  */
 
 import { PROVIDERS, cents, fine } from "./rows.mjs";
@@ -38,6 +40,8 @@ const ITEMS = [
   { key: "cloudRunCpuHours", label: "Cloud Run CPU", unit: "h", per: "an hour, after the free tier", provider: "gcp" },
   { key: "ciMinutes", label: "CI minutes", unit: "min", per: "a Linux minute if private", provider: "github" },
   { key: "aiGenerations", label: "AI generations", unit: "", per: "a clip", provider: "gcp" },
+  { key: "modalGpu", label: "Modal GPU", unit: "", per: "", provider: "modal", unmeasured: true },
+  { key: "falGenerations", label: "fal generations", unit: "", per: "", provider: "fal", unmeasured: true },
 ];
 
 const isRig = (r) => r.provider === "aws" && /BoxUsage:/.test(r.line);
@@ -47,11 +51,22 @@ const isCpu = (r) => isServerless(r) && /CPU/i.test(r.line);
 const isCi = (r) => r.provider === "github" && r.category === "ci";
 const isCiMinutes = (r) => isCi(r) && r.service.toLowerCase() === "actions" && /minute/i.test(String(r.unit ?? ""));
 const isAi = (r) => r.provider === "gcp" && r.category === "ai";
+const isModal = (r) => r.provider === "modal";
+const isFal = (r) => r.provider === "fal";
+
+/** Modal's apps by usage, largest first: `[{ app, cost }]`. */
+export function modalApps(rows) {
+  const by = new Map();
+  for (const r of rows) if (isModal(r)) by.set(r.line, (by.get(r.line) ?? 0) + (r.gross ?? 0));
+  return [...by.entries()].map(([app, cost]) => ({ app, cost: cents(cost) })).filter((a) => a.cost > 0).sort((a, b) => b.cost - a.cost || a.app.localeCompare(b.app));
+}
 
 /**
- * The five items, in order, over `rows` (already cut to the range's months). A provider not in
+ * The seven items, in order, over `rows` (already cut to the range's months). A provider not in
  * `configured` leaves its item's `quantity` and `cost` null; `unitPrice` is cost over quantity
  * (gross over quantity for CI, whose net is 0 on public repositories), null when the quantity is 0.
+ * Modal and fal have no quantities: `quantity` and `unitPrice` are null, `cost` Modal's usage
+ * (its apps listed by cost) and fal's spend.
  */
 export function activityItems(rows, { configured = PROVIDERS } = {}) {
   const sum = (test, field = "amount") => rows.reduce((n, r) => (test(r) ? n + (r[field] ?? 0) : n), 0);
@@ -65,8 +80,10 @@ export function activityItems(rows, { configured = PROVIDERS } = {}) {
   return ITEMS.map((item) => {
     const base = { key: item.key, label: item.label };
     if (!configured.includes(item.provider)) {
-      return { ...base, quantity: null, unit: item.unit, cost: null, ...(item.key === "ciMinutes" ? { gross: null } : {}), unitPrice: null, per: item.per };
+      return { ...base, quantity: null, unit: item.unit, cost: null, ...(item.key === "ciMinutes" ? { gross: null } : {}), unitPrice: null, per: item.per, ...(item.key === "modalGpu" ? { apps: null } : {}) };
     }
+    if (item.key === "modalGpu") return { ...base, quantity: null, unit: "", cost: cents(sum(isModal, "gross")), unitPrice: null, per: "", apps: modalApps(rows) };
+    if (item.key === "falGenerations") return { ...base, quantity: null, unit: "", cost: cents(sum(isFal)), unitPrice: null, per: "" };
     const m = measured[item.key]();
     const priced = item.key === "ciMinutes" ? m.gross : m.cost;
     const quantity = item.unit === "min" || item.unit === "" ? Math.round(m.quantity) : Math.round(m.quantity * 100) / 100;

@@ -51,17 +51,19 @@ const round4 = (n) => Math.round(n * 1e4) / 1e4;
 
 /**
  * Usage items (`date, product, sku, quantity, unitType, pricePerUnit, grossAmount,
- * discountAmount, netAmount, repositoryName`) folded into one row a month a product a SKU and
- * one a day a product a SKU, each `{ product, sku, quantity, unitType, gross, net }`, plus the
- * last day any item names.
+ * discountAmount, netAmount, repositoryName`) folded into one row a month a product a SKU a
+ * repository and one a day the same, each `{ product, sku, repo, quantity, unitType, gross, net }`
+ * (`repo` the repository without the owner, `game-dayhike`, null for an account-level item; the
+ * finance page's projects axis reads it), plus the last day any item names.
  */
 export function shapeUsage(items) {
   const months = new Map();
   const days = new Map();
   let lastDay = null;
   const fold = (map, when, field, it) => {
-    const key = `${when}\u0000${it.product}\u0000${it.sku}`;
-    const row = map.get(key) ?? { [field]: when, product: String(it.product ?? ""), sku: String(it.sku ?? ""), quantity: 0, unitType: it.unitType ?? null, gross: 0, net: 0 };
+    const repo = repoOf(it.repositoryName);
+    const key = `${when}\u0000${it.product}\u0000${it.sku}\u0000${repo ?? ""}`;
+    const row = map.get(key) ?? { [field]: when, product: String(it.product ?? ""), sku: String(it.sku ?? ""), repo, quantity: 0, unitType: it.unitType ?? null, gross: 0, net: 0 };
     row.quantity += num(it.quantity);
     row.gross += num(it.grossAmount);
     row.net += num(it.netAmount);
@@ -74,6 +76,13 @@ export function shapeUsage(items) {
     fold(days, day, "day", it);
     if (lastDay === null || day > lastDay) lastDay = day;
   }
-  const finish = (map) => [...map.values()].map((r) => ({ ...r, quantity: round4(r.quantity), gross: round4(r.gross), net: round4(r.net) })).sort((a, b) => (a.month ?? a.day).localeCompare(b.month ?? b.day) || a.product.localeCompare(b.product) || a.sku.localeCompare(b.sku));
+  const finish = (map) => [...map.values()].map((r) => ({ ...r, quantity: round4(r.quantity), gross: round4(r.gross), net: round4(r.net) })).sort((a, b) => (a.month ?? a.day).localeCompare(b.month ?? b.day) || a.product.localeCompare(b.product) || a.sku.localeCompare(b.sku) || String(a.repo).localeCompare(String(b.repo)));
   return { months: finish(months), days: finish(days), lastDay };
+}
+
+/** `game-dayhike` of `csarkosh/game-dayhike`; null when the item names no repository. */
+export function repoOf(repositoryName) {
+  const s = String(repositoryName ?? "").trim();
+  if (s === "") return null;
+  return s.includes("/") ? s.slice(s.lastIndexOf("/") + 1) : s;
 }

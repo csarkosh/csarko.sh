@@ -1,12 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { CATEGORIES, CATEGORY_KEYS, categorize, kindOf } from "../src/finance/categories.mjs";
-import { awsRegionOf, awsRows, gcpRows, githubRows, cents, fine, addMonths, daysInMonth, monthsBetween, lastBilledDay } from "../src/finance/rows.mjs";
+import { PROVIDERS, PROVIDER_LABELS, awsRegionOf, awsRows, gcpRows, githubRows, modalRows, falRows, cents, fine, addMonths, daysInMonth, monthsBetween, lastBilledDay, FAL_LINE } from "../src/finance/rows.mjs";
 import { parseRange, monthsOf, partialMonths, categoriesTable, monthTotals, runRateForecast, RANGES } from "../src/finance/months.mjs";
 import { idleLines } from "../src/finance/idle.mjs";
 import { dailySeries, median, trailingTotals } from "../src/finance/daily.mjs";
 import { activityItems, toGiB, toHours } from "../src/finance/activity.mjs";
-import { financeHealth } from "../src/finance/kpis.mjs";
+import { financeHealth, CRITICAL_DAY_USD } from "../src/finance/kpis.mjs";
+import { falSeries } from "../src/finance/fal.mjs";
+import { PROJECTS, PROJECT_KEYS, projectOf, projectsTable } from "../src/finance/projects.mjs";
+import { filmLabel, providerOf, filmOf, filmsOf, DEFAULT_CAP_USD } from "../src/finance/films.mjs";
 
 /* ---- categories ---- */
 
@@ -85,13 +88,19 @@ test("an AWS usage type's region: its prefix, global for Route 53 and tax, us-ea
   assert.equal(awsRegionOf("EBS:VolumeUsage.gp3", "EC2 - Other"), "us-east-1");
 });
 
-test("the three sources become one row shape; GitHub's amount is the net and keeps the gross", () => {
+test("the five providers in the contract's order with their labels", () => {
+  assert.deepEqual(PROVIDERS, ["aws", "gcp", "github", "modal", "fal"]);
+  assert.deepEqual(PROVIDERS.map((p) => PROVIDER_LABELS[p]), ["AWS", "Google Cloud", "GitHub", "Modal", "fal"]);
+});
+
+test("the sources become one row shape; GitHub's amount is the net and keeps the gross and the repository", () => {
   const [a] = awsRows([{ day: "2026-10-22", service: "Amazon Elastic Compute Cloud - Compute", line: "BoxUsage:g4dn.xlarge", amount: "3.156", quantity: 6, unit: "Hrs" }]);
-  assert.deepEqual(a, { provider: "aws", day: "2026-10-22", service: "Amazon Elastic Compute Cloud - Compute", line: "BoxUsage:g4dn.xlarge", where: "us-east-1", category: "compute", amount: 3.156, quantity: 6, unit: "Hrs", gross: null });
+  assert.deepEqual(a, { provider: "aws", day: "2026-10-22", service: "Amazon Elastic Compute Cloud - Compute", line: "BoxUsage:g4dn.xlarge", where: "us-east-1", category: "compute", amount: 3.156, quantity: 6, unit: "Hrs", gross: null, repo: null });
   const [g] = gcpRows([{ month: "2026-10", project: "fps-csarko", service: "Vertex AI", sku: "Veo 3 Fast 720p Audio Video Generation", unit: "count", net: 64.8, amount: 648 }]);
-  assert.deepEqual([g.provider, g.month, g.where, g.category, g.amount, g.quantity], ["gcp", "2026-10", "fps-csarko", "ai", 64.8, 648]);
-  const [h] = githubRows([{ month: "2026-10", product: "actions", sku: "Actions Linux", quantity: 9185, unitType: "Minutes", gross: 73.48, net: 0 }]);
-  assert.deepEqual([h.provider, h.category, h.amount, h.gross, h.unit, h.where], ["github", "ci", 0, 73.48, "Minutes", null]);
+  assert.deepEqual([g.provider, g.month, g.where, g.category, g.amount, g.quantity, g.repo], ["gcp", "2026-10", "fps-csarko", "ai", 64.8, 648, null]);
+  const [h] = githubRows([{ month: "2026-10", product: "actions", sku: "Actions Linux", repo: "game-dayhike", quantity: 9185, unitType: "Minutes", gross: 73.48, net: 0 }]);
+  assert.deepEqual([h.provider, h.category, h.amount, h.gross, h.unit, h.where, h.repo], ["github", "ci", 0, 73.48, "Minutes", null, "game-dayhike"]);
+  assert.equal(githubRows([{ month: "2026-10", product: "actions", sku: "Actions Linux", gross: 1, net: 0 }])[0].repo, null, "an older snapshot's row names no repository");
   assert.deepEqual(awsRows(null), []);
   assert.equal(lastBilledDay([{ day: "2026-10-27", amount: 0 }, { day: "2026-10-26", amount: 0.1 }, { day: "2026-10-20", amount: 1 }]), "2026-10-26", "a zero row is not a billed day");
   assert.equal(lastBilledDay([]), null);
@@ -144,7 +153,7 @@ test("categoriesTable: every category present and aligned, zeros never null, oth
   assert.deepEqual(t.categories.find((c) => c.key === "other").byMonth, [0, 0.1, 0.3]);
   assert.deepEqual(t.partial, ["2026-08", "2026-09"]);
   assert.deepEqual(t.other, [{ provider: "gcp", line: "Log Storage cost", amount: 0.4 }], "a zero line is not listed; a month outside the range is not counted");
-  assert.deepEqual(monthTotals(rows, "2026-10"), { aws: 21.24, gcp: 5.54, github: 0 });
+  assert.deepEqual(monthTotals(rows, "2026-10"), { aws: 21.24, gcp: 5.54, github: 0, modal: 0, fal: 0 });
 });
 
 test("a run-rate forecast extrapolates the month to date over the days billed", () => {
@@ -209,9 +218,9 @@ test("median, the 60-day series, the median of the 14 days before, flags and the
   assert.equal(s.asOf, "2026-10-27");
   assert.equal(s.days.length, 60);
   assert.deepEqual([s.days[0].day, s.days.at(-1).day], ["2026-08-29", "2026-10-27"], "every day present, the empty ones at 0");
-  assert.deepEqual(s.days[0], { day: "2026-08-29", aws: 0, gcp: 0, github: null, total: 0, median14: null, flagged: false, top: null });
+  assert.deepEqual(s.days[0], { day: "2026-08-29", aws: 0, gcp: 0, github: null, modal: null, fal: null, total: 0, median14: null, flagged: false, top: null });
   const d20 = s.days.find((d) => d.day === day(20));
-  assert.deepEqual(d20, { day: "2026-10-20", aws: 4.6, gcp: 25, github: null, total: 29.6, median14: 1, flagged: true, top: { provider: "gcp", line: "Veo 3 Fast 720p Audio Video Generation", amount: 24.4 } });
+  assert.deepEqual(d20, { day: "2026-10-20", aws: 4.6, gcp: 25, github: null, modal: null, fal: null, total: 29.6, median14: 1, flagged: true, top: { provider: "gcp", line: "Veo 3 Fast 720p Audio Video Generation", amount: 24.4 } });
   const d3 = s.days.find((d) => d.day === day(3));
   assert.equal(d3.median14, 0, "the fourteen days before are mostly the empty days of the window's start");
   assert.equal(d3.flagged, true, "$3.50 against a zero median, over the $1 floor");
@@ -245,8 +254,14 @@ test("unit conversions and the five items in order, with nulls for a source that
       { month: "2026-10", product: "actions", sku: "Actions Storage", quantity: 6, unitType: "GigabyteHours", gross: 0.05, net: 0 },
     ]),
   ];
+  rows.push(
+    ...modalRows({ credits: 30, monthly: [{ month: "2026-10", app: "cinema-spike", cost: 67.28 }, { month: "2026-10", app: "dayhike-record", cost: 6.64 }, { month: "2026-10", app: "dayhike-gate", cost: 6.08 }], rows: [] }),
+    ...falRows([{ day: "2026-10-12", spend: 9.8, purchase: 0 }, { day: "2026-10-13", spend: 3.1, purchase: 0 }, { day: "2026-10-09", spend: 0, purchase: 100 }], "monthly"),
+  );
   const items = activityItems(rows);
-  assert.deepEqual(items.map((i) => i.key), ["rigHours", "egressGiB", "cloudRunCpuHours", "ciMinutes", "aiGenerations"]);
+  assert.deepEqual(items.map((i) => i.key), ["rigHours", "egressGiB", "cloudRunCpuHours", "ciMinutes", "aiGenerations", "modalGpu", "falGenerations"]);
+  assert.deepEqual(items[5], { key: "modalGpu", label: "Modal GPU", quantity: null, unit: "", cost: 80, unitPrice: null, per: "", apps: [{ app: "cinema-spike", cost: 67.28 }, { app: "dayhike-record", cost: 6.64 }, { app: "dayhike-gate", cost: 6.08 }] }, "the usage before the credits, apps largest first");
+  assert.deepEqual(items[6], { key: "falGenerations", label: "fal generations", quantity: null, unit: "", cost: 12.9, unitPrice: null, per: "" }, "spend only, never the purchase");
   assert.deepEqual(items[0], { key: "rigHours", label: "Rig hours", quantity: 40.3, unit: "h", cost: 21.24, unitPrice: 0.527, per: "an hour" });
   assert.deepEqual(items[1], { key: "egressGiB", label: "Hosting egress", quantity: 134.96, unit: "GiB", cost: 18.76, unitPrice: 0.139, per: "a GiB" });
   assert.deepEqual(items[2], { key: "cloudRunCpuHours", label: "Cloud Run CPU", quantity: 83.33, unit: "h", cost: 3.43, unitPrice: 0.0412, per: "an hour, after the free tier" }, "CPU seconds as hours against every serverless dollar");
@@ -256,27 +271,179 @@ test("unit conversions and the five items in order, with nulls for a source that
   assert.deepEqual(off[1], { key: "egressGiB", label: "Hosting egress", quantity: null, unit: "GiB", cost: null, unitPrice: null, per: "a GiB" });
   assert.deepEqual(off[3], { key: "ciMinutes", label: "CI minutes", quantity: null, unit: "min", cost: null, gross: null, unitPrice: null, per: "a Linux minute if private" });
   assert.equal(off[0].quantity, 40.3);
+  assert.deepEqual(off[5], { key: "modalGpu", label: "Modal GPU", quantity: null, unit: "", cost: null, unitPrice: null, per: "", apps: null });
+  assert.deepEqual(off[6], { key: "falGenerations", label: "fal generations", quantity: null, unit: "", cost: null, unitPrice: null, per: "" });
   const none = activityItems([], { configured: ["aws", "gcp", "github"] });
   assert.deepEqual([none[0].quantity, none[0].cost, none[0].unitPrice], [0, 0, null], "a quantity of 0 is a measurement; the unit price is unknown");
 });
 
 /* ---- health ---- */
 
-test("health: good under the goal, warning over it or on a flagged day, critical on an unexplained $20 day", () => {
+test("health: no goal; good when every source answered, warning when one failed or a flagged day has no compute or AI line, critical over $100", () => {
+  assert.equal(CRITICAL_DAY_USD, 100);
   const quiet = Array.from({ length: 10 }, (_, i) => ({ day: day(i + 1), total: 0.9, flagged: false, top: null }));
-  assert.deepEqual(financeHealth({ idleRunRate: 1.05, goalUsd: 5, days: quiet, rows: [] }), { status: "good", note: "Idle run-rate $1.05 a month, under the $5 goal" });
-  assert.deepEqual(financeHealth({ idleRunRate: 10.62, goalUsd: 5, days: quiet, rows: [] }), { status: "warning", note: "Idle run-rate $10.62 a month, over the $5 goal" });
-  const spiked = [...quiet.slice(0, 9), { day: day(10), total: 4.5, flagged: true, top: { provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 4.2 } }];
-  assert.deepEqual(financeHealth({ idleRunRate: 1, goalUsd: 5, days: spiked, rows: [] }), { status: "warning", note: "$4.50 on 2026-10-10, over three times the trailing median, BoxUsage:g4dn.xlarge" });
-  const big = [...quiet.slice(0, 9), { day: day(10), total: 26.72, flagged: true, top: null }];
-  const veo = gcpRows([{ day: day(10), service: "Vertex AI", sku: "Veo 3 Fast 720p Audio Video Generation", net: 24.4 }]);
-  assert.equal(financeHealth({ idleRunRate: 1, goalUsd: 5, days: big, rows: veo }).status, "warning", "a Veo batch explains the day");
-  assert.deepEqual(financeHealth({ idleRunRate: 1, goalUsd: 5, days: big, rows: [] }), { status: "critical", note: "$26.72 on 2026-10-10 with no rig or AI line to explain it" });
-  const old = [{ day: day(1), total: 50, flagged: true, top: null }, ...quiet.slice(1)];
-  assert.equal(financeHealth({ idleRunRate: 1, goalUsd: 5, days: old, rows: [] }).status, "good", "only the last seven days count");
-  assert.deepEqual(financeHealth({ idleRunRate: null, goalUsd: 5, days: quiet, rows: [] }), { status: "warning", note: "No idle run-rate yet" });
+  const five = ["aws", "gcp", "github", "modal", "fal"];
+  assert.deepEqual(financeHealth({ errors: {}, days: quiet, rows: [], configured: five }), { status: "good", note: "5 sources answered; no day of the last 7 out of line" });
+  assert.deepEqual(financeHealth({ errors: {}, days: quiet, rows: [], configured: ["gcp"] }), { status: "good", note: "1 source answered; no day of the last 7 out of line" });
+  assert.deepEqual(financeHealth({ errors: { aws: "AccessDenied" }, days: quiet, rows: [], configured: five }), { status: "warning", note: "A source failed: aws" });
+  assert.deepEqual(financeHealth({ errors: { aws: "x", modal: "y" }, days: quiet, rows: [], configured: five }).note, "2 sources failed: aws, modal");
+  const spiked = [...quiet.slice(0, 9), { day: day(10), total: 4.5, flagged: true, top: { provider: "aws", line: "USE1-PublicIPv4:InUseAddress", amount: 4.2 } }];
+  assert.deepEqual(financeHealth({ errors: {}, days: spiked, rows: [], configured: five }), { status: "warning", note: "$4.50 on 2026-10-10, over three times the trailing median, with no compute or AI line to explain it, USE1-PublicIPv4:InUseAddress" });
+  const rig = awsRows([{ day: day(10), service: "EC2", line: "BoxUsage:g4dn.xlarge", amount: 4.2 }]);
+  assert.equal(financeHealth({ errors: {}, days: spiked, rows: rig, configured: five }).status, "good", "a rig day explains itself");
+  const big = [...quiet.slice(0, 9), { day: day(10), total: 126.72, flagged: true, top: null }];
+  const veo = gcpRows([{ day: day(10), service: "Vertex AI", sku: "Veo 3 Fast 720p Audio Video Generation", net: 124.4 }]);
+  assert.equal(financeHealth({ errors: {}, days: big, rows: veo, configured: five }).status, "good", "a Veo batch explains the day, whatever its size");
+  const modal = modalRows({ credits: 30, rows: [{ day: day(10), app: "cinema-spike", cost: 90 }], monthly: [{ month: "2026-10", app: "cinema-spike", cost: 90 }] }, "daily");
+  assert.equal(financeHealth({ errors: {}, days: big, rows: modal, configured: five }).status, "good", "a Modal app day too");
+  assert.deepEqual(financeHealth({ errors: {}, days: big, rows: [], configured: five }), { status: "critical", note: "$126.72 on 2026-10-10 with no compute or AI line to explain it" });
+  assert.equal(financeHealth({ errors: { gcp: "quota" }, days: big, rows: [], configured: five }).status, "critical", "an unexplained day outranks a failed source");
+  const old = [{ day: day(1), total: 150, flagged: true, top: null }, ...quiet.slice(1)];
+  assert.equal(financeHealth({ errors: {}, days: old, rows: [], configured: five }).status, "good", "only the last seven days count");
 });
 
 test("Secrets Manager's API requests land with its secrets, not in other (seen live 2026-10-30)", () => {
   assert.equal(categorize({ provider: "aws", service: "AWS Secrets Manager", line: "USE1-AWSSecretsManagerAPIRequest" }), "dns");
+});
+
+/* ---- Modal ---- */
+
+test("Modal rows: every app a compute line named by its app, the amount its share of the month's net of the $30 credits, the gross the usage", () => {
+  const report = {
+    credits: 30,
+    monthly: [{ month: "2026-10", app: "cinema-spike", cost: 60 }, { month: "2026-10", app: "dayhike-record", cost: 20 }, { month: "2026-09", app: "cinema-spike", cost: 25 }],
+    rows: [{ day: "2026-10-16", app: "cinema-spike", env: "main", cost: 40 }, { day: "2026-10-17", app: "cinema-spike", env: "main", cost: 20 }, { day: "2026-10-17", app: "dayhike-record", env: "main", cost: 20 }, { day: "2026-09-25", app: "cinema-spike", env: "main", cost: 25 }],
+  };
+  const monthly = modalRows(report, "monthly");
+  assert.deepEqual(monthly[0], { provider: "modal", month: "2026-10", service: "Modal", line: "cinema-spike", where: "cinema-spike", category: "compute", amount: 37.5, quantity: 0, unit: null, gross: 60, repo: null }, "60 of 80 usage, 50 net");
+  assert.deepEqual([monthly[1].amount, monthly[1].gross], [12.5, 20]);
+  assert.deepEqual([monthly[2].amount, monthly[2].gross], [0, 25], "September stayed under the credits: nothing charged");
+  assert.equal(Math.round(monthly.filter((r) => r.month === "2026-10").reduce((n, r) => n + r.amount, 0) * 100) / 100, 50);
+  const daily = modalRows(report, "daily");
+  assert.deepEqual(daily.map((r) => [r.day, r.line, r.amount, r.gross]), [["2026-10-16", "cinema-spike", 25, 40], ["2026-10-17", "cinema-spike", 12.5, 20], ["2026-10-17", "dayhike-record", 12.5, 20], ["2026-09-25", "cinema-spike", 0, 25]], "a day's share uses the month's totals");
+  const own = modalRows({ credits: 30, rows: [{ day: "2026-11-02", app: "x", cost: 50 }], monthly: [] }, "daily");
+  assert.equal(own[0].amount, 20, "a month the monthly list lacks nets its own daily rows");
+  assert.deepEqual(modalRows(null), []);
+  assert.deepEqual(modalRows({ at: "x", error: "modal: token refused" }), []);
+  assert.equal(modalRows({ rows: [], monthly: [{ month: "2026-10", app: "a", cost: 45 }] })[0].amount, 15, "credits default to $30");
+});
+
+/* ---- fal ---- */
+
+const snap = (date, balance) => ({ date, finance: { at: `${date}T10:00:00Z`, fal: { at: `${date}T10:00:00Z`, balance, currency: "USD", lastDay: date } } });
+
+test("fal series: a fall is the earlier day's spend, a rise a purchase, a skipped day spreads the fall; the latest reading has no day yet", () => {
+  const s = falSeries([snap("2026-10-10", 100), snap("2026-10-11", 95.8), snap("2026-10-12", 95.8), snap("2026-10-13", 86), { date: "2026-10-14", finance: { at: "x" } }, snap("2026-10-16", 80), snap("2026-10-17", 180), snap("2026-10-18", 170.5)]);
+  assert.deepEqual([s.balance, s.currency, s.lastDay], [170.5, "USD", "2026-10-17"]);
+  assert.deepEqual(s.days.map((d) => [d.day, d.spend, d.purchase, d.balance]), [
+    ["2026-10-10", 4.2, 0, 100],
+    ["2026-10-11", 0, 0, 95.8],
+    ["2026-10-12", 9.8, 0, 95.8],
+    ["2026-10-13", 2, 0, 86],
+    ["2026-10-14", 2, 0, null],
+    ["2026-10-15", 2, 0, null],
+    ["2026-10-16", 0, 100, 80],
+    ["2026-10-17", 9.5, 0, 180],
+  ]);
+  assert.equal(falSeries([snap("2026-10-10", 100)]).lastDay, null, "one reading: no spend yet");
+  assert.equal(falSeries([{ date: "2026-10-10", finance: {} }]), null);
+  assert.equal(falSeries([]), null);
+  const rows = falRows(s.days, "daily");
+  assert.deepEqual(rows.map((r) => [r.day, r.amount]), [["2026-10-10", 4.2], ["2026-10-12", 9.8], ["2026-10-13", 2], ["2026-10-14", 2], ["2026-10-15", 2], ["2026-10-17", 9.5]], "days with spend only");
+  assert.deepEqual(rows[0], { provider: "fal", day: "2026-10-10", service: "fal", line: FAL_LINE, where: null, category: "ai", amount: 4.2, quantity: 0, unit: null, gross: null, repo: null });
+  assert.deepEqual(falRows(s.days, "monthly").map((r) => [r.month, Math.round(r.amount * 100) / 100]), [["2026-10", 29.5]]);
+  assert.deepEqual(falRows(null), []);
+});
+
+/* ---- projects ---- */
+
+test("projects: the four in order, and the rule table over every provider", () => {
+  assert.deepEqual(PROJECT_KEYS, ["films", "dayhike", "site", "other"]);
+  assert.deepEqual(PROJECTS.map((p) => p.label), ["Films", "Day Hike", "csarko.sh and admin", "Other"]);
+  const aws = (line, service = "EC2 - Other") => awsRows([{ month: "2026-10", service, line, amount: 1 }])[0];
+  assert.equal(projectOf(aws("Route53-Domains", "Amazon Registrar")), "site");
+  assert.equal(projectOf(aws("HostedZone", "Amazon Route 53")), "site");
+  assert.equal(projectOf(aws("DNS-Queries", "Amazon Route 53")), "site");
+  for (const line of ["BoxUsage:g4dn.xlarge", "EBS:VolumeUsage.gp3", "USW2-EBS:SnapshotUsage", "us-west-2-KMS-Keys", "USE1-AWSSecretsManager-Secrets", "USW2-TimedStorage-ByteHrs", "USE1-PublicIPv4:InUseAddress", "Tax"]) assert.equal(projectOf(aws(line)), "dayhike", line);
+  const gcp = (project, service, sku) => gcpRows([{ month: "2026-10", project, service, sku, net: 1 }])[0];
+  assert.equal(projectOf(gcp("fps-csarko", "Vertex AI", "Veo 3 Fast 720p Audio Video Generation")), "films");
+  assert.equal(projectOf(gcp("fps-csarko", "Compute Engine", "Nvidia L4 GPU running in Americas")), "dayhike");
+  assert.equal(projectOf(gcp("fps-csarko", "Cloud Run", "Services CPU (Request-based billing)")), "dayhike");
+  assert.equal(projectOf(gcp("csarko-sh", "Firebase Hosting", "Outgoing Bandwidth")), "site");
+  assert.equal(projectOf(gcp("csarko-sh", "Cloud Run", "Services CPU")), "site");
+  assert.equal(projectOf(gcp("magicpixel-487014", "Networking", "Cloud Load Balancer Forwarding Rule Minimum Global")), "other");
+  const gh = (repo) => githubRows([{ month: "2026-10", product: "actions", sku: "Actions Linux", repo, gross: 1, net: 0 }])[0];
+  assert.deepEqual([projectOf(gh("game-dayhike")), projectOf(gh("csarko.sh")), projectOf(gh("lib-visits")), projectOf(gh(null))], ["dayhike", "site", "other", "other"]);
+  const modal = (app) => modalRows({ credits: 0, monthly: [{ month: "2026-10", app, cost: 1 }] })[0];
+  assert.deepEqual([projectOf(modal("cinema-spike")), projectOf(modal("dayhike-record")), projectOf(modal("rig-probe"))], ["films", "dayhike", "other"]);
+  assert.equal(projectOf(falRows([{ day: "2026-10-12", spend: 1 }], "monthly")[0]), "films");
+  assert.equal(projectOf({ provider: "stripe", line: "x" }), "other");
+
+  const rows = [
+    aws("Route53-Domains", "Amazon Registrar"), { ...aws("BoxUsage:g4dn.xlarge"), amount: 21.24 }, { ...aws("HostedZone", "Amazon Route 53"), month: "2026-09" },
+    { ...gcp("fps-csarko", "Vertex AI", "Veo"), amount: 64.8 }, { ...gcp("csarko-sh", "Firebase Hosting", "Outgoing Bandwidth"), amount: 18.76 }, { ...gcp("magicpixel-487014", "Networking", "Cloud Load Balancer Forwarding Rule Minimum Global"), amount: 10.96 },
+    ...modalRows({ credits: 30, monthly: [{ month: "2026-10", app: "cinema-spike", cost: 60 }, { month: "2026-10", app: "dayhike-record", cost: 20 }] }),
+    ...falRows([{ day: "2026-10-12", spend: 53.63 }], "monthly"),
+    { ...aws("BoxUsage:g4dn.xlarge"), month: "2026-07", amount: 99 },
+  ];
+  const t = projectsTable(rows, ["2026-08", "2026-09", "2026-10"]);
+  assert.deepEqual(t, {
+    months: ["2026-08", "2026-09", "2026-10"],
+    projects: [
+      { key: "films", label: "Films", byMonth: [0, 0, 155.93] },
+      { key: "dayhike", label: "Day Hike", byMonth: [0, 0, 33.74] },
+      { key: "site", label: "csarko.sh and admin", byMonth: [0, 1, 19.76] },
+      { key: "other", label: "Other", byMonth: [0, 0, 10.96] },
+    ],
+    partial: ["2026-08", "2026-09"],
+  });
+});
+
+/* ---- films ---- */
+
+test("films: the labels, the provider rule, a film's shape and the list largest first", () => {
+  assert.equal(filmLabel("last-trail"), "The Last Trail");
+  assert.equal(filmLabel("ranger-radio"), "Ranger Radio, the earlier cut of The Last Trail");
+  assert.equal(filmLabel("rowan-rockslide"), "Pipeline spike: rowan-rockslide");
+  assert.equal(filmLabel("rowan-speech"), "Pipeline spike: rowan-speech");
+  assert.equal(filmLabel("last-trail-thing17"), "The Last Trail, thing17 takes");
+  assert.equal(filmLabel("last-trail-"), "last-trail-");
+  assert.equal(filmLabel("hallway"), "hallway");
+  assert.equal(providerOf({ model: "veo-3.1-fast-generate-001", note: "vertex, list rate" }), "gcp");
+  assert.equal(providerOf({ model: "Veo 3", note: "" }), "gcp");
+  assert.equal(providerOf({ model: "Edit", note: "via Vertex fallback" }), "gcp");
+  assert.equal(providerOf({ model: "Seedance-2.5" }), "fal");
+  assert.equal(providerOf({ model: "nano-banana-2-edit" }), "fal");
+  assert.equal(providerOf({ model: "Nano Banana 2" }), "fal");
+  assert.equal(providerOf({ model: "elevenlabs-sfx-v2" }), "fal");
+  for (const model of ["Edit", "LTX", "A2V", "Wan", "T2I"]) assert.equal(providerOf({ model, gpu: "B200" }), "modal", model);
+  assert.equal(DEFAULT_CAP_USD, 150);
+  const film = filmOf({ slug: "last-trail", rows: [
+    { what: "clips", model: "veo-3.1-fast-generate-001", gpu: "api", seconds: 2046, usd: 30.9, note: "vertex" },
+    { what: "clips", model: "veo-3.1-fast-generate-001", gpu: "api", seconds: 2046, usd: 30.9, note: "vertex" },
+    { what: "frames", model: "Edit", gpu: "A100-80GB", seconds: 1800, usd: 1.25, note: "" },
+    { what: "clips", model: "Seedance-2.5", gpu: "api", seconds: 300, usd: 7.06, note: "" },
+    { what: "sfx", model: "elevenlabs-sfx-v2", gpu: "api", seconds: 8, usd: 0.012, note: "" },
+    null,
+  ] });
+  assert.deepEqual(film, {
+    key: "last-trail", label: "The Last Trail", total: 70.12, capUsd: 150,
+    byProvider: { modal: 1.25, fal: 7.07, gcp: 61.8 },
+    byModel: [
+      { model: "veo-3.1-fast-generate-001", provider: "gcp", usd: 61.8, calls: 2, seconds: 4092 },
+      { model: "Seedance-2.5", provider: "fal", usd: 7.06, calls: 1, seconds: 300 },
+      { model: "Edit", provider: "modal", usd: 1.25, calls: 1, seconds: 1800 },
+      { model: "elevenlabs-sfx-v2", provider: "fal", usd: 0.01, calls: 1, seconds: 8 },
+    ],
+  });
+  assert.equal(filmOf({ slug: "rowan-speech", rows: [], budgetUsd: 20 }).capUsd, 20);
+  assert.equal(filmOf({ slug: "x", rows: [], budgetUsd: 0 }).capUsd, 150);
+  const all = filmsOf([
+    { slug: "rowan-speech", rows: [{ model: "LTX", usd: 0.42 }], budgetUsd: null, updated: "2026-10-17T20:36:24Z" },
+    { slug: "last-trail", rows: [{ model: "Edit", usd: 18.49 }], budgetUsd: null, updated: "2026-10-28T20:32:39Z" },
+    { slug: "empty", rows: [], budgetUsd: null, updated: null },
+  ]);
+  assert.equal(all.asOf, "2026-10-28T20:32:39Z", "the newest file's time");
+  assert.deepEqual(all.films.map((f) => [f.key, f.total]), [["last-trail", 18.49], ["rowan-speech", 0.42], ["empty", 0]]);
+  assert.deepEqual(filmsOf([]), { asOf: null, films: [] });
 });

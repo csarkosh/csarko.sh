@@ -4,6 +4,24 @@
     { "key": "egressGiB", "label": "Hosting egress", "quantity": 134.96, "unit": "GiB", "cost": 18.76, "unitPrice": 0.139, "per": "a GiB" },
     { "key": "cloudRunCpuHours", "label": "Cloud Run CPU", "quantity": 118.13, "unit": "h", "cost": 3.43, "unitPrice": 0.029, "per": "an hour, after the free tier" },
     { "key": "ciMinutes", "label": "CI minutes", "quantity": 9185, "unit": "min", "cost": 0, "gross": 73.67, "unitPrice": 0.008, "per": "a Linux minute if private" },
-    { "key": "aiGenerations", "label": "AI generations", "quantity": 648, "unit": "", "cost": 64.8, "unitPrice": 0.1, "per": "a clip" }
+    { "key": "aiGenerations", "label": "AI generations", "quantity": 648, "unit": "", "cost": 64.8, "unitPrice": 0.1, "per": "a clip" },
+    {
+      "key": "modalGpu",
+      "label": "Modal GPU",
+      "quantity": null,
+      "unit": "",
+      "cost": 80.06,
+      "unitPrice": null,
+      "per": "",
+      "apps": [
+        { "app": "cinema-spike", "cost": 67.28 },
+        { "app": "dayhike-record", "cost": 6.64 },
+        { "app": "dayhike-gate", "cost": 4.29 },
+        { "app": "dayhike-suite-spike", "cost": 1.03 },
+        { "app": "dayhike-gpu-spike", "cost": 0.8 },
+        { "app": "dayhike-rig-probe", "cost": 0.02 }
+      ]
+    },
+    { "key": "falGenerations", "label": "fal generations", "quantity": null, "unit": "", "cost": 53.63, "unitPrice": null, "per": "" }
   ]
 }

@@ -1,41 +1,53 @@
 /**
- * The finance page's routes under `/finance/admin/*`: the index card and the six queries
+ * The finance page's routes under `/finance/admin/*`: the index card and the eight queries
  * (`admin/CONTRACT.md`, the Finance section), plus `snapshotPart()`, the step the daily snapshot
  * runs. Tested with fake collectors and the in-memory store, like queries.mjs.
  *
  * Who is read when. AWS Cost Explorer costs $0.01 a call, so only `snapshotPart()` calls it
  * (two calls a day, a third for the forecast until the 28th) and stores the rows under the day's
- * snapshot as `finance.aws`; GitHub's usage goes under `finance.github` from the same job. Every
- * query reads those from the latest snapshot and GCP live from BigQuery (free at this size).
- * The snapshot also stores the four KPI values of the day (`finance.kpi`), which the index
- * card's twelve-week trends read, as the csarko.sh card's do.
+ * snapshot as `finance.aws`; GitHub's usage goes under `finance.github` and fal's credit balance
+ * under `finance.fal` from the same job; Modal's billing report is written under `finance.modal`
+ * by its own job (`admin/finance-modal/`, Python, since Modal has no REST billing endpoint).
+ * Every query reads those from the latest snapshot, fal's spend from the run of snapshots (a
+ * day's spend is the balance's fall, `finance/fal.mjs`), GCP live from BigQuery (free at this
+ * size) and the film ledgers live from their bucket (cached five minutes). The snapshot also
+ * stores the four KPI values of the day (`finance.kpi`), which the index card's twelve-week
+ * trends read, as the csarko.sh card's do.
  *
  * The shaping is pure, in `src/finance/`: categories, rows, months (the range and the
- * categories table), idle, daily, activity, kpis (health). This file only fetches and assembles.
+ * categories table), idle, daily, activity, projects, films, fal (the series), kpis (health).
+ * This file only fetches and assembles.
  */
 
 import { parseRange, monthsOf, categoriesTable, monthTotals, monthGross, runRateForecast, GCP_EXPORT_FROM } from "./finance/months.mjs";
-import { PROVIDERS, PROVIDER_LABELS, awsRows, gcpRows, githubRows, cents, monthOf, addMonths, lastBilledDay } from "./finance/rows.mjs";
+import { PROVIDERS, PROVIDER_LABELS, awsRows, gcpRows, githubRows, modalRows, falRows, cents, monthOf, addMonths, lastBilledDay } from "./finance/rows.mjs";
 import { idleLines } from "./finance/idle.mjs";
-import { dailySeries, trailingTotals } from "./finance/daily.mjs";
+import { dailySeries, trailingTotals, SERIES_DAYS } from "./finance/daily.mjs";
 import { activityItems } from "./finance/activity.mjs";
+import { projectsTable } from "./finance/projects.mjs";
+import { filmsOf } from "./finance/films.mjs";
+import { falSeries } from "./finance/fal.mjs";
 import { financeHealth } from "./finance/kpis.mjs";
 import { CALL_COST_USD } from "./collectors/aws-cost.mjs";
 import { weeklyTrend, TREND_WEEKS } from "./queries.mjs";
 import { addDays, isoDate } from "./time.mjs";
 
 export { parseRange };
-export const FINANCE_QUERY_NAMES = ["summary", "categories", "idle", "daily", "activity", "sources"];
+export const FINANCE_QUERY_NAMES = ["summary", "categories", "idle", "daily", "activity", "sources", "projects", "films"];
 export const FINANCE_APP = "finance";
-/** The environment variable that configures each source, for `notConfigured`. */
-export const SOURCE_ENV = { aws: "AWS_COST_ROLE_ARN", gcp: "BILLING_DATASET", github: "GITHUB_TOKEN" };
-export const SOURCE_LABELS = { aws: "AWS Cost Explorer", gcp: "Google Cloud billing export", github: "GitHub usage" };
+/** The environment variable that configures each source, for `notConfigured`. Modal's is the job's secret: the API reports it from the snapshot. */
+export const SOURCE_ENV = { aws: "AWS_COST_ROLE_ARN", gcp: "BILLING_DATASET", github: "GITHUB_TOKEN", modal: "MODAL_TOKEN_ID", fal: "FAL_ADMIN_KEY", ledgers: "FILM_LEDGERS_BUCKET" };
+export const SOURCE_LABELS = { aws: "AWS Cost Explorer", gcp: "Google Cloud billing export", github: "GitHub usage", modal: "Modal billing report", fal: "fal credit balance", ledgers: "Film ledgers" };
+/** The providers whose forecast is a real one (Cost Explorer's, GCP's run-rate); GitHub's net to date, Modal's net to date and fal's run-rate count only beside one of these. */
+const REAL_FORECASTS = ["aws", "gcp"];
 
 export function isFinanceQueryName(name) {
   return FINANCE_QUERY_NAMES.includes(name);
 }
 
-export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, store, now = Date.now, log = console, goalUsd = 5 }) {
+const quiet = { configured: false };
+
+export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal = quiet, ledgers = quiet, modalConfigured = false, store, now = Date.now, log = console }) {
   const hints = () => ({ notConfigured: {}, errors: {} });
   const withHints = (body, h) => ({
     ...body,
@@ -95,47 +107,109 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, store
   }
 
   /**
+   * Modal's part is written by its own job, so whether it is configured is read from the
+   * snapshot: a part present with rows is the report; one present as `{ at, error }` is the job's
+   * failure; one absent is not configured unless `MODAL_CONFIGURED=1` says the job exists, in
+   * which case it has not run yet.
+   */
+  function modalFromSnapshot(h, snapshot) {
+    const fin = snapshot?.finance ?? null;
+    const m = fin?.modal ?? null;
+    if (m === null) {
+      if (!modalConfigured) h.notConfigured.modal = SOURCE_ENV.modal;
+      else h.errors.modal = fin === null ? "No snapshot yet: the daily job has not run" : `The latest snapshot (${snapshot.date}) has no ${SOURCE_LABELS.modal}`;
+      return null;
+    }
+    if (typeof m.error === "string" || !Array.isArray(m.rows)) {
+      h.errors.modal = typeof m.error === "string" ? m.error : `The latest snapshot (${snapshot.date}) has a ${SOURCE_LABELS.modal} without rows`;
+      return null;
+    }
+    return m;
+  }
+
+  /** The snapshots fal's series reads: the last 60 days, stretched back to the first of the previous month so `range=last` sees the whole month. */
+  const falWindow = (today) => {
+    const sixty = addDays(today, -(SERIES_DAYS - 1));
+    const prev = `${addMonths(monthOf(today), -1)}-01`;
+    return sixty < prev ? sixty : prev;
+  };
+
+  /**
+   * fal's part: the series from the snapshots that carry a balance (`finance/fal.mjs`), or null
+   * with `notConfigured` without the key, or with an error when no snapshot has read it yet.
+   */
+  function falFromSnapshots(h, snapshots, extra = null) {
+    if (!fal.configured) {
+      h.notConfigured.fal = SOURCE_ENV.fal;
+      return null;
+    }
+    const series = falSeries(extra === null ? snapshots : [...snapshots, extra]);
+    if (series === null) {
+      h.errors.fal = "No snapshot yet: the daily job has not read the balance";
+      return null;
+    }
+    return series;
+  }
+
+  /**
    * Everything a query may need, loaded once: the latest snapshot, each source's data or null,
    * and the line rows (rows.mjs) by day and by month across the sources that answered.
    */
-  async function load(h, { gcp = true } = {}) {
-    const [snapshot, gcpData] = await Promise.all([
+  async function load(h) {
+    const today = isoDate(now());
+    const [snapshot, gcpData, snapshots] = await Promise.all([
       store.latestSnapshot(),
-      gcp ? part(h, "gcp", gcpBilling.configured, gcpLive) : null,
+      part(h, "gcp", gcpBilling.configured, gcpLive),
+      fal.configured ? store.listSnapshots(falWindow(today), today) : [],
     ]);
     const aws = fromSnapshot(h, snapshot, "aws", awsCost.configured);
     const github = fromSnapshot(h, snapshot, "github", githubBilling.configured);
-    return assemble({ snapshot, aws, gcp: gcpData, github });
+    const modal = modalFromSnapshot(h, snapshot);
+    const falData = falFromSnapshots(h, snapshots);
+    return assemble({ snapshot, aws, gcp: gcpData, github, modal, fal: falData });
   }
 
-  function assemble({ snapshot, aws, gcp, github }) {
-    const data = { aws, gcp, github };
+  function assemble({ snapshot, aws, gcp, github, modal, fal: falData }) {
+    const data = { aws, gcp, github, modal, fal: falData };
     return {
       snapshot,
       data,
       configured: PROVIDERS.filter((p) => data[p] !== null),
-      dailyRows: [...awsRows(aws?.daily), ...gcpRows(gcp?.daily), ...githubRows(github?.days)],
-      monthlyRows: [...awsRows(aws?.monthly), ...gcpRows(gcp?.monthly), ...githubRows(github?.months)],
+      dailyRows: [...awsRows(aws?.daily), ...gcpRows(gcp?.daily), ...githubRows(github?.days), ...modalRows(modal, "daily"), ...falRows(falData?.days, "daily")],
+      monthlyRows: [...awsRows(aws?.monthly), ...gcpRows(gcp?.monthly), ...githubRows(github?.months), ...modalRows(modal, "monthly"), ...falRows(falData?.days, "monthly")],
       lastDays: {
         aws: aws === null ? null : aws.lastDay ?? lastBilledDay(awsRows(aws.daily)),
         gcp: gcp === null ? null : gcp.lastDay ?? null,
         github: github === null ? null : github.lastDay ?? null,
+        modal: modal === null ? null : modal.lastDay ?? lastBilledDay(modalRows(modal, "daily").map((r) => ({ ...r, amount: r.gross }))),
+        fal: falData === null ? null : falData.lastDay,
       },
     };
   }
 
-  /** Each provider's forecast for `month` (the current one), from what it offers: AWS's own, GCP's run-rate, GitHub's net to date. */
+  /**
+   * Each provider's forecast for `month` (the current one), from what it offers: AWS's own,
+   * GCP's run-rate, GitHub's and Modal's net to date, fal's run-rate over the days it has a reading for.
+   */
   function forecastsOf(loaded, month, mtd) {
     const { data, lastDays } = loaded;
-    const out = { aws: null, gcp: null, github: null };
+    const out = Object.fromEntries(PROVIDERS.map((p) => [p, null]));
     if (data.aws !== null) {
       const f = data.aws.forecast;
       if (f && typeof f.remaining === "number" && monthOf(f.from) === month) out.aws = mtd.aws + f.remaining;
     }
     if (data.gcp !== null) out.gcp = runRateForecast(mtd.gcp, month, lastDays.gcp);
     if (data.github !== null) out.github = mtd.github;
+    if (data.modal !== null) out.modal = mtd.modal;
+    if (data.fal !== null) out.fal = runRateForecast(mtd.fal, month, lastDays.fal);
     return out;
   }
+
+  /** The forecasts summed, or null unless one of them is a real one: alone, a net to date would read $0.00 after the 28th, when Cost Explorer's is not asked for. */
+  const sumForecasts = (forecasts) => {
+    if (!REAL_FORECASTS.some((p) => forecasts[p] !== null)) return null;
+    return cents(Object.values(forecasts).reduce((n, v) => n + (v ?? 0), 0));
+  };
 
   /**
    * The four KPI values and their previous periods over loaded data, for `kpis()` and the
@@ -156,15 +230,11 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, store
     const dom = today.slice(8, 10);
     const prevToDate = dailyRows.reduce((n, r) => (r.day && monthOf(r.day) === prevMonth && r.day.slice(8, 10) <= dom ? n + r.amount : n), 0);
     const last30 = trailingTotals(series.days, 30);
-    const forecasts = forecastsOf(loaded, month, mtd);
-    // GitHub's "forecast" is its net to date, so it counts only beside a real one: alone it
-    // would read $0.00 on the days after the 28th, when Cost Explorer's is not asked for.
-    const known = forecasts.aws === null && forecasts.gcp === null ? [] : Object.values(forecasts).filter((v) => v !== null);
     return {
       monthToDate: { value: cents(sumConfigured(mtd)), prev: cents(prevToDate) },
       idleRunRate: { value: idleNow.runRate, prev: idleBefore.runRate },
       last30: { value: last30.value, prev: last30.prev },
-      forecast: { value: known.length > 0 ? cents(known.reduce((n, v) => n + v, 0)) : null, prev: cents(sumConfigured(last)) },
+      forecast: { value: sumForecasts(forecastsOf(loaded, month, mtd)), prev: cents(sumConfigured(last)) },
       series,
       idle: idleNow,
     };
@@ -182,7 +252,7 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, store
       const current = month === monthOf(today);
       const mtd = monthTotals(monthlyRows, month);
       const last = monthTotals(monthlyRows, prevMonth);
-      const forecasts = current ? forecastsOf(loaded, month, mtd) : { aws: null, gcp: null, github: null };
+      const forecasts = current ? forecastsOf(loaded, month, mtd) : Object.fromEntries(PROVIDERS.map((p) => [p, null]));
       const idle = idleLines(dailyRows, { today });
       const providers = PROVIDERS.map((p) => {
         const on = data[p] !== null;
@@ -193,19 +263,19 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, store
           forecast: on && forecasts[p] !== null ? cents(forecasts[p]) : null,
           lastMonth: on ? cents(last[p]) : null,
           lastDay: on ? lastDays[p] : null,
-          ...(p === "github" ? { gross: on ? cents(monthGross(monthlyRows, month)) : null } : {}),
+          ...(p === "github" ? { gross: on ? cents(monthGross(monthlyRows, month, "github")) : null } : {}),
+          ...(p === "modal" ? { gross: on ? cents(monthGross(monthlyRows, month, "modal")) : null, credits: on ? data.modal.credits ?? null : null } : {}),
+          ...(p === "fal" ? { balance: on ? data.fal.balance : null } : {}),
         };
       });
       // The totals sum the unrounded amounts, then round once, so they agree with the KPIs' to the cent.
       const sum = (totals) => cents(configured.reduce((n, p) => n + (totals[p] ?? 0), 0));
-      const forecastKnown = providers.some((p) => p.provider !== "github" && p.forecast !== null);
       return withHints({
         at: new Date(now()).toISOString(),
         month,
-        goalUsd,
         total: {
           mtd: configured.length > 0 ? sum(mtd) : null,
-          forecast: current && forecastKnown ? sum(forecasts) : null,
+          forecast: current ? sumForecasts(forecasts) : null,
           lastMonth: configured.length > 0 ? sum(last) : null,
           idleRunRate: configured.length > 0 ? idle.runRate : null,
         },
@@ -220,13 +290,20 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, store
       return withHints(categoriesTable(monthlyRows, monthsOf(range, today), { exportFrom: firstDay }), h);
     },
 
+    async projects(range = "month") {
+      const h = hints();
+      const today = isoDate(now());
+      const [{ monthlyRows }, firstDay] = await Promise.all([load(h), exportFirstDay()]);
+      return withHints(projectsTable(monthlyRows, monthsOf(range, today), { exportFrom: firstDay }), h);
+    },
+
     async idle() {
       const h = hints();
       const today = isoDate(now());
       const { configured, dailyRows } = await load(h);
-      if (configured.length === 0) return withHints({ runRate: null, goalUsd, asOf: today, lines: null }, h);
+      if (configured.length === 0) return withHints({ runRate: null, asOf: today, lines: null }, h);
       const r = idleLines(dailyRows, { today });
-      return withHints({ runRate: r.runRate, goalUsd, asOf: r.asOf, lines: r.lines }, h);
+      return withHints({ runRate: r.runRate, asOf: r.asOf, lines: r.lines }, h);
     },
 
     async daily() {
@@ -245,19 +322,32 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, store
       return withHints({ items: activityItems(monthlyRows.filter((r) => months.has(r.month)), { configured }) }, h);
     },
 
+    async films() {
+      const h = hints();
+      const list = await part(h, "ledgers", ledgers.configured, () => ledgers.list());
+      if (list === null) return withHints({ asOf: null, films: null }, h);
+      return withHints(filmsOf(list), h);
+    },
+
     async sources() {
       const h = hints();
       const today = isoDate(now());
-      const [snapshot, monthSnapshots, gcpLastDay, gcpFirstDay] = await Promise.all([
+      const [snapshot, monthSnapshots, gcpLastDay, gcpFirstDay, falSnapshots, ledgerList] = await Promise.all([
         store.latestSnapshot(),
         store.listSnapshots(`${monthOf(today)}-01`, today),
         part(h, "gcp", gcpBilling.configured, () => gcpBilling.lastDay()),
         exportFirstDay(),
+        fal.configured ? store.listSnapshots(falWindow(today), today) : [],
+        ledgers.configured ? part(h, "ledgers", true, () => ledgers.list()) : null,
       ]);
       const fin = snapshot?.finance ?? null;
       const snapshotAt = fin?.at ?? null;
       const calls = awsCost.configured ? monthSnapshots.reduce((n, s) => n + (Number(s.finance?.awsCalls ?? s.finance?.aws?.calls) || 0), 0) : null;
       const awsDays = fin?.aws ? awsRows(fin.aws.daily) : [];
+      const modal = fin?.modal ?? null;
+      const modalOk = modal !== null && Array.isArray(modal.rows);
+      const falData = fal.configured ? falSeries(falSnapshots) : null;
+      const none = { callsThisMonth: null, callCostUsd: null };
       return withHints({
         sources: [
           {
@@ -269,13 +359,28 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, store
           },
           {
             key: "gcp", label: SOURCE_LABELS.gcp, configured: gcpBilling.configured,
-            lastDay: gcpLastDay ?? null, snapshotAt: null, callsThisMonth: null, callCostUsd: null,
+            lastDay: gcpLastDay ?? null, snapshotAt: null, ...none,
             note: `BigQuery, read live; rows from ${gcpFirstDay} on.`,
           },
           {
             key: "github", label: SOURCE_LABELS.github, configured: githubBilling.configured,
-            lastDay: fin?.github?.lastDay ?? null, snapshotAt: fin?.github ? snapshotAt : null, callsThisMonth: null, callCostUsd: null,
+            lastDay: fin?.github?.lastDay ?? null, snapshotAt: fin?.github ? snapshotAt : null, ...none,
             note: "From the snapshot; public repositories bill $0.",
+          },
+          {
+            key: "modal", label: SOURCE_LABELS.modal, configured: modalConfigured || modal !== null,
+            lastDay: modalOk ? modal.lastDay ?? null : null, snapshotAt: modal !== null ? modal.at ?? snapshotAt : null, ...none,
+            note: "The workspace report, per app per day, written by the daily job.",
+          },
+          {
+            key: "fal", label: SOURCE_LABELS.fal, configured: fal.configured,
+            lastDay: falData?.lastDay ?? null, snapshotAt: fin?.fal ? snapshotAt : null, ...none,
+            note: "The balance once a day; a day's spend is its fall.",
+          },
+          {
+            key: "ledgers", label: SOURCE_LABELS.ledgers, configured: ledgers.configured,
+            lastDay: null, snapshotAt: ledgerList === null ? null : filmsOf(ledgerList).asOf, ...none,
+            note: ledgerList === null ? "The film pipeline's priced calls, one ledger a film, in the bucket." : `${ledgerList.length} ledger${ledgerList.length === 1 ? "" : "s"} in the bucket; the time is the newest file's.`,
           },
         ],
       }, h);
@@ -298,25 +403,27 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, store
       });
       const kpis = [
         kpi("monthToDate", "Month to date"),
-        kpi("idleRunRate", `Idle run-rate, goal $${goalUsd}`, { good: "down" }),
+        kpi("idleRunRate", "Idle run-rate", { good: "down" }),
         kpi("last30", "Last 30 days"),
         kpi("forecast", "Forecast"),
       ];
       let health;
       if (values === null) {
-        const hint = h.notConfigured.aws ?? h.notConfigured.gcp ?? h.notConfigured.github ?? null;
+        const hint = PROVIDERS.map((p) => h.notConfigured[p]).find((v) => v) ?? null;
         health = hint ? { status: "warning", note: `Not configured (${hint})` } : { status: "warning", note: "No finance data yet" };
         if (hint) for (const k of kpis) h.notConfigured[k.key] = hint;
       } else {
-        health = financeHealth({ idleRunRate: values.idleRunRate.value, goalUsd, days: values.series.days, rows: loaded.dailyRows });
+        health = financeHealth({ errors: h.errors, days: values.series.days, rows: loaded.dailyRows, configured: loaded.configured });
       }
       return withHints({ app: FINANCE_APP, at: new Date(t).toISOString(), kpis, health }, h);
     },
 
     /**
      * The daily snapshot's finance part, `{ finance: {...} }` for the day's document: the Cost
-     * Explorer rows (two or three calls), GitHub's usage, the day's four KPI values, and the
-     * hints. A source that fails is null with its error; a failure here never fails the snapshot.
+     * Explorer rows (two or three calls), GitHub's usage, fal's balance, the day's four KPI values,
+     * and the hints. A source that fails is null with its error; a failure here never fails the
+     * snapshot. The store merges a snapshot at the top level, so `finance` is replaced whole: the
+     * Modal part its own job wrote into today's document earlier is carried over.
      */
     async snapshotPart() {
       const h = hints();
@@ -346,11 +453,22 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, store
           if (forecast === null) h.errors.awsForecast = failures.join("; ");
         }
       }
-      const [github, gcp] = await Promise.all([
+      const [github, gcp, falReading, latest, snapshots] = await Promise.all([
         part(h, "github", githubBilling.configured, () => githubBilling.usage()),
         part(h, "gcp", gcpBilling.configured, gcpLive),
+        part(h, "fal", fal.configured, () => fal.balance()),
+        store.latestSnapshot(),
+        fal.configured ? store.listSnapshots(falWindow(today), addDays(today, -1)) : [],
       ]);
-      const values = kpiValues(assemble({ snapshot: null, aws, gcp, github }), today);
+      const falPart = falReading === null ? null : { at: new Date(t).toISOString(), balance: falReading.balance, currency: falReading.currency, lastDay: today };
+      // Today's document may already hold Modal's part (its job runs first); keep it, and read it for the KPIs.
+      const todays = latest !== null && latest.date === today ? latest : null;
+      const modalPart = todays?.finance?.modal ?? null;
+      const modalHints = hints();
+      const modal = modalFromSnapshot(modalHints, todays);
+      const falHints = hints();
+      const falData = falPart === null ? null : falFromSnapshots(falHints, snapshots, { date: today, finance: { fal: falPart } });
+      const values = kpiValues(assemble({ snapshot: null, aws, gcp, github, modal, fal: falData }), today);
       const kpi = values === null
         ? { monthToDate: null, idleRunRate: null, last30: null, forecast: null }
         : { monthToDate: values.monthToDate.value, idleRunRate: values.idleRunRate.value, last30: values.last30.value, forecast: values.forecast.value };
@@ -359,6 +477,8 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, store
           at: new Date(t).toISOString(),
           aws,
           github: github === null ? null : { months: github.months, days: github.days, lastDay: github.lastDay },
+          fal: falPart,
+          ...(modalPart !== null ? { modal: modalPart } : {}),
           awsCalls,
           kpi,
         }, h),

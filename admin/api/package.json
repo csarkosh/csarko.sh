@@ -17,6 +17,7 @@
     "@aws-sdk/credential-providers": "3.1160.0",
     "@google-cloud/bigquery": "9.2.0",
     "@google-cloud/firestore": "9.3.1",
+    "@google-cloud/storage": "8.4.0",
     "jose": "6.2.12"
   }
 }

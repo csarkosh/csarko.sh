@@ -25,6 +25,8 @@ import { createArkos } from "./collectors/arkos.mjs";
 import { createAwsCost } from "./collectors/aws-cost.mjs";
 import { createGcpBilling } from "./collectors/gcp-billing.mjs";
 import { createGitHubBilling } from "./collectors/github-billing.mjs";
+import { createFal } from "./collectors/fal.mjs";
+import { createLedgers } from "./collectors/ledgers.mjs";
 import { createGsc } from "./collectors/gsc.mjs";
 import { createYouTube } from "./collectors/youtube.mjs";
 import { createGitHub } from "./collectors/github.mjs";
@@ -46,13 +48,17 @@ const store = process.env.ADMIN_STORE === "memory" ? createMemoryStore() : await
 const bigquery = config.visits.dataset || config.finance.billingDataset ? new BigQuery({ projectId: config.projectId }) : null;
 
 // The finance page's sources: Cost Explorer (called by the snapshot job only; $0.01 a call), the
-// billing export in BigQuery (live) and GitHub's usage endpoint (the snapshot job again).
+// billing export in BigQuery (live), GitHub's usage endpoint and fal's credit balance (the
+// snapshot job again), Modal's report (written into the snapshot by its own job) and the film
+// ledgers in their bucket (live, cached).
 const finance = createFinanceQueries({
   awsCost: createAwsCost({ roleArn: config.finance.awsRoleArn, audience: config.finance.awsAudience, local: config.finance.awsLocal, fetch, log }),
   gcpBilling: createGcpBilling({ bigquery, projectId: config.projectId, dataset: config.finance.billingDataset, table: config.finance.billingTable, cache }),
   githubBilling: createGitHubBilling({ token: config.github.token, owner: config.github.owner, fetch, cache }),
+  fal: createFal({ adminKey: config.fal.adminKey, fetch, cache }),
+  ledgers: createLedgers({ bucket: config.finance.ledgersBucket, projectId: config.projectId, cache, log }),
+  modalConfigured: config.finance.modalConfigured,
   store,
-  goalUsd: config.finance.goalUsd,
   log,
 });
 
@@ -99,6 +105,9 @@ const unconfigured = [
   config.psiKey === null && "PSI_KEY",
   !config.finance.awsRoleArn && !config.finance.awsLocal && "AWS_COST_ROLE_ARN",
   !(config.finance.billingDataset && config.finance.billingTable) && "BILLING_DATASET",
+  !config.finance.modalConfigured && "MODAL_TOKEN_ID",
+  config.fal.adminKey === null && "FAL_ADMIN_KEY",
+  !config.finance.ledgersBucket && "FILM_LEDGERS_BUCKET",
 ].filter(Boolean);
 if (unconfigured.length > 0) log.warn(`admin: not configured, their sections will read null: ${unconfigured.join(", ")}`);
 
