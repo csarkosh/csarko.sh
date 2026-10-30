@@ -58,6 +58,19 @@ export function pickPrices(baked, fetched, door) {
   return { prices: { door, month: fetched.month, pool: fetched.pool, tiers, links }, stale: false };
 }
 
+/**
+ * The bill sentence in three parts, the figure being the part in <b>: page.mjs bakes it and
+ * app.js rewrites the same three parts when the live prices win, so the two never drift.
+ * Cyrus, Oct 30: "In October the cloud behind all this cost $288. Each tier is a slice of that bill."
+ */
+export function billParts(prices) {
+  return {
+    before: `In ${monthName(prices.month)} the cloud behind all this cost `,
+    figure: `$${Math.round(prices.pool)}`,
+    after: '. Each tier is a slice of that bill.',
+  };
+}
+
 /** The button's words for a tier: its price, or "what you like" for the free row. */
 export function buttonLabel(tierKey, prices) {
   if (tierKey === OWN_TIER) return 'Tip what you like';

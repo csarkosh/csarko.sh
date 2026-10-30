@@ -10,7 +10,7 @@
 import { CUSTOM, DONATE_URL, TIERS } from '../admin/api/src/donate/doors.mjs';
 import { escapeHtml, standaloneShell } from '../.agents/skills/site-quality/scripts/docs_lib.mjs';
 import { ICON_CSS, iconSvg } from './icon.mjs';
-import { DEFAULT_TIER, PROJECTS_BACK, buttonLabel, monthName } from './view.mjs';
+import { DEFAULT_TIER, PROJECTS_BACK, billParts, buttonLabel } from './view.mjs';
 
 const BRAND = 'Buy Me Tokens';
 // The free row's words: its name is CUSTOM's, its price the minimum.
@@ -100,13 +100,14 @@ export function doorPage({ door, prices, picture, theme }) {
     tiers: TIERS.map((t) => { const p = tierOf(t.key); return { tier: p.tier, usd: p.usd, label: p.label }; }),
     links: Object.fromEntries([...TIERS, CUSTOM].map((t) => [t.key, linkOf(t.key)])),
   };
+  const bill = billParts(prices);
   const main = `  <main id="top" class="wrap" tabindex="-1">
     <article class="tip">
       <p class="kicker">${escapeHtml(title)}</p>
       <h1>${escapeHtml(door.headline)}</h1>
       <p class="lead">${escapeHtml(door.lead)}</p>
       ${pictureHtml(picture, picture.alt)}
-      <p class="bill">Everything I give away here cost <b>$${Math.round(prices.pool)}</b> to run in ${monthName(prices.month)}. Each tier is a slice of that.</p>
+      <p class="bill">${escapeHtml(bill.before)}<b>${escapeHtml(bill.figure)}</b>${escapeHtml(bill.after)}</p>
       <fieldset class="tiers">
         <legend class="sr-only">Pick a tier</legend>
 ${rows.join('\n')}
@@ -160,7 +161,7 @@ export const DONATE_CSS = `
     .shot { display: block; margin: 0 0 22px; }
     /* The picture keeps its own shape: a hero is as wide as it was made, a poster arrives cropped to 16:9. */
     .shot img { display: block; width: 100%; height: auto; object-fit: cover; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
-    .bill { margin: 0 0 18px; color: var(--text); }
+    .bill { margin: 0 0 18px; color: var(--text); text-wrap: pretty; }
     .bill b { font-family: var(--mono); font-weight: 600; color: var(--accent); }
     .note { margin: -10px 0 18px; font-size: 13.5px; color: var(--muted); }
 

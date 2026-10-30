@@ -3,7 +3,7 @@
 // door in the address picks the thanks line and the link back. Every value reaches the page through
 // textContent or setAttribute, never as markup. Without this script both pages still work: the
 // button pays the default tier and the thanks page links to the projects page.
-import { DEFAULT_TIER, backLink, buttonLabel, monthName, pickPrices, thanksLine } from '/view.js';
+import { DEFAULT_TIER, backLink, billParts, buttonLabel, monthName, pickPrices, thanksLine } from '/view.js';
 
 // PRICES_URL in admin/api/src/donate/doors.mjs; build.mjs fails if the two differ.
 const PRICES_URL = 'https://storage.googleapis.com/csarko-sh-donate-prices/prices.json';
@@ -34,12 +34,13 @@ function doorPage(pay, baked) {
   addEventListener('pageshow', setButton);
 
   function apply({ prices: next, stale }) {
+    // The bill's three parts, the same ones page.mjs baked: the text before the <b>, the figure, the rest.
     const bill = document.querySelector('.bill');
     const figure = bill?.querySelector('b');
     if (figure) {
-      figure.textContent = `$${Math.round(next.pool)}`;
-      const rest = figure.nextSibling;
-      if (rest) rest.textContent = ` to run in ${monthName(next.month)}. Each tier is a slice of that.`;
+      const parts = billParts(next);
+      bill.replaceChildren(parts.before, figure, parts.after);
+      figure.textContent = parts.figure;
     }
     for (const row of document.querySelectorAll('.tier')) {
       const key = row.querySelector('input')?.value;

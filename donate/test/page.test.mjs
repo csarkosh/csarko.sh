@@ -12,7 +12,7 @@ test('the Arkos door, top to bottom', () => {
   const at = (s) => { const i = html.indexOf(s); assert.ok(i >= 0, s); return i; };
   assert.ok(at('<p class="kicker">Buy Me Tokens · Arkos IDE</p>') < at('<h1>Fund my next agent run</h1>'));
   assert.ok(at('<h1>') < at('<picture class="shot">') && at('<picture class="shot">') < at('<p class="bill">'));
-  at('Everything I give away here cost <b>$288</b> to run in October. Each tier is a slice of that.');
+  at('<p class="bill">In October the cloud behind all this cost <b>$288</b>. Each tier is a slice of that bill.</p>');
   assert.ok(html.includes('srcset="arkos-640.abc.avif 640w, arkos-1280.abc.avif 1280w"'));
   assert.ok(html.includes('width="1280" height="720"'));
   assert.equal((html.match(/<input type="radio" name="tier"/g) || []).length, 5);

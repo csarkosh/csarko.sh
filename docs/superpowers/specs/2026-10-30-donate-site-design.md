@@ -86,9 +86,10 @@ nav, trail or wordmark). Top to bottom:
    must be wider than tall, or the door must declare a crop (the focal point), in which case
    the cropped frame is what is checked; a door with no picture does not build, and a door
    that does not build gets no Stripe links and no entry in the prices JSON that month.
-4. **The bill sentence**, the one line that makes the prices mean something: "Everything I
-   give away here cost **$288** to run in October. Each tier is a slice of that." The figure is
-   the pool (section 3), rounded to the dollar, the month named.
+4. **The bill sentence**, the one line that makes the prices mean something: "In October the
+   cloud behind all this cost **$288**. Each tier is a slice of that bill." (Cyrus, Oct 30: the
+   first wording felt too demanding.) The figure is the pool (section 3), rounded to the dollar,
+   the month named.
 5. **Four tiers**, each a row: the name in bold, a one-line caption under it in the door's
    words, the price on the right in monospace accent, and under the price its share: "about
    1%", "about 3%", "about 10%", "about 30%". The second tier is selected by default. The names

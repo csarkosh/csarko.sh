@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pickPrices, buttonLabel, backLink, monthName } from '../view.mjs';
+import { pickPrices, buttonLabel, backLink, monthName, billParts } from '../view.mjs';
 
 const BAKED = { month: '2026-10', pool: 288, tiers: [{ tier: 'prompt', usd: 3, label: 'about 1%' }, { tier: 'context', usd: 9, label: 'about 3%' }, { tier: 'run', usd: 29, label: 'about 10%' }, { tier: 'finetune', usd: 87, label: 'about 30%' }], links: { prompt: 'a', context: 'b', run: 'c', finetune: 'd', own: 'e' } };
 
@@ -36,4 +36,11 @@ test('the thanks link: the door’s own, else the projects page; junk never pass
   assert.deepEqual(backLink('<img onerror=1>', doors), { label: 'Back to the projects', href: 'https://csarko.sh/projects' });
   assert.deepEqual(backLink(null, doors), { label: 'Back to the projects', href: 'https://csarko.sh/projects' });
   assert.equal(monthName('2026-10'), 'October');
+});
+
+test('the bill sentence is one template: the page bakes it and the script rewrites it from the same parts', () => {
+  const { before, figure, after } = billParts({ month: '2026-10', pool: 287.6 });
+  assert.equal(`${before}${figure}${after}`, 'In October the cloud behind all this cost $288. Each tier is a slice of that bill.');
+  assert.equal(figure, '$288');
+  assert.deepEqual(billParts({ month: '2026-11', pool: 300.2 }), { before: 'In November the cloud behind all this cost ', figure: '$300', after: '. Each tier is a slice of that bill.' });
 });
