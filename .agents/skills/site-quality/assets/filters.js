@@ -18,6 +18,14 @@
     b.checked = true;
     if (b.type === 'radio') one = true;
   }));
+  // The page may have been styled before this ran, so the chips a link lit would fade in as if
+  // clicked: a link's filter is simply there, so they take their state with no transition.
+  if (boxes.some((b) => b.checked)) {
+    var chips = [].slice.call(form.children);
+    chips.forEach((c) => { c.style.transition = 'none'; });
+    form.offsetWidth;
+    chips.forEach((c) => { c.style.transition = ''; });
+  }
   var sync = () => {
     var p = params(), on = boxes.filter((b) => b.checked).map((b) => b.value);
     p.delete('filter');
@@ -31,4 +39,85 @@
   form.addEventListener('change', sync);
   // A reset clears the boxes after its event, so sync on the next task.
   form.addEventListener('reset', () => setTimeout(sync));
+
+  // The glide (Material 3 motion, Cyrus 2026-10-29): leaving cards fade out where they were,
+  // staying cards move from their old place to their new one, arriving cards fade in and rise, and
+  // the list's height eases so nothing under it jumps. By the time a chip's change event fires,
+  // :has() has already filtered the list, so "before" is a cache of each card's place in the list
+  // (offsetLeft/Top within the list, which docs_lib.mjs positions: layout, not the transforms of a
+  // glide in flight), refreshed whenever the list's size changes (load, fonts, a lazy picture, a
+  // resize: a ResizeObserver) and after each glide. Every timing is a motion token; under reduced
+  // motion they read 0ms and the filter is simply instant. The ?filter= applied above never
+  // glides: nothing has changed yet when the cache is first taken.
+  var list = document.querySelector('.project-list, .all-docs');
+  if (!list || !list.animate) return;
+  var items = [].slice.call(list.children), cache = new Map(), listH = 0, run = [], grow;
+  var place = (li) => [li.offsetLeft, li.offsetTop, li.offsetWidth, li.offsetHeight];
+  var remember = () => {
+    cache = new Map();
+    listH = 0;
+    items.forEach((li) => {
+      if (!li.offsetParent) return;
+      var p = place(li);
+      cache.set(li, p);
+      // The list's natural height, from its cards: its own height is pinned while it eases.
+      listH = Math.max(listH, p[1] + p[3]);
+    });
+  };
+  var css = getComputedStyle(document.documentElement);
+  var token = (name) => css.getPropertyValue('--md-' + name).trim();
+  var ms = (name) => { var v = token('duration-' + name); return (parseFloat(v) || 0) * (/ms$/.test(v) ? 1 : 1000); };
+  var glide = (before, h0) => {
+    // A click during a glide starts from what is on screen: the list's height as it is, and each
+    // card's place plus the move it is part way through.
+    if (grow && grow.playState === 'running') h0 = list.offsetHeight;
+    var shift = new Map(items.filter((li) => li.offsetParent).map((li) => {
+      var m = new DOMMatrix(getComputedStyle(li).transform);
+      return [li, [m.e, m.f]];
+    }));
+    run.forEach((a) => a.cancel());
+    run = [];
+    [].slice.call(list.querySelectorAll('[data-ghost]')).forEach((g) => g.remove());
+    remember();
+    var out = ms('short3'), move = ms('medium4'), arrive = ms('medium2');
+    if (!move) return;
+    var standard = token('easing-standard'), add = (el, frames, opts) => run.push(el.animate(frames, opts));
+    items.forEach((li) => {
+      var was = before.get(li), now = cache.get(li);
+      if (was && !now && out) {
+        var g = li.cloneNode(true);
+        g.setAttribute('data-ghost', '');
+        g.setAttribute('aria-hidden', 'true');
+        g.inert = true;
+        [g].concat([].slice.call(g.querySelectorAll('[id]'))).forEach((el) => el.removeAttribute('id'));
+        Object.assign(g.style, { display: 'flex', position: 'absolute', margin: 0, pointerEvents: 'none',
+          left: was[0] + 'px', top: was[1] + 'px', width: was[2] + 'px', height: was[3] + 'px' });
+        list.appendChild(g);
+        var fade = g.animate([{ opacity: 1 }, { opacity: 0 }], { duration: out, easing: token('easing-emphasized-accelerate'), fill: 'forwards' });
+        fade.onfinish = () => g.remove();
+        run.push(fade);
+      } else if (was && now) {
+        var s = shift.get(li) || [0, 0], dx = was[0] + s[0] - now[0], dy = was[1] + s[1] - now[1];
+        if (Math.abs(dx) >= 0.5 || Math.abs(dy) >= 0.5)
+          add(li, [{ transform: 'translate(' + dx + 'px, ' + dy + 'px)' }, { transform: 'none' }], { duration: move, easing: standard });
+      } else if (now && arrive) {
+        add(li, [{ opacity: 0, transform: 'translateY(8px) scale(0.98)' }, { opacity: 1, transform: 'none' }],
+          { duration: arrive, delay: ms('short2'), easing: token('easing-emphasized-decelerate'), fill: 'backwards' });
+      }
+    });
+    // The height is clipped while it eases, so a card outside it shows only as the list reaches it.
+    if (h0 !== listH) {
+      grow = list.animate([{ height: h0 + 'px', overflow: 'clip' }, { height: listH + 'px', overflow: 'clip' }], { duration: move, easing: standard });
+      run.push(grow);
+    }
+  };
+  remember();
+  if (window.ResizeObserver) new ResizeObserver(remember).observe(list);
+  form.addEventListener('change', () => glide(cache, listH));
+  // The reset's boxes clear after its event, so glide on the next task, as sync does, from the
+  // places as they were now (a frame drawn in between would re-measure the filtered list).
+  form.addEventListener('reset', () => {
+    var before = cache, h0 = listH;
+    setTimeout(() => glide(before, h0));
+  });
 })();

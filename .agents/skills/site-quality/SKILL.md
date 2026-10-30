@@ -27,7 +27,7 @@ apply to the home page and to every generated page: `/projects`, `/research` and
 
 ```bash
 S=.agents/skills/site-quality/scripts
-$S/check.py                    # static: SEO, performance budgets, a11y, headers, 404, layout (~5s)
+$S/check.py                    # static: SEO, performance budgets, a11y, headers, 404, layout, motion (~10s)
 $S/check.py --live             # + deployed site: live headers, caching, 404, redirects, third-party JS
 $S/check.py --lighthouse       # + Lighthouse on the home page, /film and the newest doc, once per theme (SEO/A11y/Best Practices 100, Performance ≥ 95)
 $S/check.py --observatory      # + Mozilla HTTP Observatory (must be A+)
@@ -57,7 +57,7 @@ Same inputs, same outputs (two builds produce identical hashes).
 | `public/research/feed.xml` | `docs/published/` via `build_docs.mjs` | The Atom feed of every doc, newest first; doc pages and `/research` link it as `rel="alternate"`. |
 | `public/assets/fig-<slug>-<name>-<w>.<hash>.{avif,webp,jpg}`, `fig-<slug>-<name>.<hash>.svg`, `public/research/figures/<slug>-<name>.{jpg,svg}` | `assets/research/<slug>/<name>.{png,svg}`, a doc's figures *(2026-10-23)* | `build_docs.mjs` reads each file's size and writes a `<!-- generated:figure:<slug>/<name> -->` marker holding a plain `<img>` with the Markdown's alt; `build_assets.py` swaps in the hashed `<picture>` (an SVG as one `<img>`). The stable JPEG, cut to 1200x630 from the middle, is the doc's share card when its first figure is a PNG. See the `publish-doc` skill's "Figures". |
 | `public/assets/reading.<hash>.js` | `assets/reading.js` | A doc page's own script, written into its `generated:analytics` block after the lib-visits tags: the contents rail's current section, and the `section` event. Whole-line comments stripped before hashing, so its source can explain itself. |
-| `public/assets/filters.<hash>.js` | `assets/filters.js` | `/projects`' and `/research`'s own script *(2026-10-29)*, in the same block: a link's `?filter=a,b` (the chips' values) checks those chips on load, and each chip change writes the checked ones back into the address bar, keeping other parameters such as `?ref=`. The chips still filter through CSS alone; without the script a filter link just opens unfiltered. About 790 B. |
+| `public/assets/filters.<hash>.js` | `assets/filters.js` | `/projects`' and `/research`'s own script *(2026-10-29)*, in the same block: a link's `?filter=a,b` (the chips' values) checks those chips on load, and each chip change writes the checked ones back into the address bar, keeping other parameters such as `?ref=`. **It also makes the list glide** (Material 3 motion, 2026-10-29): leaving cards fade out where they were, staying cards move to their new places, arriving ones fade in and rise, and the list's height eases, all on the `--md-*` tokens, so under reduced motion the filter is instant; a link's filter applies with no motion at all. The chips still filter through CSS alone; without the script a filter link just opens unfiltered and a click is instant. About 4.5 KB, which takes the list pages to about 8.5 KB of the 10,000 B script budget. |
 | `public/sitemap.xml` | `docs/published/`, `docs/games/` and `docs/films/` via `build_docs.mjs` | `/`, `/film`, `/games`, `/research` (no `lastmod` on any of the four), then each doc with its own. Each section's URL appears only while it has content. |
 | `public/assets/portrait-{240,360,480,720}.<hash>.{avif,webp,jpg}` | `assets/portrait-source.jpg` | Responsive LCP image. Desktop 2x loads a ~15 KB AVIF instead of a 100 KB JPEG. |
 | `public/assets/<font>.<hash>.woff2` | `assets/fonts/*.woff2` | Inter + JetBrains Mono variable, latin subset. License: `public/licenses/fonts-OFL.txt`. |
@@ -97,6 +97,15 @@ portrait is a `<picture>` with AVIF + WebP, `srcset`/`sizes`/`width`/`height`,
 resources** except origins in `THIRD_PARTY` in `check.py`; scripts must be
 `async`/`defer`; JavaScript ≤ 10 KB (third-party measured with `--live`). Doc
 pages get a 225 KB HTML budget.
+
+**Motion** — `motion_checks()` serves `public/` on a free localhost port with serve.py's routing and
+drives the pages in headless Chrome, once as is and once with `--force-prefers-reduced-motion`: a
+chip click on `/projects` and `/research` glides and settles with no ghost, inline height or running
+animation left, even after a second click mid-glide or All; `?filter=` opens filtered with nothing
+animating; under reduced motion a click is final at once; after a resize the glide starts from the
+cards' new places; and a doc's word definition fades in and out. Each case is a JavaScript object
+literal (`public_motion_pages()`), so the admin's cases can run through the same function with their
+own root.
 
 **Accessibility** — the first element in `<body>` is the skip link, and its
 target has `tabindex="-1"`; alt on every image; in-page links resolve; new-tab

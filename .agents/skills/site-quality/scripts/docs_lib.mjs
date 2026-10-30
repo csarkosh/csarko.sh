@@ -745,7 +745,7 @@ const DOCS_CSS = `
     .rail ol { list-style: none; margin: 16px 0 0; padding: 0 0 0 16px; border-left: 1px solid var(--border-strong); display: grid; gap: 4px; }
     .rail a { display: flex; gap: 10px; padding: 4px 0; color: var(--muted); font-size: 13.5px; line-height: 1.45; transition: color var(--md-duration-short3) var(--md-easing-standard); }
     .rail a:hover { color: var(--text); }
-    .rail .num { font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--faint); flex: none; }
+    .rail .num { font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--faint); flex: none; transition: color var(--md-duration-short3) var(--md-easing-standard); }
 
     .section-head { border-top: 1px solid var(--border); padding-top: 48px; margin-top: 56px; }
     .prose h2, .prose h3, .prose h4 { color: var(--text); text-wrap: balance; }
@@ -813,7 +813,7 @@ const DOCS_CSS = `
     }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
-      .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg, .card-source { transition: none; }
+      .nav ul a, .crumbs a, .rail a, .rail .num, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg, .card-source { transition: none; }
     }`;
 
 // Only the research index carries the filter's rules (it is the one page with the chips, and
@@ -823,9 +823,12 @@ const DOCS_CSS = `
 // new category gets its chip and its rule together.
 // The chips' rules for one list: `list` is the filtered <ul>, `values` the chips' values, and a
 // card shows while its data-<attr> carries any checked value. /projects uses the same rules with
-// its kinds (Cyrus, 2026-10-29); a link's ?filter= checks the chips through filters.js.
+// its kinds (Cyrus, 2026-10-29); a link's ?filter= checks the chips through filters.js, whose
+// glide measures the cards against the list and lays the leaving ones' ghosts over it, so the list
+// is positioned; its rows keep their own height while the glide holds the list taller than them.
 const filterCss = (list, prefix, attr, values) => `
     .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
+    ${list} { position: relative; align-content: start; }
     .chip { position: relative; display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; padding: 5px 12px; border-radius: 999px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); cursor: pointer; transition: border-color var(--md-duration-short3) var(--md-easing-standard), color var(--md-duration-short3) var(--md-easing-standard), background var(--md-duration-short3) var(--md-easing-standard); }
     .chip small { font-size: 11px; color: var(--muted); } /* --faint fails 4.5:1 on a lit chip's accent tint (4.35, Lighthouse) */
     .chip:hover { color: var(--text); border-color: var(--border-strong); }
@@ -1132,6 +1135,13 @@ const DOC_CSS = `
     .term:hover, .term:focus-visible { text-decoration-color: var(--accent); }
     .term-def { max-width: min(92vw, 420px); margin: auto; padding: 16px 18px; color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.55; }
     .term-def::backdrop { background: var(--nav-bg); }
+    /* A definition fades and scales in from 0.96 (decelerating) and leaves faster than it came
+       (accelerating); display and overlay are held through the exit so it does not vanish first. */
+    .term-def, .term-def::backdrop { opacity: 0; transition-property: opacity, scale, display, overlay; transition-duration: var(--md-duration-short3); transition-timing-function: var(--md-easing-emphasized-accelerate); transition-behavior: allow-discrete; }
+    .term-def { scale: 0.96; }
+    .term-def:popover-open, .term-def:popover-open::backdrop { opacity: 1; transition-duration: var(--md-duration-short4); transition-timing-function: var(--md-easing-emphasized-decelerate); }
+    .term-def:popover-open { scale: 1; }
+    @starting-style { .term-def:popover-open, .term-def:popover-open::backdrop { opacity: 0; } .term-def:popover-open { scale: 0.96; } }
     /* A wide table or code block that scrolls sideways shows a shade at the edge it can scroll to. */
     .scroll { background:
       linear-gradient(to right, var(--surface) 30%, transparent) left / 40px 100% no-repeat local,

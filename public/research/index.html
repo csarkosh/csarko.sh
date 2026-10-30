@@ -506,7 +506,7 @@
     .rail ol { list-style: none; margin: 16px 0 0; padding: 0 0 0 16px; border-left: 1px solid var(--border-strong); display: grid; gap: 4px; }
     .rail a { display: flex; gap: 10px; padding: 4px 0; color: var(--muted); font-size: 13.5px; line-height: 1.45; transition: color var(--md-duration-short3) var(--md-easing-standard); }
     .rail a:hover { color: var(--text); }
-    .rail .num { font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--faint); flex: none; }
+    .rail .num { font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--faint); flex: none; transition: color var(--md-duration-short3) var(--md-easing-standard); }
 
     .section-head { border-top: 1px solid var(--border); padding-top: 48px; margin-top: 56px; }
     .prose h2, .prose h3, .prose h4 { color: var(--text); text-wrap: balance; }
@@ -574,9 +574,10 @@
     }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
-      .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg, .card-source { transition: none; }
+      .nav ul a, .crumbs a, .rail a, .rail .num, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg, .card-source { transition: none; }
     }
     .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
+    .all-docs { position: relative; align-content: start; }
     .chip { position: relative; display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; padding: 5px 12px; border-radius: 999px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); cursor: pointer; transition: border-color var(--md-duration-short3) var(--md-easing-standard), color var(--md-duration-short3) var(--md-easing-standard), background var(--md-duration-short3) var(--md-easing-standard); }
     .chip small { font-size: 11px; color: var(--muted); } /* --faint fails 4.5:1 on a lit chip's accent tint (4.35, Lighthouse) */
     .chip:hover { color: var(--text); border-color: var(--border-strong); }
@@ -955,7 +956,7 @@
   <!-- generated:analytics -->
   <script defer src="/assets/visits.9f98979d.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
-  <script defer src="/assets/filters.ece15e55.js"></script>
+  <script defer src="/assets/filters.d6f5b449.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

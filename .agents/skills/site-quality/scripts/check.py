@@ -17,6 +17,8 @@ The rules each check protects are explained in .agents/skills/site-quality/SKILL
 import base64
 import hashlib
 import html as htmllib
+import http.server
+import importlib.util
 import json
 import re
 import shutil
@@ -24,6 +26,7 @@ import struct
 import subprocess
 import sys
 import tempfile
+import threading
 import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET  # parses only the repo's own sitemap.xml
@@ -810,6 +813,265 @@ for (const {key, width: w, src} of frames) {
         check(not problems, f"{frame['key']}: {'; '.join(problems) or 'all nav links visible on one line, no overflow'}")
 
 
+# ------------------------------------------------------------------------ motion
+
+_serve_spec = importlib.util.spec_from_file_location("serve", ROOT / ".agents/skills/preview/scripts/serve.py")
+serve = importlib.util.module_from_spec(_serve_spec)
+_serve_spec.loader.exec_module(serve)
+
+# The harness: each case opens its page in a fresh same-origin iframe at its width, awaits the
+# iframe's load, runs its steps and reports the problems they found. Chrome runs it twice, the
+# second time with reduced motion forced; each run takes the cases whose `reduced` matches it.
+# Time is real: --virtual-time-budget never advances the animation timeline, so animations would
+# stay at their first frame. Instead the hidden /__motion/hold frame keeps the harness's load event
+# (and so --dump-dom) waiting until the results have been POSTed to /__motion/result.
+MOTION_HARNESS = """<!doctype html><html><body><iframe src="/__motion/hold" hidden></iframe><script>
+const CASES = [%s];
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const t = {
+  sleep,
+  // A fresh iframe at `width`, resolved once it has loaded; `during(doc)` is called on the page's
+  // own document every millisecond or so until then, for what happens while it loads.
+  open(url, width = 1280, during) {
+    const f = document.createElement('iframe');
+    f.style.cssText = `width:${width}px;height:900px;border:0`;
+    return new Promise((resolve, reject) => {
+      let done = false;
+      f.onload = () => { done = true; resolve(f); };
+      f.onerror = reject;
+      f.src = url;
+      document.body.appendChild(f);
+      if (during) (async () => {
+        while (!done) {
+          const d = f.contentDocument;
+          if (d && d.URL !== 'about:blank') during(d);
+          await sleep(1);
+        }
+      })();
+    });
+  },
+  visible: (el) => el.getClientRects().length > 0,
+  // Every filtered item shows exactly when want(item) says, and the glide has left nothing
+  // behind: no ghost, no inline height on the list, nothing still animating in it.
+  only(d, list, want) {
+    const ul = d.querySelector(list), p = [];
+    if (!ul) return [`no ${list}`];
+    const items = [...ul.querySelectorAll(':scope > li:not([data-ghost])')];
+    const wrong = items.filter((li) => t.visible(li) !== want(li)).map((li) => li.id || li.querySelector('a').textContent.trim());
+    if (wrong.length) p.push(`shown or hidden wrongly: ${wrong.join(', ')}`);
+    const ghosts = d.querySelectorAll('[data-ghost]').length;
+    if (ghosts) p.push(`${ghosts} ghost(s) left`);
+    if (ul.style.height) p.push(`inline height ${ul.style.height} left on the list`);
+    const running = ul.getAnimations({ subtree: true }).filter((a) => a.playState === 'running').length;
+    if (running) p.push(`${running} animation(s) still running`);
+    return p;
+  },
+};
+(async () => {
+  const out = { reduced: REDUCED };
+  for (const c of CASES) {
+    if (!!c.reduced !== REDUCED) continue;
+    try {
+      out[c.name] = await c.run(c.url ? await t.open(c.url, c.width) : null, t);
+    } catch (e) {
+      out[c.name] = [`steps threw: ${e}`];
+    }
+    document.querySelectorAll('iframe:not([hidden])').forEach((f) => f.remove());
+  }
+  await fetch('/__motion/result', { method: 'POST', body: JSON.stringify(out) });
+})();
+</script></body></html>"""
+
+
+def motion_checks(public_root: Path, pages: list[str], redirects=None) -> None:
+    """Drive the given pages' motion in headless Chrome and fail on anything their steps report.
+
+    `public_root` is served on a free localhost port with Firebase's clean URLs (serve.py's
+    route(); `redirects` defaults to firebase.json's public ones for public/, none otherwise),
+    because root-relative scripts do not load from file://. Each entry of `pages` is one case,
+    a JavaScript object literal: {name, url, width (default 1280), reduced (true: run under
+    prefers-reduced-motion), run: async (iframe, t) => [problem, ...]}, `t` being the harness's
+    helpers (sleep, visible, open, only). Without a url, run gets no iframe and opens its own
+    with t.open. An empty list from run is a pass."""
+    print(f"motion (headless Chrome, {public_root.name}/)")
+    if not Path(CHROME).exists():
+        warn("Google Chrome not found — motion checks skipped")
+        return
+    harness = (MOTION_HARNESS % ",\n".join(pages)).encode()
+    posted, box = threading.Event(), {}
+
+    class Handler(serve.Handler):
+        public = public_root
+
+        def reply(self, body=b"", ctype="text/html; charset=utf-8"):
+            self.send_response(200)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_GET(self):
+            if self.path == "/__motion":
+                return self.reply(harness)
+            if self.path == "/__motion/hold":
+                posted.wait(150)
+                return self.reply()
+            super().do_GET()
+
+        def do_POST(self):
+            if self.path != "/__motion/result":
+                return self.send_error(404)
+            box["data"] = self.rfile.read(int(self.headers.get("Content-Length", 0)))
+            posted.set()
+            self.reply()
+
+        def log_message(self, *args):
+            pass
+    Handler.redirects = (serve.load_redirects() if public_root.resolve() == PUBLIC.resolve() else ()) if redirects is None else redirects
+
+    class Server(http.server.ThreadingHTTPServer):
+        def handle_error(self, request, client_address):
+            # A case's iframe removed mid-load drops its connection; that is not a failure.
+            if not isinstance(sys.exc_info()[1], ConnectionError):
+                super().handle_error(request, client_address)
+
+    server = Server(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    url = f"http://127.0.0.1:{server.server_address[1]}/__motion"
+    results = {}
+    try:
+        for reduced in (False, True):
+            posted.clear()
+            box.clear()
+            flags = ["--force-prefers-reduced-motion"] if reduced else []
+            subprocess.run([CHROME, "--headless=new", "--disable-gpu", *flags, "--dump-dom", url],
+                           capture_output=True, timeout=180)
+            try:
+                data = json.loads(box["data"])
+            except (KeyError, json.JSONDecodeError):
+                fail(f"motion harness{' (reduced motion)' if reduced else ''} produced no result")
+                continue
+            check(data.pop("reduced") == reduced, f"the {'reduced-motion' if reduced else 'full-motion'} run sees prefers-reduced-motion: {'reduce' if reduced else 'no-preference'}")
+            results.update(data)
+    finally:
+        server.shutdown()
+        server.server_close()
+    for page in pages:
+        name = re.search(r"name:\s*'([^']*)'", page).group(1)
+        problems = results.get(name)
+        check(problems == [], f"{name}: {'; '.join(problems) if problems else 'no result' if problems is None else 'as designed'}")
+
+
+def public_motion_pages(public=PUBLIC):
+    """The public site's motion cases: the list pages' filter glide (SKILL.md, filters.js) and a
+    doc's word definitions."""
+    pages = [
+        # Review Focus 3: a link's ?filter= applies at load without a glide.
+        # Watched from its first frame: a 150 ms chip fade would be over by the load event. First,
+        # so the page loads cold, as from a link: the chips may be styled before filters.js runs.
+        """{ name: '/projects?filter=film opens filtered, with nothing animating', run: async (_, t) => {
+          const seen = new Set();
+          const f = await t.open('/projects?filter=film', 1280, (d) => d.getAnimations().forEach((a) => seen.add(`${a.effect.target.className || a.effect.target.tagName} ${a.transitionProperty || 'animation'}`)));
+          const d = f.contentDocument, p = [];
+          if (seen.size) p.push(`animated while loading: ${[...seen].join(', ')}`);
+          if (!d.getElementById('kind-film').checked) p.push('Film is not checked');
+          return p.concat(t.only(d, '.project-list', (li) => li.matches('[data-kind~="film"]')));
+        } }""",
+        # A chip click glides at once and settles on the filtered list alone.
+        """{ name: '/projects: a Film click glides, then only the films show', url: '/projects', run: async (f, t) => {
+          const d = f.contentDocument, p = [];
+          d.getElementById('kind-film').click();
+          await t.sleep(30);
+          // The list's own animations: the chip's colour transition does not count.
+          if (!d.querySelector('.project-list').getAnimations({ subtree: true }).length) p.push('nothing in the list animates 30 ms after the click');
+          if (!d.querySelector('.project-list > [data-ghost]')) p.push('no leaving card fades out where it was');
+          // While the list's height eases, its cards keep their own height (a grid would stretch them).
+          const shown = [...d.querySelectorAll('.project-list > li:not([data-ghost])')].filter(t.visible);
+          const mid = shown.map((li) => li.offsetHeight);
+          await t.sleep(600);
+          shown.forEach((li, i) => { if (Math.abs(li.offsetHeight - mid[i]) > 1) p.push(`${li.id} is ${mid[i]} px tall mid-glide, ${li.offsetHeight} px after`); });
+          return p.concat(t.only(d, '.project-list', (li) => li.matches('[data-kind~="film"]')));
+        } }""",
+        # Review Focus 1: a click during a glide cancels it and ends on the last click's state.
+        """{ name: '/projects: Film then Games within 100 ms ends on the game alone', url: '/projects', run: async (f, t) => {
+          const d = f.contentDocument;
+          d.getElementById('kind-film').click();
+          await t.sleep(50);
+          d.getElementById('kind-games').click();
+          await t.sleep(700);
+          return t.only(d, '.project-list', (li) => li.matches('[data-kind~="games"]'));
+        } }""",
+        """{ name: '/research: AI twice within 100 ms ends with every doc shown', url: '/research', run: async (f, t) => {
+          const d = f.contentDocument;
+          d.getElementById('cat-ai').click();
+          await t.sleep(50);
+          d.getElementById('cat-ai').click();
+          await t.sleep(700);
+          return t.only(d, '.all-docs', () => true);
+        } }""",
+        # All is the form's reset: its glide starts from the places before the reset.
+        """{ name: '/research: All after AI glides back to every doc', url: '/research', run: async (f, t) => {
+          const d = f.contentDocument, p = [];
+          d.getElementById('cat-ai').click();
+          await t.sleep(600);
+          d.querySelector('.filters .all').click();
+          await t.sleep(30);
+          if (!d.querySelector('.all-docs').getAnimations({ subtree: true }).length) p.push('nothing in the list animates 30 ms after All');
+          await t.sleep(700);
+          return p.concat(t.only(d, '.all-docs', () => true));
+        } }""",
+        # Review Focus 2: reduced motion filters in the same frame, with no animation at all.
+        """{ name: '/projects under reduced motion: a Film click is final at once', url: '/projects', reduced: true, run: async (f, t) => {
+          const d = f.contentDocument, p = [];
+          d.getElementById('kind-film').click();
+          await t.sleep(20);
+          const n = d.getAnimations().filter((a) => a.playState === 'running').length;
+          if (n) p.push(`${n} animation(s) running 20 ms after the click`);
+          return p.concat(t.only(d, '.project-list', (li) => li.matches('[data-kind~="film"]')));
+        } }""",
+        # Review Focus 4: after a resize, a glide starts from where the cards are now, not from
+        # where they were at the old width.
+        """{ name: '/projects at 1280 then 390 px: an Apps click moves each card from its 390 px place', url: '/projects', run: async (f, t) => {
+          const d = f.contentDocument, ul = d.querySelector('.project-list'), p = [];
+          await t.sleep(100);
+          f.style.width = '390px';
+          // Long enough for the phone pictures the narrower cards ask for to arrive and settle.
+          await t.sleep(500);
+          const at = (li) => { const r = li.getBoundingClientRect(), l = ul.getBoundingClientRect(); return [r.left - l.left, r.top - l.top]; };
+          const staying = [...ul.querySelectorAll(':scope > li[data-kind~="apps"]')];
+          const before = new Map(staying.map((li) => [li, at(li)]));
+          d.getElementById('kind-apps').click();
+          await t.sleep(30);
+          const first = new Map(staying.map((li) => {
+            const a = li.getAnimations().find((a) => a.effect.getKeyframes()[0].transform);
+            return [li, a ? new DOMMatrix(a.effect.getKeyframes()[0].transform) : new DOMMatrix()];
+          }));
+          await t.sleep(600);
+          for (const li of staying) {
+            const [x0, y0] = before.get(li), [x1, y1] = at(li), m = first.get(li);
+            if (Math.abs(m.e - (x0 - x1)) > 1.5 || Math.abs(m.f - (y0 - y1)) > 1.5)
+              p.push(`${li.id} starts at (${m.e}, ${m.f}), not at its offset (${x0 - x1}, ${y0 - y1})`);
+          }
+          return p.concat(t.only(d, '.project-list', (li) => li.matches('[data-kind~="apps"]')));
+        } }""",
+    ]
+    docs = sorted(((re.search(r'<meta property="article:published_time" content="([^"]+)"', p.read_text(encoding="utf-8")) or [None, ""])[1], p.stem)
+                  for p in (public / DOCS_DIR).glob("*.html") if 'class="term-def"' in p.read_text(encoding="utf-8"))
+    if docs:
+        slug = docs[-1][1]
+        pages.append("""{ name: '/research/%s: a word definition fades in and out', url: '/research/%s', run: async (f, t) => {
+          const el = f.contentDocument.querySelector('.term-def'), p = [];
+          el.showPopover();
+          if (!el.getAnimations().length) p.push('nothing animates as it opens');
+          await t.sleep(400);
+          el.hidePopover();
+          if (!el.getAnimations().length) p.push('nothing animates as it closes');
+          return p;
+        } }""" % (slug, slug))
+    return pages
+
+
 # -------------------------------------------------------------------------- live
 
 def fetch(url):
@@ -1126,6 +1388,7 @@ def main(argv):
     analytics_checks(pages)
     docs_build_checks()
     layout_checks()
+    motion_checks(PUBLIC, public_motion_pages())
 
     def arg(flag, default):
         i = argv.index(flag)
