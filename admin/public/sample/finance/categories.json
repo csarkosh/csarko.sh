@@ -9,6 +9,7 @@
     { "key": "ai", "label": "AI generation", "kind": "activity", "byMonth": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.72, 118.43] },
     { "key": "dns", "label": "DNS, keys and secrets", "kind": "idle", "byMonth": [2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.16] },
     { "key": "domains", "label": "Domains", "kind": "fixed", "byMonth": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 76, 0] },
+    { "key": "claudeCode", "label": "Claude Code", "kind": "fixed", "byMonth": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 200] },
     { "key": "ci", "label": "CI", "kind": "activity", "byMonth": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
     { "key": "tax", "label": "Tax", "kind": "activity", "byMonth": [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.28] },
     { "key": "other", "label": "Other", "kind": "activity", "byMonth": [0.62, 0.6, 0.62, 0.62, 0.56, 0.62, 0.6, 0.62, 0.6, 0.62, 0.62, 0.6, 0.54] }

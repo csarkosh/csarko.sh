@@ -10,6 +10,7 @@
  *   github  by repository: `game-dayhike` is Day Hike, `csarko.sh` the site, the rest other
  *   modal   by app name: `cinema-*` the films, `dayhike-*` Day Hike, the rest other
  *   fal     every line is the films
+ *   claude  the subscription is other (Claude Code serves every project)
  */
 
 import { cents, monthOf } from "./rows.mjs";
@@ -47,6 +48,8 @@ export function projectOf(row) {
       return "other";
     case "fal":
       return "films";
+    case "claude":
+      return "other";
     default:
       return "other";
   }

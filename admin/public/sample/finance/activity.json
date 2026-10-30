@@ -22,6 +22,7 @@
         { "app": "dayhike-rig-probe", "cost": 0.02 }
       ]
     },
-    { "key": "falGenerations", "label": "fal generations", "quantity": null, "unit": "", "cost": 53.63, "unitPrice": null, "per": "" }
+    { "key": "falGenerations", "label": "fal generations", "quantity": null, "unit": "", "cost": 53.63, "unitPrice": null, "per": "" },
+    { "key": "claudeCode", "label": "Claude Code", "quantity": 62534, "unit": "messages", "cost": 200, "unitPrice": null, "per": "", "listValue": 10450.68 }
   ]
 }

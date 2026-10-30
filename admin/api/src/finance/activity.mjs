@@ -1,5 +1,5 @@
 /**
- * What activity bought (spec section 4, card 5): seven items for a range, each a quantity, its
+ * What activity bought (spec section 4, card 5): eight items for a range, each a quantity, its
  * cost and the unit price, so the next session can be budgeted. Pure over monthly line rows
  * (rows.mjs) restricted to the range's months.
  *
@@ -10,6 +10,8 @@
  *   aiGenerations     Vertex AI and Gemini usage, counted in the SKU's own unit
  *   modalGpu          Modal's usage (before the plan's credits) with its apps by cost; the report has no quantities
  *   falGenerations    fal's spend from the balance's fall; no quantity either
+ *   claudeCode        Claude Code: the messages in the transcripts, the subscription as the cost,
+ *                     and `listValue`, what the tokens would cost at API list price (claude.mjs)
  */
 
 import { PROVIDERS, cents, fine } from "./rows.mjs";
@@ -42,6 +44,7 @@ const ITEMS = [
   { key: "aiGenerations", label: "AI generations", unit: "", per: "a clip", provider: "gcp" },
   { key: "modalGpu", label: "Modal GPU", unit: "", per: "", provider: "modal", unmeasured: true },
   { key: "falGenerations", label: "fal generations", unit: "", per: "", provider: "fal", unmeasured: true },
+  { key: "claudeCode", label: "Claude Code", unit: "messages", per: "", provider: "claude", unmeasured: true },
 ];
 
 const isRig = (r) => r.provider === "aws" && /BoxUsage:/.test(r.line);
@@ -53,6 +56,7 @@ const isCiMinutes = (r) => isCi(r) && r.service.toLowerCase() === "actions" && /
 const isAi = (r) => r.provider === "gcp" && r.category === "ai";
 const isModal = (r) => r.provider === "modal";
 const isFal = (r) => r.provider === "fal";
+const isClaude = (r) => r.provider === "claude";
 
 /** Modal's apps by usage, largest first: `[{ app, cost }]`. */
 export function modalApps(rows) {
@@ -62,13 +66,15 @@ export function modalApps(rows) {
 }
 
 /**
- * The seven items, in order, over `rows` (already cut to the range's months). A provider not in
+ * The eight items, in order, over `rows` (already cut to the range's months). A provider not in
  * `configured` leaves its item's `quantity` and `cost` null; `unitPrice` is cost over quantity
  * (gross over quantity for CI, whose net is 0 on public repositories), null when the quantity is 0.
  * Modal and fal have no quantities: `quantity` and `unitPrice` are null, `cost` Modal's usage
- * (its apps listed by cost) and fal's spend.
+ * (its apps listed by cost) and fal's spend. Claude Code's `cost` is the subscription over the
+ * range, its `quantity` the messages and `listValue` the list-price value from `claudeUsage`
+ * (`{ messages, listValue }` for the range's months, null when no sync has been read).
  */
-export function activityItems(rows, { configured = PROVIDERS } = {}) {
+export function activityItems(rows, { configured = PROVIDERS, claudeUsage = null } = {}) {
   const sum = (test, field = "amount") => rows.reduce((n, r) => (test(r) ? n + (r[field] ?? 0) : n), 0);
   const measured = {
     rigHours: () => ({ quantity: sum(isRig, "quantity"), cost: sum(isRig) }),
@@ -80,10 +86,11 @@ export function activityItems(rows, { configured = PROVIDERS } = {}) {
   return ITEMS.map((item) => {
     const base = { key: item.key, label: item.label };
     if (!configured.includes(item.provider)) {
-      return { ...base, quantity: null, unit: item.unit, cost: null, ...(item.key === "ciMinutes" ? { gross: null } : {}), unitPrice: null, per: item.per, ...(item.key === "modalGpu" ? { apps: null } : {}) };
+      return { ...base, quantity: null, unit: item.unit, cost: null, ...(item.key === "ciMinutes" ? { gross: null } : {}), unitPrice: null, per: item.per, ...(item.key === "modalGpu" ? { apps: null } : {}), ...(item.key === "claudeCode" ? { listValue: null } : {}) };
     }
     if (item.key === "modalGpu") return { ...base, quantity: null, unit: "", cost: cents(sum(isModal, "gross")), unitPrice: null, per: "", apps: modalApps(rows) };
     if (item.key === "falGenerations") return { ...base, quantity: null, unit: "", cost: cents(sum(isFal)), unitPrice: null, per: "" };
+    if (item.key === "claudeCode") return { ...base, quantity: claudeUsage?.messages ?? null, unit: "messages", cost: cents(sum(isClaude)), unitPrice: null, per: "", listValue: claudeUsage?.listValue ?? null };
     const m = measured[item.key]();
     const priced = item.key === "ciMinutes" ? m.gross : m.cost;
     const quantity = item.unit === "min" || item.unit === "" ? Math.round(m.quantity) : Math.round(m.quantity * 100) / 100;

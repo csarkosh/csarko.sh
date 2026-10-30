@@ -1,6 +1,6 @@
 {
   "runRate": 10.62,
-  "asOf": "2026-10-27",
+  "asOf": "2026-10-28",
   "lines": [
     { "provider": "aws", "line": "EBS:VolumeUsage.gp3", "category": "storage", "where": "us-east-1", "perDay": 0.1707, "perMonth": 5.12, "stoppedOn": null },
     { "provider": "aws", "line": "USW2-EBS:SnapshotUsage", "category": "storage", "where": "us-west-2", "perDay": 0.076, "perMonth": 2.28, "stoppedOn": null },

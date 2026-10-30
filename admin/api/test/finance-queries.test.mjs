@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createFinanceQueries, isFinanceQueryName, FINANCE_QUERY_NAMES, SOURCE_ENV, parseRange } from "../src/finance-queries.mjs";
+import { createFinanceQueries, isFinanceQueryName, isFinanceManualKey, FINANCE_QUERY_NAMES, FINANCE_MANUAL_KEYS, SOURCE_ENV, CLAUDE_NO_SYNC, parseRange } from "../src/finance-queries.mjs";
 import { createQueries } from "../src/queries.mjs";
 import { createMemoryStore } from "../src/store.mjs";
 import { createCache } from "../src/cache.mjs";
@@ -17,11 +17,15 @@ const GITHUB = shapeUsage(fixture("finance-github-usage").usageItems);
 const MODAL = fixture("finance-modal");
 const FAL = fixture("finance-fal-balances");
 const LEDGERS = fixture("finance-ledgers");
+const CLAUDE = fixture("finance-claude");
 // The 28th, late: the day's snapshot (10:00Z) holds Cost Explorer rows through the 27th and the forecast made that morning.
 const NOW = Date.parse("2026-10-28T23:10:00Z");
 const SNAPSHOT_AT = "2026-10-28T10:00:00Z";
 const log = { error() {}, warn() {}, log() {} };
-const HINTS = { aws: "AWS_COST_ROLE_ARN", gcp: "BILLING_DATASET", github: "GITHUB_TOKEN", modal: "MODAL_TOKEN_ID", fal: "FAL_ADMIN_KEY" };
+const HINTS = { aws: "AWS_COST_ROLE_ARN", gcp: "BILLING_DATASET", github: "GITHUB_TOKEN", modal: "MODAL_TOKEN_ID", fal: "FAL_ADMIN_KEY", claude: "claude-subscription" };
+// The subscription as entered on the page: $100 a month from September, raised to $200 on 2026-10-27.
+const SUBSCRIPTION = [{ at: "2026-09-05T12:00:00Z", value: 100 }, { at: "2026-10-27T03:20:00Z", value: 200 }];
+const NO_CLAUDE = { claude: "claude-subscription" };
 
 /** A fake Storage client over the ledger fixture, for the ledgers collector. */
 function fakeStorage(calls) {
@@ -60,8 +64,11 @@ function fakes({ awsOn = true, gcpOn = true, githubOn = true, falOn = true, ledg
 /**
  * A store holding the fal balance the job read each day since Sep 30 and, on the 28th, the
  * fixtures as the finance part, as the two jobs would have written it (Modal's part first).
+ * `claude` seeds the subscription series and, unless `sync` is false, the Mac's usage part too;
+ * the default has neither, so Claude Code is not configured and the other five add up as before.
  */
-async function seeded(deps, { date = "2026-10-28", kpi = { monthToDate: 238.71, idleRunRate: 10.62, last30: 250.65, forecast: 263.49 }, modal = MODAL, fal = true } = {}) {
+async function seeded(deps, { date = "2026-10-28", kpi = { monthToDate: 238.71, idleRunRate: 10.62, last30: 250.65, forecast: 263.49 }, modal = MODAL, fal = true, claude = false, sync = true } = {}) {
+  if (claude) for (const point of SUBSCRIPTION) await deps.store.appendManual("claude-subscription", point);
   if (fal) {
     for (const [day, balance] of Object.entries(FAL.balances)) {
       if (day >= date) continue;
@@ -69,28 +76,30 @@ async function seeded(deps, { date = "2026-10-28", kpi = { monthToDate: 238.71, 
     }
   }
   const falPart = fal ? { at: SNAPSHOT_AT, balance: FAL.balances[date] ?? 46.37, currency: "USD", lastDay: date } : null;
-  await deps.store.writeSnapshot(date, { at: SNAPSHOT_AT, visits7: 10, finance: { at: SNAPSHOT_AT, aws: AWS, github: GITHUB, fal: falPart, ...(modal === null ? {} : { modal }), awsCalls: 3, kpi } });
+  await deps.store.writeSnapshot(date, { at: SNAPSHOT_AT, visits7: 10, finance: { at: SNAPSHOT_AT, aws: AWS, github: GITHUB, fal: falPart, ...(modal === null ? {} : { modal }), ...(claude && sync ? { claude: CLAUDE } : {}), awsCalls: 3, kpi } });
   return deps;
 }
 
 const make = (deps) => createFinanceQueries({ ...deps, now: () => NOW, log });
 
-test("the eight query names, the env each source is configured by, and the range parser the routes use", () => {
-  assert.deepEqual(FINANCE_QUERY_NAMES, ["summary", "categories", "idle", "daily", "activity", "sources", "projects", "films"]);
-  assert.ok(isFinanceQueryName("projects") && isFinanceQueryName("films"));
+test("the nine query names, the one manual key, what configures each source, and the range parser the routes use", () => {
+  assert.deepEqual(FINANCE_QUERY_NAMES, ["summary", "categories", "idle", "daily", "activity", "sources", "projects", "films", "claude"]);
+  assert.ok(isFinanceQueryName("projects") && isFinanceQueryName("films") && isFinanceQueryName("claude"));
   assert.ok(!isFinanceQueryName("visits"));
+  assert.deepEqual(FINANCE_MANUAL_KEYS, ["claude-subscription"]);
+  assert.ok(isFinanceManualKey("claude-subscription") && !isFinanceManualKey("substack") && !isFinanceManualKey("claude"));
   assert.deepEqual(SOURCE_ENV, { ...HINTS, ledgers: "FILM_LEDGERS_BUCKET" });
   assert.equal(parseRange("13m"), "13m");
 });
 
-test("summary: the five providers, the totals, Modal net of its credits, fal from the balance's fall, the forecast as AWS's plus GCP's run-rate plus the nets to date and fal's run-rate", async () => {
+test("summary: the six providers, the totals, Modal net of its credits, fal from the balance's fall, the forecast as AWS's plus GCP's run-rate plus the nets to date and fal's run-rate; Claude Code not configured without a fee", async () => {
   const deps = await seeded(fakes());
   const s = await make(deps).summary("month");
   assert.equal(s.at, "2026-10-28T23:10:00.000Z");
   assert.equal(s.month, "2026-10");
   assert.equal(s.goalUsd, undefined, "no goal");
-  assert.deepEqual(s.providers.map((p) => [p.provider, p.label]), [["aws", "AWS"], ["gcp", "Google Cloud"], ["github", "GitHub"], ["modal", "Modal"], ["fal", "fal"]]);
-  const [aws, gcp, github, modal, fal] = s.providers;
+  assert.deepEqual(s.providers.map((p) => [p.provider, p.label]), [["aws", "AWS"], ["gcp", "Google Cloud"], ["github", "GitHub"], ["modal", "Modal"], ["fal", "fal"], ["claude", "Claude Code"]]);
+  const [aws, gcp, github, modal, fal, claude] = s.providers;
   assert.deepEqual(aws, { provider: "aws", label: "AWS", mtd: 30.96, forecast: 32.38, lastMonth: 94.34, lastDay: "2026-10-27" });
   assert.equal(aws.forecast, Math.round((30.96 + AWS.forecast.remaining) * 100) / 100, "month to date plus Cost Explorer's remaining");
   assert.deepEqual([gcp.mtd, gcp.lastMonth, gcp.lastDay], [104.05, 23.04, "2026-10-27"]);
@@ -99,9 +108,10 @@ test("summary: the five providers, the totals, Modal net of its credits, fal fro
   assert.deepEqual(modal, { provider: "modal", label: "Modal", mtd: 50.06, forecast: 50.06, lastMonth: 43.49, lastDay: "2026-10-24", gross: 80.06, credits: 30 }, "$80.06 of usage less $30 of credits; September's $73.49 likewise");
   assert.deepEqual(fal, { provider: "fal", label: "fal", mtd: 53.63, forecast: 61.58, lastMonth: 0.72, lastDay: "2026-10-27", balance: 46.37 }, "the balance fell $53.63 after the $100 purchase, which is not spend");
   assert.ok(Math.abs(fal.forecast - (53.63 / 27) * 31) < 0.02, "fal: run-rate over the days with a reading");
+  assert.deepEqual(claude, { provider: "claude", label: "Claude Code", mtd: null, forecast: null, lastMonth: null, lastDay: null, listValue: null, messages: null }, "no fee entered yet");
   assert.deepEqual([s.total.mtd, s.total.lastMonth, s.total.idleRunRate], [238.71, 161.59, 10.62]);
   assert.ok(Math.abs(s.total.forecast - (aws.forecast + gcp.forecast + github.forecast + modal.forecast + fal.forecast)) <= 0.011, "the total is rounded once");
-  assert.equal(s.notConfigured, undefined);
+  assert.deepEqual(s.notConfigured, NO_CLAUDE);
   assert.equal(s.errors, undefined);
   assert.deepEqual(deps.calls, ["gcp:daily", "gcp:monthly", "gcp:lastDay"], "GCP live; the rest from the snapshots, Cost Explorer and fal never called on a request");
 });
@@ -155,7 +165,7 @@ test("projects: the four projects aligned with the months, the films from Vertex
   assert.deepEqual(by("dayhike")[2], 45.51);
   const total = p.projects.reduce((n, x) => n + x.byMonth[2], 0);
   assert.ok(Math.abs(total - 238.71) < 0.05, "the projects add up to the month");
-  assert.equal(p.notConfigured, undefined);
+  assert.deepEqual(p.notConfigured, NO_CLAUDE);
   const off = await make(fakes({ awsOn: false, gcpOn: false, githubOn: false, modalOn: false, falOn: false })).projects("month");
   assert.ok(off.projects.every((x) => x.byMonth.every((v) => v === 0)));
   assert.deepEqual(off.notConfigured, HINTS);
@@ -165,7 +175,7 @@ test("idle: the lines sorted by perMonth, the stopped forwarding rule at zero wi
   const q = make(await seeded(fakes()));
   const r = await q.idle();
   assert.deepEqual([r.runRate, r.goalUsd, r.asOf], [10.62, undefined, "2026-10-27"]);
-  assert.deepEqual(Object.keys(r), ["runRate", "asOf", "lines"]);
+  assert.deepEqual(Object.keys(r), ["runRate", "asOf", "lines", "notConfigured"]);
   assert.deepEqual(r.lines[0], { provider: "aws", line: "EBS:VolumeUsage.gp3", category: "storage", where: "us-east-1", perDay: 0.1707, perMonth: 5.12, stoppedOn: null });
   const rule = r.lines.at(-1);
   assert.deepEqual(rule, { provider: "gcp", line: "Cloud Load Balancer Forwarding Rule Minimum Global", category: "loadBalancing", where: "magicpixel-487014", perDay: 0, perMonth: 0, stoppedOn: "2026-10-18" });
@@ -181,7 +191,8 @@ test("daily: 60 days ending on the latest billed day with modal and fal columns,
   const { days } = await q.daily();
   assert.equal(days.length, 60);
   assert.deepEqual([days[0].day, days.at(-1).day], ["2026-08-29", "2026-10-27"]);
-  assert.deepEqual(Object.keys(days[0]), ["day", "aws", "gcp", "github", "modal", "fal", "total", "median14", "flagged", "top"]);
+  assert.deepEqual(Object.keys(days[0]), ["day", "aws", "gcp", "github", "modal", "fal", "claude", "total", "median14", "flagged", "top"]);
+  assert.equal(days[0].claude, null, "not configured");
   assert.equal(days[0].median14, null, "no day before the first");
   const renewal = days.find((d) => d.day === "2026-09-16");
   assert.deepEqual([renewal.flagged, renewal.top], [true, { provider: "aws", line: "Route53-Domains", amount: 76 }]);
@@ -199,7 +210,7 @@ test("daily: 60 days ending on the latest billed day with modal and fal columns,
   assert.deepEqual([quiet.flagged, quiet.modal, quiet.fal], [false, 0, 0]);
 });
 
-test("activity: the seven items for the month and for 90 days, Modal's apps by usage", async () => {
+test("activity: the eight items for the month and for 90 days, Modal's apps by usage, Claude Code's nulls without a fee", async () => {
   const q = make(await seeded(fakes()));
   const { items } = await q.activity("month");
   assert.deepEqual(items.map((i) => [i.key, i.quantity, i.cost, i.unitPrice]), [
@@ -210,7 +221,9 @@ test("activity: the seven items for the month and for 90 days, Modal's apps by u
     ["aiGenerations", 648, 64.8, 0.1],
     ["modalGpu", null, 80.06, null],
     ["falGenerations", null, 53.63, null],
+    ["claudeCode", null, null, null],
   ]);
+  assert.deepEqual(items[7], { key: "claudeCode", label: "Claude Code", quantity: null, unit: "messages", cost: null, unitPrice: null, per: "", listValue: null });
   assert.equal(items[3].gross, 73.67);
   assert.deepEqual(items[5].apps, [
     { app: "cinema-spike", cost: 67.28 }, { app: "dayhike-record", cost: 6.64 }, { app: "dayhike-gate", cost: 4.29 },
@@ -252,23 +265,24 @@ test("films: one entry a ledger, largest first, the labels, the cap, by provider
   assert.deepEqual(await make(fakes({ ledgersFail: true })).films(), { asOf: null, films: null, errors: { ledgers: "ledgers: listing gs://csarko-sh-film-ledgers failed: permission denied" } });
 });
 
-test("sources: six rows; configured, last day, the snapshot time, this month's Cost Explorer calls, Modal's own time, the ledgers' count", async () => {
+test("sources: seven rows; configured, last day, the snapshot time, this month's Cost Explorer calls, Modal's own time, the ledgers' count", async () => {
   const deps = await seeded(fakes());
   await deps.store.writeSnapshot("2026-10-27", { at: "2026-10-27T10:00:00Z", finance: { at: "2026-10-27T10:00:00Z", aws: { ...AWS, calls: 3 }, github: GITHUB, fal: { balance: 48.77, currency: "USD" }, awsCalls: 3, kpi: {} } });
   await deps.store.writeSnapshot("2026-09-30", { at: "2026-09-30T10:00:00Z", finance: { at: "2026-09-30T10:00:00Z", aws: AWS, github: GITHUB, fal: { balance: 0.72, currency: "USD" }, awsCalls: 2, kpi: {} } });
   const { sources, notConfigured, errors } = await make(deps).sources();
   assert.equal(notConfigured, undefined);
   assert.equal(errors, undefined);
-  assert.deepEqual(sources.map((s) => s.key), ["aws", "gcp", "github", "modal", "fal", "ledgers"]);
+  assert.deepEqual(sources.map((s) => s.key), ["aws", "gcp", "github", "modal", "fal", "claude", "ledgers"]);
   assert.deepEqual(sources[0], { key: "aws", label: "AWS Cost Explorer", configured: true, lastDay: "2026-10-27", snapshotAt: SNAPSHOT_AT, callsThisMonth: 6, callCostUsd: 0.06, note: "Two calls a day from the snapshot job, $0.01 each; a third for the forecast until the 28th." });
   assert.deepEqual(sources[1], { key: "gcp", label: "Google Cloud billing export", configured: true, lastDay: "2026-10-27", snapshotAt: null, callsThisMonth: null, callCostUsd: null, note: "BigQuery, read live; rows from 2026-10-02 on." });
   assert.deepEqual(sources[2], { key: "github", label: "GitHub usage", configured: true, lastDay: "2026-10-27", snapshotAt: SNAPSHOT_AT, callsThisMonth: null, callCostUsd: null, note: "From the snapshot; public repositories bill $0." });
   assert.deepEqual(sources[3], { key: "modal", label: "Modal billing report", configured: true, lastDay: "2026-10-24", snapshotAt: "2026-10-28T10:02:00Z", callsThisMonth: null, callCostUsd: null, note: "The workspace report, per app per day, written by the daily job." });
   assert.deepEqual(sources[4], { key: "fal", label: "fal credit balance", configured: true, lastDay: "2026-10-27", snapshotAt: SNAPSHOT_AT, callsThisMonth: null, callCostUsd: null, note: "The balance once a day; a day's spend is its fall." });
-  assert.deepEqual(sources[5], { key: "ledgers", label: "Film ledgers", configured: true, lastDay: null, snapshotAt: "2026-10-28T20:32:39Z", callsThisMonth: null, callCostUsd: null, note: "8 ledgers in the bucket; the time is the newest file's." });
+  assert.deepEqual(sources[5], { key: "claude", label: "Claude Code transcripts", configured: false, lastDay: null, snapshotAt: null, callsThisMonth: null, callCostUsd: null, note: "Local transcripts, synced by tools/claude-usage-sync.py on the Mac; priced at API list rates as the plan's value." }, "no fee entered");
+  assert.deepEqual(sources[6], { key: "ledgers", label: "Film ledgers", configured: true, lastDay: null, snapshotAt: "2026-10-28T20:32:39Z", callsThisMonth: null, callCostUsd: null, note: "8 ledgers in the bucket; the time is the newest file's." });
   const off = await make(fakes({ awsOn: false, gcpOn: false, githubOn: false, modalOn: false, falOn: false, ledgersOn: false })).sources();
-  assert.deepEqual(off.sources.map((s) => [s.configured, s.lastDay, s.snapshotAt]), Array.from({ length: 6 }, () => [false, null, null]));
-  assert.equal(off.sources[5].note, "The film pipeline's priced calls, one ledger a film, in the bucket.");
+  assert.deepEqual(off.sources.map((s) => [s.configured, s.lastDay, s.snapshotAt]), Array.from({ length: 7 }, () => [false, null, null]));
+  assert.equal(off.sources[6].note, "The film pipeline's priced calls, one ledger a film, in the bucket.");
 });
 
 test("kpis: four KPIs in dollars with no goal in the label, previous periods, twelve-week trends from the snapshots' kpi values, health from the sources and the days", async () => {
@@ -298,7 +312,7 @@ test("kpis: four KPIs in dollars with no goal in the label, previous periods, tw
   assert.equal(idle.trend[0], 25, "2026-08-10 falls in the first of the twelve weeks");
   assert.equal(mtd.trend[5], 0, "a week with no snapshot is 0");
   assert.deepEqual(k.health, { status: "good", note: "5 sources answered; no day of the last 7 out of line" });
-  assert.equal(k.notConfigured, undefined);
+  assert.deepEqual(k.notConfigured, NO_CLAUDE);
   const failing = await make(await seeded(fakes({ gcpFail: true }))).kpis();
   assert.deepEqual(failing.health, { status: "warning", note: "A source failed: gcp" });
   assert.deepEqual(failing.errors, { gcp: "BigQuery finance-daily failed: quota" });
@@ -372,17 +386,17 @@ test("not configured: every part null with its hint, the shapes kept, nothing fe
   assert.deepEqual(s.providers[4], { provider: "fal", label: "fal", mtd: null, forecast: null, lastMonth: null, lastDay: null, balance: null });
   assert.deepEqual(s.notConfigured, HINTS);
   const c = await q.categories("90");
-  assert.equal(c.categories.length, 11);
+  assert.equal(c.categories.length, 12);
   assert.ok(c.categories.every((x) => x.byMonth.every((v) => v === 0)));
   assert.deepEqual(c.notConfigured, HINTS);
   assert.deepEqual(await q.idle(), { runRate: null, asOf: "2026-10-28", lines: null, notConfigured: HINTS });
   assert.deepEqual(await q.daily(), { days: null, notConfigured: HINTS });
   const a = await q.activity("month");
   assert.ok(a.items.every((i) => i.quantity === null && i.cost === null && i.unitPrice === null));
-  assert.equal(a.items.length, 7);
+  assert.equal(a.items.length, 8);
   assert.deepEqual(a.notConfigured, HINTS);
   const src = await q.sources();
-  assert.deepEqual(src.sources.map((x) => [x.configured, x.lastDay, x.callsThisMonth]), Array.from({ length: 6 }, () => [false, null, null]));
+  assert.deepEqual(src.sources.map((x) => [x.configured, x.lastDay, x.callsThisMonth]), Array.from({ length: 7 }, () => [false, null, null]));
   const k = await q.kpis();
   assert.ok(k.kpis.every((x) => x.value === null && x.prev === null && x.trend.length === 12 && x.trend.every((v) => v === 0)));
   assert.deepEqual(k.health, { status: "warning", note: "Not configured (AWS_COST_ROLE_ARN)" });
@@ -393,11 +407,11 @@ test("not configured: every part null with its hint, the shapes kept, nothing fe
 test("half configured: GCP alone answers, the rest null with hints, totals sum what is there", async () => {
   const q = make(fakes({ awsOn: false, githubOn: false, modalOn: false, falOn: false }));
   const s = await q.summary("month");
-  assert.deepEqual(s.providers.map((p) => p.mtd), [null, 104.05, null, null, null]);
+  assert.deepEqual(s.providers.map((p) => p.mtd), [null, 104.05, null, null, null, null]);
   assert.equal(s.total.mtd, 104.05);
-  assert.deepEqual(s.notConfigured, { aws: "AWS_COST_ROLE_ARN", github: "GITHUB_TOKEN", modal: "MODAL_TOKEN_ID", fal: "FAL_ADMIN_KEY" });
+  assert.deepEqual(s.notConfigured, { aws: "AWS_COST_ROLE_ARN", github: "GITHUB_TOKEN", modal: "MODAL_TOKEN_ID", fal: "FAL_ADMIN_KEY", ...NO_CLAUDE });
   const { days } = await q.daily();
-  assert.deepEqual([days.at(-1).aws, typeof days.at(-1).gcp, days.at(-1).github, days.at(-1).modal, days.at(-1).fal], [null, "number", null, null, null]);
+  assert.deepEqual([days.at(-1).aws, typeof days.at(-1).gcp, days.at(-1).github, days.at(-1).modal, days.at(-1).fal, days.at(-1).claude], [null, "number", null, null, null, null]);
   const a = await q.activity("month");
   assert.deepEqual([a.items[0].quantity, a.items[1].quantity, a.items[3].quantity, a.items[5].cost, a.items[6].cost], [null, 134.96, null, null, null]);
 });
@@ -405,17 +419,17 @@ test("half configured: GCP alone answers, the rest null with hints, totals sum w
 test("Modal is configured by its part in the snapshot: absent and MODAL_CONFIGURED unset is not configured; absent with it set, or present with an error, is an error", async () => {
   // Not configured: no part, no flag; the rest answers.
   const none = await make(await seeded(fakes({ modalOn: false }), { modal: null })).summary("month");
-  assert.deepEqual(none.notConfigured, { modal: "MODAL_TOKEN_ID" });
+  assert.deepEqual(none.notConfigured, { modal: "MODAL_TOKEN_ID", ...NO_CLAUDE });
   assert.equal(none.providers[3].mtd, null);
   assert.equal(none.total.mtd, 188.65, "the other four");
   // The part is there although the flag is not: the report is used.
   const unflagged = await make(await seeded(fakes({ modalOn: false }))).summary("month");
-  assert.equal(unflagged.notConfigured, undefined);
+  assert.deepEqual(unflagged.notConfigured, NO_CLAUDE);
   assert.equal(unflagged.providers[3].mtd, 50.06);
   // The job exists but has not written today: an error, not a hint.
   const missing = await make(await seeded(fakes(), { modal: null })).summary("month");
   assert.deepEqual(missing.errors, { modal: "The latest snapshot (2026-10-28) has no Modal billing report" });
-  assert.equal(missing.notConfigured, undefined);
+  assert.deepEqual(missing.notConfigured, NO_CLAUDE);
   // The job failed and wrote its error.
   const failed = await make(await seeded(fakes(), { modal: { at: "2026-10-28T10:02:00Z", error: "modal billing report: token refused" } })).summary("month");
   assert.deepEqual(failed.errors, { modal: "modal billing report: token refused" });
@@ -441,7 +455,7 @@ test("configured but no snapshot yet, or a snapshot without the source: null wit
   const s = await empty.summary("month");
   assert.equal(s.providers[0].mtd, null);
   assert.deepEqual(s.errors, { aws: "No snapshot yet: the daily job has not run", github: "No snapshot yet: the daily job has not run" });
-  assert.deepEqual(s.notConfigured, { modal: "MODAL_TOKEN_ID", fal: "FAL_ADMIN_KEY" });
+  assert.deepEqual(s.notConfigured, { modal: "MODAL_TOKEN_ID", fal: "FAL_ADMIN_KEY", ...NO_CLAUDE });
   assert.equal(s.providers[1].mtd, 104.05, "GCP is live and unaffected");
 
   const deps = fakes();
@@ -456,4 +470,136 @@ test("configured but no snapshot yet, or a snapshot without the source: null wit
   assert.equal(d.days.at(-1).gcp, null);
   assert.equal(typeof d.days.at(-1).aws, "number");
   assert.equal(typeof d.days.at(-1).modal, "number");
+});
+
+test("Claude Code: the fee from the manual series is the spend, applied from its entry's month; the transcripts' list value sits beside it in summary, categories, projects, daily, activity, sources and the KPIs", async () => {
+  const q = make(await seeded(fakes(), { claude: true }));
+  const s = await q.summary("month");
+  assert.deepEqual(s.providers[5], { provider: "claude", label: "Claude Code", mtd: 200, forecast: 200, lastMonth: 100, lastDay: "2026-10-28", listValue: 10450.68, messages: 62534 }, "$200 from the 27th's entry applies to the whole of October; September was $100");
+  assert.deepEqual(s.total, { mtd: 438.71, forecast: 463.49, lastMonth: 261.59, idleRunRate: 10.62 }, "the other five plus the fee; the forecast is the fee, counted beside Cost Explorer's");
+  assert.equal(s.notConfigured, undefined);
+  assert.equal(s.errors, undefined);
+  const last = await q.summary("last");
+  assert.deepEqual([last.providers[5].mtd, last.providers[5].forecast, last.providers[5].lastMonth, last.providers[5].listValue, last.providers[5].messages], [100, null, 0, 2717.73, 27034], "September's fee, no August entry, September's value");
+  assert.equal(last.total.mtd, 261.59);
+
+  const c = await q.categories("90");
+  assert.deepEqual(c.categories.find((x) => x.key === "claudeCode"), { key: "claudeCode", label: "Claude Code", kind: "fixed", byMonth: [0, 100, 200] });
+  assert.ok(Math.abs(c.categories.reduce((n, x) => n + x.byMonth[2], 0) - 438.71) < 0.05, "the categories add up to the month");
+  assert.deepEqual(c.other.map((o) => o.line), ["Log Storage cost"], "not an unmapped line");
+  const p = await q.projects("90");
+  assert.deepEqual(p.projects.find((x) => x.key === "other").byMonth, [18.88, 118.27, 210.96], "the subscription is other");
+
+  const { days } = await q.daily();
+  assert.deepEqual([days.length, days[0].day, days.at(-1).day], [60, "2026-08-30", "2026-10-28"], "the fee is paid for today, so the series ends today");
+  const today = days.at(-1);
+  assert.deepEqual([today.claude, today.aws, today.gcp, today.total, today.top], [6.45, 0, 0, 6.45, { provider: "claude", line: "claude.ai subscription", amount: 6.45 }], "200 / 31 a day; the other sources have not reported today yet");
+  assert.equal(days.find((d) => d.day === "2026-10-27").claude, 6.45);
+  assert.equal(days.find((d) => d.day === "2026-09-30").claude, 3.33, "100 / 30 in September");
+  assert.equal(days.find((d) => d.day === "2026-08-31").claude, 0, "no entry before September");
+  assert.ok(Math.abs(days.filter((d) => d.day.startsWith("2026-10")).reduce((n, d) => n + d.claude, 0) - (200 / 31) * 28) < 0.05, "the 28 days so far sum to their share of the fee");
+  assert.equal(days.find((d) => d.day === "2026-10-27").flagged, false);
+
+  const { items } = await q.activity("month");
+  assert.deepEqual(items[7], { key: "claudeCode", label: "Claude Code", quantity: 62534, unit: "messages", cost: 200, unitPrice: null, per: "", listValue: 10450.68 });
+  assert.deepEqual((await q.activity("90")).items[7], { key: "claudeCode", label: "Claude Code", quantity: 92338, unit: "messages", cost: 300, unitPrice: null, per: "", listValue: 13468.77 }, "September's fee and value join; August has value but no fee");
+  assert.deepEqual([(await q.activity("last")).items[7].cost, (await q.activity("last")).items[7].listValue], [100, 2717.73]);
+
+  const { sources } = await q.sources();
+  assert.deepEqual(sources[5], { key: "claude", label: "Claude Code transcripts", configured: true, lastDay: "2026-10-28", snapshotAt: "2026-10-28T03:16:05Z", callsThisMonth: null, callCostUsd: null, note: "Local transcripts, synced by tools/claude-usage-sync.py on the Mac; priced at API list rates as the plan's value." }, "the sync's own time, not the job's");
+
+  const k = await q.kpis();
+  assert.deepEqual(k.kpis.map((x) => [x.key, x.value, x.prev]), [["monthToDate", 438.71, 248.13], ["idleRunRate", 10.62, 23.67], ["last30", 432.75, 250.45], ["forecast", 463.49, 261.59]], "September through the 28th carries 28 days of its $100; the idle run-rate ignores the fee");
+  assert.deepEqual(k.health, { status: "good", note: "6 sources answered; no day of the last 7 out of line" });
+  const idle = await q.idle();
+  assert.deepEqual([idle.runRate, idle.asOf, idle.lines.some((l) => l.provider === "claude")], [10.62, "2026-10-28", false], "a fixed line is never idle");
+});
+
+test("Claude Code: the claude query for each range, its days ending on the sync's last day, the byModel sums largest first", async () => {
+  const q = make(await seeded(fakes(), { claude: true }));
+  const month = await q.claude("month");
+  assert.deepEqual({ ...month, byModel: month.byModel.length, days: month.days.length }, {
+    month: "2026-10", subscriptionUsd: 200, enteredAt: "2026-10-27T03:20:00Z",
+    listValue: 10450.68, messages: 62534, lastDay: "2026-10-28", syncedAt: "2026-10-28T03:16:05Z", files: 1149,
+    byModel: 5, days: 60,
+  });
+  assert.deepEqual(month.byModel[0], { model: "claude-fable-5-1", input: 671857, cacheWrite: 144799003, cacheRead: 10981299316, output: 42893815, messages: 27877, usd: 6711.24 });
+  assert.deepEqual(month.byModel.map((m) => [m.model, m.usd]), [["claude-fable-5-1", 6711.24], ["claude-opus-5-5", 3699.71], ["claude-opus-4-7", 38.37], ["claude-haiku-5-5", 0.78], ["claude-sonnet-5-5", 0.58]]);
+  assert.equal(Math.round(month.byModel.reduce((n, m) => n + m.usd, 0) * 100) / 100, month.listValue);
+  assert.deepEqual([month.days[0].day, month.days.at(-1).day], ["2026-08-30", "2026-10-28"]);
+  assert.deepEqual(month.days.at(-1), { day: "2026-10-28", usd: 558.77, messages: 3340, byModel: { "claude-fable-5-1": 358.83, "claude-opus-5-5": 197.83, "claude-opus-4-7": 2.02, "claude-sonnet-5-5": 0.05, "claude-haiku-5-5": 0.04 } });
+  assert.deepEqual(month.days.find((d) => d.day === "2026-10-05"), { day: "2026-10-05", usd: 0, messages: 0, byModel: {} }, "a day off is present at 0");
+  assert.deepEqual(month.days[0], { day: "2026-08-30", usd: 8.41, messages: 78, byModel: { "claude-opus-4-7": 7.7, "claude-sonnet-4-6": 0.71 } });
+  assert.equal(month.notConfigured, undefined);
+  assert.equal(month.errors, undefined);
+
+  const last = await q.claude("last");
+  assert.deepEqual([last.month, last.subscriptionUsd, last.enteredAt, last.listValue, last.messages], ["2026-09", 100, "2026-09-05T12:00:00Z", 2717.73, 27034]);
+  assert.deepEqual(last.byModel.map((m) => m.model), ["claude-opus-5-5", "claude-opus-4-7", "claude-sonnet-5-5"]);
+  assert.equal(last.days.length, 60, "the days ignore the range");
+
+  const ninety = await q.claude("90");
+  assert.deepEqual([ninety.month, ninety.subscriptionUsd, ninety.listValue, ninety.messages], ["2026-10", 200, 13468.77, 92338], "the value over the three months; the fee the current month's");
+  assert.deepEqual(ninety.byModel.map((m) => [m.model, m.usd, m.messages]), [["claude-fable-5-1", 6711.24, 27877], ["claude-opus-5-5", 5524.31, 49986], ["claude-opus-4-7", 1197.44, 9460], ["claude-sonnet-4-6", 25.46, 640], ["claude-sonnet-5-5", 9.54, 3375], ["claude-haiku-5-5", 0.78, 1000]], "summed over the months, largest first");
+  assert.equal((await q.claude("13m")).listValue, 13468.77);
+});
+
+test("Claude Code: a fee with no sync is the spend alone and an error asking for one; no fee is not configured, the usage still shown by its own query; a $0 entry", async () => {
+  const noSync = make(await seeded(fakes(), { claude: true, sync: false }));
+  const s = await noSync.summary("month");
+  assert.deepEqual(s.providers[5], { provider: "claude", label: "Claude Code", mtd: 200, forecast: 200, lastMonth: 100, lastDay: null, listValue: null, messages: null });
+  assert.equal(s.total.mtd, 438.71, "the fee counts");
+  assert.deepEqual(s.errors, { claude: CLAUDE_NO_SYNC });
+  assert.equal(s.notConfigured, undefined);
+  assert.deepEqual(await noSync.claude("month"), { month: "2026-10", subscriptionUsd: 200, enteredAt: "2026-10-27T03:20:00Z", listValue: null, messages: null, lastDay: null, syncedAt: null, files: null, byModel: null, days: null, errors: { claude: CLAUDE_NO_SYNC } });
+  assert.deepEqual((await noSync.activity("month")).items[7], { key: "claudeCode", label: "Claude Code", quantity: null, unit: "messages", cost: 200, unitPrice: null, per: "", listValue: null });
+  assert.deepEqual((await noSync.sources()).sources[5].configured, true);
+  assert.deepEqual((await noSync.sources()).sources[5].snapshotAt, null);
+  assert.deepEqual((await noSync.kpis()).health, { status: "warning", note: "A source failed: claude" });
+
+  // No entry: the provider is not configured, but the transcripts' value is there for the card that asks for the fee.
+  const deps = await seeded(fakes());
+  await deps.store.writeSnapshot("2026-10-28", { finance: { ...(await deps.store.latestSnapshot()).finance, claude: CLAUDE } });
+  const noFee = make(deps);
+  const c = await noFee.claude("month");
+  assert.deepEqual([c.subscriptionUsd, c.enteredAt, c.listValue, c.messages, c.byModel.length, c.days.length, c.notConfigured, c.errors], [null, null, 10450.68, 62534, 5, 60, NO_CLAUDE, undefined]);
+  assert.deepEqual((await noFee.summary("month")).providers[5].mtd, null);
+  assert.deepEqual((await noFee.summary("month")).notConfigured, NO_CLAUDE);
+  assert.equal((await noFee.sources()).sources[5].configured, false, "the fee configures it, not the sync");
+  assert.equal((await noFee.sources()).sources[5].snapshotAt, "2026-10-28T03:16:05Z");
+
+  // A month before the first entry: the fee is null and nothing is wrong.
+  const early = make(await seeded(fakes(), { claude: true }));
+  await early.manual("claude-subscription", 0);
+  const zero = await early.summary("month");
+  assert.deepEqual([zero.providers[5].mtd, zero.providers[5].lastMonth, zero.total.mtd], [0, 100, 238.71], "cancelled this month: $0 from October on, September's $100 kept");
+  const fresh = fakes();
+  await fresh.store.appendManual("claude-subscription", { at: "2026-10-27T03:20:00Z", value: 200 });
+  await seeded(fresh, { claude: false });
+  const l = await make(fresh).claude("last");
+  assert.deepEqual([l.subscriptionUsd, l.enteredAt, l.notConfigured, l.errors], [null, null, undefined, { claude: CLAUDE_NO_SYNC }], "September predates the entry");
+});
+
+test("Claude Code: the manual query appends the fee and answers the entry; snapshotPart carries the Mac's part over and counts the fee in the day's KPIs", async () => {
+  const deps = await seeded(fakes());
+  const q = make(deps);
+  assert.deepEqual(await q.manual("claude-subscription", 200), { key: "claude-subscription", value: 200, at: "2026-10-28T23:10:00.000Z" });
+  assert.deepEqual(await deps.store.getManual("claude-subscription"), [{ at: "2026-10-28T23:10:00.000Z", value: 200 }]);
+  assert.equal((await q.summary("month")).providers[5].mtd, 200, "applies to this month at once");
+  assert.equal((await q.summary("month")).providers[5].lastMonth, 0);
+
+  const job = fakes();
+  await seeded(job, { date: "2026-10-27", modal: null, claude: true, sync: false });
+  // The Mac's sync and Modal's job both wrote into today's document before the snapshot runs.
+  await job.store.writeSnapshot("2026-10-28", { finance: { modal: MODAL, claude: CLAUDE } });
+  const part = await make(job).snapshotPart();
+  assert.deepEqual(part.finance.claude, CLAUDE, "carried over, like Modal's part");
+  assert.deepEqual(part.finance.modal, MODAL);
+  assert.deepEqual(part.finance.kpi, { monthToDate: 438.71, idleRunRate: 10.62, last30: 432.75, forecast: 463.49 }, "the fee in the day's values");
+  assert.equal(part.finance.errors, undefined);
+  assert.equal(part.finance.notConfigured, undefined);
+  const noPart = await make(await seeded(fakes(), { date: "2026-10-27", claude: true, sync: false })).snapshotPart();
+  assert.equal(noPart.finance.claude, undefined, "nothing to carry");
+  assert.equal(noPart.finance.kpi.monthToDate, 388.65, "238.71 less Modal's 50.06 (no Modal part today) plus the $200 fee: the fee counts without a sync");
+  assert.equal(noPart.finance.errors, undefined, "a missing sync is not the job's failure");
 });

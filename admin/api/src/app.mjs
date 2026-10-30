@@ -12,7 +12,8 @@
  *   GET  /arkos/admin/kpis             Arkos IDE's index card
  *   GET  /arkos/admin/query/<name>?days=N[&who=users|me|all]   one of Arkos's four queries
  *   GET  /finance/admin/kpis           the finance page's index card
- *   GET  /finance/admin/query/<name>?range=month|last|90|13m   one of the eight finance queries
+ *   GET  /finance/admin/query/<name>?range=month|last|90|13m   one of the nine finance queries
+ *   POST /finance/admin/manual/<key>   { value } appended to a finance series (claude-subscription)
  *
  * Arkos IDE is served under the prefix `/arkos`, and the finance page under
  * `/finance`, so that each one's `api` in apps.json is `<service>/<prefix>`
@@ -32,7 +33,7 @@ import { answer, fail, failureOf, readBody, parseDays, parseTz, isAllowedOrigin,
 import { clientIpOf } from "./limiter.mjs";
 import { isQueryName, isManualKey } from "./queries.mjs";
 import { isArkosQueryName, parseWho } from "./arkos-queries.mjs";
-import { isFinanceQueryName, parseRange } from "./finance-queries.mjs";
+import { isFinanceQueryName, isFinanceManualKey, parseRange } from "./finance-queries.mjs";
 
 const MAX_BODY_BYTES = 1024;
 
@@ -149,7 +150,7 @@ export function createApp({ config, queries, arkos = null, finance = null, limit
     return fail(res, 404, "not found", cors);
   }
 
-  /** The finance page's two routes, `path` with the prefix taken off: the index card and the eight queries, each taking `range`. */
+  /** The finance page's three routes, `path` with the prefix taken off: the index card, the nine queries (each taking `range`) and the manual series. */
   async function routeFinance(req, res, path, search, cors) {
     if (path === "/admin/kpis") {
       if (req.method !== "GET") return fail(res, 405, "method not allowed", { ...cors, allow: "GET, OPTIONS" });
@@ -163,6 +164,15 @@ export function createApp({ config, queries, arkos = null, finance = null, limit
       const range = parseRange(search.get("range"));
       if (range === null) return fail(res, 400, "range must be month, last, 90 or 13m", cors);
       return answer(res, 200, await finance[query[1]](range), cors);
+    }
+
+    const manual = /^\/admin\/manual\/([a-z-]+)$/.exec(path);
+    if (manual !== null) {
+      if (!isFinanceManualKey(manual[1])) return fail(res, 404, "no such manual series", cors);
+      if (req.method !== "POST") return fail(res, 405, "method not allowed", { ...cors, allow: "POST, OPTIONS" });
+      const value = parseManualValue(await readBody(req, MAX_BODY_BYTES));
+      if (value === null) return fail(res, 400, "body must be JSON { value: number } with a finite, non-negative value", cors);
+      return answer(res, 200, await finance.manual(manual[1], value), cors);
     }
 
     return fail(res, 404, "not found", cors);

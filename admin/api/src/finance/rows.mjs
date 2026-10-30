@@ -3,10 +3,10 @@
  *
  *   { provider, day | month, service, line, where, category, amount, quantity, unit, gross }
  *
- * `provider` is `aws`, `gcp`, `github`, `modal` or `fal`; `day` (YYYY-MM-DD, the provider's UTC
- * billing day) on a daily row and `month` (YYYY-MM) on a monthly one; `line` is the usage type,
- * SKU, GitHub SKU, Modal app or fal's one line; `where` the AWS region, the GCP project id, the
- * Modal app or null; `amount` US dollars net of credits; `quantity` in `unit`; `gross` what GitHub
+ * `provider` is `aws`, `gcp`, `github`, `modal`, `fal` or `claude`; `day` (YYYY-MM-DD, the
+ * provider's UTC billing day) on a daily row and `month` (YYYY-MM) on a monthly one; `line` is the
+ * usage type, SKU, GitHub SKU, Modal app, fal's one line or the claude.ai subscription; `where` the
+ * AWS region, the GCP project id, the Modal app, `subscription` or null; `amount` US dollars net of credits; `quantity` in `unit`; `gross` what GitHub
  * would have charged on private repositories, or a Modal app's usage before the plan's included
  * credits (null elsewhere); `repo` the GitHub repository (null elsewhere). Amounts are kept
  * unrounded here and rounded to cents where the answer is shaped.
@@ -14,14 +14,15 @@
  * The sources: Cost Explorer rows from the daily snapshot (`collectors/aws-cost.mjs`), the GCP
  * export's rows from BigQuery (`collectors/gcp-billing.mjs`), GitHub's usage items from the
  * snapshot (`collectors/github-billing.mjs`), Modal's billing report from the snapshot (written by
- * the Python job in `admin/finance-modal/`), and fal's credit balance read once a day into the
- * snapshot (`collectors/fal.mjs`, the series derived in `fal.mjs` here).
+ * the Python job in `admin/finance-modal/`), fal's credit balance read once a day into the
+ * snapshot (`collectors/fal.mjs`, the series derived in `fal.mjs` here), and Claude Code's
+ * subscription fee from the hand-entered series (`claude.mjs` here, which makes its rows).
  */
 
 import { categorize } from "./categories.mjs";
 
-export const PROVIDERS = ["aws", "gcp", "github", "modal", "fal"];
-export const PROVIDER_LABELS = { aws: "AWS", gcp: "Google Cloud", github: "GitHub", modal: "Modal", fal: "fal" };
+export const PROVIDERS = ["aws", "gcp", "github", "modal", "fal", "claude"];
+export const PROVIDER_LABELS = { aws: "AWS", gcp: "Google Cloud", github: "GitHub", modal: "Modal", fal: "fal", claude: "Claude Code" };
 
 /** Dollars to cents, as a number; -0 and NaN read as 0. */
 export function cents(x) {

@@ -10,12 +10,15 @@ import { financeHealth, CRITICAL_DAY_USD } from "../src/finance/kpis.mjs";
 import { falSeries } from "../src/finance/fal.mjs";
 import { PROJECTS, PROJECT_KEYS, projectOf, projectsTable } from "../src/finance/projects.mjs";
 import { filmLabel, providerOf, filmOf, filmsOf, DEFAULT_CAP_USD } from "../src/finance/films.mjs";
+import { CLAUDE_SUBSCRIPTION_KEY, CLAUDE_LINE, subscriptionSeries, subscriptionFor, claudeRows, claudeUsage, usageForMonths, usageDays } from "../src/finance/claude.mjs";
 
 /* ---- categories ---- */
 
-test("the eleven categories, in the contract's order, each idle, activity or fixed", () => {
-  assert.deepEqual(CATEGORY_KEYS, ["compute", "serverless", "hosting", "loadBalancing", "storage", "ai", "dns", "domains", "ci", "tax", "other"]);
-  assert.deepEqual(CATEGORIES.map((c) => c.kind), ["activity", "activity", "activity", "idle", "idle", "activity", "idle", "fixed", "activity", "activity", "activity"]);
+test("the twelve categories, in the contract's order, each idle, activity or fixed; Claude Code fixed, after the domains", () => {
+  assert.deepEqual(CATEGORY_KEYS, ["compute", "serverless", "hosting", "loadBalancing", "storage", "ai", "dns", "domains", "claudeCode", "ci", "tax", "other"]);
+  assert.deepEqual(CATEGORIES.map((c) => c.kind), ["activity", "activity", "activity", "idle", "idle", "activity", "idle", "fixed", "fixed", "activity", "activity", "activity"]);
+  assert.equal(CATEGORIES.find((c) => c.key === "claudeCode").label, "Claude Code");
+  assert.equal(categorize({ provider: "claude", service: "Claude Code", line: CLAUDE_LINE }), "other", "no rule: claude.mjs writes the category itself");
   assert.ok(CATEGORIES.every((c) => typeof c.label === "string" && c.label.length > 0));
   assert.equal(kindOf("storage"), "idle");
   assert.equal(kindOf("nope"), "activity", "an unknown key reads as other");
@@ -88,9 +91,9 @@ test("an AWS usage type's region: its prefix, global for Route 53 and tax, us-ea
   assert.equal(awsRegionOf("EBS:VolumeUsage.gp3", "EC2 - Other"), "us-east-1");
 });
 
-test("the five providers in the contract's order with their labels", () => {
-  assert.deepEqual(PROVIDERS, ["aws", "gcp", "github", "modal", "fal"]);
-  assert.deepEqual(PROVIDERS.map((p) => PROVIDER_LABELS[p]), ["AWS", "Google Cloud", "GitHub", "Modal", "fal"]);
+test("the six providers in the contract's order with their labels", () => {
+  assert.deepEqual(PROVIDERS, ["aws", "gcp", "github", "modal", "fal", "claude"]);
+  assert.deepEqual(PROVIDERS.map((p) => PROVIDER_LABELS[p]), ["AWS", "Google Cloud", "GitHub", "Modal", "fal", "Claude Code"]);
 });
 
 test("the sources become one row shape; GitHub's amount is the net and keeps the gross and the repository", () => {
@@ -146,14 +149,14 @@ test("categoriesTable: every category present and aligned, zeros never null, oth
   ];
   const t = categoriesTable(rows, ["2026-08", "2026-09", "2026-10"]);
   assert.deepEqual(t.months, ["2026-08", "2026-09", "2026-10"]);
-  assert.equal(t.categories.length, 11);
+  assert.equal(t.categories.length, 12);
   assert.deepEqual(t.categories.map((c) => c.key), CATEGORY_KEYS);
   assert.deepEqual(t.categories[0], { key: "compute", label: "Compute", kind: "activity", byMonth: [0, 7.7, 26.48] });
   assert.deepEqual(t.categories.find((c) => c.key === "ci").byMonth, [0, 0, 0], "net, not gross");
   assert.deepEqual(t.categories.find((c) => c.key === "other").byMonth, [0, 0.1, 0.3]);
   assert.deepEqual(t.partial, ["2026-08", "2026-09"]);
   assert.deepEqual(t.other, [{ provider: "gcp", line: "Log Storage cost", amount: 0.4 }], "a zero line is not listed; a month outside the range is not counted");
-  assert.deepEqual(monthTotals(rows, "2026-10"), { aws: 21.24, gcp: 5.54, github: 0, modal: 0, fal: 0 });
+  assert.deepEqual(monthTotals(rows, "2026-10"), { aws: 21.24, gcp: 5.54, github: 0, modal: 0, fal: 0, claude: 0 });
 });
 
 test("a run-rate forecast extrapolates the month to date over the days billed", () => {
@@ -218,9 +221,9 @@ test("median, the 60-day series, the median of the 14 days before, flags and the
   assert.equal(s.asOf, "2026-10-27");
   assert.equal(s.days.length, 60);
   assert.deepEqual([s.days[0].day, s.days.at(-1).day], ["2026-08-29", "2026-10-27"], "every day present, the empty ones at 0");
-  assert.deepEqual(s.days[0], { day: "2026-08-29", aws: 0, gcp: 0, github: null, modal: null, fal: null, total: 0, median14: null, flagged: false, top: null });
+  assert.deepEqual(s.days[0], { day: "2026-08-29", aws: 0, gcp: 0, github: null, modal: null, fal: null, claude: null, total: 0, median14: null, flagged: false, top: null });
   const d20 = s.days.find((d) => d.day === day(20));
-  assert.deepEqual(d20, { day: "2026-10-20", aws: 4.6, gcp: 25, github: null, modal: null, fal: null, total: 29.6, median14: 1, flagged: true, top: { provider: "gcp", line: "Veo 3 Fast 720p Audio Video Generation", amount: 24.4 } });
+  assert.deepEqual(d20, { day: "2026-10-20", aws: 4.6, gcp: 25, github: null, modal: null, fal: null, claude: null, total: 29.6, median14: 1, flagged: true, top: { provider: "gcp", line: "Veo 3 Fast 720p Audio Video Generation", amount: 24.4 } });
   const d3 = s.days.find((d) => d.day === day(3));
   assert.equal(d3.median14, 0, "the fourteen days before are mostly the empty days of the window's start");
   assert.equal(d3.flagged, true, "$3.50 against a zero median, over the $1 floor");
@@ -235,7 +238,7 @@ test("median, the 60-day series, the median of the 14 days before, flags and the
 
 /* ---- activity ---- */
 
-test("unit conversions and the five items in order, with nulls for a source that is off", () => {
+test("unit conversions and the eight items in order, with nulls for a source that is off", () => {
   assert.equal(toGiB(2 ** 30, "byte"), 1);
   assert.equal(toGiB(3, "gibibyte"), 3);
   assert.equal(toHours(7200, "second"), 2);
@@ -258,8 +261,11 @@ test("unit conversions and the five items in order, with nulls for a source that
     ...modalRows({ credits: 30, monthly: [{ month: "2026-10", app: "cinema-spike", cost: 67.28 }, { month: "2026-10", app: "dayhike-record", cost: 6.64 }, { month: "2026-10", app: "dayhike-gate", cost: 6.08 }], rows: [] }),
     ...falRows([{ day: "2026-10-12", spend: 9.8, purchase: 0 }, { day: "2026-10-13", spend: 3.1, purchase: 0 }, { day: "2026-10-09", spend: 0, purchase: 100 }], "monthly"),
   );
-  const items = activityItems(rows);
-  assert.deepEqual(items.map((i) => i.key), ["rigHours", "egressGiB", "cloudRunCpuHours", "ciMinutes", "aiGenerations", "modalGpu", "falGenerations"]);
+  rows.push(...claudeRows([{ at: "2026-10-03T00:00:00Z", value: 200 }], "monthly", { today: "2026-10-28" }));
+  const items = activityItems(rows, { claudeUsage: { messages: 62534, listValue: 10450.68 } });
+  assert.deepEqual(items.map((i) => i.key), ["rigHours", "egressGiB", "cloudRunCpuHours", "ciMinutes", "aiGenerations", "modalGpu", "falGenerations", "claudeCode"]);
+  assert.deepEqual(items[7], { key: "claudeCode", label: "Claude Code", quantity: 62534, unit: "messages", cost: 200, unitPrice: null, per: "", listValue: 10450.68 }, "the subscription as the cost, the transcripts' messages and list value beside it");
+  assert.deepEqual(activityItems(rows)[7], { key: "claudeCode", label: "Claude Code", quantity: null, unit: "messages", cost: 200, unitPrice: null, per: "", listValue: null }, "the fee is entered but no sync has been read");
   assert.deepEqual(items[5], { key: "modalGpu", label: "Modal GPU", quantity: null, unit: "", cost: 80, unitPrice: null, per: "", apps: [{ app: "cinema-spike", cost: 67.28 }, { app: "dayhike-record", cost: 6.64 }, { app: "dayhike-gate", cost: 6.08 }] }, "the usage before the credits, apps largest first");
   assert.deepEqual(items[6], { key: "falGenerations", label: "fal generations", quantity: null, unit: "", cost: 12.9, unitPrice: null, per: "" }, "spend only, never the purchase");
   assert.deepEqual(items[0], { key: "rigHours", label: "Rig hours", quantity: 40.3, unit: "h", cost: 21.24, unitPrice: 0.527, per: "an hour" });
@@ -273,6 +279,7 @@ test("unit conversions and the five items in order, with nulls for a source that
   assert.equal(off[0].quantity, 40.3);
   assert.deepEqual(off[5], { key: "modalGpu", label: "Modal GPU", quantity: null, unit: "", cost: null, unitPrice: null, per: "", apps: null });
   assert.deepEqual(off[6], { key: "falGenerations", label: "fal generations", quantity: null, unit: "", cost: null, unitPrice: null, per: "" });
+  assert.deepEqual(off[7], { key: "claudeCode", label: "Claude Code", quantity: null, unit: "messages", cost: null, unitPrice: null, per: "", listValue: null });
   const none = activityItems([], { configured: ["aws", "gcp", "github"] });
   assert.deepEqual([none[0].quantity, none[0].cost, none[0].unitPrice], [0, 0, null], "a quantity of 0 is a measurement; the unit price is unknown");
 });
@@ -446,4 +453,89 @@ test("films: the labels, the provider rule, a film's shape and the list largest 
   assert.equal(all.asOf, "2026-10-28T20:32:39Z", "the newest file's time");
   assert.deepEqual(all.films.map((f) => [f.key, f.total]), [["last-trail", 18.49], ["rowan-speech", 0.42], ["empty", 0]]);
   assert.deepEqual(filmsOf([]), { asOf: null, films: [] });
+});
+
+/* ---- Claude Code ---- */
+
+test("the subscription series: sorted, bad entries dropped; a month takes the latest entry at or before its end", () => {
+  assert.equal(CLAUDE_SUBSCRIPTION_KEY, "claude-subscription");
+  const series = subscriptionSeries([{ at: "2026-10-27T03:20:00Z", value: 200 }, { at: "2026-09-05T12:00:00Z", value: 100 }, { at: "2026-09-06T00:00:00Z", value: "x" }, null, { at: "2026-09-07T00:00:00Z", value: -1 }]);
+  assert.deepEqual(series, [{ at: "2026-09-05T12:00:00Z", value: 100 }, { at: "2026-10-27T03:20:00Z", value: 200 }]);
+  assert.equal(subscriptionFor(series, "2026-08"), null, "before the first entry");
+  assert.deepEqual(subscriptionFor(series, "2026-09"), { at: "2026-09-05T12:00:00Z", value: 100 }, "entered on the 5th, it applies to the whole month");
+  assert.deepEqual(subscriptionFor(series, "2026-10"), { at: "2026-10-27T03:20:00Z", value: 200 }, "the plan change applies from its month");
+  assert.deepEqual(subscriptionFor(series, "2027-03"), { at: "2026-10-27T03:20:00Z", value: 200 }, "and on");
+  assert.deepEqual(subscriptionSeries(null), []);
+  assert.equal(subscriptionFor([], "2026-10"), null);
+});
+
+test("the fee as rows: one a month for 13 months from the first entry, category claudeCode and project other; a day is fee / daysInMonth and a month's days sum to the fee", () => {
+  const series = subscriptionSeries([{ at: "2026-09-05T12:00:00Z", value: 100 }, { at: "2026-10-27T03:20:00Z", value: 200 }]);
+  const monthly = claudeRows(series, "monthly", { today: "2026-10-28" });
+  assert.deepEqual(monthly.map((r) => [r.month, r.amount]), [["2026-09", 100], ["2026-10", 200]], "August has no entry, so no line");
+  assert.deepEqual(monthly[1], { provider: "claude", month: "2026-10", service: "Claude Code", line: CLAUDE_LINE, where: "subscription", category: "claudeCode", amount: 200, quantity: 0, unit: null, gross: null, repo: null });
+  assert.equal(projectOf(monthly[1]), "other");
+  assert.equal(kindOf(monthly[1].category), "fixed", "idle logic ignores it");
+  const daily = claudeRows(series, "daily", { today: "2026-10-28" });
+  assert.deepEqual([daily[0].day, daily.at(-1).day], ["2026-09-01", "2026-10-28"], "from the first of the previous month (earlier than 60 days back here) through today");
+  assert.ok(daily.every((r) => r.category === "claudeCode" && r.where === "subscription"));
+  const sep = daily.filter((r) => r.day.startsWith("2026-09"));
+  assert.equal(sep.length, 30);
+  assert.ok(Math.abs(sep[0].amount - 100 / 30) < 1e-9);
+  assert.equal(cents(sep.reduce((n, r) => n + r.amount, 0)), 100, "September's days sum to September's fee");
+  const oct = daily.filter((r) => r.day.startsWith("2026-10"));
+  assert.equal(oct.length, 28);
+  assert.ok(Math.abs(oct[0].amount - 200 / 31) < 1e-9, "spread over the 31 days of the month, not the 28 so far");
+  assert.equal(cents(oct.reduce((n, r) => n + r.amount, 0)), cents((200 / 31) * 28));
+  const late = claudeRows(subscriptionSeries([{ at: "2026-10-27T03:20:00Z", value: 200 }]), "daily", { today: "2026-10-28" });
+  assert.deepEqual([late[0].day, late.length], ["2026-10-01", 28], "entered on the 27th, the month's earlier days are paid for too");
+  assert.deepEqual(claudeRows([], "daily", { today: "2026-10-28" }), []);
+  assert.deepEqual(claudeRows(undefined, "monthly", { today: "2026-10-28" }), []);
+  const thirteen = claudeRows(subscriptionSeries([{ at: "2024-01-01T00:00:00Z", value: 20 }]), "monthly", { today: "2026-10-28" });
+  assert.equal(thirteen.length, 13);
+  assert.deepEqual([thirteen[0].month, thirteen.at(-1).month], ["2025-10", "2026-10"]);
+  const table = categoriesTable(monthly, ["2026-08", "2026-09", "2026-10"]);
+  assert.deepEqual(table.categories.find((c) => c.key === "claudeCode").byMonth, [0, 100, 200]);
+  assert.deepEqual(table.other, [], "it is its own category, not an unmapped line");
+  assert.equal(monthTotals(monthly, "2026-10").claude, 200);
+  const series60 = dailySeries(daily, { today: "2026-10-28", configured: ["claude"] });
+  assert.deepEqual([series60.asOf, series60.days.at(-1).claude, series60.days.at(-1).total], ["2026-10-28", 6.45, 6.45]);
+  assert.equal(idleLines(daily, { today: "2026-10-28" }).lines.length, 0, "a fixed line is never idle");
+});
+
+test("the usage part: checked, summed by model over months (largest first) and laid out by day with 0s where none", () => {
+  assert.equal(claudeUsage(null), null);
+  assert.equal(claudeUsage({ at: "x", rows: [] }), null, "no monthly rows is no part");
+  const part = {
+    at: "2026-10-28T03:16:05Z", lastDay: "2026-10-28", files: 3, pricing: "list",
+    rows: [
+      { day: "2026-10-27", model: "claude-fable-5-1", input: 10, cacheWrite: 20, cacheRead: 30, output: 40, messages: 5, usd: 1.5 },
+      { day: "2026-10-27", model: "claude-opus-5-5", input: 1, cacheWrite: 2, cacheRead: 3, output: 4, messages: 2, usd: 0.25 },
+      { day: "2026-10-28", model: "claude-fable-5-1", input: 10, cacheWrite: 20, cacheRead: 30, output: 40, messages: 3, usd: 2 },
+      { day: "2026-08-31", model: "claude-fable-5-1", input: 1, cacheWrite: 1, cacheRead: 1, output: 1, messages: 1, usd: 9 },
+    ],
+    monthly: [
+      { month: "2026-09", model: "claude-fable-5-1", input: 100, cacheWrite: 200, cacheRead: 300, output: 400, messages: 50, usd: 12 },
+      { month: "2026-10", model: "claude-fable-5-1", input: 20, cacheWrite: 40, cacheRead: 60, output: 80, messages: 8, usd: 3.5 },
+      { month: "2026-10", model: "claude-opus-5-5", input: 1, cacheWrite: 2, cacheRead: 3, output: 4, messages: 2, usd: 0.25 },
+    ],
+  };
+  const usage = claudeUsage(part);
+  assert.deepEqual([usage.at, usage.lastDay, usage.files, usage.pricing, usage.rows.length, usage.monthly.length], ["2026-10-28T03:16:05Z", "2026-10-28", 3, "list", 4, 3]);
+  const oct = usageForMonths(usage, ["2026-10"]);
+  assert.deepEqual(oct, { listValue: 3.75, messages: 10, byModel: [
+    { model: "claude-fable-5-1", input: 20, cacheWrite: 40, cacheRead: 60, output: 80, messages: 8, usd: 3.5 },
+    { model: "claude-opus-5-5", input: 1, cacheWrite: 2, cacheRead: 3, output: 4, messages: 2, usd: 0.25 },
+  ] });
+  const ninety = usageForMonths(usage, ["2026-08", "2026-09", "2026-10"]);
+  assert.deepEqual([ninety.listValue, ninety.messages], [15.75, 60]);
+  assert.deepEqual(ninety.byModel[0], { model: "claude-fable-5-1", input: 120, cacheWrite: 240, cacheRead: 360, output: 480, messages: 58, usd: 15.5 }, "summed over the range");
+  assert.deepEqual(usageForMonths(usage, ["2026-07"]), { listValue: 0, messages: 0, byModel: [] });
+  const days = usageDays(usage, { today: "2026-10-28" });
+  assert.equal(days.length, 60);
+  assert.deepEqual([days[0].day, days.at(-1).day], ["2026-08-30", "2026-10-28"], "ending on the part's last day; the 31 August row is outside");
+  assert.deepEqual(days.at(-2), { day: "2026-10-27", usd: 1.75, messages: 7, byModel: { "claude-fable-5-1": 1.5, "claude-opus-5-5": 0.25 } });
+  assert.deepEqual(days.at(-1), { day: "2026-10-28", usd: 2, messages: 3, byModel: { "claude-fable-5-1": 2 } });
+  assert.deepEqual(days[10], { day: "2026-09-09", usd: 0, messages: 0, byModel: {} }, "a day with no use is present at 0");
+  assert.equal(usageDays({ ...usage, lastDay: null }, { today: "2026-10-30" }).at(-1).day, "2026-10-30", "no last day: today");
 });

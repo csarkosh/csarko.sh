@@ -9,8 +9,9 @@
  * nothing matching is `other`, which the page lists so the table gets a row.
  *
  * Each category has a kind: `idle` bills while nothing runs (the number the page exists for),
- * `activity` bills because something ran, `fixed` is a yearly line shown amortised (the domain).
- * Tax follows the rest and is counted as activity.
+ * `activity` bills because something ran, `fixed` is a flat line (the domain's yearly renewal, the
+ * claude.ai subscription's monthly fee, which `claude.mjs` writes straight into `claudeCode`:
+ * no rule here). Tax follows the rest and is counted as activity.
  */
 
 export const CATEGORIES = [
@@ -22,6 +23,7 @@ export const CATEGORIES = [
   { key: "ai", label: "AI generation", kind: "activity" },
   { key: "dns", label: "DNS, keys and secrets", kind: "idle" },
   { key: "domains", label: "Domains", kind: "fixed" },
+  { key: "claudeCode", label: "Claude Code", kind: "fixed" },
   { key: "ci", label: "CI", kind: "activity" },
   { key: "tax", label: "Tax", kind: "activity" },
   { key: "other", label: "Other", kind: "activity" },

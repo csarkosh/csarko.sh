@@ -1,13 +1,15 @@
 /**
- * The finance page's routes under `/finance/admin/*`: the index card and the eight queries
- * (`admin/CONTRACT.md`, the Finance section), plus `snapshotPart()`, the step the daily snapshot
- * runs. Tested with fake collectors and the in-memory store, like queries.mjs.
+ * The finance page's routes under `/finance/admin/*`: the index card, the nine queries and the
+ * one manual series (`admin/CONTRACT.md`, the Finance section), plus `snapshotPart()`, the step
+ * the daily snapshot runs. Tested with fake collectors and the in-memory store, like queries.mjs.
  *
  * Who is read when. AWS Cost Explorer costs $0.01 a call, so only `snapshotPart()` calls it
  * (two calls a day, a third for the forecast until the 28th) and stores the rows under the day's
  * snapshot as `finance.aws`; GitHub's usage goes under `finance.github` and fal's credit balance
  * under `finance.fal` from the same job; Modal's billing report is written under `finance.modal`
- * by its own job (`admin/finance-modal/`, Python, since Modal has no REST billing endpoint).
+ * by its own job (`admin/finance-modal/`, Python, since Modal has no REST billing endpoint), and
+ * Claude Code's transcript usage under `finance.claude` by `tools/claude-usage-sync.py` on the Mac
+ * (the subscription fee itself, the spend, is the manual series `claude-subscription`).
  * Every query reads those from the latest snapshot, fal's spend from the run of snapshots (a
  * day's spend is the balance's fall, `finance/fal.mjs`), GCP live from BigQuery (free at this
  * size) and the film ledgers live from their bucket (cached five minutes). The snapshot also
@@ -15,8 +17,8 @@
  * trends read, as the csarko.sh card's do.
  *
  * The shaping is pure, in `src/finance/`: categories, rows, months (the range and the
- * categories table), idle, daily, activity, projects, films, fal (the series), kpis (health).
- * This file only fetches and assembles.
+ * categories table), idle, daily, activity, projects, films, fal (the series), claude (the fee's
+ * rows and the usage), kpis (health). This file only fetches and assembles.
  */
 
 import { parseRange, monthsOf, categoriesTable, monthTotals, monthGross, runRateForecast, GCP_EXPORT_FROM } from "./finance/months.mjs";
@@ -27,22 +29,31 @@ import { activityItems } from "./finance/activity.mjs";
 import { projectsTable } from "./finance/projects.mjs";
 import { filmsOf } from "./finance/films.mjs";
 import { falSeries } from "./finance/fal.mjs";
+import { CLAUDE_SUBSCRIPTION_KEY, subscriptionSeries, subscriptionFor, claudeRows, claudeUsage, usageForMonths, usageDays } from "./finance/claude.mjs";
 import { financeHealth } from "./finance/kpis.mjs";
 import { CALL_COST_USD } from "./collectors/aws-cost.mjs";
 import { weeklyTrend, TREND_WEEKS } from "./queries.mjs";
 import { addDays, isoDate } from "./time.mjs";
 
 export { parseRange };
-export const FINANCE_QUERY_NAMES = ["summary", "categories", "idle", "daily", "activity", "sources", "projects", "films"];
+export const FINANCE_QUERY_NAMES = ["summary", "categories", "idle", "daily", "activity", "sources", "projects", "films", "claude"];
+/** The hand-entered series the finance page writes (`POST /finance/admin/manual/<key>`): the claude.ai subscription's monthly fee. */
+export const FINANCE_MANUAL_KEYS = [CLAUDE_SUBSCRIPTION_KEY];
 export const FINANCE_APP = "finance";
-/** The environment variable that configures each source, for `notConfigured`. Modal's is the job's secret: the API reports it from the snapshot. */
-export const SOURCE_ENV = { aws: "AWS_COST_ROLE_ARN", gcp: "BILLING_DATASET", github: "GITHUB_TOKEN", modal: "MODAL_TOKEN_ID", fal: "FAL_ADMIN_KEY", ledgers: "FILM_LEDGERS_BUCKET" };
-export const SOURCE_LABELS = { aws: "AWS Cost Explorer", gcp: "Google Cloud billing export", github: "GitHub usage", modal: "Modal billing report", fal: "fal credit balance", ledgers: "Film ledgers" };
-/** The providers whose forecast is a real one (Cost Explorer's, GCP's run-rate); GitHub's net to date, Modal's net to date and fal's run-rate count only beside one of these. */
+/** What configures each source, for `notConfigured`: an environment variable, except Modal's (the job's secret: the API reports it from the snapshot) and Claude Code's (the manual series the fee is entered in). */
+export const SOURCE_ENV = { aws: "AWS_COST_ROLE_ARN", gcp: "BILLING_DATASET", github: "GITHUB_TOKEN", modal: "MODAL_TOKEN_ID", fal: "FAL_ADMIN_KEY", claude: CLAUDE_SUBSCRIPTION_KEY, ledgers: "FILM_LEDGERS_BUCKET" };
+export const SOURCE_LABELS = { aws: "AWS Cost Explorer", gcp: "Google Cloud billing export", github: "GitHub usage", modal: "Modal billing report", fal: "fal credit balance", claude: "Claude Code transcripts", ledgers: "Film ledgers" };
+/** The error when the subscription is entered but no snapshot carries the transcripts' usage. */
+export const CLAUDE_NO_SYNC = "No usage sync yet: run tools/claude-usage-sync.py";
+/** The providers whose forecast is a real one (Cost Explorer's, GCP's run-rate); GitHub's net to date, Modal's net to date, fal's run-rate and Claude Code's fee count only beside one of these. */
 const REAL_FORECASTS = ["aws", "gcp"];
 
 export function isFinanceQueryName(name) {
   return FINANCE_QUERY_NAMES.includes(name);
+}
+
+export function isFinanceManualKey(key) {
+  return FINANCE_MANUAL_KEYS.includes(key);
 }
 
 const quiet = { configured: false };
@@ -152,44 +163,71 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
   }
 
   /**
+   * Claude Code's part: `{ series, usage }`, the subscription series (the spend, `finance/claude.mjs`)
+   * and the usage part of the latest snapshot (the value), or null with `notConfigured` when no fee
+   * has been entered. An entry with no part yet is the fee alone, `usage` null with `errors.claude`
+   * asking for a sync.
+   */
+  function claudeFrom(h, snapshot, rawSeries) {
+    const series = subscriptionSeries(rawSeries);
+    if (series.length === 0) {
+      h.notConfigured.claude = SOURCE_ENV.claude;
+      return null;
+    }
+    const usage = claudeUsage(snapshot?.finance?.claude);
+    if (usage === null) h.errors.claude = CLAUDE_NO_SYNC;
+    return { series, usage };
+  }
+
+  /** The claude row's extras for `summary`: the month's list-price value and messages, null without a sync. */
+  const claudeValue = (claude, month) => {
+    const u = claude?.usage ? usageForMonths(claude.usage, [month]) : null;
+    return { listValue: u === null ? null : u.listValue, messages: u === null ? null : u.messages };
+  };
+
+  /**
    * Everything a query may need, loaded once: the latest snapshot, each source's data or null,
    * and the line rows (rows.mjs) by day and by month across the sources that answered.
    */
   async function load(h) {
     const today = isoDate(now());
-    const [snapshot, gcpData, snapshots] = await Promise.all([
+    const [snapshot, gcpData, snapshots, claudeSeries] = await Promise.all([
       store.latestSnapshot(),
       part(h, "gcp", gcpBilling.configured, gcpLive),
       fal.configured ? store.listSnapshots(falWindow(today), today) : [],
+      store.getManual(CLAUDE_SUBSCRIPTION_KEY),
     ]);
     const aws = fromSnapshot(h, snapshot, "aws", awsCost.configured);
     const github = fromSnapshot(h, snapshot, "github", githubBilling.configured);
     const modal = modalFromSnapshot(h, snapshot);
     const falData = falFromSnapshots(h, snapshots);
-    return assemble({ snapshot, aws, gcp: gcpData, github, modal, fal: falData });
+    const claude = claudeFrom(h, snapshot, claudeSeries);
+    return assemble({ snapshot, aws, gcp: gcpData, github, modal, fal: falData, claude, today });
   }
 
-  function assemble({ snapshot, aws, gcp, github, modal, fal: falData }) {
-    const data = { aws, gcp, github, modal, fal: falData };
+  function assemble({ snapshot, aws, gcp, github, modal, fal: falData, claude, today }) {
+    const data = { aws, gcp, github, modal, fal: falData, claude };
     return {
       snapshot,
       data,
       configured: PROVIDERS.filter((p) => data[p] !== null),
-      dailyRows: [...awsRows(aws?.daily), ...gcpRows(gcp?.daily), ...githubRows(github?.days), ...modalRows(modal, "daily"), ...falRows(falData?.days, "daily")],
-      monthlyRows: [...awsRows(aws?.monthly), ...gcpRows(gcp?.monthly), ...githubRows(github?.months), ...modalRows(modal, "monthly"), ...falRows(falData?.days, "monthly")],
+      dailyRows: [...awsRows(aws?.daily), ...gcpRows(gcp?.daily), ...githubRows(github?.days), ...modalRows(modal, "daily"), ...falRows(falData?.days, "daily"), ...claudeRows(claude?.series, "daily", { today })],
+      monthlyRows: [...awsRows(aws?.monthly), ...gcpRows(gcp?.monthly), ...githubRows(github?.months), ...modalRows(modal, "monthly"), ...falRows(falData?.days, "monthly"), ...claudeRows(claude?.series, "monthly", { today })],
       lastDays: {
         aws: aws === null ? null : aws.lastDay ?? lastBilledDay(awsRows(aws.daily)),
         gcp: gcp === null ? null : gcp.lastDay ?? null,
         github: github === null ? null : github.lastDay ?? null,
         modal: modal === null ? null : modal.lastDay ?? lastBilledDay(modalRows(modal, "daily").map((r) => ({ ...r, amount: r.gross }))),
         fal: falData === null ? null : falData.lastDay,
+        claude: claude === null ? null : claude.usage?.lastDay ?? null,
       },
     };
   }
 
   /**
    * Each provider's forecast for `month` (the current one), from what it offers: AWS's own,
-   * GCP's run-rate, GitHub's and Modal's net to date, fal's run-rate over the days it has a reading for.
+   * GCP's run-rate, GitHub's and Modal's net to date, fal's run-rate over the days it has a reading
+   * for, Claude Code's the month's fee (flat, so the month to date is the month).
    */
   function forecastsOf(loaded, month, mtd) {
     const { data, lastDays } = loaded;
@@ -202,6 +240,7 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
     if (data.github !== null) out.github = mtd.github;
     if (data.modal !== null) out.modal = mtd.modal;
     if (data.fal !== null) out.fal = runRateForecast(mtd.fal, month, lastDays.fal);
+    if (data.claude !== null) out.claude = mtd.claude;
     return out;
   }
 
@@ -266,6 +305,7 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
           ...(p === "github" ? { gross: on ? cents(monthGross(monthlyRows, month, "github")) : null } : {}),
           ...(p === "modal" ? { gross: on ? cents(monthGross(monthlyRows, month, "modal")) : null, credits: on ? data.modal.credits ?? null : null } : {}),
           ...(p === "fal" ? { balance: on ? data.fal.balance : null } : {}),
+          ...(p === "claude" ? claudeValue(on ? data.claude : null, month) : {}),
         };
       });
       // The totals sum the unrounded amounts, then round once, so they agree with the KPIs' to the cent.
@@ -317,9 +357,49 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
     async activity(range = "month") {
       const h = hints();
       const today = isoDate(now());
-      const { configured, monthlyRows } = await load(h);
-      const months = new Set(monthsOf(range, today));
-      return withHints({ items: activityItems(monthlyRows.filter((r) => months.has(r.month)), { configured }) }, h);
+      const { configured, monthlyRows, data } = await load(h);
+      const months = monthsOf(range, today);
+      const inRange = new Set(months);
+      const claude = data.claude?.usage ? usageForMonths(data.claude.usage, months) : null;
+      return withHints({ items: activityItems(monthlyRows.filter((r) => inRange.has(r.month)), { configured, claudeUsage: claude }) }, h);
+    },
+
+    /**
+     * Claude Code's own card: the month's fee and when it was entered, the range's list-price
+     * value and messages by model, and the last 60 days of use. Reads the snapshot and the series
+     * only, never GCP. The usage is shown even before a fee is entered, with the hint.
+     */
+    async claude(range = "month") {
+      const h = hints();
+      const today = isoDate(now());
+      const [snapshot, rawSeries] = await Promise.all([store.latestSnapshot(), store.getManual(CLAUDE_SUBSCRIPTION_KEY)]);
+      const months = monthsOf(range, today);
+      const month = months.at(-1);
+      const series = subscriptionSeries(rawSeries);
+      if (series.length === 0) h.notConfigured.claude = SOURCE_ENV.claude;
+      const sub = subscriptionFor(series, month);
+      const usage = claudeUsage(snapshot?.finance?.claude);
+      if (usage === null && series.length > 0) h.errors.claude = CLAUDE_NO_SYNC;
+      const u = usage === null ? null : usageForMonths(usage, months);
+      return withHints({
+        month,
+        subscriptionUsd: sub === null ? null : cents(sub.value),
+        enteredAt: sub === null ? null : sub.at,
+        listValue: u === null ? null : u.listValue,
+        messages: u === null ? null : u.messages,
+        lastDay: usage === null ? null : usage.lastDay,
+        syncedAt: usage === null ? null : usage.at,
+        files: usage === null ? null : usage.files,
+        byModel: u === null ? null : u.byModel,
+        days: usage === null ? null : usageDays(usage, { today }),
+      }, h);
+    },
+
+    /** Appends `{ at, value }` to a manual series (`claude-subscription`: the fee, so it applies from this month) and answers the entry. */
+    async manual(key, value) {
+      const at = new Date(now()).toISOString();
+      await store.appendManual(key, { at, value });
+      return { key, value, at };
     },
 
     async films() {
@@ -332,13 +412,14 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
     async sources() {
       const h = hints();
       const today = isoDate(now());
-      const [snapshot, monthSnapshots, gcpLastDay, gcpFirstDay, falSnapshots, ledgerList] = await Promise.all([
+      const [snapshot, monthSnapshots, gcpLastDay, gcpFirstDay, falSnapshots, ledgerList, claudeSeries] = await Promise.all([
         store.latestSnapshot(),
         store.listSnapshots(`${monthOf(today)}-01`, today),
         part(h, "gcp", gcpBilling.configured, () => gcpBilling.lastDay()),
         exportFirstDay(),
         fal.configured ? store.listSnapshots(falWindow(today), today) : [],
         ledgers.configured ? part(h, "ledgers", true, () => ledgers.list()) : null,
+        store.getManual(CLAUDE_SUBSCRIPTION_KEY),
       ]);
       const fin = snapshot?.finance ?? null;
       const snapshotAt = fin?.at ?? null;
@@ -347,6 +428,8 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
       const modal = fin?.modal ?? null;
       const modalOk = modal !== null && Array.isArray(modal.rows);
       const falData = fal.configured ? falSeries(falSnapshots) : null;
+      const claudeOn = subscriptionSeries(claudeSeries).length > 0;
+      const claudePart = claudeUsage(fin?.claude);
       const none = { callsThisMonth: null, callCostUsd: null };
       return withHints({
         sources: [
@@ -376,6 +459,11 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
             key: "fal", label: SOURCE_LABELS.fal, configured: fal.configured,
             lastDay: falData?.lastDay ?? null, snapshotAt: fin?.fal ? snapshotAt : null, ...none,
             note: "The balance once a day; a day's spend is its fall.",
+          },
+          {
+            key: "claude", label: SOURCE_LABELS.claude, configured: claudeOn,
+            lastDay: claudePart === null ? null : claudePart.lastDay, snapshotAt: claudePart === null ? null : claudePart.at, ...none,
+            note: "Local transcripts, synced by tools/claude-usage-sync.py on the Mac; priced at API list rates as the plan's value.",
           },
           {
             key: "ledgers", label: SOURCE_LABELS.ledgers, configured: ledgers.configured,
@@ -423,7 +511,8 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
      * Explorer rows (two or three calls), GitHub's usage, fal's balance, the day's four KPI values,
      * and the hints. A source that fails is null with its error; a failure here never fails the
      * snapshot. The store merges a snapshot at the top level, so `finance` is replaced whole: the
-     * Modal part its own job wrote into today's document earlier is carried over.
+     * Modal part its own job wrote into today's document earlier is carried over, and so is the
+     * Claude Code part the Mac's sync wrote.
      */
     async snapshotPart() {
       const h = hints();
@@ -453,22 +542,28 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
           if (forecast === null) h.errors.awsForecast = failures.join("; ");
         }
       }
-      const [github, gcp, falReading, latest, snapshots] = await Promise.all([
+      const [github, gcp, falReading, latest, snapshots, claudeSeries] = await Promise.all([
         part(h, "github", githubBilling.configured, () => githubBilling.usage()),
         part(h, "gcp", gcpBilling.configured, gcpLive),
         part(h, "fal", fal.configured, () => fal.balance()),
         store.latestSnapshot(),
         fal.configured ? store.listSnapshots(falWindow(today), addDays(today, -1)) : [],
+        store.getManual(CLAUDE_SUBSCRIPTION_KEY),
       ]);
       const falPart = falReading === null ? null : { at: new Date(t).toISOString(), balance: falReading.balance, currency: falReading.currency, lastDay: today };
-      // Today's document may already hold Modal's part (its job runs first); keep it, and read it for the KPIs.
+      // Today's document may already hold Modal's part (its job runs first) and Claude Code's (the Mac's sync); keep both, and read them for the KPIs.
       const todays = latest !== null && latest.date === today ? latest : null;
       const modalPart = todays?.finance?.modal ?? null;
+      // The usage sync runs on the Mac when Cyrus runs it, not daily, so a new day's document
+      // carries the newest part forward until the next sync (its `at` says how old it is).
+      const claudePart = todays?.finance?.claude ?? latest?.finance?.claude ?? null;
       const modalHints = hints();
       const modal = modalFromSnapshot(modalHints, todays);
       const falHints = hints();
       const falData = falPart === null ? null : falFromSnapshots(falHints, snapshots, { date: today, finance: { fal: falPart } });
-      const values = kpiValues(assemble({ snapshot: null, aws, gcp, github, modal, fal: falData }), today);
+      // The fee counts in the day's KPIs; a missing sync is not the job's failure, so its hints stay out of the snapshot.
+      const claude = claudeFrom(hints(), claudePart === null ? todays : { ...todays, finance: { ...(todays?.finance ?? {}), claude: claudePart } }, claudeSeries);
+      const values = kpiValues(assemble({ snapshot: null, aws, gcp, github, modal, fal: falData, claude, today }), today);
       const kpi = values === null
         ? { monthToDate: null, idleRunRate: null, last30: null, forecast: null }
         : { monthToDate: values.monthToDate.value, idleRunRate: values.idleRunRate.value, last30: values.last30.value, forecast: values.forecast.value };
@@ -479,6 +574,7 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
           github: github === null ? null : { months: github.months, days: github.days, lastDay: github.lastDay },
           fal: falPart,
           ...(modalPart !== null ? { modal: modalPart } : {}),
+          ...(claudePart !== null ? { claude: claudePart } : {}),
           awsCalls,
           kpi,
         }, h),

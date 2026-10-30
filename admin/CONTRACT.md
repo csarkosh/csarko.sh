@@ -490,18 +490,28 @@ image and commit so the offsets can be symbolicated (`atos`). `lost` is session 
 whose `end` is `lost` (crashes not reported, force quits included). `byVersion` joins
 crash reports and sessions by `ver`.
 
-## Finance: `GET <api>/finance/admin/kpis` and `/finance/admin/query/<name>?range=month|last|90|13m`
+## Finance: `GET <api>/finance/admin/kpis`, `/finance/admin/query/<name>?range=month|last|90|13m` and `POST /finance/admin/manual/<key>`
 
 The cloud spend page (`docs/superpowers/specs/2026-10-29-finance-admin-page-design.md`), served
-by `csarko-admin` under the prefix `/finance`, as Arkos's is under `/arkos`. Five sources: AWS
+by `csarko-admin` under the prefix `/finance`, as Arkos's is under `/arkos`. Six sources: AWS
 Cost Explorer (read once a day by the snapshot job, never on a request: each call costs $0.01),
 the GCP billing export in BigQuery (`csarko-sh.billing`, read live; Google backfilled it to
 2026-08-01), GitHub's usage endpoint (from the snapshot), **Modal** (the workspace billing
 report, per app per day, written into the snapshot by a daily Cloud Run job, since Modal has no
-REST billing endpoint), and **fal** (its prepaid credit balance read once a day from
+REST billing endpoint), **fal** (its prepaid credit balance read once a day from
 `/account/billing`, so a day's spend is the balance's fall and a rise is a credit purchase;
-fal's per-model report is enterprise-only). Beside the providers, the **film ledgers**: every
-paid call the film pipeline makes is priced and written to `<film>/ledger.json`
+fal's per-model report is enterprise-only), and **Claude Code** (Cyrus, 2026-10-30: "its own
+category"). Claude Code runs on a claude.ai subscription, a flat monthly fee the code cannot read,
+so the fee is entered on the page (`POST /finance/admin/manual/claude-subscription`) and **is the
+spend**: one line a month, category `claudeCode`, project `other`, `where` "subscription", spread
+evenly over the month's days in `daily` (`fee / daysInMonth`, so the stack and the tables agree);
+a month uses the latest entry at or before its end, so a plan change applies from its month, and
+the idle logic ignores it. Beside the fee, the **value**: `tools/claude-usage-sync.py`, run on the
+Mac after a day's sessions, sums the local transcripts' tokens per day and per model, prices them
+at the first-party API list price and writes `finance.claude` into the day's snapshot (no
+transcript text leaves the Mac); that `usd` is what the same tokens would cost as API calls, the
+plan's value, never a bill, and is shown as context (`listValue`). Beside the providers, the **film
+ledgers**: every paid call the film pipeline makes is priced and written to `<film>/ledger.json`
 (`~/Projects/film-generation`, on the external SSD), synced to the bucket `csarko-sh-film-ledgers`;
 they attribute cost per film and per model, and carry no dates.
 
@@ -511,19 +521,25 @@ own UTC billing day, which the page says. `range` is `month` (the current calend
 months); `daily`, `idle` and `films` ignore it. A part whose source is missing is `null` with
 `notConfigured: { "<part>": "<ENV NAME>" }` (`aws` → `AWS_COST_ROLE_ARN`, `gcp` → `BILLING_DATASET`,
 `github` → `GITHUB_TOKEN`, `modal` → `MODAL_TOKEN_ID` (the job's secret; the API reports it from
-the snapshot), `fal` → `FAL_ADMIN_KEY`, `ledgers` → `FILM_LEDGERS_BUCKET`); one that failed is `null`
-with `errors`. The `providers` keys, in this fixed order, are `aws`, `gcp`, `github`, `modal`, `fal`
-(labels AWS, Google Cloud, GitHub, Modal, fal). The categories and their fixed order are `compute`,
-`serverless`, `hosting`, `loadBalancing`, `storage`, `ai`, `dns`, `domains`, `ci`, `tax`, `other`
+the snapshot), `fal` → `FAL_ADMIN_KEY`, `claude` → `claude-subscription` (not an environment
+variable: the manual series the fee is entered in; no entry means not configured), `ledgers` →
+`FILM_LEDGERS_BUCKET`); one that failed is `null` with `errors` (for `claude`, a fee with no sync in
+the latest snapshot is `errors.claude = "No usage sync yet: run tools/claude-usage-sync.py"`, with
+the fee still counted). The `providers` keys, in this fixed order, are `aws`, `gcp`, `github`,
+`modal`, `fal`, `claude` (labels AWS, Google Cloud, GitHub, Modal, fal, Claude Code). The
+categories and their fixed order are `compute`, `serverless`, `hosting`, `loadBalancing`,
+`storage`, `ai`, `dns`, `domains`, `claudeCode`, `ci`, `tax`, `other`
 (`admin/api/src/finance/categories.mjs`; each is `idle`, `activity` or `fixed`): a Modal app is
-`compute` (its `where` the app name), fal is `ai`. **There is no spend goal** (Cyrus, 2026-10-30:
+`compute` (its `where` the app name), fal is `ai`, the Claude Code subscription is `claudeCode`
+(label "Claude Code", `fixed`). **There is no spend goal** (Cyrus, 2026-10-30:
 the films drive the cost on purpose); the idle run-rate is reported as a fact, not judged.
 
 Projects, the second axis (`projects` query): every line is also one of `films` (Vertex AI in
 `fps-csarko`, Modal apps named `cinema-*`, every fal line), `dayhike` (everything else in
 `fps-csarko`, every AWS line but the domains and the `csarko.sh` zone, Modal apps named
 `dayhike-*`, GitHub lines on `game-dayhike`), `site` (project `csarko-sh`, the `csarko.sh` domain
-and zone, GitHub lines on `csarko.sh`) or `other` (`admin/api/src/finance/projects.mjs`).
+and zone, GitHub lines on `csarko.sh`) or `other` (the Claude Code subscription, which serves
+every project; `admin/api/src/finance/projects.mjs`).
 
 ### `kpis`
 
@@ -543,7 +559,8 @@ median with no compute or AI line to explain it, `critical` when such a day is o
     { "provider": "gcp", "label": "Google Cloud", "mtd": 108.93, "forecast": 118.1, "lastMonth": 19.62, "lastDay": "2026-10-28" },
     { "provider": "github", "label": "GitHub", "mtd": 0, "forecast": 0, "lastMonth": 0, "lastDay": "2026-10-29", "gross": 73.48 },
     { "provider": "modal", "label": "Modal", "mtd": 49.94, "forecast": 49.94, "lastMonth": 43.49, "lastDay": "2026-10-24", "gross": 79.94, "credits": 30 },
-    { "provider": "fal", "label": "fal", "mtd": 53.63, "forecast": 55.2, "lastMonth": 0.72, "lastDay": "2026-10-29", "balance": 46.37 }
+    { "provider": "fal", "label": "fal", "mtd": 53.63, "forecast": 55.2, "lastMonth": 0.72, "lastDay": "2026-10-29", "balance": 46.37 },
+    { "provider": "claude", "label": "Claude Code", "mtd": 200, "forecast": 200, "lastMonth": 200, "lastDay": "2026-10-30", "listValue": 10450.68, "messages": 62534 }
   ]
 }
 ```
@@ -558,6 +575,11 @@ is the prepaid credit left, and a fal month's `mtd` is the balance's fall over t
 purchase is not spend). fal's `lastDay` is the day before the latest reading: the fall between
 two readings is the earlier day's spend. `forecast` for Modal is its net to date, for fal its
 run-rate over the days with a reading; like GitHub's, both count only beside AWS's or GCP's.
+Claude Code's `mtd`, `forecast` and `lastMonth` are the month's subscription fee (the fee the
+latest entry at or before each month's end names; `lastMonth` 0 for a month before the first
+entry), its `forecast` counting beside a real one like GitHub's; `lastDay` is the sync's last
+transcript day, `listValue` the month's usd summed over the sync's monthly rows and `messages`
+the month's messages, all three `null` when no sync has been read.
 
 ### `categories`
 
@@ -600,7 +622,7 @@ the last day it billed. `where` is the AWS region or the GCP project id.
 ```json
 {
   "days": [
-    { "day": "2026-10-26", "aws": 0.57, "gcp": 26.15, "github": 0, "modal": 12.4, "fal": 3.1, "total": 42.22, "median14": 1.1, "flagged": true,
+    { "day": "2026-10-26", "aws": 0.57, "gcp": 26.15, "github": 0, "modal": 12.4, "fal": 3.1, "claude": 6.45, "total": 48.67, "median14": 1.1, "flagged": true,
       "top": { "provider": "gcp", "line": "Veo 3 Fast 720p Audio Video Generation", "amount": 24.4 } }
   ]
 }
@@ -609,6 +631,9 @@ the last day it billed. `where` is the AWS region or the GCP project id.
 The last 60 days ending on the latest day any source has, every day present (0 where nothing
 billed, `null` for a provider not configured). `median14` is the median of the 14 days before;
 `flagged` when `total` is over three times it and over $1; `top` is the day's largest line.
+`claude` is the subscription spread over the month's days (`fee / daysInMonth`, 200 / 31 above),
+through today: the fee is paid for today, so with it configured the series ends today and the
+last day may hold the fee alone until the other sources report.
 
 ### `activity`
 
@@ -621,14 +646,18 @@ billed, `null` for a provider not configured). `median14` is the median of the 1
     { "key": "ciMinutes", "label": "CI minutes", "quantity": 9602, "unit": "min", "cost": 0, "gross": 73.48, "unitPrice": 0.006, "per": "a Linux minute if private" },
     { "key": "aiGenerations", "label": "AI generations", "quantity": 648, "unit": "", "cost": 64.8, "unitPrice": 0.1, "per": "a clip" },
     { "key": "modalGpu", "label": "Modal GPU", "quantity": null, "unit": "", "cost": 79.94, "unitPrice": null, "per": "" , "apps": [ { "app": "cinema-spike", "cost": 67.28 }, { "app": "dayhike-record", "cost": 6.64 } ] },
-    { "key": "falGenerations", "label": "fal generations", "quantity": null, "unit": "", "cost": 53.63, "unitPrice": null, "per": "" }
+    { "key": "falGenerations", "label": "fal generations", "quantity": null, "unit": "", "cost": 53.63, "unitPrice": null, "per": "" },
+    { "key": "claudeCode", "label": "Claude Code", "quantity": 62534, "unit": "messages", "cost": 200, "unitPrice": null, "per": "", "listValue": 10450.68 }
   ]
 }
 ```
 
-Seven items always, in this order, for the range (`modalGpu` carries its apps by cost,
+Eight items always, in this order, for the range (`modalGpu` carries its apps by cost,
 largest first, since Modal's report has no quantities; fal's balance has none either); `quantity` and `cost` are `null` when the
 source is not configured, `unitPrice` is `cost / quantity` (null when the quantity is 0).
+`claudeCode` is the subscription over the range's months as `cost`, the transcripts' messages as
+`quantity` and their list-price value as `listValue` (both `null` when no sync has been read;
+`unitPrice` always `null`, since the fee does not buy messages).
 
 ### `sources`
 
@@ -640,10 +669,15 @@ source is not configured, `unitPrice` is `cost / quantity` (null when the quanti
     { "key": "github", "label": "GitHub usage", "configured": true, "lastDay": "2026-10-29", "snapshotAt": "2026-10-30T10:00:00Z", "callsThisMonth": null, "callCostUsd": null, "note": "From the snapshot; public repositories bill $0." },
     { "key": "modal", "label": "Modal billing report", "configured": true, "lastDay": "2026-10-24", "snapshotAt": "2026-10-30T10:02:00Z", "callsThisMonth": null, "callCostUsd": null, "note": "The workspace report, per app per day, written by the daily job." },
     { "key": "fal", "label": "fal credit balance", "configured": true, "lastDay": "2026-10-29", "snapshotAt": "2026-10-30T10:00:00Z", "callsThisMonth": null, "callCostUsd": null, "note": "The balance once a day; a day's spend is its fall." },
+    { "key": "claude", "label": "Claude Code transcripts", "configured": true, "lastDay": "2026-10-30", "snapshotAt": "2026-10-30T03:16:05Z", "callsThisMonth": null, "callCostUsd": null, "note": "Local transcripts, synced by tools/claude-usage-sync.py on the Mac; priced at API list rates as the plan's value." },
     { "key": "ledgers", "label": "Film ledgers", "configured": true, "lastDay": null, "snapshotAt": "2026-10-29T21:40:00Z", "callsThisMonth": null, "callCostUsd": null, "note": "8 ledgers in the bucket; the time is the newest file's." }
   ]
 }
 ```
+
+Seven rows. `claude` is configured when a fee has been entered (the sync alone does not configure
+it); its `lastDay` is the sync's last transcript day and `snapshotAt` the sync's own time
+(`finance.claude.at`), both `null` until a sync has been read.
 
 ### `projects`
 
@@ -683,6 +717,38 @@ the ledger when it carries one, else the pipeline's default of 150. A ledger row
 a note naming `vertex` or a model naming Veo is `gcp`, a model naming Seedance, Nano Banana
 or ElevenLabs is `fal`, everything else ran on Modal. `null` with `notConfigured.ledgers` when
 the bucket is not set; an empty bucket is `films: []`.
+
+### `claude`
+
+```json
+{ "month": "2026-10", "subscriptionUsd": 200, "enteredAt": "2026-10-30T03:20:00Z",
+  "listValue": 10450.68, "messages": 62534, "lastDay": "2026-10-30", "syncedAt": "2026-10-30T03:16:05Z", "files": 1149,
+  "byModel": [ { "model": "claude-fable-5-1", "input": 671857, "cacheWrite": 144799003, "cacheRead": 10981299316, "output": 42893815, "messages": 27877, "usd": 6711.24 } ],
+  "days": [ { "day": "2026-10-29", "usd": 412.5, "messages": 2100, "byModel": { "claude-fable-5-1": 300.1, "claude-opus-5-5": 112.4 } } ] }
+```
+
+Claude Code's own card. `month` is the range's last month (the previous one for `range=last`);
+`subscriptionUsd` the fee that month uses (the latest entry at or before its end) and
+`enteredAt` that entry's time, both `null` for a month before the first entry, with
+`notConfigured.claude` when there is no entry at all. `byModel` is the sync's monthly rows for
+the range's months summed by model, largest `usd` first, and `listValue` and `messages` are
+their sums (so for `90` and `13m` they cover the range, where `summary`'s cover the month);
+`lastDay`, `syncedAt` (`finance.claude.at`) and `files` (transcript files read) are the sync's
+own. `days` is the last 60 days ending on `lastDay`, every day present (0 and `{}` where none),
+each day's `byModel` the models by `usd`, largest first; it ignores `range`. The usage is shown
+even before a fee is entered; without a sync in the latest snapshot, `listValue`, `messages`,
+`lastDay`, `syncedAt`, `files`, `byModel` and `days` are `null` (with `errors.claude` when a fee
+is entered). Reads the latest snapshot and the series only, never BigQuery.
+
+### `POST /finance/admin/manual/claude-subscription`
+
+Body `{ "value": <the plan's monthly fee in USD, a finite number, 0 or more> }`, the admin's
+ID token (never the scheduler's). Appends `{ at, value }` to the series `manual/claude-subscription`
+and answers the entry, `{ "key": "claude-subscription", "value": 200, "at": "2026-10-30T03:20:00Z" }`.
+The entry applies from its month on (`summary`, `categories`, `projects`, `daily`, `activity`
+and the KPIs change at once), so a plan change is entered in the month it takes effect and $0
+records a cancellation. 400 for any other body, 404 for any other key (`substack` is the
+csarko.sh page's, under `/admin/manual/`), 405 for a method other than POST.
 
 ## Auth: what `/auth.js` exports
 
