@@ -276,3 +276,7 @@ test("health: good under the goal, warning over it or on a flagged day, critical
   assert.equal(financeHealth({ idleRunRate: 1, goalUsd: 5, days: old, rows: [] }).status, "good", "only the last seven days count");
   assert.deepEqual(financeHealth({ idleRunRate: null, goalUsd: 5, days: quiet, rows: [] }), { status: "warning", note: "No idle run-rate yet" });
 });
+
+test("Secrets Manager's API requests land with its secrets, not in other (seen live 2026-10-30)", () => {
+  assert.equal(categorize({ provider: "aws", service: "AWS Secrets Manager", line: "USE1-AWSSecretsManagerAPIRequest" }), "dns");
+});

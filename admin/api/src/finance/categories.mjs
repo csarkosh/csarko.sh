@@ -55,7 +55,7 @@ const AWS_RULES = [
   [/Requests-Tier/, "storage"],
   [/^HostedZone$/, "dns"],
   [/KMS-Keys/, "dns"],
-  [/AWSSecretsManager-Secrets/, "dns"],
+  [/AWSSecretsManager/, "dns"],
   [/^DNS-Queries$/, "hosting"],
   [/PublicIPv4:InUseAddress/, "hosting"],
   [/PublicIPv4:IdleAddress/, "hosting"],

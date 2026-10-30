@@ -157,7 +157,9 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, store
     const prevToDate = dailyRows.reduce((n, r) => (r.day && monthOf(r.day) === prevMonth && r.day.slice(8, 10) <= dom ? n + r.amount : n), 0);
     const last30 = trailingTotals(series.days, 30);
     const forecasts = forecastsOf(loaded, month, mtd);
-    const known = Object.values(forecasts).filter((v) => v !== null);
+    // GitHub's "forecast" is its net to date, so it counts only beside a real one: alone it
+    // would read $0.00 on the days after the 28th, when Cost Explorer's is not asked for.
+    const known = forecasts.aws === null && forecasts.gcp === null ? [] : Object.values(forecasts).filter((v) => v !== null);
     return {
       monthToDate: { value: cents(sumConfigured(mtd)), prev: cents(prevToDate) },
       idleRunRate: { value: idleNow.runRate, prev: idleBefore.runRate },
@@ -196,7 +198,7 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, store
       });
       // The totals sum the unrounded amounts, then round once, so they agree with the KPIs' to the cent.
       const sum = (totals) => cents(configured.reduce((n, p) => n + (totals[p] ?? 0), 0));
-      const forecastKnown = providers.some((p) => p.forecast !== null);
+      const forecastKnown = providers.some((p) => p.provider !== "github" && p.forecast !== null);
       return withHints({
         at: new Date(now()).toISOString(),
         month,
