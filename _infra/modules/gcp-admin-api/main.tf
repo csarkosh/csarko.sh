@@ -76,6 +76,46 @@ resource "google_project_iam_member" "admin" {
   member  = "serviceAccount:${google_service_account.admin.email}"
 }
 
+# ---- the billing export (the Finance page) -------------------------------------------
+
+# Cloud Billing's standard usage cost export, which Google writes into this
+# dataset as the table gcp_billing_export_v1_<billing account id with
+# underscores> (BILLING_TABLE below). Design: docs/superpowers/specs/
+# 2026-10-29-finance-admin-page-design.md, section 6.
+#
+# Created by hand on 2026-10-29, because the export had to be switched on in the
+# console that day and wants its dataset first:
+#
+#   bq mk --dataset --location=US \
+#     --description "Cloud Billing standard usage cost export (enabled 2026-10-29)" \
+#     csarko-sh:billing
+#
+# then imported into this state (`terraform import
+# module.gcp_admin_api.google_bigquery_dataset.billing projects/csarko-sh/datasets/billing`)
+# rather than recreated. The export setting itself has no Terraform resource and
+# stays console-only (Billing > Billing export). The table is Google's: Terraform
+# never declares it, and the dataset refuses to take it along on a destroy.
+# The BigQuery API is enabled by gcp-visits, which waits on this whole module,
+# so this resource cannot depend on it; the dataset exists, so the API is on.
+resource "google_bigquery_dataset" "billing" {
+  project     = var.project_id
+  dataset_id  = "billing"
+  location    = "US"
+  description = "Cloud Billing standard usage cost export (enabled 2026-10-29)"
+
+  delete_contents_on_destroy = false
+}
+
+# Read-only on this one dataset. The project-wide roles/bigquery.jobUser the
+# queries also need is already granted in gcp-visits (its `reader` binding, for
+# the visits queries), so it is not repeated here: one binding, one owner.
+resource "google_bigquery_dataset_iam_member" "admin_reads_billing" {
+  project    = var.project_id
+  dataset_id = google_bigquery_dataset.billing.dataset_id
+  role       = "roles/bigquery.dataViewer"
+  member     = "serviceAccount:${google_service_account.admin.email}"
+}
+
 # The snapshot job's identity. It holds no role at all: the service is public
 # (allUsers may invoke it), so the OIDC token Scheduler signs with this account
 # is not for Cloud Run's IAM but for the handler, which accepts a snapshot
@@ -327,6 +367,40 @@ resource "google_cloud_run_v2_service" "admin" {
       env {
         name  = "GOOGLE_CLOUD_PROJECT"
         value = var.project_id
+      }
+
+      # The Finance page (spec 2026-10-29-finance-admin-page-design.md): where
+      # the billing export lands, and the AWS role the costs collector assumes.
+      # BILLING_TABLE is empty until billing_account_id is set, so the API can
+      # say the export is not configured instead of querying a table that is
+      # not there.
+      env {
+        name  = "BILLING_DATASET"
+        value = google_bigquery_dataset.billing.dataset_id
+      }
+      env {
+        name  = "BILLING_TABLE"
+        value = var.billing_account_id != "" ? "gcp_billing_export_v1_${replace(var.billing_account_id, "-", "_")}" : ""
+      }
+
+      # No AWS key anywhere: the service asks the metadata server for a Google
+      # ID token for its own service account with AWS_COST_AUDIENCE as the
+      # audience and trades it to STS (AssumeRoleWithWebIdentity) for an hour of
+      # the role, whose trust policy names exactly that audience and this
+      # account's unique id (modules/aws-costs).
+      env {
+        name  = "AWS_COST_ROLE_ARN"
+        value = var.aws_cost_role_arn
+      }
+      env {
+        name  = "AWS_COST_AUDIENCE"
+        value = var.aws_cost_audience
+      }
+
+      # The idle run-rate the page's summary measures against, whole US dollars a month.
+      env {
+        name  = "FINANCE_GOAL_USD"
+        value = tostring(var.finance_goal_usd)
       }
     }
   }

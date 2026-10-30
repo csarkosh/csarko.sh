@@ -172,10 +172,34 @@ module "gcp_admin_api" {
   billing_account_id = var.billing_account_id
   monthly_budget_usd = var.monthly_budget_usd
 
+  # The Finance page's AWS side (module aws_costs below). The two modules refer
+  # to each other, which is fine: Terraform's graph is per resource, and the
+  # service account the role trusts does not depend on the service that reads
+  # the role's ARN, so there is no cycle.
+  aws_cost_role_arn = module.aws_costs.role_arn
+  aws_cost_audience = module.aws_costs.audience
+  finance_goal_usd  = var.finance_goal_usd
+
   providers = {
     google         = google
     google.billing = google.billing
     google-beta    = google-beta
+  }
+}
+
+# The Finance page's AWS costs: one IAM role the admin API assumes with a Google
+# ID token for its own service account (no key, nothing stored), allowed two
+# Cost Explorer reads. The audience is an identifier under the admin site, not
+# a URL that serves anything; it is set here so the role and the service agree
+# on the one string. The root's AWS provider (Route 53) serves it: IAM is global.
+module "aws_costs" {
+  source = "./modules/aws-costs"
+
+  audience                  = "https://${var.admin_domain_name}/aws-costs"
+  service_account_unique_id = module.gcp_admin_api.service_account_unique_id
+
+  providers = {
+    aws = aws
   }
 }
 

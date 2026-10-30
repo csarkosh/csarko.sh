@@ -118,3 +118,13 @@ output "visits_service_url" { value = module.gcp_visits.service_url }
 output "visits_secret_id" { value = module.gcp_visits.secret_id }
 output "visits_dataset" { value = module.gcp_visits.dataset }
 output "visits_history_dataset" { value = module.gcp_visits.history_dataset }
+
+output "admin_costs_role_arn" {
+  description = "The AWS IAM role the admin API assumes for Cost Explorer (the Finance page); the service's AWS_COST_ROLE_ARN"
+  value       = module.aws_costs.role_arn
+}
+
+output "admin_costs_audience" {
+  description = "The audience of the Google ID token the admin API presents to AWS STS; the service's AWS_COST_AUDIENCE"
+  value       = module.aws_costs.audience
+}

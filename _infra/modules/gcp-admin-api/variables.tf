@@ -108,3 +108,30 @@ variable "admin_emails" {
   type        = list(string)
   default     = []
 }
+
+variable "aws_cost_role_arn" {
+  description = <<-EOT
+    ARN of the AWS IAM role the costs collector assumes for Cost Explorer
+    (modules/aws-costs, csarko-admin-costs). Empty serves the Finance page's
+    AWS cards an "unconfigured" line instead of a role to assume.
+  EOT
+  type        = string
+  default     = ""
+}
+
+variable "aws_cost_audience" {
+  description = <<-EOT
+    The audience the service puts in the Google ID token it mints for its own
+    service account and presents to AWS STS; the role's trust policy accepts
+    exactly this value (accounts.google.com:aud). Not a secret: the token's
+    signature is the proof, the audience only scopes it to that one use.
+  EOT
+  type        = string
+  default     = ""
+}
+
+variable "finance_goal_usd" {
+  description = "The monthly idle run-rate goal the Finance page measures against, in whole US dollars (FINANCE_GOAL_USD)."
+  type        = number
+  default     = 5
+}

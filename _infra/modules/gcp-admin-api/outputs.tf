@@ -27,3 +27,8 @@ output "image_repository" {
   description = "Artifact Registry Docker path `gcloud run deploy --source` pushes to, without a tag"
   value       = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.source_deploy.repository_id}"
 }
+
+output "service_account_unique_id" {
+  description = "The service's identity as its numeric unique id: the `sub` claim of the ID tokens it mints, which the AWS costs role's trust policy names"
+  value       = google_service_account.admin.unique_id
+}
