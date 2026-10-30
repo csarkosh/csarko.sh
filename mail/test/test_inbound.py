@@ -111,6 +111,19 @@ class Forward(Base):
         self.table.query = real_query
         self.assertTrue(self.store.message_by_id("m3c")["forwarded"])
 
+    def test_ses_error_text_never_carries_an_address(self):
+        # SES's sandbox refusal names the unverified identities, the owner among them.
+        self.ses.fail_with("MessageRejected", f"Email address is not verified. The following identities failed the check in region US-EAST-2: {OWNER}, ada@example.com")
+        self.deliver("m3d", "ada@example.com", ["hello@csarko.sh"])
+        row = self.store.message_by_id("m3d")
+        self.assertIn("MessageRejected", row["error"])
+        for text in (row["error"], json.dumps(self.logs)):
+            self.assertNotIn(OWNER, text)
+            self.assertNotIn("ada@example.com", text)
+        self.ses.fail_with("MessageRejected", f"identities failed the check: {OWNER}")
+        handler({"action": "forward", "message_id": "m3d"}, None)
+        self.assertNotIn(OWNER, json.dumps(self.logs))
+
     def test_foreign_recipients_are_ignored(self):
         out = self.deliver("m8", "ada@example.com", ["someone@example.org", "hello@csarko.sh"])
         self.assertEqual([r["recipient"] for r in out["results"]], ["hello@csarko.sh"])

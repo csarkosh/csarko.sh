@@ -112,12 +112,12 @@ class FakeSES:
         self.message_ids = []
         self._fail = None
 
-    def fail_with(self, code):
-        self._fail = code
+    def fail_with(self, code, message="refused"):
+        self._fail = (code, message) if code else None
 
     def send_email(self, **kw):
         if self._fail:
-            raise FakeClientError(self._fail)
+            raise FakeClientError(*self._fail)
         self.calls.append(kw)
         mid = f"0100019a-ses-{len(self.message_ids) + 1:04d}"
         self.message_ids.append(mid)

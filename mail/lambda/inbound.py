@@ -13,6 +13,7 @@ refused send into duplicate forwards; the raw message is always in S3 to try aga
 
 import json
 import os
+import re
 from dataclasses import dataclass
 
 from mailkit import PROTECTED, build_forward, build_reply, is_owner, parse_recipient, policy, summary
@@ -70,11 +71,15 @@ def send(ses, raw: bytes, *, from_address: str, to: list, config_set: str) -> st
     return response["MessageId"]
 
 
+_ADDRESS = re.compile(r"[^\s<>(),;:\"']+@[^\s<>(),;:\"']+")
+
+
 def _error_text(error: Exception) -> str:
+    """The error for the index row and the log, with every address redacted: SES's sandbox
+    refusal names the unverified identities, and the owner is one of them."""
     detail = getattr(error, "response", {}).get("Error", {})
-    if detail.get("Code"):
-        return f"{detail['Code']}: {detail.get('Message', '')}".strip()
-    return f"{type(error).__name__}: {error}"
+    text = f"{detail['Code']}: {detail.get('Message', '')}" if detail.get("Code") else f"{type(error).__name__}: {error}"
+    return _ADDRESS.sub("<address>", text).strip()
 
 
 def _verdicts(receipt: dict) -> dict:
