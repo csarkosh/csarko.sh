@@ -6,8 +6,11 @@ section 5. The Lambda loads this as a flat module (`import mailkit`), so the fol
 is not a package.
 """
 
+import email.policy
+import email.utils
 import re
 from dataclasses import dataclass
+from email.parser import BytesHeaderParser
 from typing import Literal, Optional
 
 # RFC 2142 names plus the DMARC report sink: these can never be blocked (spec section 7).
@@ -57,3 +60,131 @@ def policy(state: str, verdicts: dict, dmarc_policy: Optional[str]) -> tuple:
     if state == "archive":
         return "archive", None
     return "forward", None
+
+
+# ---------------------------------------------------------------------------------------------
+# Headers, at the byte level. A forward changes a handful of header lines and nothing else, so
+# the header block is split into lines and rejoined, and the body (every MIME part, every
+# boundary, every attachment byte) is passed through exactly as it arrived.
+
+# Headers a forward drops: the original route and the signatures that would fail after the
+# From change (spec section 5.1, step 4), plus the receipt headers SES itself added.
+_FORWARD_DROP = ("return-path", "dkim-signature", "received", "authentication-results", "received-spf", "sender")
+_FORWARD_DROP_PREFIXES = ("arc-", "x-ses-")
+
+
+def _split(raw: bytes):
+    """Split a message into (headers, eol, body). Each header is [name, value_bytes], where the
+    value keeps its leading space and its folding; a line with no colon is kept as [None, line]."""
+    ends = [(raw.find(sep), sep) for sep in (b"\r\n\r\n", b"\n\n") if raw.find(sep) >= 0]
+    if ends:
+        index, sep = min(ends)
+        block, body = raw[:index], raw[index:]
+        eol = b"\r\n" if sep.startswith(b"\r\n") else b"\n"
+    else:
+        block, body, eol = raw, b"", (b"\r\n" if b"\r\n" in raw else b"\n")
+    headers = []
+    for line in block.split(eol):
+        if line[:1] in (b" ", b"\t") and headers:
+            headers[-1][1] += eol + line
+            continue
+        name, colon, value = line.partition(b":")
+        if colon and name and b" " not in name.strip():
+            headers.append([name.decode("ascii", "replace").strip(), value])
+        else:
+            headers.append([None, line])
+    return headers, eol, body
+
+
+def _join(headers, eol: bytes, body: bytes) -> bytes:
+    lines = [value if name is None else name.encode("ascii") + b":" + value for name, value in headers]
+    return eol.join(lines) + body
+
+
+def _parsed_headers(raw: bytes):
+    return BytesHeaderParser(policy=email.policy.default).parsebytes(raw)
+
+
+def _address(header) -> tuple:
+    """(display name, lower-cased address) of the first address in an address header."""
+    if header is None:
+        return "", ""
+    try:
+        first = header.addresses[0]
+        return first.display_name or "", first.addr_spec.lower()
+    except (AttributeError, IndexError, TypeError):
+        name, addr = email.utils.parseaddr(str(header))
+        return name, addr.lower()
+
+
+def _addresses(header) -> list:
+    if header is None:
+        return []
+    try:
+        return [a.addr_spec.lower() for a in header.addresses]
+    except (AttributeError, TypeError):
+        return [addr.lower() for _, addr in email.utils.getaddresses([str(header)]) if addr]
+
+
+def summary(raw: bytes) -> dict:
+    """The fields the message index keeps (spec section 6)."""
+    h = _parsed_headers(raw)
+    name, addr = _address(h["From"])
+    reply_to = _address(h["Reply-To"])[1] if h["Reply-To"] is not None else None
+    return {
+        "from": addr,
+        "from_name": name,
+        "to": _addresses(h["To"]),
+        "subject": str(h["Subject"] or ""),
+        "date": str(h["Date"] or ""),
+        "message_id": str(h["Message-ID"] or "").strip(),
+        "size": len(raw),
+        "reply_to": reply_to or None,
+    }
+
+
+def _raw_value(headers, name: str) -> Optional[bytes]:
+    for n, value in headers:
+        if n is not None and n.lower() == name:
+            return value.strip()
+    return None
+
+
+def _header(name: str, value: str):
+    return [name, b" " + value.encode("ascii")]
+
+
+def build_forward(raw: bytes, *, alias_local: str, base_domain: str, owner: str, reverse_alias: str, verdicts: dict) -> bytes:
+    """The message the owner receives: From is the alias (so DKIM and DMARC pass at the owner's
+    provider), Reply-To is the reverse alias, To is the owner, and the original sender and route
+    are kept only in X- headers. Every other header and the whole body are untouched."""
+    headers, eol, body = _split(raw)
+    name, addr = _address(_parsed_headers(raw)["From"])
+    original_from = _raw_value(headers, "from")
+    original_to = _raw_value(headers, "to")
+    original_reply_to = _raw_value(headers, "reply-to")
+
+    kept = []
+    for n, value in headers:
+        lower = (n or "").lower()
+        if n is not None and (lower in _FORWARD_DROP or lower.startswith(_FORWARD_DROP_PREFIXES)):
+            continue
+        if lower in ("from", "to", "reply-to"):
+            continue
+        kept.append([n, value])
+
+    display = f"{name or addr} via {base_domain}"
+    added = [
+        _header("From", email.utils.formataddr((display, f"{alias_local}@{base_domain}"), charset="utf-8")),
+        _header("To", owner),
+        _header("Reply-To", reverse_alias),
+        _header("X-Alias", alias_local),
+        _header("X-SES-Verdicts", " ".join(f"{k}={verdicts.get(k, 'NONE')}" for k in ("spam", "virus", "spf", "dkim", "dmarc"))),
+    ]
+    if original_from is not None:
+        added.append(["X-Original-From", b" " + original_from])
+    if original_to is not None:
+        added.append(["X-Original-To", b" " + original_to])
+    if original_reply_to is not None:
+        added.append(["X-Original-Reply-To", b" " + original_reply_to])
+    return _join(added + kept, eol, body)
