@@ -69,12 +69,16 @@
   var ms = (name) => { var v = token('duration-' + name); return (parseFloat(v) || 0) * (/ms$/.test(v) ? 1 : 1000); };
   var glide = (before, h0) => {
     // A click during a glide starts from what is on screen: the list's height as it is, and each
-    // card's place plus the move it is part way through.
+    // card as it is drawn, its place plus the move or rise it is part way through, at the opacity it
+    // has. A card this click hid has no style to read, so it is shown for the reading.
     if (grow && grow.playState === 'running') h0 = list.offsetHeight;
-    var shift = new Map(items.filter((li) => li.offsetParent).map((li) => {
-      var m = new DOMMatrix(getComputedStyle(li).transform);
-      return [li, [m.e, m.f]];
+    var hid = items.filter((li) => before.has(li) && !li.offsetParent);
+    hid.forEach((li) => { li.style.display = 'flex'; });
+    var drawn = new Map(items.filter((li) => li.offsetParent).map((li) => {
+      var cs = getComputedStyle(li), m = new DOMMatrix(cs.transform);
+      return [li, { transform: cs.transform, opacity: +cs.opacity, x: m.e, y: m.f }];
     }));
+    hid.forEach((li) => { li.style.display = ''; });
     run.forEach((a) => a.cancel());
     run = [];
     [].slice.call(list.querySelectorAll('[data-ghost]')).forEach((g) => g.remove());
@@ -90,14 +94,15 @@
         g.setAttribute('aria-hidden', 'true');
         g.inert = true;
         [g].concat([].slice.call(g.querySelectorAll('[id]'))).forEach((el) => el.removeAttribute('id'));
-        Object.assign(g.style, { display: 'flex', position: 'absolute', margin: 0, pointerEvents: 'none',
+        var look = drawn.get(li);
+        Object.assign(g.style, { display: 'flex', position: 'absolute', margin: 0, pointerEvents: 'none', transform: look.transform,
           left: was[0] + 'px', top: was[1] + 'px', width: was[2] + 'px', height: was[3] + 'px' });
         list.appendChild(g);
-        var fade = g.animate([{ opacity: 1 }, { opacity: 0 }], { duration: out, easing: token('easing-emphasized-accelerate'), fill: 'forwards' });
+        var fade = g.animate([{ opacity: look.opacity }, { opacity: 0 }], { duration: out, easing: token('easing-emphasized-accelerate'), fill: 'forwards' });
         fade.onfinish = () => g.remove();
         run.push(fade);
       } else if (was && now) {
-        var s = shift.get(li) || [0, 0], dx = was[0] + s[0] - now[0], dy = was[1] + s[1] - now[1];
+        var s = drawn.get(li), dx = was[0] + s.x - now[0], dy = was[1] + s.y - now[1];
         if (Math.abs(dx) >= 0.5 || Math.abs(dy) >= 0.5)
           add(li, [{ transform: 'translate(' + dx + 'px, ' + dy + 'px)' }, { transform: 'none' }], { duration: move, easing: standard });
       } else if (now && arrive) {

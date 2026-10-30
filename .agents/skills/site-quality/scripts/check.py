@@ -831,6 +831,29 @@ const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const t = {
   sleep,
+  // Clicks with click(), first noting where each card that the click will hide is drawn and how
+  // opaque it is; ghostsAt(d) then compares each ghost (in the same order) with that. The ghost's
+  // first opacity is checked at once, its rect when ghostsAt runs.
+  ghostsStay(d, list, click) {
+    const ul = d.querySelector(list), w = d.defaultView;
+    const shown = [...ul.querySelectorAll(':scope > li:not([data-ghost])')].filter(t.visible);
+    const was = new Map(shown.map((li) => [li, { r: li.getBoundingClientRect(), o: +w.getComputedStyle(li).opacity }]));
+    click();
+    const leaving = shown.filter((li) => !t.visible(li)), ghosts = [...ul.querySelectorAll(':scope > [data-ghost]')], p = [];
+    if (ghosts.length !== leaving.length) return [`${ghosts.length} ghost(s) for ${leaving.length} leaving card(s)`];
+    ghosts.forEach((g, i) => {
+      const a = g.getAnimations()[0], o0 = a ? +a.effect.getKeyframes()[0].opacity : 1, o = was.get(leaving[i]).o;
+      if (Math.abs(o0 - o) > 0.05) p.push(`${leaving[i].id}'s ghost starts at opacity ${o0.toFixed(2)}, the card was at ${o.toFixed(2)}`);
+    });
+    t._ghosts = ghosts.map((g, i) => [g, leaving[i], was.get(leaving[i]).r]);
+    return p;
+  },
+  ghostsAt(d) {
+    return (t._ghosts || []).flatMap(([g, li, r]) => {
+      const n = g.getBoundingClientRect(), off = Math.max(...['left', 'top', 'width', 'height'].map((k) => Math.abs(n[k] - r[k])));
+      return off > 2 ? [`${li.id}'s ghost is drawn ${Math.round(off)} px from where the card was (${Math.round(n.left)}, ${Math.round(n.top)} vs ${Math.round(r.left)}, ${Math.round(r.top)})`] : [];
+    });
+  },
   // A fresh iframe at `width`, resolved once it has loaded; `during(doc)` is called on the page's
   // own document every millisecond or so until then, for what happens while it loads.
   open(url, width = 1280, during) {
@@ -994,13 +1017,29 @@ def public_motion_pages(public=PUBLIC):
           return p.concat(t.only(d, '.project-list', (li) => li.matches('[data-kind~="film"]')));
         } }""",
         # Review Focus 1: a click during a glide cancels it and ends on the last click's state.
+        # A card leaving mid-glide fades out where it is on screen, at the opacity it has: its ghost
+        # starts on the card's drawn rect (place plus the move or rise in flight), not its layout place.
         """{ name: '/projects: Film then Games within 100 ms ends on the game alone', url: '/projects', run: async (f, t) => {
           const d = f.contentDocument;
           d.getElementById('kind-film').click();
           await t.sleep(50);
+          const p = t.ghostsStay(d, '.project-list', () => d.getElementById('kind-games').click());
+          await t.sleep(20);
+          p.push(...t.ghostsAt(d));
+          await t.sleep(700);
+          return p.concat(t.only(d, '.project-list', (li) => li.matches('[data-kind~="games"]')));
+        } }""",
+        """{ name: '/projects: films leaving mid-arrival fade from where and how they were', url: '/projects', run: async (f, t) => {
+          const d = f.contentDocument;
           d.getElementById('kind-games').click();
           await t.sleep(700);
-          return t.only(d, '.project-list', (li) => li.matches('[data-kind~="games"]'));
+          d.getElementById('kind-film').click();
+          await t.sleep(200);
+          const p = t.ghostsStay(d, '.project-list', () => d.getElementById('kind-games').click());
+          await t.sleep(20);
+          p.push(...t.ghostsAt(d));
+          await t.sleep(700);
+          return p.concat(t.only(d, '.project-list', (li) => li.matches('[data-kind~="games"]')));
         } }""",
         """{ name: '/research: AI twice within 100 ms ends with every doc shown', url: '/research', run: async (f, t) => {
           const d = f.contentDocument;
