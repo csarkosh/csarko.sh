@@ -33,14 +33,25 @@ async function withPage(values, fn) {
   }
 }
 
-/** An element that records what it is asked to animate. */
+/**
+ * An element that records what it is asked to animate. Its animations run until `finish()`
+ * (as Animation.finish() does: playState 'finished', a fill of 'none' then draws nothing) or
+ * `cancel()`.
+ */
 function element(props = {}) {
   const listeners = {};
   const node = {
-    localName: 'div', hidden: false, style: {}, children: [], offsetHeight: 0, calls: [],
+    localName: 'div', hidden: false, style: {}, children: [], offsetHeight: 0, calls: [], animations: [],
     animate(frames, options) {
       node.calls.push({ frames, options });
-      return { playState: 'running', finished: new Promise(() => {}), cancel() { this.playState = 'idle'; } };
+      const animation = {
+        playState: 'running', finished: new Promise(() => {}),
+        effect: { getTiming: () => ({ duration: options.duration, delay: options.delay ?? 0, fill: options.fill ?? 'auto' }) },
+        cancel() { this.playState = 'idle'; },
+        finish() { this.playState = 'finished'; },
+      };
+      node.animations.push(animation);
+      return animation;
     },
     addEventListener(type, fn) { (listeners[type] ??= []).push(fn); },
     dispatch(type, event = {}) { for (const fn of listeners[type] ?? []) fn(event); },
@@ -152,6 +163,55 @@ test('a menu hidden while it opens shrinks from how it is drawn', async () => {
   assert.deepEqual([shrink[0].opacity, shrink[0].transform], [0.4, 'matrix(0.95, 0, 0, 0.95, 0, 0)']);
   assert.deepEqual([shrink[1].opacity, shrink[1].transform], [0, 'scale(0.92)']);
   assert.equal(menu.hidden, false, 'hidden only once the fade is done');
+});
+
+test('a second easeHeight after the first has finished eases from the new from', async () => {
+  const { easeHeight } = await load();
+  const card = element({ offsetHeight: 300 });
+  await withPage(TOKENS, () => {
+    easeHeight(card, 100, 200).finish();
+    // Re-rendered since, and now 300 px tall: the caller measured 200 before and 300 after.
+    const again = easeHeight(card, 200, 300);
+    assert.ok(again, 'the second change eases too');
+  });
+  assert.equal(card.calls.length, 2);
+  assert.deepEqual(card.calls[1].frames.map((f) => f.height), ['200px', '300px']);
+});
+
+test('a second fadeIn after the first has finished fades from 0 again', async () => {
+  const { fadeIn } = await load();
+  const node = element();
+  await withPage(TOKENS, () => {
+    fadeIn(node).finish();
+    fadeIn(node);
+  });
+  assert.equal(node.calls.length, 2);
+  assert.deepEqual(node.calls[1].frames.map((f) => f.opacity), [0, 1]);
+});
+
+test('a fadeOut that has finished still holds: a fadeIn starts from how it is drawn', async () => {
+  const { fadeOut, fadeIn } = await load();
+  const node = element();
+  await withPage(TOKENS, () => {
+    fadeOut(node).finish();
+    node.drawn = { opacity: '0.25' };
+    fadeIn(node);
+  });
+  assert.equal(node.calls[1].frames[0].opacity, 0.25);
+});
+
+test('a menu shown, then hidden by its owner, shows again', async () => {
+  const { showMenu } = await load();
+  const menu = element({ hidden: true });
+  await withPage(TOKENS, () => {
+    showMenu(menu);
+    menu.animations[0].finish();
+    menu.hidden = true;
+    showMenu(menu);
+  });
+  assert.equal(menu.hidden, false);
+  assert.equal(menu.calls.length, 2);
+  assert.equal(menu.calls[1].frames[0].transform, 'scale(0.92)', 'from small, as a fresh show');
 });
 
 test('under reduced motion nothing animates and nothing waits', async () => {

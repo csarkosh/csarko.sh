@@ -41,8 +41,15 @@ function play(node, frames, { duration, easing, delay = 0, fill = 'none' }) {
   return node.animate(frames, { duration, easing, delay, fill });
 }
 
-// Still drawing (running, or finished and holding its last frame), as opposed to cancelled.
-const live = (animation) => Boolean(animation) && animation.playState !== 'idle';
+// Still drawing: running or paused, or finished and holding its last frame (a fill of forwards
+// or both, as fadeOut and hideMenu use). A finished animation with no fill draws nothing, so it
+// is over, as is a cancelled one.
+function live(animation) {
+  if (!animation) return false;
+  const state = animation.playState;
+  if (state === 'running' || state === 'paused') return true;
+  return state === 'finished' && /^(forwards|both)$/.test(animation.effect?.getTiming().fill ?? '');
+}
 
 // An element's look as it is drawn now, its animations included; with none, its own.
 function look(node) {
