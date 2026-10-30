@@ -119,9 +119,15 @@
    normal 17.9; light CVD 10.0, normal 19.6) and 2026-10-29 (the six providers, --pairs all: dark
    CVD 8.2, normal 15.2; light CVD 8.9, normal 16.9; the nine categories, adjacent pairs: dark CVD
    8.4, normal 15.2; light CVD 9.1, normal 17.4; every check passes in both themes, no WARN). Text
-   never takes a series colour. */
+   never takes a series colour. Then --income, the Donations chart's one series (2026-10-30): the
+   accent, the site's own colour and charts.js's mark for a lone series, so income reads as the
+   site's and not as a thirteenth provider; the twelve spend tones fill the hue wheel, and a sweep
+   of every OKLCH hue in band found no thirteenth that clears the CVD gate beside all of them (the
+   best, a violet, ΔE 7.6), while the accent stands 10.6:1 (dark) and 5.8:1 (light) on --surface
+   (the validator's band and chroma gates are for a palette's series, not the site's own accent). */
 /* admin:palette */
 :root {
+  --income: var(--accent);
   --cat-1: #3987e5;
   --cat-2: #d95926;
   --cat-3: #199e70;
@@ -141,6 +147,7 @@
 }
 @media (prefers-color-scheme: light) {
   :root {
+    --income: var(--accent);
     --cat-1: #2a78d6;
     --cat-2: #eb6834;
     --cat-3: #1aa674;
@@ -369,6 +376,9 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 /* Stat tiles: label, value, delta, trend. */
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 18px; }
 .tiles.compact { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+/* Six tiles in two rows of three (the Billing page's This month), two across on a phone; the
+   skeleton's row takes the same class so the shape holds the same height. */
+.tiles.across-3, .skel-tiles.across-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .tile { display: flex; flex-direction: column; min-width: 0; padding: 14px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; }
 .tile .label { margin: 0 0 6px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
 .tile .value { font-size: 1.75rem; line-height: 1.15; font-weight: 600; letter-spacing: -0.02em; overflow-wrap: anywhere; }
@@ -444,6 +454,7 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .chart .seg.j2, .legend .swatch.j2, .tooltip .key.j2 { fill: var(--proj-2); background: var(--proj-2); }
 .chart .seg.j3, .legend .swatch.j3, .tooltip .key.j3 { fill: var(--proj-3); background: var(--proj-3); }
 .chart .seg.j4, .legend .swatch.j4, .tooltip .key.j4 { fill: var(--proj-4); background: var(--proj-4); }
+.chart .seg.inc, .legend .swatch.inc, .tooltip .key.inc { fill: var(--income); background: var(--income); }
 
 /* Sparkline: 1px, the trend in faint, the latest step in the accent. */
 .spark { display: block; width: 120px; max-width: 100%; height: 28px; overflow: visible; }
@@ -666,6 +677,7 @@ footer .mono { font-family: var(--mono); }
   .page-head { margin-bottom: 28px; }
   .card { padding: 18px; }
   .tiles { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+  .tiles.across-3, .skel-tiles.across-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tile .value { font-size: 1.5rem; }
   .bars li { grid-template-columns: minmax(72px, 96px) minmax(0, 1fr) auto; gap: 8px; font-size: 13px; }
   .skel-bar { grid-template-columns: minmax(72px, 96px) minmax(0, 1fr) 36px; gap: 8px; }

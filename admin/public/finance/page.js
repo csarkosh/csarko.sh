@@ -1,7 +1,9 @@
 /**
  * The Finance dashboard (docs/superpowers/specs/2026-10-29-finance-admin-page-design.md, amended
- * 2026-10-30, Claude Code added 2026-10-29): a range row, then nine cards in order, each loading its
- * own query and showing its own error line. The month's totals and forecast with a row per provider,
+ * 2026-10-30, Claude Code added 2026-10-29, donations 2026-10-30): a range row, then ten cards in
+ * order, each loading its own query and showing its own error line. The month's totals, the
+ * donations against them and the net with a row per provider, the donations themselves (Stripe,
+ * read live: amounts and days, never who gave),
  * spend by category month by month, spend by project (the films, Day Hike, the site, the rest), each
  * film's cost from the pipeline's own ledgers against its cap, Claude Code (the claude.ai fee entered
  * by hand, and the local transcripts' tokens priced at API list rates as the plan's value), the idle
@@ -120,8 +122,8 @@ const PROVIDERS = {
   claude: { label: 'Claude Code', tone: 'p6', env: 'claude-subscription' },
 };
 const PROVIDER_KEYS = Object.keys(PROVIDERS);
-/** Every part a card may be told is not configured, the ledgers included. */
-const ENV = { ...Object.fromEntries(PROVIDER_KEYS.map((k) => [k, PROVIDERS[k].env])), ledgers: 'FILM_LEDGERS_BUCKET' };
+/** Every part a card may be told is not configured, Stripe (the donations) and the ledgers included. */
+const ENV = { ...Object.fromEntries(PROVIDER_KEYS.map((k) => [k, PROVIDERS[k].env])), stripe: 'STRIPE_KEY', ledgers: 'FILM_LEDGERS_BUCKET' };
 const PARTS = Object.keys(ENV);
 const providerName = (key) => PROVIDERS[key]?.label ?? str(key);
 const SUBSCRIPTION = 'claude-subscription';
@@ -169,12 +171,26 @@ function providerCell(p) {
   return el('span', { class: 'cell' }, el('span', {}, p.label ?? providerName(p.provider)), notes.length ? el('small', {}, notes.join('; ')) : null);
 }
 
+/** "4 donations", "1 donation", a dash for an unknown count. */
+const donations = (n) => (isNum(n) ? `${count(n)} donation${n === 1 ? '' : 's'}` : '– donations');
+
 function summaryCard([summary], r) {
   const total = summary.total;
   if (!total) return [notConfigured(missing(summary, ...PROVIDER_KEYS))];
   const finished = r === 'last';
-  const tiles = el('div', { class: 'tiles' },
+  // The donations (Stripe) count as income against the spend: the month's net under its gross and
+  // fees, and Net, the spend after them, against the month before's net. Without the key both say so.
+  const income = summary.income && typeof summary.income === 'object' ? summary.income : null;
+  const given = income?.mtd ?? null;
+  const stripeEnv = missing(summary, 'stripe') ?? ENV.stripe;
+  const lastNet = isNum(total.lastMonth) && isNum(income?.lastMonth?.net) ? total.lastMonth - income.lastMonth.net : null;
+  const tiles = el('div', { class: 'tiles across-3' },
     tile(finished ? 'The month' : 'Month to date', money(total.mtd), { delta: delta(num(total.mtd), total.lastMonth, { good: 'down', vs: 'the month before', percent: true, format: money }) }),
+    tile('Donations', isNum(given?.net) ? money(given.net) : '–', { note: isNum(given?.net) ? `gross ${money(given.gross)}, fees ${money(given.fees)}, ${donations(given.count)}` : notConfiguredText(stripeEnv) }),
+    tile('Net', isNum(total.net) ? money(total.net) : '–', {
+      delta: isNum(total.net) && isNum(lastNet) ? delta(total.net, lastNet, { good: 'down', vs: 'the month before', percent: true, format: money }) : undefined,
+      note: isNum(total.net) ? 'What the month cost after donations' : notConfiguredText(stripeEnv),
+    }),
     tile('Forecast', finished ? '–' : money(total.forecast), { note: finished ? 'A finished month has no forecast' : 'AWS forecast, Google Cloud run-rate, the rest at their month to date' }),
     tile(finished ? 'The month before' : 'Last month', money(total.lastMonth)),
     tile('Idle run-rate', money(total.idleRunRate), { note: 'What bills a month while nothing runs' }));
@@ -192,7 +208,68 @@ function summaryCard([summary], r) {
   return [...errorLines(summary), tiles, providers];
 }
 
-// ---------------------------------------------------------------- 2. by category, 3. by project
+// ---------------------------------------------------------------- 2. donations
+
+/**
+ * The period the Donations tiles cover, in words: the answer's own month for This month and Last
+ * month, the last three of its thirteen months for 90 days, all thirteen for 13 months.
+ */
+function incomePeriod(r, income) {
+  const months = (Array.isArray(income?.months) ? income.months : []).map((m) => str(m.month));
+  if (r === '13m') return rangeText(r, months);
+  if (r === '90') return rangeText(r, months.slice(-3));
+  return income?.month ? `${monthName(income.month)}${r === 'month' ? ' so far' : ''}` : rangeText(r);
+}
+
+function donationsCard([income], r) {
+  if (!Array.isArray(income.days)) return [notConfigured(missing(income, 'stripe') ?? ENV.stripe, 'Stripe donations')];
+  const period = incomePeriod(r, income);
+  const feeShare = isNum(income.fees) && num(income.gross) > 0 ? `${Math.round((income.fees / income.gross) * 1000) / 10}% of the gross` : 'Stripe’s cut';
+  const tiles = el('div', { class: 'tiles' },
+    tile('Gross', money(income.gross), { note: `Given in ${period}, before fees` }),
+    tile('Fees', money(income.fees), { note: feeShare }),
+    tile('Net', money(income.net), { note: 'Gross less fees, after refunds: the income' }),
+    tile('Donations', count(income.count), { note: `In ${period}` }),
+    tile('Average', money(income.average), { note: 'Gross a donation' }));
+  const b = income.balance && typeof income.balance === 'object' ? income.balance : null;
+  const balance = b
+    ? el('p', { class: 'note' }, `Balance at Stripe: ${money(b.available)} available, ${money(b.pending)} pending${b.currency ? ` (${str(b.currency).toUpperCase()})` : ''}; a payout moves the available balance to the bank.`)
+    : null;
+  const days = income.days;
+  const given = days.reduce((n, d) => n + num(d.count), 0);
+  const total = days.reduce((n, d) => n + num(d.net), 0);
+  const marks = days.map((d) => ({ label: shortDay(d.day), detail: d.day, lines: num(d.count) > 0 ? [{ v: count(d.count), k: num(d.count) === 1 ? 'donation' : 'donations' }] : [] }));
+  const chart = columns(marks, {
+    height: 220,
+    series: [{ key: 'net', label: 'Net a day', tone: 'inc', values: days.map((d) => num(d.net)) }],
+    format: moneyShort,
+    tip: money,
+    label: `Donations net per day for the last ${days.length} days: ${money(total)} in all from ${donations(given)}; the folds below list the newest, the payouts and the months.`,
+  });
+  const recent = Array.isArray(income.recent) ? income.recent : [];
+  const payouts = Array.isArray(income.payouts) ? income.payouts : [];
+  const months = Array.isArray(income.months) ? income.months : [];
+  const recentFold = folded(`Recent donations · ${recent.length}`, table([
+    { key: 'day', label: 'Day', render: (v) => shortDay(v) },
+    { key: 'gross', label: 'Gross', num: true, render: (v) => money(v) },
+    { key: 'net', label: 'Net', num: true, render: (v) => money(v) },
+  ], recent, 'No donations yet.'));
+  const payoutsFold = folded(`Payouts · ${payouts.length}`, table([
+    { key: 'day', label: 'Day', render: (v) => shortDay(v) },
+    { key: 'amount', label: 'Amount', num: true, render: (v) => money(v) },
+    { key: 'status', label: 'Status', render: (v) => str(v) },
+  ], payouts, 'No payouts in the last 60 days.'));
+  const monthsFold = folded('By month as a table', table([
+    { key: 'month', label: 'Month', wrap: true, render: (v) => monthName(v) },
+    { key: 'gross', label: 'Gross', num: true, render: (v) => money(v) },
+    { key: 'fees', label: 'Fees', num: true, render: (v) => money(v) },
+    { key: 'net', label: 'Net', num: true, render: (v) => money(v) },
+    { key: 'count', label: 'Donations', num: true, render: (v) => count(v) },
+  ], [...months].reverse(), 'No months yet.'));
+  return [...errorLines(income), tiles, balance, chart, recentFold, payoutsFold, monthsFold].filter(Boolean);
+}
+
+// ---------------------------------------------------------------- 3. by category, 4. by project
 
 /** The months' column labels, a star on a month that has AWS and GitHub only. */
 function monthColumns(months, partial) {
@@ -271,7 +348,7 @@ function projectsCard([projects], r) {
   return [...errorLines(projects), chart, partialNote(partial), share, folded('By project as a table', table(tableCols, rows))].filter(Boolean);
 }
 
-// ---------------------------------------------------------------- 4. films
+// ---------------------------------------------------------------- 5. films
 
 const DEFAULT_CAP = 150;
 
@@ -326,7 +403,7 @@ function providerSplit(byProvider) {
   return Object.entries(byProvider).filter(([, v]) => isNum(v) && v > 0).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${providerName(k)} ${money(v)}`).join(' · ');
 }
 
-// ---------------------------------------------------------------- 5. Claude Code
+// ---------------------------------------------------------------- 6. Claude Code
 
 /**
  * The models in a fixed order, each with its stack slot: the categorical palette's first five
@@ -435,7 +512,7 @@ function claudeCard([answer]) {
   return parts;
 }
 
-// ---------------------------------------------------------------- 6. idle run-rate
+// ---------------------------------------------------------------- 7. idle run-rate
 
 function idleCard([idle]) {
   if (!Array.isArray(idle.lines)) return [notConfigured(missing(idle, ...PROVIDER_KEYS))];
@@ -475,7 +552,7 @@ function idleCard([idle]) {
   return [...errorLines(idle), tiles, body, asTable].filter(Boolean);
 }
 
-// ---------------------------------------------------------------- 7. daily
+// ---------------------------------------------------------------- 8. daily
 
 const SPIKE = 3;
 const shorten = (s, n = 48) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
@@ -528,7 +605,7 @@ function dailyCard([daily]) {
     flagList, asTable];
 }
 
-// ---------------------------------------------------------------- 8. what activity bought
+// ---------------------------------------------------------------- 9. what activity bought
 
 /** Which source each item comes from, for the Not configured note. */
 const ITEM_SOURCE = { rigHours: 'aws', egressGiB: 'gcp', cloudRunCpuHours: 'gcp', ciMinutes: 'github', aiGenerations: 'gcp', modalGpu: 'modal', falGenerations: 'fal', claudeCode: 'claude' };
@@ -564,7 +641,7 @@ function activityCard([activity]) {
   return [...errorLines(activity), el('div', { class: 'tiles compact' }, ...tiles)];
 }
 
-// ---------------------------------------------------------------- 9. sources
+// ---------------------------------------------------------------- 10. sources
 
 function sourcesCard([sources]) {
   if (!Array.isArray(sources.sources)) return [notConfigured(missing(sources, ...PARTS))];
@@ -582,7 +659,8 @@ function sourcesCard([sources]) {
 // ---------------------------------------------------------------- the cards
 
 const CARDS = [
-  { id: 'summary', title: (r) => (r === 'last' ? 'Last month' : 'This month'), queries: ['summary'], sub: (r, a) => `${a?.month ? `${monthName(a.month)}${r === 'last' ? '' : ' so far'}` : r === 'last' ? 'The previous calendar month' : 'The current calendar month'}, every provider, net of credits${a?.at ? `, as of ${ago(a.at)}` : ''}. The AI short films drive the activity spend on purpose, so the page keeps it apart from the idle spend: the idle run-rate is what bills while nothing runs, the rest is what the films, Day Hike and the site bought. The forecast is AWS's own plus Google Cloud's run-rate plus the other providers' month to date. Claude Code's row is the claude.ai fee, with what the month's tokens would cost at API list price under it.`, render: summaryCard, skeleton: { tiles: 4, rows: 6, row: 56 } },
+  { id: 'summary', title: (r) => (r === 'last' ? 'Last month' : 'This month'), queries: ['summary'], sub: (r, a) => `${a?.month ? `${monthName(a.month)}${r === 'last' ? '' : ' so far'}` : r === 'last' ? 'The previous calendar month' : 'The current calendar month'}, every provider, net of credits${a?.at ? `, as of ${ago(a.at)}` : ''}. Donations through Stripe count as income against the spend: Net is what the month cost after them. The AI short films drive the activity spend on purpose, so the page keeps it apart from the idle spend: the idle run-rate is what bills while nothing runs, the rest is what the films, Day Hike and the site bought. The forecast is AWS's own plus Google Cloud's run-rate plus the other providers' month to date. Claude Code's row is the claude.ai fee, with what the month's tokens would cost at API list price under it.`, render: summaryCard, skeleton: { tiles: 6, across: 3, rows: 6, row: 56 } },
+  { id: 'donations', title: () => 'Donations', queries: ['income'], sub: (r, a) => `Donations arrive through Stripe and are read live with a restricted key that can only read the balance, its transactions and the payouts. The tiles are ${incomePeriod(r, a)}, the chart the last 60 days, the folds the newest donations, the payouts and the months; amounts are dollars after refunds, on Stripe's UTC days. Nothing about who gave is shown: no name, email, card or message, only amounts and days.`, render: donationsCard, skeleton: { tiles: 5, lines: 1, chart: 220, folds: 3 } },
   { id: 'categories', title: () => 'By category', queries: ['categories'], sub: (r, a) => `One column a month for ${rangeText(r, a?.months)}, split by category in a fixed order; CI, tax and unmapped lines fold into Other, listed below. Compute, serverless, hosting and AI generation bill because something ran (a Modal app is Compute, named by its app; fal is AI generation); load balancing, storage, DNS and keys bill while nothing does; domains are a yearly fee shown a twelfth a month, and Claude Code is the subscription, a fixed fee a month.`, render: categoriesCard, skeleton: { chart: 240, lines: 2, folds: 2 } },
   { id: 'projects', title: () => 'By project', queries: ['projects'], sub: (r, a) => `The same months as By category for ${rangeText(r, a?.months)}, every line sorted by what it was for. A line is a film cost when it is Vertex AI, a cinema-* Modal app or fal; Day Hike is the rest of fps-csarko, the rigs and the dayhike-* Modal apps; csarko.sh and admin is the csarko-sh project with the domain and its zone; everything else is Other.`, render: projectsCard, skeleton: { chart: 240, lines: 1, folds: 1 } },
   { id: 'films', title: () => 'Films', queries: ['films'], sub: (r, a) => `Each film's cost from the pipeline's own ledgers: every paid call is priced before it is made and written to the film's ledger on the SSD, synced to the bucket${a?.asOf ? ` (newest ${ago(a.asOf)})` : ''}. The rows carry no dates, so they attribute cost by film and by model and never feed the Daily chart; the Veo rows are at list rate, so a film's Google Cloud figure can read higher than Google's bill. The pipeline's cap is ${moneyShort(DEFAULT_CAP)} a film. The same for every range.`, render: filmsCard, skeleton: { tiles: 3, bars: 4, folds: 4 } },
@@ -590,7 +668,7 @@ const CARDS = [
   { id: 'idle', title: () => 'Idle run-rate', queries: ['idle'], sub: () => 'Every line that bills while nothing runs, as its last seven days’ average times 30, most expensive first, with the provider and the region or project. A line gone since a week ago stays struck through for seven days with the day it stopped, so a cleanup is seen to have worked. The same for every range.', render: idleCard, skeleton: { tiles: 3, bars: 6, folds: 1 } },
   { id: 'daily', title: () => 'Daily', queries: ['daily'], sub: () => `The last 60 days, one column a day, stacked by provider in a fixed order, with the trailing 14-day median as a dashed line. A day over ${SPIKE} times its median (and over $1) is marked, and its largest line named: a rig round, a Veo batch, a Modal render or a forgotten machine shows up here the day after. The same for every range.`, render: dailyCard, skeleton: { chart: 220, lines: 2, folds: 1 } },
   { id: 'activity', title: () => 'What activity bought', queries: ['activity'], sub: (r) => `What ran in ${rangeText(r)}, how much of it, what it cost, and the unit price to budget the next session with. CI minutes cost nothing on public repositories; the gross is what they would on private ones. Modal's report and fal's balance carry no quantities, so those tiles show a dash and what they do know. Claude Code's tile counts the messages, costs the subscription, and notes what the tokens would have cost at API list price.`, render: activityCard, skeleton: { tiles: 8, tile: 150 } },
-  { id: 'sources', title: () => 'Sources', queries: ['sources'], sub: () => 'Where the numbers come from, the last day each has data, when the snapshot last read it, and what reading costs: Cost Explorer bills a cent a call, two a day, the one line this page adds to the bill. Modal is read by its own daily job, fal as a balance once a day, the film ledgers from their bucket, and Claude Code from the transcripts tools/claude-usage-sync.py sums on the Mac.', render: sourcesCard, skeleton: { rows: 7, row: 64 } },
+  { id: 'sources', title: () => 'Sources', queries: ['sources'], sub: () => 'Where the numbers come from, the last day each has data, when the snapshot last read it, and what reading costs: Cost Explorer bills a cent a call, two a day, the one line this page adds to the bill. Modal is read by its own daily job, fal as a balance once a day, the film ledgers from their bucket, Claude Code from the transcripts tools/claude-usage-sync.py sums on the Mac, and the Stripe donations live with a restricted key.', render: sourcesCard, skeleton: { rows: 8, row: 64 } },
 ];
 
 // ---------------------------------------------------------------- the page

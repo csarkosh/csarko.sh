@@ -505,7 +505,8 @@ export function errorLine(text, detail) {
  * height), `bars` labelled bars (split over `cols` columns with a heading each, as `.cols`
  * lays them), `rows` table rows, `items` list entries (a heading line, a line of chips and a
  * block, `item` px from one to the next), `lines` of text, then `folds` folded tables. `tile`
- * and `row` are a card's tile and table-row heights, where they differ from the usual. Hidden from screen
+ * and `row` are a card's tile and table-row heights, where they differ from the usual; `across`
+ * fixes how many tiles sit in a row where the card's tiles do (`.tiles.across-3`). Hidden from screen
  * readers; the card's body says "Loading" to them (see `loading()`).
  */
 export function skeleton(shape = {}) {
@@ -517,12 +518,13 @@ export function skeleton(shape = {}) {
   return skeletonOf(shape);
 }
 
-function skeletonOf({ chips = 0, tiles = 0, tile = 136, chart = false, bars = 0, cols = 0, rows = 0, row = 42, items = 0, item = 312, lines = 0, folds = 0 } = {}) {
+function skeletonOf({ chips = 0, tiles = 0, tile = 136, across = 0, chart = false, bars = 0, cols = 0, rows = 0, row = 42, items = 0, item = 312, lines = 0, folds = 0 } = {}) {
   const sk = (cls, attrs = {}) => el('div', { class: `skel ${cls}`, ...attrs });
   const parts = [];
   if (chips > 0) parts.push(el('div', { class: 'skel-row' }, ...Array.from({ length: chips }, () => sk('pill'))));
   if (tiles > 0) {
-    parts.push(el('div', { class: 'skel-tiles' }, ...Array.from({ length: tiles }, () =>
+    // `across` fixes the tiles' columns (`.tiles.across-3`), so the skeleton wraps as the tiles will.
+    parts.push(el('div', { class: `skel-tiles${across ? ` across-${across}` : ''}` }, ...Array.from({ length: tiles }, () =>
       // Only the lines a tile of this height holds: a label and the figure, then a line or two.
       el('div', { class: 'skel-tile', style: `height:${tile}px` }, sk('text label'), sk('text figure'), ...(tile >= 130 ? [sk('text'), sk('text short')] : tile >= 110 ? [sk('text short')] : [])))));
   }

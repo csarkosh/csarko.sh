@@ -330,7 +330,7 @@ anything related to the admin pages in this repo:
   shape, dark and light by system setting with no toggle. A new colour is a token in
   both blocks, 4.5:1 on its surface in both themes; a chart's series colours (the
   `admin:palette` block pair in `theme.css`, `--cat-1` to `--cat-10`, `--prov-1` to `--prov-6` and
-  `--proj-1` to `--proj-4`, the Billing page's categories, providers and projects; `--cat-10` and `--prov-6` are one orchid, Claude Code's own tone in the categories and the providers alike, so it reads as its own series rather than folding into Other, *Cyrus 2026-10-29*) are marks that text never wears, so they clear
+  `--proj-1` to `--proj-4`, the Billing page's categories, providers and projects; `--cat-10` and `--prov-6` are one orchid, Claude Code's own tone in the categories and the providers alike, so it reads as its own series rather than folding into Other, *Cyrus 2026-10-29*; `--income`, the Donations chart's lone series, is the accent, since the twelve spend tones fill the hue wheel and income is the site's own, *2026-10-30*) are marks that text never wears, so they clear
   3:1 on their theme's surface and the colour-blind separation the dataviz validator checks,
   not 4.5:1 *(Cyrus, 2026-10-29)*; `check.py --admin` holds both. No em-dashes, no email address or
   phone number.
