@@ -12,8 +12,8 @@
  *
  * One page per shipped door (DOORS in admin/api/src/donate/doors.mjs): index.html for the bare
  * door and <door>/index.html for the others (donate/page.mjs), each with this month's prices baked
- * in as its fallback and its picture beside it in assets/ (pictures.py: 16:9, AVIF, WebP and JPEG
- * at 640 and 1280 wide, hashed). Around the pages:
+ * in as its fallback and its picture beside it in assets/ (pictures.py: landscape, a poster
+ * cropped to 16:9, AVIF, WebP and JPEG at 640 and 1280 wide, hashed). Around the pages:
  *   thanks/index.html             where Stripe sends a payer back, every door's line and link
  *   app.js, view.js               the pages' one script and the logic it shares with this build
  *   icon.svg                      the Buy Me Tokens icon, for READMEs to embed as an <img>
@@ -55,7 +55,19 @@ function args(argv) {
 }
 
 async function loadPrices(file) {
-  if (file) return JSON.parse(readFileSync(file, 'utf8'));
+  if (file) {
+    let text;
+    try {
+      text = readFileSync(file, 'utf8');
+    } catch {
+      fail(`no prices file at ${file}`);
+    }
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      fail(`${file} is not JSON: ${e.message}`);
+    }
+  }
   const res = await fetch(PRICES_URL, { cache: 'no-cache' });
   if (res.status === 404) fail('no prices.json yet; the step has not run. Preview with --prices donate/test/fixtures/prices.json');
   if (!res.ok) fail(`${PRICES_URL}: ${res.status}`);
@@ -162,6 +174,14 @@ async function main() {
   const app = readFileSync(path.join(DONATE, 'public-src', 'app.js'), 'utf8');
   if (!app.includes(`'${PRICES_URL}'`)) fail(`public-src/app.js does not fetch ${PRICES_URL}`);
 
+  // The site's 404 page, so a wrong path here looks like one on csarko.sh; its links are made absolute.
+  if (!existsSync(path.join(SITE_PUBLIC, '404.html'))) fail('public/404.html not found; this host serves the site\'s not-found page');
+  // Its analytics tags go: this host serves neither the scripts nor the /v beacon route.
+  const notFound = readFileSync(path.join(SITE_PUBLIC, '404.html'), 'utf8')
+    .replace(/(<!-- generated:analytics -->)[\s\S]*?(\s*<!-- \/generated:analytics -->)/, '$1$2')
+    .replace(/href="\/(?!assets\/|favicon|apple-touch)/g, 'href="https://csarko.sh/');
+  if (/<script\b(?![^>]*application\/ld\+json)/.test(notFound)) fail('404.html: a script survived the copy');
+
   rmSync(OUT, { recursive: true, force: true });
   mkdirSync(path.join(OUT, 'assets'), { recursive: true });
   for (const f of fontFiles) copyFileSync(path.join(SITE_PUBLIC, 'assets', f), path.join(OUT, 'assets', f));
@@ -195,15 +215,7 @@ async function main() {
   const urls = doors.map((d) => `${DONATE_URL}${d.path}`);
   writeFileSync(path.join(OUT, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${DONATE_URL}/sitemap.xml\n`);
   writeFileSync(path.join(OUT, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url>\n    <loc>${u}</loc>\n  </url>`).join('\n')}\n</urlset>\n`);
-  // The site's 404 page, so a wrong path here looks like one on csarko.sh; its links are made absolute.
-  if (existsSync(path.join(SITE_PUBLIC, '404.html'))) {
-    // Its analytics tags go: this host serves neither the scripts nor the /v beacon route.
-    const notFound = readFileSync(path.join(SITE_PUBLIC, '404.html'), 'utf8')
-      .replace(/(<!-- generated:analytics -->)[\s\S]*?(\s*<!-- \/generated:analytics -->)/, '$1$2')
-      .replace(/href="\/(?!assets\/|favicon|apple-touch)/g, 'href="https://csarko.sh/');
-    if (/<script\b(?![^>]*application\/ld\+json)/.test(notFound)) fail('404.html: a script survived the copy');
-    writeFileSync(path.join(OUT, '404.html'), notFound);
-  }
+  writeFileSync(path.join(OUT, '404.html'), notFound);
   console.log(`donate: ${doors.length} door(s), ${json.month} prices → donate/public/`);
 }
 

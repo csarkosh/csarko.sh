@@ -17,30 +17,23 @@ const readJson = (id) => {
 };
 
 function doorPage(pay, baked) {
-  // The door is the page's path: /arkos is arkos, / is the bare door.
-  const door = location.pathname.replace(/^\/+|\/+$/g, '') || 'all';
   let prices = baked;
   const selected = () => document.querySelector('input[name="tier"]:checked')?.value ?? DEFAULT_TIER;
 
-  // The button follows the selected tier; its words fade back in rather than jump.
+  // The button follows the selected tier: its words change only with its link, so it never says
+  // one tier's price and pays another's.
   function setButton() {
     const tier = selected();
     const href = prices.links[tier];
-    if (href) pay.setAttribute('href', href);
-    const label = buttonLabel(tier, prices);
-    if (pay.textContent !== label) {
-      pay.textContent = label;
-      pay.classList.remove('swap');
-      void pay.offsetWidth;
-      pay.classList.add('swap');
-    }
+    if (!href) return;
+    pay.setAttribute('href', href);
+    pay.textContent = buttonLabel(tier, prices);
   }
   for (const radio of document.querySelectorAll('input[name="tier"]')) radio.addEventListener('change', setButton);
   // A page restored from history may come back with another tier checked.
   addEventListener('pageshow', setButton);
 
   function apply({ prices: next, stale }) {
-    prices = next;
     const bill = document.querySelector('.bill');
     const figure = bill?.querySelector('b');
     if (figure) {
@@ -57,6 +50,7 @@ function doorPage(pay, baked) {
       price.firstChild.textContent = `$${tier.usd}`;
       if (share) share.textContent = tier.label;
     }
+    prices = next;
     if (stale && bill && !document.querySelector('.note')) {
       const note = document.createElement('p');
       note.className = 'note';
@@ -69,7 +63,9 @@ function doorPage(pay, baked) {
   fetch(PRICES_URL, { cache: 'no-cache' })
     .then((res) => (res.ok ? res.json() : null))
     .catch(() => null)
-    .then((fetched) => apply(pickPrices(baked, fetched, door)));
+    .then((fetched) => apply(pickPrices(baked, fetched, baked.door)))
+    // Anything the live prices break leaves the baked ones, said to be from their month.
+    .catch(() => apply({ prices: baked, stale: true }));
   setButton();
 }
 

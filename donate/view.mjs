@@ -19,26 +19,43 @@ export function monthName(month) {
   return m ? MONTHS[Number(m[1]) - 1] : '';
 }
 
+const httpsUrl = (u) => {
+  try {
+    return typeof u === 'string' && new URL(u).protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
 /**
- * The prices a door shows. `baked` is the build's copy for this door ({ month, pool, tiers:
+ * The prices a door shows. `baked` is the build's copy for this door ({ door, month, pool, tiers:
  * [{ tier, usd, label }], links: { <tier>: url } }); `fetched` is the bucket's whole prices.json,
  * or whatever the fetch produced. The live one wins when it is a month at least as new as the baked
- * one and carries this door; it is reshaped to the baked shape. Otherwise the baked prices stand,
- * marked stale, so the page says which month they are from.
+ * one and carries this door with an https link for every tier the baked one has (so the button can
+ * never say one tier's price and pay another's); it is reshaped to the baked shape. Otherwise the
+ * baked prices stand, marked stale, so the page says which month they are from.
  */
 export function pickPrices(baked, fetched, door) {
   const fallback = { prices: baked, stale: true };
   if (!isObject(fetched) || typeof fetched.month !== 'string' || !MONTH.test(fetched.month)) return fallback;
-  if (fetched.month < baked.month || !own(fetched.doors, door) || !isObject(fetched.doors[door].links)) return fallback;
+  if (fetched.month < baked.month || !own(fetched.doors, door) || !isObject(fetched.doors[door])) return fallback;
+  const live = fetched.doors[door].links;
+  if (!isObject(live)) return fallback;
   const links = {};
-  for (const [tier, link] of Object.entries(fetched.doors[door].links)) {
-    if (own(link, 'url') && typeof link.url === 'string' && !/^\s*javascript:/i.test(link.url)) links[tier] = link.url;
+  for (const tier of Object.keys(baked.links)) {
+    const url = own(live, tier) && isObject(live[tier]) ? live[tier].url : null;
+    if (!httpsUrl(url)) return fallback;
+    links[tier] = url;
   }
-  const tiers = Array.isArray(fetched.tiers)
-    ? fetched.tiers.filter((t) => isObject(t) && typeof t.tier === 'string' && Number.isFinite(t.usd)).map(({ tier, usd, label }) => ({ tier, usd, label: String(label ?? '') }))
-    : [];
-  const pool = Number.isFinite(fetched.pool) ? fetched.pool : baked.pool;
-  return { prices: { month: fetched.month, pool, tiers: tiers.length ? tiers : baked.tiers, links }, stale: false };
+  // Every tier the baked prices show needs a live price too, or its row and button would go stale.
+  const tiers = [];
+  for (const { tier } of baked.tiers) {
+    const t = Array.isArray(fetched.tiers) ? fetched.tiers.find((x) => isObject(x) && x.tier === tier) : null;
+    if (!t || !Number.isFinite(t.usd)) return fallback;
+    tiers.push({ tier, usd: t.usd, label: String(t.label ?? '') });
+  }
+  if (!Number.isFinite(fetched.pool)) return fallback;
+  return { prices: { door, month: fetched.month, pool: fetched.pool, tiers, links }, stale: false };
 }
 
 /** The button's words for a tier: its price, or "what you like" for the free row. */

@@ -41,8 +41,23 @@ test('the thanks page bakes every shipped door’s line and link, escaped', () =
   assert.ok(html.includes('<a id="back" href="https://csarko.sh/projects">Back to the projects</a>'));
 });
 
-test('the CSS is tokens only and sizes the picture 16:9', () => {
+test('the CSS is tokens only and sizes the picture by its own shape', () => {
   assert.ok(!/#[0-9a-f]{3,8}\b/i.test(DONATE_CSS.replace(/#(top|pay|back|prices|doors)\b/g, '')));
-  assert.ok(DONATE_CSS.includes('aspect-ratio: 16 / 9'));
+  assert.ok(!DONATE_CSS.includes('aspect-ratio: 16 / 9'), 'no fixed frame: a wide hero keeps its own shape');
+  assert.ok(/\.shot img \{[^}]*height: auto;[^}]*object-fit: cover;/.test(DONATE_CSS));
   assert.ok(DONATE_CSS.includes('.tier:has(:checked)'));
+  assert.ok(!/@keyframes|animation:/.test(DONATE_CSS), 'nothing animated');
+});
+
+test('a wide picture keeps its own width and height on the page', () => {
+  const wide = { ...PICTURE, width: 1280, height: 432 };
+  const html = doorPage({ door: doorByKey('arkos'), prices: PRICES, picture: wide, theme: THEME });
+  assert.ok(html.includes('width="1280" height="432"'));
+});
+
+test('the baked prices name their door, and the bar links to the site', () => {
+  const html = doorPage({ door: doorByKey('arkos'), prices: PRICES, picture: PICTURE, theme: THEME });
+  const baked = JSON.parse(/<script type="application\/json" id="prices">(.*?)<\/script>/.exec(html)[1]);
+  assert.equal(baked.door, 'arkos');
+  assert.ok(html.includes('<a class="app-name" href="https://donate.csarko.sh">'));
 });

@@ -8,9 +8,20 @@ test('the live JSON wins when it is this month or newer, the baked one otherwise
   assert.deepEqual(pickPrices(BAKED, null), { prices: BAKED, stale: true });
   assert.deepEqual(pickPrices(BAKED, { month: '2026-09', doors: {} }), { prices: BAKED, stale: true });
   assert.deepEqual(pickPrices(BAKED, 'garbage'), { prices: BAKED, stale: true });
-  const live = { month: '2026-11', pool: 300, tiers: BAKED.tiers, doors: { arkos: { links: { prompt: { url: 'x' } } } } };
+  const links = (over = {}) => Object.fromEntries(['prompt', 'context', 'run', 'finetune', 'own'].map((t) => [t, { url: `https://buy.stripe.com/${t}` }]).concat(Object.entries(over)));
+  const live = { month: '2026-11', pool: 300, tiers: BAKED.tiers, doors: { arkos: { links: links() } } };
   assert.equal(pickPrices(BAKED, live, 'arkos').stale, false);
-  assert.equal(pickPrices(BAKED, live, 'arkos').prices.links.prompt, 'x');
+  assert.equal(pickPrices(BAKED, live, 'arkos').prices.links.prompt, 'https://buy.stripe.com/prompt');
+  assert.equal(pickPrices(BAKED, live, 'arkos').prices.door, 'arkos');
+  // A live door missing a link, or carrying one that is not https, never wins: the button could
+  // otherwise say one tier's price and pay another's.
+  const without = links(); delete without.run;
+  for (const doorLinks of [without, links({ run: { url: 'javascript:alert(1)' } }), links({ own: { url: 'http://buy.stripe.com/own' } }), links({ own: null })]) {
+    assert.deepEqual(pickPrices(BAKED, { ...live, doors: { arkos: { links: doorLinks } } }, 'arkos'), { prices: BAKED, stale: true });
+  }
+  assert.deepEqual(pickPrices(BAKED, { ...live, doors: { arkos: null } }, 'arkos'), { prices: BAKED, stale: true });
+  assert.deepEqual(pickPrices(BAKED, live, 'macstats'), { prices: BAKED, stale: true });
+  assert.deepEqual(pickPrices(BAKED, { ...live, tiers: BAKED.tiers.slice(1) }, 'arkos'), { prices: BAKED, stale: true }, 'a tier without a live price');
 });
 
 test('the button says the price, or what you like', () => {

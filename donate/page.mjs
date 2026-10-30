@@ -39,9 +39,10 @@ function shell({ title, description, canonical, main, noindex = false }) {
     links: [],
     main,
   });
+  // The bar's name is the site's: it links to the bare door, not to the page it is on.
   const name = `<a class="app-name" href="${escapeHtml(canonical)}">${BRAND}</a>`;
   if (!html.includes(name)) throw new Error('page.mjs: the shell lost its bar name');
-  let out = html.replace(name, `<a class="app-name" href="${escapeHtml(canonical)}">${iconSvg()}${BRAND}</a>`);
+  let out = html.replace(name, `<a class="app-name" href="${DONATE_URL}">${iconSvg()}${BRAND}</a>`);
   if (noindex) out = out.replace('<meta name="viewport" content="width=device-width, initial-scale=1" />', '$&\n  <meta name="robots" content="noindex" />');
   return out;
 }
@@ -93,6 +94,7 @@ export function doorPage({ door, prices, picture, theme }) {
   });
   rows.push(`        <label class="tier own"><input type="radio" name="tier" value="${CUSTOM.key}" /><span class="what"><b>${escapeHtml(CUSTOM.name)}</b><small>${OWN_CAPTION}</small></span><span class="price">any<small>$${CUSTOM.minimumUsd} or more</small></span></label>`);
   const baked = {
+    door: door.door,
     month: prices.month,
     pool: prices.pool,
     tiers: TIERS.map((t) => { const p = tierOf(t.key); return { tier: p.tier, usd: p.usd, label: p.label }; }),
@@ -156,7 +158,8 @@ export const DONATE_CSS = `
     .tip h1 { font-size: clamp(1.9rem, 6vw, 2.4rem); line-height: 1.1; letter-spacing: -0.03em; margin: 0 0 14px; }
     .tip .lead { font-size: 1.05rem; color: var(--prose); margin: 0 0 24px; }
     .shot { display: block; margin: 0 0 22px; }
-    .shot img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+    /* The picture keeps its own shape: a hero is as wide as it was made, a poster arrives cropped to 16:9. */
+    .shot img { display: block; width: 100%; height: auto; object-fit: cover; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
     .bill { margin: 0 0 18px; color: var(--text); }
     .bill b { font-family: var(--mono); font-weight: 600; color: var(--accent); }
     .note { margin: -10px 0 18px; font-size: 13.5px; color: var(--muted); }
@@ -178,8 +181,6 @@ export const DONATE_CSS = `
     .btn { display: block; padding: 13px 16px; border-radius: 10px; background: var(--accent); color: var(--on-accent); font-size: 16px; font-weight: 600; text-align: center;
       transition: background-color var(--md-duration-short3) var(--md-easing-standard); }
     .btn:hover { background: var(--accent-hover); }
-    .btn.swap { animation: swap var(--md-duration-short4) var(--md-easing-standard); }
-    @keyframes swap { from { color: transparent; } }
     .foot { margin: 12px 0 0; font-size: 13px; color: var(--muted); text-align: center; }
 
     .thanks .back { margin: 28px 0 0; }
@@ -193,5 +194,4 @@ export const DONATE_CSS = `
     }
     @media (prefers-reduced-motion: reduce) {
       .tier, .btn, footer .maker, .thanks .back a { transition: none; }
-      .btn.swap { animation: none; }
     }`;
