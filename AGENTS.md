@@ -553,9 +553,12 @@ dark token changes, regenerate them
     2021 certificate, the 2019 `csarko-website` and `inject-headers` Lambdas and
     their log groups, the `html5-multiplayer-shooter-ec2-sg` security group, and
     the `shooter`, `webgl` and `webrtc` state objects.
-  - **Kept:** `s3://sh.csarko.terraform/csarko.sh/terraform.tfstate`. It is stale
-    (most of what it lists is gone) but it also claims the **Route53 zone and the
-    apex MX records**. Never run Terraform against it — a destroy would take out
-    the zone and mail. There is no longer any AWS CloudFront, ACM, API Gateway or
+  - **Kept until 2026-10-29:** `s3://sh.csarko.terraform/csarko.sh/terraform.tfstate`. It
+    was stale (most of what it listed was gone) but it also claimed the **Route53 zone and
+    the apex MX records**, so Terraform was never to be run against it. **On 2026-10-29 the
+    bucket and every version in it were deleted** in the cloud-cost cleanup (Terraform 0.12
+    state from 2020, serial 139, with the retired `shooter`, `webgl` and `webrtc` states):
+    nothing can be run against it now, and the zone and the MX records were untouched and
+    checked afterwards. There is no longer any AWS CloudFront, ACM, API Gateway or
     Lambda for csarko.sh; the zone itself is the only csarko.sh resource left on
     AWS.
