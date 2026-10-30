@@ -81,3 +81,5 @@ npx -y firebase-tools hosting:clone csarko-sh:<version-or-channel> csarko-sh:liv
 ```
 
 Or revert the commit and redeploy.
+
+donate.csarko.sh deploys with `donate/deploy.sh` the way apps.csarko.sh does with `apps/deploy.sh`, after the build has the month's prices.
