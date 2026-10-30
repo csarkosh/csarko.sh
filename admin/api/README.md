@@ -93,6 +93,13 @@ currency and a day of each transaction and nothing else: no name, email, card, r
 description, customer or Stripe id; `recent` is `day, gross, net, currency` and the tests fail on
 any other field. A Stripe read that fails is `errors.stripe`, a health warning like any source's;
 without the key every income part is null with `notConfigured.stripe = "STRIPE_KEY"`.
+The balance transactions are listed with `expand[]=data.source` so each carries its charge, and the
+only field kept from it is the **door** (`metadata.door`): the `income` query's `byDoor` splits the
+range by door, `unknown` for a charge without one.
+The daily snapshot also runs the **donate step** (`src/donate/step.mjs`, `STRIPE_WRITE_KEY`): once a
+month it makes the next month's prices and payment links and publishes the prices object, and stores
+`finance.donate = { month, pool, at, doors }` (the `income` query's `prices`), carried forward on the
+days it does nothing; without the key it is `notConfigured.donate`, and a failure is `errors.donate`.
 The job also stores the day's KPI values as `finance.kpi` (`monthToDate`, `idleRunRate`, `last30`,
 `forecast`, `donations`; `last30` left the card on 2026-10-30 but keeps its history), which the index
 card's trends read, a small `finance.stripe = { at, mtdNet, count, lastDay }` read live, and
@@ -146,6 +153,9 @@ variables from Secret Manager. A credential whose value is empty or the placehol
 | `BILLING_DATASET`, `BILLING_TABLE` | | the GCP billing export's dataset (`billing`) and table (`gcp_billing_export_v1_013AA0_554DB9_BBF90D`); either empty means the GCP part is not configured |
 | `FAL_ADMIN_KEY` | | a fal API key with the Admin scope, for the credit balance; empty means the fal part is not configured |
 | `STRIPE_KEY` | | a **restricted** Stripe key (read on balance transactions, charges and payouts, nothing else; never the secret key), for the donations; empty means the income parts (`summary.income`, `total.net`, the `income` query, the `donations` KPI) are not configured |
+| `STRIPE_WRITE_KEY` | | a second **restricted** Stripe key that can write products, prices and payment links (nothing else), for the monthly tip prices; empty means the donate step is not configured (`notConfigured.donate`) and the snapshot skips it |
+| `DONATE_BUCKET` | | the public GCS bucket the donate step writes the prices object into (`csarko-sh-donate-prices`); empty means the donate step is not configured either (it needs both this and the write key) |
+| `DONATE_URL` | `https://donate.csarko.sh` | the donate site's address, read into the config; the step's payment links currently return to the same address from `src/donate/doors.mjs` |
 | `FILM_LEDGERS_BUCKET` | | the private GCS bucket holding `<film>/ledger.json` (`csarko-sh-film-ledgers`); empty means the Films card is not configured |
 | `MODAL_CONFIGURED` | | `1` when Terraform has created the Modal job (`csarko-finance-modal`), so a snapshot without its part is an error rather than "Not configured (MODAL_TOKEN_ID)"; the job's own secrets are `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET`, never read here |
 | (none for Claude Code) | | the provider is configured by the manual series `claude-subscription` in Firestore, entered on the page, and its usage part is written by `tools/claude-usage-sync.py` with Cyrus's own `gcloud` token: nothing on the service |

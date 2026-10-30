@@ -7,13 +7,15 @@
  * rounded to cents, and a `day` is the transaction's UTC date.
  *
  * Privacy (the contract: "No donor identity ever reaches the page"): a row here is amounts, a
- * currency and a day. No description, no source or charge id, no customer, no receipt. `recentOf`
+ * currency, a day and the door a tip came in by (the one field read from the expanded charge, its
+ * `metadata.door`). No description, no source or charge id, no customer, no receipt. `recentOf`
  * is the only list the page sees one donation at a time, and it carries `day`, `gross`, `net`
  * and `currency` and nothing else, ever.
  */
 
 import { cents, monthOf, addMonths, monthsBetween } from "./rows.mjs";
 import { addDays, isoDate } from "../time.mjs";
+import { doorByKey } from "../donate/doors.mjs";
 
 export const DONATION_TYPES = ["charge", "payment"];
 export const REFUND_TYPES = ["refund", "payment_refund"];
@@ -27,7 +29,7 @@ const dayOf = (unix) => isoDate(num(unix) * 1000);
 
 /**
  * The income rows out of balance transactions, newest first: `{ day, created, gross, fees, net,
- * currency, refund }`, a donation with positive gross and net, a refund with both negative. Counts
+ * currency, refund, door }`, a donation with positive gross and net, a refund with both negative. Counts
  * count donations only: a refund changes the amounts, not how many gave.
  */
 export function donationsOf(transactions) {
@@ -39,7 +41,8 @@ export function donationsOf(transactions) {
     if (!donation && !refund) continue;
     const gross = refund ? -Math.abs(dollars(t.amount)) : dollars(t.amount);
     const net = refund ? -Math.abs(dollars(t.net)) : dollars(t.net);
-    rows.push({ day: dayOf(t.created), created: t.created, gross, fees: dollars(t.fee), net, currency: String(t.currency ?? "usd").toLowerCase(), refund });
+    const door = typeof t.source?.metadata?.door === "string" && t.source.metadata.door !== "" ? t.source.metadata.door : null;
+    rows.push({ day: dayOf(t.created), created: t.created, gross, fees: dollars(t.fee), net, currency: String(t.currency ?? "usd").toLowerCase(), refund, door });
   }
   return rows.sort((a, b) => b.created - a.created);
 }
@@ -82,6 +85,22 @@ export function incomeFor(rows, months) {
   const set = new Set(months);
   const s = sumOf(rows.filter((r) => set.has(monthOf(r.day))));
   return { ...s, average: s.count > 0 ? cents(s.gross / s.count) : null };
+}
+
+/**
+ * The months' income split by door, `[{ door, label, gross, fees, net, count }]`, `door` "unknown"
+ * for a charge without one, biggest net first (ties by door). The labels are the doors' names.
+ */
+export function incomeByDoor(rows, months) {
+  const set = new Set(months);
+  const groups = new Map();
+  for (const r of rows) {
+    if (!set.has(monthOf(r.day))) continue;
+    const door = r.door ?? "unknown";
+    (groups.get(door) ?? groups.set(door, []).get(door)).push(r);
+  }
+  return [...groups].map(([door, list]) => ({ door, label: doorByKey(door)?.name ?? (door === "all" ? "The whole body of work" : "Unknown"), ...sumOf(list) }))
+    .sort((a, b) => b.net - a.net || (a.door < b.door ? -1 : a.door > b.door ? 1 : 0));
 }
 
 /** The newest `n` donations (refunds left out), `{ day, gross, net, currency }` and no other field. */
