@@ -11,11 +11,14 @@
  *   POST /admin/snapshot               the daily ledger write (admin token or the scheduler's OIDC token)
  *   GET  /arkos/admin/kpis             Arkos IDE's index card
  *   GET  /arkos/admin/query/<name>?days=N[&who=users|me|all]   one of Arkos's four queries
+ *   GET  /finance/admin/kpis           the finance page's index card
+ *   GET  /finance/admin/query/<name>?range=month|last|90|13m   one of the nine finance queries
+ *   POST /finance/admin/manual/<key>   { value } appended to a finance series (claude-subscription)
  *
- * Arkos IDE is served under the prefix `/arkos` so that its `api` in
- * apps.json is `<service>/arkos` and the shell's two routes hold for it.
- * Both prefixes go through the same checks in the same order; only the
- * route table differs.
+ * Arkos IDE is served under the prefix `/arkos`, and the finance page under
+ * `/finance`, so that each one's `api` in apps.json is `<service>/<prefix>`
+ * and the shell's two routes hold for it. All three prefixes go through the
+ * same checks in the same order; only the route table differs.
  *
  * Order of the checks, and why: the origin first, so somebody else's page
  * gets a 403 and no CORS headers; the preflight next, since it carries no
@@ -30,12 +33,14 @@ import { answer, fail, failureOf, readBody, parseDays, parseTz, isAllowedOrigin,
 import { clientIpOf } from "./limiter.mjs";
 import { isQueryName, isManualKey } from "./queries.mjs";
 import { isArkosQueryName, parseWho } from "./arkos-queries.mjs";
+import { isFinanceQueryName, isFinanceManualKey, parseRange } from "./finance-queries.mjs";
 
 const MAX_BODY_BYTES = 1024;
 
 const ARKOS_PREFIX = "/arkos";
+const FINANCE_PREFIX = "/finance";
 
-export function createApp({ config, queries, arkos = null, limiter, adminAuth, oidc, now = Date.now, log = console }) {
+export function createApp({ config, queries, arkos = null, finance = null, limiter, adminAuth, oidc, now = Date.now, log = console }) {
   const readersMissingLogged = { done: false };
 
   return function handle(req, res) {
@@ -47,7 +52,8 @@ export function createApp({ config, queries, arkos = null, limiter, adminAuth, o
       return answer(res, 200, { ok: true, at: new Date(now()).toISOString() });
     }
     const isArkos = arkos !== null && path.startsWith(`${ARKOS_PREFIX}/admin/`);
-    if (!path.startsWith("/admin/") && !isArkos) return fail(res, 404, "not found");
+    const isFinance = finance !== null && path.startsWith(`${FINANCE_PREFIX}/admin/`);
+    if (!path.startsWith("/admin/") && !isArkos && !isFinance) return fail(res, 404, "not found");
 
     const origin = req.headers.origin;
     if (!isAllowedOrigin(origin, config.allowedOrigins)) return fail(res, 403, "origin not allowed");
@@ -78,6 +84,7 @@ export function createApp({ config, queries, arkos = null, limiter, adminAuth, o
         }
         if (!authorized) return fail(res, 401, "unauthorized", cors);
         if (isArkos) await routeArkos(req, res, path.slice(ARKOS_PREFIX.length), url.searchParams, cors);
+        else if (isFinance) await routeFinance(req, res, path.slice(FINANCE_PREFIX.length), url.searchParams, cors);
         else await route(req, res, path, url.searchParams, cors);
       } catch (error) {
         // The cause goes to the log, where it can be read later; the page gets the message.
@@ -138,6 +145,34 @@ export function createApp({ config, queries, arkos = null, limiter, adminAuth, o
       const who = parseWho(search.get("who"));
       if (who === null) return fail(res, 400, "who must be users, me or all", cors);
       return answer(res, 200, await arkos[query[1]](days, who), cors);
+    }
+
+    return fail(res, 404, "not found", cors);
+  }
+
+  /** The finance page's three routes, `path` with the prefix taken off: the index card, the nine queries (each taking `range`) and the manual series. */
+  async function routeFinance(req, res, path, search, cors) {
+    if (path === "/admin/kpis") {
+      if (req.method !== "GET") return fail(res, 405, "method not allowed", { ...cors, allow: "GET, OPTIONS" });
+      return answer(res, 200, await finance.kpis(), cors);
+    }
+
+    const query = /^\/admin\/query\/([a-z]+)$/.exec(path);
+    if (query !== null) {
+      if (!isFinanceQueryName(query[1])) return fail(res, 404, "no such query", cors);
+      if (req.method !== "GET") return fail(res, 405, "method not allowed", { ...cors, allow: "GET, OPTIONS" });
+      const range = parseRange(search.get("range"));
+      if (range === null) return fail(res, 400, "range must be month, last, 90 or 13m", cors);
+      return answer(res, 200, await finance[query[1]](range), cors);
+    }
+
+    const manual = /^\/admin\/manual\/([a-z-]+)$/.exec(path);
+    if (manual !== null) {
+      if (!isFinanceManualKey(manual[1])) return fail(res, 404, "no such manual series", cors);
+      if (req.method !== "POST") return fail(res, 405, "method not allowed", { ...cors, allow: "POST, OPTIONS" });
+      const value = parseManualValue(await readBody(req, MAX_BODY_BYTES));
+      if (value === null) return fail(res, 400, "body must be JSON { value: number } with a finite, non-negative value", cors);
+      return answer(res, 200, await finance.manual(manual[1], value), cors);
     }
 
     return fail(res, 404, "not found", cors);

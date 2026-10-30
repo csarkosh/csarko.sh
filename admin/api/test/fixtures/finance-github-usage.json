@@ -1,0 +1,20 @@
+{
+  "usageItems": [
+    {"date":"2026-10-02T00:00:00Z","product":"actions","sku":"Actions Linux","quantity":640,"unitType":"Minutes","pricePerUnit":0.008,"grossAmount":5.12,"discountAmount":5.12,"netAmount":0,"repositoryName":"csarkosh/game-dayhike"},
+    {"date":"2026-10-05T00:00:00Z","product":"actions","sku":"Actions Linux","quantity":820,"unitType":"Minutes","pricePerUnit":0.008,"grossAmount":6.56,"discountAmount":6.56,"netAmount":0,"repositoryName":"csarkosh/game-dayhike"},
+    {"date":"2026-10-09T00:00:00Z","product":"actions","sku":"Actions Linux","quantity":905,"unitType":"Minutes","pricePerUnit":0.008,"grossAmount":7.24,"discountAmount":7.24,"netAmount":0,"repositoryName":"csarkosh/game-dayhike"},
+    {"date":"2026-10-13T00:00:00Z","product":"actions","sku":"Actions Linux","quantity":1210,"unitType":"Minutes","pricePerUnit":0.008,"grossAmount":9.68,"discountAmount":9.68,"netAmount":0,"repositoryName":"csarkosh/game-dayhike"},
+    {"date":"2026-10-16T00:00:00Z","product":"actions","sku":"Actions Linux","quantity":980,"unitType":"Minutes","pricePerUnit":0.008,"grossAmount":7.84,"discountAmount":7.84,"netAmount":0,"repositoryName":"csarkosh/game-dayhike"},
+    {"date":"2026-10-19T00:00:00Z","product":"actions","sku":"Actions Linux","quantity":1150,"unitType":"Minutes","pricePerUnit":0.008,"grossAmount":9.2,"discountAmount":9.2,"netAmount":0,"repositoryName":"csarkosh/game-dayhike"},
+    {"date":"2026-10-22T00:00:00Z","product":"actions","sku":"Actions Linux","quantity":1320,"unitType":"Minutes","pricePerUnit":0.008,"grossAmount":10.56,"discountAmount":10.56,"netAmount":0,"repositoryName":"csarkosh/game-dayhike"},
+    {"date":"2026-10-24T00:00:00Z","product":"actions","sku":"Actions Linux","quantity":1090,"unitType":"Minutes","pricePerUnit":0.008,"grossAmount":8.72,"discountAmount":8.72,"netAmount":0,"repositoryName":"csarkosh/game-dayhike"},
+    {"date":"2026-10-27T00:00:00Z","product":"actions","sku":"Actions Linux","quantity":1070,"unitType":"Minutes","pricePerUnit":0.008,"grossAmount":8.56,"discountAmount":8.56,"netAmount":0,"repositoryName":"csarkosh/game-dayhike"},
+    {"date":"2026-09-03T00:00:00Z","product":"actions","sku":"Actions Linux","quantity":410,"unitType":"Minutes","pricePerUnit":0.008,"grossAmount":3.28,"discountAmount":3.28,"netAmount":0,"repositoryName":"csarkosh/game-dayhike"},
+    {"date":"2026-09-10T00:00:00Z","product":"actions","sku":"Actions Linux","quantity":410,"unitType":"Minutes","pricePerUnit":0.008,"grossAmount":3.28,"discountAmount":3.28,"netAmount":0,"repositoryName":"csarkosh/game-dayhike"},
+    {"date":"2026-09-18T00:00:00Z","product":"actions","sku":"Actions Linux","quantity":410,"unitType":"Minutes","pricePerUnit":0.008,"grossAmount":3.28,"discountAmount":3.28,"netAmount":0,"repositoryName":"csarkosh/game-dayhike"},
+    {"date":"2026-09-25T00:00:00Z","product":"actions","sku":"Actions Linux","quantity":410,"unitType":"Minutes","pricePerUnit":0.008,"grossAmount":3.28,"discountAmount":3.28,"netAmount":0,"repositoryName":"csarkosh/game-dayhike"},
+    {"date":"2026-10-01T00:00:00Z","product":"actions","sku":"Actions Storage","quantity":6.25,"unitType":"GigabyteHours","pricePerUnit":0.008,"grossAmount":0.05,"discountAmount":0.05,"netAmount":0,"repositoryName":"csarkosh/game-dayhike"},
+    {"date":"2026-10-01T00:00:00Z","product":"git_lfs","sku":"LFS Storage","quantity":2,"unitType":"GigabyteHours","pricePerUnit":0.07,"grossAmount":0.14,"discountAmount":0.14,"netAmount":0,"repositoryName":"csarkosh/game-dayhike"},
+    {"date":"2026-09-01T00:00:00Z","product":"git_lfs","sku":"LFS Storage","quantity":2,"unitType":"GigabyteHours","pricePerUnit":0.07,"grossAmount":0.14,"discountAmount":0.14,"netAmount":0,"repositoryName":"csarkosh/game-dayhike"}
+  ]
+}

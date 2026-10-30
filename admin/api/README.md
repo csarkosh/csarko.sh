@@ -2,12 +2,17 @@
 
 The Cloud Run service behind `https://admin.csarko.sh/csarko.sh/`. It holds the vendor
 credentials, reads the site's lib-visits rows from BigQuery, Google Search Console, YouTube, GitHub, Hacker News,
-PageSpeed Insights and Firebase Hosting for the admin page, and writes one snapshot a
+PageSpeed Insights and Firebase Hosting for the admin page, the cloud bills (AWS Cost Explorer, the
+GCP billing export, GitHub's usage, Modal's billing report, fal's credit balance, the Claude Code
+subscription with the transcripts' list-price value, and the film ledgers) for the finance page, and writes one snapshot a
 day into Firestore so the trend lines are ours. Design: `docs/superpowers/specs/2026-10-12-admin-dashboard-design.md`
-(Parts 1, 2.1, 2.3, 2.4). Response shapes: `admin/CONTRACT.md`.
+(Parts 1, 2.1, 2.3, 2.4); the finance page's is `docs/superpowers/specs/2026-10-29-finance-admin-page-design.md`.
+Response shapes: `admin/CONTRACT.md`.
 
 Node 22, ES modules, `node:http`, no framework. Runtime dependencies are
-`@google-cloud/firestore`, `@google-cloud/bigquery` and `jose`, nothing else.
+`@google-cloud/firestore`, `@google-cloud/bigquery`, `@google-cloud/storage` (the film ledgers'
+bucket), `jose`, and for Cost Explorer `@aws-sdk/client-cost-explorer` and
+`@aws-sdk/credential-providers`, nothing else.
 
 ## Routes
 
@@ -20,9 +25,12 @@ Node 22, ES modules, `node:http`, no framework. Runtime dependencies are
 | `POST /admin/snapshot` | admin token, or Cloud Scheduler's OIDC token | runs every collector and merges `snapshots/<YYYY-MM-DD>` (UTC) |
 | `GET /arkos/admin/kpis` | admin token | Arkos IDE's index card: active Macs, new installs, sessions and crash-free sessions over 7 days, each with the 7 days before and a 12-week trend computed from the rows, plus the health dot |
 | `GET /arkos/admin/query/<name>?days=1\|7\|30\|90` | admin token | one of Arkos's `installs`, `journey`, `sessions`, `crashes`; same `days` rule |
+| `GET /finance/admin/kpis` | admin token | the finance page's index card: month to date, the idle run-rate (a fact, there is no goal), the last 30 days and the month's forecast, in dollars, with 12-week trends from the snapshots and the health dot (the sources answered, no unexplained day) |
+| `GET /finance/admin/query/<name>?range=month\|last\|90\|13m` | admin token | one of `summary`, `categories`, `idle`, `daily`, `activity`, `sources`, `projects` (the spend by Films, Day Hike, the site and other), `films` (each film ledger's total against its cap, by provider and model), `claude` (Claude Code: the month's subscription fee, the transcripts' list-price value by model and by day); `range` defaults to `month`, anything else is 400 (`idle`, `daily` and `films` ignore it) |
+| `POST /finance/admin/manual/<key>` body `{ "value": n }` | admin token | appends `{ at, value }` to `manual/<key>` and answers `{ key, value, at }` (key: `claude-subscription`, the claude.ai plan's monthly fee in USD, applying from its month; `n` finite and 0 or more, else 400; any other key 404) |
 
-Arkos IDE is served under the prefix `/arkos`, so `apps.json` names `<service>/arkos` as its API
-and the shell's two routes hold. Its routes read the Arkos rows in the same log bucket
+Arkos IDE is served under the prefix `/arkos`, and the finance page under `/finance`, so `apps.json`
+names `<service>/arkos` and `<service>/finance` as their APIs and the shell's two routes hold. Its routes read the Arkos rows in the same log bucket
 (`json_payload.app = 'arkos'`: the daily update checks, the opt-in session reports, the crash
 reports) through `queries/arkos-*.sql`; the journey (steps, paths, milestones, next steps,
 features) is worked out in code (`src/arkos.mjs`, `src/steps.mjs`) over the range's 5,000 newest
@@ -31,10 +39,63 @@ session reports. Macs are counted without an id from the check's `rd`, which nee
 yesterday); `journey`, `sessions` and `crashes` take the last `days` times 24 hours, as the
 csarko.sh queries do. Design: `docs/superpowers/specs/2026-10-17-arkos-admin-dashboard-design.md`.
 
+## Finance: the cloud bills
+
+The finance page (`/finance/admin/*`) reads six providers and the film ledgers. **AWS Cost Explorer costs $0.01 a call,
+so it is never called on a request**: the daily snapshot job makes two calls (13 months of cost and
+usage by usage type, and 60 days of the same) and a third for the month's forecast until the 28th,
+and stores the rows under the day's snapshot as `finance.aws` (`monthly`, `daily`, `forecast`,
+`calls`, `lastDay`); every query reads the latest snapshot. GitHub's usage
+(`GET /users/<owner>/settings/billing/usage`, current and previous month; the token needs the
+fine-grained **Plan: read** permission) is read by the same job and stored as `finance.github`.
+The GCP billing export (`csarko-sh.billing`, the standard usage cost export, rows from 2026-10-29 on)
+is read live from BigQuery through `queries/finance-*.sql`, partition-pruned and cached five minutes.
+**fal** has no per-model report below the enterprise plan, so the same job reads the prepaid credit
+balance (`GET https://api.fal.ai/v1/account/billing?expand=credits`, `Authorization: Key <FAL_ADMIN_KEY>`,
+a key with the Admin scope) and stores it as `finance.fal = { at, balance, currency, lastDay }`; a day's
+spend is the balance's fall between two snapshots (a rise is a credit purchase, never spend), derived
+from the run of snapshots (`src/finance/fal.mjs`). **Modal** has no REST billing endpoint, so a Python
+Cloud Run job (`admin/finance-modal/`, scheduled ten minutes before the snapshot) runs
+`modal billing report` and writes `finance.modal = { at, lastDay, credits, rows, monthly }` into the
+day's document (`rows` the last 60 days by app and day, `monthly` 13 months by app and month, `cost` the
+usage in USD; `{ at, error }` when it failed); the API reads it from the latest snapshot, every app a
+`compute` line named by the app, charged as the month's usage less the plan's $30 of included credits
+(each line carries its share of that net, `gross` the usage). The job here keeps that part when it
+writes `finance`, since the store replaces the key whole. The **film ledgers** (`<film>/ledger.json`
+in the bucket `FILM_LEDGERS_BUCKET`, synced by the pipeline's `tools/cinema/ledger-sync.sh`) are read
+live with `@google-cloud/storage` and cached five minutes; the service account needs
+`roles/storage.objectViewer` on the bucket. **Claude Code** (Cyrus, 2026-10-30: "its own category")
+runs on a claude.ai subscription, a flat fee the code cannot read, so the fee is entered on the page
+(`POST /finance/admin/manual/claude-subscription`, the series `manual/claude-subscription`) and is
+the spend: one `claudeCode` line a month (the twelfth category, `fixed`, project other), spread over
+the month's days in `daily`; a month uses the latest entry at or before its end, so a plan change
+applies from its month, and no entry means the provider is not configured
+(`notConfigured.claude = "claude-subscription"`). The value beside it comes from
+`tools/claude-usage-sync.py`, which Cyrus runs on his Mac after a day's sessions (`--dry-run` to
+print it): it sums the local transcripts' tokens (`~/.claude*/projects/**/*.jsonl`) per day and per
+model, prices them at the first-party API list price, and PATCHes `finance.claude = { at, lastDay,
+files, rows, monthly, pricing }` into the day's snapshot with his `gcloud` token (no transcript text
+leaves the Mac). The API reads it from the latest snapshot (`src/finance/claude.mjs`); a fee with no
+sync there is `errors.claude = "No usage sync yet: run tools/claude-usage-sync.py"`, the fee still
+counted. The job here keeps that part, like Modal's, when it writes `finance`.
+The job also stores the day's four KPI values as `finance.kpi`, which the index card's trends read,
+and `finance.awsCalls`, which the Sources card sums over the month. A failing finance step is
+`errors.finance` on the snapshot and never fails the rest of the day's write.
+
+AWS credentials come by **web identity federation**, so no key is stored: the service asks the
+metadata server for a Google ID token for its own service account (audience `AWS_COST_AUDIENCE`,
+the role's trust condition; the role ARN when none is set) and exchanges it with
+`AssumeRoleWithWebIdentity` on `AWS_COST_ROLE_ARN` (`_infra/modules/aws-costs`). Off Cloud Run there
+is no metadata server: set `AWS_COST_LOCAL=1` and the SDK's default credential chain (an `AWS_PROFILE`
+on the Mac) is used instead, for a local run only. Every line is put in one of twelve categories
+(`src/finance/categories.mjs`: compute, serverless, hosting, load balancing, storage, AI, DNS and
+keys, domains, Claude Code, CI, tax, other), each idle, activity or fixed; an unmapped line lands in
+`other` and the page lists it so the table gets a row.
+
 Every answer is JSON with `cache-control: no-store`. Errors are `{ "error": "..." }`:
 401 without the token, 403 for an origin that is not allowed, 404 for an unknown route
 or query, 405 for the wrong method, 429 past 60 requests in a burst and one a second
-per address, 503 on every `/admin/*` and `/arkos/admin/*` route while `ADMIN_EMAILS` is empty. Both
+per address, 503 on every `/admin/*`, `/arkos/admin/*` and `/finance/admin/*` route while `ADMIN_EMAILS` is empty. All three
 prefixes go through the same checks in the same order.
 
 A source whose credential is missing answers `null` for its part and a
@@ -62,6 +123,15 @@ variables from Secret Manager. A credential whose value is empty or the placehol
 | `YOUTUBE_KEY`, `YOUTUBE_HANDLE` | `csarkosh` | YouTube Data API key and the channel handle |
 | `GITHUB_TOKEN`, `GITHUB_OWNER` | `csarkosh` | fine-grained token for the traffic endpoints, and the account whose public repositories are reported: every one of them, forks left out, found by listing the account (the public listing can never name a private one) |
 | `PSI_KEY` | | PageSpeed Insights API key (Lighthouse performance, run by the snapshot) |
+| `AWS_COST_ROLE_ARN` | | the IAM role (`csarko-admin-costs`) the service assumes by web identity federation to call Cost Explorer; empty means the AWS part of the finance page is not configured |
+| `AWS_COST_AUDIENCE` | the role ARN | the audience of the Google ID token the role trusts (`accounts.google.com:oaud`) |
+| `AWS_COST_LOCAL` | | `1` uses the SDK's default credential chain (`AWS_PROFILE`) instead of federation, for a local run; never set on Cloud Run |
+| `BILLING_DATASET`, `BILLING_TABLE` | | the GCP billing export's dataset (`billing`) and table (`gcp_billing_export_v1_013AA0_554DB9_BBF90D`); either empty means the GCP part is not configured |
+| `FAL_ADMIN_KEY` | | a fal API key with the Admin scope, for the credit balance; empty means the fal part is not configured |
+| `FILM_LEDGERS_BUCKET` | | the private GCS bucket holding `<film>/ledger.json` (`csarko-sh-film-ledgers`); empty means the Films card is not configured |
+| `MODAL_CONFIGURED` | | `1` when Terraform has created the Modal job (`csarko-finance-modal`), so a snapshot without its part is an error rather than "Not configured (MODAL_TOKEN_ID)"; the job's own secrets are `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET`, never read here |
+| (none for Claude Code) | | the provider is configured by the manual series `claude-subscription` in Firestore, entered on the page, and its usage part is written by `tools/claude-usage-sync.py` with Cyrus's own `gcloud` token: nothing on the service |
+| ~~`FINANCE_GOAL_USD`~~ | | removed 2026-10-30: there is no spend goal, the idle run-rate is reported as a fact |
 | `SITE_URL`, `SITEMAP_URL` | `https://csarko.sh`, `<SITE_URL>/sitemap.xml` | the public site and its sitemap |
 | `HOSTING_SITE` | `csarko-sh` | Firebase Hosting site for the last-deploy time (read with the metadata server's token; null off Cloud Run) |
 | `ALLOWED_ORIGINS` | `https://admin.csarko.sh,http://localhost:8788` | CORS allowlist |
@@ -74,11 +144,12 @@ variables from Secret Manager. A credential whose value is empty or the placehol
 ## BigQuery access
 
 The service account reads with `roles/bigquery.jobUser` and `roles/logging.viewAccessor`
-on the project and `roles/bigquery.dataViewer` on the two datasets, `csarko_visits` (the
-Log Analytics linked dataset) and `csarko_history` (`_infra/modules/gcp-visits`). Each
+on the project and `roles/bigquery.dataViewer` on the three datasets, `csarko_visits` (the
+Log Analytics linked dataset), `csarko_history` (`_infra/modules/gcp-visits`) and `billing` (the
+cost export, `_infra`), and `roles/storage.objectViewer` on the film ledgers' bucket. Each
 query in `queries/*.sql` is one BigQuery job (about a second of fixed overhead), run in
 parallel and cached five minutes by window. Dependencies: `@google-cloud/firestore`,
-`jose` and `@google-cloud/bigquery`.
+`jose`, `@google-cloud/bigquery` and `@google-cloud/storage`.
 
 ## Local run
 
@@ -96,6 +167,15 @@ curl -H "authorization: Bearer $ID_TOKEN" 'http://localhost:8787/admin/query/hea
 `.env.local` is git-ignored. Without any vendor credential the service still starts:
 the uptime, sitemap, Hacker News and GitHub-stars parts work unauthenticated and the
 rest reads `null` with its `notConfigured` hint, which is the state the page must handle.
+For the finance page locally, add `AWS_COST_LOCAL=1` with an `AWS_PROFILE` that may call Cost
+Explorer, `BILLING_DATASET=billing` and `BILLING_TABLE=...` (your `gcloud` login reads BigQuery),
+`FAL_ADMIN_KEY=...` and `FILM_LEDGERS_BUCKET=csarko-sh-film-ledgers` (your `gcloud` login reads the
+bucket), then `POST /admin/snapshot` once so the AWS, GitHub and fal parts have a snapshot to read;
+remember each snapshot costs two or three cents of Cost Explorer. fal's spend needs two snapshots on
+different days; Modal's part needs the Python job, or a hand-written `finance.modal` in the store.
+Claude Code needs the fee entered (`POST /finance/admin/manual/claude-subscription` with
+`{ "value": 200 }`) and, for the value, a `finance.claude` part: `tools/claude-usage-sync.py` writes
+the real one into Firestore, or copy `test/fixtures/finance-claude.json` into the memory store.
 
 ## Deploy
 
@@ -128,10 +208,17 @@ src/queries.mjs         the eight queries, kpis, snapshot, manual
 src/arkos-queries.mjs   Arkos IDE's kpis and four queries, their ranges and not-configured shapes
 src/arkos.mjs           Arkos rows to answers: journey (paths, milestones, next, features...), installs, crashes, kpis
 src/steps.mjs           the Arkos event-to-step table, restore folding and duplicate collapsing
+src/finance-queries.mjs the finance page's kpis, nine queries, the manual series and the snapshot's finance step; `parseRange`
+src/finance/*.mjs       pure shaping over plain rows: categories (the table), rows (sources to one shape, Modal's credits),
+                        months (range, the categories table), idle (run-rate, stopped lines), daily (median, flags), activity,
+                        projects (the rule table), films (ledgers to the Films card), fal (the balance's fall),
+                        claude (the subscription's rows, the transcripts' value), kpis (health)
 src/health.mjs          the thresholds behind the health dot
 src/referrers.mjs       host to group classifier (rows are `{ name, count }`)
 src/store.mjs           Firestore and in-memory stores
-src/collectors/*.mjs    visits (and the BigQuery runner), arkos, gsc, youtube, github, hn, psi, uptime, hosting, sitemap
-queries/*.sql           the saved BigQuery SQL, one job per query, copied into the image
+src/collectors/*.mjs    visits (and the BigQuery runner), arkos, gsc, youtube, github, hn, psi, uptime, hosting, sitemap,
+                        aws-cost (Cost Explorer by federation), gcp-billing (the export in BigQuery), github-billing (usage),
+                        fal (the credit balance), ledgers (the film ledgers in their bucket)
+queries/*.sql           the saved BigQuery SQL, one job per query, copied into the image (finance-*.sql read the export)
 test/                   node:test suites and JSON fixtures
 ```

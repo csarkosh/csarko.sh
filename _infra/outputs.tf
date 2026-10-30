@@ -103,6 +103,16 @@ output "admin_api_secret_ids" {
   value       = module.gcp_admin_api.secret_ids
 }
 
+output "admin_finance_modal_job_name" {
+  description = "Cloud Run job that writes Modal's billing report into the snapshot, for `gcloud run jobs deploy --source admin/finance-modal`"
+  value       = module.gcp_admin_api.finance_modal_job_name
+}
+
+output "film_ledgers_bucket" {
+  description = "The private GCS bucket the film pipeline syncs <film>/ledger.json into (the Finance page's Films card)"
+  value       = module.gcp_admin_api.film_ledgers_bucket
+}
+
 output "admin_scheduler_service_account" {
   description = "The identity the daily snapshot job calls the API as"
   value       = module.gcp_admin_api.scheduler_service_account_email
@@ -118,3 +128,13 @@ output "visits_service_url" { value = module.gcp_visits.service_url }
 output "visits_secret_id" { value = module.gcp_visits.secret_id }
 output "visits_dataset" { value = module.gcp_visits.dataset }
 output "visits_history_dataset" { value = module.gcp_visits.history_dataset }
+
+output "admin_costs_role_arn" {
+  description = "The AWS IAM role the admin API assumes for Cost Explorer (the Finance page); the service's AWS_COST_ROLE_ARN"
+  value       = module.aws_costs.role_arn
+}
+
+output "admin_costs_audience" {
+  description = "The audience of the Google ID token the admin API presents to AWS STS; the service's AWS_COST_AUDIENCE"
+  value       = module.aws_costs.audience
+}

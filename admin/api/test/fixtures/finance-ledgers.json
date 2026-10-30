@@ -1,0 +1,285 @@
+{
+  "last-trail": {
+    "updated": "2026-10-28T20:32:39Z",
+    "body": [
+      {
+        "what": "frames",
+        "model": "T2I",
+        "gpu": "L40S",
+        "seconds": 271,
+        "usd": 0.147,
+        "note": "12 images"
+      },
+      {
+        "what": "frames",
+        "model": "T2I",
+        "gpu": "L40S",
+        "seconds": 344,
+        "usd": 0.193,
+        "note": "15 images"
+      },
+      {
+        "what": "frames",
+        "model": "Edit",
+        "gpu": "A100-80GB",
+        "seconds": 13312,
+        "usd": 9.245,
+        "note": "edits"
+      },
+      {
+        "what": "frames",
+        "model": "Edit",
+        "gpu": "A100-80GB",
+        "seconds": 13312,
+        "usd": 9.245,
+        "note": "edits"
+      },
+      {
+        "what": "frames",
+        "model": "nano-banana-2-edit",
+        "gpu": "api",
+        "seconds": 2838,
+        "usd": 12.36,
+        "note": "edits through fal"
+      },
+      {
+        "what": "frames",
+        "model": "nano-banana-2-edit",
+        "gpu": "api",
+        "seconds": 2838,
+        "usd": 12.36,
+        "note": "edits through fal"
+      },
+      {
+        "what": "clips",
+        "model": "veo-3.1-fast-generate-001",
+        "gpu": "api",
+        "seconds": 2046,
+        "usd": 30.9,
+        "note": "vertex, list rate"
+      },
+      {
+        "what": "clips",
+        "model": "veo-3.1-fast-generate-001",
+        "gpu": "api",
+        "seconds": 2046,
+        "usd": 30.9,
+        "note": "vertex, list rate"
+      },
+      {
+        "what": "clips",
+        "model": "veo-3.1-fast-generate-001",
+        "gpu": "api",
+        "seconds": 2045,
+        "usd": 30.9,
+        "note": "vertex, list rate"
+      },
+      {
+        "what": "clips",
+        "model": "Seedance-2.5",
+        "gpu": "api",
+        "seconds": 1883,
+        "usd": 7.06,
+        "note": "through fal"
+      },
+      {
+        "what": "clips",
+        "model": "A2V",
+        "gpu": "B200",
+        "seconds": 1479,
+        "usd": 2.56,
+        "note": ""
+      },
+      {
+        "what": "clips",
+        "model": "LTX",
+        "gpu": "B200",
+        "seconds": 459,
+        "usd": 0.8,
+        "note": ""
+      },
+      {
+        "what": "sfx",
+        "model": "elevenlabs-sfx-v2",
+        "gpu": "api",
+        "seconds": 64,
+        "usd": 0.08,
+        "note": "through fal"
+      }
+    ]
+  },
+  "ranger-radio": {
+    "updated": "2026-10-22T15:22:30Z",
+    "body": [
+      {
+        "what": "frames",
+        "model": "T2I",
+        "gpu": "L40S",
+        "seconds": 2193,
+        "usd": 1.19,
+        "note": "16 batches"
+      },
+      {
+        "what": "frames",
+        "model": "Edit",
+        "gpu": "A100-80GB",
+        "seconds": 12976,
+        "usd": 9.01,
+        "note": "edits"
+      },
+      {
+        "what": "clips",
+        "model": "Seedance-2.5",
+        "gpu": "api",
+        "seconds": 5516,
+        "usd": 22.49,
+        "note": "through fal"
+      },
+      {
+        "what": "clips",
+        "model": "LTX",
+        "gpu": "B200",
+        "seconds": 10120,
+        "usd": 17.57,
+        "note": ""
+      },
+      {
+        "what": "clips",
+        "model": "A2V",
+        "gpu": "B200",
+        "seconds": 6599,
+        "usd": 11.46,
+        "note": ""
+      },
+      {
+        "what": "clips",
+        "model": "veo-3.1-fast-generate-001",
+        "gpu": "api",
+        "seconds": 180,
+        "usd": 3.6,
+        "note": "vertex, list rate"
+      }
+    ]
+  },
+  "rowan-rockslide": {
+    "updated": "2026-10-16T22:21:18Z",
+    "body": [
+      {
+        "what": "character",
+        "model": "T2I",
+        "gpu": "L40S",
+        "seconds": 168,
+        "usd": 0.091,
+        "note": "3 seeds"
+      },
+      {
+        "what": "frames",
+        "model": "Edit",
+        "gpu": "A100-80GB",
+        "seconds": 2547,
+        "usd": 1.77,
+        "note": "edits"
+      },
+      {
+        "what": "clips",
+        "model": "Wan",
+        "gpu": "H100",
+        "seconds": 8867,
+        "usd": 9.73,
+        "note": ""
+      },
+      {
+        "what": "clips",
+        "model": "LTX",
+        "gpu": "B200",
+        "seconds": 2735,
+        "usd": 4.75,
+        "note": ""
+      }
+    ]
+  },
+  "rowan-speech": {
+    "updated": "2026-10-17T20:36:24Z",
+    "body": {
+      "budget_usd": 20,
+      "rows": [
+        {
+          "what": "frames",
+          "model": "Edit",
+          "gpu": "A100-80GB",
+          "seconds": 364,
+          "usd": 0.253,
+          "note": "2 edits"
+        },
+        {
+          "what": "frames",
+          "model": "Edit",
+          "gpu": "A100-80GB",
+          "seconds": 365,
+          "usd": 0.254,
+          "note": "2 edits"
+        },
+        {
+          "what": "clips",
+          "model": "LTX",
+          "gpu": "B200",
+          "seconds": 243,
+          "usd": 0.42,
+          "note": ""
+        }
+      ]
+    }
+  },
+  "last-trail-dad": {
+    "updated": "2026-10-24T16:44:25Z",
+    "body": [
+      {
+        "what": "character",
+        "model": "T2I",
+        "gpu": "L40S",
+        "seconds": 61,
+        "usd": 0.033,
+        "note": "2 seeds"
+      }
+    ]
+  },
+  "last-trail-thing-body": {
+    "updated": "2026-10-24T06:22:15Z",
+    "body": [
+      {
+        "what": "character",
+        "model": "T2I",
+        "gpu": "L40S",
+        "seconds": 112,
+        "usd": 0.061,
+        "note": "3 seeds"
+      }
+    ]
+  },
+  "last-trail-thing-face17": {
+    "updated": "2026-10-24T06:23:44Z",
+    "body": [
+      {
+        "what": "character",
+        "model": "T2I",
+        "gpu": "L40S",
+        "seconds": 88,
+        "usd": 0.048,
+        "note": "3 seeds"
+      }
+    ]
+  },
+  "last-trail-thing17": {
+    "updated": "2026-10-24T06:03:00Z",
+    "body": [
+      {
+        "what": "character",
+        "model": "T2I",
+        "gpu": "L40S",
+        "seconds": 92,
+        "usd": 0.05,
+        "note": "3 seeds"
+      }
+    ]
+  }
+}

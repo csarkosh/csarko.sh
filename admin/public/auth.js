@@ -131,12 +131,14 @@ export function initialsOf(account) {
 
 /**
  * The nav's account (Cyrus, 2026-10-13: in place of the app links): a round profile button
- * that toggles a small menu with the Live or Sample badge, the signed-in email and Sign out.
- * Rendered into `host`, the nav's `#account`, by each page once it is ready. Under
- * `?preview` there is no account: the menu says so and has no Sign out. The menu closes on
- * Escape, on a click elsewhere, and when Sign out is pressed; the gate then returns. It grows
- * in from the button's corner and fades out (motion.js showMenu, hideMenu); the button's
- * `aria-expanded` says where it is going, so a click while it moves turns it round.
+ * that toggles a small menu with the signed-in name and email, then the Billing link and
+ * Sign out, every line on the same left edge (Cyrus, 2026-10-29: no Live badge, Billing in the
+ * menu rather than among the index's cards). Rendered into `host`, the nav's `#account`, by
+ * each page once it is ready. Under `?preview` there is no account: the menu says so and has
+ * no Sign out. The menu closes on Escape, on a click elsewhere, and when Sign out is pressed;
+ * the gate then returns. It grows in from the button's corner and fades out (motion.js
+ * showMenu, hideMenu); the button's `aria-expanded` says where it is going, so a click while
+ * it moves turns it round.
  */
 export function accountMenu(host, { account = null, preview = false } = {}) {
   menuHost = host;
@@ -156,17 +158,22 @@ export function accountMenu(host, { account = null, preview = false } = {}) {
     }
   }
   const button = make('button', { class: `avatar${initials ? ' me' : ''}`, type: 'button', 'aria-label': account ? `Account, ${account.name ?? account.email}` : 'Account', 'aria-haspopup': 'true', 'aria-expanded': 'false', 'aria-controls': 'account-menu' }, face);
+  // Billing is reached from here, not from the index's cards (Cyrus, 2026-10-29): it is the
+  // account's own page, not an app's. The link keeps `?preview` so the sample set follows.
+  const onBilling = location.pathname.startsWith('/finance/');
+  const billing = make('a', { class: 'item', href: `/finance/${preview ? '?preview' : ''}`, ...(onBilling ? { 'aria-current': 'page' } : {}) }, 'Billing');
+  const items = make('div', { class: 'items' }, billing);
   const menu = make('div', { class: 'menu', id: 'account-menu', hidden: true },
-    make('span', { class: `badge ${preview ? 'sample' : 'live'}` }, preview ? 'Sample data' : 'Live'),
     ...(account?.name ? [make('p', { class: 'name' }, account.name)] : []),
-    account ? make('p', { class: 'email' }, account.email) : make('p', { class: 'note' }, 'Nobody is signed in: the page shows the sample data set.'));
+    account ? make('p', { class: 'email' }, account.email) : make('p', { class: 'note' }, 'Nobody is signed in: the page shows the sample data set.'),
+    items);
   const isOpen = () => button.getAttribute('aria-expanded') === 'true';
   const close = () => { hideMenu(menu); button.setAttribute('aria-expanded', 'false'); };
   const open = () => { showMenu(menu); button.setAttribute('aria-expanded', 'true'); };
   if (account) {
-    const out = make('button', { class: 'btn ghost small', type: 'button' }, 'Sign out');
+    const out = make('button', { class: 'item', type: 'button' }, 'Sign out');
     out.addEventListener('click', () => { close(); signOut(); });
-    menu.append(out);
+    items.append(out);
   }
   button.addEventListener('click', () => { if (isOpen()) close(); else open(); });
   document.addEventListener('click', (event) => { if (isOpen() && !host.contains(event.target)) close(); });

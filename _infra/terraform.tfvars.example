@@ -21,7 +21,10 @@ dns_zone_name = "csarko.sh"
 # that switched to lib-visits (variables.tf says why it has no default).
 # visits_history_until = "2026-10-15T18:00:00Z"
 
-# Optional: a monthly budget alert for the whole project. Empty creates none.
+# The billing account: a monthly budget alert for the whole project, and the name
+# of the Cloud Billing export table the admin dashboard's Finance page reads
+# (gcp_billing_export_v1_<id with underscores>). Empty creates no budget and
+# leaves the Finance page's GCP side unconfigured.
 # billing_account_id = "XXXXXX-XXXXXX-XXXXXX"
 # monthly_budget_usd = 5
 

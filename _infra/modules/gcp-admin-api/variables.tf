@@ -72,11 +72,61 @@ variable "secret_ids" {
   EOT
   type        = map(string)
   default = {
-    gsc-sa-key   = "GSC_SA_KEY"
-    youtube-key  = "YOUTUBE_KEY"
-    github-token = "GITHUB_TOKEN"
-    psi-key      = "PSI_KEY"
+    gsc-sa-key    = "GSC_SA_KEY"
+    youtube-key   = "YOUTUBE_KEY"
+    github-token  = "GITHUB_TOKEN"
+    psi-key       = "PSI_KEY"
+    fal-admin-key = "FAL_ADMIN_KEY"
   }
+}
+
+variable "job_secret_ids" {
+  description = <<-EOT
+    The Modal job's secrets, secret id to environment variable, created and
+    granted like secret_ids but mounted on the job alone. The names are the
+    Modal client's own: it reads MODAL_TOKEN_ID and MODAL_TOKEN_SECRET itself.
+  EOT
+  type        = map(string)
+  default = {
+    modal-token-id     = "MODAL_TOKEN_ID"
+    modal-token-secret = "MODAL_TOKEN_SECRET"
+  }
+}
+
+variable "seeded_secret_ids" {
+  description = <<-EOT
+    The secrets (from secret_ids and job_secret_ids) created with a first version
+    holding the literal `unset`, so Cloud Run accepts the service and the job in
+    the same apply; the real value is added by hand as a new version. The four
+    original secrets are not here: their versions were added by hand before
+    the service existed.
+  EOT
+  type        = set(string)
+  default     = ["fal-admin-key", "modal-token-id", "modal-token-secret"]
+}
+
+variable "job_image" {
+  description = "Container image to create the Modal job with. `gcloud run jobs deploy --source` owns it afterwards."
+  type        = string
+  default     = "us-docker.pkg.dev/cloudrun/container/job:latest"
+}
+
+variable "modal_credits_usd" {
+  description = "The Modal plan's included monthly credits, whole US dollars (MODAL_CREDITS_USD on the job; $30 on Starter)."
+  type        = number
+  default     = 30
+}
+
+variable "finance_modal_schedule" {
+  description = "Cron schedule for the Modal billing job, in snapshot_time_zone. Before snapshot_schedule, so the snapshot reads a fresh part."
+  type        = string
+  default     = "50 5 * * *"
+}
+
+variable "film_ledgers_bucket" {
+  description = "Name of the private GCS bucket the film pipeline syncs <film>/ledger.json into (FILM_LEDGERS_BUCKET on the service). Bucket names are global."
+  type        = string
+  default     = "csarko-sh-film-ledgers"
 }
 
 variable "snapshot_schedule" {
@@ -107,4 +157,25 @@ variable "admin_emails" {
   description = "The accounts that may read the admin routes, as addresses. Empty serves no admin routes."
   type        = list(string)
   default     = []
+}
+
+variable "aws_cost_role_arn" {
+  description = <<-EOT
+    ARN of the AWS IAM role the costs collector assumes for Cost Explorer
+    (modules/aws-costs, csarko-admin-costs). Empty serves the Finance page's
+    AWS cards an "unconfigured" line instead of a role to assume.
+  EOT
+  type        = string
+  default     = ""
+}
+
+variable "aws_cost_audience" {
+  description = <<-EOT
+    The audience the service puts in the Google ID token it mints for its own
+    service account and presents to AWS STS; the role's trust policy accepts
+    exactly this value (accounts.google.com:aud). Not a secret: the token's
+    signature is the proof, the audience only scopes it to that one use.
+  EOT
+  type        = string
+  default     = ""
 }

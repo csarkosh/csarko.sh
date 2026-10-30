@@ -1,0 +1,101 @@
+{
+  "asOf": "2026-10-28T20:32:39Z",
+  "films": [
+    {
+      "key": "last-trail",
+      "label": "The Last Trail",
+      "total": 146.75,
+      "capUsd": 150,
+      "byProvider": { "modal": 22.19, "fal": 31.86, "gcp": 92.7 },
+      "byModel": [
+        { "model": "veo-3.1-fast-generate-001", "provider": "gcp", "usd": 92.7, "calls": 3, "seconds": 6137 },
+        { "model": "nano-banana-2-edit", "provider": "fal", "usd": 24.72, "calls": 2, "seconds": 5676 },
+        { "model": "Edit", "provider": "modal", "usd": 18.49, "calls": 2, "seconds": 26624 },
+        { "model": "Seedance-2.5", "provider": "fal", "usd": 7.06, "calls": 1, "seconds": 1883 },
+        { "model": "A2V", "provider": "modal", "usd": 2.56, "calls": 1, "seconds": 1479 },
+        { "model": "LTX", "provider": "modal", "usd": 0.8, "calls": 1, "seconds": 459 },
+        { "model": "T2I", "provider": "modal", "usd": 0.34, "calls": 2, "seconds": 615 },
+        { "model": "elevenlabs-sfx-v2", "provider": "fal", "usd": 0.08, "calls": 1, "seconds": 64 }
+      ]
+    },
+    {
+      "key": "ranger-radio",
+      "label": "Ranger Radio, the earlier cut of The Last Trail",
+      "total": 65.32,
+      "capUsd": 150,
+      "byProvider": { "modal": 39.23, "fal": 22.49, "gcp": 3.6 },
+      "byModel": [
+        { "model": "Seedance-2.5", "provider": "fal", "usd": 22.49, "calls": 1, "seconds": 5516 },
+        { "model": "LTX", "provider": "modal", "usd": 17.57, "calls": 1, "seconds": 10120 },
+        { "model": "A2V", "provider": "modal", "usd": 11.46, "calls": 1, "seconds": 6599 },
+        { "model": "Edit", "provider": "modal", "usd": 9.01, "calls": 1, "seconds": 12976 },
+        { "model": "veo-3.1-fast-generate-001", "provider": "gcp", "usd": 3.6, "calls": 1, "seconds": 180 },
+        { "model": "T2I", "provider": "modal", "usd": 1.19, "calls": 1, "seconds": 2193 }
+      ]
+    },
+    {
+      "key": "rowan-rockslide",
+      "label": "Pipeline spike: rowan-rockslide",
+      "total": 16.34,
+      "capUsd": 150,
+      "byProvider": { "modal": 16.34, "fal": 0, "gcp": 0 },
+      "byModel": [
+        { "model": "Wan", "provider": "modal", "usd": 9.73, "calls": 1, "seconds": 8867 },
+        { "model": "LTX", "provider": "modal", "usd": 4.75, "calls": 1, "seconds": 2735 },
+        { "model": "Edit", "provider": "modal", "usd": 1.77, "calls": 1, "seconds": 2547 },
+        { "model": "T2I", "provider": "modal", "usd": 0.09, "calls": 1, "seconds": 168 }
+      ]
+    },
+    {
+      "key": "rowan-speech",
+      "label": "Pipeline spike: rowan-speech",
+      "total": 0.93,
+      "capUsd": 20,
+      "byProvider": { "modal": 0.93, "fal": 0, "gcp": 0 },
+      "byModel": [
+        { "model": "Edit", "provider": "modal", "usd": 0.51, "calls": 2, "seconds": 729 },
+        { "model": "LTX", "provider": "modal", "usd": 0.42, "calls": 1, "seconds": 243 }
+      ]
+    },
+    {
+      "key": "last-trail-thing-body",
+      "label": "The Last Trail, thing-body takes",
+      "total": 0.06,
+      "capUsd": 150,
+      "byProvider": { "modal": 0.06, "fal": 0, "gcp": 0 },
+      "byModel": [
+        { "model": "T2I", "provider": "modal", "usd": 0.06, "calls": 1, "seconds": 112 }
+      ]
+    },
+    {
+      "key": "last-trail-thing-face17",
+      "label": "The Last Trail, thing-face17 takes",
+      "total": 0.05,
+      "capUsd": 150,
+      "byProvider": { "modal": 0.05, "fal": 0, "gcp": 0 },
+      "byModel": [
+        { "model": "T2I", "provider": "modal", "usd": 0.05, "calls": 1, "seconds": 88 }
+      ]
+    },
+    {
+      "key": "last-trail-thing17",
+      "label": "The Last Trail, thing17 takes",
+      "total": 0.05,
+      "capUsd": 150,
+      "byProvider": { "modal": 0.05, "fal": 0, "gcp": 0 },
+      "byModel": [
+        { "model": "T2I", "provider": "modal", "usd": 0.05, "calls": 1, "seconds": 92 }
+      ]
+    },
+    {
+      "key": "last-trail-dad",
+      "label": "The Last Trail, dad takes",
+      "total": 0.03,
+      "capUsd": 150,
+      "byProvider": { "modal": 0.03, "fal": 0, "gcp": 0 },
+      "byModel": [
+        { "model": "T2I", "provider": "modal", "usd": 0.03, "calls": 1, "seconds": 61 }
+      ]
+    }
+  ]
+}

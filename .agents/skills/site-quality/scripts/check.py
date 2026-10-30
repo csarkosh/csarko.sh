@@ -1818,11 +1818,29 @@ def admin_checks():
         squash = lambda t: re.sub(r"\s+", " ", t)
         for block in re.findall(r"(?<![\w-]):root\s*\{.*?\}", gen.group(1), re.S):
             check(squash(block) in squash(index_css), f"theme.css token block is the home page's own, re-indented only ({block[:24]!r}…)")
-        rest = re.sub(r"/\*.*?\*/", "", theme.replace(gen.group(0), ""), flags=re.S)
+        # The chart series' own token pair (admin:palette, the finance page's categorical
+        # palette, 2026-10-29): the one block beside the site's that may hold a colour, read
+        # as a token block too. Every slot must be in both themes and, as a mark, 3:1 and up
+        # on --surface; text never takes a series colour, so 4.5:1 is not asked of it.
+        pal = re.search(r"/\* admin:palette \*/(.*?)/\* /admin:palette \*/", theme, re.S)
+        rest = re.sub(r"/\*.*?\*/", "", theme.replace(gen.group(0), "").replace(pal.group(0) if pal else "", ""), flags=re.S)
         stray = sorted(set(COLOR_LITERAL.findall(rest)))
-        check(not stray, f"theme.css: no colours outside the token block {stray or ''}")
+        check(not stray, f"theme.css: no colours outside the token blocks {stray or ''}")
         bad = motion_literals(rest)
         check(not bad, f"theme.css: transitions and animations use motion tokens, no bare easing or duration {bad or ''}")
+        if pal:
+            blocks = re.findall(r"(?<![\w-]):root\s*\{(.*?)\}", pal.group(1), re.S)
+            check(len(blocks) == 2, "theme.css admin:palette holds one dark and one light block")
+            site = re.findall(r"(?<![\w-]):root\s*\{(.*?)\}", gen.group(1), re.S)
+            for name, block, tokens in zip(("dark", "light"), blocks, site):
+                slots = dict(re.findall(r"(--[\w-]+)\s*:\s*([^;]+);", block))
+                surface = dict(re.findall(r"(--[\w-]+)\s*:\s*([^;]+);", tokens)).get("--surface", "").strip()
+                check(bool(re.fullmatch(r"#[0-9a-fA-F]{6}", surface)), f"theme.css {name}: --surface is a hex the palette can be checked against ({surface!r})")
+                low = [f"{k} {contrast(v.strip(), surface):.2f}" for k, v in slots.items() if re.fullmatch(r"#[0-9a-fA-F]{6}", v.strip()) and re.fullmatch(r"#[0-9a-fA-F]{6}", surface) and contrast(v.strip(), surface) < 3]
+                check(not low, f"theme.css {name}: every palette slot ≥ 3:1 on --surface {low or ''}")
+            names = [set(re.findall(r"(--[\w-]+)\s*:", b)) for b in blocks]
+            if len(names) == 2:
+                check(names[0] == names[1], f"theme.css admin:palette names the same slots in both themes {sorted(names[0] ^ names[1]) or ''}")
     for ref in re.findall(r"url\(([^)]+)\)", theme):
         ref = ref.strip("'\"")
         check(ref.startswith("/") and (ADMIN / ref.lstrip("/")).exists(), f"theme.css asset is self-hosted and present: {ref}")

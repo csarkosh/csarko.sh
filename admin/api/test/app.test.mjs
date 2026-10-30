@@ -28,11 +28,25 @@ const arkos = {
   async sessions(days) { return { rows: [], days }; },
   async crashes(days) { return { total: 0, days }; },
 };
+const finance = {
+  async kpis() { return { app: "finance", kpis: [] }; },
+  async summary(range) { calls.push(["finance-summary", range]); return { range }; },
+  async categories(range) { return { range }; },
+  async idle(range) { return { range }; },
+  async daily(range) { if (range === "13m") throw new UpstreamError("BigQuery finance-daily failed: quota"); return { range }; },
+  async activity(range) { return { range }; },
+  async sources(range) { return { range }; },
+  async projects(range) { return { range }; },
+  async films(range) { return { range }; },
+  async claude(range) { calls.push(["finance-claude", range]); return { range }; },
+  async manual(key, value) { calls.push(["finance-manual", key, value]); return { key, value, at: "t" }; },
+  async snapshotPart() { calls.push(["finance-snapshot"]); return { finance: {} }; },
+};
 const oidc = { async verify(token, audiences) { return token === "oidc-ok" && audiences.length > 0 ? { email: "s@x" } : null; } };
 const log = { error() {}, warn() {}, log() {} };
 
 function serve(config, capacity = 100) {
-  const app = createApp({ config: { allowedOrigins: ["https://admin.csarko.sh"], serviceUrl: null, ...config }, queries, arkos, limiter: new IpLimiter({ capacity, refillPerSecond: 0 }), adminAuth: config.adminAuth === undefined ? adminAuth : config.adminAuth, oidc, log });
+  const app = createApp({ config: { allowedOrigins: ["https://admin.csarko.sh"], serviceUrl: null, ...config }, queries, arkos, finance, limiter: new IpLimiter({ capacity, refillPerSecond: 0 }), adminAuth: config.adminAuth === undefined ? adminAuth : config.adminAuth, oidc, log });
   const server = http.createServer(app);
   return new Promise((resolve) => server.listen(0, "127.0.0.1", () => resolve(server)));
 }
@@ -218,10 +232,81 @@ test("Arkos: CORS, preflight, foreign origin, rate limit and the empty allowlist
   assert.equal((await call(closed, "GET", "/arkos/admin/kpis", { headers: { origin: "https://evil.example" } })).status, 403, "the origin before the 503");
 });
 
-test("without an Arkos source the prefix is not found", async () => {
+test("without an Arkos or a finance source the prefix is not found", async () => {
   const app = createApp({ config: { allowedOrigins: [], serviceUrl: null }, queries, limiter: new IpLimiter(), adminAuth, oidc, log });
   const server = http.createServer(app);
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   servers.push(server);
   assert.equal((await call(server, "GET", "/arkos/admin/kpis", auth())).status, 404);
+  assert.equal((await call(server, "GET", "/finance/admin/kpis", auth())).status, 404);
+});
+
+test("Finance under /finance: the index card, its nine queries with range and the one manual series, through the same auth", async () => {
+  const server = await serve({});
+  servers.push(server);
+  assert.equal((await call(server, "GET", "/finance", auth("12.0.0.1"))).status, 404);
+  assert.equal((await call(server, "GET", "/finance/admin", auth("12.0.0.1"))).status, 404);
+  assert.equal((await call(server, "GET", "/finance/admin/kpis", { ip: "12.0.0.2" })).status, 401, "no token");
+  assert.equal((await call(server, "GET", "/finance/admin/query/summary", { headers: { authorization: "Bearer nope" }, ip: "12.0.0.2" })).status, 401, "wrong token");
+
+  const kpis = await call(server, "GET", "/finance/admin/kpis", auth("12.0.0.1"));
+  assert.equal(kpis.status, 200);
+  assert.equal(kpis.body.app, "finance");
+  assert.equal(kpis.headers.get("cache-control"), "no-store");
+
+  for (const name of ["summary", "categories", "idle", "daily", "activity", "sources", "projects", "films", "claude"]) {
+    const r = await call(server, "GET", `/finance/admin/query/${name}?range=90`, auth("12.0.0.1"));
+    assert.equal(r.status, 200, name);
+    assert.deepEqual(r.body, { range: "90" }, name);
+  }
+  assert.deepEqual(calls.at(-1), ["finance-claude", "90"]);
+  assert.deepEqual((await call(server, "GET", "/finance/admin/query/claude?range=last", auth("12.0.0.1"))).body, { range: "last" });
+  assert.deepEqual((await call(server, "GET", "/finance/admin/query/summary", auth("12.0.0.1"))).body, { range: "month" }, "the default range is the current month");
+  assert.deepEqual(calls.at(-1), ["finance-summary", "month"]);
+  for (const range of ["last", "13m"]) assert.deepEqual((await call(server, "GET", `/finance/admin/query/summary?range=${range}`, auth("12.0.0.1"))).body, { range });
+  const bad = await call(server, "GET", "/finance/admin/query/summary?range=7", auth("12.0.0.1"));
+  assert.deepEqual([bad.status, bad.body.error], [400, "range must be month, last, 90 or 13m"]);
+  assert.equal((await call(server, "GET", "/finance/admin/query/summary?range=year", auth("12.0.0.1"))).status, 400);
+  assert.equal((await call(server, "GET", "/finance/admin/query/summary?days=7", auth("12.0.0.1"))).status, 200, "days is not a finance parameter and is ignored");
+  assert.equal((await call(server, "GET", "/finance/admin/query/nope", auth("12.0.0.1"))).status, 404);
+  assert.equal((await call(server, "GET", "/finance/admin/query/visits", auth("12.0.0.1"))).status, 404, "the csarko.sh queries are not finance's");
+  assert.equal((await call(server, "GET", "/finance/admin/query/journey", auth("12.0.0.1"))).status, 404, "nor Arkos's");
+  assert.equal((await call(server, "GET", "/admin/query/summary", auth("12.0.0.1"))).status, 404, "nor finance's the csarko.sh ones");
+  assert.equal((await call(server, "GET", "/arkos/admin/query/idle", auth("12.0.0.1"))).status, 404);
+  assert.equal((await call(server, "POST", "/finance/admin/query/idle", auth("12.0.0.1"))).status, 405);
+  assert.equal((await call(server, "POST", "/finance/admin/kpis", auth("12.0.0.1"))).status, 405);
+  assert.equal((await call(server, "POST", "/finance/admin/snapshot", auth("12.0.0.1"))).status, 404, "no snapshot route under the prefix");
+  assert.equal((await call(server, "POST", "/finance/admin/snapshot", { headers: { authorization: "Bearer oidc-ok" }, ip: "12.0.0.1" })).status, 401, "the scheduler's token opens nothing here");
+
+  // The one manual series: the claude.ai subscription's monthly fee.
+  const fee = await call(server, "POST", "/finance/admin/manual/claude-subscription", { ...auth("12.0.0.5"), headers: { ...auth().headers, "content-type": "application/json" }, body: JSON.stringify({ value: 200 }) });
+  assert.equal(fee.status, 200);
+  assert.deepEqual(fee.body, { key: "claude-subscription", value: 200, at: "t" });
+  assert.deepEqual(calls.at(-1), ["finance-manual", "claude-subscription", 200]);
+  assert.equal((await call(server, "POST", "/finance/admin/manual/claude-subscription", { ...auth("12.0.0.5"), body: '{"value":0}' })).status, 200, "a cancelled plan is $0");
+  assert.equal((await call(server, "POST", "/finance/admin/manual/claude-subscription", { ...auth("12.0.0.5"), body: '{"value":"200"}' })).status, 400, "a string is not a value");
+  assert.equal((await call(server, "POST", "/finance/admin/manual/claude-subscription", { ...auth("12.0.0.5"), body: '{"value":-1}' })).status, 400);
+  assert.equal((await call(server, "POST", "/finance/admin/manual/claude-subscription", { ...auth("12.0.0.5"), body: "nope" })).status, 400);
+  assert.equal((await call(server, "POST", "/finance/admin/manual/claude-subscription", { ...auth("12.0.0.5"), body: JSON.stringify({ value: Infinity }) })).status, 400);
+  assert.equal((await call(server, "POST", "/finance/admin/manual/substack", { ...auth("12.0.0.5"), body: '{"value":1}' })).status, 404, "the csarko.sh series is not finance's");
+  assert.equal((await call(server, "POST", "/finance/admin/manual/claude", { ...auth("12.0.0.5"), body: '{"value":1}' })).status, 404);
+  assert.equal((await call(server, "POST", "/admin/manual/claude-subscription", { ...auth("12.0.0.5"), body: '{"value":1}' })).status, 404, "nor finance's the csarko.sh one");
+  assert.equal((await call(server, "GET", "/finance/admin/manual/claude-subscription", auth("12.0.0.5"))).status, 405);
+  assert.equal((await call(server, "POST", "/finance/admin/manual/claude-subscription", { headers: { authorization: "Bearer oidc-ok" }, ip: "12.0.0.5", body: '{"value":1}' })).status, 401, "the admin token only");
+  assert.equal((await call(server, "POST", "/finance/admin/manual/claude-subscription", { ip: "12.0.0.6", body: '{"value":1}' })).status, 401);
+
+  const upstream = await call(server, "GET", "/finance/admin/query/daily?range=13m", auth("12.0.0.3"));
+  assert.equal(upstream.status, 502);
+  assert.deepEqual(upstream.body, { error: "BigQuery finance-daily failed: quota" });
+
+  const origin = "https://admin.csarko.sh";
+  const ok = await call(server, "GET", "/finance/admin/query/idle", { ...auth("12.0.0.4"), headers: { ...auth().headers, origin } });
+  assert.equal(ok.headers.get("access-control-allow-origin"), origin);
+  const pre = await call(server, "OPTIONS", "/finance/admin/kpis", { headers: { origin, "access-control-request-method": "GET" }, ip: "12.0.0.4" });
+  assert.equal(pre.status, 204);
+  assert.equal((await call(server, "GET", "/finance/admin/kpis", { ...auth("12.0.0.4"), headers: { ...auth().headers, origin: "https://evil.example" } })).status, 403);
+
+  const closed = await serve({ adminAuth: { enabled: false, async verify() { return null; } } });
+  servers.push(closed);
+  assert.equal((await call(closed, "GET", "/finance/admin/kpis", auth())).status, 503);
 });

@@ -132,7 +132,8 @@ function tileDays(perDay, days, keys) {
 const sum = (rows, key) => rows.reduce((n, r) => n + (r[key] ?? 0), 0);
 
 function sampleRange(name, data, days) {
-  if (days === 7) return data;
+  // A page that scopes by something other than days (finance's `range`) gets the file as it is.
+  if (days === 7 || days === null || days === undefined) return data;
   const scale = days / 7;
   if (name === 'visits') {
     const cur = tileDays(data.current.perDay, days, ['visits', 'pageviews']);
@@ -167,7 +168,13 @@ function sampleRange(name, data, days) {
   return data;
 }
 
-/** A source: kpis(app), query(app, name, days, extra), manual(app, key, value). Every live request carries `tz` (viewerZone); `extra` adds query parameters (Arkos's `who`); the sample ignores both. */
+/**
+ * A source: kpis(app), query(app, name, days, extra), manual(app, key, value). Every live request
+ * carries `tz` (viewerZone); `extra` adds query parameters (Arkos's `who`); the sample ignores both.
+ * A page whose API scopes by something other than days passes `days` as null and the scope in
+ * `extra` (finance's `range=month|last|90|13m`): no `days` is sent, and the sample file under
+ * /sample/<slug>/<name>.json is served as it is for every range.
+ */
 export function source() {
   if (preview) {
     return {
@@ -189,7 +196,7 @@ export function source() {
   return {
     kind: 'live',
     kpis: (app) => readJson(`${app.api}/admin/kpis?${new URLSearchParams({ tz: viewerZone })}`),
-    query: (app, name, days, extra = {}) => readJson(`${app.api}/admin/query/${encodeURIComponent(name)}?${new URLSearchParams({ days, tz: viewerZone, ...extra })}`),
+    query: (app, name, days, extra = {}) => readJson(`${app.api}/admin/query/${encodeURIComponent(name)}?${new URLSearchParams({ ...(days === null || days === undefined ? {} : { days }), tz: viewerZone, ...extra })}`),
     manual: (app, key, value) => readJson(`${app.api}/admin/manual/${encodeURIComponent(key)}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

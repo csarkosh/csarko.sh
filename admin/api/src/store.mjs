@@ -90,7 +90,11 @@ export async function createFirestoreStore({ projectId, log = console } = {}) {
     },
     async writeSnapshot(date, data) {
       const ref = db.collection(SNAPSHOTS).doc(date);
-      await ref.set(data, { merge: true });
+      // Merged at the top level only, as the memory store's spread is: each part named in
+      // `data` replaces the stored one whole. `{ merge: true }` merged nested maps too, so a
+      // day's second run kept the first run's `finance.errors.aws` beside the rows that had
+      // since succeeded (2026-10-30), and the page showed an error for a source that was fine.
+      await ref.set(data, { mergeFields: Object.keys(data).map((key) => new FieldPath(key)) });
       const written = await ref.get();
       return { date, ...written.data() };
     },

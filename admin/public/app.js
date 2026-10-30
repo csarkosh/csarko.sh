@@ -65,7 +65,9 @@ function unreachable(card, app, error) {
  * shell's own file and needs none), each held at the height it last had so nothing beside or
  * under it moves (Cyrus, 2026-10-29); each fills, or reports, as its API answers.
  */
-const shown = loadApps().then((apps) => {
+const shown = loadApps().then((all) => {
+  // An entry with `listed: false` (Billing) is reached from the account menu, not a card.
+  const apps = all.filter((app) => app.listed !== false);
   const cards = apps.map((app) => appCard(app));
   grid.replaceChildren(...cards);
   cards.forEach((card, i) => hold(card, apps[i].slug));

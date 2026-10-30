@@ -158,8 +158,11 @@ queries' do.
 - **AWS, no stored key.** An IAM role `csarko-admin-costs` in `_infra` (the AWS provider is
   already there for DNS) with one policy, `ce:GetCostAndUsage` and `ce:GetCostForecast`, that
   trusts the Cloud Run service account through web identity federation
-  (`sts:AssumeRoleWithWebIdentity`, provider `accounts.google.com`, the condition
-  `accounts.google.com:oaud` equal to the service account's unique id). The API mints a Google
+  (`sts:AssumeRoleWithWebIdentity`, provider `accounts.google.com`, the conditions
+  `accounts.google.com:oaud` equal to the audience the token is minted for,
+  `https://admin.csarko.sh/aws-costs`, and `accounts.google.com:aud` and `:sub` equal to the
+  service account's unique id, since a service account's token sets `azp` and AWS then reads
+  `aud` as that field; *as built 2026-10-29*, `_infra/modules/aws-costs/`). The API mints a Google
   ID token for its own service account from the metadata server and exchanges it; nothing
   long-lived is stored, and Secret Manager stays as it is. A fallback for local preview is an
   `AWS_PROFILE` on the developer's Mac, never a key in a secret.
@@ -218,3 +221,47 @@ are never published; a research doc that quotes a figure quotes it by hand.
 - Is $5 the health threshold, or $3?
 - Load the GCP months before October 29 from a console CSV once, or let the history start
   there?
+
+## 11. Amended 2026-10-30: no goal, the film providers, the ledgers
+
+Cyrus, 2026-10-30: "I don't have a goal of $5. I am building AI short films which drives a lot of
+that cost." So the page judges nothing: the idle run-rate is reported as a fact beside the
+activity spend, and the health dot reads the sources and the unexplained days only. And the
+providers the films run on are on the page:
+
+- **Modal** (GPU for the image, video and assembly stages of `~/Projects/film-generation`, and
+  the Day Hike `dayhike-*` experiments): $80.06 of usage in October 2026 against $30 of included
+  credits, $73.49 in September. Modal has no REST billing endpoint, so a Python Cloud Run job
+  (`admin/finance-modal/`, `csarko-finance-modal`, scheduled ten minutes before the snapshot)
+  runs the workspace billing report and writes `finance.modal` into the day's snapshot. Every
+  Modal app is a Compute line named by its app; `cinema-*` apps are film cost, `dayhike-*`
+  are Day Hike's.
+- **fal** (Seedance, Nano Banana 2, sound effects): $53.63 in October from a prepaid balance.
+  fal's per-model report is enterprise-only, so the API reads the credit balance once a day
+  with an admin-scoped key (`FAL_ADMIN_KEY`) and a day's spend is the balance's fall; a rise
+  is a purchase, never spend. Category AI generation, project Films.
+- **The film ledgers**: the pipeline prices every paid call before it is made and writes it
+  to `<film>/ledger.json` on the SSD; `tools/cinema/ledger-sync.sh` there copies the ledgers
+  alone to the private bucket `csarko-sh-film-ledgers`, and the Films card shows each film's
+  total against its $150 cap, by model and provider. The rows carry no dates, so they
+  attribute cost and never feed the daily chart; Veo rows are at list rate, so a film's Vertex
+  figure can read higher than Google's bill.
+- **Projects**, the second axis: Films, Day Hike, csarko.sh and admin, Other, by month, from
+  a rule table over every provider's lines (`admin/api/src/finance/projects.mjs`).
+
+Secrets added (seeded `unset`, the page says "Not configured" until a version is added):
+`modal-token-id`, `modal-token-secret` (a dedicated Modal token from the workspace's settings),
+`fal-admin-key` (a fal key with the Admin scope). The $5 budget on the `csarko-sh` project
+stays: it is the site's own alert, not a goal.
+
+**Claude Code, its own category** (Cyrus, 2026-10-30: "i want claude code plumbing into this
+too as its own category"). Claude Code runs on a claude.ai subscription, a flat fee with no
+billing endpoint, and its usage is in the local transcripts (`~/.claude*/projects/**/*.jsonl`,
+one JSON line a message with its token counts and model). `tools/claude-usage-sync.py`, run on
+the Mac, sums them per day and per model, prices each row at the first-party API list price
+(the plan's value, never a bill: October 2026 came to about $10,450 at list, against a flat
+fee), and writes `finance.claude` into the day's snapshot; no transcript text leaves the Mac.
+The subscription fee is entered once on the page (the manual series `claude-subscription`)
+and is the provider's spend, spread evenly over the month's days; the category `claudeCode`
+is fixed, like Domains. The Claude Code card shows the fee, the month's list-price value,
+the messages, and the daily value by model.

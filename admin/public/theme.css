@@ -100,8 +100,77 @@
 }
 /* /generated:fonts */
 
+/* The chart series (finance/page.js, the one page with more than one series): the dataviz
+   skill's reference palette, eight hues in one fixed order and stepped for each surface, each
+   a slot a category keeps whatever the range shows (compute, serverless, hosting, load
+   balancing, storage, AI, DNS, domains); the ninth, Other, is the neutral --faint. Then the
+   tenth, Claude Code (a category of its own, Cyrus 2026-10-29: the claude.ai fee, fixed), is an
+   orchid, OKLCH hue 320, searched for and stepped per surface so it clears the adjacent-pairs gate
+   beside the eighth (Domains, the red) and the all-pairs gate beside the five providers below. Then
+   the six providers of the Daily chart in its stack order, AWS, Google Cloud, GitHub, Modal, fal,
+   Claude Code: the palette's first three slots, which stay apart in every pairing, two hues of
+   their own for the film providers (a violet, OKLCH hue 300, and a magenta, hue 350: no fourth and
+   fifth slot of the eight clears the all-pairs gate beside the first three, so these were searched
+   for and stepped per surface), and the orchid again for Claude Code. The only colours on these
+   pages that are not the site's own, so they live in their own pair of blocks, dark and light,
+   which check.py reads as token blocks (every slot in both, 3:1 and up on --surface). Validated
+   with the skill's validate_palette.js on 2026-10-29 (the categories, adjacent pairs), 2026-10-30
+   (the five providers, --pairs all, on the site's own surfaces #111318 and #ffffff: dark CVD 9.4,
+   normal 17.9; light CVD 10.0, normal 19.6) and 2026-10-29 (the six providers, --pairs all: dark
+   CVD 8.2, normal 15.2; light CVD 8.9, normal 16.9; the nine categories, adjacent pairs: dark CVD
+   8.4, normal 15.2; light CVD 9.1, normal 17.4; every check passes in both themes, no WARN). Text
+   never takes a series colour. */
+/* admin:palette */
+:root {
+  --cat-1: #3987e5;
+  --cat-2: #d95926;
+  --cat-3: #199e70;
+  --cat-4: #c98500;
+  --cat-5: #d55181;
+  --cat-6: #008300;
+  --cat-7: #9085e9;
+  --cat-8: #e66767;
+  --cat-9: var(--faint);
+  --cat-10: #a571b1;
+  --prov-1: var(--cat-2);
+  --prov-2: var(--cat-1);
+  --prov-3: var(--cat-3);
+  --prov-4: #7e3ccd;
+  --prov-5: #bb167c;
+  --prov-6: var(--cat-10);
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --cat-1: #2a78d6;
+    --cat-2: #eb6834;
+    --cat-3: #1aa674;
+    --cat-4: #c58600;
+    --cat-5: #d87299;
+    --cat-6: #008300;
+    --cat-7: #6250d6;
+    --cat-8: #e34948;
+    --cat-9: var(--faint);
+    --cat-10: #b282bd;
+    --prov-1: var(--cat-2);
+    --prov-2: var(--cat-1);
+    --prov-3: var(--cat-3);
+    --prov-4: #622aa1;
+    --prov-5: #bc3181;
+    --prov-6: var(--cat-10);
+  }
+}
+/* /admin:palette */
+
 /* Derived tokens: no new values, only the site's, mixed. */
 :root {
+  /* The four projects of the By project chart, in its stack order: Films, Day Hike, csarko.sh
+     and admin, Other. The palette's yellow, magenta and violet, the triple that stays furthest
+     apart in every pairing (validated --pairs all in both themes on 2026-10-30: dark CVD 13.2,
+     normal 19.3; light CVD 13.5, normal 17.4), and the neutral for Other, as the categories' is. */
+  --proj-1: var(--cat-5);
+  --proj-2: var(--cat-4);
+  --proj-3: var(--cat-7);
+  --proj-4: var(--cat-9);
   --ghost: color-mix(in srgb, var(--faint) 32%, transparent);
   --grid-line: var(--border);
   --axis-line: var(--border-strong);
@@ -138,8 +207,9 @@ main:focus { outline: none; }
 .wordmark small { font-size: 15px; font-weight: 400; color: var(--muted); margin-left: 8px; }
 /* The account, at the nav's right (Cyrus, 2026-10-13: in place of the app links, which the
    trail covers): a round profile button that opens a small menu with the signed-in email,
-   the Live or Sample badge, and Sign out. The menu is a plain element toggled by the
-   button (aria-expanded), closed by Escape or a click elsewhere (`auth.js`, accountMenu). */
+   the Billing link and Sign out. The menu is toggled by the button (aria-expanded), grows in
+   from its corner and fades out (motion.js showMenu, hideMenu), and closes on Escape or a click
+   elsewhere (`auth.js`, accountMenu). */
 .account { position: relative; display: flex; align-items: center; }
 .avatar { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border-strong); transition: color var(--md-duration-short3) var(--md-easing-standard), border-color var(--md-duration-short3) var(--md-easing-standard); }
 .avatar svg { width: 20px; height: 20px; }
@@ -154,7 +224,12 @@ main:focus { outline: none; }
 .menu[hidden] { display: none; }
 .menu .email { font-family: var(--mono); font-size: 12.5px; color: var(--text); overflow-wrap: anywhere; margin: 0; }
 .menu .note { font-size: 13px; }
-.menu .btn { justify-self: start; }
+/* The menu's rows after the account: Billing, then Sign out, each a plain line on the same left
+   edge as the name and email (no button chrome), under a rule. */
+.menu .items { display: grid; border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px; }
+.menu .item { display: block; width: 100%; padding: 7px 0; margin: 0; border: 0; background: none; color: var(--text); font: inherit; font-size: 14px; line-height: 1.4; text-align: left; text-decoration: none; cursor: pointer; transition: color var(--md-duration-short3) var(--md-easing-standard); }
+.menu .item:hover, .menu .item:focus-visible { color: var(--accent); }
+.menu .item[aria-current="page"] { color: var(--accent); font-weight: 600; }
 
 /* Page head: the site's eyebrow, title and lead. */
 main { min-height: calc(100vh - 60px); padding-block: 56px 96px; }
@@ -318,10 +393,19 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .chart .ghost { fill: var(--ghost); }
 .chart .hit { fill: transparent; cursor: default; outline: none; }
 .chart .hit:focus-visible { outline: none; stroke: var(--accent); stroke-width: 1.5; }
+/* Stacked columns (finance): each segment in its series' slot, lit together under the pointer;
+   the median as a dashed ghost line; a flagged day as a dot in the warning colour above its
+   column (the tooltip and the list under the chart say why, never the dot alone). */
+.chart .seg { fill: var(--accent); }
+.chart .stack.hover .seg { filter: brightness(1.15); }
+.chart .median { fill: none; stroke: var(--faint); stroke-width: 1.5; stroke-dasharray: 3 3; stroke-linejoin: round; }
+.chart .flag { fill: var(--warning); stroke: var(--surface); stroke-width: 1.5; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 8px 0 0; padding: 0; list-style: none; font-family: var(--mono); font-size: 11.5px; color: var(--faint); }
 .legend li { display: inline-flex; align-items: center; gap: 6px; }
-.legend .swatch { width: 10px; height: 10px; border-radius: 3px; background: var(--accent); }
+.legend .swatch { width: 10px; height: 10px; border-radius: 3px; background: var(--accent); flex: none; }
 .legend .swatch.ghost { background: var(--ghost); }
+.legend .swatch.line { height: 0; border-top: 2px dashed var(--faint); border-radius: 0; background: none; }
+.legend .swatch.flag { border-radius: 50%; width: 8px; height: 8px; background: var(--warning); }
 /* A tooltip's look, and hidden until it is shown. Day Hike's page loads this file and uses the same
    class (AGENTS.md, "Motion is motion.js"), so the fade below is the host's own (.fades, charts.js
    tooltip()): a bare .tooltip, as Day Hike's bundle draws it, shows with display: block alone.
@@ -336,6 +420,29 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .tooltip .v { font-weight: 600; color: var(--text); font-size: 13.5px; font-variant-numeric: tabular-nums; }
 .tooltip .key { display: inline-block; width: 10px; height: 2px; background: var(--accent); vertical-align: middle; margin-right: 6px; }
 .tooltip .key.ghost { background: var(--ghost); }
+.tooltip .key.flag { width: 8px; height: 8px; border-radius: 50%; background: var(--warning); }
+.tooltip .key.none { background: none; }
+/* The slots, one rule each, for a segment, a legend swatch and a tooltip key alike. */
+.chart .seg.c1, .legend .swatch.c1, .tooltip .key.c1 { fill: var(--cat-1); background: var(--cat-1); }
+.chart .seg.c2, .legend .swatch.c2, .tooltip .key.c2 { fill: var(--cat-2); background: var(--cat-2); }
+.chart .seg.c3, .legend .swatch.c3, .tooltip .key.c3 { fill: var(--cat-3); background: var(--cat-3); }
+.chart .seg.c4, .legend .swatch.c4, .tooltip .key.c4 { fill: var(--cat-4); background: var(--cat-4); }
+.chart .seg.c5, .legend .swatch.c5, .tooltip .key.c5 { fill: var(--cat-5); background: var(--cat-5); }
+.chart .seg.c6, .legend .swatch.c6, .tooltip .key.c6 { fill: var(--cat-6); background: var(--cat-6); }
+.chart .seg.c7, .legend .swatch.c7, .tooltip .key.c7 { fill: var(--cat-7); background: var(--cat-7); }
+.chart .seg.c8, .legend .swatch.c8, .tooltip .key.c8 { fill: var(--cat-8); background: var(--cat-8); }
+.chart .seg.c9, .legend .swatch.c9, .tooltip .key.c9 { fill: var(--cat-9); background: var(--cat-9); }
+.chart .seg.c10, .legend .swatch.c10, .tooltip .key.c10 { fill: var(--cat-10); background: var(--cat-10); }
+.chart .seg.p1, .legend .swatch.p1, .tooltip .key.p1 { fill: var(--prov-1); background: var(--prov-1); }
+.chart .seg.p2, .legend .swatch.p2, .tooltip .key.p2 { fill: var(--prov-2); background: var(--prov-2); }
+.chart .seg.p3, .legend .swatch.p3, .tooltip .key.p3 { fill: var(--prov-3); background: var(--prov-3); }
+.chart .seg.p4, .legend .swatch.p4, .tooltip .key.p4 { fill: var(--prov-4); background: var(--prov-4); }
+.chart .seg.p5, .legend .swatch.p5, .tooltip .key.p5 { fill: var(--prov-5); background: var(--prov-5); }
+.chart .seg.p6, .legend .swatch.p6, .tooltip .key.p6 { fill: var(--prov-6); background: var(--prov-6); }
+.chart .seg.j1, .legend .swatch.j1, .tooltip .key.j1 { fill: var(--proj-1); background: var(--proj-1); }
+.chart .seg.j2, .legend .swatch.j2, .tooltip .key.j2 { fill: var(--proj-2); background: var(--proj-2); }
+.chart .seg.j3, .legend .swatch.j3, .tooltip .key.j3 { fill: var(--proj-3); background: var(--proj-3); }
+.chart .seg.j4, .legend .swatch.j4, .tooltip .key.j4 { fill: var(--proj-4); background: var(--proj-4); }
 
 /* Sparkline: 1px, the trend in faint, the latest step in the accent. */
 .spark { display: block; width: 120px; max-width: 100%; height: 28px; overflow: visible; }
@@ -416,6 +523,36 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .bars .n small { color: var(--faint); margin-left: 4px; }
 .bars .fill { transition: filter var(--md-duration-short3) var(--md-easing-standard); }
 .bars li:focus-within .fill, .bars li:hover .fill { filter: brightness(1.08); }
+
+/* Finance (finance/page.js). The idle list: a wider name column holding the line in mono with
+   its provider and place under it; a line that stopped billing is struck through in --faint
+   and its value says when, so a cleanup is seen to have worked. */
+.bars.wide li { grid-template-columns: minmax(150px, 2fr) minmax(0, 3fr) auto; align-items: center; }
+.bars.wide .name { white-space: normal; display: grid; gap: 1px; line-height: 1.35; }
+.bars.wide .name .mono { color: var(--text); overflow-wrap: anywhere; }
+.bars.wide .name small { font-size: 12px; color: var(--faint); }
+.bars li.stopped .name .mono, span.stopped { text-decoration: line-through; color: var(--faint); }
+.bars li.stopped .fill { background: var(--ghost); }
+.bars li.stopped .n { color: var(--faint); font-weight: 400; }
+/* A tile's second figure: what an activity cost under how much of it there was. */
+/* A film's total against its cap (finance, Films): the track is the cap's full width in the ghost
+   tint, the fill the accent, clipped at the cap; past it the fill turns the warning colour and the
+   figure says "over the cap" in words. */
+.bars.capped .track { background: var(--ghost); border-radius: 4px; }
+.bars.capped .fill { border-radius: 4px; }
+.bars.capped .fill.over { background: var(--warning); }
+.bars.capped .n small { display: block; margin-left: 0; }
+.tile .cost { margin-top: 6px; font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tile .cost b { color: var(--text); font-weight: 600; }
+.tile .cost small { font-size: 12px; color: var(--faint); margin-left: 4px; }
+/* The provider cell: the name, with GitHub's gross under it. */
+.cell { display: grid; gap: 1px; }
+.cell small { font-size: 12px; color: var(--faint); white-space: normal; }
+/* A list of flagged days under the Daily chart. */
+.flags { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13.5px; color: var(--muted); }
+.flags li { overflow-wrap: anywhere; }
+.flags .n { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.flags .mono { color: var(--muted); }
 
 /* Arkos' journey (ide-arkos/page.js). The flow: a step's bar in the step's tone, bands in a
    wash of the accent (the end's in --faint), lit while a step is hovered or focused. It keeps
@@ -531,11 +668,18 @@ footer .mono { font-family: var(--mono); }
   .tile .value { font-size: 1.5rem; }
   .bars li { grid-template-columns: minmax(72px, 96px) minmax(0, 1fr) auto; gap: 8px; font-size: 13px; }
   .skel-bar { grid-template-columns: minmax(72px, 96px) minmax(0, 1fr) 36px; gap: 8px; }
+  /* A film's cap bar on a phone: the name on its own line, the track the full width under it
+     with the figure at its end, so the cap's extent still reads. */
+  .bars.capped li { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; }
+  .bars.capped .name { grid-column: 1 / -1; }
+  .bars.capped .track { height: 14px; }
 }
 @media (max-width: 360px) {
   .nav ul { gap: 11px; }
   .wrap { padding-inline: 16px; }
   .tiles { grid-template-columns: 1fr 1fr; }
+  /* Two tiles across 320px leave 89px for a figure: "$238.59" fits at this size, not at 1.5rem. */
+  .tile .value { font-size: 1.3rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

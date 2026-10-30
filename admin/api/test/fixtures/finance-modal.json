@@ -1,0 +1,169 @@
+{
+  "at": "2026-10-28T10:02:00Z",
+  "lastDay": "2026-10-24",
+  "credits": 30,
+  "rows": [
+    {
+      "day": "2026-09-24",
+      "app": "cinema-spike",
+      "env": "main",
+      "cost": 20.04
+    },
+    {
+      "day": "2026-09-25",
+      "app": "cinema-spike",
+      "env": "main",
+      "cost": 22.16
+    },
+    {
+      "day": "2026-09-27",
+      "app": "cinema-spike",
+      "env": "main",
+      "cost": 17.92
+    },
+    {
+      "day": "2026-09-28",
+      "app": "dayhike-record",
+      "env": "main",
+      "cost": 6.87
+    },
+    {
+      "day": "2026-09-29",
+      "app": "dayhike-record",
+      "env": "main",
+      "cost": 6.5
+    },
+    {
+      "day": "2026-10-16",
+      "app": "cinema-spike",
+      "env": "main",
+      "cost": 12.4
+    },
+    {
+      "day": "2026-10-16",
+      "app": "dayhike-gate",
+      "env": "main",
+      "cost": 1.29
+    },
+    {
+      "day": "2026-10-17",
+      "app": "cinema-spike",
+      "env": "main",
+      "cost": 18.9
+    },
+    {
+      "day": "2026-10-17",
+      "app": "dayhike-gate",
+      "env": "main",
+      "cost": 3.0
+    },
+    {
+      "day": "2026-10-18",
+      "app": "cinema-spike",
+      "env": "main",
+      "cost": 9.72
+    },
+    {
+      "day": "2026-10-18",
+      "app": "dayhike-rig-probe",
+      "env": "main",
+      "cost": 0.02
+    },
+    {
+      "day": "2026-10-20",
+      "app": "cinema-spike",
+      "env": "main",
+      "cost": 11.06
+    },
+    {
+      "day": "2026-10-20",
+      "app": "dayhike-record",
+      "env": "main",
+      "cost": 2.14
+    },
+    {
+      "day": "2026-10-21",
+      "app": "cinema-spike",
+      "env": "main",
+      "cost": 7.35
+    },
+    {
+      "day": "2026-10-21",
+      "app": "dayhike-record",
+      "env": "main",
+      "cost": 2.9
+    },
+    {
+      "day": "2026-10-23",
+      "app": "cinema-spike",
+      "env": "main",
+      "cost": 4.15
+    },
+    {
+      "day": "2026-10-23",
+      "app": "dayhike-record",
+      "env": "main",
+      "cost": 1.6
+    },
+    {
+      "day": "2026-10-23",
+      "app": "dayhike-suite-spike",
+      "env": "main",
+      "cost": 1.03
+    },
+    {
+      "day": "2026-10-24",
+      "app": "cinema-spike",
+      "env": "main",
+      "cost": 3.7
+    },
+    {
+      "day": "2026-10-24",
+      "app": "dayhike-gpu-spike",
+      "env": "main",
+      "cost": 0.8
+    }
+  ],
+  "monthly": [
+    {
+      "month": "2026-09",
+      "app": "cinema-spike",
+      "cost": 60.12
+    },
+    {
+      "month": "2026-09",
+      "app": "dayhike-record",
+      "cost": 13.37
+    },
+    {
+      "month": "2026-10",
+      "app": "cinema-spike",
+      "cost": 67.28
+    },
+    {
+      "month": "2026-10",
+      "app": "dayhike-gate",
+      "cost": 4.29
+    },
+    {
+      "month": "2026-10",
+      "app": "dayhike-gpu-spike",
+      "cost": 0.8
+    },
+    {
+      "month": "2026-10",
+      "app": "dayhike-record",
+      "cost": 6.64
+    },
+    {
+      "month": "2026-10",
+      "app": "dayhike-rig-probe",
+      "cost": 0.02
+    },
+    {
+      "month": "2026-10",
+      "app": "dayhike-suite-spike",
+      "cost": 1.03
+    }
+  ]
+}
