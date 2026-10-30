@@ -218,19 +218,49 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .card-foot { margin: 18px 0 0; font-family: var(--mono); font-size: 12px; color: var(--faint); }
 .empty, .note { color: var(--faint); font-size: 14px; margin: 0; }
 
-/* Skeletons: the shape of what a card is waiting for (tiles, a chart, the lines of a
-   table), in the surface's own greys with a slow sweep, so a card is never blank while
-   its query runs. The body is aria-busy and says "Loading" to a screen reader; the
-   shapes are aria-hidden. A card that fails replaces its skeleton with its error line. */
-.skeleton { display: grid; gap: 10px; }
-.skel-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-.skel { position: relative; overflow: hidden; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; }
-.skel::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, var(--surface-hover), transparent); transform: translateX(-100%); animation: skel-sweep 1.8s ease-in-out infinite; }
-.skel.tile { height: 96px; }
-.skel.line { height: 14px; border: 0; border-radius: 6px; }
+/* Skeletons, in the Material manner (Cyrus, 2026-10-29: mui.com/material-ui/react-skeleton):
+   each part the shape of the content it stands for (a line of text, a pill, a stat tile,
+   a bar, a chart), in a tint of the text colour, pulsing as MUI's default does, so a card
+   is never blank while its query runs and its loaded shape is no surprise. The body is
+   aria-busy and says "Loading" to a screen reader; the shapes are aria-hidden. A card that
+   fails replaces its skeleton with its error line. `.tile`, `.line` and `.chart` are the
+   older parts, which Day Hike's page may still draw. */
+.skeleton { display: block; }
+/* Each part is spaced as the content it stands for is (the tiles' 18 px under them, a fold's
+   16 px over it, a bar every 31 px), so a card's skeleton is its loaded height or near it. */
+.skel { background: color-mix(in srgb, var(--text) 11%, transparent); border-radius: 4px; animation: skel-pulse 2s ease-in-out .5s infinite; }
+.skel.text { height: 12px; margin: 4.5px 0; width: 100%; }
+.skel.text.short { width: 60%; }
+.skel.text.label { width: 45%; height: 10px; }
+.skel.text.figure { width: 38%; height: 26px; margin: 6px 0 8px; }
+.skel.text.head { width: 100%; height: 10px; margin: 13.5px 0 14px; opacity: .7; }
+.skel.text.num { width: 44px; justify-self: end; }
+.skel.text.section { width: 120px; height: 16px; margin: 26.5px 0 14.5px; }
+.skel.text.fold { width: 160px; height: 14px; margin: 28.5px 0 12.5px; }
+.skel.rect { border-radius: 4px; }
+.skel.rounded { border-radius: 12px; }
+.skel.pill { width: 76px; height: 29px; border-radius: 999px; }
+.skel.chart { height: 201px; margin-top: 6px; }
+.skel.block { flex: 1; }
+.skel-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.skeleton > .skel-row { margin-bottom: 18px; }
+.skel-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 18px; }
+.skel-tile { padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; display: grid; gap: 4px; align-content: start; overflow: hidden; }
+.skel-list { display: grid; gap: 8px; }
+.skel-bar { display: grid; grid-template-columns: minmax(84px, 128px) minmax(0, 1fr) 44px; gap: 12px; align-items: center; height: 23px; }
+.skel-bar .skel.text { margin: 0; }
+.skel.bar { height: 10px; border-radius: 999px; }
+.skel-trow { display: grid; grid-template-columns: minmax(0, 1fr) 64px 64px; gap: 16px; align-items: center; border-top: 1px solid var(--border); }
+.skel-list:has(> .skel-trow) { gap: 0; }
+.skel-trow .skel.text { margin: 0; }
+.skel-item { display: flex; flex-direction: column; gap: 10px; padding-bottom: 26px; box-sizing: border-box; }
+/* A column's heading stands for its h3: 22 px over it, 10 under, 25 tall. */
+.cols > .skel-list > .skel.text.label { height: 14px; margin: 27.5px 0 15.5px; }
+.cols > .skel-list { gap: 8px; align-content: start; }
+.skel.tile { height: 96px; border-radius: 12px; }
+.skel.line { height: 12px; margin: 1px 0; }
 .skel.line.short { width: 60%; }
-.skel.chart { height: 180px; }
-@keyframes skel-sweep { to { transform: translateX(100%); } }
+@keyframes skel-pulse { 0% { opacity: 1; } 50% { opacity: .4; } 100% { opacity: 1; } }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .error { color: var(--warning); font-size: 14px; font-weight: 600; margin: 0; display: flex; gap: 8px; align-items: flex-start; }
 .error svg { width: 16px; height: 16px; flex: none; margin-top: 3px; }
@@ -468,6 +498,7 @@ footer .mono { font-family: var(--mono); }
   .tiles { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
   .tile .value { font-size: 1.5rem; }
   .bars li { grid-template-columns: minmax(72px, 96px) minmax(0, 1fr) auto; gap: 8px; font-size: 13px; }
+  .skel-bar { grid-template-columns: minmax(72px, 96px) minmax(0, 1fr) 36px; gap: 8px; }
 }
 @media (max-width: 360px) {
   .nav ul { gap: 11px; }
@@ -477,5 +508,5 @@ footer .mono { font-family: var(--mono); }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .nav ul a, .btn, .range button, .j-filters button, .card .card-title a, details.folded summary::before, .fl-band { transition: none; }
-  .skel::after { animation: none; }
+  .skel { animation: none; }
 }

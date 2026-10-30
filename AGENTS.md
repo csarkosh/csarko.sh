@@ -323,10 +323,19 @@ anything related to the admin pages in this repo:
   head included, with a `generated:head` block that `admin/build.mjs` fills after
   `admin/deploy.sh` has pulled the bundle. The old aside under the page head is gone.
 - **Never blank** *(Cyrus, 2026-10-13)*. Every card is on the page at once as a skeleton
-  the shape of what it waits for (`charts.js`, `skeleton()` and `loading()`: tiles, a
-  chart, lines, in the surface's greys with a slow sweep, still under reduced motion),
-  fills on its own as its queries answer, and shows its own error line in place; no page
-  waits for its slowest card, and no error replaces the whole page.
+  the shape of what it waits for, fills on its own as its queries answer, and shows its own
+  error line in place; no page waits for its slowest card, and no error replaces the whole page.
+- **Never jumps** *(Cyrus, 2026-10-29)*. The skeleton is Material's
+  (mui.com/material-ui/react-skeleton): each part the shape of the content it stands for (text
+  lines, pills, stat tiles, labelled bars, table rows, a chart, list entries, folds) in a tint of
+  `--text`, pulsing, still under reduced motion (`charts.js` `skeleton()`, each card's
+  `skeleton:` spec sized to what it really holds; `theme.css` `.skel`). A card also remembers the
+  height it last had in each view (page, query, width to 40 px) in localStorage
+  (`admin:hold:…`): `hold()` keeps a waiting card at exactly that height and `settle()` lets
+  it go and remembers it, so a view seen before loads with nothing moving, and a range change
+  holds a card at its height instead of collapsing it. A chart keeps its own height from its first
+  draw. Day Hike's page does the same in its own repo (`client/src/admin/hold.ts`, the same keys,
+  the host's `.skel` classes), so a change to those classes is a change to its page.
 - **Same bar.** Lighthouse 100 on Accessibility and Best Practices, Performance ≥ 95,
   a layout that holds from 320px to 1440px, a strict CSP and the same security
   headers. No third-party script, with one documented exception: Google's sign-in

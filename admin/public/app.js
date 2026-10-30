@@ -9,7 +9,7 @@
  */
 
 import { accountMenu, requireSession } from '/auth.js';
-import { ago, delta, el, errorLine, loading, status, tile } from '/charts.js';
+import { ago, delta, el, errorLine, hold, loading, settle, status, tile } from '/charts.js';
 import { loadApps, preview, source } from '/data.js';
 
 const root = document.getElementById('top');
@@ -21,7 +21,7 @@ function appCard(app) {
   const head = el('div', { class: 'card-head' },
     el('h2', { class: 'card-title', id: `app-${app.slug}` }, el('a', { href: app.page }, app.name)),
     el('a', { class: 'home', href: app.home, target: '_blank', rel: 'noopener' }, app.home.replace(/^https?:\/\//, '')));
-  card.append(head, el('p', { class: 'sub' }, el('a', { href: app.page }, 'Open the dashboard')), loading({ tiles: 4 }));
+  card.append(head, el('p', { class: 'sub' }, el('a', { href: app.page }, 'Open the dashboard')), loading({ tiles: 4, tile: 156 }));
   return card;
 }
 
@@ -57,24 +57,36 @@ function unreachable(card, app, error) {
   body.removeAttribute('aria-busy');
 }
 
-/** The cards go up at once as skeletons; each fills, or reports, as its API answers. */
+/**
+ * The cards go up at once as skeletons, before the sign-in is restored (apps.json is the
+ * shell's own file and needs none), each held at the height it last had so nothing beside or
+ * under it moves (Cyrus, 2026-10-29); each fills, or reports, as its API answers.
+ */
+const shown = loadApps().then((apps) => {
+  const cards = apps.map((app) => appCard(app));
+  grid.replaceChildren(...cards);
+  cards.forEach((card, i) => hold(card, apps[i].slug));
+  return { apps, cards };
+});
+// A failure is load()'s to report, in place of the cards; not an unhandled rejection meanwhile.
+shown.catch(() => {});
+
 async function load() {
   const data = source();
-  let apps;
+  let apps, cards;
   try {
-    apps = await loadApps();
+    ({ apps, cards } = await shown);
   } catch (error) {
     grid.replaceChildren(el('section', { class: 'card' }, errorLine('apps.json could not be read.', error.message)));
     return;
   }
-  const cards = apps.map((app) => appCard(app));
-  grid.replaceChildren(...cards);
   await Promise.all(apps.map(async (app, i) => {
     try {
       fill(cards[i], app, await data.kpis(app));
     } catch (error) {
       unreachable(cards[i], app, error);
     }
+    settle(cards[i], app.slug);
   }));
 }
 

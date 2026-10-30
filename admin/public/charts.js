@@ -185,6 +185,10 @@ export function columns(bars, { height = 180, width = null, unit = '', previous 
     const ticks = ticksFor(Math.max(0, ...values, ...ghosts));
     const max = ticks[ticks.length - 1] || 1;
     const root = svg('svg', { viewBox: `0 0 ${W} ${height}`, width: W, height, role: 'img', 'aria-label': summary });
+    // Its own height, whatever the width it was drawn at: the first draw (at 640, before the
+    // host is measured) would otherwise scale to the card's width for a frame, and the card
+    // under it with it.
+    root.style.height = `${height}px`;
     const y = (v) => pad.t + innerH - (v / max) * innerH;
     ticks.forEach((v, i) => {
       root.append(svg('line', { x1: pad.l, x2: W - pad.r, y1: y(v), y2: y(v), class: i === 0 ? 'axis-line' : 'grid-line' }));
@@ -322,21 +326,126 @@ export function errorLine(text, detail) {
 }
 
 /**
- * The shape of what a card is waiting for, shown while its queries run: `tiles` stat
- * tiles, a `chart`, then `lines` of a table (every third one short). Hidden from screen
+ * The shape of what a card is waiting for, shown while its queries run, in the Material
+ * skeleton's manner (Cyrus, 2026-10-29: https://mui.com/material-ui/react-skeleton/): each
+ * part the shape of the content it stands for, in a tint of the text colour that pulses.
+ * Parts, top to bottom: `chips` filter buttons, `tiles` stat tiles, a `chart` (true, or its
+ * height), `bars` labelled bars (split over `cols` columns with a heading each, as `.cols`
+ * lays them), `rows` table rows, `items` list entries (a heading line, a line of chips and a
+ * block, `item` px from one to the next), `lines` of text, then `folds` folded tables. `tile`
+ * and `row` are a card's tile and table-row heights, where they differ from the usual. Hidden from screen
  * readers; the card's body says "Loading" to them (see `loading()`).
  */
-export function skeleton({ tiles = 0, chart = false, lines = 0 } = {}) {
+export function skeleton(shape = {}) {
+  // A card of headed sections is a list of shapes, each after the first under a heading line.
+  if (Array.isArray(shape)) {
+    return el('div', { class: 'skeleton', 'aria-hidden': 'true' }, ...shape.flatMap((part, i) =>
+      [...(part.heading ?? i > 0 ? [el('div', { class: 'skel text section' })] : []), ...skeleton(part).childNodes]));
+  }
+  return skeletonOf(shape);
+}
+
+function skeletonOf({ chips = 0, tiles = 0, tile = 136, chart = false, bars = 0, cols = 0, rows = 0, row = 42, items = 0, item = 312, lines = 0, folds = 0 } = {}) {
+  const sk = (cls, attrs = {}) => el('div', { class: `skel ${cls}`, ...attrs });
   const parts = [];
-  if (tiles > 0) parts.push(el('div', { class: 'skel-tiles' }, ...Array.from({ length: tiles }, () => el('div', { class: 'skel tile' }))));
-  if (chart) parts.push(el('div', { class: 'skel chart' }));
-  for (let i = 0; i < lines; i += 1) parts.push(el('div', { class: `skel line${i % 3 === 2 ? ' short' : ''}` }));
+  if (chips > 0) parts.push(el('div', { class: 'skel-row' }, ...Array.from({ length: chips }, () => sk('pill'))));
+  if (tiles > 0) {
+    parts.push(el('div', { class: 'skel-tiles' }, ...Array.from({ length: tiles }, () =>
+      // Only the lines a tile of this height holds: a label and the figure, then a line or two.
+      el('div', { class: 'skel-tile', style: `height:${tile}px` }, sk('text label'), sk('text figure'), ...(tile >= 130 ? [sk('text'), sk('text short')] : tile >= 110 ? [sk('text short')] : [])))));
+  }
+  if (chart) parts.push(sk('rect chart', typeof chart === 'number' ? { style: `height:${chart}px` } : {}));
+  const barList = (n) => el('div', { class: 'skel-list' }, ...Array.from({ length: n }, (_, i) =>
+    el('div', { class: 'skel-bar' }, sk('text'), sk('rect bar', { style: `width:${[92, 70, 54, 40, 30, 22, 16, 12][i % 8]}%` }), sk('text num'))));
+  if (bars > 0 && cols > 1) {
+    const each = Math.ceil(bars / cols);
+    parts.push(el('div', { class: 'cols' }, ...Array.from({ length: cols }, () => el('div', { class: 'skel-list' }, sk('text label'), barList(each)))));
+  } else if (bars > 0) parts.push(barList(bars));
+  if (rows > 0) {
+    parts.push(el('div', { class: 'skel-list' }, sk('text head'), ...Array.from({ length: rows }, (_, i) =>
+      el('div', { class: 'skel-trow', style: `height:${row}px` }, sk(`text${i % 3 === 2 ? ' short' : ''}`), sk('text num'), sk('text num')))));
+  }
+  for (let i = 0; i < items; i += 1) {
+    parts.push(el('div', { class: 'skel-item', style: `height:${item}px` }, sk('text short'), el('div', { class: 'skel-row' }, sk('pill'), sk('pill'), sk('pill')), sk('rounded block')));
+  }
+  for (let i = 0; i < lines; i += 1) parts.push(sk(`text${i % 3 === 2 ? ' short' : ''}`));
+  for (let i = 0; i < folds; i += 1) parts.push(sk('text fold'));
   return el('div', { class: 'skeleton', 'aria-hidden': 'true' }, ...parts);
 }
 
 /** A card body that is loading: busy for assistive tech, a skeleton for everyone else. */
 export function loading(shape) {
   return el('div', { class: 'body', 'aria-busy': 'true' }, el('p', { class: 'sr-only' }, 'Loading'), skeleton(shape));
+}
+
+/*
+ * Cards never jump (Cyrus, 2026-10-29). A card's content is the size of its data, which no
+ * skeleton can know, so each card remembers the height it last had in this view (the page,
+ * its query, so the range and the filters, and the window's width to 40 px) in this
+ * browser's localStorage, beside the sign-in's own entries. `hold()` gives a loading card
+ * that height and fills the space with skeleton lines; `settle()`, once the content is in,
+ * lets it go and remembers the new height. A view seen before therefore loads in place; a
+ * view never seen falls back to the skeleton's own shape. Storage refused (a private
+ * window) costs only the memory.
+ */
+const HOLD = 'admin:hold:';
+const holdKey = (id) => `${HOLD}${location.pathname}|${id}|${[...new URLSearchParams(location.search)].sort().map(([k, v]) => `${k}=${v}`).join('&')}|${Math.round(innerWidth / 40)}`;
+const recall = (id) => {
+  try {
+    return Number(localStorage.getItem(holdKey(id))) || 0;
+  } catch {
+    return 0;
+  }
+};
+
+/**
+ * Hold `card` at the height it last had in this view (else at `fallback`, its height now,
+ * on a reload): exactly that height, the skeleton filled down to it with lines or clipped
+ * at it, so the space is the content's before the content comes.
+ */
+export function hold(card, id, fallback = 0) {
+  watching.get(card)?.disconnect();
+  const height = recall(id) || fallback;
+  if (!height) return;
+  card.style.height = `${height}px`;
+  card.style.overflow = 'hidden';
+  const shape = card.querySelector('.skeleton');
+  if (!shape) return;
+  // As many text lines as fit between the skeleton's foot and the card's padding.
+  const probe = shape.appendChild(el('div', { class: 'skel text' }));
+  const box = probe.getBoundingClientRect();
+  const step = box.height + parseFloat(getComputedStyle(probe).marginTop) + parseFloat(getComputedStyle(probe).marginBottom);
+  probe.remove();
+  const room = card.getBoundingClientRect().bottom - parseFloat(getComputedStyle(card).paddingBottom) - shape.getBoundingClientRect().bottom;
+  const n = step > 0 ? Math.max(0, Math.min(400, Math.floor(room / step))) : 0;
+  for (let i = 0; i < n; i += 1) shape.append(el('div', { class: `skel text${i % 4 === 3 ? ' short' : ''}` }));
+}
+
+// A card's content can settle after it goes in (a chart sized to its box, a font), so its
+// height is remembered again as it changes for a moment after; not for longer, or a fold
+// the reader opens would be remembered open.
+const watching = new WeakMap();
+const SETTLING_MS = 1500;
+
+/** The content is in: let the card take its own height, and remember it for this view. */
+export function settle(card, id) {
+  card.style.height = '';
+  card.style.overflow = '';
+  const key = holdKey(id);
+  const keep = () => {
+    try {
+      localStorage.setItem(key, String(Math.round(card.getBoundingClientRect().height * 100) / 100));
+    } catch {
+      // No storage: the next load falls back to the skeleton's shape.
+    }
+  };
+  keep();
+  if (typeof ResizeObserver !== 'function') return;
+  watching.get(card)?.disconnect();
+  const watch = new ResizeObserver(keep);
+  watch.observe(card);
+  watching.set(card, watch);
+  setTimeout(() => { if (watching.get(card) === watch) { watch.disconnect(); watching.delete(card); } }, SETTLING_MS);
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

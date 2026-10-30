@@ -15,7 +15,7 @@
  */
 
 import { accountMenu, requireSession } from '/auth.js';
-import { ago, bars, columns, compact, delta, el, errorLine, folded, loading, pct, shortDay, table, tile } from '/charts.js';
+import { ago, bars, columns, compact, delta, el, errorLine, folded, hold, loading, pct, settle, shortDay, skeleton, table, tile } from '/charts.js';
 import { RANGES, loadApps, preview, readParam, readRange, readToggles, source, utcMidnightHere, viewerZone, viewerZoneName, writeParam, writeRange, writeToggles } from '/data.js';
 
 const SLUG = 'ide-arkos';
@@ -569,16 +569,16 @@ function sessionsCard([sessions]) {
 // ---------------------------------------------------------------- the cards
 
 const CARDS = [
-  { id: 'installs', title: 'Macs running Arkos', queries: ['installs'], sub: (d) => `Every copy checks for updates once a day, and that check is all this card counts: it needs no consent and carries no id. A Mac is counted once in ${d === 1 ? 'today so far (UTC), against yesterday' : `the last ${d} UTC days`} from its check’s days since the last one. A UTC day rolls at ${utcMidnightHere()} here; each Mac’s once-a-day check is counted on its UTC day, so these days cannot be re-cut to ${viewerZoneName}. Versions, macOS and processor count each Mac once.`, render: installsCard, skeleton: { tiles: 4, chart: true } },
-  { id: 'paths', title: 'Paths through a session', queries: ['journey'], sub: () => `What people do after a launch, in order: each column is the next step, each band the sessions that went from one step to the next. Each column shows its six most common steps; Other gathers the rest. Restored tabs count as part of the launch; Ended is where a session stopped. ${OPT_IN}`, render: pathsCard, skeleton: { chart: true, lines: 2 } },
-  { id: 'milestones', title: 'How far sessions get', queries: ['journey'], sub: () => 'The share of sessions that reached each milestone at any point, and the median time from the launch to the first time, for all sessions and for first sessions (a copy’s first run with usage reports on).', render: milestonesCard, skeleton: { lines: 7 } },
-  { id: 'next', title: 'What comes next', queries: ['journey'], sub: () => 'For the most common steps, what people did right after, as a share of the sessions that took the step. A step often followed by Ended, an error or a help page is a place to smooth.', render: nextCard, skeleton: { lines: 8 } },
-  { id: 'features', title: 'What gets used', queries: ['journey'], sub: () => 'Features by the sessions that used them, and how tabs get opened: by the palette, a shortcut or a click, which says whether the shortcuts are found.', render: featuresCard, skeleton: { lines: 8 } },
-  { id: 'time', title: 'Time', queries: ['journey'], sub: () => 'Hours the window was in front, by surface; how long sessions run; how they end.', render: timeCard, skeleton: { lines: 6 } },
-  { id: 'friction', title: 'Friction', queries: ['journey'], sub: () => 'What went wrong where people saw it, and sessions lost to a crash or a force quit.', render: frictionCard, skeleton: { tiles: 3, lines: 4 } },
-  { id: 'return', title: 'Coming back', queries: ['journey'], sub: () => 'How long since a copy’s previous session, and the sessions of each install week in the weeks after it. No id is kept: both come from what each report says about its own copy.', render: returnCard, skeleton: { lines: 6 } },
-  { id: 'crashes', title: 'Crashes', queries: ['crashes'], sub: () => 'Crash reports people agreed to send, grouped by where the panic happened, with the offsets to symbolicate against the release’s dSYM. Lost sessions are the runs that ended without a quit, reported or not.', render: crashesCard, skeleton: { tiles: 3, lines: 5 } },
-  { id: 'sessions', title: 'Recent sessions', queries: ['sessions'], sub: () => `The newest sessions in full, newest first: each step at its time since the launch, how long the window was in front on each surface, and how it ended. Times are in ${viewerZoneName}; a session is reported after it ends, so it started its length before it arrived.`, render: sessionsCard, skeleton: { lines: 6 } },
+  { id: 'installs', title: 'Macs running Arkos', queries: ['installs'], sub: (d) => `Every copy checks for updates once a day, and that check is all this card counts: it needs no consent and carries no id. A Mac is counted once in ${d === 1 ? 'today so far (UTC), against yesterday' : `the last ${d} UTC days`} from its check’s days since the last one. A UTC day rolls at ${utcMidnightHere()} here; each Mac’s once-a-day check is counted on its UTC day, so these days cannot be re-cut to ${viewerZoneName}. Versions, macOS and processor count each Mac once.`, render: installsCard, skeleton: { tiles: 4, chart: true, bars: 12, cols: 3, folds: 1 } },
+  { id: 'paths', title: 'Paths through a session', queries: ['journey'], sub: () => `What people do after a launch, in order: each column is the next step, each band the sessions that went from one step to the next. Each column shows its six most common steps; Other gathers the rest. Restored tabs count as part of the launch; Ended is where a session stopped. ${OPT_IN}`, render: pathsCard, skeleton: { chips: 2, chart: 600, folds: 1 } },
+  { id: 'milestones', title: 'How far sessions get', queries: ['journey'], sub: () => 'The share of sessions that reached each milestone at any point, and the median time from the launch to the first time, for all sessions and for first sessions (a copy’s first run with usage reports on).', render: milestonesCard, skeleton: { rows: 7 } },
+  { id: 'next', title: 'What comes next', queries: ['journey'], sub: () => 'For the most common steps, what people did right after, as a share of the sessions that took the step. A step often followed by Ended, an error or a help page is a place to smooth.', render: nextCard, skeleton: { bars: 39, cols: 3 } },
+  { id: 'features', title: 'What gets used', queries: ['journey'], sub: () => 'Features by the sessions that used them, and how tabs get opened: by the palette, a shortcut or a click, which says whether the shortcuts are found.', render: featuresCard, skeleton: { lines: 1, bars: 38, cols: 3, folds: 1 } },
+  { id: 'time', title: 'Time', queries: ['journey'], sub: () => 'Hours the window was in front, by surface; how long sessions run; how they end.', render: timeCard, skeleton: { bars: 12, cols: 3 } },
+  { id: 'friction', title: 'Friction', queries: ['journey'], sub: () => 'What went wrong where people saw it, and sessions lost to a crash or a force quit.', render: frictionCard, skeleton: { tiles: 3, bars: 5, cols: 2 } },
+  { id: 'return', title: 'Coming back', queries: ['journey'], sub: () => 'How long since a copy’s previous session, and the sessions of each install week in the weeks after it. No id is kept: both come from what each report says about its own copy.', render: returnCard, skeleton: { bars: 5, rows: 6, cols: 2 } },
+  { id: 'crashes', title: 'Crashes', queries: ['crashes'], sub: () => 'Crash reports people agreed to send, grouped by where the panic happened, with the offsets to symbolicate against the release’s dSYM. Lost sessions are the runs that ended without a quit, reported or not.', render: crashesCard, skeleton: [{ tiles: 3 }, { rows: 2 }, { rows: 3, folds: 1 }] },
+  { id: 'sessions', title: 'Recent sessions', queries: ['sessions'], sub: () => `The newest sessions in full, newest first: each step at its time since the launch, how long the window was in front on each surface, and how it ended. Times are in ${viewerZoneName}; a session is reported after it ends, so it started its length before it arrived.`, render: sessionsCard, skeleton: { chips: 3, items: 8 } },
 ];
 
 // ---------------------------------------------------------------- the page
@@ -592,7 +592,11 @@ function cardShell(def) {
 
 async function loadCard(def, gen, card) {
   const body = card.querySelector('.body');
-  if (!body.querySelector('.skeleton')) card.classList.add('loading');
+  // A rendered card goes back to its skeleton while it reloads, held at the height this view
+  // had last (else the one it has now), so nothing under it moves; see hold() in charts.js.
+  const now = body.querySelector('.skeleton') ? 0 : card.getBoundingClientRect().height;
+  if (now) body.replaceChildren(el('p', { class: 'sr-only' }, 'Loading'), skeleton(def.skeleton));
+  hold(card, def.id, now);
   body.setAttribute('aria-busy', 'true');
   try {
     const results = await Promise.all(def.queries.map((name) => query(name, range)));
@@ -606,8 +610,8 @@ async function loadCard(def, gen, card) {
     body.replaceChildren(errorLine(`${def.title} could not be read.`, error.message));
   } finally {
     if (gen === generation) {
-      card.classList.remove('loading');
       body.removeAttribute('aria-busy');
+      settle(card, def.id);
     }
   }
 }
@@ -657,6 +661,16 @@ function whoButtons() {
   note();
 }
 
+/**
+ * Every card is on the page, held at its last height, from the first paint: restoring the
+ * sign-in takes a second or so, and cards that appeared only after it would push the page
+ * about as they came (Cyrus, 2026-10-29). The queries wait for the session; the shapes do not.
+ */
+function shells() {
+  grid.replaceChildren(...CARDS.map(cardShell));
+  for (const def of CARDS) hold(document.getElementById(`card-${def.id}`), def.id);
+}
+
 async function start() {
   try {
     const apps = await loadApps();
@@ -671,6 +685,7 @@ async function start() {
 
 rangeButtons();
 whoButtons();
+shells();
 if (preview) {
   accountMenu(account, { preview: true });
   start();

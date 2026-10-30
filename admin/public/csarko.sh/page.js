@@ -12,7 +12,7 @@
  */
 
 import { accountMenu, requireSession } from '/auth.js';
-import { ago, bars, columns, compact, delta, el, errorLine, folded, loading, pct, shortDay, status, table, tile } from '/charts.js';
+import { ago, bars, columns, compact, delta, el, errorLine, folded, hold, loading, pct, settle, shortDay, skeleton, status, table, tile } from '/charts.js';
 import { RANGES, loadApps, preview, readRange, readToggles, source, utcMidnightHere, viewerZone, viewerZoneName, writeRange, writeToggles } from '/data.js';
 
 const SLUG = 'csarko.sh';
@@ -524,15 +524,15 @@ function searchSub(d, search) {
 
 /** Each card: its queries, its copy, how it renders, and the skeleton that stands in for it while the queries run. */
 const CARDS = [
-  { id: 'visitors', title: 'Visitors', queries: ['visits'], sub: visitorsSub, render: visitorsCard, skeleton: { tiles: 2, chart: true } },
-  { id: 'referrers', title: 'Where they come from', queries: ['referrers'], sub: () => `Visitors by where the visit started; the raw referrers and the tagged links folded below. ${GOATCOUNTER_NOTE}`, render: referrersCard, skeleton: { lines: 6 } },
-  { id: 'pages', title: 'What they read', queries: ['pages'], sub: () => `Pages by visitors; the paths that hit the 404 page folded below. ${GOATCOUNTER_NOTE}`, render: pagesCard, skeleton: { lines: 6 } },
-  { id: 'events', title: 'Where they go next', queries: ['events', 'visits'], sub: () => `Clicks out to a profile, to play, to watch, and docs read to the end. ${GOATCOUNTER_NOTE}`, render: eventsCard, skeleton: { tiles: 3, lines: 4 } },
-  { id: 'journeys', title: 'Journeys', queries: ['journeys'], sub: () => 'The most recent visits, newest first, each from where it came to how it left: every page with when it was reached, how far it was scrolled, how long it was visible and on screen, its LCP, and the click that ended the visit. From lib-visits, so since the cutover only.', render: journeysCard, skeleton: { lines: 6 } },
-  { id: 'search', title: 'Search', queries: ['search'], sub: searchSub, render: searchCard, skeleton: { tiles: 4, chart: true } },
-  { id: 'reach', title: 'Reach', queries: ['reach'], sub: () => 'YouTube, GitHub, Hacker News and Substack: exposure beyond the site. A section reads Not configured until its credential is in Secret Manager.', render: reachCard, skeleton: { tiles: 3, lines: 4 } },
-  { id: 'health', title: 'Health', queries: ['health'], sub: () => '', render: healthCard, skeleton: { tiles: 4, lines: 1 } },
-  { id: 'audience', title: 'Audience', queries: ['audience'], sub: () => '', render: audienceCard, skeleton: { lines: 5 } },
+  { id: 'visitors', title: 'Visitors', queries: ['visits'], sub: visitorsSub, render: visitorsCard, skeleton: { tiles: 2, tile: 188, chart: true, folds: 1 } },
+  { id: 'referrers', title: 'Where they come from', queries: ['referrers'], sub: () => `Visitors by where the visit started; the raw referrers and the tagged links folded below. ${GOATCOUNTER_NOTE}`, render: referrersCard, skeleton: { bars: 10, folds: 3 } },
+  { id: 'pages', title: 'What they read', queries: ['pages'], sub: () => `Pages by visitors; the paths that hit the 404 page folded below. ${GOATCOUNTER_NOTE}`, render: pagesCard, skeleton: { rows: 8, row: 62, folds: 2 } },
+  { id: 'events', title: 'Where they go next', queries: ['events', 'visits'], sub: () => `Clicks out to a profile, to play, to watch, and docs read to the end. ${GOATCOUNTER_NOTE}`, render: eventsCard, skeleton: [{ tiles: 4 }, { bars: 4, folds: 1 }] },
+  { id: 'journeys', title: 'Journeys', queries: ['journeys'], sub: () => 'The most recent visits, newest first, each from where it came to how it left: every page with when it was reached, how far it was scrolled, how long it was visible and on screen, its LCP, and the click that ended the visit. From lib-visits, so since the cutover only.', render: journeysCard, skeleton: { chips: 4, items: 8 } },
+  { id: 'search', title: 'Search', queries: ['search'], sub: searchSub, render: searchCard, skeleton: { tiles: 5, chart: 185, folds: 3 } },
+  { id: 'reach', title: 'Reach', queries: ['reach'], sub: () => 'YouTube, GitHub, Hacker News and Substack: exposure beyond the site. A section reads Not configured until its credential is in Secret Manager.', render: reachCard, skeleton: [{ heading: true, tiles: 3, tile: 118, folds: 1 }, { rows: 2, row: 44, folds: 1 }, { tiles: 3, tile: 118, folds: 1 }, { tiles: 2, tile: 118, lines: 3 }] },
+  { id: 'health', title: 'Health', queries: ['health'], sub: () => '', render: healthCard, skeleton: { lines: 1, tiles: 5, folds: 1 } },
+  { id: 'audience', title: 'Audience', queries: ['audience'], sub: () => '', render: audienceCard, skeleton: { lines: 1, folds: 1 } },
 ];
 
 // ---------------------------------------------------------------- the page
@@ -546,8 +546,11 @@ function cardShell(def) {
 
 async function loadCard(def, gen, card) {
   const body = card.querySelector('.body');
-  // A skeleton is already the loading state; a rendered card dims while it reloads.
-  if (!body.querySelector('.skeleton')) card.classList.add('loading');
+  // A rendered card goes back to its skeleton while it reloads, held at the height this view
+  // had last (else the one it has now), so nothing under it moves; see hold() in charts.js.
+  const now = body.querySelector('.skeleton') ? 0 : card.getBoundingClientRect().height;
+  if (now) body.replaceChildren(el('p', { class: 'sr-only' }, 'Loading'), skeleton(def.skeleton));
+  hold(card, def.id, now);
   body.setAttribute('aria-busy', 'true');
   try {
     const results = await Promise.all(def.queries.map((name) => data.query(app, name, range)));
@@ -561,8 +564,8 @@ async function loadCard(def, gen, card) {
     body.replaceChildren(errorLine(`${def.title} could not be read.`, error.message));
   } finally {
     if (gen === generation) {
-      card.classList.remove('loading');
       body.removeAttribute('aria-busy');
+      settle(card, def.id);
     }
   }
 }
@@ -596,6 +599,16 @@ function rangeButtons() {
 }
 
 
+/**
+ * Every card is on the page, held at its last height, from the first paint: restoring the
+ * sign-in takes a second or so, and cards that appeared only after it would push the page
+ * about as they came (Cyrus, 2026-10-29). The queries wait for the session; the shapes do not.
+ */
+function shells() {
+  grid.replaceChildren(...CARDS.map(cardShell));
+  for (const def of CARDS) hold(document.getElementById(`card-${def.id}`), def.id);
+}
+
 async function start() {
   try {
     const apps = await loadApps();
@@ -609,6 +622,7 @@ async function start() {
 }
 
 rangeButtons();
+shells();
 // The nav's account menu (the badge, the email, Sign out) is the shell's: auth.js renders it.
 if (preview) {
   accountMenu(account, { preview: true });
