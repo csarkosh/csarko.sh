@@ -11,6 +11,12 @@
  */
 
 /**
+ * The first month the step prices (the spec's section 3, "The first pool and the launch"). An earlier
+ * closed month is never priced, so a run before Nov 3 does nothing.
+ */
+export const DONATE_FROM_MONTH = "2026-10";
+
+/**
  * The launch flag. Flipped to `true` by the launch commit (plan Task 9 Step 3) once donate.csarko.sh
  * serves the doors; until then the entrances on csarko.sh and apps.csarko.sh render nothing.
  */

@@ -1,7 +1,7 @@
 // admin/api/test/donate-prices.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { TIERS, CUSTOM, TIER_KEYS, DOORS, doorOf, doorByKey, shippedDoors, DONATE_URL, PRICES_URL } from "../src/donate/doors.mjs";
+import { TIERS, CUSTOM, TIER_KEYS, DOORS, doorOf, doorByKey, shippedDoors, DONATE_URL, PRICES_URL, DONATE_FROM_MONTH } from "../src/donate/doors.mjs";
 import { poolOf, priceOf, pricesOf, decide, PRICE_DAY, LATE_DAY } from "../src/donate/prices.mjs";
 
 test("four tiers at 1, 3, 10 and 30 percent, then the custom row", () => {
@@ -71,4 +71,13 @@ test("decide: holds while GCP's export starts after the first day of the month b
   assert.equal(decide({ today: "2026-11-02", current: null, failed: [], doors, gcpFirstDay: "2026-10-01" }).reason, "before the 3rd");
   assert.equal(PRICE_DAY, 3);
   assert.equal(LATE_DAY, 7);
+});
+
+test("decide never prices a month before the launch month", () => {
+  assert.equal(DONATE_FROM_MONTH, "2026-10");
+  const doors = ["arkos", "all"];
+  const sep = decide({ today: "2026-10-30", current: null, failed: [], doors });
+  assert.deepEqual(sep, { run: false, reason: "before the first priced month", month: "2026-09", newMonth: false, pending: [] });
+  assert.equal(decide({ today: "2026-11-03", current: null, failed: [], doors }).run, true);
+  assert.equal(decide({ today: "2026-10-30", current: null, failed: [], doors, fromMonth: "2026-09" }).run, true, "the default guards, not the date");
 });

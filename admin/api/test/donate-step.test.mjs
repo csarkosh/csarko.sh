@@ -215,3 +215,13 @@ test("the bucket rethrows a read that fails with anything but a 404", async () =
   const b = createPricesBucket({ bucket: "csarko-sh-donate-prices", storage, log: { error() {} } });
   await assert.rejects(b.read(), /denied/);
 });
+
+test("a run before the launch month touches neither Stripe nor the bucket", async () => {
+  const calls = [];
+  const bucket = fakeBucket();
+  const step = createDonateStep({ writer: fakeWriter(calls), bucket, now: () => Date.parse("2026-10-30T20:00:00Z"), log: { error() {}, warn() {} } });
+  const out = await step.run({ monthlyRows: [], failed: [], today: "2026-10-30", gcpFirstDay: "2026-10-01" });
+  assert.deepEqual(out, { ran: false, reason: "before the first priced month", record: null });
+  assert.deepEqual(calls, []);
+  assert.equal(bucket.writes, 0);
+});

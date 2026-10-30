@@ -99,7 +99,7 @@ range by door, `unknown` for a charge without one.
 The daily snapshot also runs the **donate step** (`src/donate/step.mjs`, `STRIPE_WRITE_KEY`): once a
 month it makes the next month's prices and payment links and publishes the prices object, and stores
 `finance.donate = { month, pool, at, doors }` (the `income` query's `prices`), carried forward on the
-days it does nothing; without the key it is `notConfigured.donate`, and a failure is `errors.donate`.
+days it does nothing; without the key it is `notConfigured.donate`, and a failure is `errors.donate`. The first month it ever prices is the `DONATE_FROM_MONTH` constant in `src/donate/doors.mjs` (2026-10), so an earlier closed month is never priced.
 While the GCP export's first usage day is after the first of the month being priced, the step holds
 with the reason `waiting on GCP history for <month>`, whatever the day of the month.
 The job also stores the day's KPI values as `finance.kpi` (`monthToDate`, `idleRunRate`, `last30`,

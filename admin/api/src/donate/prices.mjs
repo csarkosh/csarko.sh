@@ -10,7 +10,7 @@
 
 import { addMonths, monthOf } from "../finance/rows.mjs";
 import { projectOf } from "../finance/projects.mjs";
-import { TIERS } from "./doors.mjs";
+import { TIERS, DONATE_FROM_MONTH } from "./doors.mjs";
 
 export const PRICE_DAY = 3;
 export const LATE_DAY = 7;
@@ -39,11 +39,12 @@ export function pricesOf(pool) {
  * whose collector failed today, `doors` the shipped door keys, `gcpFirstDay` the GCP export's first
  * usage day (null when GCP is not configured).
  */
-export function decide({ today, current, failed, doors, gcpFirstDay = null }) {
+export function decide({ today, current, failed, doors, gcpFirstDay = null, fromMonth = DONATE_FROM_MONTH }) {
   const month = addMonths(monthOf(today), -1);
   const published = current?.month === month ? current.doors ?? [] : [];
   const missing = doors.filter((d) => !published.includes(d));
   if (current?.month === month && missing.length === 0) return { run: false, reason: "done", month, newMonth: false, pending: [] };
+  if (month < fromMonth) return { run: false, reason: "before the first priced month", month, newMonth: false, pending: [] };
   if (gcpFirstDay !== null && gcpFirstDay > `${month}-01`) return { run: false, reason: `waiting on GCP history for ${month}`, month, newMonth: false, pending: [] };
   const day = Number(today.slice(8, 10));
   if (day < PRICE_DAY) return { run: false, reason: "before the 3rd", month, newMonth: false, pending: [] };

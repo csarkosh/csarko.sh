@@ -169,7 +169,7 @@ October's GCP spend for Oct 1 to 28 is loaded once from the console's cost table
 Finance spec already allows for history, so the first bill sentence names an honest October.
 The site launches when the step's first run has written October's JSON, around Nov 3; it does
 not ship with a hand-typed or seeded pool, and the hand load happens once, for that one month,
-never again.
+never again (the step's `DONATE_FROM_MONTH` constant, 2026-10, enforces it; a run before then prices nothing).
 
 ## 4. The monthly step and the money
 
