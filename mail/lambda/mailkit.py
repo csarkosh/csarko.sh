@@ -258,6 +258,9 @@ def is_owner(mail: dict, receipt: dict, raw: bytes, owner: str) -> bool:
     for the owner's domain (Gmail signs everything it sends, so its own replies always pass)."""
     owner = owner.strip().lower()
     envelope = str(mail.get("source", "")).strip().lower()
+    headers, _, _ = _split(raw)
+    if any(name is None for name, _ in headers) or sum(1 for name, _ in headers if name.lower() == "from") != 1:
+        return False  # a line that is not a header (where parsers part ways), or a second From
     froms = _raw_values(raw, "From")
     if len(froms) != 1 or len(_addresses(froms)) != 1:
         return False  # SES's DMARC check and our parser must be reading the same, single From

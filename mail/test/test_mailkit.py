@@ -297,6 +297,13 @@ class Hardening(unittest.TestCase):
         s = summary(raw)
         self.assertEqual((s["from"], s["from_name"]), ("ada@example.com", "boss@csarko.sh"))
 
+    def test_a_malformed_header_line_cannot_hide_a_second_from(self):
+        # The stdlib stops reading headers at a line that is not a header; SES might not. Neither
+        # reading may differ for the owner check.
+        for hidden in ("Fo\u00f6: x\nFrom: Ada <ada@evil.example>\n", "not a header line\nFrom: Ada <ada@evil.example>\n"):
+            raw = FIX["gmail-reply"].replace(b"Date:", hidden.encode() + b"Date:")
+            self.assertFalse(is_owner({"source": "owner@example.net"}, {"dmarcVerdict": {"status": "PASS"}}, raw, "owner@example.net"), hidden)
+
     def test_a_from_with_two_addresses_is_not_the_owner(self):
         raw = FIX["gmail-reply"].replace(b"From: Owner <owner@example.net>", b"From: Owner <owner@example.net>, Ada <ada@example.com>")
         self.assertFalse(is_owner({"source": "owner@example.net"}, {"dmarcVerdict": {"status": "PASS"}}, raw, "owner@example.net"))
