@@ -4,7 +4,6 @@ published: 2026-10-07
 categories: Rendering
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-07-ground-fog-in-aaa-games.md
 updated: 2026-10-23
-featured: 5
 series: Rendering a browser forest
 ---
 # Volumetric ground fog without the sprite wall

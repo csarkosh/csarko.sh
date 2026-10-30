@@ -72,7 +72,6 @@ description: <70–160 characters: what a searcher learns from this doc>
 published: <YYYY-MM-DD, the doc's original date>
 categories: <one to three of the list below, comma-separated, spelled exactly>
 updated: <YYYY-MM-DD, only when revising a published doc>
-featured: <1, 2, 3…, only for a doc in /research's Start here row>
 series: <the run of docs it belongs to, only if it has one; see "Series and Keep reading">
 related: <2 to 4 doc slugs for its Keep reading block, only to hand-pick them>
 source: <https://github.com/… URL of the original, only if that repo is public>
@@ -216,21 +215,11 @@ A doc that measures a rendering technique in a procedural world is `Rendering,
 Worlds and terrain`; an AI film experiment is `AI, Film`. Adding a category is a
 change to `CATEGORIES` (its chip and its filter rule follow) and a note here.
 
-### Start here
+### No Start here row
 
-`/research` opens with a **Start here** row *(Cyrus, 2026-10-18)*: his most read docs, plus one
-or two that speak to his professional work (distributed systems, AI and evaluation), so a
-visitor from LinkedIn or the home page meets the strongest work before the newest. A doc joins
-it with `featured: <n>`, lowest first; two docs cannot share a number, and the build refuses
-one that is not a whole number from 1. Keep it to about five. The row's cards still appear in the
-full list below, which the chips filter alone. Featuring a doc is not a revision: leave
-`updated` alone. Pick by the admin dashboard's What they read and Search cards, not by date,
-and lead with docs that reward a short visit *(2026-10-23: ground fog and the AI horror short,
-9 and 10 minutes, kept readers longest; a 26 or 79 minute doc is a poor first card)*.
-*(2026-10-26, for Staff roles at AI companies: the row leads with the agent and infrastructure docs,
-How Codex embeds its browser (9 min) first, then the two Arkos reboot and update docs, the netcode
-doc and ground fog; the 40-minute telemetry doc stays out of the row.)*
-Each card's click counts as `start-<slug>`.
+`/research` had a **Start here** row of featured docs from 2026-10-18; Cyrus dropped it on
+2026-10-29, with the `featured:` field (the build now refuses it). Every doc is in the one list,
+newest first, filtered by one category chip at a time.
 
 To **update** a doc, edit its file and set `updated`. To **remove** one, delete
 its file; the build deletes the page.

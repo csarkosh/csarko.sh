@@ -3,7 +3,6 @@ description: Codex's browser pane is an Electron webview guest of its own Chromi
 published: 2026-10-24
 categories: Tooling, AI
 series: Arkos IDE notes
-featured: 1
 ---
 # How Codex embeds its browser, and what a Rust IDE can copy
 
