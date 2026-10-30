@@ -28,6 +28,16 @@ output "image_repository" {
   value       = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.source_deploy.repository_id}"
 }
 
+output "finance_modal_job_name" {
+  description = "Cloud Run job name of the Modal billing job, for `gcloud run jobs deploy --source admin/finance-modal`"
+  value       = google_cloud_run_v2_job.finance_modal.name
+}
+
+output "film_ledgers_bucket" {
+  description = "The private bucket the film pipeline syncs <film>/ledger.json into; the service's FILM_LEDGERS_BUCKET"
+  value       = google_storage_bucket.film_ledgers.name
+}
+
 output "service_account_unique_id" {
   description = "The service's identity as its numeric unique id: the `sub` claim of the ID tokens it mints, which the AWS costs role's trust policy names"
   value       = google_service_account.admin.unique_id

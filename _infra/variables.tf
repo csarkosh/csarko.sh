@@ -153,14 +153,3 @@ variable "admin_emails" {
   type        = list(string)
   default     = []
 }
-
-variable "finance_goal_usd" {
-  description = <<-EOT
-    The monthly idle run-rate the admin dashboard's Finance page measures
-    against, in whole US dollars: what the two clouds should bill while nothing
-    runs (FINANCE_GOAL_USD on the admin API). Separate from monthly_budget_usd,
-    which is the alert on the whole GCP project.
-  EOT
-  type        = number
-  default     = 5
-}

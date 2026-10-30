@@ -221,3 +221,35 @@ are never published; a research doc that quotes a figure quotes it by hand.
 - Is $5 the health threshold, or $3?
 - Load the GCP months before October 29 from a console CSV once, or let the history start
   there?
+
+## 11. Amended 2026-10-30: no goal, the film providers, the ledgers
+
+Cyrus, 2026-10-30: "I don't have a goal of $5. I am building AI short films which drives a lot of
+that cost." So the page judges nothing: the idle run-rate is reported as a fact beside the
+activity spend, and the health dot reads the sources and the unexplained days only. And the
+providers the films run on are on the page:
+
+- **Modal** (GPU for the image, video and assembly stages of `~/Projects/film-generation`, and
+  the Day Hike `dayhike-*` experiments): $80.06 of usage in October 2026 against $30 of included
+  credits, $73.49 in September. Modal has no REST billing endpoint, so a Python Cloud Run job
+  (`admin/finance-modal/`, `csarko-finance-modal`, scheduled ten minutes before the snapshot)
+  runs the workspace billing report and writes `finance.modal` into the day's snapshot. Every
+  Modal app is a Compute line named by its app; `cinema-*` apps are film cost, `dayhike-*`
+  are Day Hike's.
+- **fal** (Seedance, Nano Banana 2, sound effects): $53.63 in October from a prepaid balance.
+  fal's per-model report is enterprise-only, so the API reads the credit balance once a day
+  with an admin-scoped key (`FAL_ADMIN_KEY`) and a day's spend is the balance's fall; a rise
+  is a purchase, never spend. Category AI generation, project Films.
+- **The film ledgers**: the pipeline prices every paid call before it is made and writes it
+  to `<film>/ledger.json` on the SSD; `tools/cinema/ledger-sync.sh` there copies the ledgers
+  alone to the private bucket `csarko-sh-film-ledgers`, and the Films card shows each film's
+  total against its $150 cap, by model and provider. The rows carry no dates, so they
+  attribute cost and never feed the daily chart; Veo rows are at list rate, so a film's Vertex
+  figure can read higher than Google's bill.
+- **Projects**, the second axis: Films, Day Hike, csarko.sh and admin, Other, by month, from
+  a rule table over every provider's lines (`admin/api/src/finance/projects.mjs`).
+
+Secrets added (seeded `unset`, the page says "Not configured" until a version is added):
+`modal-token-id`, `modal-token-secret` (a dedicated Modal token from the workspace's settings),
+`fal-admin-key` (a fal key with the Admin scope). The $5 budget on the `csarko-sh` project
+stays: it is the site's own alert, not a goal.

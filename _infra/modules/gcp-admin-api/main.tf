@@ -5,10 +5,20 @@
 # the Cloud Scheduler job that takes them. Design: docs/superpowers/specs/
 # 2026-10-12-admin-dashboard-design.md, Part 2 (approved 2026-10-12).
 #
+# The Finance page (spec 2026-10-29-finance-admin-page-design.md, sections 6 and
+# 11) adds the Modal job: a Cloud Run job, csarko-finance-modal
+# (admin/finance-modal), run by a second Scheduler job ten minutes before the
+# snapshot, with its two secrets; the fal secret the service reads; and the film
+# ledgers bucket the service lists.
+#
 # Everything here sits inside the free tiers at one reader: Cloud Run's two
-# million requests a month, five of Secret Manager's six free active versions
-# (the four secrets below and gcp-visits' one), Firestore's free (default)
-# database, and three Scheduler jobs. The budget at the end is the alarm if that ever stops being true.
+# million requests a month and the job's one short run a day, Firestore's free
+# (default) database, the two Scheduler jobs of three free, and the bucket's
+# few KB. Secret Manager is the one that steps past its free tier: six free
+# active versions, and the seven secrets below plus gcp-visits' one carry eight
+# or more (the three seeded ones hold two each until the `unset` version is
+# disabled), at $0.06 a version-month past six. The budget at the end is the
+# alarm if that ever stops being a few cents.
 
 terraform {
   required_providers {
@@ -53,10 +63,13 @@ resource "google_project_service" "apis" {
 # ---- identities -------------------------------------------------------------------
 
 # Its own identity rather than the default compute service account, which
-# carries project-wide editor. Three permissions, all read or write of its own
-# data: the Firestore snapshots, the four secrets (each granted on the secret
-# itself, below, not project-wide), and the public site's Hosting releases for
-# the "last deploy" check.
+# carries project-wide editor. Every permission is read or write of its own
+# data: the Firestore snapshots, the secrets (each granted on the secret
+# itself, below, not project-wide), the public site's Hosting releases for
+# the "last deploy" check, the billing export dataset and the film ledgers
+# bucket. The Modal job runs as this account too: it writes one path of the
+# same snapshot document and reads two of the same secrets, so a second
+# account would hold the same two roles.
 resource "google_service_account" "admin" {
   project      = var.project_id
   account_id   = "csarko-admin"
@@ -116,10 +129,12 @@ resource "google_bigquery_dataset_iam_member" "admin_reads_billing" {
   member     = "serviceAccount:${google_service_account.admin.email}"
 }
 
-# The snapshot job's identity. It holds no role at all: the service is public
-# (allUsers may invoke it), so the OIDC token Scheduler signs with this account
-# is not for Cloud Run's IAM but for the handler, which accepts a snapshot
-# request only when the token's email is this one (SNAPSHOT_INVOKER below).
+# The snapshot job's identity. For the snapshot it holds no role: the service
+# is public (allUsers may invoke it), so the OIDC token Scheduler signs with
+# this account is not for Cloud Run's IAM but for the handler, which accepts a
+# snapshot request only when the token's email is this one (SNAPSHOT_INVOKER
+# below). Its one role is run.invoker on the Modal job (below), which it
+# starts through the Cloud Run Jobs API with an OAuth token.
 resource "google_service_account" "scheduler" {
   project      = var.project_id
   account_id   = "csarko-admin-scheduler"
@@ -138,8 +153,15 @@ resource "google_service_account" "scheduler" {
 # `latest`, so a rotation is a new version plus a redeploy. Automatic
 # replication: Google picks the regions, which is the free option and the only
 # one that needs no decision.
+#
+# The service's secrets (var.secret_ids) and the Modal job's (var.job_secret_ids)
+# are one set here: the same containers, the same reader.
+locals {
+  all_secret_ids = merge(var.secret_ids, var.job_secret_ids)
+}
+
 resource "google_secret_manager_secret" "this" {
-  for_each = var.secret_ids
+  for_each = local.all_secret_ids
 
   project   = var.project_id
   secret_id = each.key
@@ -152,12 +174,31 @@ resource "google_secret_manager_secret" "this" {
 }
 
 resource "google_secret_manager_secret_iam_member" "admin_reads" {
-  for_each = var.secret_ids
+  for_each = local.all_secret_ids
 
   project   = var.project_id
   secret_id = google_secret_manager_secret.this[each.key].secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.admin.email}"
+}
+
+# The Finance page's secrets (2026-10-30) are seeded with the literal `unset`,
+# so the service and the job can be created in the same apply as the secrets
+# (Cloud Run refuses a revision whose secret has no version) and the page says
+# "Not configured" until a real value is added by hand, as a new version. The
+# four original secrets predate this and have hand-added versions only. After
+# the real version exists, `gcloud secrets versions disable 1 --secret=<id>`
+# stops the seed counting as an active version; `enabled` is ignored here so
+# that is not drift.
+resource "google_secret_manager_secret_version" "seed" {
+  for_each = var.seeded_secret_ids
+
+  secret      = google_secret_manager_secret.this[each.key].id
+  secret_data = "unset"
+
+  lifecycle {
+    ignore_changes = [enabled]
+  }
 }
 
 # ---- the snapshots ------------------------------------------------------------------
@@ -397,10 +438,19 @@ resource "google_cloud_run_v2_service" "admin" {
         value = var.aws_cost_audience
       }
 
-      # The idle run-rate the page's summary measures against, whole US dollars a month.
+      # The film ledgers (spec section 11): the private bucket the pipeline syncs
+      # <film>/ledger.json into, read here with objectViewer (below).
       env {
-        name  = "FINANCE_GOAL_USD"
-        value = tostring(var.finance_goal_usd)
+        name  = "FILM_LEDGERS_BUCKET"
+        value = google_storage_bucket.film_ledgers.name
+      }
+
+      # The Modal part is the job's, not the service's: this says the job exists,
+      # so the API reports Modal from the snapshot instead of "not configured"
+      # (whether the token itself is set, the job says in the snapshot).
+      env {
+        name  = "MODAL_CONFIGURED"
+        value = "1"
       }
     }
   }
@@ -434,6 +484,7 @@ resource "google_cloud_run_v2_service" "admin" {
   depends_on = [
     google_project_service.apis["run.googleapis.com"],
     google_secret_manager_secret_iam_member.admin_reads,
+    google_secret_manager_secret_version.seed,
     google_project_iam_member.admin,
   ]
 }
@@ -496,6 +547,184 @@ resource "google_cloud_scheduler_job" "snapshot" {
   }
 
   depends_on = [google_project_service_identity.scheduler]
+}
+
+# ---- the Modal job (the Finance page) -----------------------------------------------
+
+# Modal has no REST billing endpoint; its workspace billing report is in its
+# Python SDK only. So the Finance page's Modal part comes from a Cloud Run
+# *job* in Python (admin/finance-modal), run once a day, which writes the
+# report for the last 60 days and 13 months into the day's snapshot document
+# at the one path `finance.modal` and nothing else. It runs as the service's
+# own account (the Firestore role and the secrets' reader, above). The two
+# Modal secrets reach it as environment; everything else is the project and
+# the plan's included credits.
+resource "google_cloud_run_v2_job" "finance_modal" {
+  project  = var.project_id
+  location = var.region
+  name     = "csarko-finance-modal"
+
+  deletion_protection = false
+
+  template {
+    task_count = 1
+
+    template {
+      service_account = google_service_account.admin.email
+
+      # Thirteen monthly report calls, paced for Modal's rate limit, and one
+      # Firestore write: a minute or two. Ten minutes is the ceiling, and one
+      # retry covers a cold start or a rate-limit day.
+      timeout     = "600s"
+      max_retries = 1
+
+      containers {
+        image = var.job_image
+
+        resources {
+          limits = {
+            cpu    = "1"
+            memory = "512Mi"
+          }
+        }
+
+        dynamic "env" {
+          for_each = var.job_secret_ids
+          content {
+            name = env.value
+            value_source {
+              secret_key_ref {
+                secret  = google_secret_manager_secret.this[env.key].secret_id
+                version = "latest"
+              }
+            }
+          }
+        }
+
+        env {
+          name  = "GOOGLE_CLOUD_PROJECT"
+          value = var.project_id
+        }
+
+        # Written into the snapshot as `credits`: the plan's included monthly
+        # credits, which the API subtracts from the gross to get what is charged.
+        env {
+          name  = "MODAL_CREDITS_USD"
+          value = tostring(var.modal_credits_usd)
+        }
+      }
+    }
+  }
+
+  lifecycle {
+    # As the service: Terraform owns the shape, `gcloud run jobs deploy --source
+    # admin/finance-modal` owns the image. Created with Google's sample job
+    # image so the first apply has something to run; `client`,
+    # `client_version` and `deletion_protection` are stamped by gcloud at each
+    # deploy, as on the service.
+    ignore_changes = [
+      template[0].template[0].containers[0].image,
+      client,
+      client_version,
+      deletion_protection,
+    ]
+  }
+
+  depends_on = [
+    google_project_service.apis["run.googleapis.com"],
+    google_secret_manager_secret_iam_member.admin_reads,
+    google_secret_manager_secret_version.seed,
+    google_project_iam_member.admin,
+  ]
+}
+
+# Scheduler starts the job through the Cloud Run Jobs API, so here the token is
+# OAuth (a Google API wants an access token, not an ID token) and Cloud Run's
+# IAM does the checking: the scheduler account needs run.invoker on this job.
+resource "google_cloud_run_v2_job_iam_member" "scheduler_runs_finance_modal" {
+  project  = var.project_id
+  location = var.region
+  name     = google_cloud_run_v2_job.finance_modal.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.scheduler.email}"
+}
+
+# 05:50 New York, ten minutes before the snapshot, so the API's run reads a
+# fresh Modal part from the day's document rather than yesterday's.
+resource "google_cloud_scheduler_job" "finance_modal" {
+  project     = var.project_id
+  region      = var.region
+  name        = "csarko-finance-modal"
+  description = "Starts the Modal billing job, which writes finance.modal into the day's snapshot."
+  schedule    = var.finance_modal_schedule
+  time_zone   = var.snapshot_time_zone
+
+  # The run call returns at once with an operation; the job's own timeout
+  # bounds the work. One retry covers a transient refusal from the API.
+  attempt_deadline = "60s"
+
+  retry_config {
+    retry_count = 1
+  }
+
+  http_target {
+    http_method = "POST"
+    uri         = "https://run.googleapis.com/v2/projects/${var.project_id}/locations/${var.region}/jobs/${google_cloud_run_v2_job.finance_modal.name}:run"
+
+    oauth_token {
+      service_account_email = google_service_account.scheduler.email
+    }
+  }
+
+  depends_on = [
+    google_project_service_identity.scheduler,
+    google_cloud_run_v2_job_iam_member.scheduler_runs_finance_modal,
+  ]
+}
+
+# ---- the film ledgers (the Finance page) --------------------------------------------
+
+# The film pipeline (~/Projects/film-generation, on the external SSD) prices
+# every paid call before it is made and writes it to the film's ledger; its
+# `tools/cinema/ledger-sync.sh` copies the ledgers alone into this bucket, and
+# the Finance page's Films card reads them. The layout is one object a film:
+#
+#   gs://csarko-sh-film-ledgers/<film>/ledger.json
+#
+# Private in every way a bucket can be: uniform bucket-level access (no object
+# ACLs), public access prevention enforced, and the only reader beyond the
+# project's owner is the admin service account (below). Versioned, because a
+# sync is an overwrite and a ledger is the only record of what a film cost;
+# the noncurrent versions are capped so a daily sync of eight ledgers never
+# grows past a few hundred small objects. Same region as everything else.
+resource "google_storage_bucket" "film_ledgers" {
+  project  = var.project_id
+  name     = var.film_ledgers_bucket
+  location = var.region
+
+  uniform_bucket_level_access = true
+  public_access_prevention    = "enforced"
+  force_destroy               = false
+
+  versioning {
+    enabled = true
+  }
+
+  lifecycle_rule {
+    action {
+      type = "Delete"
+    }
+    condition {
+      num_newer_versions = 30
+      with_state         = "ARCHIVED"
+    }
+  }
+}
+
+resource "google_storage_bucket_iam_member" "admin_reads_ledgers" {
+  bucket = google_storage_bucket.film_ledgers.name
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_service_account.admin.email}"
 }
 
 # ---- the budget ------------------------------------------------------------------

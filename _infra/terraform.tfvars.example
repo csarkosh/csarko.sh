@@ -27,8 +27,6 @@ dns_zone_name = "csarko.sh"
 # leaves the Finance page's GCP side unconfigured.
 # billing_account_id = "XXXXXX-XXXXXX-XXXXXX"
 # monthly_budget_usd = 5
-# The idle run-rate goal the Finance page measures against, US dollars a month.
-# finance_goal_usd = 5
 
 # The Google accounts that may read admin.csarko.sh.
 admin_emails = ["you@example.com"]

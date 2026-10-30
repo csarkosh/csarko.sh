@@ -178,7 +178,6 @@ module "gcp_admin_api" {
   # the role's ARN, so there is no cycle.
   aws_cost_role_arn = module.aws_costs.role_arn
   aws_cost_audience = module.aws_costs.audience
-  finance_goal_usd  = var.finance_goal_usd
 
   providers = {
     google         = google
