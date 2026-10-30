@@ -389,6 +389,7 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .chart .tick { fill: var(--faint); font-family: var(--mono); font-size: 11px; }
 .chart .dlabel { fill: var(--muted); font-family: var(--mono); font-size: 11px; }
 .chart .bar { fill: var(--accent); transition: fill var(--md-duration-short3) var(--md-easing-standard); }
+.chart .seg { transition: filter var(--md-duration-short3) var(--md-easing-standard); }
 .chart .bar.hover { fill: var(--accent-hover); }
 .chart .ghost { fill: var(--ghost); }
 .chart .hit { fill: transparent; cursor: default; outline: none; }
@@ -683,6 +684,6 @@ footer .mono { font-family: var(--mono); }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .nav ul a, .btn, .range button, .j-filters button, .card .card-title a, details.folded summary::before, .fl-band, .tooltip.fades, .chart .bar, .bars .fill { transition: none; }
+  .nav ul a, .btn, .range button, .j-filters button, .card .card-title a, details.folded summary::before, .fl-band, .tooltip.fades, .chart .bar, .chart .seg, .bars .fill { transition: none; }
   .skel { animation: none; }
 }

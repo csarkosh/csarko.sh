@@ -4,4 +4,4 @@ public/game-dayhike/
 
 # The build tooling for the vendored Firebase Auth SDK (`npm install` here); the bundle it
 # writes, public/vendor/firebase-auth.<hash>.js, is committed like every generated asset.
-node_modules/
+node_modules
