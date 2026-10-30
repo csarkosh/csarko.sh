@@ -13,15 +13,18 @@
  * The budget: the snapshot route has 60 s for everything it does, so the step must stay well under
  * 30 s. A first run is about ten sequential creates (the products and prices) and then one batch of
  * five concurrent link creates per door, the doors still one after another, instead of about forty
- * sequential calls. Nothing is written to the bucket until
- * every create has succeeded. A run that writes a month retires nothing: the bucket's object is
- * cached five minutes, so the previous month's links must outlive that. The first later run that
- * finds the month done sweeps instead, deactivating the links and archiving the prices of any
- * other month, each failure logged and left for the next day. A door shipped mid-month gets its
- * links at the month's current prices and touches nothing else.
+ * sequential calls.
+ *
+ * Nothing is written to the bucket until every create has succeeded. A run that writes a month
+ * retires nothing. The first later run that finds the month done sweeps instead, deactivating the
+ * links and archiving the prices of every month older than the previous one, each failure logged
+ * and left for the next day. The previous month's stay live for one more month: the deployed
+ * pages bake its links in as their fallback, and the site is redeployed once a month after the new
+ * prices land, so a visitor whose fetch fails still meets a live checkout. A door shipped
+ * mid-month gets its links at the month's current prices and touches nothing else.
  */
 
-import { cents } from "../finance/rows.mjs";
+import { addMonths, cents } from "../finance/rows.mjs";
 import { CUSTOM, DONATE_URL, TIERS, TIER_KEYS, shippedDoors } from "./doors.mjs";
 import { decide, poolOf, pricesOf } from "./prices.mjs";
 
@@ -86,9 +89,14 @@ export function createDonateStep({ writer, bucket, now = Date.now, log = console
     return { links: Object.fromEntries(made) };
   }
 
-  /** Other months' links deactivated and prices archived; each failure logged, none fatal. */
+  /**
+   * Links and prices two or more months older than `month` retired (the previous month's are kept
+   * for the baked fallback); each failure logged, none fatal.
+   */
   async function sweep(month) {
     const swept = { links: 0, prices: 0 };
+    const keep = addMonths(month, -1);
+    const monthOfKey = (key) => /^donate:(\d{4}-\d{2}):/.exec(key)?.[1] ?? null;
     try {
       const attempt = async (what, fn, counter) => {
         try {
@@ -99,13 +107,14 @@ export function createDonateStep({ writer, bucket, now = Date.now, log = console
         }
       };
       for (const l of await writer.listLinks()) {
-        if (l.metadata?.donate === "1" && l.metadata?.month !== month) await attempt(`link ${l.id}`, () => writer.deactivateLink(l.id), "links");
+        if (l.metadata?.donate === "1" && typeof l.metadata.month === "string" && l.metadata.month < keep) await attempt(`link ${l.id}`, () => writer.deactivateLink(l.id), "links");
       }
       for (const p of await writer.listPrices()) {
-        if (typeof p.lookup_key === "string" && p.lookup_key.startsWith("donate:") && !p.lookup_key.startsWith(`donate:${month}:`)) await attempt(`price ${p.id}`, () => writer.archivePrice(p.id), "prices");
+        const old = typeof p.lookup_key === "string" ? monthOfKey(p.lookup_key) : null;
+        if (old !== null && old < keep) await attempt(`price ${p.id}`, () => writer.archivePrice(p.id), "prices");
       }
     } catch (error) {
-      log.error("donate: listing last month's objects to retire failed", error);
+      log.error("donate: listing the old months' objects to retire failed", error);
     }
     return swept;
   }

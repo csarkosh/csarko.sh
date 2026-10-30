@@ -194,7 +194,10 @@ calling the admin API's snapshot route once a day) gains one idempotent step, **
    `after_completion` redirects to the thanks page with the door, and which collects the
    payer's email for the receipt (Stripe's default). Five links per door, seven doors: 35 links
    a month.
-5. Deactivate last month's links (`active: false`); archive last month's Prices.
+5. Last month's links stay live for one more month and are swept on the first snapshot after
+   that (links `active: false`, Prices archived), so the baked fallback on the deployed pages
+   always pays. *(Amended Oct 30 after the branch review: the sweep retired them the day after
+   the new month published.)*
 6. Write **one JSON** the page reads: the month, the pool rounded to the dollar, and per door
    the five prices, shares and link URLs. It is published to a public Cloud Storage object with
    CORS for `https://donate.csarko.sh` (my call; a Hosting rewrite cannot reach a bucket, and the
@@ -204,8 +207,14 @@ calling the admin API's snapshot route once a day) gains one idempotent step, **
 
 The step is a module next to the Finance ones (`admin/api/src/donate/`), pure functions over
 the Finance rows and Stripe's objects, with the Stripe calls behind the same collector shape as
-`collectors/stripe.mjs`. It writes its last run and the link ids into the daily snapshot so the
-Finance page can show when prices last turned and refuse a second run in a month.
+`collectors/stripe.mjs`. It writes its last run into the daily snapshot so the Finance page can
+show when prices last turned and refuse a second run in a month: the snapshot record is
+`{ month, pool, at, doors }`, and the bucket JSON is the source of truth for the ids.
+
+**The monthly redeploy** *(amended Oct 30 after the branch review)*. The pages bake the month's
+prices and links in as their fallback, so `donate/deploy.sh` is re-run after each month's prices
+land: a line in Cyrus's monthly routine, on or after the day the Finance page's prices line says
+they turned. Until then the fallback points at last month's links, which step 5 keeps live.
 
 **Tips as income.** The Finance page's donations (`finance/income.mjs`, amounts and days only)
 gain a by-door split read from each payment's `metadata.door`, so the funnels are visible to

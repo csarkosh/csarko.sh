@@ -75,11 +75,15 @@ test("done, before the 3rd and a failed provider leave Stripe and the bucket alo
   assert.equal(bucket.writes, 0);
 });
 
-test("the next month: new prices and links, nothing retired; the next done run sweeps last month's links and prices", async () => {
+test("the next month: new prices and links, nothing retired; the next done run keeps last month's for the baked fallback and sweeps the month before", async () => {
   const calls = [];
   const tag = (month, door, tier, id) => ({ id, url: "u", metadata: { donate: "1", month, door, tier } });
-  const links = [tag("2026-10", "arkos", "prompt", "plink_o1"), tag("2026-10", "all", "own", "plink_o2"), tag("2026-11", "arkos", "prompt", "plink_n1")];
-  const prices = [...["prompt", "context", "run", "finetune", "own"].map((t, i) => ({ id: `price_o${i + 1}`, lookup_key: `donate:2026-10:${t}` })), { id: "price_n1", lookup_key: "donate:2026-11:prompt" }, { id: "price_x", lookup_key: null }];
+  const links = [tag("2026-09", "arkos", "prompt", "plink_s1"), tag("2026-09", "all", "own", "plink_s2"), tag("2026-10", "arkos", "prompt", "plink_o1"), tag("2026-10", "all", "own", "plink_o2"), tag("2026-11", "arkos", "prompt", "plink_n1")];
+  const prices = [
+    ...["prompt", "context", "run", "finetune", "own"].map((t, i) => ({ id: `price_s${i + 1}`, lookup_key: `donate:2026-09:${t}` })),
+    ...["prompt", "context", "run", "finetune", "own"].map((t, i) => ({ id: `price_o${i + 1}`, lookup_key: `donate:2026-10:${t}` })),
+    { id: "price_n1", lookup_key: "donate:2026-11:prompt" }, { id: "price_x", lookup_key: null },
+  ];
   const oct = { month: "2026-10", pool: 288, at: "x", tiers: [], custom: { priceId: "price_o5", minimumUsd: 1 }, products: {}, doors: { arkos: { links: {} }, all: { links: {} } } };
   const bucket = fakeBucket(oct);
   const log = { error() {}, warn() {} };
@@ -89,17 +93,19 @@ test("the next month: new prices and links, nothing retired; the next done run s
   assert.equal(bucket.json.pool, 100);
   assert.equal(calls.filter((c) => c[0] === "deactivateLink" || c[0] === "archivePrice").length, 0, "the run that writes the month retires nothing");
   const out = await createDonateStep({ writer: fakeWriter(calls, { links, prices }), bucket, now: () => Date.parse("2026-12-04T10:00:00Z"), log }).run({ monthlyRows: nov, failed: [], today: "2026-12-04" });
+  // On Dec 4 November is current and October is the previous month: October's objects survive,
+  // September's go.
   assert.deepEqual([out.ran, out.reason, out.swept], [false, "done", { links: 2, prices: 5 }]);
-  assert.deepEqual(calls.filter((c) => c[0] === "deactivateLink").map((c) => c[1]), ["plink_o1", "plink_o2"]);
-  assert.deepEqual(calls.filter((c) => c[0] === "archivePrice").map((c) => c[1]), ["price_o1", "price_o2", "price_o3", "price_o4", "price_o5"]);
+  assert.deepEqual(calls.filter((c) => c[0] === "deactivateLink").map((c) => c[1]), ["plink_s1", "plink_s2"]);
+  assert.deepEqual(calls.filter((c) => c[0] === "archivePrice").map((c) => c[1]), ["price_s1", "price_s2", "price_s3", "price_s4", "price_s5"]);
 });
 
 test("a sweep that fails on one link and one price logs it, goes on and counts only what it retired", async () => {
   const calls = [];
   const errors = [];
-  const tag = (id) => ({ id, url: "u", metadata: { donate: "1", month: "2026-09", door: "arkos", tier: "prompt" } });
+  const tag = (id) => ({ id, url: "u", metadata: { donate: "1", month: "2026-08", door: "arkos", tier: "prompt" } });
   const links = [tag("plink_a"), tag("plink_b")];
-  const prices = [{ id: "price_a", lookup_key: "donate:2026-09:prompt" }, { id: "price_b", lookup_key: "donate:2026-09:run" }];
+  const prices = [{ id: "price_a", lookup_key: "donate:2026-08:prompt" }, { id: "price_b", lookup_key: "donate:2026-08:run" }];
   const cur = { month: "2026-10", pool: 288, at: "x", tiers: [], custom: {}, products: {}, doors: Object.fromEntries(["arkos", "macstats", "visits", "last-trail", "hallway", "all"].map((d) => [d, { links: {} }])) };
   const out = await createDonateStep({ writer: fakeWriter(calls, { links, prices, failOn: ["plink_a", "price_b"] }), bucket: fakeBucket(cur), now: () => NOW, log: { error: (...a) => errors.push(a), warn() {} } }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-05" });
   assert.deepEqual(out.swept, { links: 1, prices: 1 });
