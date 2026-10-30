@@ -396,7 +396,11 @@ export function filteredList(rows, { id, render, shown, more, empty }) {
     drawn = true;
     const first = kept.slice(0, shown).map(item);
     const after = kept.slice(shown).map(item);
+    // From the height the tail is drawn at; then its ease in flight goes, so the height it goes to
+    // is measured as it is laid out without one (easeHeight would re-measure it with the leaving
+    // parts still in, and snap when they go).
     const from = tail.getBoundingClientRect().height;
+    heightEases(tail).forEach((a) => a.cancel());
     const fill = (list, items) => () => list.replaceChildren(...items);
     if (animate) {
       glideList(head, fill(head, first), keyOf);

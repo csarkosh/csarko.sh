@@ -1573,6 +1573,31 @@ def admin_motion_pages():
           if (card.querySelectorAll('[data-ghost]').length) p.push('ghosts left after two clicks');
           return p.concat(t.clean(list, 'the list'), t.clean(card, 'the card'));
         } }"""),
+        # Review Focus 1: the More fold comes and goes again within 300 ms. The space under the list
+        # eases to where it ends, with the leaving fold left out, and never snaps when the ease ends.
+        ("/csarko.sh/: the More fold appears and leaves within 300 ms, and the space under the list never snaps", """{ url: '/csarko.sh/?preview', run: async (f, t) => {
+          const d = f.contentDocument, w = d.defaultView, p = [];
+          if (!await t.loaded(d)) return ['the cards did not load'];
+          await t.settled(d);
+          const card = d.getElementById('card-journeys'), tail = card.querySelector('.j-tail');
+          const button = [...card.querySelectorAll('.j-filters button')].find((b) => b.textContent === 'Hide suspect');
+          // 10 journeys, 8 shown: showing the suspect one brings the fold, hiding it again takes it away.
+          button.click();
+          await t.sleep(100);
+          button.click();
+          const ease = t.heightEases(tail)[0];
+          const target = ease ? parseFloat(ease.effect.getKeyframes().at(-1).height) : null;
+          const heights = [];
+          const frame = () => new Promise((resolve) => { w.requestAnimationFrame(() => resolve()); });
+          for (const end = performance.now() + 700; performance.now() < end; await frame()) heights.push(tail.getBoundingClientRect().height);
+          await t.settled(d);
+          const final = tail.getBoundingClientRect().height;
+          if (target !== null && Math.abs(target - final) > 1) p.push(`the space eases to ${target} px but ends at ${final.toFixed(1)} px`);
+          const step = Math.max(0, ...heights.slice(1).map((h, i) => Math.abs(h - heights[i])));
+          if (step > 20) p.push(`the space under the list steps ${step.toFixed(1)} px in one frame`);
+          if (!card.querySelector('.j-tail details').hidden) p.push('the fold is still shown');
+          return p.concat(t.clean(tail, 'the space under the list'));
+        } }"""),
         ("/ide-arkos/: a session filter glides; First sessions only cross-fades the paths", """{ url: '/ide-arkos/?preview', run: async (f, t) => {
           const d = f.contentDocument, p = [];
           if (!await t.loaded(d)) return ['the cards did not load'];
