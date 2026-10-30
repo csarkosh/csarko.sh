@@ -52,6 +52,13 @@ export function createGcpBilling({ bigquery, projectId, dataset, table, cache, n
       const start = new Date(Date.UTC(y, m - 1 - (months - 1), 1)).toISOString().slice(0, 10);
       return run("finance-monthly", { start, end: addDays(today, 1) });
     },
+    /** The first usage day the export holds (Google backfills months before the day it was
+     * switched on), or null when it is empty: the months before it are AWS and GitHub only. */
+    async firstDay() {
+      const rows = await run("finance-first-day", {});
+      const day = rows[0]?.day;
+      return typeof day === "string" && day !== "" ? day : null;
+    },
     /** The latest usage day present in the last `days` days, or null when the export has none. */
     async lastDay(days = DAILY_DAYS) {
       const today = isoDate(now());

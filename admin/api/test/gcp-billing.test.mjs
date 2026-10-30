@@ -6,7 +6,7 @@ import { createGcpBilling, EXPORT_TABLE } from "../src/collectors/gcp-billing.mj
 
 const queriesDir = new URL("../queries/", import.meta.url).pathname;
 const NOW = Date.parse("2026-10-28T23:10:00Z");
-const NAMES = ["finance-daily", "finance-monthly", "finance-last-day"];
+const NAMES = ["finance-daily", "finance-monthly", "finance-last-day", "finance-first-day"];
 
 // As in visits.test.mjs: each saved SQL file starts with a distinct comment, so the fake knows which file ran.
 function fakeBigQuery(calls, { fail = false, empty = false } = {}) {
@@ -21,6 +21,7 @@ function fakeBigQuery(calls, { fail = false, empty = false } = {}) {
       calls.push({ name, params });
       if (fail) throw new Error("quota");
       if (name === "finance-last-day") return [[{ day: empty ? null : "2026-10-27" }]];
+      if (name === "finance-first-day") return [[{ day: empty ? null : "2026-08-01" }]];
       if (name === "finance-daily") return [[{ day: "2026-10-27", project: "fps-csarko", service: "Cloud Run", sku: "Services CPU (Request-based billing)", unit: "second", net: 0.08, amount: 9800 }]];
       return [[{ month: "2026-10", project: "fps-csarko", service: "Vertex AI", sku: "Veo 3 Fast 720p Audio Video Generation", unit: "count", net: { value: "64.8" }, amount: 648 }]];
     },
@@ -80,6 +81,9 @@ test("every finance SQL file reads the export table placeholder and prunes on _P
     assert.ok(sql.includes("`csarko-sh.billing.gcp_billing_export_v1_013AA0_554DB9_BBF90D`"), `${name} names the export table the runner rewrites`);
     assert.ok(EXPORT_TABLE.test(sql), name);
     EXPORT_TABLE.lastIndex = 0;
+    // The first-day query scans the whole table on purpose: where the history starts is not
+    // inside any window, and the table is kilobytes a day.
+    if (name === "finance-first-day") continue;
     assert.ok(sql.includes("_PARTITIONTIME >= TIMESTAMP(DATE_SUB(DATE(@start), INTERVAL 2 DAY))"), `${name} prunes partitions`);
     assert.ok(sql.includes("usage_start_time >= TIMESTAMP(@start)"), `${name} cuts on usage time`);
   }
@@ -88,4 +92,11 @@ test("every finance SQL file reads the export table placeholder and prunes on _P
     assert.ok(sql.includes("SUM(cost) + SUM(IFNULL((SELECT SUM(c.amount) FROM UNNEST(credits) AS c), 0)) AS net"), `${name} nets the credits`);
     assert.ok(sql.includes("SUM(usage.amount) AS amount") && sql.includes("usage.unit AS unit"), `${name} carries the usage`);
   }
+});
+
+test("firstDay reads the export's first usage day over the whole table and answers null for an empty export", async () => {
+  const { gcp, calls } = make();
+  assert.equal(await gcp.firstDay(), "2026-08-01");
+  assert.deepEqual(calls.at(-1).params, {});
+  assert.equal(await make({ empty: true }).gcp.firstDay(), null);
 });

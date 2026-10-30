@@ -9,7 +9,9 @@ import { CATEGORIES } from "./categories.mjs";
 import { PROVIDERS, cents, addMonths, monthsBetween, monthOf, daysInMonth } from "./rows.mjs";
 
 export const RANGES = ["month", "last", "90", "13m"];
-/** The first day the GCP export has rows: months before it carry AWS and GitHub only. */
+/** The day the GCP export was switched on: the fallback for where its rows start when the
+ * export cannot say (`gcpBilling.firstDay()`, which reads the real first day, since Google
+ * backfills earlier months). Months before the first day carry AWS and GitHub only. */
 export const GCP_EXPORT_FROM = "2026-10-29";
 
 /** `range` from the query string: absent is `month`, anything not in RANGES is null (a 400). */

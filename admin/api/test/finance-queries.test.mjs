@@ -32,6 +32,7 @@ function fakes({ awsOn = true, gcpOn = true, githubOn = true, gcpFail = false, f
       async daily() { calls.push("gcp:daily"); if (gcpFail) throw new Error("BigQuery finance-daily failed: quota"); return GCP.daily; },
       async monthly() { calls.push("gcp:monthly"); return GCP.monthly; },
       async lastDay() { calls.push("gcp:lastDay"); return GCP.lastDay; },
+      async firstDay() { calls.push("gcp:firstDay"); return GCP.firstDay ?? "2026-10-02"; },
     },
     githubBilling: { configured: githubOn, async usage() { calls.push("github:usage"); return GITHUB; } },
     store: createMemoryStore(),
@@ -160,7 +161,7 @@ test("sources: configured, last day, the snapshot time and this month's Cost Exp
   assert.equal(errors, undefined);
   assert.deepEqual(sources.map((s) => s.key), ["aws", "gcp", "github"]);
   assert.deepEqual(sources[0], { key: "aws", label: "AWS Cost Explorer", configured: true, lastDay: "2026-10-27", snapshotAt: SNAPSHOT_AT, callsThisMonth: 6, callCostUsd: 0.06, note: "Two calls a day from the snapshot job, $0.01 each; a third for the forecast until the 28th." });
-  assert.deepEqual(sources[1], { key: "gcp", label: "Google Cloud billing export", configured: true, lastDay: "2026-10-27", snapshotAt: null, callsThisMonth: null, callCostUsd: null, note: "BigQuery, read live; rows from 2026-10-29 on." });
+  assert.deepEqual(sources[1], { key: "gcp", label: "Google Cloud billing export", configured: true, lastDay: "2026-10-27", snapshotAt: null, callsThisMonth: null, callCostUsd: null, note: "BigQuery, read live; rows from 2026-10-02 on." });
   assert.deepEqual(sources[2], { key: "github", label: "GitHub usage", configured: true, lastDay: "2026-10-27", snapshotAt: SNAPSHOT_AT, callsThisMonth: null, callCostUsd: null, note: "From the snapshot; public repositories bill $0." });
 });
 

@@ -58,6 +58,17 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, store
     }
   }
 
+  /** Where the export's rows start (Google backfills the months before it was switched on), the
+   * day it was switched on when the export cannot say or is not configured. */
+  const exportFirstDay = async () => {
+    if (!gcpBilling.configured) return GCP_EXPORT_FROM;
+    try {
+      return (await gcpBilling.firstDay()) ?? GCP_EXPORT_FROM;
+    } catch {
+      return GCP_EXPORT_FROM;
+    }
+  };
+
   /** GCP's three jobs at once: `{ daily, monthly, lastDay }` (plain rows and a day). */
   const gcpLive = () => Promise.all([gcpBilling.daily(), gcpBilling.monthly(), gcpBilling.lastDay()]).then(([daily, monthly, lastDay]) => ({ daily, monthly, lastDay }));
 
@@ -203,8 +214,8 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, store
     async categories(range = "month") {
       const h = hints();
       const today = isoDate(now());
-      const { monthlyRows } = await load(h);
-      return withHints(categoriesTable(monthlyRows, monthsOf(range, today)), h);
+      const [{ monthlyRows }, firstDay] = await Promise.all([load(h), exportFirstDay()]);
+      return withHints(categoriesTable(monthlyRows, monthsOf(range, today), { exportFrom: firstDay }), h);
     },
 
     async idle() {
@@ -235,10 +246,11 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, store
     async sources() {
       const h = hints();
       const today = isoDate(now());
-      const [snapshot, monthSnapshots, gcpLastDay] = await Promise.all([
+      const [snapshot, monthSnapshots, gcpLastDay, gcpFirstDay] = await Promise.all([
         store.latestSnapshot(),
         store.listSnapshots(`${monthOf(today)}-01`, today),
         part(h, "gcp", gcpBilling.configured, () => gcpBilling.lastDay()),
+        exportFirstDay(),
       ]);
       const fin = snapshot?.finance ?? null;
       const snapshotAt = fin?.at ?? null;
@@ -256,7 +268,7 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, store
           {
             key: "gcp", label: SOURCE_LABELS.gcp, configured: gcpBilling.configured,
             lastDay: gcpLastDay ?? null, snapshotAt: null, callsThisMonth: null, callCostUsd: null,
-            note: `BigQuery, read live; rows from ${GCP_EXPORT_FROM} on.`,
+            note: `BigQuery, read live; rows from ${gcpFirstDay} on.`,
           },
           {
             key: "github", label: SOURCE_LABELS.github, configured: githubBilling.configured,
