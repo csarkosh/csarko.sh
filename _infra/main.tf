@@ -24,6 +24,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.0"
+    }
     google = {
       source  = "hashicorp/google"
       version = "~> 6.0"
@@ -37,6 +41,12 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
+}
+
+# Mail: SES receives mail only in some regions; us-east-2 is one, and the account's default.
+provider "aws" {
+  alias  = "mail"
+  region = var.mail_region
 }
 
 provider "google" {
@@ -261,6 +271,9 @@ module "aws_dns" {
     # Google Search Console, Domain property csarko.sh (verified 2026-09-11).
     # Google re-checks it periodically; removing it un-verifies the property.
     "google-site-verification=r8DHgyFqGEsfamOeyKlLZecMwnv54ysXg91ZFGylr_4",
+    # SPF for mail from the domain (module aws_mail): SES, plus Google until the Workspace
+    # subscription is gone (mail_cutover_complete).
+    module.aws_mail.apex_spf_value,
   ]
 
   # Non-apex hostnames CNAME straight to their site's own web.app host: the
@@ -273,5 +286,28 @@ module "aws_dns" {
 
   providers = {
     aws = aws
+  }
+}
+
+# Every address at the domain: SES receives, a Lambda forwards to the owner or sends the owner's
+# reply as the alias. Design: docs/superpowers/specs/2026-10-30-email-aliases-design.md. The
+# cutover is three variables, in order: the trial subdomain first, then mail_manage_apex_mx, and
+# mail_cutover_complete once the Workspace subscription is cancelled (spec section 8).
+module "aws_mail" {
+  source = "./modules/aws-mail"
+
+  domain            = var.domain_name
+  zone_name         = var.dns_zone_name
+  owner_address     = var.mail_owner_address
+  lambda_source_dir = "${path.root}/../mail/lambda"
+  retention_days    = var.mail_retention_days
+  protected_aliases = var.mail_protected_aliases
+  manage_apex_mx    = var.mail_manage_apex_mx
+  apex_mx_rollback  = var.mail_apex_mx_rollback
+  trial_subdomain   = var.mail_trial_subdomain
+  cutover_complete  = var.mail_cutover_complete
+
+  providers = {
+    aws = aws.mail
   }
 }

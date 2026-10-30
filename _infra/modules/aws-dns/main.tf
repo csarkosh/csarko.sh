@@ -10,10 +10,10 @@ data "aws_route53_zone" "this" {
   name = var.zone_name
 }
 
-# The zone itself is not managed by this state, and neither is anything else in
-# it: the apex MX records (Google Workspace mail) and the fps repo's games/game
-# CNAMEs live elsewhere. This module owns the apex A, the apex TXT, and one CNAME
-# per entry in cname_records (www) — nothing more.
+# The zone itself is not managed by this state, and this module owns only the
+# apex A, the apex TXT, and one CNAME per entry in cname_records (www). The mail
+# records (the apex MX once mail_manage_apex_mx is set, DKIM, MAIL FROM, DMARC,
+# the trial MX) are modules/aws-mail's; the fps repo's games/game CNAMEs live there.
 
 # allow_overwrite lets the first apply UPSERT over the apex A record the old
 # AWS site left behind (an alias to its CloudFront distribution). That swap is

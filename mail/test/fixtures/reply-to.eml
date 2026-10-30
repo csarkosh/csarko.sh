@@ -1,0 +1,25 @@
+Return-Path: <bounce+ada=example.com@mailer.example.com>
+Received: from mx.example.com (mx.example.com [192.0.2.10])
+ by inbound-smtp.us-east-2.amazonaws.com with SMTP id abc123
+ for hello@csarko.sh; Thu, 30 Oct 2026 12:00:01 +0000 (UTC)
+Received: from [10.0.0.5] by mx.example.com; Thu, 30 Oct 2026 12:00:00 +0000
+DKIM-Signature: v=1; a=rsa-sha256; d=example.com; s=s1; h=from:to:subject;
+ bh=AAAA; b=BBBB
+Authentication-Results: amazonses.com; spf=pass; dkim=pass header.i=@example.com
+From: "Ada Example" <ada@example.com>
+To: hello@csarko.sh
+Subject: Hello there
+Date: Thu, 30 Oct 2026 12:00:00 +0000
+Message-ID: <plain-2@example.com>
+Reply-To: list-bounces@example.com
+In-Reply-To: <plain-0@example.com>
+References: <root@example.com> <plain-0@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Hi,
+
+Just checking this address works.
+
+Ada

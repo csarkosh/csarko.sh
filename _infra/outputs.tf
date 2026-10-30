@@ -138,3 +138,15 @@ output "admin_costs_audience" {
   description = "The audience of the Google ID token the admin API presents to AWS STS; the service's AWS_COST_AUDIENCE"
   value       = module.aws_costs.audience
 }
+
+output "mail_table" { value = module.aws_mail.table_name }
+output "mail_bucket" { value = module.aws_mail.bucket }
+output "mail_function" { value = module.aws_mail.function_name }
+output "mail_config_set" { value = module.aws_mail.configuration_set }
+output "mail_region" { value = module.aws_mail.region }
+output "mail_skill_policy_arn" {
+  description = "Attach to the AWS profile the mail skill runs as."
+  value       = module.aws_mail.skill_policy_arn
+}
+output "mail_owner_identity_verified" { value = module.aws_mail.owner_identity_verified }
+output "mail_domain_identity_verified" { value = module.aws_mail.domain_identity_verified }

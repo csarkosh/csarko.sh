@@ -28,3 +28,6 @@ voice.md
 
 # apps.csarko.sh is built from GitHub at each deploy (apps/build.mjs); nothing in it is a source.
 apps/public/
+
+# aws-mail packages the Lambda here at plan time.
+_infra/modules/aws-mail/.build/
