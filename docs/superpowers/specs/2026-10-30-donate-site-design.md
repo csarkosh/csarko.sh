@@ -192,11 +192,12 @@ calling the admin API's snapshot route once a day) gains one idempotent step, **
    minimum), then for each door and each tier a Payment Link whose metadata and whose
    `payment_intent_data.metadata` carry `door`, `tier`, `month` and `share`, whose
    `after_completion` redirects to the thanks page with the door, and which collects the
-   payer's email for the receipt (Stripe's default). Five links per door, seven doors: 35 links
-   a month.
+   payer's email for the receipt (Stripe's default). Five links per door, six shipped doors
+   today: 30 links a month, seven doors and 35 links with Day Hike.
 5. Last month's links stay live for one more month and are swept on the first snapshot after
-   that (links `active: false`, Prices archived), so the baked fallback on the deployed pages
-   always pays. *(Amended Oct 30 after the branch review: the sweep retired them the day after
+   that, once the following month's prices have landed (links `active: false`, Prices archived:
+   anything two or more months older than the published month), so the baked fallback on the
+   deployed pages always pays. *(Amended Oct 30 after the branch review: the sweep retired them the day after
    the new month published.)*
 6. Write **one JSON** the page reads: the month, the pool rounded to the dollar, and per door
    the five prices, shares and link URLs. It is published to a public Cloud Storage object with
