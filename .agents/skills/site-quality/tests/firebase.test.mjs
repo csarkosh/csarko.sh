@@ -34,3 +34,17 @@ test("every other /apps address lands on the Apps filter; only the old pictures 
   assert.ok(rest > pictures, "the catch-all comes after the pictures (the first match wins)");
   assert.ok(!site.redirects.some((r) => r.source === "/apps/:file*"), "no /apps page lands on a /projects/<name> that does not exist");
 });
+
+test("the donate site: its own entry, a CSP that reaches only the prices bucket, no rewrite and no redirect", () => {
+  const donate = fb.hosting.find((h) => h.site === "csarko-sh-donate");
+  assert.equal(donate.public, "donate/public");
+  assert.equal(donate.cleanUrls, true);
+  assert.equal(donate.trailingSlash, false);
+  assert.equal(donate.rewrites, undefined);
+  assert.equal(donate.redirects, undefined);
+  const csp = donate.headers.find((h) => h.source === "**").headers.find((h) => h.key === "Content-Security-Policy").value;
+  assert.ok(csp.includes("connect-src 'self' https://storage.googleapis.com;"));
+  assert.ok(csp.includes("script-src 'self';"));
+  assert.ok(csp.includes("form-action 'none'"));
+  assert.ok(!csp.includes("stripe"), "Stripe is a navigation, not a request from the page");
+});

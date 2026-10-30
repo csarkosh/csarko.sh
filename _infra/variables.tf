@@ -64,6 +64,18 @@ variable "apps_hosting_site_id" {
   default     = "csarko-sh-apps"
 }
 
+variable "donate_domain_name" {
+  description = "Hostname of the donate site (Buy Me Tokens), a static page whose prices the admin API publishes to a public bucket."
+  type        = string
+  default     = "donate.csarko.sh"
+}
+
+variable "donate_hosting_site_id" {
+  description = "Firebase Hosting site id of the donate site. Globally unique across all of Firebase."
+  type        = string
+  default     = "csarko-sh-donate"
+}
+
 variable "admin_domain_name" {
   description = "Hostname of the admin dashboard. A subdomain of domain_name, so it CNAMEs to its site's web.app host."
   type        = string

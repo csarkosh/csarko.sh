@@ -182,6 +182,10 @@ module "gcp_admin_api" {
   billing_account_id = var.billing_account_id
   monthly_budget_usd = var.monthly_budget_usd
 
+  # The donate site's origin: the prices bucket's CORS names it, and DONATE_URL is where the
+  # admin API sends a reader to look at what it published.
+  donate_origin = "https://${var.donate_domain_name}"
+
   # The Finance page's AWS side (module aws_costs below). The two modules refer
   # to each other, which is fine: Terraform's graph is per resource, and the
   # service account the role trusts does not depend on the service that reads
@@ -210,6 +214,28 @@ module "aws_costs" {
   providers = {
     aws = aws
   }
+}
+
+# The donate site, https://donate.csarko.sh (Buy Me Tokens; design:
+# docs/superpowers/specs/2026-10-30-donate-site-design.md): a fourth Hosting site in the
+# project. It is static, with no rewrite and no redirect, and reads its prices from the
+# public bucket in module gcp_admin_api (donate_prices_bucket) with a request the CSP allows
+# for that one origin. It deploys on its own, apart from the other sites.
+module "gcp_hosting_donate" {
+  source = "./modules/gcp-hosting"
+
+  project_id            = var.gcp_project_id
+  site_id               = var.donate_hosting_site_id
+  domain_name           = var.donate_domain_name
+  redirect_domain_names = []
+  manage_project        = false
+
+  providers = {
+    google      = google
+    google-beta = google-beta
+  }
+
+  depends_on = [module.gcp_hosting]
 }
 
 # The two datasets' names are set here and passed to both modules: the admin API
@@ -249,9 +275,10 @@ module "gcp_visits" {
 # for the life of the site, unlike required_dns_updates, which empties once a
 # domain reconciles (the fps repo learned this the hard way).
 locals {
-  hosting_cname_target       = trimprefix(module.gcp_hosting.default_url, "https://")
-  admin_hosting_cname_target = trimprefix(module.gcp_hosting_admin.default_url, "https://")
-  apps_hosting_cname_target  = trimprefix(module.gcp_hosting_apps.default_url, "https://")
+  hosting_cname_target        = trimprefix(module.gcp_hosting.default_url, "https://")
+  admin_hosting_cname_target  = trimprefix(module.gcp_hosting_admin.default_url, "https://")
+  apps_hosting_cname_target   = trimprefix(module.gcp_hosting_apps.default_url, "https://")
+  donate_hosting_cname_target = trimprefix(module.gcp_hosting_donate.default_url, "https://")
 }
 
 # csarko.sh is a zone apex, so it cannot be a CNAME the way games.csarko.sh is
@@ -277,11 +304,12 @@ module "aws_dns" {
   ]
 
   # Non-apex hostnames CNAME straight to their site's own web.app host: the
-  # redirect domains (www) to the public site, admin to the admin site, apps to the apps site.
+  # redirect domains (www) to the public site, admin to the admin site, apps to the apps site, donate to the donate site.
   cname_records = merge(
     { for d in var.redirect_domain_names : d => local.hosting_cname_target },
     { (var.admin_domain_name) = local.admin_hosting_cname_target },
     { (var.apps_domain_name) = local.apps_hosting_cname_target },
+    { (var.donate_domain_name) = local.donate_hosting_cname_target },
   )
 
   providers = {
