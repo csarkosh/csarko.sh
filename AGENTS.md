@@ -255,9 +255,10 @@ three from the command line):
   apps and films, built with AI"). Until that day they were three pages, `/apps`, `/film` and
   `/games`, each in the nav; those URLs, and the stable pictures under `/apps/` and `/film/`, now
   301 to `/projects` (`firebase.json`; `check.py --live` checks it). **Chips above the cards**
-  *(Cyrus, 2026-10-29)*: All, Apps, Film, Games (`PROJECT_KINDS` in `docs_lib.mjs`), multi-select
-  like `/research`'s, each card carrying `data-kind`; a link pre-applies them,
-  `/projects?filter=film,games`, through the same `filters.js`, and `/film`, `/games` and `/apps`
+  *(Cyrus, 2026-10-29)*: All, Apps, Film, Games (`PROJECT_KINDS` in `docs_lib.mjs`), **single
+  select** (radios: a kind replaces the last, All clears it; `/research`'s stay multi-select), each
+  card carrying `data-kind`; a link pre-applies one, `/projects?filter=film` (a link naming several
+  opens on the first), through the same `filters.js`, and `/film`, `/games` and `/apps`
   301 to their own filter (so `games.csarko.sh`, via `/games`, lands on Games). A chip counts
   `filter-<kind>` (`filter-all` for All). The page sits near its 50,000 B HTML budget (49,253 B
   with six projects, 2026-10-29): the next card needs a budget of its own, as `/research` got. The sources stay in their own

@@ -826,7 +826,7 @@ test('/projects carries Apps, Film and Games chips with counts, All as a reset, 
   assert.ok(html.includes('<form class="filters" aria-label="Filter by kind">'));
   assert.ok(html.includes('<button type="reset" class="chip all" data-visits-event="filter-all">All <small>4</small></button>'));
   for (const [value, label, count] of [['apps', 'Apps', 1], ['film', 'Film', 2], ['games', 'Games', 1]]) {
-    assert.ok(html.includes(`<label class="chip"><input type="checkbox" name="kind" value="${value}" id="kind-${value}" data-visits-event="filter-${value}" />${label} <small>${count}</small></label>`), label);
+    assert.ok(html.includes(`<label class="chip"><input type="radio" name="kind" value="${value}" id="kind-${value}" data-visits-event="filter-${value}" />${label} <small>${count}</small></label>`), label);
     assert.ok(html.includes(`.docs-index:has(#kind-${value}:checked) .project-list > li[data-kind~="${value}"] { display: flex; }`), label);
   }
   assert.ok(html.includes('.docs-index:has(.filters input:checked) .project-list > li { display: none; }'));

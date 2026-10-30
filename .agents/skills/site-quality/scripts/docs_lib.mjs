@@ -1285,9 +1285,11 @@ ${FOOTER}`;
 
 const tagList = (tags, model) => `<ul class="tags" role="list">${model ? `<li class="tag-model">${escapeHtml(model)}</li>` : ''}${tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>`;
 
-// The chips above /projects: All, then one a kind with its count, the way /research's are built.
+// The chips above /projects: All, then one a kind with its count, the way /research's are built,
+// but single select (Cyrus, 2026-10-29): radios sharing a name, so a kind replaces the last; All
+// (the form's reset) clears it. The CSS rules are the same as the checkboxes'.
 function projectFilters(projects, pad) {
-  const chips = PROJECT_KINDS.map(([value, label, kind]) => `${pad}  <label class="chip"><input type="checkbox" name="kind" value="${value}" id="kind-${value}" data-visits-event="filter-${value}" />${escapeHtml(label)} <small>${projects.filter((p) => p.kind === kind).length}</small></label>`);
+  const chips = PROJECT_KINDS.map(([value, label, kind]) => `${pad}  <label class="chip"><input type="radio" name="kind" value="${value}" id="kind-${value}" data-visits-event="filter-${value}" />${escapeHtml(label)} <small>${projects.filter((p) => p.kind === kind).length}</small></label>`);
   return `${pad}<form class="filters" aria-label="Filter by kind">
 ${pad}  <button type="reset" class="chip all" data-visits-event="filter-all">All <small>${projects.length}</small></button>
 ${chips.join('\n')}

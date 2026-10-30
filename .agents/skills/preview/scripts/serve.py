@@ -33,18 +33,22 @@ FIREBASE_JSON = Path(__file__).resolve().parents[4] / "firebase.json"
 
 
 def load_redirects(config=FIREBASE_JSON):
-    """firebase.json's hosting.redirects as (pattern, destination) pairs. Only the source syntax
-    this site uses is supported: literal segments, ":name" for one segment, ":name*" for the rest."""
+    """firebase.json's hosting.redirects as (pattern, destination) pairs. Only the syntax this site
+    uses is supported: literal segments, ":name" for one segment, ":name*" for the rest, "**" for
+    anything below, and a "regex" rule (RE2's named groups read the same in Python)."""
     pairs = []
     hosting = json.loads(Path(config).read_text()).get("hosting", {})
     # Two sites since admin.csarko.sh: the public site is the entry publishing `public`.
     if isinstance(hosting, list):
         hosting = next((h for h in hosting if h.get("public") == "public"), {})
     for r in hosting.get("redirects", []):
+        if "regex" in r:
+            pairs.append((re.compile(r["regex"].removeprefix("^").removesuffix("$")), r["destination"]))
+            continue
         parts = []
         for seg in r["source"].split("/"):
             m = re.fullmatch(r":(\w+)(\*?)", seg)
-            parts.append(re.escape(seg) if not m else f"(?P<{m[1]}>.*)" if m[2] else f"(?P<{m[1]}>[^/]+)")
+            parts.append(".*" if seg == "**" else re.escape(seg) if not m else f"(?P<{m[1]}>.*)" if m[2] else f"(?P<{m[1]}>[^/]+)")
         pairs.append((re.compile("/".join(parts)), r["destination"]))
     return pairs
 
@@ -63,7 +67,9 @@ def route(public, raw_path, redirects=()):
     query = f"?{parts.query}" if parts.query else ""
     for pattern, destination in redirects:
         if m := pattern.fullmatch(path):
-            return 301, re.sub(r":(\w+)", lambda g: m[g[1]], destination) + query
+            target = re.sub(r":(\w+)", lambda g: m[g[1]], destination)
+            # A destination with its own query keeps the request's after it, as Firebase does.
+            return 301, target + (query.replace("?", "&", 1) if query and "?" in target else query)
     if path != "/" and path.endswith("/"):
         return 301, path.rstrip("/") + query
     if path.endswith(".html"):

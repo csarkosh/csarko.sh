@@ -43,6 +43,15 @@ class Route(unittest.TestCase):
         self.assertEqual(self.route("/docs/a?utm=x"), (301, "/research/a?utm=x"))
         self.assertEqual(self.route("/docsx"), (404, self.public / "404.html"))
 
+    def test_old_project_pages_land_on_their_filter_as_on_firebase(self):
+        self.assertEqual(self.route("/film"), (301, "/projects?filter=film"))
+        # A destination with its own query keeps the request's after it, joined with "&".
+        self.assertEqual(self.route("/film?ref=x"), (301, "/projects?filter=film&ref=x"))
+        # "**" catches everything under /apps; the regex rule before it keeps the pictures.
+        self.assertEqual(self.route("/apps/ide-arkos"), (301, "/projects?filter=apps"))
+        self.assertEqual(self.route("/apps/x/y"), (301, "/projects?filter=apps"))
+        self.assertEqual(self.route("/apps/lib-visits.jpg"), (301, "/projects/lib-visits.jpg"))
+
     def test_missing_and_outside_paths_get_the_404_page(self):
         self.assertEqual(self.route("/nope"), (404, self.public / "404.html"))
         self.assertEqual(self.route("/../../etc/passwd"), (404, self.public / "404.html"))
