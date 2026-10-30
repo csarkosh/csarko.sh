@@ -95,5 +95,11 @@
     { "day": "2026-10-31", "amount": 37.93, "status": "pending" },
     { "day": "2026-10-18", "amount": 18.38, "status": "paid" }
   ],
-  "balance": { "available": 0, "pending": 37.93, "currency": "usd" }
+  "balance": { "available": 0, "pending": 37.93, "currency": "usd" },
+  "byDoor": [
+    { "door": "films", "label": "Films", "gross": 30, "fees": 1.77, "net": 28.23, "count": 2 },
+    { "door": "dayhike", "label": "Day Hike", "gross": 20, "fees": 1.17, "net": 18.83, "count": 2 },
+    { "door": "unknown", "label": "Unknown", "gross": 10, "fees": 0.75, "net": 9.25, "count": 1 }
+  ],
+  "prices": { "month": "2026-09", "pool": 412.5, "at": "2026-10-03T06:10:00.000Z" }
 }
