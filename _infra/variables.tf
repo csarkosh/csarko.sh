@@ -153,3 +153,51 @@ variable "admin_emails" {
   type        = list(string)
   default     = []
 }
+
+variable "mail_region" {
+  description = "Where SES receives the domain's mail (an SES receiving region)."
+  type        = string
+  default     = "us-east-2"
+}
+
+variable "mail_owner_address" {
+  description = "Where every alias at the domain forwards, and the only sender allowed to reply through a reverse alias. Set in the git-ignored terraform.tfvars; never committed."
+  type        = string
+  sensitive   = true
+}
+
+variable "mail_retention_days" {
+  description = "Days a received or sent message is kept."
+  type        = number
+  default     = 365
+}
+
+variable "mail_protected_aliases" {
+  description = "Local parts that can never be blocked, besides postmaster, abuse and dmarc."
+  type        = list(string)
+  default     = []
+}
+
+variable "mail_trial_subdomain" {
+  description = "A subdomain whose MX points at SES during the trial (\"test\" is test.csarko.sh). Empty after the cutover."
+  type        = string
+  default     = "test"
+}
+
+variable "mail_manage_apex_mx" {
+  description = "Point the apex MX at SES (the cutover). False until the trial passes."
+  type        = bool
+  default     = false
+}
+
+variable "mail_apex_mx_rollback" {
+  description = "With mail_manage_apex_mx, point the apex MX back at Google Workspace's hosts."
+  type        = bool
+  default     = false
+}
+
+variable "mail_cutover_complete" {
+  description = "True once the Workspace subscription is cancelled: SPF drops Google and DMARC moves to p=quarantine."
+  type        = bool
+  default     = false
+}

@@ -30,3 +30,14 @@ dns_zone_name = "csarko.sh"
 
 # The Google accounts that may read admin.csarko.sh.
 admin_emails = ["you@example.com"]
+
+# Mail (docs/superpowers/specs/2026-10-30-email-aliases-design.md). Where every alias forwards.
+mail_owner_address = "you@example.com"
+# The cutover, in order: the trial runs on test.<domain> with the apex untouched; then
+# mail_manage_apex_mx = true points the apex at SES; mail_cutover_complete = true once the old
+# mail provider can no longer send as the domain (SPF and DMARC tighten); then
+# mail_trial_subdomain = "" removes the trial MX.
+# mail_trial_subdomain  = "test"
+# mail_manage_apex_mx   = false
+# mail_cutover_complete = false
+# mail_protected_aliases = ["tips"]
