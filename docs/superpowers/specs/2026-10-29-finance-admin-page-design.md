@@ -253,3 +253,15 @@ Secrets added (seeded `unset`, the page says "Not configured" until a version is
 `modal-token-id`, `modal-token-secret` (a dedicated Modal token from the workspace's settings),
 `fal-admin-key` (a fal key with the Admin scope). The $5 budget on the `csarko-sh` project
 stays: it is the site's own alert, not a goal.
+
+**Claude Code, its own category** (Cyrus, 2026-10-30: "i want claude code plumbing into this
+too as its own category"). Claude Code runs on a claude.ai subscription, a flat fee with no
+billing endpoint, and its usage is in the local transcripts (`~/.claude*/projects/**/*.jsonl`,
+one JSON line a message with its token counts and model). `tools/claude-usage-sync.py`, run on
+the Mac, sums them per day and per model, prices each row at the first-party API list price
+(the plan's value, never a bill: October 2026 came to about $10,450 at list, against a flat
+fee), and writes `finance.claude` into the day's snapshot; no transcript text leaves the Mac.
+The subscription fee is entered once on the page (the manual series `claude-subscription`)
+and is the provider's spend, spread evenly over the month's days; the category `claudeCode`
+is fixed, like Domains. The Claude Code card shows the fee, the month's list-price value,
+the messages, and the daily value by model.
