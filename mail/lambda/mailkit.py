@@ -130,6 +130,12 @@ def _raw_values(raw: bytes, name: str) -> list:
     return [_clean(str(value)) for value in message.get_all(name) or []]
 
 
+def raw_header(raw: bytes, name: str) -> Optional[str]:
+    """The first value of a header as written (RFC 2047 words left encoded), or None."""
+    values = _raw_values(raw, name)
+    return values[0] if values else None
+
+
 def _decode(text: str) -> str:
     """RFC 2047 decoding of display text (a name, a subject), cleaned for reuse in a header."""
     try:

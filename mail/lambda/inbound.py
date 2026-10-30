@@ -17,7 +17,7 @@ import re
 from dataclasses import dataclass
 from typing import Optional
 
-from mailkit import PROTECTED, build_forward, build_reply, is_owner, parse_recipient, policy, summary
+from mailkit import PROTECTED, build_forward, build_reply, is_owner, parse_recipient, policy, raw_header, summary
 from store import Store
 
 
@@ -70,8 +70,12 @@ _log = _print_log
 
 
 def send(ses, raw: bytes, *, from_address: str, to: list, config_set: str) -> str:
+    """Send a built message. SES rewrites the From header to the call's FromEmailAddress (seen in
+    the live trial), so the call names the message's own From header, display name and all;
+    `from_address` is the fallback for a message without one."""
+    from_header = (raw_header(raw, "From") or from_address)
     response = ses.send_email(
-        FromEmailAddress=from_address,
+        FromEmailAddress=from_header,
         Destination={"ToAddresses": list(to)},
         Content={"Raw": {"Data": raw}},
         ConfigurationSetName=config_set,

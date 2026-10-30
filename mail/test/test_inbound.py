@@ -73,7 +73,7 @@ class Forward(Base):
         out = self.deliver("m1", "ada@example.com", ["Hello@csarko.sh"])
         self.assertEqual(out["results"][0], {"recipient": "Hello@csarko.sh", "action": "forward", "flag": None, "sent": True})
         sent = self.ses.calls[0]
-        self.assertEqual((sent["FromEmailAddress"], sent["Destination"]["ToAddresses"]), ("hello@csarko.sh", [OWNER]))
+        self.assertEqual((sent["FromEmailAddress"], sent["Destination"]["ToAddresses"]), ('"Ada Example via csarko.sh" <hello@csarko.sh>', [OWNER]))
         self.assertEqual(sent["ConfigurationSetName"], "mail")
         token = self.store.token_for("hello", "ada@example.com")
         self.assertEqual(parse(sent["Content"]["Raw"]["Data"])["Reply-To"], f"reply.{token}@csarko.sh")
@@ -82,10 +82,24 @@ class Forward(Base):
         self.assertTrue(row["forwarded"])
         self.assertEqual((row["direction"], row["s3_key"], row["verdicts"]), ("in", "raw/m1", OK))
 
+    def test_the_send_names_the_whole_from_header(self):
+        # SES rewrites From to the FromEmailAddress of the call (found in the live trial): a bare
+        # address there would drop the "<sender> via <domain>" display name.
+        self.deliver("dn1", "ada@example.com", ["hello@csarko.sh"])
+        call = self.ses.calls[0]
+        self.assertEqual(call["FromEmailAddress"], parse(call["Content"]["Raw"]["Data"])["From"])
+        self.assertEqual(call["FromEmailAddress"], '"Ada Example via csarko.sh" <hello@csarko.sh>')
+
+    def test_a_reply_names_the_aliases_display_name_in_the_send(self):
+        token = self.store.token_for("hello", "ada@example.com")
+        self.store.set_state("hello", "forward", name="Hello Desk")
+        self.deliver("dn2", OWNER, [f"reply.{token}@csarko.sh"], raw=FIX["gmail-reply"])
+        self.assertEqual(self.ses.calls[0]["FromEmailAddress"], "Hello Desk <hello@csarko.sh>")
+
     def test_trial_subdomain_reverse_alias_uses_that_domain(self):
         self.deliver("m2", "ada@example.com", ["hello@test.csarko.sh"])
         self.assertTrue(parse(self.ses.calls[0]["Content"]["Raw"]["Data"])["Reply-To"].endswith("@test.csarko.sh"))
-        self.assertEqual(self.ses.calls[0]["FromEmailAddress"], "hello@csarko.sh")
+        self.assertTrue(self.ses.calls[0]["FromEmailAddress"].endswith("<hello@csarko.sh>"))  # the base domain sends
 
     def test_send_failure_leaves_row_unforwarded(self):
         self.ses.fail_with("MessageRejected")
