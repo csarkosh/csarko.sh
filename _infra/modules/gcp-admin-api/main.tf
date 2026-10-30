@@ -8,7 +8,7 @@
 # The Finance page (spec 2026-10-29-finance-admin-page-design.md, sections 6 and
 # 11) adds the Modal job: a Cloud Run job, csarko-finance-modal
 # (admin/finance-modal), run by a second Scheduler job ten minutes before the
-# snapshot, with its two secrets; the fal secret the service reads; and the film
+# snapshot, with its two secrets; the fal and Stripe secrets the service reads; and the film
 # ledgers bucket the service lists.
 #
 # Everything here sits inside the free tiers at one reader: Cloud Run's two

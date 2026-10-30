@@ -77,6 +77,7 @@ variable "secret_ids" {
     github-token  = "GITHUB_TOKEN"
     psi-key       = "PSI_KEY"
     fal-admin-key = "FAL_ADMIN_KEY"
+    stripe-key    = "STRIPE_KEY"
   }
 }
 
@@ -102,7 +103,7 @@ variable "seeded_secret_ids" {
     the service existed.
   EOT
   type        = set(string)
-  default     = ["fal-admin-key", "modal-token-id", "modal-token-secret"]
+  default     = ["fal-admin-key", "modal-token-id", "modal-token-secret", "stripe-key"]
 }
 
 variable "job_image" {
