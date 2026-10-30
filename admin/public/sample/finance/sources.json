@@ -6,6 +6,7 @@
     { "key": "modal", "label": "Modal billing report", "configured": true, "lastDay": "2026-10-24", "snapshotAt": "2026-10-28T10:02:00Z", "callsThisMonth": null, "callCostUsd": null, "note": "The workspace report, per app per day, written by the daily job." },
     { "key": "fal", "label": "fal credit balance", "configured": true, "lastDay": "2026-10-27", "snapshotAt": "2026-10-28T10:00:00Z", "callsThisMonth": null, "callCostUsd": null, "note": "The balance once a day; a day's spend is its fall." },
     { "key": "claude", "label": "Claude Code transcripts", "configured": true, "lastDay": "2026-10-28", "snapshotAt": "2026-10-28T03:16:05Z", "callsThisMonth": null, "callCostUsd": null, "note": "Local transcripts, synced by tools/claude-usage-sync.py on the Mac; priced at API list rates as the plan's value." },
-    { "key": "ledgers", "label": "Film ledgers", "configured": true, "lastDay": null, "snapshotAt": "2026-10-28T20:32:39Z", "callsThisMonth": null, "callCostUsd": null, "note": "8 ledgers in the bucket; the time is the newest file's." }
+    { "key": "ledgers", "label": "Film ledgers", "configured": true, "lastDay": null, "snapshotAt": "2026-10-28T20:32:39Z", "callsThisMonth": null, "callCostUsd": null, "note": "8 ledgers in the bucket; the time is the newest file's." },
+    { "key": "stripe", "label": "Stripe donations", "configured": true, "lastDay": "2026-10-28", "snapshotAt": null, "callsThisMonth": null, "callCostUsd": null, "note": "Read live from Stripe with a restricted key; amounts only, never who gave." }
   ]
 }

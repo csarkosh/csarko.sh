@@ -94,7 +94,7 @@
     "kpis": [
       { "key": "monthToDate", "label": "Month to date", "value": 438.71, "prev": 248.13, "unit": "USD", "trend": [24.1, 25.3, 26, 27.2, 3.1, 9.8, 15.4, 22.6, 24.8, 30.2, 57.9, 438.71] },
       { "key": "idleRunRate", "label": "Idle run-rate", "value": 10.62, "prev": 23.67, "unit": "USD", "trend": [25.9, 25.9, 26, 26.1, 26.1, 26.2, 26.2, 26.3, 26.3, 26.4, 26.3, 10.62], "good": "down" },
-      { "key": "last30", "label": "Last 30 days", "value": 432.75, "prev": 250.45, "unit": "USD", "trend": [24.6, 25.1, 25.4, 26, 26.3, 26.8, 101.4, 110.2, 112, 115.3, 118.9, 432.75] },
+      { "key": "donations", "label": "Donations, net", "value": 56.31, "prev": 9.41, "unit": "USD", "trend": [0, 0, 0, 0, 0, 0, 0, 9.41, -0.74, 18.38, 22.93, 56.31], "good": "up" },
       { "key": "forecast", "label": "Forecast", "value": 463.49, "prev": 261.59, "unit": "USD", "trend": [25, 25.3, 26.2, 26.4, 26.1, 26.6, 27.4, 29, 29.5, 33.1, 60.4, 463.49] }
     ],
     "health": { "status": "good", "note": "6 sources answered; no day of the last 7 out of line" }

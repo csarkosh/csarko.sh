@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { CATEGORIES, CATEGORY_KEYS, categorize, kindOf } from "../src/finance/categories.mjs";
 import { PROVIDERS, PROVIDER_LABELS, awsRegionOf, awsRows, gcpRows, githubRows, modalRows, falRows, cents, fine, addMonths, daysInMonth, monthsBetween, lastBilledDay, FAL_LINE } from "../src/finance/rows.mjs";
 import { parseRange, monthsOf, partialMonths, categoriesTable, monthTotals, runRateForecast, RANGES } from "../src/finance/months.mjs";
@@ -11,6 +12,7 @@ import { falSeries } from "../src/finance/fal.mjs";
 import { PROJECTS, PROJECT_KEYS, projectOf, projectsTable } from "../src/finance/projects.mjs";
 import { filmLabel, providerOf, filmOf, filmsOf, DEFAULT_CAP_USD } from "../src/finance/films.mjs";
 import { CLAUDE_SUBSCRIPTION_KEY, CLAUDE_LINE, subscriptionSeries, subscriptionFor, claudeRows, claudeUsage, usageForMonths, usageDays } from "../src/finance/claude.mjs";
+import { donationsOf, incomeFor, incomeDays, incomeMonths, recentOf, payoutsOf, balanceOf, lastDonationDay } from "../src/finance/income.mjs";
 
 /* ---- categories ---- */
 
@@ -538,4 +540,77 @@ test("the usage part: checked, summed by model over months (largest first) and l
   assert.deepEqual(days.at(-1), { day: "2026-10-28", usd: 2, messages: 3, byModel: { "claude-fable-5-1": 2 } });
   assert.deepEqual(days[10], { day: "2026-09-09", usd: 0, messages: 0, byModel: {} }, "a day with no use is present at 0");
   assert.equal(usageDays({ ...usage, lastDay: null }, { today: "2026-10-30" }).at(-1).day, "2026-10-30", "no last day: today");
+});
+
+/* ---- income (the donations through Stripe) ---- */
+
+const STRIPE = JSON.parse(readFileSync(new URL("./fixtures/finance-stripe.json", import.meta.url), "utf8"));
+
+test("donationsOf: charges and payments are donations in dollars on their UTC day, a refund subtracts (gross and net negative, fee as given), a payout is not income, newest first, no identity", () => {
+  const rows = donationsOf(STRIPE.transactions);
+  assert.equal(rows.length, 7, "eight transactions less the payout");
+  assert.deepEqual(rows[0], { day: "2026-10-28", created: 1793212930, gross: 25, fees: 1.03, net: 23.97, currency: "usd", refund: false });
+  assert.deepEqual(rows.map((r) => r.day), ["2026-10-28", "2026-10-25", "2026-10-20", "2026-10-13", "2026-10-07", "2026-10-06", "2026-09-29"]);
+  const refund = rows.find((r) => r.refund);
+  assert.deepEqual(refund, { day: "2026-10-07", created: 1791370800, gross: -15, fees: 0, net: -15, currency: "usd", refund: true });
+  assert.deepEqual(Object.keys(rows[0]).sort(), ["created", "currency", "day", "fees", "gross", "net", "refund"], "no description, source or customer");
+  assert.deepEqual(donationsOf([{ type: "payment_refund", amount: 500, fee: 0, net: 500, created: 1791370800, currency: "usd" }])[0].gross, -5, "a refund is negative whichever sign Stripe gives it");
+  assert.deepEqual(donationsOf([{ type: "stripe_fee", amount: -200, fee: 0, net: -200, created: 1791370800 }, { type: "adjustment", amount: 100, created: 1791370800 }, null, { type: "charge" }]), [], "nothing else counts, and a transaction without a time is skipped");
+  assert.deepEqual(donationsOf([]), []);
+  assert.deepEqual(donationsOf(undefined), []);
+  assert.equal(donationsOf([{ type: "charge", amount: 333, fee: 40, net: 293, created: 1791370800 }])[0].fees, 0.4, "cents, not floating noise");
+  assert.equal(donationsOf([{ type: "charge", amount: 1, fee: 1, net: 0, created: 1791370800 }])[0].net, 0);
+});
+
+test("incomeFor: the month's totals and average; a refund moves the amounts and not the count; empty is zeros with a null average", () => {
+  const rows = donationsOf(STRIPE.transactions);
+  assert.deepEqual(incomeFor(rows, ["2026-10"]), { gross: 60, fees: 3.69, net: 56.31, count: 5, average: 12 }, "$75 given, $15 refunded; five gave");
+  assert.deepEqual(incomeFor(rows, ["2026-09"]), { gross: 10, fees: 0.59, net: 9.41, count: 1, average: 10 });
+  assert.deepEqual(incomeFor(rows, ["2026-08", "2026-09", "2026-10"]), { gross: 70, fees: 4.28, net: 65.72, count: 6, average: 11.67 });
+  assert.deepEqual(incomeFor(rows, ["2026-08"]), { gross: 0, fees: 0, net: 0, count: 0, average: null });
+  assert.deepEqual(incomeFor([], ["2026-10"]), { gross: 0, fees: 0, net: 0, count: 0, average: null });
+});
+
+test("incomeDays: 60 days ending today, every day present with zeros; incomeMonths: thirteen ending this month", () => {
+  const rows = donationsOf(STRIPE.transactions);
+  const days = incomeDays(rows, { today: "2026-10-28" });
+  assert.equal(days.length, 60);
+  assert.deepEqual([days[0].day, days.at(-1).day], ["2026-08-30", "2026-10-28"]);
+  assert.deepEqual(days[0], { day: "2026-08-30", gross: 0, fees: 0, net: 0, count: 0 });
+  assert.deepEqual(days.at(-1), { day: "2026-10-28", gross: 25, fees: 1.03, net: 23.97, count: 1 });
+  assert.deepEqual(days.find((d) => d.day === "2026-10-07"), { day: "2026-10-07", gross: -15, fees: 0, net: -15, count: 0 }, "the refund's day is negative");
+  assert.equal(days.reduce((n, d) => n + d.count, 0), 6, "every donation since Aug 30 is on its day");
+  assert.deepEqual(incomeDays([], { today: "2026-10-28", count: 3 }), [{ day: "2026-10-26", gross: 0, fees: 0, net: 0, count: 0 }, { day: "2026-10-27", gross: 0, fees: 0, net: 0, count: 0 }, { day: "2026-10-28", gross: 0, fees: 0, net: 0, count: 0 }]);
+  const months = incomeMonths(rows, { today: "2026-10-28" });
+  assert.equal(months.length, 13);
+  assert.deepEqual([months[0].month, months.at(-1).month], ["2025-10", "2026-10"]);
+  assert.deepEqual(months.at(-1), { month: "2026-10", gross: 60, fees: 3.69, net: 56.31, count: 5 });
+  assert.deepEqual(months.at(-2), { month: "2026-09", gross: 10, fees: 0.59, net: 9.41, count: 1 });
+  assert.ok(months.slice(0, 11).every((m) => m.gross === 0 && m.count === 0));
+});
+
+test("recentOf: the newest donations, refunds left out, with day, gross, net and currency and no other field ever", () => {
+  const rows = donationsOf(STRIPE.transactions);
+  const recent = recentOf(rows, 20);
+  assert.equal(recent.length, 6);
+  assert.deepEqual(recent[0], { day: "2026-10-28", gross: 25, net: 23.97, currency: "usd" });
+  assert.ok(recent.every((r) => Object.keys(r).sort().join() === "currency,day,gross,net"));
+  assert.ok(recent.every((r) => r.gross > 0));
+  assert.deepEqual(recentOf(rows, 2).map((r) => r.day), ["2026-10-28", "2026-10-25"]);
+  assert.deepEqual(recentOf([], 20), []);
+  assert.ok(!JSON.stringify(recent).match(/Donation|ch_|txn_|py_|reader/), "nothing of Stripe's descriptions or ids");
+});
+
+test("payoutsOf and balanceOf: arrival days in dollars with Stripe's status, newest first; the balance for one currency", () => {
+  assert.deepEqual(payoutsOf(STRIPE.payouts), [{ day: "2026-10-31", amount: 37.93, status: "pending" }, { day: "2026-10-18", amount: 18.38, status: "paid" }]);
+  assert.deepEqual(payoutsOf([STRIPE.payouts[1], STRIPE.payouts[0]])[0].status, "pending", "sorted by arrival");
+  assert.deepEqual(payoutsOf([]), []);
+  assert.deepEqual(payoutsOf([{ amount: 1 }, null]), [], "no arrival date, no payout");
+  assert.deepEqual(balanceOf(STRIPE.balance), { available: 0, pending: 37.93, currency: "usd" });
+  assert.deepEqual(balanceOf({ available: [{ amount: 1050, currency: "usd" }, { amount: 900, currency: "eur" }], pending: [] }), { available: 10.5, pending: 0, currency: "usd" });
+  assert.deepEqual(balanceOf({ available: [{ amount: 900, currency: "eur" }], pending: [] }, "eur"), { available: 9, pending: 0, currency: "eur" });
+  assert.deepEqual(balanceOf(null), { available: 0, pending: 0, currency: "usd" });
+  assert.equal(lastDonationDay(donationsOf(STRIPE.transactions)), "2026-10-28");
+  assert.equal(lastDonationDay(donationsOf([STRIPE.transactions[5]])), null, "a refund alone names no donation day");
+  assert.equal(lastDonationDay([]), null);
 });

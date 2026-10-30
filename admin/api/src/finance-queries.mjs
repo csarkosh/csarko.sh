@@ -1,5 +1,5 @@
 /**
- * The finance page's routes under `/finance/admin/*`: the index card, the nine queries and the
+ * The finance page's routes under `/finance/admin/*`: the index card, the ten queries and the
  * one manual series (`admin/CONTRACT.md`, the Finance section), plus `snapshotPart()`, the step
  * the daily snapshot runs. Tested with fake collectors and the in-memory store, like queries.mjs.
  *
@@ -13,12 +13,18 @@
  * Every query reads those from the latest snapshot, fal's spend from the run of snapshots (a
  * day's spend is the balance's fall, `finance/fal.mjs`), GCP live from BigQuery (free at this
  * size) and the film ledgers live from their bucket (cached five minutes). The snapshot also
- * stores the four KPI values of the day (`finance.kpi`), which the index card's twelve-week
+ * stores the KPI values of the day (`finance.kpi`), which the index card's twelve-week
  * trends read, as the csarko.sh card's do.
+ *
+ * Income (Cyrus, 2026-10-30): donations arrive through Stripe and are read live with a restricted
+ * key (`collectors/stripe.mjs`, cached five minutes), shaped by `finance/income.mjs` into amounts
+ * and days only. `summary` carries them as `income` and `total.net`, the `income` query is the
+ * page's card, `donations` is the third KPI, and the snapshot stores the day's net
+ * (`finance.kpi.donations`) and a small `finance.stripe` summary for the trend.
  *
  * The shaping is pure, in `src/finance/`: categories, rows, months (the range and the
  * categories table), idle, daily, activity, projects, films, fal (the series), claude (the fee's
- * rows and the usage), kpis (health). This file only fetches and assembles.
+ * rows and the usage), income (the donations), kpis (health). This file only fetches and assembles.
  */
 
 import { parseRange, monthsOf, categoriesTable, monthTotals, monthGross, runRateForecast, GCP_EXPORT_FROM } from "./finance/months.mjs";
@@ -31,18 +37,21 @@ import { filmsOf } from "./finance/films.mjs";
 import { falSeries } from "./finance/fal.mjs";
 import { CLAUDE_SUBSCRIPTION_KEY, subscriptionSeries, subscriptionFor, claudeRows, claudeUsage, usageForMonths, usageDays } from "./finance/claude.mjs";
 import { financeHealth } from "./finance/kpis.mjs";
+import { donationsOf, incomeDays, incomeMonths, incomeFor, recentOf, payoutsOf, balanceOf, lastDonationDay, INCOME_DAYS, RECENT_COUNT } from "./finance/income.mjs";
 import { CALL_COST_USD } from "./collectors/aws-cost.mjs";
 import { weeklyTrend, TREND_WEEKS } from "./queries.mjs";
 import { addDays, isoDate } from "./time.mjs";
 
 export { parseRange };
-export const FINANCE_QUERY_NAMES = ["summary", "categories", "idle", "daily", "activity", "sources", "projects", "films", "claude"];
+export const FINANCE_QUERY_NAMES = ["summary", "categories", "idle", "daily", "activity", "sources", "projects", "films", "claude", "income"];
 /** The hand-entered series the finance page writes (`POST /finance/admin/manual/<key>`): the claude.ai subscription's monthly fee. */
 export const FINANCE_MANUAL_KEYS = [CLAUDE_SUBSCRIPTION_KEY];
 export const FINANCE_APP = "finance";
 /** What configures each source, for `notConfigured`: an environment variable, except Modal's (the job's secret: the API reports it from the snapshot) and Claude Code's (the manual series the fee is entered in). */
-export const SOURCE_ENV = { aws: "AWS_COST_ROLE_ARN", gcp: "BILLING_DATASET", github: "GITHUB_TOKEN", modal: "MODAL_TOKEN_ID", fal: "FAL_ADMIN_KEY", claude: CLAUDE_SUBSCRIPTION_KEY, ledgers: "FILM_LEDGERS_BUCKET" };
-export const SOURCE_LABELS = { aws: "AWS Cost Explorer", gcp: "Google Cloud billing export", github: "GitHub usage", modal: "Modal billing report", fal: "fal credit balance", claude: "Claude Code transcripts", ledgers: "Film ledgers" };
+export const SOURCE_ENV = { aws: "AWS_COST_ROLE_ARN", gcp: "BILLING_DATASET", github: "GITHUB_TOKEN", modal: "MODAL_TOKEN_ID", fal: "FAL_ADMIN_KEY", claude: CLAUDE_SUBSCRIPTION_KEY, ledgers: "FILM_LEDGERS_BUCKET", stripe: "STRIPE_KEY" };
+export const SOURCE_LABELS = { aws: "AWS Cost Explorer", gcp: "Google Cloud billing export", github: "GitHub usage", modal: "Modal billing report", fal: "fal credit balance", claude: "Claude Code transcripts", ledgers: "Film ledgers", stripe: "Stripe donations" };
+/** The Sources card's note for Stripe: the privacy rule, in one line. */
+export const STRIPE_NOTE = "Read live from Stripe with a restricted key; amounts only, never who gave.";
 /** The error when the subscription is entered but no snapshot carries the transcripts' usage. */
 export const CLAUDE_NO_SYNC = "No usage sync yet: run tools/claude-usage-sync.py";
 /** The providers whose forecast is a real one (Cost Explorer's, GCP's run-rate); GitHub's net to date, Modal's net to date, fal's run-rate and Claude Code's fee count only beside one of these. */
@@ -58,7 +67,7 @@ export function isFinanceManualKey(key) {
 
 const quiet = { configured: false };
 
-export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal = quiet, ledgers = quiet, modalConfigured = false, store, now = Date.now, log = console }) {
+export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal = quiet, ledgers = quiet, stripe = quiet, modalConfigured = false, store, now = Date.now, log = console }) {
   const hints = () => ({ notConfigured: {}, errors: {} });
   const withHints = (body, h) => ({
     ...body,
@@ -185,6 +194,38 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
     return { listValue: u === null ? null : u.listValue, messages: u === null ? null : u.messages };
   };
 
+  /** Unix seconds at the UTC start of a day. */
+  const unixOf = (day) => Math.floor(Date.parse(`${day}T00:00:00Z`) / 1000);
+
+  /**
+   * The donations: `{ rows, lastDay, balance, payouts }` read live from Stripe, the transactions
+   * since the first of the month twelve months back (the 13-month range and the newest 20 are
+   * both inside it) and the payouts of the last 60 days when asked for; null with
+   * `notConfigured.stripe` without the key, or with `errors.stripe` when Stripe refused.
+   */
+  function loadIncome(h, today, { payouts = false } = {}) {
+    return part(h, "stripe", stripe.configured, async () => {
+      const since = unixOf(`${addMonths(monthOf(today), -12)}-01`);
+      const [transactions, balance, payoutList] = await Promise.all([
+        stripe.transactions(since),
+        stripe.balance(),
+        payouts ? stripe.payouts(unixOf(addDays(today, -(INCOME_DAYS - 1)))) : null,
+      ]);
+      const rows = donationsOf(transactions);
+      return { rows, lastDay: lastDonationDay(rows), balance: balanceOf(balance), payouts: payoutList === null ? null : payoutsOf(payoutList) };
+    });
+  }
+
+  /** `summary.income` for `month`: the month's and the previous month's totals, the newest day and the balance. */
+  const incomeSummary = (income, month) => {
+    if (income === null) return null;
+    const of = (m) => {
+      const { gross, fees, net, count } = incomeFor(income.rows, [m]);
+      return { gross, fees, net, count };
+    };
+    return { mtd: of(month), lastMonth: of(addMonths(month, -1)), lastDay: income.lastDay, balance: income.balance };
+  };
+
   /**
    * Everything a query may need, loaded once: the latest snapshot, each source's data or null,
    * and the line rows (rows.mjs) by day and by month across the sources that answered.
@@ -250,8 +291,15 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
     return cents(Object.values(forecasts).reduce((n, v) => n + (v ?? 0), 0));
   };
 
+  /** The `donations` KPI over the income: the month's net against last month's, null without Stripe. */
+  function donationsKpi(income, today) {
+    if (income === null) return null;
+    const month = monthOf(today);
+    return { value: incomeFor(income.rows, [month]).net, prev: incomeFor(income.rows, [addMonths(month, -1)]).net };
+  }
+
   /**
-   * The four KPI values and their previous periods over loaded data, for `kpis()` and the
+   * The spend KPI values and their previous periods over loaded data, for `kpis()` and the
    * snapshot: month to date against last month through the same day, the idle run-rate against
    * a week earlier, the last 30 days against the 30 before, the forecast against last month's total.
    */
@@ -283,7 +331,7 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
     async summary(range = "month") {
       const h = hints();
       const today = isoDate(now());
-      const loaded = await load(h);
+      const [loaded, income] = await Promise.all([load(h), loadIncome(h, today)]);
       const { data, configured, monthlyRows, dailyRows, lastDays } = loaded;
       const months = monthsOf(range, today);
       const month = months.at(-1);
@@ -310,6 +358,7 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
       });
       // The totals sum the unrounded amounts, then round once, so they agree with the KPIs' to the cent.
       const sum = (totals) => cents(configured.reduce((n, p) => n + (totals[p] ?? 0), 0));
+      const incomeOut = incomeSummary(income, month);
       return withHints({
         at: new Date(now()).toISOString(),
         month,
@@ -318,8 +367,37 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
           forecast: current ? sumForecasts(forecasts) : null,
           lastMonth: configured.length > 0 ? sum(last) : null,
           idleRunRate: configured.length > 0 ? idle.runRate : null,
+          // What the month cost after donations: the spend (0 with no spend source) less the month's net income.
+          net: incomeOut === null ? null : cents((configured.length > 0 ? sum(mtd) : 0) - incomeOut.mtd.net),
         },
         providers,
+        income: incomeOut,
+      }, h);
+    },
+
+    /**
+     * The donations card: the range's totals and average, the last 60 days, thirteen months, the
+     * newest 20 donations (amounts and days, nothing else), the last 60 days' payouts and the
+     * balance. Null throughout with the hint when Stripe is not configured or refused.
+     */
+    async income(range = "month") {
+      const h = hints();
+      const today = isoDate(now());
+      const months = monthsOf(range, today);
+      const month = months.at(-1);
+      const income = await loadIncome(h, today, { payouts: true });
+      if (income === null) {
+        return withHints({ month, gross: null, fees: null, net: null, count: null, average: null, lastDay: null, days: null, months: null, recent: null, payouts: null, balance: null }, h);
+      }
+      return withHints({
+        month,
+        ...incomeFor(income.rows, months),
+        lastDay: income.lastDay,
+        days: incomeDays(income.rows, { today }),
+        months: incomeMonths(income.rows, { today }),
+        recent: recentOf(income.rows, RECENT_COUNT),
+        payouts: income.payouts,
+        balance: income.balance,
       }, h);
     },
 
@@ -412,7 +490,7 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
     async sources() {
       const h = hints();
       const today = isoDate(now());
-      const [snapshot, monthSnapshots, gcpLastDay, gcpFirstDay, falSnapshots, ledgerList, claudeSeries] = await Promise.all([
+      const [snapshot, monthSnapshots, gcpLastDay, gcpFirstDay, falSnapshots, ledgerList, claudeSeries, income] = await Promise.all([
         store.latestSnapshot(),
         store.listSnapshots(`${monthOf(today)}-01`, today),
         part(h, "gcp", gcpBilling.configured, () => gcpBilling.lastDay()),
@@ -420,6 +498,7 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
         fal.configured ? store.listSnapshots(falWindow(today), today) : [],
         ledgers.configured ? part(h, "ledgers", true, () => ledgers.list()) : null,
         store.getManual(CLAUDE_SUBSCRIPTION_KEY),
+        loadIncome(h, today),
       ]);
       const fin = snapshot?.finance ?? null;
       const snapshotAt = fin?.at ?? null;
@@ -470,6 +549,11 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
             lastDay: null, snapshotAt: ledgerList === null ? null : filmsOf(ledgerList).asOf, ...none,
             note: ledgerList === null ? "The film pipeline's priced calls, one ledger a film, in the bucket." : `${ledgerList.length} ledger${ledgerList.length === 1 ? "" : "s"} in the bucket; the time is the newest file's.`,
           },
+          {
+            key: "stripe", label: SOURCE_LABELS.stripe, configured: stripe.configured,
+            lastDay: income === null ? null : income.lastDay, snapshotAt: null, ...none,
+            note: STRIPE_NOTE,
+          },
         ],
       }, h);
     },
@@ -478,28 +562,31 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
       const h = hints();
       const t = now();
       const today = isoDate(t);
-      const [loaded, snapshots] = await Promise.all([load(h), store.listSnapshots(addDays(today, -7 * TREND_WEEKS + 1), today)]);
+      const [loaded, snapshots, income] = await Promise.all([load(h), store.listSnapshots(addDays(today, -7 * TREND_WEEKS + 1), today), loadIncome(h, today)]);
       const values = kpiValues(loaded, today);
+      const donations = donationsKpi(income, today);
       const points = snapshots.map((s) => ({ date: s.date, ...(s.finance?.kpi ?? {}) }));
-      const kpi = (key, label, extra = {}) => ({
+      const kpi = (key, label, from, extra = {}) => ({
         key, label,
-        value: values?.[key]?.value ?? null,
-        prev: values?.[key]?.prev ?? null,
+        value: from?.[key]?.value ?? null,
+        prev: from?.[key]?.prev ?? null,
         unit: "USD",
         trend: weeklyTrend(points, key, today),
         ...extra,
       });
       const kpis = [
-        kpi("monthToDate", "Month to date"),
-        kpi("idleRunRate", "Idle run-rate", { good: "down" }),
-        kpi("last30", "Last 30 days"),
-        kpi("forecast", "Forecast"),
+        kpi("monthToDate", "Month to date", values),
+        kpi("idleRunRate", "Idle run-rate", values, { good: "down" }),
+        kpi("donations", "Donations, net", { donations }, { good: "up" }),
+        kpi("forecast", "Forecast", values),
       ];
+      // The tile says what would fill it: the spend KPIs name the first missing spend source, the donations tile the Stripe key.
+      if (!stripe.configured) h.notConfigured.donations = SOURCE_ENV.stripe;
       let health;
       if (values === null) {
         const hint = PROVIDERS.map((p) => h.notConfigured[p]).find((v) => v) ?? null;
         health = hint ? { status: "warning", note: `Not configured (${hint})` } : { status: "warning", note: "No finance data yet" };
-        if (hint) for (const k of kpis) h.notConfigured[k.key] = hint;
+        if (hint) for (const k of kpis) if (k.key !== "donations") h.notConfigured[k.key] = hint;
       } else {
         health = financeHealth({ errors: h.errors, days: values.series.days, rows: loaded.dailyRows, configured: loaded.configured });
       }
@@ -508,7 +595,8 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
 
     /**
      * The daily snapshot's finance part, `{ finance: {...} }` for the day's document: the Cost
-     * Explorer rows (two or three calls), GitHub's usage, fal's balance, the day's four KPI values,
+     * Explorer rows (two or three calls), GitHub's usage, fal's balance, Stripe's month to date
+     * (`stripe = { at, mtdNet, count, lastDay }`, read live, for the trend), the day's KPI values,
      * and the hints. A source that fails is null with its error; a failure here never fails the
      * snapshot. The store merges a snapshot at the top level, so `finance` is replaced whole: the
      * Modal part its own job wrote into today's document earlier is carried over, and so is the
@@ -542,14 +630,17 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
           if (forecast === null) h.errors.awsForecast = failures.join("; ");
         }
       }
-      const [github, gcp, falReading, latest, snapshots, claudeSeries] = await Promise.all([
+      const [github, gcp, falReading, latest, snapshots, claudeSeries, income] = await Promise.all([
         part(h, "github", githubBilling.configured, () => githubBilling.usage()),
         part(h, "gcp", gcpBilling.configured, gcpLive),
         part(h, "fal", fal.configured, () => fal.balance()),
         store.latestSnapshot(),
         fal.configured ? store.listSnapshots(falWindow(today), addDays(today, -1)) : [],
         store.getManual(CLAUDE_SUBSCRIPTION_KEY),
+        loadIncome(h, today),
       ]);
+      const donations = donationsKpi(income, today);
+      const stripePart = income === null ? null : { at: new Date(t).toISOString(), mtdNet: donations.value, count: incomeFor(income.rows, [monthOf(today)]).count, lastDay: income.lastDay };
       const falPart = falReading === null ? null : { at: new Date(t).toISOString(), balance: falReading.balance, currency: falReading.currency, lastDay: today };
       // Today's document may already hold Modal's part (its job runs first) and Claude Code's (the Mac's sync); keep both, and read them for the KPIs.
       const todays = latest !== null && latest.date === today ? latest : null;
@@ -564,15 +655,20 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
       // The fee counts in the day's KPIs; a missing sync is not the job's failure, so its hints stay out of the snapshot.
       const claude = claudeFrom(hints(), claudePart === null ? todays : { ...todays, finance: { ...(todays?.finance ?? {}), claude: claudePart } }, claudeSeries);
       const values = kpiValues(assemble({ snapshot: null, aws, gcp, github, modal, fal: falData, claude, today }), today);
-      const kpi = values === null
-        ? { monthToDate: null, idleRunRate: null, last30: null, forecast: null }
-        : { monthToDate: values.monthToDate.value, idleRunRate: values.idleRunRate.value, last30: values.last30.value, forecast: values.forecast.value };
+      // last30 left the card (2026-10-30) but stays in the day's values, so its history is unbroken should it return.
+      const kpi = {
+        ...(values === null
+          ? { monthToDate: null, idleRunRate: null, last30: null, forecast: null }
+          : { monthToDate: values.monthToDate.value, idleRunRate: values.idleRunRate.value, last30: values.last30.value, forecast: values.forecast.value }),
+        donations: donations === null ? null : donations.value,
+      };
       return {
         finance: withHints({
           at: new Date(t).toISOString(),
           aws,
           github: github === null ? null : { months: github.months, days: github.days, lastDay: github.lastDay },
           fal: falPart,
+          stripe: stripePart,
           ...(modalPart !== null ? { modal: modalPart } : {}),
           ...(claudePart !== null ? { claude: claudePart } : {}),
           awsCalls,

@@ -26,6 +26,7 @@ import { createAwsCost } from "./collectors/aws-cost.mjs";
 import { createGcpBilling } from "./collectors/gcp-billing.mjs";
 import { createGitHubBilling } from "./collectors/github-billing.mjs";
 import { createFal } from "./collectors/fal.mjs";
+import { createStripe } from "./collectors/stripe.mjs";
 import { createLedgers } from "./collectors/ledgers.mjs";
 import { createGsc } from "./collectors/gsc.mjs";
 import { createYouTube } from "./collectors/youtube.mjs";
@@ -49,13 +50,15 @@ const bigquery = config.visits.dataset || config.finance.billingDataset ? new Bi
 
 // The finance page's sources: Cost Explorer (called by the snapshot job only; $0.01 a call), the
 // billing export in BigQuery (live), GitHub's usage endpoint and fal's credit balance (the
-// snapshot job again), Modal's report (written into the snapshot by its own job) and the film
-// ledgers in their bucket (live, cached).
+// snapshot job again), Modal's report (written into the snapshot by its own job), the film
+// ledgers in their bucket (live, cached) and the donations through Stripe (live, cached, a
+// restricted key).
 const finance = createFinanceQueries({
   awsCost: createAwsCost({ roleArn: config.finance.awsRoleArn, audience: config.finance.awsAudience, local: config.finance.awsLocal, fetch, log }),
   gcpBilling: createGcpBilling({ bigquery, projectId: config.projectId, dataset: config.finance.billingDataset, table: config.finance.billingTable, cache }),
   githubBilling: createGitHubBilling({ token: config.github.token, owner: config.github.owner, fetch, cache }),
   fal: createFal({ adminKey: config.fal.adminKey, fetch, cache }),
+  stripe: createStripe({ key: config.stripe.key, fetch, cache }),
   ledgers: createLedgers({ bucket: config.finance.ledgersBucket, projectId: config.projectId, cache, log }),
   modalConfigured: config.finance.modalConfigured,
   store,
@@ -108,6 +111,7 @@ const unconfigured = [
   !config.finance.modalConfigured && "MODAL_TOKEN_ID",
   config.fal.adminKey === null && "FAL_ADMIN_KEY",
   !config.finance.ledgersBucket && "FILM_LEDGERS_BUCKET",
+  config.stripe.key === null && "STRIPE_KEY",
 ].filter(Boolean);
 if (unconfigured.length > 0) log.warn(`admin: not configured, their sections will read null: ${unconfigured.join(", ")}`);
 

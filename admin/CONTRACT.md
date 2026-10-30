@@ -675,7 +675,7 @@ source is not configured, `unitPrice` is `cost / quantity` (null when the quanti
 }
 ```
 
-Seven rows. `claude` is configured when a fee has been entered (the sync alone does not configure
+Eight rows, the `stripe` row last (see Income below). `claude` is configured when a fee has been entered (the sync alone does not configure
 it); its `lastDay` is the sync's last transcript day and `snapshotAt` the sync's own time
 (`finance.claude.at`), both `null` until a sync has been read.
 
@@ -749,6 +749,69 @@ The entry applies from its month on (`summary`, `categories`, `projects`, `daily
 and the KPIs change at once), so a plan change is entered in the month it takes effect and $0
 records a cancellation. 400 for any other body, 404 for any other key (`substack` is the
 csarko.sh page's, under `/admin/manual/`), 405 for a method other than POST.
+
+### Income: `summary.income`, the `income` query and the `donations` KPI
+
+Donations arrive through Stripe (Cyrus, 2026-10-30: "I also just setup a stripe account for
+donations. I want this to be included as income into the dashboard"). The API reads Stripe with
+a restricted key (`STRIPE_KEY`, read-only on balance transactions, charges and payouts), live
+and cached five minutes: `GET /v1/balance_transactions` (a donation is a transaction of type
+`charge` or `payment`, with `amount` gross, `fee` and `net` in the smallest currency unit; a
+`refund` or `payment_refund` subtracts; nothing else counts as income), `GET /v1/payouts` and
+`GET /v1/balance`. Amounts on the page are dollars net of refunds. **No donor identity ever
+reaches the page**: no name, email, card, receipt or description, only amounts and days.
+Not configured: `notConfigured.stripe = "STRIPE_KEY"`.
+
+`summary` gains:
+
+```json
+"income": {
+  "mtd": { "gross": 85, "fees": 2.77, "net": 82.23, "count": 4 },
+  "lastMonth": { "gross": 0, "fees": 0, "net": 0, "count": 0 },
+  "lastDay": "2026-10-30",
+  "balance": { "available": 0, "pending": 82.23, "currency": "usd" }
+},
+"total": { "...": "as before", "net": 199.46 }
+```
+
+`total.net` is the month's spend less `income.mtd.net` (what the month cost after donations);
+`null` with `income` when Stripe is not configured.
+
+The index card's four KPIs become `monthToDate`, `idleRunRate` (`good: "down"`), `donations`
+(the month's net, `good: "up"`, trend from the snapshots' `finance.kpi.donations`) and
+`forecast`; `last30` leaves the card (it stays in the page's data).
+
+### `income`
+
+```json
+{
+  "month": "2026-10", "gross": 85, "fees": 2.77, "net": 82.23, "count": 4, "average": 21.25,
+  "lastDay": "2026-10-30",
+  "days": [ { "day": "2026-10-30", "gross": 25, "fees": 1.03, "net": 23.97, "count": 1 } ],
+  "months": [ { "month": "2026-10", "gross": 85, "fees": 2.77, "net": 82.23, "count": 4 } ],
+  "recent": [ { "day": "2026-10-30", "gross": 25, "net": 23.97, "currency": "usd" } ],
+  "payouts": [ { "day": "2026-11-02", "amount": 82.23, "status": "pending" } ],
+  "balance": { "available": 0, "pending": 82.23, "currency": "usd" }
+}
+```
+
+`days` the last 60 days ending today (the donations are live), every day present (0s where
+none, a refund's day negative); `months` thirteen ending this month; `recent` the newest 20
+donations (a refund is not one); `payouts` the last 60 days' (`day` the arrival date, `status`
+Stripe's); `range` picks `month`/`gross`/`fees`/`net`/`count`/`average` as the other queries do,
+and `days`, `months`, `recent`, `payouts`, `lastDay` and `balance` ignore it. `count` counts
+donations: a refund moves `gross`, `fees` and `net`, never the count, and `average` is `gross /
+count` (null at 0). In `summary`, `income.mtd` is the range's month and `income.lastMonth` the one
+before it, so `range=last` reads the previous month's donations; `total.net` is `0` less the net
+when no spend source is configured. A Stripe read that fails is `errors.stripe` with `income`,
+`total.net` and every `income` part `null`, a health `warning` like any source's; not configured,
+the `donations` KPI is `null` with `notConfigured.donations = "STRIPE_KEY"` (so the tile shows it),
+beside `notConfigured.stripe`. `sources` gains an eighth row, last, `stripe` ("Stripe donations",
+`configured`, `lastDay` the newest donation's day, `snapshotAt` null since it is read live, note
+"Read live from Stripe with a restricted key; amounts only, never who gave."). The daily snapshot
+stores the day's net as `finance.kpi.donations` (the trend; `last30` stays in `finance.kpi` so its
+history is unbroken) and a summary `finance.stripe = { at, mtdNet, count, lastDay }`, read live by
+the job.
 
 ## Auth: what `/auth.js` exports
 

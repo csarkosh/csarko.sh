@@ -84,6 +84,8 @@ export function readConfig(env = process.env, log = console) {
       modalConfigured: env.MODAL_CONFIGURED === "1",
     },
     fal: { adminKey: secret(env.FAL_ADMIN_KEY) },
+    // Donations (Cyrus, 2026-10-30): a restricted Stripe key, read-only on balance transactions, charges and payouts.
+    stripe: { key: secret(env.STRIPE_KEY) },
     siteUrl,
     sitemapUrl: text(env.SITEMAP_URL, `${siteUrl}/sitemap.xml`),
     hostingSite: text(env.HOSTING_SITE, "csarko-sh"),

@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createFinanceQueries, isFinanceQueryName, isFinanceManualKey, FINANCE_QUERY_NAMES, FINANCE_MANUAL_KEYS, SOURCE_ENV, CLAUDE_NO_SYNC, parseRange } from "../src/finance-queries.mjs";
+import { createFinanceQueries, isFinanceQueryName, isFinanceManualKey, FINANCE_QUERY_NAMES, FINANCE_MANUAL_KEYS, SOURCE_ENV, CLAUDE_NO_SYNC, STRIPE_NOTE, parseRange } from "../src/finance-queries.mjs";
+import { UpstreamError } from "../src/http.mjs";
 import { createQueries } from "../src/queries.mjs";
 import { createMemoryStore } from "../src/store.mjs";
 import { createCache } from "../src/cache.mjs";
@@ -18,6 +19,7 @@ const MODAL = fixture("finance-modal");
 const FAL = fixture("finance-fal-balances");
 const LEDGERS = fixture("finance-ledgers");
 const CLAUDE = fixture("finance-claude");
+const STRIPE = fixture("finance-stripe");
 // The 28th, late: the day's snapshot (10:00Z) holds Cost Explorer rows through the 27th and the forecast made that morning.
 const NOW = Date.parse("2026-10-28T23:10:00Z");
 const SNAPSHOT_AT = "2026-10-28T10:00:00Z";
@@ -26,6 +28,11 @@ const HINTS = { aws: "AWS_COST_ROLE_ARN", gcp: "BILLING_DATASET", github: "GITHU
 // The subscription as entered on the page: $100 a month from September, raised to $200 on 2026-10-27.
 const SUBSCRIPTION = [{ at: "2026-09-05T12:00:00Z", value: 100 }, { at: "2026-10-27T03:20:00Z", value: 200 }];
 const NO_CLAUDE = { claude: "claude-subscription" };
+const NO_STRIPE = { stripe: "STRIPE_KEY" };
+// October's donations in the Stripe fixture: $75 given in five donations, one of $15 refunded in full.
+const OCT_INCOME = { gross: 60, fees: 3.69, net: 56.31, count: 5 };
+const SEP_INCOME = { gross: 10, fees: 0.59, net: 9.41, count: 1 };
+const BALANCE = { available: 0, pending: 37.93, currency: "usd" };
 
 /** A fake Storage client over the ledger fixture, for the ledgers collector. */
 function fakeStorage(calls) {
@@ -34,7 +41,7 @@ function fakeStorage(calls) {
 }
 
 /** Fake collectors: configured ones answer from the fixtures; Cost Explorer and GitHub count their calls. */
-function fakes({ awsOn = true, gcpOn = true, githubOn = true, falOn = true, ledgersOn = true, modalOn = true, gcpFail = false, forecastFail = false, awsFail = false, falFail = false, ledgersFail = false, falBalance = 46.37 } = {}) {
+function fakes({ awsOn = true, gcpOn = true, githubOn = true, falOn = true, ledgersOn = true, modalOn = true, stripeOn = true, gcpFail = false, forecastFail = false, awsFail = false, falFail = false, ledgersFail = false, stripeFail = false, falBalance = 46.37 } = {}) {
   const calls = [];
   return {
     calls,
@@ -53,6 +60,12 @@ function fakes({ awsOn = true, gcpOn = true, githubOn = true, falOn = true, ledg
     },
     githubBilling: { configured: githubOn, async usage() { calls.push("github:usage"); return GITHUB; } },
     fal: { configured: falOn, async balance() { calls.push("fal:balance"); if (falFail) throw new Error("fal 403 on /v1/account/billing: scope"); return { balance: falBalance, currency: "USD" }; } },
+    stripe: {
+      configured: stripeOn,
+      async transactions(since) { calls.push(`stripe:transactions:${since}`); if (stripeFail) throw new UpstreamError("Stripe 401 on /balance_transactions: Invalid API Key provided: [key]"); return STRIPE.transactions.filter((t) => t.created >= since); },
+      async payouts(since) { calls.push(`stripe:payouts:${since}`); return STRIPE.payouts.filter((p) => p.created >= since); },
+      async balance() { calls.push("stripe:balance"); return STRIPE.balance; },
+    },
     ledgers: ledgersOn
       ? createLedgers({ bucket: "csarko-sh-film-ledgers", cache: createCache(), storage: ledgersFail ? { bucket() { return { async getFiles() { throw new Error("permission denied"); } }; } } : fakeStorage(calls), log })
       : { configured: false },
@@ -67,7 +80,7 @@ function fakes({ awsOn = true, gcpOn = true, githubOn = true, falOn = true, ledg
  * `claude` seeds the subscription series and, unless `sync` is false, the Mac's usage part too;
  * the default has neither, so Claude Code is not configured and the other five add up as before.
  */
-async function seeded(deps, { date = "2026-10-28", kpi = { monthToDate: 238.71, idleRunRate: 10.62, last30: 250.65, forecast: 263.49 }, modal = MODAL, fal = true, claude = false, sync = true } = {}) {
+async function seeded(deps, { date = "2026-10-28", kpi = { monthToDate: 238.71, idleRunRate: 10.62, last30: 250.65, forecast: 263.49, donations: 56.31 }, modal = MODAL, fal = true, claude = false, sync = true } = {}) {
   if (claude) for (const point of SUBSCRIPTION) await deps.store.appendManual("claude-subscription", point);
   if (fal) {
     for (const [day, balance] of Object.entries(FAL.balances)) {
@@ -82,13 +95,14 @@ async function seeded(deps, { date = "2026-10-28", kpi = { monthToDate: 238.71, 
 
 const make = (deps) => createFinanceQueries({ ...deps, now: () => NOW, log });
 
-test("the nine query names, the one manual key, what configures each source, and the range parser the routes use", () => {
-  assert.deepEqual(FINANCE_QUERY_NAMES, ["summary", "categories", "idle", "daily", "activity", "sources", "projects", "films", "claude"]);
+test("the ten query names, the one manual key, what configures each source, and the range parser the routes use", () => {
+  assert.deepEqual(FINANCE_QUERY_NAMES, ["summary", "categories", "idle", "daily", "activity", "sources", "projects", "films", "claude", "income"]);
+  assert.ok(isFinanceQueryName("income"));
   assert.ok(isFinanceQueryName("projects") && isFinanceQueryName("films") && isFinanceQueryName("claude"));
   assert.ok(!isFinanceQueryName("visits"));
   assert.deepEqual(FINANCE_MANUAL_KEYS, ["claude-subscription"]);
   assert.ok(isFinanceManualKey("claude-subscription") && !isFinanceManualKey("substack") && !isFinanceManualKey("claude"));
-  assert.deepEqual(SOURCE_ENV, { ...HINTS, ledgers: "FILM_LEDGERS_BUCKET" });
+  assert.deepEqual(SOURCE_ENV, { ...HINTS, ledgers: "FILM_LEDGERS_BUCKET", stripe: "STRIPE_KEY" });
   assert.equal(parseRange("13m"), "13m");
 });
 
@@ -111,9 +125,11 @@ test("summary: the six providers, the totals, Modal net of its credits, fal from
   assert.deepEqual(claude, { provider: "claude", label: "Claude Code", mtd: null, forecast: null, lastMonth: null, lastDay: null, listValue: null, messages: null }, "no fee entered yet");
   assert.deepEqual([s.total.mtd, s.total.lastMonth, s.total.idleRunRate], [238.71, 161.59, 10.62]);
   assert.ok(Math.abs(s.total.forecast - (aws.forecast + gcp.forecast + github.forecast + modal.forecast + fal.forecast)) <= 0.011, "the total is rounded once");
+  assert.deepEqual(s.income, { mtd: OCT_INCOME, lastMonth: SEP_INCOME, lastDay: "2026-10-28", balance: BALANCE }, "the donations beside the spend");
+  assert.equal(s.total.net, 182.4, "238.71 of spend less 56.31 of net donations");
   assert.deepEqual(s.notConfigured, NO_CLAUDE);
   assert.equal(s.errors, undefined);
-  assert.deepEqual(deps.calls, ["gcp:daily", "gcp:monthly", "gcp:lastDay"], "GCP live; the rest from the snapshots, Cost Explorer and fal never called on a request");
+  assert.deepEqual([...deps.calls].sort(), ["gcp:daily", "gcp:lastDay", "gcp:monthly", "stripe:balance", "stripe:transactions:1759276800"], "GCP and Stripe live (the transactions since 2025-10-01, the 13-month range); the rest from the snapshots, Cost Explorer and fal never called on a request");
 });
 
 test("summary with range=last names the previous month and no forecast; 90 and 13m keep the current month", async () => {
@@ -265,14 +281,14 @@ test("films: one entry a ledger, largest first, the labels, the cap, by provider
   assert.deepEqual(await make(fakes({ ledgersFail: true })).films(), { asOf: null, films: null, errors: { ledgers: "ledgers: listing gs://csarko-sh-film-ledgers failed: permission denied" } });
 });
 
-test("sources: seven rows; configured, last day, the snapshot time, this month's Cost Explorer calls, Modal's own time, the ledgers' count", async () => {
+test("sources: eight rows; configured, last day, the snapshot time, this month's Cost Explorer calls, Modal's own time, the ledgers' count", async () => {
   const deps = await seeded(fakes());
   await deps.store.writeSnapshot("2026-10-27", { at: "2026-10-27T10:00:00Z", finance: { at: "2026-10-27T10:00:00Z", aws: { ...AWS, calls: 3 }, github: GITHUB, fal: { balance: 48.77, currency: "USD" }, awsCalls: 3, kpi: {} } });
   await deps.store.writeSnapshot("2026-09-30", { at: "2026-09-30T10:00:00Z", finance: { at: "2026-09-30T10:00:00Z", aws: AWS, github: GITHUB, fal: { balance: 0.72, currency: "USD" }, awsCalls: 2, kpi: {} } });
   const { sources, notConfigured, errors } = await make(deps).sources();
   assert.equal(notConfigured, undefined);
   assert.equal(errors, undefined);
-  assert.deepEqual(sources.map((s) => s.key), ["aws", "gcp", "github", "modal", "fal", "claude", "ledgers"]);
+  assert.deepEqual(sources.map((s) => s.key), ["aws", "gcp", "github", "modal", "fal", "claude", "ledgers", "stripe"]);
   assert.deepEqual(sources[0], { key: "aws", label: "AWS Cost Explorer", configured: true, lastDay: "2026-10-27", snapshotAt: SNAPSHOT_AT, callsThisMonth: 6, callCostUsd: 0.06, note: "Two calls a day from the snapshot job, $0.01 each; a third for the forecast until the 28th." });
   assert.deepEqual(sources[1], { key: "gcp", label: "Google Cloud billing export", configured: true, lastDay: "2026-10-27", snapshotAt: null, callsThisMonth: null, callCostUsd: null, note: "BigQuery, read live; rows from 2026-10-02 on." });
   assert.deepEqual(sources[2], { key: "github", label: "GitHub usage", configured: true, lastDay: "2026-10-27", snapshotAt: SNAPSHOT_AT, callsThisMonth: null, callCostUsd: null, note: "From the snapshot; public repositories bill $0." });
@@ -280,31 +296,40 @@ test("sources: seven rows; configured, last day, the snapshot time, this month's
   assert.deepEqual(sources[4], { key: "fal", label: "fal credit balance", configured: true, lastDay: "2026-10-27", snapshotAt: SNAPSHOT_AT, callsThisMonth: null, callCostUsd: null, note: "The balance once a day; a day's spend is its fall." });
   assert.deepEqual(sources[5], { key: "claude", label: "Claude Code transcripts", configured: false, lastDay: null, snapshotAt: null, callsThisMonth: null, callCostUsd: null, note: "Local transcripts, synced by tools/claude-usage-sync.py on the Mac; priced at API list rates as the plan's value." }, "no fee entered");
   assert.deepEqual(sources[6], { key: "ledgers", label: "Film ledgers", configured: true, lastDay: null, snapshotAt: "2026-10-28T20:32:39Z", callsThisMonth: null, callCostUsd: null, note: "8 ledgers in the bucket; the time is the newest file's." });
-  const off = await make(fakes({ awsOn: false, gcpOn: false, githubOn: false, modalOn: false, falOn: false, ledgersOn: false })).sources();
-  assert.deepEqual(off.sources.map((s) => [s.configured, s.lastDay, s.snapshotAt]), Array.from({ length: 7 }, () => [false, null, null]));
+  assert.deepEqual(sources[7], { key: "stripe", label: "Stripe donations", configured: true, lastDay: "2026-10-28", snapshotAt: null, callsThisMonth: null, callCostUsd: null, note: STRIPE_NOTE }, "read live: the newest donation's day, no snapshot time");
+  assert.equal(STRIPE_NOTE, "Read live from Stripe with a restricted key; amounts only, never who gave.");
+  const off = await make(fakes({ awsOn: false, gcpOn: false, githubOn: false, modalOn: false, falOn: false, ledgersOn: false, stripeOn: false })).sources();
+  assert.deepEqual(off.sources.map((s) => [s.configured, s.lastDay, s.snapshotAt]), Array.from({ length: 8 }, () => [false, null, null]));
+  assert.deepEqual(off.notConfigured, { gcp: "BILLING_DATASET", ...NO_STRIPE }, "the two sources the card reads live");
+  const refused = await make(await seeded(fakes({ stripeFail: true }))).sources();
+  assert.deepEqual([refused.sources[7].configured, refused.sources[7].lastDay], [true, null]);
+  assert.deepEqual(refused.errors, { stripe: "Stripe 401 on /balance_transactions: Invalid API Key provided: [key]" });
   assert.equal(off.sources[6].note, "The film pipeline's priced calls, one ledger a film, in the bucket.");
 });
 
-test("kpis: four KPIs in dollars with no goal in the label, previous periods, twelve-week trends from the snapshots' kpi values, health from the sources and the days", async () => {
+test("kpis: four KPIs in dollars with no goal in the label, donations third, previous periods, twelve-week trends from the snapshots' kpi values, health from the sources and the days", async () => {
   const deps = await seeded(fakes());
   // The store replaces `finance` whole, so an earlier day's kpi values are written beside its fal reading, as the job does.
   const withKpi = async (date, kpi) => {
     const prior = (await deps.store.listSnapshots(date, date))[0];
     await deps.store.writeSnapshot(date, { finance: { ...(prior?.finance ?? {}), kpi } });
   };
-  await withKpi("2026-10-20", { monthToDate: 60, idleRunRate: 26.3, last30: 90, forecast: 70 });
-  await withKpi("2026-10-21", { monthToDate: 62, idleRunRate: 26.2, last30: 91, forecast: 71 });
+  await withKpi("2026-10-20", { monthToDate: 60, idleRunRate: 26.3, last30: 90, forecast: 70, donations: 24 });
+  await withKpi("2026-10-21", { monthToDate: 62, idleRunRate: 26.2, last30: 91, forecast: 71, donations: 33.52 });
   await withKpi("2026-08-10", { monthToDate: 5, idleRunRate: 25, last30: 24, forecast: 25 });
   const k = await make(deps).kpis();
   assert.deepEqual([k.app, k.at], ["finance", "2026-10-28T23:10:00.000Z"]);
   assert.deepEqual(k.kpis.map((x) => [x.key, x.label, x.unit]), [
-    ["monthToDate", "Month to date", "USD"], ["idleRunRate", "Idle run-rate", "USD"], ["last30", "Last 30 days", "USD"], ["forecast", "Forecast", "USD"],
+    ["monthToDate", "Month to date", "USD"], ["idleRunRate", "Idle run-rate", "USD"], ["donations", "Donations, net", "USD"], ["forecast", "Forecast", "USD"],
   ]);
-  const [mtd, idle, last30, forecast] = k.kpis;
+  const [mtd, idle, donations, forecast] = k.kpis;
   assert.equal(mtd.value, 238.71);
   assert.equal(mtd.prev, 154.8, "September through the 28th: AWS, GCP and Modal's net through the 28th");
   assert.deepEqual([idle.value, idle.prev, idle.good], [10.62, 23.67, "down"]);
-  assert.deepEqual([last30.value, last30.prev], [250.65, 152.92]);
+  assert.deepEqual([donations.value, donations.prev, donations.good], [56.31, 9.41, "up"], "October's net against September's");
+  assert.deepEqual(donations.trend.slice(-2), [33.52, 56.31], "from the snapshots' finance.kpi.donations");
+  assert.equal(donations.trend[0], 0, "a snapshot without the value is 0");
+  assert.equal(k.kpis.some((x) => x.key === "last30"), false, "last30 left the card");
   assert.equal(forecast.value, (await make(deps).summary("month")).total.forecast);
   assert.equal(forecast.prev, 161.59, "last month's total");
   assert.ok(k.kpis.every((x) => x.trend.length === 12));
@@ -316,6 +341,14 @@ test("kpis: four KPIs in dollars with no goal in the label, previous periods, tw
   const failing = await make(await seeded(fakes({ gcpFail: true }))).kpis();
   assert.deepEqual(failing.health, { status: "warning", note: "A source failed: gcp" });
   assert.deepEqual(failing.errors, { gcp: "BigQuery finance-daily failed: quota" });
+  const stripeDown = await make(await seeded(fakes({ stripeFail: true }))).kpis();
+  assert.deepEqual(stripeDown.health, { status: "warning", note: "A source failed: stripe" }, "a Stripe read failure is a warning like any source's");
+  assert.deepEqual(stripeDown.errors, { stripe: "Stripe 401 on /balance_transactions: Invalid API Key provided: [key]" });
+  assert.deepEqual([stripeDown.kpis[2].value, stripeDown.kpis[2].prev, stripeDown.kpis[0].value], [null, null, 238.71]);
+  const noStripe = await make(await seeded(fakes({ stripeOn: false }))).kpis();
+  assert.deepEqual([noStripe.kpis[2].key, noStripe.kpis[2].value, noStripe.kpis[2].prev, noStripe.kpis[2].good], ["donations", null, null, "up"]);
+  assert.deepEqual(noStripe.notConfigured, { ...NO_CLAUDE, stripe: "STRIPE_KEY", donations: "STRIPE_KEY" }, "the tile shows the hint");
+  assert.deepEqual(noStripe.health, { status: "good", note: "5 sources answered; no day of the last 7 out of line" }, "health is the spend's");
 });
 
 test("snapshotPart: the Cost Explorer calls and the forecast, GitHub's usage, fal's balance, Modal's part carried over from the day's document, the day's KPI values", async () => {
@@ -328,12 +361,13 @@ test("snapshotPart: the Cost Explorer calls and the forecast, GitHub's usage, fa
   assert.deepEqual(Object.keys(part), ["finance"]);
   const f = part.finance;
   assert.equal(f.at, "2026-10-28T23:10:00.000Z");
-  assert.deepEqual(deps.calls.sort(), ["aws:daily", "aws:forecast", "aws:monthly", "fal:balance", "gcp:daily", "gcp:lastDay", "gcp:monthly", "github:usage"]);
+  assert.deepEqual(deps.calls.sort(), ["aws:daily", "aws:forecast", "aws:monthly", "fal:balance", "gcp:daily", "gcp:lastDay", "gcp:monthly", "github:usage", "stripe:balance", "stripe:transactions:1759276800"], "Stripe read live by the job too, for the day's net");
   assert.deepEqual([f.aws.monthly.length, f.aws.daily.length, f.aws.forecast, f.aws.calls, f.aws.lastDay, f.awsCalls], [AWS.monthly.length, AWS.daily.length, AWS.forecast, 4, "2026-10-27", 4]);
   assert.deepEqual([f.github.months.length, f.github.days.length, f.github.lastDay], [GITHUB.months.length, GITHUB.days.length, "2026-10-27"]);
   assert.deepEqual(f.fal, { at: "2026-10-28T23:10:00.000Z", balance: 46.37, currency: "USD", lastDay: "2026-10-28" });
   assert.deepEqual(f.modal, MODAL, "the store replaces `finance` whole, so the Modal part is carried into it");
-  assert.deepEqual(f.kpi, { monthToDate: 238.71, idleRunRate: 10.62, last30: 250.65, forecast: 263.49 }, "every provider counted, fal's series with today's reading");
+  assert.deepEqual(f.kpi, { monthToDate: 238.71, idleRunRate: 10.62, last30: 250.65, forecast: 263.49, donations: 56.31 }, "every provider counted, fal's series with today's reading, the month's net donations");
+  assert.deepEqual(f.stripe, { at: "2026-10-28T23:10:00.000Z", mtdNet: 56.31, count: 5, lastDay: "2026-10-28" }, "the small Stripe summary, read live by the job");
   assert.equal(f.notConfigured, undefined);
   assert.equal(f.errors, undefined);
 
@@ -371,20 +405,21 @@ test("snapshotPart: a failed forecast keeps the rows and says so; a failed usage
   assert.equal(noFal.finance.fal, null);
   assert.match(noFal.finance.errors.fal, /fal 403/);
   assert.equal(noFal.finance.aws.calls, 4);
-  const off = await make(fakes({ awsOn: false, githubOn: false, gcpOn: false, falOn: false, modalOn: false })).snapshotPart();
-  assert.deepEqual(off.finance, { at: "2026-10-28T23:10:00.000Z", aws: null, github: null, fal: null, awsCalls: 0, kpi: { monthToDate: null, idleRunRate: null, last30: null, forecast: null }, notConfigured: { aws: "AWS_COST_ROLE_ARN", github: "GITHUB_TOKEN", gcp: "BILLING_DATASET", fal: "FAL_ADMIN_KEY" } });
+  const off = await make(fakes({ awsOn: false, githubOn: false, gcpOn: false, falOn: false, modalOn: false, stripeOn: false })).snapshotPart();
+  assert.deepEqual(off.finance, { at: "2026-10-28T23:10:00.000Z", aws: null, github: null, fal: null, stripe: null, awsCalls: 0, kpi: { monthToDate: null, idleRunRate: null, last30: null, forecast: null, donations: null }, notConfigured: { aws: "AWS_COST_ROLE_ARN", github: "GITHUB_TOKEN", gcp: "BILLING_DATASET", fal: "FAL_ADMIN_KEY", stripe: "STRIPE_KEY" } });
 });
 
 test("not configured: every part null with its hint, the shapes kept, nothing fetched", async () => {
-  const deps = fakes({ awsOn: false, gcpOn: false, githubOn: false, modalOn: false, falOn: false, ledgersOn: false });
+  const deps = fakes({ awsOn: false, gcpOn: false, githubOn: false, modalOn: false, falOn: false, ledgersOn: false, stripeOn: false });
   const q = make(deps);
   const s = await q.summary("month");
-  assert.deepEqual(s.total, { mtd: null, forecast: null, lastMonth: null, idleRunRate: null });
+  assert.deepEqual(s.total, { mtd: null, forecast: null, lastMonth: null, idleRunRate: null, net: null });
+  assert.equal(s.income, null);
   assert.deepEqual(s.providers[0], { provider: "aws", label: "AWS", mtd: null, forecast: null, lastMonth: null, lastDay: null });
   assert.deepEqual(s.providers[2].gross, null);
   assert.deepEqual(s.providers[3], { provider: "modal", label: "Modal", mtd: null, forecast: null, lastMonth: null, lastDay: null, gross: null, credits: null });
   assert.deepEqual(s.providers[4], { provider: "fal", label: "fal", mtd: null, forecast: null, lastMonth: null, lastDay: null, balance: null });
-  assert.deepEqual(s.notConfigured, HINTS);
+  assert.deepEqual(s.notConfigured, { ...HINTS, ...NO_STRIPE });
   const c = await q.categories("90");
   assert.equal(c.categories.length, 12);
   assert.ok(c.categories.every((x) => x.byMonth.every((v) => v === 0)));
@@ -396,11 +431,13 @@ test("not configured: every part null with its hint, the shapes kept, nothing fe
   assert.equal(a.items.length, 8);
   assert.deepEqual(a.notConfigured, HINTS);
   const src = await q.sources();
-  assert.deepEqual(src.sources.map((x) => [x.configured, x.lastDay, x.callsThisMonth]), Array.from({ length: 7 }, () => [false, null, null]));
+  assert.deepEqual(src.sources.map((x) => [x.configured, x.lastDay, x.callsThisMonth]), Array.from({ length: 8 }, () => [false, null, null]));
+  const inc = await q.income("month");
+  assert.deepEqual(inc, { month: "2026-10", gross: null, fees: null, net: null, count: null, average: null, lastDay: null, days: null, months: null, recent: null, payouts: null, balance: null, notConfigured: NO_STRIPE });
   const k = await q.kpis();
   assert.ok(k.kpis.every((x) => x.value === null && x.prev === null && x.trend.length === 12 && x.trend.every((v) => v === 0)));
   assert.deepEqual(k.health, { status: "warning", note: "Not configured (AWS_COST_ROLE_ARN)" });
-  assert.deepEqual(k.notConfigured, { ...HINTS, monthToDate: "AWS_COST_ROLE_ARN", idleRunRate: "AWS_COST_ROLE_ARN", last30: "AWS_COST_ROLE_ARN", forecast: "AWS_COST_ROLE_ARN" });
+  assert.deepEqual(k.notConfigured, { ...HINTS, ...NO_STRIPE, monthToDate: "AWS_COST_ROLE_ARN", idleRunRate: "AWS_COST_ROLE_ARN", donations: "STRIPE_KEY", forecast: "AWS_COST_ROLE_ARN" }, "each tile names what would fill it");
   assert.deepEqual(deps.calls, []);
 });
 
@@ -476,7 +513,7 @@ test("Claude Code: the fee from the manual series is the spend, applied from its
   const q = make(await seeded(fakes(), { claude: true }));
   const s = await q.summary("month");
   assert.deepEqual(s.providers[5], { provider: "claude", label: "Claude Code", mtd: 200, forecast: 200, lastMonth: 100, lastDay: "2026-10-28", listValue: 10450.68, messages: 62534 }, "$200 from the 27th's entry applies to the whole of October; September was $100");
-  assert.deepEqual(s.total, { mtd: 438.71, forecast: 463.49, lastMonth: 261.59, idleRunRate: 10.62 }, "the other five plus the fee; the forecast is the fee, counted beside Cost Explorer's");
+  assert.deepEqual(s.total, { mtd: 438.71, forecast: 463.49, lastMonth: 261.59, idleRunRate: 10.62, net: 382.4 }, "the other five plus the fee; the forecast is the fee, counted beside Cost Explorer's; net after the $56.31 of donations");
   assert.equal(s.notConfigured, undefined);
   assert.equal(s.errors, undefined);
   const last = await q.summary("last");
@@ -509,7 +546,7 @@ test("Claude Code: the fee from the manual series is the spend, applied from its
   assert.deepEqual(sources[5], { key: "claude", label: "Claude Code transcripts", configured: true, lastDay: "2026-10-28", snapshotAt: "2026-10-28T03:16:05Z", callsThisMonth: null, callCostUsd: null, note: "Local transcripts, synced by tools/claude-usage-sync.py on the Mac; priced at API list rates as the plan's value." }, "the sync's own time, not the job's");
 
   const k = await q.kpis();
-  assert.deepEqual(k.kpis.map((x) => [x.key, x.value, x.prev]), [["monthToDate", 438.71, 248.13], ["idleRunRate", 10.62, 23.67], ["last30", 432.75, 250.45], ["forecast", 463.49, 261.59]], "September through the 28th carries 28 days of its $100; the idle run-rate ignores the fee");
+  assert.deepEqual(k.kpis.map((x) => [x.key, x.value, x.prev]), [["monthToDate", 438.71, 248.13], ["idleRunRate", 10.62, 23.67], ["donations", 56.31, 9.41], ["forecast", 463.49, 261.59]], "September through the 28th carries 28 days of its $100; the idle run-rate ignores the fee");
   assert.deepEqual(k.health, { status: "good", note: "6 sources answered; no day of the last 7 out of line" });
   const idle = await q.idle();
   assert.deepEqual([idle.runRate, idle.asOf, idle.lines.some((l) => l.provider === "claude")], [10.62, "2026-10-28", false], "a fixed line is never idle");
@@ -595,11 +632,62 @@ test("Claude Code: the manual query appends the fee and answers the entry; snaps
   const part = await make(job).snapshotPart();
   assert.deepEqual(part.finance.claude, CLAUDE, "carried over, like Modal's part");
   assert.deepEqual(part.finance.modal, MODAL);
-  assert.deepEqual(part.finance.kpi, { monthToDate: 438.71, idleRunRate: 10.62, last30: 432.75, forecast: 463.49 }, "the fee in the day's values");
+  assert.deepEqual(part.finance.kpi, { monthToDate: 438.71, idleRunRate: 10.62, last30: 432.75, forecast: 463.49, donations: 56.31 }, "the fee in the day's values");
   assert.equal(part.finance.errors, undefined);
   assert.equal(part.finance.notConfigured, undefined);
   const noPart = await make(await seeded(fakes(), { date: "2026-10-27", claude: true, sync: false })).snapshotPart();
   assert.equal(noPart.finance.claude, undefined, "nothing to carry");
   assert.equal(noPart.finance.kpi.monthToDate, 388.65, "238.71 less Modal's 50.06 (no Modal part today) plus the $200 fee: the fee counts without a sync");
   assert.equal(noPart.finance.errors, undefined, "a missing sync is not the job's failure");
+});
+
+test("income: the donations card for each range, 60 days and 13 months, the newest donations as amounts and days only, the payouts and the balance; a refused Stripe is null with the error", async () => {
+  const deps = await seeded(fakes());
+  const q = make(deps);
+  const month = await q.income("month");
+  assert.deepEqual([month.month, month.gross, month.fees, month.net, month.count, month.average, month.lastDay], ["2026-10", 60, 3.69, 56.31, 5, 12, "2026-10-28"]);
+  assert.equal(month.days.length, 60);
+  assert.deepEqual([month.days[0].day, month.days.at(-1).day], ["2026-08-30", "2026-10-28"], "ending today: the donations are live");
+  assert.deepEqual(month.days.at(-1), { day: "2026-10-28", gross: 25, fees: 1.03, net: 23.97, count: 1 });
+  assert.deepEqual(month.days.find((d) => d.day === "2026-10-07"), { day: "2026-10-07", gross: -15, fees: 0, net: -15, count: 0 }, "the refund's day");
+  assert.equal(month.months.length, 13);
+  assert.deepEqual(month.months.at(-1), { month: "2026-10", ...OCT_INCOME });
+  assert.deepEqual(month.months.at(-2), { month: "2026-09", ...SEP_INCOME });
+  assert.equal(month.recent.length, 6, "six donations in the window; the refund is not one");
+  assert.deepEqual(month.recent[0], { day: "2026-10-28", gross: 25, net: 23.97, currency: "usd" });
+  assert.ok(month.recent.every((r) => Object.keys(r).sort().join() === "currency,day,gross,net"), "day, gross, net, currency and nothing else");
+  assert.ok(!JSON.stringify(month).match(/Donation|ch_|txn_|py_|po_|reader|description|source/), "no description, id or customer anywhere in the answer");
+  assert.deepEqual(month.payouts, [{ day: "2026-10-31", amount: 37.93, status: "pending" }, { day: "2026-10-18", amount: 18.38, status: "paid" }]);
+  assert.deepEqual(month.balance, BALANCE);
+  assert.equal(month.notConfigured, undefined, "the card reads Stripe alone: no hint for the spend sources");
+  assert.equal(month.errors, undefined);
+  assert.ok(deps.calls.includes("stripe:payouts:1788048000"), "the payouts of the last 60 days (since 2026-08-30)");
+
+  const last = await q.income("last");
+  assert.deepEqual([last.month, last.gross, last.fees, last.net, last.count, last.average], ["2026-09", 10, 0.59, 9.41, 1, 10]);
+  assert.deepEqual([last.days.length, last.months.length, last.recent.length, last.lastDay], [60, 13, 6, "2026-10-28"], "the days, months, recent and last day ignore the range");
+  const ninety = await q.income("90");
+  assert.deepEqual([ninety.month, ninety.gross, ninety.fees, ninety.net, ninety.count, ninety.average], ["2026-10", 70, 4.28, 65.72, 6, 11.67]);
+  const thirteen = await q.income("13m");
+  assert.deepEqual([thirteen.month, thirteen.gross, thirteen.count], ["2026-10", 70, 6]);
+
+  const refused = await make(await seeded(fakes({ stripeFail: true }))).income("month");
+  assert.deepEqual(refused, { month: "2026-10", gross: null, fees: null, net: null, count: null, average: null, lastDay: null, days: null, months: null, recent: null, payouts: null, balance: null, errors: { stripe: "Stripe 401 on /balance_transactions: Invalid API Key provided: [key]" } });
+  const s = await make(await seeded(fakes({ stripeFail: true }))).summary("month");
+  assert.deepEqual([s.income, s.total.net, s.errors], [null, null, { stripe: "Stripe 401 on /balance_transactions: Invalid API Key provided: [key]" }], "summary: null with the error, the spend still answered");
+  assert.equal(s.total.mtd, 238.71);
+});
+
+test("summary.income and total.net: range=last takes the previous month's donations, income alone with no spend source, and not configured is null with the hint", async () => {
+  const q = make(await seeded(fakes()));
+  const last = await q.summary("last");
+  assert.deepEqual(last.income.mtd, SEP_INCOME, "the range's month");
+  assert.deepEqual(last.income.lastMonth, { gross: 0, fees: 0, net: 0, count: 0 }, "August: nothing");
+  assert.equal(last.total.net, 152.18, "161.59 less 9.41");
+  const alone = await make(fakes({ awsOn: false, gcpOn: false, githubOn: false, modalOn: false, falOn: false, ledgersOn: false })).summary("month");
+  assert.deepEqual([alone.total.mtd, alone.total.net], [null, -56.31], "no spend source: the month cost less than nothing");
+  assert.deepEqual(alone.income.mtd, OCT_INCOME);
+  const off = await make(await seeded(fakes({ stripeOn: false }))).summary("month");
+  assert.deepEqual([off.income, off.total.net, off.total.mtd], [null, null, 238.71]);
+  assert.deepEqual(off.notConfigured, { ...NO_CLAUDE, ...NO_STRIPE });
 });

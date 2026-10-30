@@ -39,6 +39,7 @@ const finance = {
   async projects(range) { return { range }; },
   async films(range) { return { range }; },
   async claude(range) { calls.push(["finance-claude", range]); return { range }; },
+  async income(range) { return { range }; },
   async manual(key, value) { calls.push(["finance-manual", key, value]); return { key, value, at: "t" }; },
   async snapshotPart() { calls.push(["finance-snapshot"]); return { finance: {} }; },
 };
@@ -241,7 +242,7 @@ test("without an Arkos or a finance source the prefix is not found", async () =>
   assert.equal((await call(server, "GET", "/finance/admin/kpis", auth())).status, 404);
 });
 
-test("Finance under /finance: the index card, its nine queries with range and the one manual series, through the same auth", async () => {
+test("Finance under /finance: the index card, its ten queries with range and the one manual series, through the same auth", async () => {
   const server = await serve({});
   servers.push(server);
   assert.equal((await call(server, "GET", "/finance", auth("12.0.0.1"))).status, 404);
@@ -254,7 +255,7 @@ test("Finance under /finance: the index card, its nine queries with range and th
   assert.equal(kpis.body.app, "finance");
   assert.equal(kpis.headers.get("cache-control"), "no-store");
 
-  for (const name of ["summary", "categories", "idle", "daily", "activity", "sources", "projects", "films", "claude"]) {
+  for (const name of ["summary", "categories", "idle", "daily", "activity", "sources", "projects", "films", "claude", "income"]) {
     const r = await call(server, "GET", `/finance/admin/query/${name}?range=90`, auth("12.0.0.1"));
     assert.equal(r.status, 200, name);
     assert.deepEqual(r.body, { range: "90" }, name);

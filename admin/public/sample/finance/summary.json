@@ -1,7 +1,7 @@
 {
   "at": "2026-10-28T23:10:00.000Z",
   "month": "2026-10",
-  "total": { "mtd": 438.71, "forecast": 463.49, "lastMonth": 261.59, "idleRunRate": 10.62 },
+  "total": { "mtd": 438.71, "forecast": 463.49, "lastMonth": 261.59, "idleRunRate": 10.62, "net": 382.4 },
   "providers": [
     { "provider": "aws", "label": "AWS", "mtd": 30.96, "forecast": 32.38, "lastMonth": 94.34, "lastDay": "2026-10-27" },
     { "provider": "gcp", "label": "Google Cloud", "mtd": 104.05, "forecast": 119.47, "lastMonth": 23.04, "lastDay": "2026-10-27" },
@@ -9,5 +9,6 @@
     { "provider": "modal", "label": "Modal", "mtd": 50.06, "forecast": 50.06, "lastMonth": 43.49, "lastDay": "2026-10-24", "gross": 80.06, "credits": 30 },
     { "provider": "fal", "label": "fal", "mtd": 53.63, "forecast": 61.58, "lastMonth": 0.72, "lastDay": "2026-10-27", "balance": 46.37 },
     { "provider": "claude", "label": "Claude Code", "mtd": 200, "forecast": 200, "lastMonth": 100, "lastDay": "2026-10-28", "listValue": 10450.68, "messages": 62534 }
-  ]
+  ],
+  "income": { "mtd": { "gross": 60, "fees": 3.69, "net": 56.31, "count": 5 }, "lastMonth": { "gross": 10, "fees": 0.59, "net": 9.41, "count": 1 }, "lastDay": "2026-10-28", "balance": { "available": 0, "pending": 37.93, "currency": "usd" } }
 }
