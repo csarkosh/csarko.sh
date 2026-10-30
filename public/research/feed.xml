@@ -5,8 +5,18 @@
   <link href="https://csarko.sh/research" />
   <link rel="self" href="https://csarko.sh/research/feed.xml" />
   <id>https://csarko.sh/research</id>
-  <updated>2026-10-29T00:00:00Z</updated>
+  <updated>2026-10-30T00:00:00Z</updated>
   <author><name>Cyrus Sarkosh</name><uri>https://csarko.sh/</uri></author>
+  <entry>
+    <title>Unlimited email aliases that scale to zero</title>
+    <link href="https://csarko.sh/research/unlimited-email-aliases-that-scale-to-zero" />
+    <id>https://csarko.sh/research/unlimited-email-aliases-that-scale-to-zero</id>
+    <published>2026-10-30T00:00:00Z</published>
+    <updated>2026-10-30T00:00:00Z</updated>
+    <summary>Every address at a domain receives mail through SES and one Lambda, about $0.0003 a message and $0 idle. Why Google Cloud cannot, what Cloudflare costs.</summary>
+    <category term="Distributed systems" />
+    <category term="Tooling" />
+  </entry>
   <entry>
     <title>Cloud rigs for graphics work: fan out, not a cheaper cloud</title>
     <link href="https://csarko.sh/research/cloud-rigs-for-graphics-work" />

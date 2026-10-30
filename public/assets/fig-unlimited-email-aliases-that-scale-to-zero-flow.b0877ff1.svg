@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 496" width="760" height="496" role="img" aria-labelledby="t">
+  <title id="t">Mail flow for unlimited aliases, two numbered sequences. Receiving, the message, in teal: 1 arrives for any alias and the MX record hands it to SES; 2 is stored raw in S3; 3 triggers the Lambda; 4 is matched to its alias in DynamoDB; 5 gets From set to the alias and Reply-To to a reverse alias; 6 lands in the owner's inbox about 2 seconds after arrival. Replying, the reply, in amber: 1 leaves the owner's inbox for the reverse alias, which SES receives; 2 triggers the same Lambda; 3 passes the owner check and is rebuilt as the alias; 4 goes out through SES send; 5 reaches the stranger, from the alias.</title>
+  <style>
+    text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 13px; fill: #e8eaf0; }
+    .title { font-size: 16px; font-weight: 600; }
+    .sec { fill: #a0a8b8; font-size: 12px; }
+    .key { font-size: 12px; fill: #c8cdd8; }
+    .box { fill: #1a1e28; stroke: #3a3f4b; stroke-width: 1.5; }
+    .aws { fill: #1a1e28; stroke: #7dd3c0; stroke-width: 1.5; }
+    .label { font-weight: 600; }
+    .in { stroke: #7dd3c0; stroke-width: 2; fill: none; marker-end: url(#ain); }
+    .out { stroke: #f5c451; stroke-width: 2; fill: none; marker-end: url(#aout); }
+    .inl { fill: #7dd3c0; font-size: 12px; font-weight: 600; }
+    .outl { fill: #f5c451; font-size: 12px; font-weight: 600; }
+    .dash { stroke-dasharray: 4 4; }
+    .bin { fill: #7dd3c0; }
+    .bout { fill: #f5c451; }
+    .bn { fill: #12151c; font-size: 11px; font-weight: 700; }
+    @media (prefers-color-scheme: light) {
+      text { fill: #12151c; }
+      .sec { fill: #4a5263; }
+      .key { fill: #2a3040; }
+      .box, .aws { fill: #ffffff; }
+      .box { stroke: #c9ced6; }
+      .aws { stroke: #0a735f; }
+      .in { stroke: #0a735f; }
+      .inl { fill: #0a735f; }
+      .out { stroke: #8a6100; }
+      .outl { fill: #8a6100; }
+      .bin { fill: #0a735f; }
+      .bout { fill: #8a6100; }
+      .bn { fill: #ffffff; }
+    }
+  </style>
+  <defs>
+    <marker id="ain" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7dd3c0"/></marker>
+    <marker id="aout" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f5c451"/></marker>
+  </defs>
+  <text class="title" x="16" y="28">One Lambda, two directions, no server</text>
+
+  <rect class="box" x="16" y="150" width="120" height="64" rx="8"/>
+  <text class="label" x="76" y="177" text-anchor="middle">A stranger</text>
+  <text class="sec" x="76" y="196" text-anchor="middle">any mail client</text>
+
+  <rect class="aws" x="196" y="150" width="130" height="64" rx="8"/>
+  <text class="label" x="261" y="177" text-anchor="middle">SES inbound</text>
+  <text class="sec" x="261" y="196" text-anchor="middle">MX, receipt rule</text>
+
+  <rect class="aws" x="386" y="150" width="130" height="64" rx="8"/>
+  <text class="label" x="451" y="177" text-anchor="middle">Lambda</text>
+  <text class="sec" x="451" y="196" text-anchor="middle">Python, stdlib email</text>
+  <circle class="bout" cx="506" cy="160" r="8"/><text class="bn" x="506" y="164" text-anchor="middle">3</text>
+
+  <rect class="aws" x="386" y="60" width="130" height="50" rx="8"/>
+  <text class="label" x="451" y="82" text-anchor="middle">SES send</text>
+  <text class="sec" x="451" y="100" text-anchor="middle">DKIM for the domain</text>
+
+  <rect class="aws" x="196" y="280" width="130" height="56" rx="8"/>
+  <text class="label" x="261" y="304" text-anchor="middle">S3</text>
+  <text class="sec" x="261" y="322" text-anchor="middle">raw MIME, 365 days</text>
+
+  <rect class="aws" x="386" y="280" width="130" height="56" rx="8"/>
+  <text class="label" x="451" y="304" text-anchor="middle">DynamoDB</text>
+  <text class="sec" x="451" y="322" text-anchor="middle">aliases, index, tokens</text>
+
+  <rect class="box" x="612" y="150" width="132" height="64" rx="8"/>
+  <text class="label" x="678" y="177" text-anchor="middle">The owner</text>
+  <text class="sec" x="678" y="196" text-anchor="middle">one existing inbox</text>
+
+  <!-- shared hops: one arrow, a badge per direction -->
+  <path class="in" d="M136,182 L194,182"/>
+  <circle class="bin" cx="165" cy="168" r="8"/><text class="bn" x="165" y="172" text-anchor="middle">1</text>
+  <path class="in" d="M261,214 L261,278"/>
+  <circle class="bin" cx="277" cy="246" r="8"/><text class="bn" x="277" y="250" text-anchor="middle">2</text>
+  <path class="in" d="M326,182 L384,182"/>
+  <circle class="bin" cx="355" cy="168" r="8"/><text class="bn" x="355" y="172" text-anchor="middle">3</text>
+  <circle class="bout" cx="355" cy="196" r="8"/><text class="bn" x="355" y="200" text-anchor="middle">2</text>
+  <path class="in dash" d="M451,214 L451,278"/>
+  <circle class="bin" cx="435" cy="262" r="8"/><text class="bn" x="435" y="266" text-anchor="middle">4</text>
+  <path class="in" d="M451,150 L451,112"/>
+  <circle class="bin" cx="435" cy="131" r="8"/><text class="bn" x="435" y="135" text-anchor="middle">5</text>
+  <circle class="bout" cx="467" cy="131" r="8"/><text class="bn" x="467" y="135" text-anchor="middle">4</text>
+  <path class="in" d="M516,84 Q610,84 678,148"/>
+  <circle class="bin" cx="600" cy="72" r="8"/><text class="bn" x="600" y="76" text-anchor="middle">6</text>
+  <path class="out" d="M612,206 Q470,262 328,206"/>
+  <circle class="bout" cx="545" cy="246" r="8"/><text class="bn" x="545" y="250" text-anchor="middle">1</text>
+  <path class="out" d="M386,96 Q200,96 76,148"/>
+  <circle class="bout" cx="200" cy="84" r="8"/><text class="bn" x="200" y="88" text-anchor="middle">5</text>
+
+  <!-- key -->
+  <text class="inl" x="16" y="372">Receiving: the message</text>
+  <circle class="bin" cx="24" cy="388" r="7"/><text class="bn" x="24" y="392" text-anchor="middle">1</text><text class="key" x="38" y="392">Arrives for any alias; the MX record hands it to SES.</text>
+  <circle class="bin" cx="24" cy="406" r="7"/><text class="bn" x="24" y="410" text-anchor="middle">2</text><text class="key" x="38" y="410">Is stored raw in S3.</text>
+  <circle class="bin" cx="24" cy="424" r="7"/><text class="bn" x="24" y="428" text-anchor="middle">3</text><text class="key" x="38" y="428">Triggers the Lambda.</text>
+  <circle class="bin" cx="24" cy="442" r="7"/><text class="bn" x="24" y="446" text-anchor="middle">4</text><text class="key" x="38" y="446">Is matched to its alias in DynamoDB.</text>
+  <circle class="bin" cx="24" cy="460" r="7"/><text class="bn" x="24" y="464" text-anchor="middle">5</text><text class="key" x="38" y="464">Gets From set to the alias and Reply-To to a reverse alias.</text>
+  <circle class="bin" cx="24" cy="478" r="7"/><text class="bn" x="24" y="482" text-anchor="middle">6</text><text class="key" x="38" y="482">Lands in the owner's inbox, about 2 s after arrival.</text>
+
+  <text class="outl" x="416" y="372">Replying: the reply</text>
+  <circle class="bout" cx="424" cy="388" r="7"/><text class="bn" x="424" y="392" text-anchor="middle">1</text><text class="key" x="438" y="392">Leaves the owner's inbox for the reverse alias.</text>
+  <circle class="bout" cx="424" cy="406" r="7"/><text class="bn" x="424" y="410" text-anchor="middle">2</text><text class="key" x="438" y="410">Triggers the same Lambda.</text>
+  <circle class="bout" cx="424" cy="424" r="7"/><text class="bn" x="424" y="428" text-anchor="middle">3</text><text class="key" x="438" y="428">Passes the owner check and is rebuilt as the alias.</text>
+  <circle class="bout" cx="424" cy="442" r="7"/><text class="bn" x="424" y="446" text-anchor="middle">4</text><text class="key" x="438" y="446">Goes out through SES send.</text>
+  <circle class="bout" cx="424" cy="460" r="7"/><text class="bn" x="424" y="464" text-anchor="middle">5</text><text class="key" x="438" y="464">Reaches the stranger, from the alias.</text>
+</svg>
