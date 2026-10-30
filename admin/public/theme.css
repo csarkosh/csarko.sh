@@ -86,12 +86,17 @@
 /* The chart series (finance/page.js, the one page with more than one series): the dataviz
    skill's reference palette, eight hues in one fixed order and stepped for each surface, each
    a slot a category keeps whatever the range shows (compute, serverless, hosting, load
-   balancing, storage, AI, DNS, domains); the ninth, Other, is the neutral --faint. The only
-   colours on these pages that are not the site's own, so they live in their own pair of blocks,
-   dark and light, which check.py reads as token blocks (every slot in both, 3:1 and up on
-   --surface). Validated with the skill's validate_palette.js on 2026-10-29: every check passes
-   in both themes (the light steps for aqua, yellow and magenta are the reference values darkened
-   until they clear 3:1 on white, re-validated as a set). Text never takes a series colour. */
+   balancing, storage, AI, DNS, domains); the ninth, Other, is the neutral --faint. Then the
+   five providers of the Daily chart in its stack order, AWS, Google Cloud, GitHub, Modal, fal:
+   the palette's first three slots, which stay apart in every pairing, and two hues of their own
+   for the film providers (a violet, OKLCH hue 300, and a magenta, hue 350: no fourth and fifth
+   slot of the eight clears the all-pairs gate beside the first three, so these were searched
+   for and stepped per surface). The only colours on these pages that are not the site's own,
+   so they live in their own pair of blocks, dark and light, which check.py reads as token blocks
+   (every slot in both, 3:1 and up on --surface). Validated with the skill's validate_palette.js
+   on 2026-10-29 (the categories, adjacent pairs) and 2026-10-30 (the five providers, --pairs all,
+   on the site's own surfaces #111318 and #ffffff: dark CVD 9.4, normal 17.9; light CVD 10.0,
+   normal 19.6; every check passes in both themes). Text never takes a series colour. */
 /* admin:palette */
 :root {
   --cat-1: #3987e5;
@@ -103,6 +108,11 @@
   --cat-7: #9085e9;
   --cat-8: #e66767;
   --cat-9: var(--faint);
+  --prov-1: var(--cat-2);
+  --prov-2: var(--cat-1);
+  --prov-3: var(--cat-3);
+  --prov-4: #7e3ccd;
+  --prov-5: #bb167c;
 }
 @media (prefers-color-scheme: light) {
   :root {
@@ -115,17 +125,25 @@
     --cat-7: #6250d6;
     --cat-8: #e34948;
     --cat-9: var(--faint);
+    --prov-1: var(--cat-2);
+    --prov-2: var(--cat-1);
+    --prov-3: var(--cat-3);
+    --prov-4: #622aa1;
+    --prov-5: #bc3181;
   }
 }
 /* /admin:palette */
 
 /* Derived tokens: no new values, only the site's, mixed. */
 :root {
-  /* The three providers on the Daily chart, in its stack order: AWS, Google Cloud, GitHub. The
-     palette's first three slots, the ones that stay apart in every pairing (validated all-pairs). */
-  --prov-1: var(--cat-2);
-  --prov-2: var(--cat-1);
-  --prov-3: var(--cat-3);
+  /* The four projects of the By project chart, in its stack order: Films, Day Hike, csarko.sh
+     and admin, Other. The palette's yellow, magenta and violet, the triple that stays furthest
+     apart in every pairing (validated --pairs all in both themes on 2026-10-30: dark CVD 13.2,
+     normal 19.3; light CVD 13.5, normal 17.4), and the neutral for Other, as the categories' is. */
+  --proj-1: var(--cat-5);
+  --proj-2: var(--cat-4);
+  --proj-3: var(--cat-7);
+  --proj-4: var(--cat-9);
   --ghost: color-mix(in srgb, var(--faint) 32%, transparent);
   --grid-line: var(--border);
   --axis-line: var(--border-strong);
@@ -379,6 +397,12 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .chart .seg.p1, .legend .swatch.p1, .tooltip .key.p1 { fill: var(--prov-1); background: var(--prov-1); }
 .chart .seg.p2, .legend .swatch.p2, .tooltip .key.p2 { fill: var(--prov-2); background: var(--prov-2); }
 .chart .seg.p3, .legend .swatch.p3, .tooltip .key.p3 { fill: var(--prov-3); background: var(--prov-3); }
+.chart .seg.p4, .legend .swatch.p4, .tooltip .key.p4 { fill: var(--prov-4); background: var(--prov-4); }
+.chart .seg.p5, .legend .swatch.p5, .tooltip .key.p5 { fill: var(--prov-5); background: var(--prov-5); }
+.chart .seg.j1, .legend .swatch.j1, .tooltip .key.j1 { fill: var(--proj-1); background: var(--proj-1); }
+.chart .seg.j2, .legend .swatch.j2, .tooltip .key.j2 { fill: var(--proj-2); background: var(--proj-2); }
+.chart .seg.j3, .legend .swatch.j3, .tooltip .key.j3 { fill: var(--proj-3); background: var(--proj-3); }
+.chart .seg.j4, .legend .swatch.j4, .tooltip .key.j4 { fill: var(--proj-4); background: var(--proj-4); }
 
 /* Sparkline: 1px, the trend in faint, the latest step in the accent. */
 .spark { display: block; width: 120px; max-width: 100%; height: 28px; overflow: visible; }
@@ -468,6 +492,13 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .bars li.stopped .fill { background: var(--ghost); }
 .bars li.stopped .n { color: var(--faint); font-weight: 400; }
 /* A tile's second figure: what an activity cost under how much of it there was. */
+/* A film's total against its cap (finance, Films): the track is the cap's full width in the ghost
+   tint, the fill the accent, clipped at the cap; past it the fill turns the warning colour and the
+   figure says "over the cap" in words. */
+.bars.capped .track { background: var(--ghost); border-radius: 4px; }
+.bars.capped .fill { border-radius: 4px; }
+.bars.capped .fill.over { background: var(--warning); }
+.bars.capped .n small { display: block; margin-left: 0; }
 .tile .cost { margin-top: 6px; font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .tile .cost b { color: var(--text); font-weight: 600; }
 .tile .cost small { font-size: 12px; color: var(--faint); margin-left: 4px; }
@@ -592,11 +623,18 @@ footer .mono { font-family: var(--mono); }
   .tile .value { font-size: 1.5rem; }
   .bars li { grid-template-columns: minmax(72px, 96px) minmax(0, 1fr) auto; gap: 8px; font-size: 13px; }
   .skel-bar { grid-template-columns: minmax(72px, 96px) minmax(0, 1fr) 36px; gap: 8px; }
+  /* A film's cap bar on a phone: the name on its own line, the track the full width under it
+     with the figure at its end, so the cap's extent still reads. */
+  .bars.capped li { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; }
+  .bars.capped .name { grid-column: 1 / -1; }
+  .bars.capped .track { height: 14px; }
 }
 @media (max-width: 360px) {
   .nav ul { gap: 11px; }
   .wrap { padding-inline: 16px; }
   .tiles { grid-template-columns: 1fr 1fr; }
+  /* Two tiles across 320px leave 89px for a figure: "$238.59" fits at this size, not at 1.5rem. */
+  .tile .value { font-size: 1.3rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

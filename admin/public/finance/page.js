@@ -1,9 +1,14 @@
 /**
- * The Finance dashboard (docs/superpowers/specs/2026-10-29-finance-admin-page-design.md): a range
- * row, then six cards in order, each loading its own query and showing its own error line. The
- * month's totals and forecast against the idle goal, spend by category month by month, the idle
- * run-rate as the list of lines that bill while nothing runs, the last 60 days by provider with
- * the days that spiked, what the range's activity bought at what unit price, and the sources.
+ * The Finance dashboard (docs/superpowers/specs/2026-10-29-finance-admin-page-design.md, amended
+ * 2026-10-30): a range row, then eight cards in order, each loading its own query and showing its
+ * own error line. The month's totals and forecast with a row per provider, spend by category month
+ * by month, spend by project (the films, Day Hike, the site, the rest), each film's cost from the
+ * pipeline's own ledgers against its cap, the idle run-rate as the list of lines that bill while
+ * nothing runs, the last 60 days by provider with the days that spiked, what the range's activity
+ * bought at what unit price, and the sources.
+ *
+ * The page judges nothing (Cyrus, 2026-10-30: there is no spend goal; the AI short films drive
+ * the cost on purpose). It separates the activity spend from the idle spend and reports both.
  *
  * The API is csarko-admin under `/finance` (shapes in admin/CONTRACT.md, "Finance"). Every amount
  * is US dollars net of credits; a day is the provider's own UTC billing day. The range is
@@ -67,6 +72,10 @@ function moneyShort(v) {
 }
 /** A unit price: three places under a dollar ("$0.526"), two above. */
 const price = (v) => (isNum(v) ? money(v, Math.abs(v) < 1 ? 3 : 2) : '–');
+/** A count with a dash for a missing one, never a 0 standing in for "unknown". */
+const count = (v) => (isNum(v) ? v.toLocaleString('en-US') : '–');
+/** Seconds as minutes: "5.5 min", "0.2 min"; a dash when unknown. */
+const minutes = (seconds) => (isNum(seconds) ? `${(seconds / 60).toLocaleString('en-US', { maximumFractionDigits: seconds < 600 ? 1 : 0 })} min` : '–');
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const ym = (iso) => /^(\d{4})-(\d{2})/.exec(iso ?? '');
@@ -95,11 +104,18 @@ function rangeText(r, months = null) {
 
 // ---------------------------------------------------------------- the fixed orders
 
+/** The five providers in the contract's fixed order, each with its Daily stack slot and the secret that configures it. */
 const PROVIDERS = {
   aws: { label: 'AWS', tone: 'p1', env: 'AWS_COST_ROLE_ARN' },
   gcp: { label: 'Google Cloud', tone: 'p2', env: 'BILLING_DATASET' },
   github: { label: 'GitHub', tone: 'p3', env: 'GITHUB_TOKEN' },
+  modal: { label: 'Modal', tone: 'p4', env: 'MODAL_TOKEN_ID' },
+  fal: { label: 'fal', tone: 'p5', env: 'FAL_ADMIN_KEY' },
 };
+const PROVIDER_KEYS = Object.keys(PROVIDERS);
+/** Every part a card may be told is not configured, the ledgers included. */
+const ENV = { ...Object.fromEntries(PROVIDER_KEYS.map((k) => [k, PROVIDERS[k].env])), ledgers: 'FILM_LEDGERS_BUCKET' };
+const PARTS = Object.keys(ENV);
 const providerName = (key) => PROVIDERS[key]?.label ?? str(key);
 
 /** The categories in their fixed order with their slots (spec section 3); the last three fold into Other. */
@@ -117,27 +133,39 @@ const FOLDED = ['ci', 'tax', 'other'];
 const OTHER = { key: 'other', label: 'Other (CI, tax, unmapped)', tone: 'c9' };
 const categoryName = (key, answer) => answer?.categories?.find((c) => c.key === key)?.label ?? CATEGORIES.find((c) => c.key === key)?.label ?? { ci: 'CI', tax: 'Tax', other: 'Other' }[key] ?? str(key);
 
-/** "under the $5 goal" or "$1.20 over the $5 goal", in the delta's tones, the words carrying the direction. */
-function goalNote(runRate, goal) {
-  if (!isNum(runRate) || !isNum(goal)) return null;
-  const over = runRate > goal;
-  return el('span', { class: `delta ${over ? 'down' : 'up'}` }, over ? `${money(runRate - goal)} over the ${moneyShort(goal)} goal` : `under the ${moneyShort(goal)} goal`);
-}
+/** The projects in their fixed order (spec section 11) with their slots: the second axis over the same lines. */
+const PROJECTS = [
+  { key: 'films', label: 'Films', tone: 'j1' },
+  { key: 'dayhike', label: 'Day Hike', tone: 'j2' },
+  { key: 'site', label: 'csarko.sh and admin', tone: 'j3' },
+  { key: 'other', label: 'Other', tone: 'j4' },
+];
+const projectName = (key, answer) => answer?.projects?.find((p) => p.key === key)?.label ?? PROJECTS.find((p) => p.key === key)?.label ?? str(key);
 
 // ---------------------------------------------------------------- 1. this month
 
+/** The provider's name with the figure its row carries beside the net: GitHub's gross, Modal's gross before the credits, fal's balance. */
+function providerCell(p) {
+  const notes = [];
+  if (p.provider === 'github' && isNum(p.gross)) notes.push(`${money(p.gross)} gross if private`);
+  if (p.provider === 'modal' && isNum(p.gross)) notes.push(`gross ${money(p.gross)} before the ${moneyShort(isNum(p.credits) ? p.credits : 30)} included credits`);
+  if (p.provider === 'fal' && isNum(p.balance)) notes.push(`balance ${money(p.balance)} left`);
+  return el('span', { class: 'cell' }, el('span', {}, p.label ?? providerName(p.provider)), notes.length ? el('small', {}, notes.join('; ')) : null);
+}
+
 function summaryCard([summary], r) {
   const total = summary.total;
-  if (!total) return [notConfigured(missing(summary, 'aws', 'gcp', 'github'))];
+  if (!total) return [notConfigured(missing(summary, ...PROVIDER_KEYS))];
   const finished = r === 'last';
   const tiles = el('div', { class: 'tiles' },
     tile(finished ? 'The month' : 'Month to date', money(total.mtd), { delta: delta(num(total.mtd), total.lastMonth, { good: 'down', vs: 'the month before', percent: true, format: money }) }),
-    tile('Forecast', finished ? '–' : money(total.forecast), { note: finished ? 'A finished month has no forecast' : 'AWS forecast, Google Cloud run-rate, GitHub net' }),
+    tile('Forecast', finished ? '–' : money(total.forecast), { note: finished ? 'A finished month has no forecast' : 'AWS forecast, Google Cloud run-rate, the rest at their month to date' }),
     tile(finished ? 'The month before' : 'Last month', money(total.lastMonth)),
-    tile('Idle run-rate', money(total.idleRunRate), { delta: goalNote(total.idleRunRate, summary.goalUsd) ?? undefined, note: 'What bills a month while nothing runs' }));
-  const rows = (summary.providers ?? []).map((p) => ({ ...p, env: missing(summary, p.provider) }));
-  const providerCell = (p) => el('span', { class: 'cell' }, el('span', {}, p.label ?? providerName(p.provider)),
-    isNum(p.gross) ? el('small', {}, `${money(p.gross)} gross if private`) : null);
+    tile('Idle run-rate', money(total.idleRunRate), { note: 'What bills a month while nothing runs' }));
+  // Every provider has a row, in the fixed order, whether or not it answered.
+  const answered = new Map((summary.providers ?? []).map((p) => [p.provider, p]));
+  const rows = PROVIDER_KEYS.map((key) => ({ provider: key, label: providerName(key), ...(answered.get(key) ?? {}), env: missing(summary, key) ?? ENV[key] }));
+  for (const p of summary.providers ?? []) if (!PROVIDERS[p.provider]) rows.push({ ...p, env: missing(summary, p.provider) });
   const providers = table([
     { key: 'provider', label: 'Provider', wrap: true, render: (_, p) => providerCell(p) },
     { key: 'mtd', label: finished ? 'The month' : 'Month to date', num: true, render: (v, p) => (isNum(v) ? money(v) : el('span', { class: 'empty' }, notConfiguredText(p.env))) },
@@ -148,10 +176,23 @@ function summaryCard([summary], r) {
   return [...errorLines(summary), tiles, providers];
 }
 
-// ---------------------------------------------------------------- 2. by category
+// ---------------------------------------------------------------- 2. by category, 3. by project
+
+/** The months' column labels, a star on a month that has AWS and GitHub only. */
+function monthColumns(months, partial) {
+  return months.map((m, i) => ({
+    label: `${monthTick(m, i === 0)}${partial.has(m) ? '*' : ''}`,
+    detail: `${monthName(m)}${partial.has(m) ? ' (AWS and GitHub only)' : ''}`,
+  }));
+}
+const partialNote = (partial) => (partial.size
+  ? el('p', { class: 'note' }, `* ${[...partial].map((m) => monthName(m)).join(', ')}: AWS and GitHub only. The Google Cloud export has no days before 29 October 2026.`)
+  : null);
+/** A month a column in the table, each $0 faint, the total row bold. */
+const monthTableColumns = (months) => months.map((m) => ({ key: m, label: monthTick(m, true), num: true, render: (v) => (v ? money(v) : el('span', { class: 'empty' }, '$0')) }));
 
 function categoriesCard([cats], r) {
-  if (!Array.isArray(cats.months) || !Array.isArray(cats.categories)) return [notConfigured(missing(cats, 'aws', 'gcp', 'github'))];
+  if (!Array.isArray(cats.months) || !Array.isArray(cats.categories)) return [notConfigured(missing(cats, ...PROVIDER_KEYS))];
   const months = cats.months;
   const byKey = new Map(cats.categories.map((c) => [c.key, c]));
   const values = (key) => months.map((_, i) => num(byKey.get(key)?.byMonth?.[i]));
@@ -159,21 +200,14 @@ function categoriesCard([cats], r) {
   const foldedValues = months.map((_, i) => FOLDED.reduce((n, key) => n + num(byKey.get(key)?.byMonth?.[i]), 0));
   series.push({ ...OTHER, values: foldedValues });
   const partial = new Set(cats.partial ?? []);
-  const columnsOf = months.map((m, i) => ({
-    label: `${monthTick(m, i === 0)}${partial.has(m) ? '*' : ''}`,
-    detail: `${monthName(m)}${partial.has(m) ? ' (AWS and GitHub only)' : ''}`,
-  }));
   const totals = months.map((_, i) => series.reduce((n, s) => n + s.values[i], 0));
-  const chart = columns(columnsOf, {
+  const chart = columns(monthColumns(months, partial), {
     height: 240,
     series,
     format: moneyShort,
     tip: money,
     label: `Spend by category, one column a month, ${rangeText(r, months)}: ${money(totals.reduce((n, v) => n + v, 0))} in all; the table below has every figure.`,
   });
-  const partialNote = partial.size
-    ? el('p', { class: 'note' }, `* ${[...partial].map((m) => monthName(m)).join(', ')}: AWS and GitHub only. The Google Cloud export has no days before 29 October 2026.`)
-    : null;
   // Every category as a row, each month a column, the folded three kept apart here.
   const allKeys = [...CATEGORIES.map((c) => c.key), ...FOLDED];
   const rows = allKeys.map((key) => ({ key, name: categoryName(key, cats), kind: byKey.get(key)?.kind ?? '', ...Object.fromEntries(months.map((m, i) => [m, num(byKey.get(key)?.byMonth?.[i])])) }));
@@ -181,7 +215,7 @@ function categoriesCard([cats], r) {
   const tableCols = [
     { key: 'name', label: 'Category', wrap: true, render: (v, row) => (row.key === 'total' ? el('b', {}, v) : v) },
     { key: 'kind', label: 'Kind' },
-    ...months.map((m) => ({ key: m, label: monthTick(m, true), num: true, render: (v) => (v ? money(v) : el('span', { class: 'empty' }, '$0')) })),
+    ...monthTableColumns(months),
   ];
   const other = Array.isArray(cats.other) && cats.other.length
     ? folded(`Unmapped lines in Other · ${cats.other.length}`, table([
@@ -190,18 +224,101 @@ function categoriesCard([cats], r) {
       { key: 'amount', label: 'Amount', num: true, render: (v) => money(v) },
     ], cats.other))
     : null;
-  return [...errorLines(cats), chart, partialNote, folded('By category as a table', table(tableCols, rows)), other].filter(Boolean);
+  return [...errorLines(cats), chart, partialNote(partial), folded('By category as a table', table(tableCols, rows)), other].filter(Boolean);
 }
 
-// ---------------------------------------------------------------- 3. idle run-rate
+function projectsCard([projects], r) {
+  if (!Array.isArray(projects.months) || !Array.isArray(projects.projects)) return [notConfigured(missing(projects, ...PROVIDER_KEYS))];
+  const months = projects.months;
+  const byKey = new Map(projects.projects.map((p) => [p.key, p]));
+  const series = PROJECTS.map((p) => ({ ...p, label: projectName(p.key, projects), values: months.map((_, i) => num(byKey.get(p.key)?.byMonth?.[i])) }));
+  // A project the contract does not name joins Other, so the stack still sums to the month.
+  for (const p of projects.projects) if (!PROJECTS.some((k) => k.key === p.key)) months.forEach((_, i) => { series[series.length - 1].values[i] += num(p.byMonth?.[i]); });
+  const partial = new Set(projects.partial ?? []);
+  const totals = months.map((_, i) => series.reduce((n, s) => n + s.values[i], 0));
+  const filmsTotal = series[0].values.reduce((n, v) => n + v, 0);
+  const allTotal = totals.reduce((n, v) => n + v, 0);
+  const chart = columns(monthColumns(months, partial), {
+    height: 240,
+    series,
+    format: moneyShort,
+    tip: money,
+    label: `Spend by project, one column a month, ${rangeText(r, months)}: ${money(allTotal)} in all, ${money(filmsTotal)} of it the films; the table below has every figure.`,
+  });
+  const rows = series.map((s) => ({ key: s.key, name: s.label, ...Object.fromEntries(months.map((m, i) => [m, s.values[i]])) }));
+  rows.push({ key: 'total', name: 'All projects', ...Object.fromEntries(months.map((m, i) => [m, totals[i]])) });
+  const tableCols = [
+    { key: 'name', label: 'Project', wrap: true, render: (v, row) => (row.key === 'total' ? el('b', {}, v) : v) },
+    ...monthTableColumns(months),
+  ];
+  const share = allTotal > 0 ? el('p', { class: 'note' }, `The films are ${money(filmsTotal)}, ${Math.round((filmsTotal / allTotal) * 100)}% of the ${money(allTotal)} spent in ${rangeText(r, months)}.`) : null;
+  return [...errorLines(projects), chart, partialNote(partial), share, folded('By project as a table', table(tableCols, rows))].filter(Boolean);
+}
+
+// ---------------------------------------------------------------- 4. films
+
+const DEFAULT_CAP = 150;
+
+function filmsCard([answer]) {
+  if (!Array.isArray(answer.films)) return [notConfigured(missing(answer, 'ledgers') ?? ENV.ledgers, 'Film ledgers')];
+  const films = [...answer.films].sort((a, b) => num(b.total) - num(a.total) || str(a.label).localeCompare(str(b.label)));
+  if (!films.length) return [...errorLines(answer), el('p', { class: 'empty' }, 'No ledgers in the bucket yet.')];
+  const sum = films.reduce((n, f) => n + num(f.total), 0);
+  const over = films.filter((f) => num(f.total) > num(f.capUsd ?? DEFAULT_CAP));
+  const tiles = el('div', { class: 'tiles' },
+    tile('Films', films.length, { note: `One ledger a film${answer.asOf ? `, newest synced ${ago(answer.asOf)}` : ''}` }),
+    tile('All films', money(sum), { note: 'Every priced call across the ledgers' }),
+    tile('Over the cap', over.length, { note: over.length ? `${over.map((f) => str(f.label)).join(', ')}` : `Every film under its ${moneyShort(DEFAULT_CAP)} cap` }));
+  // A row a film: the name with its provider split under it, a track the cap's width, and the
+  // total with the cap in words; past the cap the fill turns and the words say so.
+  const list = el('ul', { class: 'bars wide capped', role: 'list', 'aria-label': 'Films by cost against their cap' });
+  for (const f of films) {
+    const cap = isNum(f.capUsd) && f.capUsd > 0 ? f.capUsd : DEFAULT_CAP;
+    const total = num(f.total);
+    const share = Math.min(100, (total / cap) * 100);
+    const isOver = total > cap;
+    const fill = el('span', { class: `fill${isOver ? ' over' : ''}${total <= 0 ? ' empty-fill' : ''}`, 'aria-hidden': 'true' });
+    fill.style.width = `${Math.max(share, total > 0 ? 1 : 0)}%`;
+    const split = providerSplit(f.byProvider);
+    const capText = isOver ? `${money(total - cap)} over the ${moneyShort(cap)} cap` : `${Math.round(share)}% of the ${moneyShort(cap)} cap`;
+    list.append(el('li', { tabindex: 0, title: `${str(f.label)}: ${money(total)}, ${capText}${split ? `; ${split}` : ''}` },
+      el('span', { class: 'name' }, el('span', {}, str(f.label)), split ? el('small', {}, split) : null),
+      el('span', { class: 'track' }, fill),
+      el('span', { class: 'n' }, money(total), el('small', {}, capText))));
+  }
+  // A fold a film: its provider split in a line, then every model with its calls and minutes.
+  const folds = films.map((f) => {
+    const models = [...(Array.isArray(f.byModel) ? f.byModel : [])].sort((a, b) => num(b.usd) - num(a.usd));
+    const split = providerSplit(f.byProvider);
+    return folded(`${str(f.label)} by model · ${models.length}`, [
+      split ? el('p', { class: 'note' }, `By provider: ${split}.`) : null,
+      table([
+        { key: 'model', label: 'Model', wrap: true, render: (v) => el('span', { class: 'mono' }, str(v)) },
+        { key: 'provider', label: 'Provider', render: (v) => providerName(v) },
+        { key: 'usd', label: 'Cost', num: true, render: (v) => money(v) },
+        { key: 'calls', label: 'Calls', num: true, render: (v) => count(v) },
+        { key: 'seconds', label: 'Generated', num: true, render: (v) => minutes(v) },
+      ], models, 'No priced calls in this ledger.'),
+    ]);
+  });
+  return [...errorLines(answer), tiles, list, ...folds];
+}
+
+/** "Google Cloud $82.45 · Modal $36.20 · fal $28.10", largest first, in the providers' names. */
+function providerSplit(byProvider) {
+  if (!byProvider || typeof byProvider !== 'object') return '';
+  return Object.entries(byProvider).filter(([, v]) => isNum(v) && v > 0).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${providerName(k)} ${money(v)}`).join(' · ');
+}
+
+// ---------------------------------------------------------------- 5. idle run-rate
 
 function idleCard([idle]) {
-  if (!Array.isArray(idle.lines)) return [notConfigured(missing(idle, 'aws', 'gcp', 'github'))];
+  if (!Array.isArray(idle.lines)) return [notConfigured(missing(idle, ...PROVIDER_KEYS))];
   const lines = [...idle.lines].sort((a, b) => num(b.perMonth) - num(a.perMonth) || str(a.line).localeCompare(str(b.line)));
   const live = lines.filter((l) => !l.stoppedOn);
   const stopped = lines.filter((l) => l.stoppedOn);
   const tiles = el('div', { class: 'tiles' },
-    tile('Idle run-rate', money(idle.runRate), { delta: goalNote(idle.runRate, idle.goalUsd) ?? undefined, note: `A month of the last seven days' idle lines${idle.asOf ? `, as of ${shortDay(idle.asOf)}` : ''}` }),
+    tile('Idle run-rate', money(idle.runRate), { note: `A month of the last seven days' idle lines${idle.asOf ? `, as of ${shortDay(idle.asOf)}` : ''}` }),
     tile('Lines billing', live.length, { note: 'Each a resource that costs money while nothing runs' }),
     tile('Stopped this week', stopped.length, { note: stopped.length ? 'Struck through below until a week has passed' : 'Nothing cleaned up in the last seven days' }));
   // The bars list by hand: a wider name column, the line in mono with its provider and place
@@ -233,16 +350,17 @@ function idleCard([idle]) {
   return [...errorLines(idle), tiles, body, asTable].filter(Boolean);
 }
 
-// ---------------------------------------------------------------- 4. daily
+// ---------------------------------------------------------------- 6. daily
 
 const SPIKE = 3;
 const shorten = (s, n = 48) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 function dailyCard([daily]) {
-  if (!Array.isArray(daily.days)) return [notConfigured(missing(daily, 'aws', 'gcp', 'github'))];
+  if (!Array.isArray(daily.days)) return [notConfigured(missing(daily, ...PROVIDER_KEYS))];
   const days = daily.days;
-  const keys = Object.keys(PROVIDERS);
-  const configured = keys.filter((k) => days.some((d) => isNum(d[k])));
+  // Every configured provider is a series in the fixed order; one not configured (null on every
+  // day) is named under the chart instead, so the legend names the five once all five answer.
+  const configured = PROVIDER_KEYS.filter((k) => days.some((d) => isNum(d[k])));
   const series = configured.map((k) => ({ key: k, label: providerName(k), tone: PROVIDERS[k].tone, values: days.map((d) => num(d[k])) }));
   const flags = days.map((d) => Boolean(d.flagged));
   const marks = days.map((d) => ({
@@ -262,7 +380,7 @@ function dailyCard([daily]) {
     tip: money,
     label: `Spend per day for the last ${days.length} days, stacked by provider: ${money(total)} in all, ${flags.filter(Boolean).length} days over ${SPIKE} times their median; the table below has every day.`,
   });
-  const notHere = keys.filter((k) => !configured.includes(k)).map((k) => `${providerName(k)}: ${notConfiguredText(missing(daily, k) ?? PROVIDERS[k].env)}`);
+  const notHere = PROVIDER_KEYS.filter((k) => !configured.includes(k)).map((k) => `${providerName(k)}: ${notConfiguredText(missing(daily, k) ?? PROVIDERS[k].env)}`);
   const flaggedDays = days.filter((d) => d.flagged);
   const flagItem = (d) => {
     const li = el('li', {}, el('span', { class: 'n' }, `${shortDay(d.day)}: ${money(d.total)}`));
@@ -275,45 +393,55 @@ function dailyCard([daily]) {
     : el('p', { class: 'note' }, `No day in the last ${days.length} was over ${SPIKE} times its 14-day median.`);
   const asTable = folded('Per day as a table', table([
     { key: 'day', label: 'Day', render: (v) => shortDay(v) },
-    ...keys.map((k) => ({ key: k, label: providerName(k), num: true, render: (v) => (isNum(v) ? money(v) : '') })),
+    ...PROVIDER_KEYS.map((k) => ({ key: k, label: providerName(k), num: true, render: (v) => (isNum(v) ? money(v) : el('span', { class: 'empty' }, '–')) })),
     { key: 'total', label: 'Total', num: true, render: (v, d) => (d.flagged ? el('b', {}, money(v)) : money(v)) },
     { key: 'median14', label: '14-day median', num: true, render: (v) => (isNum(v) ? money(v) : '') },
     { key: 'top', label: 'Top line', wrap: true, render: (v) => (v ? el('span', { class: 'cell' }, el('span', { class: 'mono' }, str(v.line)), el('small', {}, `${providerName(v.provider)}, ${money(v.amount)}`)) : '') },
   ], [...days].reverse()));
   return [...errorLines(daily), chart,
-    el('p', { class: 'note' }, `Days are the providers' UTC billing days${notHere.length ? `. ${notHere.join('. ')}` : ''}.`),
+    el('p', { class: 'note' }, `Days are the providers' UTC billing days; a fal day is its balance's fall${notHere.length ? `. ${notHere.join('. ')}` : ''}.`),
     flagList, asTable];
 }
 
-// ---------------------------------------------------------------- 5. what activity bought
+// ---------------------------------------------------------------- 7. what activity bought
 
 /** Which source each item comes from, for the Not configured note. */
-const ITEM_SOURCE = { rigHours: 'aws', egressGiB: 'gcp', cloudRunCpuHours: 'gcp', ciMinutes: 'github', aiGenerations: 'gcp' };
+const ITEM_SOURCE = { rigHours: 'aws', egressGiB: 'gcp', cloudRunCpuHours: 'gcp', ciMinutes: 'github', aiGenerations: 'gcp', modalGpu: 'modal', falGenerations: 'fal' };
 const UNIT_NAMES = { h: ' h', GiB: ' GiB', min: ' min', '': '' };
 
 function activityCard([activity]) {
-  if (!Array.isArray(activity.items)) return [notConfigured(missing(activity, 'aws', 'gcp', 'github'))];
+  if (!Array.isArray(activity.items)) return [notConfigured(missing(activity, ...PROVIDER_KEYS))];
   const tiles = activity.items.map((item) => {
-    const env = missing(activity, ITEM_SOURCE[item.key] ?? '') ?? PROVIDERS[ITEM_SOURCE[item.key]]?.env;
-    if (!isNum(item.quantity)) return tile(str(item.label), '–', { note: notConfiguredText(env) });
+    const env = missing(activity, ITEM_SOURCE[item.key] ?? '') ?? ENV[ITEM_SOURCE[item.key]];
+    // Nothing at all from the source: its secret is missing.
+    if (!isNum(item.quantity) && !isNum(item.cost)) return tile(str(item.label), '–', { note: notConfiguredText(env) });
     const cost = el('p', { class: 'cost' }, el('b', {}, money(item.cost)),
       isNum(item.gross) ? el('small', {}, `net, ${money(item.gross)} gross`) : null);
+    // A source with no quantity (Modal's report, fal's balance) shows a dash for it, never a 0,
+    // and says what it does know: Modal its apps by cost, fal where the money came from.
+    if (!isNum(item.quantity)) {
+      const apps = Array.isArray(item.apps) ? item.apps.filter((a) => isNum(a.cost)).sort((a, b) => b.cost - a.cost) : [];
+      const note = item.key === 'modalGpu' && apps.length ? apps.map((a) => `${str(a.app)} ${money(a.cost)}`).join(' · ')
+        : item.key === 'falGenerations' ? 'From the credit balance; fal reports no quantities'
+          : item.key === 'modalGpu' ? 'Modal’s report has no quantities' : 'No quantity reported';
+      return tile(str(item.label), '–', { delta: cost, note });
+    }
     const per = isNum(item.unitPrice) ? `${price(item.unitPrice)} ${str(item.per) || 'each'}` : (item.quantity === 0 ? 'Nothing in this range' : 'No unit price');
     return tile(str(item.label), compact(item.quantity), { unit: UNIT_NAMES[item.unit] ?? ` ${str(item.unit)}`, delta: cost, note: per });
   });
   return [...errorLines(activity), el('div', { class: 'tiles compact' }, ...tiles)];
 }
 
-// ---------------------------------------------------------------- 6. sources
+// ---------------------------------------------------------------- 8. sources
 
 function sourcesCard([sources]) {
-  if (!Array.isArray(sources.sources)) return [notConfigured(missing(sources, 'aws', 'gcp', 'github'))];
+  if (!Array.isArray(sources.sources)) return [notConfigured(missing(sources, ...PARTS))];
   const now = Date.now();
   return [...errorLines(sources), table([
     { key: 'label', label: 'Source', wrap: true },
-    { key: 'configured', label: 'Configured', render: (v, s) => (v ? 'Yes' : el('span', { class: 'empty' }, notConfiguredText(missing(sources, s.key) ?? PROVIDERS[s.key]?.env))) },
-    { key: 'lastDay', label: 'Last day', render: (v) => (v ? shortDay(v) : '') },
-    { key: 'snapshotAt', label: 'Snapshot', render: (v) => (v ? ago(v, now) : el('span', { class: 'empty' }, 'read live')) },
+    { key: 'configured', label: 'Configured', render: (v, s) => (v ? 'Yes' : el('span', { class: 'empty' }, notConfiguredText(missing(sources, s.key) ?? ENV[s.key]))) },
+    { key: 'lastDay', label: 'Last day', render: (v) => (v ? shortDay(v) : el('span', { class: 'empty' }, '–')) },
+    { key: 'snapshotAt', label: 'Snapshot', render: (v, s) => (v ? ago(v, now) : el('span', { class: 'empty' }, s.configured ? 'read live' : '–')) },
     { key: 'callsThisMonth', label: 'Calls this month', num: true, render: (v, s) => (isNum(v) ? `${v.toLocaleString('en-US')}${isNum(s.callCostUsd) ? `, ${money(s.callCostUsd)}` : ''}` : '') },
     { key: 'note', label: 'Note', wrap: true },
   ], sources.sources, 'No sources answered.')];
@@ -322,12 +450,14 @@ function sourcesCard([sources]) {
 // ---------------------------------------------------------------- the cards
 
 const CARDS = [
-  { id: 'summary', title: (r) => (r === 'last' ? 'Last month' : 'This month'), queries: ['summary'], sub: (r, a) => `${a?.month ? `${monthName(a.month)}${r === 'last' ? '' : ' so far'}` : r === 'last' ? 'The previous calendar month' : 'The current calendar month'}, every provider, net of credits${a?.at ? `, as of ${ago(a.at)}` : ''}. The forecast is AWS's own plus Google Cloud's run-rate plus GitHub's net; the idle run-rate is card 3's sum against the ${moneyShort(a?.goalUsd ?? 5)} goal.`, render: summaryCard, skeleton: { tiles: 4, rows: 3, row: 56 } },
-  { id: 'categories', title: () => 'By category', queries: ['categories'], sub: (r, a) => `One column a month for ${rangeText(r, a?.months)}, split by category in a fixed order; CI, tax and unmapped lines fold into Other, listed below. Compute, serverless, hosting and AI bill because something ran; load balancing, storage, DNS and keys bill while nothing does; domains are a yearly fee shown a twelfth a month.`, render: categoriesCard, skeleton: { chart: 240, lines: 2, folds: 2 } },
+  { id: 'summary', title: (r) => (r === 'last' ? 'Last month' : 'This month'), queries: ['summary'], sub: (r, a) => `${a?.month ? `${monthName(a.month)}${r === 'last' ? '' : ' so far'}` : r === 'last' ? 'The previous calendar month' : 'The current calendar month'}, every provider, net of credits${a?.at ? `, as of ${ago(a.at)}` : ''}. The AI short films drive the activity spend on purpose, so the page keeps it apart from the idle spend: the idle run-rate is what bills while nothing runs, the rest is what the films, Day Hike and the site bought. The forecast is AWS's own plus Google Cloud's run-rate plus the other providers' month to date.`, render: summaryCard, skeleton: { tiles: 4, rows: 5, row: 56 } },
+  { id: 'categories', title: () => 'By category', queries: ['categories'], sub: (r, a) => `One column a month for ${rangeText(r, a?.months)}, split by category in a fixed order; CI, tax and unmapped lines fold into Other, listed below. Compute, serverless, hosting and AI generation bill because something ran (a Modal app is Compute, named by its app; fal is AI generation); load balancing, storage, DNS and keys bill while nothing does; domains are a yearly fee shown a twelfth a month.`, render: categoriesCard, skeleton: { chart: 240, lines: 2, folds: 2 } },
+  { id: 'projects', title: () => 'By project', queries: ['projects'], sub: (r, a) => `The same months as By category for ${rangeText(r, a?.months)}, every line sorted by what it was for. A line is a film cost when it is Vertex AI, a cinema-* Modal app or fal; Day Hike is the rest of fps-csarko, the rigs and the dayhike-* Modal apps; csarko.sh and admin is the csarko-sh project with the domain and its zone; everything else is Other.`, render: projectsCard, skeleton: { chart: 240, lines: 1, folds: 1 } },
+  { id: 'films', title: () => 'Films', queries: ['films'], sub: (r, a) => `Each film's cost from the pipeline's own ledgers: every paid call is priced before it is made and written to the film's ledger on the SSD, synced to the bucket${a?.asOf ? ` (newest ${ago(a.asOf)})` : ''}. The rows carry no dates, so they attribute cost by film and by model and never feed the Daily chart; the Veo rows are at list rate, so a film's Google Cloud figure can read higher than Google's bill. The pipeline's cap is ${moneyShort(DEFAULT_CAP)} a film. The same for every range.`, render: filmsCard, skeleton: { tiles: 3, bars: 4, folds: 4 } },
   { id: 'idle', title: () => 'Idle run-rate', queries: ['idle'], sub: () => 'Every line that bills while nothing runs, as its last seven days’ average times 30, most expensive first, with the provider and the region or project. A line gone since a week ago stays struck through for seven days with the day it stopped, so a cleanup is seen to have worked. The same for every range.', render: idleCard, skeleton: { tiles: 3, bars: 6, folds: 1 } },
-  { id: 'daily', title: () => 'Daily', queries: ['daily'], sub: () => `The last 60 days, one column a day, stacked by provider, with the trailing 14-day median as a dashed line. A day over ${SPIKE} times its median (and over $1) is marked, and its largest line named: a rig round, a Veo batch or a forgotten machine shows up here the day after. The same for every range.`, render: dailyCard, skeleton: { chart: 220, lines: 2, folds: 1 } },
-  { id: 'activity', title: () => 'What activity bought', queries: ['activity'], sub: (r) => `What ran in ${rangeText(r)}, how much of it, what it cost, and the unit price to budget the next session with. CI minutes cost nothing on public repositories; the gross is what they would on private ones.`, render: activityCard, skeleton: { tiles: 5, tile: 150 } },
-  { id: 'sources', title: () => 'Sources', queries: ['sources'], sub: () => 'Where the numbers come from, the last day each has data, when the snapshot last read it, and what reading costs: Cost Explorer bills a cent a call, two a day, the one line this page adds to the bill.', render: sourcesCard, skeleton: { rows: 3, row: 64 } },
+  { id: 'daily', title: () => 'Daily', queries: ['daily'], sub: () => `The last 60 days, one column a day, stacked by provider in a fixed order, with the trailing 14-day median as a dashed line. A day over ${SPIKE} times its median (and over $1) is marked, and its largest line named: a rig round, a Veo batch, a Modal render or a forgotten machine shows up here the day after. The same for every range.`, render: dailyCard, skeleton: { chart: 220, lines: 2, folds: 1 } },
+  { id: 'activity', title: () => 'What activity bought', queries: ['activity'], sub: (r) => `What ran in ${rangeText(r)}, how much of it, what it cost, and the unit price to budget the next session with. CI minutes cost nothing on public repositories; the gross is what they would on private ones. Modal's report and fal's balance carry no quantities, so those tiles show a dash and what they do know.`, render: activityCard, skeleton: { tiles: 7, tile: 150 } },
+  { id: 'sources', title: () => 'Sources', queries: ['sources'], sub: () => 'Where the numbers come from, the last day each has data, when the snapshot last read it, and what reading costs: Cost Explorer bills a cent a call, two a day, the one line this page adds to the bill. Modal is read by its own daily job, fal as a balance once a day, and the film ledgers from their bucket.', render: sourcesCard, skeleton: { rows: 6, row: 64 } },
 ];
 
 // ---------------------------------------------------------------- the page
