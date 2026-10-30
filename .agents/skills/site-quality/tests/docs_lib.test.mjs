@@ -230,11 +230,20 @@ const INDEX = `<style>
     :root {
       color-scheme: dark;
       --bg: #0a0b0e;
+      --md-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+      --md-duration-short3: 150ms;
+      --md-duration-medium4: 400ms;
     }
     @media (prefers-color-scheme: light) {
       :root {
         color-scheme: light;
         --bg: #f6f7f9;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      :root {
+        --md-duration-short3: 0ms;
+        --md-duration-medium4: 0ms;
       }
     }
   </style>
@@ -244,10 +253,33 @@ const src = (slug, published, extra = '') =>
 const doc = (...args) => { const s = src(...args); return loadDoc(s.name, s.text); };
 const jsonLd = (html) => JSON.parse(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(html)[1])['@graph'];
 
-test('themeBlocks copies both token blocks verbatim', () => {
+test('themeBlocks copies both token blocks and the reduced-motion block verbatim', () => {
   assert.equal(themeBlocks(INDEX),
-    ':root {\n      color-scheme: dark;\n      --bg: #0a0b0e;\n    }\n    @media (prefers-color-scheme: light) {\n      :root {\n        color-scheme: light;\n        --bg: #f6f7f9;\n      }\n    }');
+    ':root {\n      color-scheme: dark;\n      --bg: #0a0b0e;\n      --md-easing-standard: cubic-bezier(0.2, 0, 0, 1);\n      --md-duration-short3: 150ms;\n      --md-duration-medium4: 400ms;\n    }\n    @media (prefers-color-scheme: light) {\n      :root {\n        color-scheme: light;\n        --bg: #f6f7f9;\n      }\n    }\n    @media (prefers-reduced-motion: reduce) {\n      :root {\n        --md-duration-short3: 0ms;\n        --md-duration-medium4: 0ms;\n      }\n    }');
   assert.throws(() => themeBlocks('<style></style>'), /theme token blocks not found/);
+});
+
+test('themeBlocks copies the motion tokens and the reduced-motion block', () => {
+  const out = themeBlocks(INDEX);
+  assert.match(out, /--md-easing-standard: cubic-bezier\(0\.2, 0, 0, 1\)/);
+  assert.match(out, /@media \(prefers-reduced-motion: reduce\)[\s\S]*--md-duration-medium4: 0ms/);
+});
+
+test('themeBlocks refuses an index.html without the reduced-motion block', () => {
+  const without = INDEX.replace(/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\n    \}\n  <\/style>/, '</style>');
+  assert.notEqual(without, INDEX);
+  assert.throws(() => themeBlocks(without), DocError);
+});
+
+test('no generated page uses a bare ease or a literal transition duration', () => {
+  const out = buildSite({ sources: [src('a', '2026-01-01')], indexHtml: INDEX });
+  const projects = projectsPage([game('day-hike'), film('hallway'), app('lib-visits', ['license: GPL-3.0'])], themeBlocks(INDEX));
+  const pages = [...out.entries(), ['projects', projects]].filter(([, v]) => typeof v === 'string' && v.includes('transition'));
+  assert.ok(pages.length > 0, 'some generated page has a transition');
+  for (const [name, css] of pages) {
+    assert.doesNotMatch(css, /transition:[^;]*\bease\b/, `${name}: bare ease`);
+    assert.doesNotMatch(css, /transition:[^;]*\b\d+(\.\d+)?m?s\b/, `${name}: literal duration`);
+  }
 });
 
 test('a doc with a Sources section marks that heading, not the author box, as its read end', () => {

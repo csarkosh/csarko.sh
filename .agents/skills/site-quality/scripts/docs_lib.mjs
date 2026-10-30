@@ -637,8 +637,10 @@ export const sortProjects = (projects) =>
 export function themeBlocks(indexHtml) {
   const dark = /(?<![\w-]):root\s*\{[^}]*\}/.exec(indexHtml);
   const light = /@media\s*\(prefers-color-scheme:\s*light\)\s*\{\s*:root\s*\{[^}]*\}\s*\}/.exec(indexHtml);
+  const reduced = /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{\s*:root\s*\{[^}]*\}\s*\}/.exec(indexHtml);
   if (!dark || !light) throw new DocError('public/index.html: theme token blocks not found');
-  return `${dark[0]}\n    ${light[0]}`;
+  if (!reduced) throw new DocError('public/index.html: reduced-motion token block not found');
+  return `${dark[0]}\n    ${light[0]}\n    ${reduced[0]}`;
 }
 
 const jsonLd = (data) => JSON.stringify({ '@context': 'https://schema.org', '@graph': data }, null, 2).replace(/</g, '\\u003c');
@@ -700,7 +702,7 @@ const DOCS_CSS = `
     .wordmark { font-family: var(--mono); font-weight: 500; font-size: 15px; letter-spacing: -0.01em; }
     .wordmark span { color: var(--accent); }
     .nav ul { display: flex; align-items: center; gap: 20px; list-style: none; margin: 0; padding: 0; }
-    .nav ul a { color: var(--muted); font-size: 14px; transition: color .15s ease; }
+    .nav ul a { color: var(--muted); font-size: 14px; transition: color var(--md-duration-short3) var(--md-easing-standard); }
     .nav ul a:hover { color: var(--text); }
     /* Same bar as the home page: heading links (dimmer, in front), a divider, then page links.
        Docs pages carry only page links, so these two rules are here to keep the copies in step. */
@@ -714,7 +716,7 @@ const DOCS_CSS = `
     .crumbs ol { display: flex; align-items: center; list-style: none; margin: 0; padding: 11px 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; }
     .crumbs li { display: flex; align-items: center; min-width: 0; flex: none; }
     .crumbs li + li::before { content: "›"; color: var(--faint); margin: 0 8px; flex: none; }
-    .crumbs a { color: var(--muted); transition: color .15s ease; }
+    .crumbs a { color: var(--muted); transition: color var(--md-duration-short3) var(--md-easing-standard); }
     .crumbs a:hover { color: var(--text); }
     /* The page you are on is the one crumb long enough to overflow a phone, so it is the one that
        shrinks and truncates; the full title stays in the DOM for assistive tech and for search. */
@@ -741,7 +743,7 @@ const DOCS_CSS = `
       .rail { display: block; position: sticky; top: 108px; align-self: start; max-height: calc(100vh - 140px); overflow-y: auto; }
     }
     .rail ol { list-style: none; margin: 16px 0 0; padding: 0 0 0 16px; border-left: 1px solid var(--border-strong); display: grid; gap: 4px; }
-    .rail a { display: flex; gap: 10px; padding: 4px 0; color: var(--muted); font-size: 13.5px; line-height: 1.45; transition: color .15s ease; }
+    .rail a { display: flex; gap: 10px; padding: 4px 0; color: var(--muted); font-size: 13.5px; line-height: 1.45; transition: color var(--md-duration-short3) var(--md-easing-standard); }
     .rail a:hover { color: var(--text); }
     .rail .num { font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--faint); flex: none; }
 
@@ -755,7 +757,7 @@ const DOCS_CSS = `
     .prose ul, .prose ol { padding-left: 1.25em; }
     .prose li { margin: 12px 0; }
     .prose li::marker { color: var(--accent); }
-    .prose a:not(.anchor), .author a, .tags a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; transition: text-decoration-color .15s ease; }
+    .prose a:not(.anchor), .author a, .tags a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; transition: text-decoration-color var(--md-duration-short3) var(--md-easing-standard); }
     .prose a:not(.anchor):hover, .author a:hover, .tags a:hover { text-decoration-color: var(--accent); }
     a.external::after { content: "↗"; font-size: .72em; margin-left: 2px; vertical-align: .3em; display: inline-block; }
     .prose code { font-family: var(--mono); font-size: .86em; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: .12em .4em; overflow-wrap: anywhere; }
@@ -784,7 +786,7 @@ const DOCS_CSS = `
     .card {
       position: relative; display: flex; flex-direction: column;
       background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 22px; transition: border-color .18s ease, transform .18s ease, background .18s ease;
+      padding: 22px; transition: border-color var(--md-duration-short3) var(--md-easing-standard), transform var(--md-duration-short3) var(--md-easing-standard), background var(--md-duration-short3) var(--md-easing-standard);
     }
     .card:hover, .card:focus-within { border-color: var(--accent-border); transform: translateY(-2px); background: var(--surface-hover); }
     /* ::before, not ::after: an external link already uses ::after for its ↗ mark. */
@@ -793,7 +795,7 @@ const DOCS_CSS = `
 
     .doc-list, .project-list { display: grid; gap: 14px; list-style: none; margin: 0; padding: 0; }
     .doc-list .doc-title { margin: 0 0 4px; font-size: 1.2rem; line-height: 1.35; letter-spacing: -0.015em; font-weight: 600; }
-    .doc-list .doc-title a { transition: color .15s ease; }
+    .doc-list .doc-title a { transition: color var(--md-duration-short3) var(--md-easing-standard); }
     .doc-list li:hover .doc-title a, .doc-list .doc-title a:focus-visible { color: var(--accent); }
     .doc-meta { margin: 0 0 6px; font-family: var(--mono); font-size: 12px; color: var(--faint); }
     .doc-desc { margin: 0; color: var(--muted); max-width: 78ch; }
@@ -824,7 +826,7 @@ const DOCS_CSS = `
 // its kinds (Cyrus, 2026-10-29); a link's ?filter= checks the chips through filters.js.
 const filterCss = (list, prefix, attr, values) => `
     .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
-    .chip { position: relative; display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; padding: 5px 12px; border-radius: 999px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); cursor: pointer; transition: border-color .15s ease, color .15s ease, background .15s ease; }
+    .chip { position: relative; display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; padding: 5px 12px; border-radius: 999px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); cursor: pointer; transition: border-color var(--md-duration-short3) var(--md-easing-standard), color var(--md-duration-short3) var(--md-easing-standard), background var(--md-duration-short3) var(--md-easing-standard); }
     .chip small { font-size: 11px; color: var(--muted); } /* --faint fails 4.5:1 on a lit chip's accent tint (4.35, Lighthouse) */
     .chip:hover { color: var(--text); border-color: var(--border-strong); }
     .chip input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
@@ -875,10 +877,10 @@ const PROJECTS_CSS = `
     /* The home page's .card-link ("Play in your browser"), here as the card's own link. */
     .card-links { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; margin-top: 18px; }
     .card-link { font-size: 14px; font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
-    .card-link svg { width: 14px; height: 14px; transition: transform .18s ease; }
+    .card-link svg { width: 14px; height: 14px; transition: transform var(--md-duration-short3) var(--md-easing-standard); }
     .card:hover .card-link svg { transform: translate(2px, -2px); }
     /* The repo link: lifted above the card's overlay, quieter than the card's own link. */
-    .card-source { position: relative; z-index: 1; font-size: 14px; font-weight: 500; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; transition: color .15s ease, text-decoration-color .15s ease; }
+    .card-source { position: relative; z-index: 1; font-size: 14px; font-weight: 500; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; transition: color var(--md-duration-short3) var(--md-easing-standard), text-decoration-color var(--md-duration-short3) var(--md-easing-standard); }
     .card-source:hover, .card-source:focus-visible { color: var(--accent); text-decoration-color: var(--accent); }
     .card-source svg { width: 14px; height: 14px; }
     @media (max-width: 640px) {
@@ -1148,12 +1150,12 @@ const DOC_CSS = `
     .next-list .doc-title { font-size: 1.05rem; }
     .next-list .doc-desc { font-size: 14.5px; }
     .play-line { margin: 20px 0 0; }
-    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background .15s ease; }
+    .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
     .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
     .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
-    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color .15s ease; }
+    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color var(--md-duration-short3) var(--md-easing-standard); }
     .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
     .afterward .next:hover { border-color: var(--accent); }
     @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }`;

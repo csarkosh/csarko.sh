@@ -53,6 +53,7 @@ BUDGET_ANY_PORTRAIT = 90_000
 BUDGET_SCRIPTS = 10_000  # all JavaScript the page loads, first- and third-party (third-party measured live)
 
 BUDGET_HTML_DOCS_INDEX = 80_000  # the research index lists every doc with its card, about 1.7 KB each; 29 docs crossed BUDGET_HTML on 2026-10-14
+BUDGET_HTML_PROJECTS = 55_000  # /projects carries the shared theme blocks, now with the Material 3 motion tokens (+1.2 KB took it from 49.2 KB past BUDGET_HTML) (2026-10-29)
 BUDGET_HTML_DOC = 260_000  # a doc page is mostly prose, so long research docs get more room than BUDGET_HTML; the longest, with 146 sources, was 197 KB (55 KB gzipped) and is 210 KB since every doc page carries its contents list, Keep reading block and their rules (2026-10-23); the horror sound doc, 21,000 words and 191 sources, is 251 KB (70 KB gzipped) (2026-10-24)
 
 BUILD_DOCS = SKILL / "scripts/build_docs.mjs"
@@ -482,7 +483,7 @@ def resource_refs(page, html):
 def performance_checks(page, html, name):
     print(f"performance ({name})")
     size = len(html.encode())
-    budget = {"doc": BUDGET_HTML_DOC, "docs-index": BUDGET_HTML_DOCS_INDEX}.get(page_kind(name), BUDGET_HTML)
+    budget = {"doc": BUDGET_HTML_DOC, "docs-index": BUDGET_HTML_DOCS_INDEX, "projects-index": BUDGET_HTML_PROJECTS}.get(page_kind(name), BUDGET_HTML)
     check(size <= budget, f"HTML {size:,} B (budget {budget:,})")
 
     refs = resource_refs(page, html)
@@ -632,6 +633,15 @@ def theme_checks(html, name):
         worst = min((contrast(hexes[fg], hexes[bg]), f"{fg} on {bg}") for fg, bg in pairs) if pairs else (0, "no pairs")
         check(pairs and not low, f"{theme}: text tokens ≥ 4.5:1 on every surface "
                                  f"({'; '.join(low) if low else f'lowest {worst[0]:.2f}, {worst[1]}'})")
+    reduced_m = re.search(r"@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{\s*:root\s*\{(.*?)\}\s*\}", css, re.S)
+    durations = sorted(k for k in dark if k.startswith("--md-duration-"))
+    zeroed = reduced_m and all(re.search(rf"{k}\s*:\s*0ms\b", reduced_m.group(1)) for k in durations)
+    check(durations and zeroed, "reduced motion zeroes every --md-duration-* token")
+    # Every timing is a token. The skeleton pulse is the one literal: a 2s ease-in-out loop, delayed .5s.
+    motion = re.sub(r"animation:\s*skel-pulse 2s ease-in-out \.5s infinite", "", css)
+    bad = sorted({m.strip() for m in re.findall(r"(?:transition|animation)\s*:([^;}]*)", motion)
+                  if re.search(r"(?<![\w-])(?:ease|ease-in|ease-out|ease-in-out|linear)(?![\w-])|(?<![\w.-])\d*\.?\d+m?s\b", re.sub(r"var\([^)]*\)", "", m))})
+    check(not bad, f"transitions and animations use motion tokens, no bare easing or duration {bad or ''}")
     schemes = set(re.findall(r'<meta name="theme-color"[^>]*media="\(prefers-color-scheme: (dark|light)\)"', html))
     check(schemes == {"dark", "light"}, f"theme-color meta for both schemes (found {sorted(schemes)})")
     check(re.search(r'<meta name="color-scheme" content="dark light"', html), '<meta name="color-scheme" content="dark light">')
