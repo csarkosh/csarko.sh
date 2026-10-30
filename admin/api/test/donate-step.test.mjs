@@ -47,8 +47,10 @@ test("a new month: five products, five prices, five links a door, one JSON, the 
   assert.equal(calls.filter((c) => c[0] === "createLink").length, 30);
   const own = calls.find((c) => c[0] === "createLink" && c[1].tier === "own" && c[1].door === "all")[1];
   assert.equal(own.redirectUrl, "https://donate.csarko.sh/thanks?door=all");
-  assert.equal(own.key, "donate:link:2026-10:all:own");
-  assert.equal(calls.find((c) => c[0] === "createPrice")[1].key, "donate:price:2026-10:prompt");
+  assert.equal(own.key, "donate:link:2026-10:all:own:2026-11-03");
+  assert.equal(calls.find((c) => c[0] === "createPrice")[1].key, "donate:price:2026-10:prompt:2026-11-03");
+  assert.equal(calls.find((c) => c[0] === "createCustomPrice")[1].key, "donate:price:2026-10:own:2026-11-03");
+  assert.equal(calls.find((c) => c[0] === "createProduct")[1].key, "donate:product:prompt", "a product's key carries no day");
   assert.equal(calls.filter((c) => c[0] === "deactivateLink").length, 0, "nothing to deactivate the first time");
   assert.ok(!JSON.stringify(j).includes("@"));
 });
@@ -166,16 +168,21 @@ test("a door added mid-month gets its links at the current prices; nothing else 
   assert.deepEqual(Object.keys(bucket.json.doors), ["arkos", "macstats", "visits", "last-trail", "hallway", "all"]);
 });
 
-test("a Stripe failure midway writes nothing and rethrows; the rerun uses the same idempotency keys", async () => {
+test("a Stripe failure midway writes nothing and rethrows; a same-day rerun uses the same idempotency keys, the next day's its own", async () => {
   const calls = [];
   const bucket = fakeBucket();
   const log = { error() {}, warn() {} };
   await assert.rejects(createDonateStep({ writer: fakeWriter(calls, { failAt: 12 }), bucket, now: () => NOW, log }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-03" }), /Stripe 500/);
   assert.equal(bucket.writes, 0);
-  const again = [];
-  await createDonateStep({ writer: fakeWriter(again), bucket, now: () => NOW, log }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-04" });
   const keys = (list) => list.filter((c) => c[1]?.key).map((c) => c[1].key);
-  assert.deepEqual(keys(again).slice(0, keys(calls).length), keys(calls));
+  const same = [];
+  await createDonateStep({ writer: fakeWriter(same), bucket, now: () => NOW, log }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-03" });
+  assert.deepEqual(keys(same).slice(0, keys(calls).length), keys(calls));
+  // A replayed 500 cannot cost a second day: the next day's keys are new, products' aside.
+  const next = [];
+  await createDonateStep({ writer: fakeWriter(next), bucket: fakeBucket(), now: () => NOW, log }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-04" });
+  assert.ok(keys(next).filter((k) => !k.startsWith("donate:product:")).every((k) => k.endsWith(":2026-11-04")));
+  assert.equal(keys(next).filter((k) => keys(calls).includes(k)).length, 5, "only the five product keys repeat");
 });
 
 test("the bucket: a missing object reads as null, a write carries the content type and a five-minute cache", async () => {
