@@ -26,7 +26,7 @@
  */
 
 import { APPS_HOST, escapeHtml, renderMarkdown, standaloneShell } from '../.agents/skills/site-quality/scripts/docs_lib.mjs';
-import { doorOf, DONATE_URL } from '../admin/api/src/donate/doors.mjs';
+import { doorOf, DONATE_LIVE, DONATE_URL } from '../admin/api/src/donate/doors.mjs';
 import { iconSvg } from '../donate/icon.mjs';
 
 export class ProductError extends Error {}
@@ -230,9 +230,10 @@ export const imagesOf = ({ hero, panels, figures = [] }) => [...new Set([hero, .
 /**
  * app: the docs/apps entry (loadApp: title, description, kicker, license, repo, slug); prepared:
  * prepareReadme's result; release: { tag, url, published, assets: [{ name, size, url }] };
- * images: README path → { url, width, height } on this host; theme: themeBlocks() of public/index.html.
+ * images: README path → { url, width, height } on this host; theme: themeBlocks() of public/index.html;
+ * live: whether donate.csarko.sh serves the doors yet (DONATE_LIVE), without which the bar has no Buy me tokens.
  */
-export function productPage({ app, prepared, release, images, theme }) {
+export function productPage({ app, prepared, release, images, theme, live = DONATE_LIVE }) {
   const { text, hero, caption, panels, flows, figures = [] } = prepared;
   const doc = renderMarkdown(text, `${app.slug} README`);
   let html = doc.html;
@@ -271,14 +272,14 @@ export function productPage({ app, prepared, release, images, theme }) {
   }];
   const rail = doc.rail.map((s) => `        <li><a href="#${s.id}"><span>${escapeHtml(s.text)}</span></a></li>`).join('\n');
   // The bar's links: the section with the downloads or the install commands, the source, Buy me
-  // tokens once the app's door has shipped, and the release, so the page says what it is before
-  // the first scroll.
+  // tokens once the site is live and the app's door has shipped, and the release, so the page says
+  // what it is before the first scroll.
   const getIt = doc.rail.find((s) => /^(setup|install|download|get)/i.test(s.text));
   const door = doorOf(app.slug);
   const links = [
     ...(getIt ? [[prepared.downloads ? 'Download' : 'Install', `#${getIt.id}`]] : []),
     ...(app.repo ? [['GitHub', app.repo, true]] : []),
-    ...(door?.shipped ? [['Buy me tokens', `${DONATE_URL}${door.path}`, true, iconSvg()]] : []),
+    ...(live && door?.shipped ? [['Buy me tokens', `${DONATE_URL}${door.path}`, true, iconSvg()]] : []),
     [release.tag, release.url, true],
   ];
   const main = `  <div class="wrap shell">

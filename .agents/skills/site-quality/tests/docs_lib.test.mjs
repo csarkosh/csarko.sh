@@ -668,7 +668,8 @@ test('an app card links out to its page, with SoftwareApplication JSON-LD', () =
 });
 
 test('every shipped project card carries one quiet Buy me tokens link to its door; Day Hike none yet; the symbol once', () => {
-  const html = projectsPage([game('day-hike'), app('ide-arkos', ['repo: https://github.com/csarkosh/ide-arkos']), film('the-last-trail')], themeBlocks(INDEX));
+  const projects = [game('day-hike'), app('ide-arkos', ['repo: https://github.com/csarkosh/ide-arkos']), film('the-last-trail')];
+  const html = projectsPage(projects, themeBlocks(INDEX), { live: true });
   assert.equal((html.match(/<symbol id="tokens-icon"/g) || []).length, 1);
   assert.ok(html.includes('<a class="card-tokens" href="https://donate.csarko.sh/arkos" data-visits-event="tokens-ide-arkos"><svg class="tokens-icon" aria-hidden="true"><use href="#tokens-icon"/></svg>Buy me tokens</a>'));
   assert.ok(html.includes('href="https://donate.csarko.sh/last-trail" data-visits-event="tokens-the-last-trail"'));
@@ -676,6 +677,9 @@ test('every shipped project card carries one quiet Buy me tokens link to its doo
   const card = html.slice(html.indexOf('id="ide-arkos"'), html.indexOf('</li>\n', html.indexOf('id="ide-arkos"')));
   assert.equal((card.match(/Buy me tokens/g) || []).length, 1);
   assert.ok(html.indexOf('card-source') < html.indexOf('card-tokens'), 'after Source on GitHub');
+  // Until launch (DONATE_LIVE false by default) no card carries the line and the page no symbol.
+  const before = projectsPage(projects, themeBlocks(INDEX));
+  assert.ok(!before.includes('card-tokens') && !before.includes('<symbol id="tokens-icon"'));
 });
 
 test('standaloneShell wears none of the site\'s chrome: its own bar, its own footer, one credit', () => {

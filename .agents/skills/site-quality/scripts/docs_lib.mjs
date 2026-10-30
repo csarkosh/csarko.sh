@@ -2,7 +2,7 @@
 // build_docs.mjs does the file I/O. Nothing here reads the clock or the disk, so the same
 // sources always produce the same bytes. Tests: ../tests/docs_lib.test.mjs (node --test).
 import { Marked } from './vendor/marked.esm.mjs';
-import { doorOf, DONATE_URL } from '../../../../admin/api/src/donate/doors.mjs';
+import { doorOf, DONATE_LIVE, DONATE_URL } from '../../../../admin/api/src/donate/doors.mjs';
 import { ICON_CSS, iconSymbol, iconUse } from '../../../../donate/icon.mjs';
 
 export const SITE = 'https://csarko.sh';
@@ -872,10 +872,6 @@ const PROJECTS_CSS = `
     .card-source { position: relative; z-index: 1; font-size: 14px; font-weight: 500; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; transition: color var(--md-duration-short3) var(--md-easing-standard), text-decoration-color var(--md-duration-short3) var(--md-easing-standard); }
     .card-source:hover, .card-source:focus-visible { color: var(--accent); text-decoration-color: var(--accent); }
     .card-source svg { width: 14px; height: 14px; }
-    /* Buy me tokens: last in the row, body-text weight, grey until hovered; never the accent. */
-    .card-tokens { position: relative; z-index: 1; display: inline-flex; align-items: center; font-size: 14px; font-weight: 400; color: var(--muted); text-decoration: none; }
-    .card-tokens:hover, .card-tokens:focus-visible { color: var(--text); }
-    ${ICON_CSS}
     @media (max-width: 640px) {
       .project-card { flex-direction: column; gap: 0; }
       .project-card .project-body { display: contents; }
@@ -888,6 +884,13 @@ const PROJECTS_CSS = `
       .project-card .tags { order: 6; }
       .project-card .card-links { order: 7; }
     }`;
+
+// Buy me tokens: last in the row, body-text weight, grey until hovered; never the accent. Only on
+// a page that carries the line (DONATE_LIVE), so until launch the page has none of it.
+const TOKENS_CSS = `
+    .card-tokens { position: relative; z-index: 1; display: inline-flex; align-items: center; font-size: 14px; font-weight: 400; color: var(--muted); text-decoration: none; }
+    .card-tokens:hover, .card-tokens:focus-visible { color: var(--text); }
+    ${ICON_CSS}`;
 
 // Only pages with IEEE references carry these rules, so adding them changed no other page.
 const REFERENCES_CSS = `
@@ -1335,8 +1338,10 @@ function sourceLink(project) {
 }
 
 // Last in the row, one quiet line to the project's door on donate.csarko.sh, once the door has
-// shipped (Day Hike's has not). Lifted above the overlay like the source link; counts tokens-<slug>.
-function tokensLink(project) {
+// shipped (Day Hike's has not) and the site is live (DONATE_LIVE). Lifted above the overlay like
+// the source link; counts tokens-<slug>.
+function tokensLink(project, live = DONATE_LIVE) {
+  if (!live) return '';
   const door = doorOf(project.slug);
   return door?.shipped
     ? `<a class="card-tokens" href="${DONATE_URL}${door.path}" data-visits-event="tokens-${project.slug}">${iconUse()}Buy me tokens</a>`
@@ -1347,9 +1352,9 @@ function tokensLink(project) {
 // it has an alt), the kicker (a game's status, an app's status and licence, a film's runtime), the
 // title, a film's content warning, the copy, the tags and the link. Its id is the slug, so
 // /projects#<slug> lands on it.
-function projectCard(project, pad) {
+function projectCard(project, pad, { live = DONATE_LIVE } = {}) {
   const media = project.kind === 'film' ? filmPoster(project, `${pad}  `) : project.alt ? preview(project, `${pad}  `) : '';
-  const links = [cardLink(project), sourceLink(project), tokensLink(project)].filter(Boolean);
+  const links = [cardLink(project), sourceLink(project), tokensLink(project, live)].filter(Boolean);
   const link = links.length ? `<div class="card-links">${links.join(' ')}</div>` : '';
   const notice = project.kind === 'film' ? `${pad}    <p class="film-notice">${WARNING_ICON}${escapeHtml(FILM_NOTICE)}</p>\n` : '';
   return `${pad}<li class="card${media ? ' project-card' : ''}" id="${project.slug}" data-kind="${kindValue(project.kind)}">
@@ -1390,7 +1395,7 @@ function projectItem(project) {
   };
 }
 
-export function projectsPage(projects, theme) {
+export function projectsPage(projects, theme, { live = DONATE_LIVE } = {}) {
   const url = `${SITE}/${PROJECTS_DIR}`;
   const trail = [HOME_CRUMB, [PROJECTS_TITLE, url]];
   const graph = [
@@ -1409,20 +1414,21 @@ export function projectsPage(projects, theme) {
     },
     breadcrumbs(trail),
   ];
-  return `${head({ title: `${PROJECTS_HEADING} · Cyrus Sarkosh`, ogTitle: PROJECTS_TITLE, description: PROJECTS_DESCRIPTION, canonical: url, ogType: 'website', extraCss: filterCss('.project-list', 'kind', 'kind', PROJECT_KINDS.map(([v]) => v)) + PROJECTS_CSS, graph, theme })}
+  const tokens = projects.some((p) => tokensLink(p, live));
+  return `${head({ title: `${PROJECTS_HEADING} · Cyrus Sarkosh`, ogTitle: PROJECTS_TITLE, description: PROJECTS_DESCRIPTION, canonical: url, ogType: 'website', extraCss: filterCss('.project-list', 'kind', 'kind', PROJECT_KINDS.map(([v]) => v)) + PROJECTS_CSS + (tokens ? TOKENS_CSS : ''), graph, theme })}
 <body>
 ${nav(`/${PROJECTS_DIR}`)}
 ${crumbs(trail)}
 
   <main id="top" class="wrap docs-index" tabindex="-1">
-${projects.some(tokensLink) ? `    ${iconSymbol()}\n` : ''}    <header class="doc-header">
+${tokens ? `    ${iconSymbol()}\n` : ''}    <header class="doc-header">
       <p class="eyebrow">${PROJECTS_TITLE}</p>
       <h1>${escapeHtml(PROJECTS_HEADING)}</h1>
       <p class="lead">${escapeHtml(PROJECTS_LEAD)}</p>
     </header>
 ${projectFilters(projects, '    ')}
     <ul class="project-list" role="list">
-${projects.map((project) => projectCard(project, '      ')).join('\n')}
+${projects.map((project) => projectCard(project, '      ', { live })).join('\n')}
     </ul>
   </main>
 
@@ -1555,7 +1561,7 @@ export function docLinks(docs, games = []) {
 
 // `figures` maps a doc's slug to its figure files (name -> { width, height }); build_docs.mjs
 // reads them from the site-quality skill's assets/research/<slug>/.
-export function buildSite({ sources, gameSources = [], filmSources = [], appSources = [], indexHtml, figures = new Map() }) {
+export function buildSite({ sources, gameSources = [], filmSources = [], appSources = [], indexHtml, figures = new Map(), live = DONATE_LIVE }) {
   const docs = sortDocs(sources.map(({ name, text }) => loadDoc(name, text, figures.get(parseDocFileName(name).slug))));
   const projects = sortProjects([
     ...gameSources.map(({ name, text }) => loadGame(name, text)),
@@ -1593,7 +1599,7 @@ export function buildSite({ sources, gameSources = [], filmSources = [], appSour
     files.set(`${DOCS_DIR}/index.html`, indexPage(docs, theme));
     files.set(`${DOCS_DIR}/feed.xml`, feed(docs));
   }
-  if (projects.length) files.set(`${PROJECTS_DIR}/index.html`, projectsPage(projects, theme));
+  if (projects.length) files.set(`${PROJECTS_DIR}/index.html`, projectsPage(projects, theme, { live }));
   files.set('sitemap.xml', sitemap(docs, projects));
   return files;
 }

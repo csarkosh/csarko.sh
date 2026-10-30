@@ -10,6 +10,12 @@
  * of the source's height at which a landscape crop is centred, for a source taller than wide.
  */
 
+/**
+ * The launch flag. Flipped to `true` by the launch commit (plan Task 9 Step 3) once donate.csarko.sh
+ * serves the doors; until then the entrances on csarko.sh and apps.csarko.sh render nothing.
+ */
+export const DONATE_LIVE = false;
+
 export const DONATE_URL = "https://donate.csarko.sh";
 export const PRICES_BUCKET = "csarko-sh-donate-prices";
 export const PRICES_OBJECT = "prices.json";
