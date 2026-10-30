@@ -312,7 +312,11 @@ anything related to the admin pages in this repo:
   `public/index.html` by `admin/build.mjs`, never retyped), Inter and JetBrains Mono
   self-hosted from the same hashed font files, the 1120px `.wrap` and the nav bar
   shape, dark and light by system setting with no toggle. A new colour is a token in
-  both blocks, 4.5:1 on its surface in both themes. No em-dashes, no email address or
+  both blocks, 4.5:1 on its surface in both themes; a chart's series colours (the
+  `admin:palette` block pair in `theme.css`, `--cat-1` to `--cat-9` and `--prov-1` to `--prov-3`,
+  the Finance page's categories and providers) are marks that text never wears, so they clear
+  3:1 on their theme's surface and the colour-blind separation the dataviz validator checks,
+  not 4.5:1 *(Cyrus, 2026-10-29)*; `check.py --admin` holds both. No em-dashes, no email address or
   phone number.
 - **One chrome, every page** *(Cyrus, 2026-10-13)*. The nav holds the wordmark and, at
   the right, the account: a round profile button whose menu is the Live or Sample badge,

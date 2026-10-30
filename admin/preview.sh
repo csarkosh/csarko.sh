@@ -9,6 +9,9 @@
 #   admin/preview.sh --lighthouse  Lighthouse (performance, accessibility, best practices) on both
 #                                  pages, once per theme, the way site-quality's check.py runs it
 #   admin/preview.sh --stop        stop a server started without flags
+#   admin/preview.sh --shots --page finance
+#                                  one page only (index, csarko-sh, ide-arkos or finance), for
+#                                  --shots and --lighthouse
 #
 # Flags combine. --shots and --lighthouse alone do not open Chrome. The pages follow the
 # system colour scheme and have no toggle, so each theme is forced with Chrome's
@@ -26,20 +29,33 @@ OUT="/tmp/csarko-sh-admin-preview"
 PORT=8788
 SHOT_PORT=8789
 PIDFILE="$OUT/server.pid"
-PAGES=("|/?preview" "csarko-sh-|/csarko.sh/?preview" "ide-arkos-|/ide-arkos/?preview")     # <file prefix>|<path>
+PAGES=("|/?preview" "csarko-sh-|/csarko.sh/?preview" "ide-arkos-|/ide-arkos/?preview" "finance-|/finance/?preview")     # <file prefix>|<path>
+# A page named as an argument (`--page finance`, the file prefix without its dash, or `index`)
+# narrows --shots and --lighthouse to that page.
 
 die() { echo "error: $*" >&2; exit 1; }
 mkdir -p "$OUT"
 
-SERVE=1; STOP=0; SHOTS=0; LIGHTHOUSE=0
-for arg in "$@"; do
-  case "$arg" in
+SERVE=1; STOP=0; SHOTS=0; LIGHTHOUSE=0; ONLY=""
+while (( $# )); do
+  case "$1" in
     --shots) SHOTS=1; SERVE=0 ;;
     --lighthouse) LIGHTHOUSE=1; SERVE=0 ;;
     --stop) STOP=1; SERVE=0 ;;
-    *) die "unknown argument: $arg" ;;
+    --page) shift; ONLY="${1:-}"; [[ -n "$ONLY" ]] || die "--page needs a name (index, csarko-sh, ide-arkos, finance)" ;;
+    *) die "unknown argument: $1" ;;
   esac
+  shift
 done
+if [[ -n "$ONLY" ]]; then
+  kept=()
+  for entry in "${PAGES[@]}"; do
+    prefix="${entry%%|*}"
+    [[ "${prefix%-}" == "$ONLY" || ( -z "$prefix" && "$ONLY" == index ) ]] && kept+=("$entry")
+  done
+  (( ${#kept[@]} )) || die "no page named $ONLY (index, csarko-sh, ide-arkos, finance)"
+  PAGES=("${kept[@]}")
+fi
 
 if (( STOP )); then
   if [[ -f "$PIDFILE" ]] && kill "$(cat "$PIDFILE")" 2>/dev/null; then
@@ -136,5 +152,5 @@ if (( SERVE )); then
     echo $! > "$PIDFILE"
     echo "serving $PUBLIC on http://localhost:$PORT (pid $!); stop with --stop"
   fi
-  open -a "Google Chrome" "http://localhost:$PORT/?preview" "http://localhost:$PORT/csarko.sh/?preview" "http://localhost:$PORT/ide-arkos/?preview"
+  open -a "Google Chrome" "http://localhost:$PORT/?preview" "http://localhost:$PORT/csarko.sh/?preview" "http://localhost:$PORT/ide-arkos/?preview" "http://localhost:$PORT/finance/?preview"
 fi

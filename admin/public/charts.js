@@ -75,21 +75,23 @@ export function ago(when, now = Date.now()) {
  * warning, unless `good` is "down" (position, errors). Arrow plus text plus aria-label,
  * so the direction is never colour alone.
  */
-export function delta(value, prev, { good = 'up', unit = '', vs = 'previous period', percent } = {}) {
+export function delta(value, prev, { good = 'up', unit = '', vs = 'previous period', percent, format = null } = {}) {
   if (typeof value !== 'number' || typeof prev !== 'number' || !Number.isFinite(value) || !Number.isFinite(prev)) {
     return el('span', { class: 'delta', 'aria-label': 'no previous value' }, icon(ARROW_FLAT), 'no previous');
   }
+  // `format` writes a figure in the caller's notation ("$24.90"); the default is the count's.
+  const show = format ?? ((v) => `${compact(v)}${unit}`);
   const change = value - prev;
   const usePercent = percent ?? (Math.abs(prev) >= 10);
-  const magnitude = usePercent ? `${Math.round((Math.abs(change) / Math.abs(prev)) * 100)}%` : `${compact(Math.abs(change))}${unit}`;
+  const magnitude = usePercent && prev !== 0 ? `${Math.round((Math.abs(change) / Math.abs(prev)) * 100)}%` : show(Math.abs(change));
   const direction = change === 0 ? 'flat' : change > 0 ? 'up' : 'down';
   const tone = direction === 'flat' ? 'flat' : (direction === 'up') === (good === 'up') ? 'up' : 'down';
   const sign = direction === 'flat' ? '' : direction === 'up' ? '+' : '−';
   const text = direction === 'flat' ? 'no change' : `${sign}${magnitude}`;
-  const node = el('span', { class: `delta ${tone}`, 'aria-label': direction === 'flat' ? `no change from ${vs}` : `${direction} ${magnitude} from ${compact(prev)}${unit} the ${vs}` },
+  const node = el('span', { class: `delta ${tone}`, 'aria-label': direction === 'flat' ? `no change from ${vs}` : `${direction} ${magnitude} from ${show(prev)} the ${vs}` },
     icon(direction === 'flat' ? ARROW_FLAT : direction === 'up' ? ARROW_UP : ARROW_DOWN),
     text,
-    el('span', { class: 'vs', 'aria-hidden': 'true' }, ` vs ${compact(prev)}${unit}`));
+    el('span', { class: 'vs', 'aria-hidden': 'true' }, ` vs ${show(prev)}`));
   return node;
 }
 
@@ -139,7 +141,8 @@ function tooltip(host) {
   host.append(node);
   return {
     show(x, y, lines) {
-      node.replaceChildren(...lines.map((line) => el('div', {}, el('span', { class: `key${line.ghost ? ' ghost' : ''}` }), el('span', { class: 'v' }, line.v), ' ', el('span', { class: 'k' }, line.k))));
+      // A line's key is the series' mark: the accent, the ghost, a slot class (`tone`), or none.
+      node.replaceChildren(...lines.map((line) => el('div', {}, el('span', { class: `key${line.ghost ? ' ghost' : ''}${line.tone ? ` ${line.tone}` : ''}` }), el('span', { class: 'v' }, line.v), ' ', el('span', { class: 'k' }, line.k))));
       node.style.display = 'block';
       const w = host.clientWidth;
       node.style.left = `${Math.max(0, Math.min(x + 12, w - node.offsetWidth - 4))}px`;
@@ -166,11 +169,26 @@ function ticksFor(max) {
  * end, a 2px surface gap between neighbours, the extreme labelled. With `previous` (a
  * number per entry) the range before is drawn behind each column as a ghost, and a legend
  * names the two. Each slot is a focusable hit target with a title and a tooltip.
+ *
+ * With `series` ([{ key, label, values, tone }], `values` one number per entry, `tone` a slot
+ * class such as c1 or p2 from theme.css) each column is a stack: the segments drawn bottom-up in
+ * the series' fixed order with a 2px surface gap between them, the legend always present, the
+ * tallest column direct-labelled with its total, and the tooltip listing every segment. A column's
+ * `value` is then its total (computed; `bars[i].value` is ignored). `line` (a number or null per
+ * entry) draws a dashed ghost line through the columns, named `lineLabel` in the legend and the
+ * tooltip; `flags` (a boolean per entry) puts a dot in the warning colour over a column, named
+ * `flagLabel`. A bar's own `lines` ([{ v, k }]) are added to its tooltip, so a day can name its top
+ * item. `format` writes the ticks and the direct label; `tip` the tooltip's figures (default: the
+ * full number plus `unit`).
  */
-export function columns(bars, { height = 180, width = null, unit = '', previous = null, label = '', previousLabel = 'Previous range', currentLabel = 'This range', format = compact } = {}) {
+export function columns(bars, { height = 180, width = null, unit = '', previous = null, label = '', previousLabel = 'Previous range', currentLabel = 'This range', format = compact, tip: tipFormat = null, series = null, line = null, lineLabel = 'Median', flags = null, flagLabel = 'Flagged' } = {}) {
   const host = el('div', { class: 'chart' });
-  const values = bars.map((b) => b.value);
-  const ghosts = previous ? previous.map((v) => (typeof v === 'number' ? v : 0)) : [];
+  const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+  const stacks = series ? bars.map((_, i) => series.map((s) => Math.max(0, isNum(s.values?.[i]) ? s.values[i] : 0))) : null;
+  const values = series ? stacks.map((parts) => parts.reduce((n, v) => n + v, 0)) : bars.map((b) => (isNum(b.value) ? b.value : 0));
+  const ghosts = previous ? previous.map((v) => (isNum(v) ? v : 0)) : [];
+  const guide = line ? line.map((v) => (isNum(v) ? v : null)) : null;
+  const show = tipFormat ?? ((v) => `${v.toLocaleString('en-US')}${unit}`);
   const total = values.reduce((n, v) => n + v, 0);
   const summary = label || `${bars.length} columns, ${format(total)}${unit} in all, highest ${format(Math.max(0, ...values))}${unit}`;
   const tip = tooltip(host);
@@ -182,7 +200,7 @@ export function columns(bars, { height = 180, width = null, unit = '', previous 
     const pad = { l: 40, r: 8, t: 16, b: 26 };
     const innerW = W - pad.l - pad.r;
     const innerH = height - pad.t - pad.b;
-    const ticks = ticksFor(Math.max(0, ...values, ...ghosts));
+    const ticks = ticksFor(Math.max(0, ...values, ...ghosts, ...(guide ?? []).filter((v) => v !== null)));
     const max = ticks[ticks.length - 1] || 1;
     const root = svg('svg', { viewBox: `0 0 ${W} ${height}`, width: W, height, role: 'img', 'aria-label': summary });
     // Its own height, whatever the width it was drawn at: the first draw (at 640, before the
@@ -200,9 +218,12 @@ export function columns(bars, { height = 180, width = null, unit = '', previous 
     const thick = Math.min(24, Math.max(3, slot - 2));
     const best = values.reduce((m, v, i) => (v > (values[m] ?? -1) ? i : m), 0);
     const labelEvery = Math.max(1, Math.ceil((bars.length * 44) / innerW));
+    const centre = (i) => pad.l + slot * i + slot / 2;
+    const hits = [];
     bars.forEach((bar, i) => {
-      const x = pad.l + slot * i + (slot - thick) / 2;
-      const top = y(bar.value);
+      const value = values[i];
+      const x = centre(i) - thick / 2;
+      const top = y(value);
       const h = Math.max(0, pad.t + innerH - top);
       if (previous) {
         const gTop = y(ghosts[i] ?? 0);
@@ -210,15 +231,33 @@ export function columns(bars, { height = 180, width = null, unit = '', previous 
         const extra = Math.min(6, slot - thick);
         if (gh > 0) root.append(svg('rect', { class: 'ghost', x: x - extra / 2, y: gTop, width: thick + extra, height: gh, rx: 2 }));
       }
-      const r = Math.min(4, thick / 2, h);
-      const rect = svg('path', {
-        class: 'bar',
-        d: h <= 0 ? '' : `M${x},${top + r} a${r},${r} 0 0 1 ${r},-${r} h${thick - 2 * r} a${r},${r} 0 0 1 ${r},${r} v${h - r} h${-thick} z`,
-      });
-      root.append(rect);
-      if (i === best && bar.value > 0) {
-        const dl = svg('text', { x: x + thick / 2, y: top - 5, 'text-anchor': 'middle', class: 'dlabel' });
-        dl.textContent = format(bar.value);
+      let mark;
+      if (series) {
+        // Bottom-up in the series' order; each segment above the first leaves a 2px gap under
+        // itself, and one too thin for the gap keeps a hairline so the stack still shows it.
+        mark = svg('g', { class: 'stack' });
+        let base = pad.t + innerH;
+        stacks[i].forEach((v, k) => {
+          if (v <= 0) return;
+          const segH = (v / max) * innerH;
+          const gap = base < pad.t + innerH ? 2 : 0;
+          const hh = Math.max(Math.min(1, segH), segH - gap);
+          mark.append(svg('rect', { class: `seg ${series[k].tone ?? ''}`.trim(), x, y: base - segH, width: thick, height: hh, rx: Math.min(1.5, hh / 2) }));
+          base -= segH;
+        });
+      } else {
+        const r = Math.min(4, thick / 2, h);
+        mark = svg('path', {
+          class: 'bar',
+          d: h <= 0 ? '' : `M${x},${top + r} a${r},${r} 0 0 1 ${r},-${r} h${thick - 2 * r} a${r},${r} 0 0 1 ${r},${r} v${h - r} h${-thick} z`,
+        });
+      }
+      root.append(mark);
+      const flagged = Boolean(flags?.[i]);
+      if (flagged) root.append(svg('circle', { class: 'flag', cx: x + thick / 2, cy: Math.max(pad.t - 8, top - 7), r: 3 }));
+      if (i === best && value > 0) {
+        const dl = svg('text', { x: x + thick / 2, y: Math.max(10, top - (flagged ? 14 : 5)), 'text-anchor': 'middle', class: 'dlabel' });
+        dl.textContent = format(value);
         root.append(dl);
       }
       if (i % labelEvery === 0) {
@@ -228,21 +267,41 @@ export function columns(bars, { height = 180, width = null, unit = '', previous 
       }
       const hit = svg('rect', { class: 'hit', x: pad.l + slot * i, y: pad.t, width: slot, height: innerH, tabindex: 0 });
       const title = svg('title');
-      title.textContent = `${bar.detail ?? bar.label}: ${bar.value.toLocaleString('en-US')}${unit}${previous ? `, previous ${(ghosts[i] ?? 0).toLocaleString('en-US')}${unit}` : ''}`;
+      const parts = [`${bar.detail ?? bar.label}: ${show(value)}`];
+      if (series) parts.push(...series.map((s, k) => (stacks[i][k] > 0 ? `${s.label} ${show(stacks[i][k])}` : null)).filter(Boolean));
+      if (previous) parts.push(`previous ${show(ghosts[i] ?? 0)}`);
+      if (guide && guide[i] !== null) parts.push(`${lineLabel.toLowerCase()} ${show(guide[i])}`);
+      if (flagged) parts.push(flagLabel.toLowerCase());
+      for (const extra of bar.lines ?? []) parts.push(`${extra.k} ${extra.v}`);
+      title.textContent = parts.join(', ');
       hit.append(title);
-      const show = () => {
-        rect.classList.add('hover');
-        const lines = [{ v: `${bar.value.toLocaleString('en-US')}${unit}`, k: bar.detail ?? bar.label }];
-        if (previous) lines.push({ v: `${(ghosts[i] ?? 0).toLocaleString('en-US')}${unit}`, k: previousLabel.toLowerCase(), ghost: true });
-        tip.show(x + thick / 2, Math.min(top, previous ? y(ghosts[i] ?? 0) : top), lines);
+      const lines = () => {
+        const out = [{ v: show(value), k: bar.detail ?? bar.label, tone: series ? 'none' : undefined }];
+        if (series) for (let k = 0; k < series.length; k += 1) if (stacks[i][k] > 0) out.push({ v: show(stacks[i][k]), k: series[k].label, tone: series[k].tone });
+        if (previous) out.push({ v: show(ghosts[i] ?? 0), k: previousLabel.toLowerCase(), ghost: true });
+        if (guide && guide[i] !== null) out.push({ v: show(guide[i]), k: lineLabel.toLowerCase(), ghost: true });
+        if (flagged) out.push({ v: flagLabel, k: '', tone: 'flag' });
+        for (const extra of bar.lines ?? []) out.push({ v: extra.v, k: extra.k, tone: 'none' });
+        return out;
       };
-      const hide = () => { rect.classList.remove('hover'); tip.hide(); };
-      hit.addEventListener('pointerenter', show);
-      hit.addEventListener('focus', show);
+      const showTip = () => {
+        mark.classList.add('hover');
+        tip.show(x + thick / 2, Math.min(top, previous ? y(ghosts[i] ?? 0) : top), lines());
+      };
+      const hide = () => { mark.classList.remove('hover'); tip.hide(); };
+      hit.addEventListener('pointerenter', showTip);
+      hit.addEventListener('focus', showTip);
       hit.addEventListener('pointerleave', hide);
       hit.addEventListener('blur', hide);
-      root.append(hit);
+      hits.push(hit);
     });
+    // The guide line over the columns, broken where it has no value; the hits over everything.
+    if (guide) {
+      let d = '';
+      guide.forEach((v, i) => { d += v === null ? '' : `${d && guide[i - 1] !== null ? 'L' : 'M'}${centre(i).toFixed(1)},${y(v).toFixed(1)} `; });
+      if (d) root.append(svg('path', { class: 'median', d: d.trim() }));
+    }
+    root.append(...hits);
     const old = host.querySelector('svg');
     if (old) old.replaceWith(root); else host.prepend(root);
     drawn = W;
@@ -257,11 +316,15 @@ export function columns(bars, { height = 180, width = null, unit = '', previous 
     });
     observer.observe(host);
   }
+  const legend = [];
+  if (series) legend.push(...series.map((s) => el('li', {}, el('span', { class: `swatch ${s.tone ?? ''}`.trim(), 'aria-hidden': 'true' }), s.label)));
   if (previous) {
-    host.append(el('ul', { class: 'legend', 'aria-label': 'Legend' },
-      el('li', {}, el('span', { class: 'swatch', 'aria-hidden': 'true' }), currentLabel),
-      el('li', {}, el('span', { class: 'swatch ghost', 'aria-hidden': 'true' }), previousLabel)));
+    legend.push(el('li', {}, el('span', { class: 'swatch', 'aria-hidden': 'true' }), currentLabel),
+      el('li', {}, el('span', { class: 'swatch ghost', 'aria-hidden': 'true' }), previousLabel));
   }
+  if (guide) legend.push(el('li', {}, el('span', { class: 'swatch line', 'aria-hidden': 'true' }), lineLabel));
+  if (flags) legend.push(el('li', {}, el('span', { class: 'swatch flag', 'aria-hidden': 'true' }), flagLabel));
+  if (legend.length) host.append(el('ul', { class: 'legend', 'aria-label': 'Legend' }, ...legend));
   return host;
 }
 

@@ -28,9 +28,10 @@ there is no sitemap, JSON-LD, Open Graph card or canonical.
 | `build.mjs` | Fills the generated blocks (below), bundles the Firebase Auth SDK when the tooling is installed, and writes `auth-config.json`. Node 22, deterministic; the one dependency is the bundle step (`package.json`). Run it after `generate-assets.sh` changes a token or a font. |
 | `package.json`, `package-lock.json` | Build tooling only, private: `@firebase/app`, `@firebase/auth` and `esbuild` as devDependencies for the vendor bundle (the two Firebase packages, not the whole `firebase` SDK, whose Firestore pulls in a vulnerable `@grpc/grpc-js`). `npm install` here once; `node_modules/` is git-ignored. The pages themselves have no dependencies. |
 | `vendor/firebase-auth.js` | The bundle's entry: the eight Firebase exports `auth.js` needs (`initializeApp`, `getAuth`, `GoogleAuthProvider`, `onAuthStateChanged`, `signInWithPopup`, `signOut`, `browserLocalPersistence`, `setPersistence`), tree-shaken from `firebase/app` and `firebase/auth`. |
-| `preview.sh` | Build, serve `public/` on `http://localhost:8788` and open both pages with sample data; `--shots` for screenshots, `--lighthouse` for the scores, `--stop`. |
+| `preview.sh` | Build, serve `public/` on `http://localhost:8788` and open every page with sample data; `--shots` for screenshots, `--lighthouse` for the scores, `--page <name>` for one page, `--stop`. |
 | `public/index.html` | The index. Static shell; `app.js` fills one card per app from `apps.json` and each app's `/admin/kpis`. |
 | `public/csarko.sh/index.html`, `page.js` | The csarko.sh dashboard: range row (Today, 7, 30, 90 days), then the eight cards, each loading its own query and showing its own error line. |
+| `public/finance/index.html`, `page.js` | The Finance dashboard (spec `docs/superpowers/specs/2026-10-29-finance-admin-page-design.md`): range row (This month, Last month, 90 days, 13 months, sent as `range=month\|last\|90\|13m` in place of `days`), then six cards: the month's totals, forecast and idle run-rate against the $5 goal with a row per provider; spend by category as stacked columns per month (the `admin:palette` slots in `theme.css`, `--cat-1` to `--cat-9`, one per category in a fixed order, validated with the dataviz skill in both themes); the idle run-rate as the list of lines that bill while nothing runs, stopped lines struck through; the last 60 days stacked by provider (`--prov-1` to `--prov-3`) with the 14-day median and flagged days; what the range's activity bought at what unit price; and the sources. Served by `csarko-admin` under `/finance`. |
 | `public/apps.json` | The tracked apps: `slug`, `name`, `home`, `api`, `page`. Adding an app is adding a line here (and its page and API). |
 | `public/theme.css` | Tokens and fonts (generated blocks), then the site's base, `.wrap`, nav, card, tile, grid, table, button, badge and note primitives. |
 | `public/auth.js` | Sign-in: `requireSession()`, `user()`, `fetchWithAuth()`, `signOut()`, on Firebase Auth (Google sign-in, project `csarko-sh`). The Day Hike bundle imports it as `/auth.js`, so its exports are a contract (`CONTRACT.md`, "Auth"); the old names `requireToken`, `clearToken` and `token` stay as aliases for one release. |
@@ -38,7 +39,7 @@ there is no sitemap, JSON-LD, Open Graph card or canonical.
 | `public/vendor/firebase-auth.<hash>.js` | **Generated:** the Firebase Auth SDK, one minified ES module (about 113 KB, 34 KB over the wire), self-hosted because the CSP allows no third-party script. Committed, as the site commits its generated assets, so a checkout deploys as is; rebuilt by `build.mjs` when `node_modules` is present and the bundle is older than `package-lock.json`. |
 | `public/charts.js` | Chart primitives, hand-written SVG and DOM: `el`, `tile`, `delta`, `columns`, `bars`, `sparkline`, `table`, `folded`, `status`, `errorLine`, `compact`, `ago`, `pct`, `shortDay`. |
 | `public/data.js` | The source: each app's API through `fetchWithAuth`, or the sample under `?preview`. |
-| `public/sample/` | Fixed sample data for `?preview`: `kpis.json` (keyed by app slug) and `csarko.sh/<query>.json`. Mirrors the examples in `CONTRACT.md`. |
+| `public/sample/` | Fixed sample data for `?preview`: `kpis.json` (keyed by app slug), `csarko.sh/<query>.json`, `ide-arkos/<query>.json` and `finance/<query>.json` (served as is for every range). Mirrors the examples in `CONTRACT.md`. |
 | `public/assets/` | **Generated:** the hashed font files, copied from `public/assets/`. Committed, as the site commits its generated assets, so a checkout deploys as is. |
 | `public/favicon.ico`, `favicon.svg` | **Generated:** the site's icons, copied. |
 | `public/robots.txt` | `Disallow: /`. |
@@ -70,6 +71,7 @@ exists for a redeploy that changes it.
 admin/preview.sh              # build, serve on :8788, open /?preview and /csarko.sh/?preview
 admin/preview.sh --shots      # 1440px and 390px, dark and light, both pages → /tmp/csarko-sh-admin-preview/
 admin/preview.sh --lighthouse # Performance, Accessibility, Best Practices per page and theme
+admin/preview.sh --shots --page finance   # one page only (index, csarko-sh, ide-arkos, finance)
 admin/preview.sh --stop
 ```
 
