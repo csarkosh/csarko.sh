@@ -1478,8 +1478,8 @@ ADMIN = ROOT / "admin" / "public"
 def admin_motion_pages():
     """The admin pages' motion cases (AGENTS.md "Admin pages", the motion rule), on the sample data
     (`?preview`): the folds' accordion, the eased card heights and the heights they remember, the
-    account menu, the glide of a chip-filtered list and the paths' cross-fade, the same under
-    reduced motion, and a warm reload that moves nothing."""
+    account menu, the glide of a chip-filtered list and the paths' cross-fade, the Billing page's
+    folds and range change, the same under reduced motion, and a warm reload that moves nothing."""
     pages = [
         ("/csarko.sh/: a fold opens as an accordion", """{ url: '/csarko.sh/?preview', run: async (f, t) => {
           const d = f.contentDocument, p = [];
@@ -1770,10 +1770,91 @@ def admin_motion_pages():
           for (const c of d.querySelectorAll('.card')) p.push(...t.clean(c, c.id));
           return p;
         } }"""),
+        # The Billing page (finance/page.js, 2026-10-30): its folds are charts.js folded(), and its
+        # range row reloads the cards the way the other pages' does.
+        ("/finance/: a fold opens as an accordion", """{ url: '/finance/?preview', run: async (f, t) => {
+          const d = f.contentDocument, p = [];
+          if (!await t.loaded(d)) return ['the cards did not load'];
+          const fold = d.querySelector('#card-categories details.folded');
+          if (!fold) return ['no fold in the By category card'];
+          fold.querySelector('summary').click();
+          await t.sleep(30);
+          if (!t.running(fold).length) p.push('nothing in the fold animates 30 ms after the click');
+          if (!t.heightEases(fold).length) p.push('its height does not ease');
+          await t.settled(d);
+          if (!fold.open) p.push('it is not open once it settles');
+          return p.concat(t.clean(fold, 'the fold'));
+        } }"""),
+        ("/finance/: a range change fades each card to its skeleton, eases its height and remembers final heights", """{ url: '/finance/?preview', run: async (f, t) => {
+          const d = f.contentDocument, w = d.defaultView, p = [];
+          if (!await t.loaded(d)) return ['the cards did not load'];
+          await t.settled(d);
+          const view = (search) => [...new URLSearchParams(search)].sort().map(([k, v]) => `${k}=${v}`).join('&');
+          const width = Math.round(w.innerWidth / 40);
+          const prefix = `admin:hold:${w.location.pathname}|`;
+          const card = d.getElementById('card-summary'), body = card.querySelector('.body');
+          const next = new URL(w.location.href);
+          next.searchParams.set('range', 'last');
+          w.localStorage.setItem(`${prefix}summary|${view(next.search)}|${width}`, String(card.getBoundingClientRect().height + 120));
+          [...d.querySelectorAll('#range button')].find((b) => b.textContent === 'Last month').click();
+          await t.sleep(30);
+          if (!body.getAnimations().some((a) => a.playState === 'running' && a.effect.getKeyframes().some((k) => 'opacity' in k))) p.push("the This month card's content does not fade out for its skeleton");
+          if (!t.heightEases(card).length) p.push('the This month card does not ease to the height remembered for the range');
+          await t.sleep(1000);
+          if (!await t.loaded(d) || !await t.settled(d)) p.push('the cards did not settle');
+          const suffix = `|${view(w.location.search)}|${width}`;
+          let n = 0;
+          for (let i = 0; i < w.localStorage.length; i += 1) {
+            const k = w.localStorage.key(i);
+            if (!k.startsWith(prefix) || !k.endsWith(suffix)) continue;
+            const id = k.slice(prefix.length, k.length - suffix.length), el = d.getElementById(`card-${id}`);
+            if (!el) continue;
+            n += 1;
+            const have = el.getBoundingClientRect().height, kept = Number(w.localStorage.getItem(k));
+            if (Math.abs(have - kept) > 1) p.push(`${id} is ${have.toFixed(1)} px tall, remembered as ${kept}`);
+            p.push(...t.clean(el, id));
+          }
+          const cards = d.querySelectorAll('.card').length;
+          if (n !== cards) p.push(`${n} of ${cards} cards remember a height for Last month`);
+          for (const c of d.querySelectorAll('.card')) {
+            const b = c.querySelector('.body');
+            if (b.querySelector('.skeleton')) p.push(`${c.id} still shows its skeleton`);
+            if (Number(getComputedStyle(b).opacity) !== 1) p.push(`${c.id}'s content is drawn at opacity ${getComputedStyle(b).opacity}`);
+          }
+          return p;
+        } }"""),
+        ("/finance/ under reduced motion: a fold, the menu and a range change are final at once", """{ url: '/finance/?preview', reduced: true, run: async (f, t) => {
+          const d = f.contentDocument, p = [];
+          if (!await t.loaded(d)) return ['the cards did not load'];
+          const running = (what) => { const n = t.running(d.documentElement).length; if (n) p.push(`${n} animation(s) running 20 ms after ${what}`); };
+          const fold = d.querySelector('#card-categories details.folded'), summary = fold.querySelector('summary');
+          summary.click();
+          await t.sleep(20);
+          running('a fold click');
+          if (!fold.open) p.push('the fold is not open 20 ms after the click');
+          summary.click();
+          await t.sleep(20);
+          if (fold.open) p.push('the fold is not closed 20 ms after a second click');
+          p.push(...t.clean(fold, 'the fold'));
+          const button = d.querySelector('#account .avatar'), menu = d.getElementById('account-menu');
+          button.click();
+          await t.sleep(20);
+          running('opening the menu');
+          if (menu.hidden) p.push('the menu is not shown 20 ms after the click');
+          d.body.click();
+          await t.sleep(20);
+          if (!menu.hidden) p.push('the menu is not hidden 20 ms after a click outside');
+          [...d.querySelectorAll('#range button')].find((b) => b.textContent === 'Last month').click();
+          await t.loaded(d);
+          await t.sleep(20);
+          running('the range change answered');
+          for (const c of d.querySelectorAll('.card')) p.push(...t.clean(c, c.id));
+          return p;
+        } }"""),
     ]
     # A view seen before loads with nothing moving (Cyrus, 2026-10-29: "Never jumps"); the content
     # fades in where it will stay.
-    for url in ("/?preview", "/csarko.sh/?preview", "/ide-arkos/?preview"):
+    for url in ("/?preview", "/csarko.sh/?preview", "/ide-arkos/?preview", "/finance/?preview"):
         pages.append((f"{url}: a warm reload moves no card, and the content fades in", """{ run: async (_, t) => {
           // The first visit remembers each card's height once its settling window (1.5 s) is over.
           let f = await t.open('%s');
