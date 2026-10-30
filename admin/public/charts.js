@@ -140,12 +140,13 @@ export function tile(label, value, { delta: change, trend, note, unit = '', tren
 }
 
 /**
- * The chart's tooltip. It fades and lifts in (theme.css `.tooltip.on`); moving from one mark to
- * the next glides it there (`.glide`) instead of fading it out and in again, so a hide is held for
- * a frame in case a show follows straight away, as it does between neighbouring marks.
+ * The chart's tooltip. It fades and lifts in (theme.css `.tooltip.fades.on`); moving from one mark
+ * to the next glides it there (`.glide`) instead of fading it out and in again, so a hide is held
+ * for a frame in case a show follows straight away, as it does between neighbouring marks. The fade
+ * is `.fades`, the host's own: Day Hike's page shares theme.css and draws a bare `.tooltip`.
  */
 function tooltip(host) {
-  const node = el('div', { class: 'tooltip', 'aria-hidden': 'true' });
+  const node = el('div', { class: 'tooltip fades', 'aria-hidden': 'true' });
   host.append(node);
   let leaving = 0;
   return {
@@ -409,7 +410,8 @@ export function filteredList(rows, { id, render, shown, more, empty }) {
       fill(head, first)();
       fill(rest, after)();
     }
-    fold.querySelector('summary').textContent = more(after.length);
+    // A fold that leaves keeps its words while it fades out, rather than saying "· 0".
+    if (after.length) fold.querySelector('summary').textContent = more(after.length);
     toggle(none, !kept.length, animate);
     toggle(fold, after.length > 0, animate);
     const to = tailHeight();

@@ -37,8 +37,16 @@
   // A link that named more than the chips took (two kinds on /projects) is rewritten to what shows.
   if (want.filter(Boolean).length > boxes.filter((b) => b.checked).length) sync();
   form.addEventListener('change', sync);
-  // A reset clears the boxes after its event, so sync on the next task.
-  form.addEventListener('reset', () => setTimeout(sync));
+  // All (the form's reset) is done by hand, at once: the browser clears the boxes only after the
+  // event, so the glide had to wait a task, and a frame painted in between showed the whole list
+  // in its final place. Its click still counts filter-all (the button's data-visits-event).
+  var reset = () => {};
+  form.addEventListener('reset', (e) => {
+    e.preventDefault();
+    boxes.forEach((b) => { b.checked = b.defaultChecked; });
+    sync();
+    reset();
+  });
 
   // The glide (Material 3 motion, Cyrus 2026-10-29): leaving cards fade out where they were,
   // staying cards move from their old place to their new one, arriving cards fade in and rise, and
@@ -102,9 +110,11 @@
         fade.onfinish = () => g.remove();
         run.push(fade);
       } else if (was && now) {
-        var s = drawn.get(li), dx = was[0] + s.x - now[0], dy = was[1] + s.y - now[1];
-        if (Math.abs(dx) >= 0.5 || Math.abs(dy) >= 0.5)
-          add(li, [{ transform: 'translate(' + dx + 'px, ' + dy + 'px)' }, { transform: 'none' }], { duration: move, easing: standard });
+        // From how it is drawn: its move from the old place, then the move, rise, scale and opacity
+        // in flight (a card still arriving keeps the opacity and scale it has reached).
+        var s = drawn.get(li), dx = was[0] - now[0], dy = was[1] - now[1];
+        if (Math.abs(dx + s.x) >= 0.5 || Math.abs(dy + s.y) >= 0.5 || s.transform !== 'none' || s.opacity < 1)
+          add(li, [{ transform: 'translate(' + dx + 'px, ' + dy + 'px) ' + (s.transform === 'none' ? '' : s.transform), opacity: s.opacity }, { transform: 'none', opacity: 1 }], { duration: move, easing: standard });
       } else if (now && arrive) {
         add(li, [{ opacity: 0, transform: 'translateY(8px) scale(0.98)' }, { opacity: 1, transform: 'none' }],
           { duration: arrive, delay: ms('short2'), easing: token('easing-emphasized-decelerate'), fill: 'backwards' });
@@ -119,10 +129,5 @@
   remember();
   if (window.ResizeObserver) new ResizeObserver(remember).observe(list);
   form.addEventListener('change', () => glide(cache, listH));
-  // The reset's boxes clear after its event, so glide on the next task, as sync does, from the
-  // places as they were now (a frame drawn in between would re-measure the filtered list).
-  form.addEventListener('reset', () => {
-    var before = cache, h0 = listH;
-    setTimeout(() => glide(before, h0));
-  });
+  reset = () => glide(cache, listH);
 })();

@@ -811,9 +811,9 @@ const DOCS_CSS = `
     }`;
 
 // Only the research index carries the filter's rules (it is the one page with the chips, and
-// the longest doc page sits close to its HTML budget). Chips that are checkboxes, "All" a reset
-// button, and no script: a doc shows while it carries any checked category; with nothing
-// checked every doc shows and All is lit. One rule per category, built from CATEGORIES, so a
+// the longest doc page sits close to its HTML budget). Chips that are radios (single select, as on
+// /projects), "All" a reset button, and no script: a doc shows while it carries the checked
+// category; with nothing checked every doc shows and All is lit. One rule per category, built from CATEGORIES, so a
 // new category gets its chip and its rule together.
 // The chips' rules for one list: `list` is the filtered <ul>, `values` the chips' values, and a
 // card shows while its data-<attr> carries any checked value. /projects uses the same rules with
@@ -983,7 +983,7 @@ const FOOTER = `  <footer>
 // for a second link inside a card.
 // Each card names its categories (the same words as the chips) and carries them as tokens
 // in data-categories, which the filter's CSS matches on.
-// `event` names a card's click in the visits log (the Start here row's start-<slug>).
+// `event`, when a list passes one, names a card's click in the visits log as `<event>-<slug>`.
 function docList(docs, level, pad, { cls = '', event } = {}) {
   const items = docs.map((d) => `${pad}  <li class="card" data-categories="${d.categories.map(categorySlug).join(' ')}">
 ${pad}    <h${level} class="doc-title"><a class="stretch" href="${d.path}"${event ? ` data-visits-event="${event}-${d.slug}"` : ''}>${d.titleHtml}</a></h${level}>
@@ -1271,9 +1271,9 @@ ${FOOTER}`;
 
 const tagList = (tags, model) => `<ul class="tags" role="list">${model ? `<li class="tag-model">${escapeHtml(model)}</li>` : ''}${tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>`;
 
-// The chips above /projects: All, then one a kind with its count, the way /research's are built,
-// but single select (Cyrus, 2026-10-29): radios sharing a name, so a kind replaces the last; All
-// (the form's reset) clears it. The CSS rules are the same as the checkboxes'.
+// The chips above /projects: All, then one a kind with its count, built as /research's are and
+// single select like them (Cyrus, 2026-10-29): radios sharing a name, so a kind replaces the last;
+// All (the form's reset) clears it. The CSS rules are /research's (filterCss).
 function projectFilters(projects, pad) {
   const chips = PROJECT_KINDS.map(([value, label, kind]) => `${pad}  <label class="chip"><input type="radio" name="kind" value="${value}" id="kind-${value}" data-visits-event="filter-${value}" />${escapeHtml(label)} <small>${projects.filter((p) => p.kind === kind).length}</small></label>`);
   return `${pad}<form class="filters" aria-label="Filter by kind">

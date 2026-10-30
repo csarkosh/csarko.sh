@@ -1163,6 +1163,40 @@ def public_motion_pages(public=PUBLIC):
           await t.settled(d);
           return p.concat(t.only(d, '.all-docs', () => true));
         } }"""),
+        # All is done by hand, at once: the glide starts in the click's own task, so no frame can
+        # paint the unfiltered list before it, and the address loses its filter.
+        ("/projects: All after Film glides in the same task and clears the address", """{ url: '/projects?filter=film', run: async (f, t) => {
+          const d = f.contentDocument, w = f.contentWindow, p = [];
+          await t.settled(d);
+          d.querySelector('.filters .all').click();
+          if (!d.querySelector('.project-list').getAnimations({ subtree: true }).length) p.push("nothing in the list animates in the click's own task, so a frame could paint the unfiltered list first");
+          if (d.getElementById('kind-film').checked) p.push('Film is still checked');
+          if (/filter=/.test(w.location.search)) p.push(`the address still names a filter (${w.location.search})`);
+          await t.settled(d);
+          return p.concat(t.only(d, '.project-list', () => true));
+        } }"""),
+        # A card that is arriving and then stays moves on from how it is drawn: it keeps the opacity
+        # and the scale it has reached, rather than jumping to opacity 1 and full size in one frame.
+        ("/projects: Games, All, then Film mid-arrival: the films keep their opacity and scale", """{ url: '/projects', run: async (f, t) => {
+          const d = f.contentDocument, w = f.contentWindow, p = [];
+          d.getElementById('kind-games').click();
+          await t.settled(d);
+          d.querySelector('.filters .all').click();
+          await t.sleep(150);
+          const films = [...d.querySelectorAll('.project-list > li[data-kind~="film"]')];
+          const look = (li) => { const cs = w.getComputedStyle(li), m = new DOMMatrix(cs.transform); return [+cs.opacity, Math.hypot(m.a, m.b)]; };
+          const before = films.map(look);
+          if (!before.some(([o]) => o < 0.9)) p.push(`the films are not mid-arrival 150 ms after All (opacity ${before.map(([o]) => o.toFixed(2)).join(', ')})`);
+          d.getElementById('kind-film').click();
+          films.forEach((li, i) => {
+            const [o0, s0] = before[i], [o1, s1] = look(li);
+            if (Math.abs(o1 - o0) > 0.05) p.push(`${li.id} jumps from opacity ${o0.toFixed(2)} to ${o1.toFixed(2)}`);
+            if (Math.abs(s1 - s0) > 0.005) p.push(`${li.id} jumps from scale ${s0.toFixed(3)} to ${s1.toFixed(3)}`);
+          });
+          await t.settled(d);
+          films.forEach((li) => { const o = +w.getComputedStyle(li).opacity; if (o !== 1) p.push(`${li.id} ends at opacity ${o}`); });
+          return p.concat(t.only(d, '.project-list', (li) => li.matches('[data-kind~="film"]')));
+        } }"""),
         # Review Focus 2: reduced motion filters in the same frame, with no animation at all.
         ("/projects under reduced motion: a Film click is final at once", """{ url: '/projects', reduced: true, run: async (f, t) => {
           const d = f.contentDocument, p = [];
@@ -1171,6 +1205,13 @@ def public_motion_pages(public=PUBLIC):
           const n = d.getAnimations().filter((a) => a.playState === 'running').length;
           if (n) p.push(`${n} animation(s) running 20 ms after the click`);
           return p.concat(t.only(d, '.project-list', (li) => li.matches('[data-kind~="film"]')));
+        } }"""),
+        ("/projects under reduced motion: All after Film is final at once", """{ url: '/projects?filter=film', reduced: true, run: async (f, t) => {
+          const d = f.contentDocument, p = [];
+          d.querySelector('.filters .all').click();
+          const n = d.getAnimations().filter((a) => a.playState === 'running').length;
+          if (n) p.push(`${n} animation(s) running in the click's own task`);
+          return p.concat(t.only(d, '.project-list', () => true));
         } }"""),
         # Review Focus 4: after a resize, a glide starts from where the cards are now, not from
         # where they were at the old width.
@@ -1572,7 +1613,37 @@ def admin_motion_pages():
           if (!menu.hidden) p.push('opened and closed within 50 ms, it ends shown');
           return p;
         } }"""),
-        ("/csarko.sh/: Hide suspect glides the journeys and leaves no ghost", """{ url: '/csarko.sh/?preview', run: async (f, t) => {
+        # Day Hike's page loads this theme.css, and its live bundle shows a bare .tooltip with an
+        # inline display: block alone (its new one brings its own .tooltip.on rules), so the host's
+        # fade is scoped to the host's own tooltips (charts.js tooltip(): .tooltip.fades).
+        ("/csarko.sh/: a bare .tooltip shows on display: block; the host's own fades in", """{ url: '/csarko.sh/?preview', run: async (f, t) => {
+          const d = f.contentDocument, w = d.defaultView, p = [];
+          if (!await t.loaded(d)) return ['the cards did not load'];
+          await t.settled(d);
+          const hit = d.querySelector('.chart .hit');
+          if (!hit) return ['no chart mark to hover'];
+          const host = hit.closest('svg').parentElement;
+          const bare = d.createElement('div');
+          bare.className = 'tooltip';
+          bare.style.display = 'block';
+          bare.textContent = 'Day Hike';
+          host.append(bare);
+          const cs = w.getComputedStyle(bare);
+          if (+cs.opacity !== 1) p.push(`a bare .tooltip shown with display: block is at opacity ${cs.opacity}`);
+          if (cs.translate !== 'none') p.push(`a bare .tooltip shown with display: block is moved by ${cs.translate}`);
+          bare.remove();
+          hit.dispatchEvent(new PointerEvent('pointerenter'));
+          const tip = host.querySelector('.tooltip.on');
+          if (!tip) return p.concat(['hovering a mark shows no tooltip']);
+          await t.sleep(30);
+          if (!tip.getAnimations().length) p.push('the host tooltip does not fade in');
+          await t.settled(d);
+          const o = +w.getComputedStyle(tip).opacity;
+          if (o !== 1) p.push(`the host tooltip ends at opacity ${o}`);
+          hit.dispatchEvent(new PointerEvent('pointerleave'));
+          return p;
+        } }"""),
+        ("/csarko.sh/: Hide suspect glides the journeys and leaves no ghost","""{ url: '/csarko.sh/?preview', run: async (f, t) => {
           const d = f.contentDocument, p = [];
           if (!await t.loaded(d)) return ['the cards did not load'];
           await t.settled(d);
@@ -1607,7 +1678,11 @@ def admin_motion_pages():
           // 10 journeys, 8 shown: showing the suspect one brings the fold, hiding it again takes it away.
           button.click();
           await t.sleep(100);
+          const said = card.querySelector('.j-tail details summary').textContent;
           button.click();
+          // The leaving fold keeps the words it had while it fades out: it never says "· 0".
+          const says = card.querySelector('.j-tail details summary').textContent;
+          if (says !== said) p.push(`the leaving fold's summary changes from "${said}" to "${says}"`);
           const ease = t.heightEases(tail)[0];
           const target = ease ? parseFloat(ease.effect.getKeyframes().at(-1).height) : null;
           const heights = [];

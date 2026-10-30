@@ -368,6 +368,16 @@ anything related to the admin pages in this repo:
   it fades out; tooltips fade and lift in and glide between marks; the sign-in gate and the page
   swap with a fade through. `check.py --admin` drives all of it in headless Chrome on `?preview`,
   under reduced motion too, and checks that a warm reload moves no card.
+- **What Day Hike's page takes from the host** *(2026-10-30)*. It loads `/theme.css` and ships on
+  its own schedule, so whichever of the two deploys first, the other's live bundle must still work.
+  It depends on: the `--md-easing-*` and `--md-duration-*` tokens (its `motion.ts` reads them off
+  `:root`), the `.skel` classes (`.skel`, `.skel-tiles`, `.skel-tile`, `.skel-list`, `.skel-trow`,
+  `.skeleton`), `.tooltip` (its look and `display: none` only: its live bundle shows one with an
+  inline `display: block`, its new one with its own `.tooltip.on` rules in `admin.css`), the
+  `.tiles`/`.tile` grid, `.card`, `.status`, `.sr-only` and the shared nav and trail. So the host's
+  tooltip fade is scoped to its own tooltips (`.tooltip.fades`, set by `charts.js` `tooltip()`), and
+  a change to any of these classes is a change to Day Hike's page: `check.py --admin` checks that a
+  bare `.tooltip` shown with `display: block` is visible.
 - **Same bar.** Lighthouse 100 on Accessibility and Best Practices, Performance ≥ 95,
   a layout that holds from 320px to 1440px, a strict CSP and the same security
   headers. No third-party script, with one documented exception: Google's sign-in

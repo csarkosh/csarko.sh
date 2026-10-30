@@ -322,13 +322,17 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .legend li { display: inline-flex; align-items: center; gap: 6px; }
 .legend .swatch { width: 10px; height: 10px; border-radius: 3px; background: var(--accent); }
 .legend .swatch.ghost { background: var(--ghost); }
-/* The tooltip fades and lifts 4 px in (short3, standard) and fades out quicker (short2,
-   accelerate); moving to the next mark, it glides there (charts.js tooltip()). */
-.tooltip { position: absolute; z-index: 2; display: none; opacity: 0; translate: 0 4px; pointer-events: none; white-space: nowrap; padding: 7px 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border-strong); box-shadow: 0 8px 24px -8px var(--shadow); font-size: 12.5px; color: var(--muted);
+/* A tooltip's look, and hidden until it is shown. Day Hike's page loads this file and uses the same
+   class (AGENTS.md, "Motion is motion.js"), so the fade below is the host's own (.fades, charts.js
+   tooltip()): a bare .tooltip, as Day Hike's bundle draws it, shows with display: block alone.
+   The host's fades and lifts 4 px in (short3, standard) and fades out quicker (short2,
+   accelerate); moving to the next mark, it glides there. */
+.tooltip { position: absolute; z-index: 2; display: none; pointer-events: none; white-space: nowrap; padding: 7px 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border-strong); box-shadow: 0 8px 24px -8px var(--shadow); font-size: 12.5px; color: var(--muted); }
+.tooltip.fades { opacity: 0; translate: 0 4px;
   transition: opacity var(--md-duration-short2) var(--md-easing-emphasized-accelerate), translate var(--md-duration-short2) var(--md-easing-emphasized-accelerate), display var(--md-duration-short2) allow-discrete; }
-.tooltip.on { display: block; opacity: 1; translate: none; transition: opacity var(--md-duration-short3) var(--md-easing-standard), translate var(--md-duration-short3) var(--md-easing-standard); }
-.tooltip.on.glide { transition: opacity var(--md-duration-short3) var(--md-easing-standard), translate var(--md-duration-short3) var(--md-easing-standard), left var(--md-duration-short3) var(--md-easing-standard), top var(--md-duration-short3) var(--md-easing-standard); }
-@starting-style { .tooltip.on { opacity: 0; translate: 0 4px; } }
+.tooltip.fades.on { display: block; opacity: 1; translate: none; transition: opacity var(--md-duration-short3) var(--md-easing-standard), translate var(--md-duration-short3) var(--md-easing-standard); }
+.tooltip.fades.on.glide { transition: opacity var(--md-duration-short3) var(--md-easing-standard), translate var(--md-duration-short3) var(--md-easing-standard), left var(--md-duration-short3) var(--md-easing-standard), top var(--md-duration-short3) var(--md-easing-standard); }
+@starting-style { .tooltip.fades.on { opacity: 0; translate: 0 4px; } }
 .tooltip .v { font-weight: 600; color: var(--text); font-size: 13.5px; font-variant-numeric: tabular-nums; }
 .tooltip .key { display: inline-block; width: 10px; height: 2px; background: var(--accent); vertical-align: middle; margin-right: 6px; }
 .tooltip .key.ghost { background: var(--ghost); }
@@ -535,6 +539,6 @@ footer .mono { font-family: var(--mono); }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .nav ul a, .btn, .range button, .j-filters button, .card .card-title a, details.folded summary::before, .fl-band, .tooltip, .chart .bar, .bars .fill { transition: none; }
+  .nav ul a, .btn, .range button, .j-filters button, .card .card-title a, details.folded summary::before, .fl-band, .tooltip.fades, .chart .bar, .bars .fill { transition: none; }
   .skel { animation: none; }
 }
