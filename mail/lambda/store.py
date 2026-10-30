@@ -5,13 +5,15 @@
 | Alias         | ALIAS#<local> / ALIAS                 | state, name, note, counts, first_from |
 | Message       | MSG#<local> / <iso>#<message id>      | the index row of one message in or out|
 | Reverse alias | REPLY#<token> / REPLY                 | the (alias, external) pair it stands for |
-| Pair          | PAIR#<alias>#<external> / PAIR        | the one token for that pair           |
+| Pair          | PAIR#<sha256 of [alias, external]> / PAIR | the one token for that pair       |
 
 The pair item is written with a condition, so two invocations handling the first two messages
 from one correspondent at once still agree on one token. The clients are injectable so the
 tests run on fakes; boto3 is imported only when a real client is needed.
 """
 
+import hashlib
+import json
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Optional
 
@@ -33,7 +35,9 @@ def message_sk(iso: str, message_id: str) -> str:
 
 
 def pair_key(alias_local: str, external: str) -> dict:
-    return {"pk": f"PAIR#{alias_local}#{external}", "sk": "PAIR"}
+    """Hashed, because both halves may contain "#": ("a#b", "c") and ("a", "b#c") must differ."""
+    digest = hashlib.sha256(json.dumps([alias_local, external]).encode()).hexdigest()
+    return {"pk": f"PAIR#{digest}", "sk": "PAIR"}
 
 
 def _conditional_failed(error: Exception) -> bool:
@@ -134,7 +138,7 @@ class Store:
     def token_for(self, alias_local: str, external: str) -> str:
         """The one token for (alias, external): reused when it exists, minted when it does not."""
         existing = self.table.get_item(Key=pair_key(alias_local, external), ConsistentRead=True).get("Item")
-        if existing:
+        if existing and self._token_matches(existing["token"], alias_local, external):
             return existing["token"]
         now = self._iso()
         for _ in range(3):
@@ -149,9 +153,13 @@ class Store:
                     raise
         else:
             raise RuntimeError("could not mint a unique reverse-alias token")
+        pair = {**pair_key(alias_local, external), "token": token, "created": now}
+        if existing:
+            # A pair item whose token stands for some other pair is not trusted: replace it.
+            self.table.put_item(Item=pair)
+            return token
         try:
-            self.table.put_item(Item={**pair_key(alias_local, external), "token": token, "created": now},
-                                ConditionExpression="attribute_not_exists(pk)")
+            self.table.put_item(Item=pair, ConditionExpression="attribute_not_exists(pk)")
             return token
         except Exception as error:
             if not _conditional_failed(error):
@@ -159,6 +167,10 @@ class Store:
             # Another invocation claimed the pair first: use its token and drop ours.
             self.table.delete_item(Key={"pk": f"REPLY#{token}", "sk": "REPLY"})
             return self.table.get_item(Key=pair_key(alias_local, external), ConsistentRead=True)["Item"]["token"]
+
+    def _token_matches(self, token: str, alias_local: str, external: str) -> bool:
+        item = self.table.get_item(Key={"pk": f"REPLY#{token}", "sk": "REPLY"}, ConsistentRead=True).get("Item")
+        return bool(item) and item.get("alias") == alias_local and item.get("external") == external
 
     def pair_for(self, token: str) -> Optional[tuple]:
         item = self.table.get_item(Key={"pk": f"REPLY#{token}", "sk": "REPLY"}, ConsistentRead=True).get("Item")

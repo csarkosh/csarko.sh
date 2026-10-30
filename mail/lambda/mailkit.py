@@ -6,12 +6,15 @@ section 5. The Lambda loads this as a flat module (`import mailkit`), so the fol
 is not a package.
 """
 
+import email.errors
+import email.header
 import email.policy
 import email.utils
 import re
 import secrets
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from email.parser import BytesHeaderParser
 from typing import Literal, Optional
 
@@ -71,8 +74,21 @@ def policy(state: str, verdicts: dict, dmarc_policy: Optional[str]) -> tuple:
 
 # Headers a forward drops: the original route and the signatures that would fail after the
 # From change (spec section 5.1, step 4), plus the receipt headers SES itself added.
-_FORWARD_DROP = ("return-path", "dkim-signature", "received", "authentication-results", "received-spf", "sender")
-_FORWARD_DROP_PREFIXES = ("arc-", "x-ses-")
+_FORWARD_DROP = ("return-path", "dkim-signature", "received", "authentication-results", "received-spf", "sender",
+                 # The headers a forward writes itself: an incoming copy would sit beside ours.
+                 "x-alias")
+_FORWARD_DROP_PREFIXES = ("arc-", "x-ses-", "x-original-")
+
+# Any line break, the way the stdlib parser (and every mail client) sees one. Splitting a CRLF
+# header block on CRLF alone would let a lone LF hide a header inside the previous one's value.
+_EOL = re.compile(rb"\r\n|\r|\n")
+_CONTROL = re.compile(r"[\x00-\x1f\x7f]+")
+_MSGID = re.compile(rb"<[^<>\s]+>")
+
+
+def _clean(text: str) -> str:
+    """Text safe to put in a header we write: control characters (CR and LF above all) become spaces."""
+    return _CONTROL.sub(" ", text).strip()
 
 
 def _split(raw: bytes):
@@ -86,7 +102,7 @@ def _split(raw: bytes):
     else:
         block, body, eol = raw, b"", (b"\r\n" if b"\r\n" in raw else b"\n")
     headers = []
-    for line in block.split(eol):
+    for line in _EOL.split(block):
         if line[:1] in (b" ", b"\t") and headers:
             headers[-1][1] += eol + line
             continue
@@ -103,45 +119,52 @@ def _join(headers, eol: bytes, body: bytes) -> bytes:
     return eol.join(lines) + body
 
 
-def _parsed_headers(raw: bytes):
-    return BytesHeaderParser(policy=email.policy.default).parsebytes(raw)
+def _values(raw: bytes, name: str) -> list:
+    """Every value of one header, decoded from RFC 2047 and cleaned of control characters.
+
+    The permissive compat32 parser is used on purpose: the default policy raises while merely
+    reading an address header whose display name decodes to a line break, which would crash
+    the Lambda on one hostile message."""
+    message = BytesHeaderParser(policy=email.policy.compat32).parsebytes(raw)
+    out = []
+    for value in message.get_all(name) or []:
+        try:
+            text = str(email.header.make_header(email.header.decode_header(str(value))))
+        except (UnicodeError, ValueError, LookupError, email.errors.HeaderParseError):
+            text = str(value)
+        out.append(_clean(text))
+    return out
 
 
-def _address(header) -> tuple:
-    """(display name, lower-cased address) of the first address in an address header."""
-    if header is None:
-        return "", ""
-    try:
-        first = header.addresses[0]
-        return first.display_name or "", first.addr_spec.lower()
-    except (AttributeError, IndexError, TypeError):
-        name, addr = email.utils.parseaddr(str(header))
-        return name, addr.lower()
+def _address(values: list) -> tuple:
+    """(display name, lower-cased address) of the first address in the first value."""
+    pairs = email.utils.getaddresses(values[:1]) if values else []
+    name, addr = pairs[0] if pairs else ("", "")
+    return _clean(name), addr.lower()
 
 
-def _addresses(header) -> list:
-    if header is None:
-        return []
-    try:
-        return [a.addr_spec.lower() for a in header.addresses]
-    except (AttributeError, TypeError):
-        return [addr.lower() for _, addr in email.utils.getaddresses([str(header)]) if addr]
+def _addresses(values: list) -> list:
+    return [addr.lower() for _, addr in email.utils.getaddresses(values) if addr]
 
 
 def summary(raw: bytes) -> dict:
     """The fields the message index keeps (spec section 6)."""
-    h = _parsed_headers(raw)
-    name, addr = _address(h["From"])
-    reply_to = _address(h["Reply-To"])[1] if h["Reply-To"] is not None else None
+    name, addr = _address(_values(raw, "From"))
+    reply_to = _values(raw, "Reply-To")
+
+    def first(header):
+        found = _values(raw, header)
+        return found[0] if found else ""
+
     return {
         "from": addr,
         "from_name": name,
-        "to": _addresses(h["To"]),
-        "subject": str(h["Subject"] or ""),
-        "date": str(h["Date"] or ""),
-        "message_id": str(h["Message-ID"] or "").strip(),
+        "to": _addresses(_values(raw, "To")),
+        "subject": first("Subject"),
+        "date": first("Date"),
+        "message_id": first("Message-ID"),
         "size": len(raw),
-        "reply_to": reply_to or None,
+        "reply_to": _address(reply_to)[1] or None if reply_to else None,
     }
 
 
@@ -161,7 +184,7 @@ def build_forward(raw: bytes, *, alias_local: str, base_domain: str, owner: str,
     provider), Reply-To is the reverse alias, To is the owner, and the original sender and route
     are kept only in X- headers. Every other header and the whole body are untouched."""
     headers, eol, body = _split(raw)
-    name, addr = _address(_parsed_headers(raw)["From"])
+    name, addr = _address(_values(raw, "From"))
     original_from = _raw_value(headers, "from")
     original_to = _raw_value(headers, "to")
     original_reply_to = _raw_value(headers, "reply-to")
@@ -175,7 +198,7 @@ def build_forward(raw: bytes, *, alias_local: str, base_domain: str, owner: str,
             continue
         kept.append([n, value])
 
-    display = f"{name or addr} via {base_domain}"
+    display = f"{_clean(name) or _clean(addr)} via {base_domain}"
     added = [
         _header("From", email.utils.formataddr((display, f"{alias_local}@{base_domain}"), charset="utf-8")),
         _header("To", owner),
@@ -212,9 +235,23 @@ def is_owner(mail: dict, receipt: dict, raw: bytes, owner: str) -> bool:
     for the owner's domain (Gmail signs everything it sends, so its own replies always pass)."""
     owner = owner.strip().lower()
     envelope = str(mail.get("source", "")).strip().lower()
-    header = _address(_parsed_headers(raw)["From"])[1]
+    froms = _values(raw, "From")
+    if len(froms) != 1 or len(_addresses(froms)) != 1:
+        return False  # SES's DMARC check and our parser must be reading the same, single From
+    header = _addresses(froms)[0]
     dmarc = (receipt.get("dmarcVerdict") or {}).get("status")
     return envelope == owner and header == owner and dmarc == "PASS"
+
+
+def _utc_date(value: bytes) -> str:
+    """The Date in UTC, so the stranger does not learn the owner's time zone."""
+    try:
+        when = email.utils.parsedate_to_datetime(value.decode("ascii", "replace").strip())
+        if when.tzinfo is None:
+            raise ValueError
+    except (TypeError, ValueError):
+        when = datetime.now(timezone.utc)
+    return email.utils.format_datetime(when.astimezone(timezone.utc))
 
 
 def build_reply(raw: bytes, *, alias_local: str, domain: str, alias_name: Optional[str], external: str) -> bytes:
@@ -222,10 +259,27 @@ def build_reply(raw: bytes, *, alias_local: str, domain: str, alias_name: Option
     an allow-list of headers, so nothing of the owner's mailbox (Received, X-Google-*, X-Gm-*,
     DKIM, Cc, the original Message-ID) survives. The body is passed through byte for byte."""
     headers, eol, body = _split(raw)
-    kept = [[n, value] for n, value in headers if n is not None and n.lower() in _REPLY_KEEP]
+    own = _MSGID.search(_raw_value(headers, "message-id") or b"")
+    own_domain = own.group(0)[1:-1].rpartition(b"@")[2].lower() if own else None
+    kept = []
+    for n, value in headers:
+        lower = (n or "").lower()
+        if lower not in _REPLY_KEEP:
+            continue
+        if lower in ("in-reply-to", "references"):
+            # The owner's provider's own Message-IDs (an earlier reply of theirs) name the
+            # provider and never reached the stranger; keep only the IDs the thread shares.
+            ids = [i for i in _MSGID.findall(value) if i[1:-1].rpartition(b"@")[2].lower() != own_domain]
+            if ids:
+                kept.append([n, b" " + (eol + b" ").join(ids)])
+            continue
+        if lower == "date":
+            kept.append(_header("Date", _utc_date(value)))
+            continue
+        kept.append([n, value])
     sender = f"{alias_local}@{domain}"
     added = [
-        _header("From", email.utils.formataddr((alias_name, sender), charset="utf-8") if alias_name else sender),
+        _header("From", email.utils.formataddr((_clean(alias_name), sender), charset="utf-8") if alias_name else sender),
         _header("To", external),
         _header("Message-ID", f"<{uuid.uuid4().hex}@{domain}>"),
     ]

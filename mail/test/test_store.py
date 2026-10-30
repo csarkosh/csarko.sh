@@ -29,7 +29,12 @@ class Keys(unittest.TestCase):
     def test_helpers(self):
         self.assertEqual(alias_key("hello"), {"pk": "ALIAS#hello", "sk": "ALIAS"})
         self.assertEqual(message_sk("2026-10-30T12:00:00+00:00", "m1"), "2026-10-30T12:00:00+00:00#m1")
-        self.assertEqual(pair_key("hello", "ada@example.com"), {"pk": "PAIR#hello#ada@example.com", "sk": "PAIR"})
+        key = pair_key("hello", "ada@example.com")
+        self.assertEqual(key["sk"], "PAIR")
+        self.assertRegex(key["pk"], r"^PAIR#[0-9a-f]{64}$")
+
+    def test_pair_keys_cannot_collide_through_a_hash_sign(self):
+        self.assertNotEqual(pair_key("a#b", "c@example.com"), pair_key("a", "b#c@example.com"))
 
 
 class EnsureAlias(Base):
@@ -92,6 +97,19 @@ class Tokens(Base):
         t = self.store.token_for("hello", "ada@example.com")
         self.assertEqual(self.store.pair_for(t), ("hello", "ada@example.com"))
         self.assertIsNone(self.store.pair_for("nosuchtoken22"))
+
+    def test_hash_sign_aliases_get_their_own_tokens(self):
+        t1 = self.store.token_for("a#b", "c@example.com")
+        t2 = self.store.token_for("a", "b#c@example.com")
+        self.assertNotEqual(t1, t2)
+        self.assertEqual(self.store.pair_for(t2), ("a", "b#c@example.com"))
+
+    def test_a_pair_item_pointing_at_another_pairs_token_is_not_trusted(self):
+        other = self.store.token_for("x", "y@example.com")
+        self.table.seed({**pair_key("hello", "ada@example.com"), "token": other})
+        mine = self.store.token_for("hello", "ada@example.com")
+        self.assertNotEqual(mine, other)
+        self.assertEqual(self.store.pair_for(mine), ("hello", "ada@example.com"))
 
     def test_concurrent_first_messages_share_one_token(self):
         # Another invocation wins the pair between our read and our write: our read saw nothing.

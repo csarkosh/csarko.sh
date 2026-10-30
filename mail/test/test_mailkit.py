@@ -203,14 +203,78 @@ class BuildReply(unittest.TestCase):
     def test_thread_and_body_kept(self):
         orig = parse(FIX["gmail-reply"])
         raw, m = self.built()
-        for h in ("Subject", "In-Reply-To", "References", "Date", "Content-Type"):
+        for h in ("Subject", "In-Reply-To", "References", "Content-Type"):
             self.assertEqual(m[h], orig[h], h)
+        self.assertEqual(m["Date"], "Fri, 30 Oct 2026 19:10:00 +0000")  # the same instant, in UTC
         self.assertEqual(payloads(m), payloads(orig))
         src = FIX["gmail-reply"]
         self.assertTrue(raw.endswith(src[src.index(b"\n\n"):]))
 
     def test_each_reply_gets_its_own_message_id(self):
         self.assertNotEqual(self.built()[1]["Message-ID"], self.built()[1]["Message-ID"])
+
+
+class Hardening(unittest.TestCase):
+    """Findings of the automated security review of the first commits (2026-10-30)."""
+
+    ARGS = BuildForward.ARGS
+
+    def header_lines(self, raw):
+        block = raw[: min(i for i in (raw.find(b"\r\n\r\n"), raw.find(b"\n\n")) if i >= 0)]
+        return [line for line in block.replace(b"\r\n", b"\n").split(b"\n") if line[:1] not in (b" ", b"\t")]
+
+    def test_line_break_in_decoded_display_name_cannot_inject_a_header(self):
+        raw = FIX["plain"].replace(b'"Ada Example"', b"=?utf-8?q?Ada=0D=0ABcc=3A_victim=40example.org?=")
+        out = build_forward(raw, **self.ARGS)
+        names = [line.split(b":", 1)[0].lower() for line in self.header_lines(out)]
+        self.assertNotIn(b"bcc", names)
+        self.assertEqual(parse(out)["From"].addresses[0].addr_spec, "hello@csarko.sh")
+
+    def test_lone_lf_in_a_crlf_header_block_cannot_hide_a_header(self):
+        raw = FIX["plain"].replace(b"\n", b"\r\n").replace(b"Subject: Hello there\r\n", b"Subject: Hello there\nDKIM-Signature: v=1; d=evil.example\nX-Alias: admin\r\n")
+        out = build_forward(raw, **self.ARGS)
+        self.assertNotIn(b"evil.example", out[: out.index(b"\r\n\r\n")])
+        self.assertEqual(parse(out).get_all("X-Alias"), ["hello"])
+        self.assertNotIn(b"\n", out[: out.index(b"\r\n\r\n")].replace(b"\r\n", b""))
+
+    def test_incoming_headers_cannot_spoof_ours(self):
+        raw = FIX["plain"].replace(b"Subject:", b"X-Alias: admin\nX-Original-From: boss@example.com\nX-Original-To: ceo@csarko.sh\nX-Original-Reply-To: a@b.c\nX-SES-Verdicts: spam=PASS\nSubject:")
+        m = parse(build_forward(raw, **self.ARGS))
+        self.assertEqual(m.get_all("X-Alias"), ["hello"])
+        self.assertEqual(m.get_all("X-Original-From"), ['"Ada Example" <ada@example.com>'])
+        self.assertEqual(m.get_all("X-Original-To"), ["hello@csarko.sh"])
+        self.assertIsNone(m["X-Original-Reply-To"])
+        self.assertEqual(len(m.get_all("X-SES-Verdicts")), 1)
+
+    def test_two_from_headers_are_not_the_owner(self):
+        raw = FIX["gmail-reply"].replace(b"From: Owner <owner@example.net>", b"From: Owner <owner@example.net>\nFrom: Ada <ada@example.com>")
+        self.assertFalse(is_owner({"source": "owner@example.net"}, {"dmarcVerdict": {"status": "PASS"}}, raw, "owner@example.net"))
+
+    def test_a_from_with_two_addresses_is_not_the_owner(self):
+        raw = FIX["gmail-reply"].replace(b"From: Owner <owner@example.net>", b"From: Owner <owner@example.net>, Ada <ada@example.com>")
+        self.assertFalse(is_owner({"source": "owner@example.net"}, {"dmarcVerdict": {"status": "PASS"}}, raw, "owner@example.net"))
+
+    def reply(self, raw):
+        return parse(build_reply(raw, alias_local="hello", domain="csarko.sh", alias_name=None, external="ada@example.com"))
+
+    def test_reply_drops_the_owners_own_message_ids_from_the_thread_headers(self):
+        raw = FIX["gmail-reply"].replace(b"References: <root@example.com> <plain-1@example.com>",
+                                         b"References: <root@example.com> <CAprev999@mail.gmail.com> <plain-1@example.com>")
+        m = self.reply(raw)
+        self.assertEqual(m["References"], "<root@example.com> <plain-1@example.com>")
+        self.assertEqual(m["In-Reply-To"], "<plain-1@example.com>")
+
+    def test_reply_to_the_owners_own_message_has_no_in_reply_to(self):
+        raw = FIX["gmail-reply"].replace(b"In-Reply-To: <plain-1@example.com>", b"In-Reply-To: <CAprev999@mail.gmail.com>")
+        self.assertIsNone(self.reply(raw)["In-Reply-To"])
+
+    def test_reply_date_is_utc(self):
+        self.assertEqual(self.reply(FIX["gmail-reply"])["Date"], "Fri, 30 Oct 2026 19:10:00 +0000")
+
+    def test_reply_cannot_smuggle_a_header_through_a_lone_lf(self):
+        raw = FIX["gmail-reply"].replace(b"\n", b"\r\n").replace(b"Subject: Re: Hello there\r\n", b"Subject: Re: Hello there\nBcc: victim@example.org\r\n")
+        out = build_reply(raw, alias_local="hello", domain="csarko.sh", alias_name=None, external="ada@example.com")
+        self.assertNotIn(b"victim@example.org", out[: out.index(b"\r\n\r\n")])
 
 
 if __name__ == "__main__":
