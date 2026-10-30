@@ -21,6 +21,7 @@
 import { accountMenu, requireSession } from '/auth.js';
 import { ago, columns, compact, delta, el, errorLine, folded, hold, loading, settle, shortDay, skeleton, table, tile } from '/charts.js';
 import { loadApps, preview, readParam, source, writeParam } from '/data.js';
+import { fadeIn, fadeOut, tokens as motion } from '/motion.js';
 
 const SLUG = 'finance';
 const root = document.getElementById('top');
@@ -603,15 +604,25 @@ function cardShell(def) {
 
 async function loadCard(def, gen, card) {
   const body = card.querySelector('.body');
-  // A rendered card goes back to its skeleton while it reloads, held at the height this view
-  // had last (else the one it has now), so nothing under it moves; see hold() in charts.js.
-  const now = body.querySelector('.skeleton') ? 0 : card.getBoundingClientRect().height;
-  if (now) body.replaceChildren(el('p', { class: 'sr-only' }, 'Loading'), skeleton(def.skeleton));
-  hold(card, def.id, now);
   body.setAttribute('aria-busy', 'true');
   card.querySelector('h2').textContent = def.title(range);
+  const answers = Promise.all(def.queries.map((name) => data.query(app, name, null, { range })));
+  answers.catch(() => {});
+  // A rendered card goes back to its skeleton while it reloads (its content fades out, the
+  // skeleton in), held at the height this view had last, else the one it has now, so nothing
+  // under it moves but by easing; see hold() in charts.js.
+  if (body.querySelector('.skeleton')) hold(card, def.id);
+  else {
+    const now = card.getBoundingClientRect().height;
+    hold(card, def.id, now);
+    await fadeOut(body)?.finished.catch(() => {});
+    if (gen !== generation) return;
+    body.replaceChildren(el('p', { class: 'sr-only' }, 'Loading'), skeleton(def.skeleton));
+    fadeIn(body, motion().short3);
+    hold(card, def.id, now);
+  }
   try {
-    const results = await Promise.all(def.queries.map((name) => data.query(app, name, null, { range })));
+    const results = await answers;
     if (gen !== generation) return;
     const sub = def.sub(range, results[0]);
     card.querySelector('.sub').textContent = sub;
@@ -623,6 +634,7 @@ async function loadCard(def, gen, card) {
   } finally {
     if (gen === generation) {
       body.removeAttribute('aria-busy');
+      fadeIn(body);
       settle(card, def.id);
     }
   }

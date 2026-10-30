@@ -356,7 +356,8 @@ anything related to the admin pages in this repo:
   height it last had in each view (page, query, width to 40 px) in localStorage
   (`admin:hold:…`): `hold()` keeps a waiting card at exactly that height and `settle()` lets
   it go and remembers it, so a view seen before loads with nothing moving, and a range change
-  holds a card at its height instead of collapsing it. A chart keeps its own height from its first
+  holds a card at its height instead of collapsing it (every host page, the Billing page's nine
+  cards included). A chart keeps its own height from its first
   draw. Where a card's height does change (a view never seen, a range or a chip whose content is
   another size), it eases there, and what it remembers is the height it ends at, measured before
   the ease and never during one (`settle()` skips readings while anything in the card eases its
@@ -369,12 +370,15 @@ anything related to the admin pages in this repo:
   screen readers and find-in-page work as before; a click while it moves is taken once it settles,
   so a fold ends as the last click asked, and a fold opened by the browser or a script just opens.
   A card's content fades in over its skeleton; a range or Whose change fades it to the skeleton
-  first. A chip-filtered list (csarko.sh's journeys, Arkos's sessions: `charts.js`
+  first. Every host page does this: the index, csarko.sh's, Arkos IDE's and Billing's (`/finance/`,
+  whose range row, its subscription Save and its many folds move the same way; it has no chip
+  rows, and its charts' tooltips are `charts.js`'s own). A chip-filtered list (csarko.sh's journeys, Arkos's sessions: `charts.js`
   `filteredList()`) glides, each entry matched by its own fields, and a chip that swaps a drawing
   (Arkos's paths) cross-fades. The account menu grows from the button's corner and is inert while
   it fades out; tooltips fade and lift in and glide between marks; the sign-in gate and the page
   swap with a fade through. `check.py --admin` drives all of it in headless Chrome on `?preview`,
-  under reduced motion too, and checks that a warm reload moves no card.
+  under reduced motion too (the Billing page's folds, range change and menu included), and checks
+  that a warm reload moves no card on the index, csarko.sh's, Arkos IDE's or Billing's page.
 - **What Day Hike's page takes from the host** *(2026-10-30)*. It loads `/theme.css` and ships on
   its own schedule, so whichever of the two deploys first, the other's live bundle must still work.
   It depends on: the `--md-easing-*` and `--md-duration-*` tokens (its `motion.ts` reads them off
