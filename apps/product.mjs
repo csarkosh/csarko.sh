@@ -20,11 +20,14 @@
  *   - a Setup step "1. **[Download `x`](…)**", as the release's download buttons; without one,
  *     a line naming the release under `## Install`;
  *   - each ```mermaid flowchart, as a static row of steps (the CSP allows no Mermaid);
- *   - relative links, as links to the file on GitHub.
+ *   - relative links, as links to the file on GitHub;
+ *   - the README's Buy me tokens line, dropped first: the page's bar carries its own.
  * HTML left over after that fails the build by name, rather than reaching the page as text.
  */
 
 import { APPS_HOST, escapeHtml, renderMarkdown, standaloneShell } from '../.agents/skills/site-quality/scripts/docs_lib.mjs';
+import { doorOf, DONATE_URL } from '../admin/api/src/donate/doors.mjs';
+import { iconSvg } from '../donate/icon.mjs';
 
 export class ProductError extends Error {}
 
@@ -138,7 +141,9 @@ const dedent = (text) => {
  * `blob` is the GitHub URL relative links resolve against ("https://github.com/o/r/blob/main/").
  */
 export function prepareReadme(readme, { blob, sections = null, install = null }) {
-  let text = readme.replace(/\r\n/g, '\n');
+  // The Buy me tokens snippet, a line that is only a link to donate.csarko.sh (with or without
+  // the icon's <img>), goes before anything else reads the text: the bar carries the link.
+  let text = readme.replace(/\r\n/g, '\n').replace(/^\[[^\]\n]*\]\(https:\/\/donate\.csarko\.sh[^)\s]*\)[ \t]*(?:\n|$)/gm, '');
   const htmlTitle = /^<h1\b[^>]*>([\s\S]*?)<\/h1>[ \t]*$/m.exec(text);
   if (htmlTitle) text = text.replace(htmlTitle[0], `# ${htmlTitle[1].trim()}`);
 
@@ -265,12 +270,15 @@ export function productPage({ app, prepared, release, images, theme }) {
     author: { '@type': 'Person', '@id': 'https://csarko.sh/#person', name: 'Cyrus Sarkosh', url: 'https://csarko.sh/' },
   }];
   const rail = doc.rail.map((s) => `        <li><a href="#${s.id}"><span>${escapeHtml(s.text)}</span></a></li>`).join('\n');
-  // The bar's links: the section with the downloads or the install commands, the source, and
-  // the release, so the page says what it is before the first scroll.
+  // The bar's links: the section with the downloads or the install commands, the source, Buy me
+  // tokens once the app's door has shipped, and the release, so the page says what it is before
+  // the first scroll.
   const getIt = doc.rail.find((s) => /^(setup|install|download|get)/i.test(s.text));
+  const door = doorOf(app.slug);
   const links = [
     ...(getIt ? [[prepared.downloads ? 'Download' : 'Install', `#${getIt.id}`]] : []),
     ...(app.repo ? [['GitHub', app.repo, true]] : []),
+    ...(door?.shipped ? [['Buy me tokens', `${DONATE_URL}${door.path}`, true, iconSvg()]] : []),
     [release.tag, release.url, true],
   ];
   const main = `  <div class="wrap shell">
@@ -326,7 +334,11 @@ const PRODUCT_CSS = `
     .app-bar ul li:last-child a { font-family: var(--mono); font-size: 12.5px; padding: 3px 9px; border: 1px solid var(--border-strong); border-radius: 999px; }
     footer .maker { color: var(--muted); }
     footer .maker:hover { color: var(--text); }
-    @media (max-width: 640px) { .app-bar ul { gap: 14px; } .app-bar ul a { font-size: 13.5px; } }
+    /* On a phone the bar wraps: the links drop to their own row when they do not fit beside the
+       name, and onto a second when they do not fit the width, every one kept, the version
+       included. Only the vertical padding is set, so .wrap keeps its side gutter. Two rows of
+       links make the bar about 113px tall at 320px, so an anchor clears it by 136px, not 84px. */
+    @media (max-width: 640px) { html { scroll-padding-top: 136px; } .app-bar .wrap { flex-wrap: wrap; height: auto; padding-top: 10px; padding-bottom: 10px; row-gap: 6px; } .app-bar ul { flex-wrap: wrap; gap: 6px 14px; } .app-bar ul a { font-size: 13.5px; } }
     @media (prefers-reduced-motion: reduce) { .app-bar ul a { transition: none; } }
     .hero-figure { margin: 8px 0 36px; }
     .hero-figure img { display: block; width: 100%; height: auto; border-radius: 14px; }

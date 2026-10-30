@@ -667,6 +667,17 @@ test('an app card links out to its page, with SoftwareApplication JSON-LD', () =
   assert.equal(first.item.operatingSystem, 'Linux, macOS');
 });
 
+test('every shipped project card carries one quiet Buy me tokens link to its door; Day Hike none yet; the symbol once', () => {
+  const html = projectsPage([game('day-hike'), app('ide-arkos', ['repo: https://github.com/csarkosh/ide-arkos']), film('the-last-trail')], themeBlocks(INDEX));
+  assert.equal((html.match(/<symbol id="tokens-icon"/g) || []).length, 1);
+  assert.ok(html.includes('<a class="card-tokens" href="https://donate.csarko.sh/arkos" data-visits-event="tokens-ide-arkos"><svg class="tokens-icon" aria-hidden="true"><use href="#tokens-icon"/></svg>Buy me tokens</a>'));
+  assert.ok(html.includes('href="https://donate.csarko.sh/last-trail" data-visits-event="tokens-the-last-trail"'));
+  assert.ok(!html.includes('tokens-day-hike'));
+  const card = html.slice(html.indexOf('id="ide-arkos"'), html.indexOf('</li>\n', html.indexOf('id="ide-arkos"')));
+  assert.equal((card.match(/Buy me tokens/g) || []).length, 1);
+  assert.ok(html.indexOf('card-source') < html.indexOf('card-tokens'), 'after Source on GitHub');
+});
+
 test('standaloneShell wears none of the site\'s chrome: its own bar, its own footer, one credit', () => {
   const html = standaloneShell({ title: 'x: a thing', ogTitle: 'x', description: 'd', canonical: 'https://apps.csarko.sh/x', graph: [], theme: themeBlocks(INDEX),
     name: 'x', links: [['Download', '#setup'], ['GitHub', 'https://github.com/o/r', true]], licence: 'MIT', main: '<main id="top"></main>' });

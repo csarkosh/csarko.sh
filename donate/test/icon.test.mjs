@@ -24,7 +24,7 @@ test('the cleft is about a quarter deep, the lobes start near the top, the token
   }
 });
 
-test('the SVG is crisp, hidden from readers, one rect per run, and the symbol and use agree', () => {
+test('the SVG is crisp, hidden from readers, one path per colour that paints the map, and the symbol and use agree', () => {
   const svg = iconSvg();
   assert.ok(svg.startsWith('<svg viewBox="0 0 32 22" shape-rendering="crispEdges" aria-hidden="true" class="tokens-icon">'));
   assert.ok(svg.includes('fill="#e5484d"'));
@@ -32,7 +32,20 @@ test('the SVG is crisp, hidden from readers, one rect per run, and the symbol an
   assert.ok(iconSymbol().includes('<symbol id="tokens-icon" viewBox="0 0 32 22"'));
   assert.equal(iconUse(), '<svg class="tokens-icon" aria-hidden="true"><use href="#tokens-icon"/></svg>');
   assert.ok(ICON_CSS.includes('height: 1em') && ICON_CSS.includes('margin-right: 0.35em'));
-  const rects = (svg.match(/<rect /g) || []).length;
-  const runs = PIXELS.reduce((n, row) => n + (row.match(/([^.])\1*/g) || []).length, 0);
-  assert.equal(rects, runs);
+  assert.ok(!svg.includes('<rect'));
+  const paths = [...svg.matchAll(/<path fill="(#[0-9a-f]{6})" d="([^"]*)"\/>/g)];
+  assert.equal(paths.length, (svg.match(/<path /g) || []).length, 'every path is fill then d');
+  const fills = paths.map(([, fill]) => fill);
+  assert.equal(new Set(fills).size, fills.length, 'at most one path per colour');
+  const letterOf = Object.fromEntries(Object.entries(PALETTE).map(([letter, hex]) => [hex, letter]));
+  const grid = Array.from({ length: 22 }, () => Array(32).fill('.'));
+  for (const [, fill, d] of paths) {
+    const segments = [...d.matchAll(/M(\d+) (\d+)h(\d+)v1h-(\d+)z/g)];
+    assert.equal(segments.map((m) => m[0]).join(''), d, 'the d is only M x y h w v1 h-w z segments');
+    for (const [, x, y, w, back] of segments) {
+      assert.equal(w, back);
+      for (let i = 0; i < Number(w); i++) grid[Number(y)][Number(x) + i] = letterOf[fill];
+    }
+  }
+  assert.deepEqual(grid.map((row) => row.join('')), PIXELS);
 });

@@ -2,6 +2,8 @@
 // build_docs.mjs does the file I/O. Nothing here reads the clock or the disk, so the same
 // sources always produce the same bytes. Tests: ../tests/docs_lib.test.mjs (node --test).
 import { Marked } from './vendor/marked.esm.mjs';
+import { doorOf, DONATE_URL } from '../../../../admin/api/src/donate/doors.mjs';
+import { ICON_CSS, iconSymbol, iconUse } from '../../../../donate/icon.mjs';
 
 export const SITE = 'https://csarko.sh';
 // Where the docs are served: /research/<slug> and the /research index, built into public/research/.
@@ -870,6 +872,10 @@ const PROJECTS_CSS = `
     .card-source { position: relative; z-index: 1; font-size: 14px; font-weight: 500; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; transition: color var(--md-duration-short3) var(--md-easing-standard), text-decoration-color var(--md-duration-short3) var(--md-easing-standard); }
     .card-source:hover, .card-source:focus-visible { color: var(--accent); text-decoration-color: var(--accent); }
     .card-source svg { width: 14px; height: 14px; }
+    /* Buy me tokens: last in the row, body-text weight, grey until hovered; never the accent. */
+    .card-tokens { position: relative; z-index: 1; display: inline-flex; align-items: center; font-size: 14px; font-weight: 400; color: var(--muted); text-decoration: none; }
+    .card-tokens:hover, .card-tokens:focus-visible { color: var(--text); }
+    ${ICON_CSS}
     @media (max-width: 640px) {
       .project-card { flex-direction: column; gap: 0; }
       .project-card .project-body { display: contents; }
@@ -1328,13 +1334,22 @@ function sourceLink(project) {
     : '';
 }
 
+// Last in the row, one quiet line to the project's door on donate.csarko.sh, once the door has
+// shipped (Day Hike's has not). Lifted above the overlay like the source link; counts tokens-<slug>.
+function tokensLink(project) {
+  const door = doorOf(project.slug);
+  return door?.shipped
+    ? `<a class="card-tokens" href="${DONATE_URL}${door.path}" data-visits-event="tokens-${project.slug}">${iconUse()}Buy me tokens</a>`
+    : '';
+}
+
 // One card, whatever the kind: its picture (a film's poster, or a game's or an app's preview when
 // it has an alt), the kicker (a game's status, an app's status and licence, a film's runtime), the
 // title, a film's content warning, the copy, the tags and the link. Its id is the slug, so
 // /projects#<slug> lands on it.
 function projectCard(project, pad) {
   const media = project.kind === 'film' ? filmPoster(project, `${pad}  `) : project.alt ? preview(project, `${pad}  `) : '';
-  const links = [cardLink(project), sourceLink(project)].filter(Boolean);
+  const links = [cardLink(project), sourceLink(project), tokensLink(project)].filter(Boolean);
   const link = links.length ? `<div class="card-links">${links.join(' ')}</div>` : '';
   const notice = project.kind === 'film' ? `${pad}    <p class="film-notice">${WARNING_ICON}${escapeHtml(FILM_NOTICE)}</p>\n` : '';
   return `${pad}<li class="card${media ? ' project-card' : ''}" id="${project.slug}" data-kind="${kindValue(project.kind)}">
@@ -1400,7 +1415,7 @@ ${nav(`/${PROJECTS_DIR}`)}
 ${crumbs(trail)}
 
   <main id="top" class="wrap docs-index" tabindex="-1">
-    <header class="doc-header">
+${projects.some(tokensLink) ? `    ${iconSymbol()}\n` : ''}    <header class="doc-header">
       <p class="eyebrow">${PROJECTS_TITLE}</p>
       <h1>${escapeHtml(PROJECTS_HEADING)}</h1>
       <p class="lead">${escapeHtml(PROJECTS_LEAD)}</p>
@@ -1419,12 +1434,13 @@ ${FOOTER}`;
  * games.csarko.sh/dayhike is the game's. It shares the site's head, tokens, fonts and type, but
  * none of its chrome: no nav, no trail, no wordmark. Its bar carries the app's name and a few
  * links of its own; its footer credits the maker once and names the licence. `main` is the
- * page's own markup inside <body>.
+ * page's own markup inside <body>. A link is [label, href, external, icon], the icon's HTML
+ * drawn inside the anchor before the label.
  */
 export function standaloneShell({ title, ogTitle, description, canonical, ogType = 'website', extraCss = '', graph, theme, name, links = [], licence = '', main, bodyClass = '' }) {
-  const bar = links.map(([label, href, external]) =>
-    `        <li><a href="${escapeHtml(href)}"${external ? ' class="external" target="_blank" rel="noopener"' : ''}>${escapeHtml(label)}</a></li>`).join('\n');
-  return `${head({ title, ogTitle, description, canonical, ogType, extraCss, graph, theme })}
+  const bar = links.map(([label, href, external, icon = '']) =>
+    `        <li><a href="${escapeHtml(href)}"${external ? ' class="external" target="_blank" rel="noopener"' : ''}>${icon}${escapeHtml(label)}</a></li>`).join('\n');
+  return `${head({ title, ogTitle, description, canonical, ogType, extraCss: `${extraCss}\n    ${ICON_CSS}`, graph, theme })}
 <body${bodyClass ? ` class="${bodyClass}"` : ''}>
   <a class="skip-link" href="#top">Skip to content</a>
   <header class="app-bar">

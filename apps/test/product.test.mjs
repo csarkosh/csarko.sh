@@ -110,6 +110,18 @@ test('productPage puts the buttons in Setup, the flow in its place and everythin
   assert.ok(!html.includes('@@'));
 });
 
+test('the bar carries Buy me tokens with the icon, and the README snippet is dropped so it reads once', () => {
+  const app = { slug: 'lib-visits', title: 'lib-visits', description: 'Cookieless web analytics: a small script and a static collector, as JSON lines for your logs.', kicker: 'Released · Open source, GPL-3.0', license: 'GPL-3.0', repo: 'https://github.com/o/r', platforms: 'Linux, macOS' };
+  const readme = `${README}\n\n[<img src="https://donate.csarko.sh/icon.svg" alt="" height="16"> Buy me tokens](https://donate.csarko.sh/visits)\n\n## License\n\nGPL-3.0\n`;
+  const prepared = prepareReadme(readme, { blob: BLOB });
+  const images = Object.fromEntries(imagesOf(prepared).map((p) => [p, { url: `/lib-visits/${p.split('/').pop().replace('.png', '.webp')}`, width: 1904, height: 893 }]));
+  assert.ok(!prepared.text.includes('donate.csarko.sh'));
+  const html = productPage({ app, prepared, release: RELEASE, images, theme: THEME });
+  assert.equal((html.match(/Buy me tokens/g) || []).length, 1);
+  assert.ok(/<li><a href="https:\/\/donate\.csarko\.sh\/visits" class="external" target="_blank" rel="noopener"><svg viewBox="0 0 32 22" shape-rendering="crispEdges"[^>]*><path [\s\S]*?<\/svg>Buy me tokens<\/a><\/li>/.test(html));
+  assert.ok(html.indexOf('>GitHub</a>') < html.indexOf('Buy me tokens') && html.indexOf('Buy me tokens') < html.indexOf(`>${RELEASE.tag}</a>`));
+});
+
 // MacStats' README: an HTML title and hero, a centred paragraph, a table of panels, an Install
 // section and relative links, with a release that carries no assets.
 const MAC = `<h1 align="center">MacStats</h1>
