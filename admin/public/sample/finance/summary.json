@@ -1,0 +1,11 @@
+{
+  "at": "2026-10-28T23:10:00Z",
+  "month": "2026-10",
+  "goalUsd": 5,
+  "total": { "mtd": 135.02, "forecast": 151.85, "lastMonth": 117.38, "idleRunRate": 10.62 },
+  "providers": [
+    { "provider": "aws", "label": "AWS", "mtd": 30.96, "forecast": 32.38, "lastMonth": 94.34, "lastDay": "2026-10-27" },
+    { "provider": "gcp", "label": "Google Cloud", "mtd": 104.05, "forecast": 119.47, "lastMonth": 23.04, "lastDay": "2026-10-27" },
+    { "provider": "github", "label": "GitHub", "mtd": 0, "forecast": 0, "lastMonth": 0, "lastDay": "2026-10-27", "gross": 73.67 }
+  ]
+}

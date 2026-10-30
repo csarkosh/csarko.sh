@@ -1,0 +1,9 @@
+{
+  "items": [
+    { "key": "rigHours", "label": "Rig hours", "quantity": 40.3, "unit": "h", "cost": 21.2, "unitPrice": 0.526, "per": "an hour" },
+    { "key": "egressGiB", "label": "Hosting egress", "quantity": 134.96, "unit": "GiB", "cost": 18.76, "unitPrice": 0.139, "per": "a GiB" },
+    { "key": "cloudRunCpuHours", "label": "Cloud Run CPU", "quantity": 118.13, "unit": "h", "cost": 3.43, "unitPrice": 0.029, "per": "an hour, after the free tier" },
+    { "key": "ciMinutes", "label": "CI minutes", "quantity": 9185, "unit": "min", "cost": 0, "gross": 73.67, "unitPrice": 0.008, "per": "a Linux minute if private" },
+    { "key": "aiGenerations", "label": "AI generations", "quantity": 648, "unit": "", "cost": 64.8, "unitPrice": 0.1, "per": "a clip" }
+  ]
+}

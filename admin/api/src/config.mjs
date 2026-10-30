@@ -69,6 +69,17 @@ export function readConfig(env = process.env, log = console) {
     youtube: { key: secret(env.YOUTUBE_KEY), handle: text(env.YOUTUBE_HANDLE, "csarkosh") },
     github: { token: secret(env.GITHUB_TOKEN), owner: text(env.GITHUB_OWNER, DEFAULT_GITHUB_OWNER) },
     psiKey: secret(env.PSI_KEY),
+    // The finance page: the AWS role the service assumes by web identity federation (no key
+    // stored) and the Google ID token's audience it trusts, the local escape hatch, the GCP
+    // billing export's dataset and table, and the idle goal in dollars a month.
+    finance: {
+      awsRoleArn: text(env.AWS_COST_ROLE_ARN),
+      awsAudience: text(env.AWS_COST_AUDIENCE),
+      awsLocal: env.AWS_COST_LOCAL === "1",
+      billingDataset: text(env.BILLING_DATASET, ""),
+      billingTable: text(env.BILLING_TABLE, ""),
+      goalUsd: Number(text(env.FINANCE_GOAL_USD, "5")),
+    },
     siteUrl,
     sitemapUrl: text(env.SITEMAP_URL, `${siteUrl}/sitemap.xml`),
     hostingSite: text(env.HOSTING_SITE, "csarko-sh"),

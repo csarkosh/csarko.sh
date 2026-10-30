@@ -1,0 +1,16 @@
+{
+  "sources": [
+    {
+      "key": "aws",
+      "label": "AWS Cost Explorer",
+      "configured": true,
+      "lastDay": "2026-10-27",
+      "snapshotAt": "2026-10-28T10:00:00Z",
+      "callsThisMonth": 84,
+      "callCostUsd": 0.84,
+      "note": "Two calls a day from the snapshot job, $0.01 each; a third for the forecast until the 28th."
+    },
+    { "key": "gcp", "label": "Google Cloud billing export", "configured": true, "lastDay": "2026-10-27", "snapshotAt": null, "callsThisMonth": null, "callCostUsd": null, "note": "BigQuery, read live; rows from 2026-10-29 on." },
+    { "key": "github", "label": "GitHub usage", "configured": true, "lastDay": "2026-10-27", "snapshotAt": "2026-10-28T10:00:00Z", "callsThisMonth": null, "callCostUsd": null, "note": "From the snapshot; public repositories bill $0." }
+  ]
+}

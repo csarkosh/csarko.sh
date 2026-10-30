@@ -1,0 +1,20 @@
+{
+  "runRate": 10.62,
+  "goalUsd": 5,
+  "asOf": "2026-10-27",
+  "lines": [
+    { "provider": "aws", "line": "EBS:VolumeUsage.gp3", "category": "storage", "where": "us-east-1", "perDay": 0.1707, "perMonth": 5.12, "stoppedOn": null },
+    { "provider": "aws", "line": "USW2-EBS:SnapshotUsage", "category": "storage", "where": "us-west-2", "perDay": 0.076, "perMonth": 2.28, "stoppedOn": null },
+    { "provider": "aws", "line": "HostedZone", "category": "dns", "where": "global", "perDay": 0.0333, "perMonth": 1, "stoppedOn": null },
+    { "provider": "aws", "line": "us-west-2-KMS-Keys", "category": "dns", "where": "us-west-2", "perDay": 0.0333, "perMonth": 1, "stoppedOn": null },
+    { "provider": "aws", "line": "USE1-AWSSecretsManager-Secrets", "category": "dns", "where": "us-east-1", "perDay": 0.0133, "perMonth": 0.4, "stoppedOn": null },
+    { "provider": "aws", "line": "USE1-EBS:SnapshotUsage", "category": "storage", "where": "us-east-1", "perDay": 0.0097, "perMonth": 0.29, "stoppedOn": null },
+    { "provider": "gcp", "line": "Balanced PD Capacity", "category": "storage", "where": "fps-csarko", "perDay": 0.004, "perMonth": 0.12, "stoppedOn": null },
+    { "provider": "gcp", "line": "Standard Storage US Multi-region", "category": "storage", "where": "csarko-sh", "perDay": 0.004, "perMonth": 0.12, "stoppedOn": null },
+    { "provider": "gcp", "line": "Storage", "category": "storage", "where": "csarko-sh", "perDay": 0.004, "perMonth": 0.12, "stoppedOn": null },
+    { "provider": "aws", "line": "USW2-TimedStorage-ByteHrs", "category": "storage", "where": "us-west-2", "perDay": 0.003, "perMonth": 0.09, "stoppedOn": null },
+    { "provider": "aws", "line": "USE2-EBS:SnapshotUsage", "category": "storage", "where": "us-east-2", "perDay": 0.0021, "perMonth": 0.06, "stoppedOn": null },
+    { "provider": "aws", "line": "USW2-Requests-Tier2", "category": "storage", "where": "us-west-2", "perDay": 0.0005, "perMonth": 0.02, "stoppedOn": null },
+    { "provider": "gcp", "line": "Cloud Load Balancer Forwarding Rule Minimum Global", "category": "loadBalancing", "where": "magicpixel-487014", "perDay": 0, "perMonth": 0, "stoppedOn": "2026-10-18" }
+  ]
+}

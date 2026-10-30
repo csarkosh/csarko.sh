@@ -17,10 +17,14 @@ import { createAdminAuth, createOidcVerifier } from "./auth.mjs";
 import { createApp } from "./app.mjs";
 import { createQueries } from "./queries.mjs";
 import { createArkosQueries } from "./arkos-queries.mjs";
+import { createFinanceQueries } from "./finance-queries.mjs";
 import { createMemoryStore, createFirestoreStore } from "./store.mjs";
 import { BigQuery } from "@google-cloud/bigquery";
 import { createVisits } from "./collectors/visits.mjs";
 import { createArkos } from "./collectors/arkos.mjs";
+import { createAwsCost } from "./collectors/aws-cost.mjs";
+import { createGcpBilling } from "./collectors/gcp-billing.mjs";
+import { createGitHubBilling } from "./collectors/github-billing.mjs";
 import { createGsc } from "./collectors/gsc.mjs";
 import { createYouTube } from "./collectors/youtube.mjs";
 import { createGitHub } from "./collectors/github.mjs";
@@ -37,8 +41,20 @@ const log = console;
 
 const store = process.env.ADMIN_STORE === "memory" ? createMemoryStore() : await createFirestoreStore({ projectId: config.projectId, log });
 
-// One client for the site's visits and Arkos's rows: both live in the lib-visits log bucket's dataset.
-const bigquery = config.visits.dataset ? new BigQuery({ projectId: config.projectId }) : null;
+// One client for the site's visits and Arkos's rows (both in the lib-visits log bucket's dataset)
+// and for the GCP billing export (its own dataset, the finance page).
+const bigquery = config.visits.dataset || config.finance.billingDataset ? new BigQuery({ projectId: config.projectId }) : null;
+
+// The finance page's sources: Cost Explorer (called by the snapshot job only; $0.01 a call), the
+// billing export in BigQuery (live) and GitHub's usage endpoint (the snapshot job again).
+const finance = createFinanceQueries({
+  awsCost: createAwsCost({ roleArn: config.finance.awsRoleArn, audience: config.finance.awsAudience, local: config.finance.awsLocal, fetch, log }),
+  gcpBilling: createGcpBilling({ bigquery, projectId: config.projectId, dataset: config.finance.billingDataset, table: config.finance.billingTable, cache }),
+  githubBilling: createGitHubBilling({ token: config.github.token, owner: config.github.owner, fetch, cache }),
+  store,
+  goalUsd: config.finance.goalUsd,
+  log,
+});
 
 const queries = createQueries({
   visits: createVisits({ bigquery, projectId: config.projectId, dataset: config.visits.dataset, historyDataset: config.visits.historyDataset, historyUntil: config.visits.historyUntil, cache, log }),
@@ -52,6 +68,7 @@ const queries = createQueries({
   sitemap: createSitemap({ url: config.sitemapUrl, fetch, cache }),
   store,
   config,
+  finance,
   log,
 });
 
@@ -65,6 +82,7 @@ const app = createApp({
   config,
   queries,
   arkos,
+  finance,
   limiter,
   adminAuth: createAdminAuth({ projectId: config.firebaseProject, allowed: config.adminEmails }),
   oidc: createOidcVerifier({ invoker: config.snapshotInvoker }),
@@ -79,6 +97,8 @@ const unconfigured = [
   config.youtube.key === null && "YOUTUBE_KEY",
   config.github.token === null && "GITHUB_TOKEN",
   config.psiKey === null && "PSI_KEY",
+  !config.finance.awsRoleArn && !config.finance.awsLocal && "AWS_COST_ROLE_ARN",
+  !(config.finance.billingDataset && config.finance.billingTable) && "BILLING_DATASET",
 ].filter(Boolean);
 if (unconfigured.length > 0) log.warn(`admin: not configured, their sections will read null: ${unconfigured.join(", ")}`);
 

@@ -490,6 +490,128 @@ image and commit so the offsets can be symbolicated (`atos`). `lost` is session 
 whose `end` is `lost` (crashes not reported, force quits included). `byVersion` joins
 crash reports and sessions by `ver`.
 
+## Finance: `GET <api>/finance/admin/kpis` and `/finance/admin/query/<name>?range=month|last|90|13m`
+
+The cloud spend page (`docs/superpowers/specs/2026-10-29-finance-admin-page-design.md`), served
+by `csarko-admin` under the prefix `/finance`, as Arkos's is under `/arkos`. Three sources: AWS
+Cost Explorer (read once a day by the snapshot job, never on a request: each call costs $0.01),
+the GCP billing export in BigQuery (`csarko-sh.billing`, rows from 2026-10-29 on), and GitHub's
+usage endpoint (from the snapshot too). Every amount is US dollars net of credits, a number,
+rounded to cents; a day is the provider's own UTC billing day, which the page says. `range` is
+`month` (the current calendar month), `last` (the previous one), `90` (the current month and the
+two before) or `13m` (thirteen months); `daily` and `idle` ignore it. A part whose source is
+missing is `null` with `notConfigured: { "<part>": "<ENV NAME>" }` (`aws` → `AWS_COST_ROLE_ARN`,
+`gcp` → `BILLING_DATASET`, `github` → `GITHUB_TOKEN`); one that failed is `null` with `errors`.
+The `providers` keys are `aws`, `gcp` and `github`; the categories and their fixed order are
+`compute`, `serverless`, `hosting`, `loadBalancing`, `storage`, `ai`, `dns`, `domains`, `ci`,
+`tax`, `other` (`admin/api/src/finance/categories.mjs`; each is `idle`, `activity` or `fixed`).
+
+### `kpis`
+
+The index card: `monthToDate`, `idleRunRate` (`good: "down"`, the goal in its `label`),
+`last30`, `forecast`; trends from the daily snapshots; health `good` when the idle run-rate is
+at or under the goal and no day of the last 7 is over three times its trailing median,
+`warning` when the run-rate is over the goal, `critical` when a day of the last 7 is over $20
+with no compute or AI line to explain it.
+
+### `summary`
+
+```json
+{
+  "at": "2026-10-29T23:10:00Z", "month": "2026-10", "goalUsd": 5,
+  "total": { "mtd": 140.56, "forecast": 151.2, "lastMonth": 24.9, "idleRunRate": 1.05 },
+  "providers": [
+    { "provider": "aws", "label": "AWS", "mtd": 31.63, "forecast": 33.1, "lastMonth": 88.93, "lastDay": "2026-10-29" },
+    { "provider": "gcp", "label": "Google Cloud", "mtd": 108.93, "forecast": 118.1, "lastMonth": 19.62, "lastDay": "2026-10-28" },
+    { "provider": "github", "label": "GitHub", "mtd": 0, "forecast": 0, "lastMonth": 0, "lastDay": "2026-10-29", "gross": 73.48 }
+  ]
+}
+```
+
+With `range=last` the month is the previous one and `forecast` is `null`. A provider's `mtd`
+is `null` when it is not configured; `total.*` sums what is there. `github.gross` is what the
+month would cost on private repositories.
+
+### `categories`
+
+```json
+{
+  "months": ["2026-08", "2026-09", "2026-10"],
+  "categories": [
+    { "key": "compute", "label": "Compute", "kind": "activity", "byMonth": [0, 7.7, 26.48] },
+    { "key": "hosting", "label": "Hosting and bandwidth", "kind": "activity", "byMonth": [0.06, 0.93, 18.92] }
+  ],
+  "partial": ["2026-08", "2026-09"],
+  "other": [ { "provider": "gcp", "line": "Some new SKU", "amount": 0.4 } ]
+}
+```
+
+One entry a category, every category present, `byMonth` aligned with `months` (0 where nothing
+billed, never null). `partial` lists the months in the range that have AWS and GitHub only (the
+GCP export has no days before 2026-10-29). `other` is every unmapped line with its month's amount,
+so the categories table gains a row.
+
+### `idle`
+
+```json
+{
+  "runRate": 1.05, "goalUsd": 5, "asOf": "2026-10-29",
+  "lines": [
+    { "provider": "aws", "line": "USE1-EBS:SnapshotUsage", "category": "storage", "where": "us-east-1", "perDay": 0.0097, "perMonth": 0.29, "stoppedOn": null },
+    { "provider": "gcp", "line": "Cloud Load Balancer Forwarding Rule Minimum Global", "category": "loadBalancing", "where": "magicpixel-487014", "perDay": 0, "perMonth": 0, "stoppedOn": "2026-10-28" }
+  ]
+}
+```
+
+Every line whose category is `idle`, `perDay` its average over the last seven billed days and
+`perMonth` that times 30, sorted by `perMonth` then by name; `runRate` their sum. A line that
+billed in the seven days before those and not since is kept for seven days with `stoppedOn`,
+the last day it billed. `where` is the AWS region or the GCP project id.
+
+### `daily`
+
+```json
+{
+  "days": [
+    { "day": "2026-10-26", "aws": 0.57, "gcp": 26.15, "github": 0, "total": 26.72, "median14": 1.1, "flagged": true,
+      "top": { "provider": "gcp", "line": "Veo 3 Fast 720p Audio Video Generation", "amount": 24.4 } }
+  ]
+}
+```
+
+The last 60 days ending on the latest day any source has, every day present (0 where nothing
+billed, `null` for a provider not configured). `median14` is the median of the 14 days before;
+`flagged` when `total` is over three times it and over $1; `top` is the day's largest line.
+
+### `activity`
+
+```json
+{
+  "items": [
+    { "key": "rigHours", "label": "Rig hours", "quantity": 40.3, "unit": "h", "cost": 21.24, "unitPrice": 0.526, "per": "an hour" },
+    { "key": "egressGiB", "label": "Hosting egress", "quantity": 134.96, "unit": "GiB", "cost": 18.76, "unitPrice": 0.139, "per": "a GiB" },
+    { "key": "cloudRunCpuHours", "label": "Cloud Run CPU", "quantity": 118.1, "unit": "h", "cost": 3.43, "unitPrice": 0.029, "per": "an hour, after the free tier" },
+    { "key": "ciMinutes", "label": "CI minutes", "quantity": 9602, "unit": "min", "cost": 0, "gross": 73.48, "unitPrice": 0.006, "per": "a Linux minute if private" },
+    { "key": "aiGenerations", "label": "AI generations", "quantity": 648, "unit": "", "cost": 64.8, "unitPrice": 0.1, "per": "a clip" }
+  ]
+}
+```
+
+Five items always, in this order, for the range; `quantity` and `cost` are `null` when the
+source is not configured, `unitPrice` is `cost / quantity` (null when the quantity is 0).
+
+### `sources`
+
+```json
+{
+  "sources": [
+    { "key": "aws", "label": "AWS Cost Explorer", "configured": true, "lastDay": "2026-10-29", "snapshotAt": "2026-10-30T10:00:00Z", "callsThisMonth": 4, "callCostUsd": 0.04, "note": "Two calls a day from the snapshot job, $0.01 each." },
+    { "key": "gcp", "label": "Google Cloud billing export", "configured": true, "lastDay": "2026-10-28", "snapshotAt": null, "callsThisMonth": null, "callCostUsd": null, "note": "BigQuery, read live; rows from 2026-10-29 on." },
+    { "key": "github", "label": "GitHub usage", "configured": true, "lastDay": "2026-10-29", "snapshotAt": "2026-10-30T10:00:00Z", "callsThisMonth": null, "callCostUsd": null, "note": "From the snapshot; public repositories bill $0." }
+  ]
+}
+```
+
 ## Auth: what `/auth.js` exports
 
 The shell's `public/auth.js` is the one auth surface on the admin host; every app page

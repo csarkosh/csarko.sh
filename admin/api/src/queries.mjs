@@ -3,7 +3,8 @@
  * one asks the collectors it needs and shapes the answer for the page
  * (`admin/CONTRACT.md`). Nothing here talks to the network directly; the
  * collectors do, through the shared cache, so this file is tested with
- * fakes.
+ * fakes. The snapshot also runs the finance step when `finance`
+ * (finance-queries.mjs) is given, merging its part into the day's document.
  *
  * Two conventions keep a half-configured service useful. A source whose
  * credential is missing yields `null` for its part of the answer and a
@@ -76,7 +77,7 @@ export function snapshotAgo(snapshots, today, daysAgo = 7) {
   return pick;
 }
 
-export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, hosting, sitemap, store, config, now = Date.now, log = console }) {
+export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, hosting, sitemap, store, config, finance = null, now = Date.now, log = console }) {
   /** Runs one part of an answer, reporting a missing credential or a failure instead of throwing. */
   async function part(hints, name, envName, configured, fn) {
     if (!configured) {
@@ -327,6 +328,10 @@ export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, h
       // The one place the sitemap's URLs are inspected (5 to 7 s each, in
       // parallel): once a day here, read by health() and search() after.
       const indexed = urls === null ? null : await part(h, "indexed", "GSC_SA_KEY", gsc.configured, () => gsc.indexedOf(urls));
+      // The finance step (finance-queries.mjs `snapshotPart`): the day's Cost Explorer calls and
+      // GitHub usage, stored under `finance`. Its own sources carry their own hints inside it; a
+      // failure of the step as a whole is `errors.finance` and the rest of the day is still written.
+      const financePart = finance === null ? null : await part(h, "finance", "AWS_COST_ROLE_ARN", true, () => finance.snapshotPart());
       const githubDoc = {};
       for (const r of repos ?? []) {
         githubDoc[r.repo] = { stars: r.stars, views14: r.traffic?.views ?? null, uniques14: r.traffic?.uniques ?? null, clones14: r.traffic?.clones ?? null };
@@ -346,6 +351,7 @@ export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, h
         indexed: indexed === null ? null : { indexed: indexed.indexed, total: indexed.total, missing: indexed.missing },
         up: live.up,
         ttfbMs: live.ttfbMs,
+        ...(financePart ?? {}),
         ...(Object.keys(h.notConfigured).length > 0 ? { notConfigured: h.notConfigured } : {}),
         ...(Object.keys(h.errors).length > 0 ? { errors: h.errors } : {}),
       };
