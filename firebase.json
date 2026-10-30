@@ -27,8 +27,13 @@
           "type": 301
         },
         {
-          "source": "/apps/:file*",
+          "regex": "^/apps/(?P<file>[^/]+\\.(?:jpg|jpeg|png|webp|avif))$",
           "destination": "/projects/:file",
+          "type": 301
+        },
+        {
+          "source": "/apps/**",
+          "destination": "/projects?filter=apps",
           "type": 301
         },
         {

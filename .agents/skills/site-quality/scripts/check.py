@@ -872,6 +872,9 @@ def live_checks(base):
             s, h, _ = fetch(f"{base}/{d}")
             # Each lands with its own kind's chip checked (Cyrus, 2026-10-29).
             check(s == 301 and h.get("location", "").endswith(f"/{PROJECTS_DIR}?filter={d}"), f"/{d} -> {s} {h.get('location', '')}")
+        # Any page under /apps lands on the Apps filter too, not on a /projects/<name> that does not exist.
+        s, h, _ = fetch(f"{base}/apps/some-app")
+        check(s == 301 and h.get("location", "").endswith(f"/{PROJECTS_DIR}?filter=apps"), f"/apps/some-app -> {s} {h.get('location', '')}")
     # The docs moved from /docs to /research; links and search results still point at the old URLs.
     if any(rel.startswith(f"{DOCS_DIR}/") for rel in built):
         old = [f"/{LEGACY_DOCS_DIR}"] + ([f"/{LEGACY_DOCS_DIR}/{Path(newest).stem}"] if newest else [])

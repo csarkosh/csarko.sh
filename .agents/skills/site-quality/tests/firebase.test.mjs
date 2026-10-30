@@ -25,3 +25,12 @@ test("the old project pages land on /projects with their own kind's chip checked
     assert.ok(site.redirects.some((r) => r.source === `/${kind}` && r.destination === `/projects?filter=${kind}` && r.type === 301), kind);
   }
 });
+
+test("every other /apps address lands on the Apps filter; only the old pictures keep their files", () => {
+  const i = (pred) => site.redirects.findIndex(pred);
+  const pictures = i((r) => r.regex === "^/apps/(?P<file>[^/]+\\.(?:jpg|jpeg|png|webp|avif))$" && r.destination === "/projects/:file");
+  const rest = i((r) => r.source === "/apps/**" && r.destination === "/projects?filter=apps" && r.type === 301);
+  assert.ok(pictures >= 0, "the old pictures still redirect to their files");
+  assert.ok(rest > pictures, "the catch-all comes after the pictures (the first match wins)");
+  assert.ok(!site.redirects.some((r) => r.source === "/apps/:file*"), "no /apps page lands on a /projects/<name> that does not exist");
+});
