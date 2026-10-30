@@ -1081,6 +1081,16 @@ def public_motion_pages(public=PUBLIC):
           if (!d.getElementById('kind-film').checked) p.push('Film is not checked');
           return p.concat(t.only(d, '.project-list', (li) => li.matches('[data-kind~="film"]')));
         } }"""),
+        # A link naming several categories opens on the first (radios), also with nothing animating.
+        ("/research?filter=rendering,ai opens on Rendering alone, with nothing animating", """{ run: async (_, t) => {
+          const seen = new Set();
+          const f = await t.open('/research?filter=rendering,ai', 1280, (d) => d.getAnimations().forEach((a) => seen.add(`${a.effect.target.className || a.effect.target.tagName} ${a.transitionProperty || 'animation'}`)));
+          const d = f.contentDocument, p = [];
+          if (seen.size) p.push(`animated while loading: ${[...seen].join(', ')}`);
+          if (!d.getElementById('cat-rendering').checked) p.push('Rendering is not checked');
+          if (d.getElementById('cat-ai').checked) p.push('AI is checked too');
+          return p.concat(t.only(d, '.all-docs', (li) => li.matches('[data-categories~="rendering"]')));
+        } }"""),
         # A chip click glides at once and settles on the filtered list alone.
         ("/projects: a Film click glides, then only the films show", """{ url: '/projects', run: async (f, t) => {
           const d = f.contentDocument, p = [];
@@ -1121,13 +1131,26 @@ def public_motion_pages(public=PUBLIC):
           await t.settled(d);
           return p.concat(t.only(d, '.project-list', (li) => li.matches('[data-kind~="games"]')));
         } }"""),
-        ("/research: AI twice within 100 ms ends with every doc shown", """{ url: '/research', run: async (f, t) => {
+        # The chips are radios (single select): AI then Rendering within 100 ms ends on Rendering alone.
+        ("/research: AI then Rendering within 100 ms ends on the rendering docs alone", """{ url: '/research', run: async (f, t) => {
           const d = f.contentDocument;
+          d.getElementById('cat-ai').click();
+          await t.sleep(50);
+          const p = t.ghostsStay(d, '.all-docs', () => d.getElementById('cat-rendering').click());
+          await t.sleep(20);
+          p.push(...t.ghostsAt(d));
+          await t.settled(d);
+          return p.concat(t.only(d, '.all-docs', (li) => li.matches('[data-categories~="rendering"]')));
+        } }"""),
+        # A second click on a checked radio keeps it checked: nothing clears it, the list stays filtered.
+        ("/research: AI twice keeps AI checked and only the AI docs shown", """{ url: '/research', run: async (f, t) => {
+          const d = f.contentDocument, p = [];
           d.getElementById('cat-ai').click();
           await t.sleep(50);
           d.getElementById('cat-ai').click();
           await t.settled(d);
-          return t.only(d, '.all-docs', () => true);
+          if (!d.getElementById('cat-ai').checked) p.push('a second click cleared the AI radio');
+          return p.concat(t.only(d, '.all-docs', (li) => li.matches('[data-categories~="ai"]')));
         } }"""),
         # All is the form's reset: its glide starts from the places before the reset.
         ("/research: All after AI glides back to every doc", """{ url: '/research', run: async (f, t) => {
