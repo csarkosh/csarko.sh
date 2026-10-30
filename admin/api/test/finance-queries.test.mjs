@@ -69,7 +69,7 @@ function fakes({ awsOn = true, gcpOn = true, githubOn = true, falOn = true, ledg
     ledgers: ledgersOn
       ? createLedgers({ bucket: "csarko-sh-film-ledgers", cache: createCache(), storage: ledgersFail ? { bucket() { return { async getFiles() { throw new Error("permission denied"); } }; } } : fakeStorage(calls), log })
       : { configured: false },
-    donate: { configured: true, async run(a) { calls.push(`donate:run:${a.today}:${a.failed.join("|")}`); return { ran: true, reason: "new month", record: { month: "2026-09", pool: 150, at: "2026-10-28T10:00:00Z", doors: ["arkos"] } }; } },
+    donate: { configured: true, args: null, async run(a) { this.args = a; calls.push(`donate:run:${a.today}:${a.failed.join("|")}`); return { ran: true, reason: "new month", record: { month: "2026-09", pool: 150, at: "2026-10-28T10:00:00Z", doors: ["arkos"] } }; } },
     modalConfigured: modalOn,
     store: createMemoryStore(),
   };
@@ -362,7 +362,7 @@ test("snapshotPart: the Cost Explorer calls and the forecast, GitHub's usage, fa
   assert.deepEqual(Object.keys(part), ["finance"]);
   const f = part.finance;
   assert.equal(f.at, "2026-10-28T23:10:00.000Z");
-  assert.deepEqual(deps.calls.sort(), ["aws:daily", "aws:forecast", "aws:monthly", "donate:run:2026-10-28:", "fal:balance", "gcp:daily", "gcp:lastDay", "gcp:monthly", "github:usage", "stripe:balance", "stripe:transactions:1759276800"], "Stripe read live by the job too, for the day's net");
+  assert.deepEqual(deps.calls.sort(), ["aws:daily", "aws:forecast", "aws:monthly", "donate:run:2026-10-28:", "fal:balance", "gcp:daily", "gcp:firstDay", "gcp:lastDay", "gcp:monthly", "github:usage", "stripe:balance", "stripe:transactions:1759276800"], "Stripe read live by the job too, for the day's net");
   assert.deepEqual([f.aws.monthly.length, f.aws.daily.length, f.aws.forecast, f.aws.calls, f.aws.lastDay, f.awsCalls], [AWS.monthly.length, AWS.daily.length, AWS.forecast, 4, "2026-10-27", 4]);
   assert.deepEqual([f.github.months.length, f.github.days.length, f.github.lastDay], [GITHUB.months.length, GITHUB.days.length, "2026-10-27"]);
   assert.deepEqual(f.fal, { at: "2026-10-28T23:10:00.000Z", balance: 46.37, currency: "USD", lastDay: "2026-10-28" });
@@ -699,12 +699,16 @@ test("the snapshot runs the donate step with the month's rows and the failed pro
   const q = createFinanceQueries({ ...f, store, now: () => NOW, log });
   const part = await q.snapshotPart();
   assert.ok(f.calls.includes("donate:run:2026-10-28:gcp|modal"), "gcp failed, and Modal has no report in an empty store");
+  assert.equal(f.donate.args.gcpFirstDay, "2026-10-02", "the export's first day reaches the step (the fake prices September, so it holds nothing)");
   assert.deepEqual(part.finance.donate, { month: "2026-09", pool: 150, at: "2026-10-28T10:00:00Z", doors: ["arkos"] });
   await store.writeSnapshot("2026-10-28", part);
   const f2 = fakes();
   f2.donate.run = async () => ({ ran: false, reason: "done", record: null });
   const next = await createFinanceQueries({ ...f2, store, now: () => NOW + 86_400_000, log }).snapshotPart();
   assert.deepEqual(next.finance.donate, part.finance.donate, "a run that did nothing keeps yesterday's record");
+  const f3 = fakes({ gcpOn: false });
+  await createFinanceQueries({ ...f3, store: createMemoryStore(), now: () => NOW, log }).snapshotPart();
+  assert.equal(f3.donate.args.gcpFirstDay, null, "GCP not configured: nothing to wait on");
 });
 test("a donate step that throws is errors.donate and the snapshot still has its finance part", async () => {
   const f = fakes();

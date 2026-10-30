@@ -665,7 +665,11 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
       const values = kpiValues(loaded, today);
       // A provider whose read failed has a partial month; the step holds off on it (`donate/step.mjs`).
       const failed = PROVIDERS.filter((p) => h.errors[p] !== undefined || modalHints.errors[p] !== undefined);
-      const donateOut = donate === null ? null : await part(h, "donate", donate.configured, () => donate.run({ monthlyRows: loaded.monthlyRows, failed, today }));
+      // It also waits while GCP's export starts after the first day of the month it would price.
+      const donateOut = donate === null ? null : await part(h, "donate", donate.configured, async () => {
+        const gcpFirstDay = gcpBilling.configured ? await exportFirstDay() : null;
+        return donate.run({ monthlyRows: loaded.monthlyRows, failed, today, gcpFirstDay });
+      });
       // last30 left the card (2026-10-30) but stays in the day's values, so its history is unbroken should it return.
       const kpi = {
         ...(values === null

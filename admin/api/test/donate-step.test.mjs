@@ -35,7 +35,7 @@ test("a new month: five products, five prices, five links a door, one JSON, the 
   const calls = [];
   const bucket = fakeBucket();
   const step = createDonateStep({ writer: fakeWriter(calls), bucket, now: () => NOW, log: { error() {}, warn() {} } });
-  const out = await step.run({ monthlyRows: ROWS, failed: [], today: "2026-11-03" });
+  const out = await step.run({ monthlyRows: ROWS, failed: [], today: "2026-11-03", gcpFirstDay: "2026-10-01" });
   assert.equal(out.ran, true);
   assert.deepEqual(out.record, { month: "2026-10", pool: 287.4, at: "2026-11-03T10:00:12.000Z", doors: ["arkos", "macstats", "visits", "last-trail", "hallway", "all"] });
   const j = bucket.json;
@@ -71,6 +71,7 @@ test("done, before the 3rd and a failed provider leave Stripe and the bucket alo
   assert.deepEqual(await step.run({ monthlyRows: ROWS, failed: [], today: "2026-11-05" }), { ran: false, reason: "done", record: { month: "2026-10", pool: 288, at: "2026-11-03T10:00:12.000Z", doors: Object.keys(current.doors) }, swept: { links: 0, prices: 0 } });
   assert.equal((await createDonateStep({ writer: fakeWriter(calls), bucket: fakeBucket(), now: () => NOW, log: { error() {}, warn() {} } }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-02" })).reason, "before the 3rd");
   assert.equal((await createDonateStep({ writer: fakeWriter(calls), bucket: fakeBucket(), now: () => NOW, log: { error() {}, warn() {} } }).run({ monthlyRows: ROWS, failed: ["gcp"], today: "2026-11-04" })).reason, "waiting on gcp");
+  assert.equal((await createDonateStep({ writer: fakeWriter(calls), bucket: fakeBucket(), now: () => NOW, log: { error() {}, warn() {} } }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-04", gcpFirstDay: "2026-10-29" })).reason, "waiting on GCP history for 2026-10");
   assert.equal(calls.length, 0);
   assert.equal(bucket.writes, 0);
 });

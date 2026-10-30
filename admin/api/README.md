@@ -100,6 +100,8 @@ The daily snapshot also runs the **donate step** (`src/donate/step.mjs`, `STRIPE
 month it makes the next month's prices and payment links and publishes the prices object, and stores
 `finance.donate = { month, pool, at, doors }` (the `income` query's `prices`), carried forward on the
 days it does nothing; without the key it is `notConfigured.donate`, and a failure is `errors.donate`.
+While the GCP export's first usage day is after the first of the month being priced, the step holds
+with the reason `waiting on GCP history for <month>`, whatever the day of the month.
 The job also stores the day's KPI values as `finance.kpi` (`monthToDate`, `idleRunRate`, `last30`,
 `forecast`, `donations`; `last30` left the card on 2026-10-30 but keeps its history), which the index
 card's trends read, a small `finance.stripe = { at, mtdNet, count, lastDay }` read live, and
@@ -130,6 +132,21 @@ answer is still worth showing; a single-source query (the visits ones) answers 5
 lib-visits counts a visit as one browser on one day (a stateless daily hash), not a
 pageview, so every `pageviews` field is `null`. The pre-cutover history keeps
 the old unit (a browser once per page per session) and is merged by day, path and name.
+
+## Redo a month's tip prices
+
+The step reuses whatever Stripe holds for the month: its lookups find the active prices by
+`lookup_key` and the active links by `metadata.month`, so a rerun alone changes nothing. To make
+the month's prices again (a wrong pool, a fixed bill):
+
+1. Archive the month's prices: every active price whose `lookup_key` starts with `donate:<month>:`
+   (`active=false`; a new price takes the key over).
+2. Deactivate the month's payment links: every active link whose `metadata.month` is the month.
+3. Delete the prices object: `gcloud storage rm gs://csarko-sh-donate-prices/prices.json`.
+4. Let the next snapshot recompute it (or call `POST /admin/snapshot`), then run `donate/deploy.sh` so
+   the pages' baked fallback points at the new links.
+
+Until step 4 the pages' fallback points at the retired links, so do it in one sitting.
 
 ## Environment
 

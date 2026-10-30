@@ -123,10 +123,10 @@ export function createDonateStep({ writer, bucket, now = Date.now, log = console
     get configured() {
       return Boolean(writer?.configured && bucket?.configured);
     },
-    async run({ monthlyRows, failed = [], today }) {
+    async run({ monthlyRows, failed = [], today, gcpFirstDay = null }) {
       const current = await bucket.read();
       const d = decide({
-        today, failed,
+        today, failed, gcpFirstDay,
         current: current ? { month: current.month, doors: Object.keys(current.doors ?? {}) } : null,
         doors: shippedDoors().map((x) => x.door),
       });

@@ -58,6 +58,17 @@ test("decide: done, before the 3rd, waiting on a provider until the 7th, a new m
   assert.equal(decide({ today: "2026-11-07", current: null, failed: ["aws"], doors }).run, true, "from the 7th it runs with what is there");
   assert.deepEqual(decide({ today: "2026-11-03", current: { month: "2026-09", doors }, failed: [], doors }), { run: true, reason: "new month", month: "2026-10", newMonth: true, pending: doors });
   assert.deepEqual(decide({ today: "2026-11-12", current: { month: "2026-10", doors: ["arkos"] }, failed: [], doors: ["arkos", "all", "dayhike"] }), { run: true, reason: "doors added", month: "2026-10", newMonth: false, pending: ["all", "dayhike"] });
+});
+
+test("decide: holds while GCP's export starts after the first day of the month being priced, at any day of the month", () => {
+  const doors = ["arkos", "all"];
+  assert.deepEqual(decide({ today: "2026-11-03", current: null, failed: [], doors, gcpFirstDay: "2026-10-02" }), { run: false, reason: "waiting on GCP history for 2026-10", month: "2026-10", newMonth: false, pending: [] });
+  assert.equal(decide({ today: "2026-11-28", current: null, failed: [], doors, gcpFirstDay: "2026-10-29" }).reason, "waiting on GCP history for 2026-10", "no day-of-month override");
+  assert.equal(decide({ today: "2026-11-03", current: null, failed: [], doors, gcpFirstDay: "2026-10-01" }).run, true, "an export from the 1st covers the month");
+  assert.equal(decide({ today: "2026-12-03", current: null, failed: [], doors, gcpFirstDay: "2026-10-02" }).run, true, "November is covered");
+  assert.equal(decide({ today: "2026-11-03", current: null, failed: [], doors, gcpFirstDay: null }).run, true, "GCP not configured: nothing to wait on");
+  assert.equal(decide({ today: "2026-11-05", current: { month: "2026-10", doors }, failed: [], doors, gcpFirstDay: "2026-10-29" }).reason, "done", "a done month still sweeps");
+  assert.equal(decide({ today: "2026-11-02", current: null, failed: [], doors, gcpFirstDay: "2026-10-01" }).reason, "before the 3rd");
   assert.equal(PRICE_DAY, 3);
   assert.equal(LATE_DAY, 7);
 });

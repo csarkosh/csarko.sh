@@ -3,7 +3,9 @@
  * is not free public work) is the pool, each tier is a share of it rounded up to the dollar, and
  * `decide` says whether today's snapshot run should publish new prices. Prices are made once a
  * month, on the 3rd (after the billing sources have settled), later if a collector failed and not
- * past the 7th; a door added mid-month gets that month's prices at the next run.
+ * past the 7th; a door added mid-month gets that month's prices at the next run. While GCP's billing
+ * export starts after the first day of the month being priced, the month waits, with no
+ * day-of-month override: a pool without GCP's whole month would undercount it for a month.
  */
 
 import { addMonths, monthOf } from "../finance/rows.mjs";
@@ -34,13 +36,15 @@ export function pricesOf(pool) {
 
 /**
  * Whether to publish prices today. `current` is the published JSON or null, `failed` the providers
- * whose collector failed today, `doors` the shipped door keys.
+ * whose collector failed today, `doors` the shipped door keys, `gcpFirstDay` the GCP export's first
+ * usage day (null when GCP is not configured).
  */
-export function decide({ today, current, failed, doors }) {
+export function decide({ today, current, failed, doors, gcpFirstDay = null }) {
   const month = addMonths(monthOf(today), -1);
   const published = current?.month === month ? current.doors ?? [] : [];
   const missing = doors.filter((d) => !published.includes(d));
   if (current?.month === month && missing.length === 0) return { run: false, reason: "done", month, newMonth: false, pending: [] };
+  if (gcpFirstDay !== null && gcpFirstDay > `${month}-01`) return { run: false, reason: `waiting on GCP history for ${month}`, month, newMonth: false, pending: [] };
   const day = Number(today.slice(8, 10));
   if (day < PRICE_DAY) return { run: false, reason: "before the 3rd", month, newMonth: false, pending: [] };
   if (failed.length > 0 && day < LATE_DAY) return { run: false, reason: `waiting on ${failed.join(", ")}`, month, newMonth: false, pending: [] };
