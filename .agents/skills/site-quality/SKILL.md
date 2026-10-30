@@ -243,8 +243,11 @@ This is the change most likely to regress everything above. In order:
    if it belongs site-wide, and re-run the layout check.
 6. New color? Make it a token with a value in both the dark and light blocks;
    text ≥ 4.5:1 on its surface in both. Check both themes' screenshots.
-7. Never add `noindex` to index.html, `Disallow: /`, or remove the canonical.
-8. New or changed doc? Use the `publish-doc` skill. A game is a file in
+7. Anything new that appears, disappears, opens or moves? Give it Material 3 motion with the
+   shared `--md-easing-*` / `--md-duration-*` tokens and a reduced-motion path (AGENTS.md, "Motion
+   follows Google's Material 3 motion guidance"); never a bare `ease` or a hand-picked duration.
+8. Never add `noindex` to index.html, `Disallow: /`, or remove the canonical.
+9. New or changed doc? Use the `publish-doc` skill. A game is a file in
    `docs/games/`; a film is a file in `docs/films/` plus its poster at
    `assets/films/<slug>.jpg`. Either way, edit the Markdown and re-run the
    generator; never edit `public/research/`, `public/games/` or `public/film/` by hand.

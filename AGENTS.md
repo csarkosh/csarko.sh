@@ -195,6 +195,18 @@ three from the command line):
   asked for it to highlight his YouTube channel instead: it links `@csarkosh` to
   https://www.youtube.com/@csarkosh. Substack is still a hero and Contact chip.
 - **No em-dashes in page copy**; commas, colons, semicolons.
+- **Motion follows Google's Material 3 motion guidance** *(Cyrus, 2026-10-29; standing rule for
+  the public site and every admin page, Day Hike's included)*: nothing that appears, disappears,
+  opens, moves or changes size does so in one frame. Use the shared motion tokens only (the
+  `--md-easing-*` and `--md-duration-*` properties on `:root` in `public/index.html`, which the
+  generated pages and the admin's `theme.css` copy), never a bare `ease` or a hand-picked time: things
+  arriving decelerate, things leaving accelerate and take less time than their entrance, anything that
+  stays on screen moves on the standard curve; 150 to 200 ms for small changes, 300 to 400 ms for
+  anything that crosses space. A folded section opens as an accordion; a filtered list glides; a
+  swapped view cross-fades or fades through; something dragged follows the pointer directly. Under
+  `prefers-reduced-motion: reduce` every duration is zero and nothing waits on an animation. Motion
+  never adds a layout shift the change would not have had: a card's height changes only by easing.
+  Design: `docs/superpowers/specs/2026-10-29-motion-design.md`.
 - **The home page's sections** *(Cyrus, 2026-10-08)*: `01 / Experience` (`#work`),
   `02 / Education` (`#education`, the University of Washington card, "Where I
   studied") and `03 / Contact`; the nav's heading links are `Work · Education ·
