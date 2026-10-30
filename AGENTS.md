@@ -272,8 +272,9 @@ three from the command line):
   card carrying `data-kind`; a link pre-applies one, `/projects?filter=film` (a link naming several
   opens on the first), through the same `filters.js`, and `/film`, `/games` and `/apps`
   301 to their own filter (so `games.csarko.sh`, via `/games`, lands on Games). A chip counts
-  `filter-<kind>` (`filter-all` for All). The page sits near its 50,000 B HTML budget (49,253 B
-  with six projects, 2026-10-29): the next card needs a budget of its own, as `/research` got. The sources stay in their own
+  `filter-<kind>` (`filter-all` for All). The page has its own HTML budget, 55,000 B
+  (`BUDGET_HTML_PROJECTS` in `check.py`, 2026-10-29, as `/research` has one): it is 50,611 B with
+  six projects and the motion tokens. The sources stay in their own
   folders (`docs/games/`, `docs/apps/`, `docs/films/`), since each kind has its own fields; a slug
   is unique across all three (it is the card's `#anchor` and its picture's
   `/projects/<slug>.jpg`). **The order is Cyrus's, most proud first**: each source's `order:`
@@ -347,8 +348,24 @@ anything related to the admin pages in this repo:
   (`admin:hold:…`): `hold()` keeps a waiting card at exactly that height and `settle()` lets
   it go and remembers it, so a view seen before loads with nothing moving, and a range change
   holds a card at its height instead of collapsing it. A chart keeps its own height from its first
-  draw. Day Hike's page does the same in its own repo (`client/src/admin/hold.ts`, the same keys,
-  the host's `.skel` classes), so a change to those classes is a change to its page.
+  draw. Where a card's height does change (a view never seen, a range or a chip whose content is
+  another size), it eases there, and what it remembers is the height it ends at, measured before
+  the ease and never during one (`settle()` skips readings while anything in the card eases its
+  height); a card not yet drawn takes its height at once. Day Hike's page does the same in its own
+  repo (`client/src/admin/hold.ts`, the same keys, the host's `.skel` classes), so a change to
+  those classes is a change to its page.
+- **Motion is `motion.js`** *(2026-10-29; the rule is "Motion follows Google's Material 3 motion
+  guidance" above)*: the shared module every host page uses (`admin/README.md` has its API).
+  Every fold (`charts.js` `folded()`) is an accordion: a `<details>` still, so the keyboard,
+  screen readers and find-in-page work as before; a click while it moves is taken once it settles,
+  so a fold ends as the last click asked, and a fold opened by the browser or a script just opens.
+  A card's content fades in over its skeleton; a range or Whose change fades it to the skeleton
+  first. A chip-filtered list (csarko.sh's journeys, Arkos's sessions: `charts.js`
+  `filteredList()`) glides, each entry matched by its own fields, and a chip that swaps a drawing
+  (Arkos's paths) cross-fades. The account menu grows from the button's corner and is inert while
+  it fades out; tooltips fade and lift in and glide between marks; the sign-in gate and the page
+  swap with a fade through. `check.py --admin` drives all of it in headless Chrome on `?preview`,
+  under reduced motion too, and checks that a warm reload moves no card.
 - **Same bar.** Lighthouse 100 on Accessibility and Best Practices, Performance ≥ 95,
   a layout that holds from 320px to 1440px, a strict CSP and the same security
   headers. No third-party script, with one documented exception: Google's sign-in

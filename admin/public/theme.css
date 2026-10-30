@@ -313,7 +313,7 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .chart .axis-line { stroke: var(--axis-line); stroke-width: 1; }
 .chart .tick { fill: var(--faint); font-family: var(--mono); font-size: 11px; }
 .chart .dlabel { fill: var(--muted); font-family: var(--mono); font-size: 11px; }
-.chart .bar { fill: var(--accent); }
+.chart .bar { fill: var(--accent); transition: fill var(--md-duration-short3) var(--md-easing-standard); }
 .chart .bar.hover { fill: var(--accent-hover); }
 .chart .ghost { fill: var(--ghost); }
 .chart .hit { fill: transparent; cursor: default; outline: none; }
@@ -322,7 +322,13 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .legend li { display: inline-flex; align-items: center; gap: 6px; }
 .legend .swatch { width: 10px; height: 10px; border-radius: 3px; background: var(--accent); }
 .legend .swatch.ghost { background: var(--ghost); }
-.tooltip { position: absolute; z-index: 2; display: none; pointer-events: none; white-space: nowrap; padding: 7px 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border-strong); box-shadow: 0 8px 24px -8px var(--shadow); font-size: 12.5px; color: var(--muted); }
+/* The tooltip fades and lifts 4 px in (short3, standard) and fades out quicker (short2,
+   accelerate); moving to the next mark, it glides there (charts.js tooltip()). */
+.tooltip { position: absolute; z-index: 2; display: none; opacity: 0; translate: 0 4px; pointer-events: none; white-space: nowrap; padding: 7px 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border-strong); box-shadow: 0 8px 24px -8px var(--shadow); font-size: 12.5px; color: var(--muted);
+  transition: opacity var(--md-duration-short2) var(--md-easing-emphasized-accelerate), translate var(--md-duration-short2) var(--md-easing-emphasized-accelerate), display var(--md-duration-short2) allow-discrete; }
+.tooltip.on { display: block; opacity: 1; translate: none; transition: opacity var(--md-duration-short3) var(--md-easing-standard), translate var(--md-duration-short3) var(--md-easing-standard); }
+.tooltip.on.glide { transition: opacity var(--md-duration-short3) var(--md-easing-standard), translate var(--md-duration-short3) var(--md-easing-standard), left var(--md-duration-short3) var(--md-easing-standard), top var(--md-duration-short3) var(--md-easing-standard); }
+@starting-style { .tooltip.on { opacity: 0; translate: 0 4px; } }
 .tooltip .v { font-weight: 600; color: var(--text); font-size: 13.5px; font-variant-numeric: tabular-nums; }
 .tooltip .key { display: inline-block; width: 10px; height: 2px; background: var(--accent); vertical-align: middle; margin-right: 6px; }
 .tooltip .key.ghost { background: var(--ghost); }
@@ -355,6 +361,8 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .j-hidden { font-family: var(--mono); font-size: 12px; color: var(--faint); margin-left: 4px; }
 .j-hidden:empty { display: none; }
 .journeys { list-style: none; margin: 0; padding: 0; display: grid; gap: 26px; }
+/* Under a filtered list: the empty line and the More fold, their margins inside it so the space they take eases whole. */
+.j-tail { display: flow-root; }
 .journey { min-width: 0; }
 .journey + .journey { padding-top: 22px; border-top: 1px solid var(--border); }
 .j-head { margin: 0 0 4px; font-family: var(--mono); font-size: 12px; color: var(--faint); overflow-wrap: anywhere; }
@@ -402,6 +410,7 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .bars .fill.empty-fill { background: var(--ghost); }
 .bars .n { font-variant-numeric: tabular-nums; color: var(--text); white-space: nowrap; font-size: 13.5px; }
 .bars .n small { color: var(--faint); margin-left: 4px; }
+.bars .fill { transition: filter var(--md-duration-short3) var(--md-easing-standard); }
 .bars li:focus-within .fill, .bars li:hover .fill { filter: brightness(1.08); }
 
 /* Arkos' journey (ide-arkos/page.js). The flow: a step's bar in the step's tone, bands in a
@@ -471,8 +480,10 @@ tbody tr:hover td { background: var(--surface-hover); }
 details.folded { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px; }
 details.folded summary { cursor: pointer; font-family: var(--mono); font-size: 12.5px; color: var(--muted); list-style: none; display: inline-flex; align-items: center; gap: 8px; }
 details.folded summary::-webkit-details-marker { display: none; }
-details.folded summary::before { content: "›"; display: inline-block; color: var(--faint); transition: transform var(--md-duration-short3) var(--md-easing-standard); }
-details.folded[open] summary::before { transform: rotate(90deg); }
+/* A fold is an accordion (motion.js): the arrow turns as it opens (medium2, standard) and turns
+   back as soon as it starts to close (short4, accelerate), while `data-closing` is on it. */
+details.folded summary::before { content: "›"; display: inline-block; color: var(--faint); transition: transform var(--md-duration-short4) var(--md-easing-emphasized-accelerate); }
+details.folded[open]:not([data-closing]) summary::before { transform: rotate(90deg); transition: transform var(--md-duration-medium2) var(--md-easing-standard); }
 details.folded summary:hover { color: var(--text); }
 details.folded > :not(summary) { margin-top: 12px; }
 details.folded .scroll { border: 1px solid var(--border); border-radius: 10px; }
@@ -524,6 +535,6 @@ footer .mono { font-family: var(--mono); }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .nav ul a, .btn, .range button, .j-filters button, .card .card-title a, details.folded summary::before, .fl-band { transition: none; }
+  .nav ul a, .btn, .range button, .j-filters button, .card .card-title a, details.folded summary::before, .fl-band, .tooltip, .chart .bar, .bars .fill { transition: none; }
   .skel { animation: none; }
 }

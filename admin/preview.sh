@@ -15,7 +15,10 @@
 # --blink-settings=preferredColorScheme (0 = dark, 1 = light), as the site's preview does.
 # The phone shots use the site preview's iframe trick (headless Chrome lays a window out
 # at ~500px even when asked for 390), with a longer virtual time budget because the framed
-# page fetches its data before it has anything to show.
+# page fetches its data before it has anything to show. Both are taken with reduced motion
+# forced: virtual time does not carry a Web Animation to its end, so a card's content would be
+# caught part way into its fade in; with every motion duration at 0 the shots show what the page
+# settles on. Its motion is check.py --admin's to drive, in real time.
 
 set -euo pipefail
 
@@ -78,11 +81,11 @@ EOF
     for theme in dark light; do
       scheme=$([[ $theme == dark ]] && echo 0 || echo 1)
       suffix=$([[ $theme == dark ]] && echo "" || echo "-light")
-      "$CHROME" --headless=new --disable-gpu --hide-scrollbars --virtual-time-budget=12000 \
+      "$CHROME" --headless=new --disable-gpu --hide-scrollbars --force-prefers-reduced-motion --virtual-time-budget=12000 \
         --blink-settings=preferredColorScheme=$scheme \
         --window-size=1440,5600 --screenshot="$OUT/${prefix}desktop$suffix.png" "$URL" 2>/dev/null \
         || echo "warning: Chrome exited $? on $URL ($theme desktop)"
-      "$CHROME" --headless=new --disable-gpu --hide-scrollbars --allow-file-access-from-files \
+      "$CHROME" --headless=new --disable-gpu --hide-scrollbars --force-prefers-reduced-motion --allow-file-access-from-files \
         --blink-settings=preferredColorScheme=$scheme \
         --virtual-time-budget=30000 --window-size=600,7000 \
         --screenshot="$OUT/${prefix}mobile$suffix.png" "file://$OUT/${prefix}mobile-frame.html" 2>/dev/null \

@@ -5,12 +5,13 @@
  * answers, and each fills on its own: a slow app never holds the others. An app whose
  * API fails still gets its card, marked Unreachable with the error in place of the tiles.
  * A KPI whose value is null (its source is not configured) shows a dash and names the
- * secret to add.
+ * secret to add. The content fades in over its skeleton, where it stays (motion.js).
  */
 
 import { accountMenu, requireSession } from '/auth.js';
 import { ago, delta, el, errorLine, hold, loading, settle, status, tile } from '/charts.js';
 import { loadApps, preview, source } from '/data.js';
+import { fadeIn } from '/motion.js';
 
 const root = document.getElementById('top');
 const grid = document.getElementById('apps');
@@ -48,6 +49,7 @@ function fill(card, app, data) {
   body.replaceChildren(el('div', { class: 'tiles' }, ...tiles),
     ...Object.entries(data.errors ?? {}).map(([part, message]) => errorLine(`${part} failed.`, String(message))));
   body.removeAttribute('aria-busy');
+  fadeIn(body);
 }
 
 function unreachable(card, app, error) {
@@ -55,6 +57,7 @@ function unreachable(card, app, error) {
   const body = card.querySelector('.body');
   body.replaceChildren(errorLine(`Unreachable: ${app.api}`, error.message));
   body.removeAttribute('aria-busy');
+  fadeIn(body);
 }
 
 /**

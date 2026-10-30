@@ -137,9 +137,10 @@ const wired = new WeakSet();
  * fade in over short3, starting halfway into that fade's length. Closing: the parts fade out over
  * short2 while the height shrinks to closed over short4, both accelerating, and then `open` is
  * cleared; `data-closing` is on the element meanwhile, for the disclosure arrow to turn with it. A
- * click while it moves is ignored. A toggle it did not cause (find-in-page, a script, another
- * <details name> opening) just opens or closes, ending any motion in flight. Wiring it twice is
- * harmless.
+ * click while it moves does not interrupt it: it is taken once the motion settles, so the fold
+ * ends as the last click asked (a second click undoes a waiting one). A toggle it did not cause
+ * (find-in-page, a script, another <details name> opening) just opens or closes, ending any motion
+ * in flight and dropping a waiting click. Wiring it twice is harmless.
  */
 export function accordion(details) {
   if (wired.has(details)) return;
@@ -147,6 +148,8 @@ export function accordion(details) {
   if (!summary) return;
   wired.add(details);
   let run = [];
+  // A click taken while the fold moved, for once it settles.
+  let waiting = false;
   // The `open` a toggle of ours will report; any other toggle came from elsewhere.
   let expect = null;
   const parts = () => [...details.children].filter((node) => node !== summary);
@@ -157,6 +160,7 @@ export function accordion(details) {
   const stop = () => {
     run.forEach((a) => a.cancel());
     run = [];
+    waiting = false;
     details.removeAttribute('data-closing');
   };
   const track = (animations, done) => {
@@ -168,6 +172,10 @@ export function accordion(details) {
       run = [];
       done();
       mine.forEach((a) => a.cancel());
+      if (waiting) {
+        waiting = false;
+        toggle();
+      }
     });
   };
   // Its height closed, without closing it (which would fire a toggle): the parts are taken out of
@@ -191,7 +199,11 @@ export function accordion(details) {
     const inner = event.target?.closest?.('a, button, input, select, textarea, label');
     if (inner && inner !== summary && summary.contains(inner)) return;
     event.preventDefault();
-    if (run.length) return;
+    if (run.length) waiting = !waiting;
+    else toggle();
+  });
+
+  function toggle() {
     const t = tokens();
     if (!details.open) {
       if (!t.medium2) return set(true);
@@ -217,7 +229,7 @@ export function accordion(details) {
         set(false);
       });
     }
-  });
+  }
 }
 
 // ---------------------------------------------------------------- the glide
@@ -348,12 +360,16 @@ export function showMenu(menu) {
   prev?.animation.cancel();
   menus.delete(menu);
   menu.hidden = false;
+  menu.inert = false;
   const animation = play(menu, [{ ...from, transformOrigin: CORNER }, { ...look(menu), transformOrigin: CORNER }],
     { duration: t.medium2, easing: t.decelerate });
   if (animation) menus.set(menu, { showing: true, animation });
 }
 
-/** Hides `menu`: it shrinks to 0.92 and fades out, short3, emphasized accelerate, and is `hidden` when done. */
+/**
+ * Hides `menu`: it shrinks to 0.92 and fades out, short3, emphasized accelerate, and is `hidden`
+ * when done. Meanwhile it is inert, so what is fading cannot be clicked or focused.
+ */
 export function hideMenu(menu) {
   const prev = menus.get(menu);
   if (menu.hidden || (prev && !prev.showing && live(prev.animation))) return;
@@ -368,10 +384,12 @@ export function hideMenu(menu) {
     return;
   }
   menus.set(menu, { showing: false, animation });
+  menu.inert = true;
   animation.finished.then(() => {
     if (menus.get(menu)?.animation !== animation) return;
     menus.delete(menu);
     menu.hidden = true;
+    menu.inert = false;
     animation.cancel();
   }, () => {});
 }

@@ -35,8 +35,8 @@ async function withPage(values, fn) {
 
 /**
  * An element that records what it is asked to animate. Its animations run until `finish()`
- * (as Animation.finish() does: playState 'finished', a fill of 'none' then draws nothing) or
- * `cancel()`.
+ * (as Animation.finish() does: playState 'finished', a fill of 'none' then draws nothing, and
+ * `finished` resolves) or `cancel()`.
  */
 function element(props = {}) {
   const listeners = {};
@@ -44,11 +44,12 @@ function element(props = {}) {
     localName: 'div', hidden: false, style: {}, children: [], offsetHeight: 0, calls: [], animations: [],
     animate(frames, options) {
       node.calls.push({ frames, options });
+      let done;
       const animation = {
-        playState: 'running', finished: new Promise(() => {}),
+        playState: 'running', finished: new Promise((resolve) => { done = resolve; }),
         effect: { getTiming: () => ({ duration: options.duration, delay: options.delay ?? 0, fill: options.fill ?? 'auto' }) },
         cancel() { this.playState = 'idle'; },
-        finish() { this.playState = 'finished'; },
+        finish() { this.playState = 'finished'; done(this); },
       };
       node.animations.push(animation);
       return animation;
@@ -254,5 +255,98 @@ test('under reduced motion the accordion opens and closes at once', async () => 
     assert.equal(details.open, false);
     assert.equal(prevented, 2, 'the script, not the browser, opens and closes it');
     assert.equal(details.calls.length, 0);
+  });
+});
+
+// An inline style that keeps what is set on it, as a part of a <details> needs for the accordion's
+// closed-height measurement.
+function styleOf() {
+  const values = {};
+  return {
+    getPropertyValue: (name) => values[name]?.[0] ?? '',
+    getPropertyPriority: (name) => values[name]?.[1] ?? '',
+    setProperty: (name, value, priority = '') => { values[name] = [value, priority]; },
+  };
+}
+// Lets the promise callbacks that follow a finished animation run.
+const tick = () => new Promise((resolve) => { setTimeout(resolve, 0); });
+const finishAll = (...nodes) => nodes.forEach((n) => n.animations.filter((a) => a.playState === 'running').forEach((a) => a.finish()));
+
+function fold() {
+  const summary = element({ localName: 'summary' });
+  const part = element({ style: styleOf() });
+  const details = element({ localName: 'details', open: false, children: [summary, part] });
+  const click = () => summary.dispatch('click', { target: summary, preventDefault() {} });
+  return { summary, part, details, click };
+}
+
+test('a click while the accordion moves is taken once it settles: the last click wins', async () => {
+  const { accordion } = await load();
+  await withPage(TOKENS, async () => {
+    const { part, details, click } = fold();
+    accordion(details);
+    click();
+    assert.equal(details.open, true);
+    assert.equal(details.calls.length, 1, 'opening: the height eases');
+    click();
+    assert.equal(details.calls.length, 1, 'nothing new while it opens');
+    finishAll(details, part);
+    await tick();
+    assert.equal(details.calls.length, 2, 'once open, it closes for the second click');
+    assert.equal(details.calls[1].options.duration, 200);
+    finishAll(details, part);
+    await tick();
+    assert.equal(details.open, false, 'it ends as the last click asked');
+  });
+});
+
+test('a click that undoes a waiting click leaves the accordion where the first one took it', async () => {
+  const { accordion } = await load();
+  await withPage(TOKENS, async () => {
+    const { part, details, click } = fold();
+    accordion(details);
+    click();
+    click();
+    click();
+    finishAll(details, part);
+    await tick();
+    assert.equal(details.open, true);
+    assert.equal(details.calls.length, 1, 'no close follows');
+  });
+});
+
+test('a toggle from elsewhere drops a waiting click', async () => {
+  const { accordion } = await load();
+  await withPage(TOKENS, async () => {
+    const { part, details, click } = fold();
+    accordion(details);
+    click();
+    click();
+    // Find-in-page, say, closes it part way.
+    details.open = false;
+    details.dispatch('toggle');
+    finishAll(details, part);
+    await tick();
+    assert.equal(details.open, false);
+    assert.equal(details.calls.length, 1, 'no motion follows the toggle');
+  });
+});
+
+test('a menu fading out cannot be clicked or focused, and can be again once shown', async () => {
+  const { showMenu, hideMenu } = await load();
+  await withPage(TOKENS, async () => {
+    const menu = element({ hidden: true });
+    showMenu(menu);
+    finishAll(menu);
+    hideMenu(menu);
+    assert.equal(menu.inert, true, 'inert while it fades out');
+    assert.equal(menu.hidden, false);
+    showMenu(menu);
+    assert.equal(menu.inert, false, 'shown again part way, it is usable');
+    hideMenu(menu);
+    finishAll(menu);
+    await tick();
+    assert.equal(menu.hidden, true);
+    assert.equal(menu.inert, false, 'hidden, it is not left inert');
   });
 });

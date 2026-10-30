@@ -608,6 +608,15 @@ def contrast(a, b):
     return (hi + 0.05) / (lo + 0.05)
 
 
+def motion_literals(css):
+    """The transition and animation declarations in `css` that name an easing or a duration
+    themselves rather than through a motion token. The skeleton pulse is the one literal: a 2s
+    ease-in-out loop, delayed .5s."""
+    motion = re.sub(r"animation:\s*skel-pulse 2s ease-in-out \.5s infinite", "", css)
+    return sorted({m.strip() for m in re.findall(r"(?:transition|animation)\s*:([^;}]*)", motion)
+                   if re.search(r"(?<![\w-])(?:ease|ease-in|ease-out|ease-in-out|linear)(?![\w-])|(?<![\w.-])\d*\.?\d+m?s\b", re.sub(r"var\([^)]*\)", "", m))})
+
+
 def theme_checks(html, name):
     """The page follows the system theme: dark tokens on :root, light overrides in
     @media (prefers-color-scheme: light). Every color must be a token, so neither
@@ -640,10 +649,7 @@ def theme_checks(html, name):
     durations = sorted(k for k in dark if k.startswith("--md-duration-"))
     zeroed = reduced_m and all(re.search(rf"{k}\s*:\s*0ms\b", reduced_m.group(1)) for k in durations)
     check(durations and zeroed, "reduced motion zeroes every --md-duration-* token")
-    # Every timing is a token. The skeleton pulse is the one literal: a 2s ease-in-out loop, delayed .5s.
-    motion = re.sub(r"animation:\s*skel-pulse 2s ease-in-out \.5s infinite", "", css)
-    bad = sorted({m.strip() for m in re.findall(r"(?:transition|animation)\s*:([^;}]*)", motion)
-                  if re.search(r"(?<![\w-])(?:ease|ease-in|ease-out|ease-in-out|linear)(?![\w-])|(?<![\w.-])\d*\.?\d+m?s\b", re.sub(r"var\([^)]*\)", "", m))})
+    bad = motion_literals(css)
     check(not bad, f"transitions and animations use motion tokens, no bare easing or duration {bad or ''}")
     schemes = set(re.findall(r'<meta name="theme-color"[^>]*media="\(prefers-color-scheme: (dark|light)\)"', html))
     check(schemes == {"dark", "light"}, f"theme-color meta for both schemes (found {sorted(schemes)})")
@@ -824,13 +830,60 @@ _serve_spec.loader.exec_module(serve)
 # second time with reduced motion forced; each run takes the cases whose `reduced` matches it.
 # Time is real: --virtual-time-budget never advances the animation timeline, so animations would
 # stay at their first frame. Instead the hidden /__motion/hold frame keeps the harness's load event
-# (and so --dump-dom) waiting until the results have been POSTed to /__motion/result.
+# (and so --dump-dom) waiting until the results have been POSTed to /__motion/result. The results
+# are POSTed after every case, so a run that dies part way keeps what it found; the last POST says
+# `done`, and so does one from the error handler when the cases do not even parse. Each case gets
+# CASE_MS before it counts as hung.
 MOTION_HARNESS = """<!doctype html><html><body><iframe src="/__motion/hold" hidden></iframe><script>
-const CASES = [%s];
+const post = (out) => fetch('/__motion/result', { method: 'POST', body: JSON.stringify(out) });
+addEventListener('error', (e) => post({ __error: `${e.message} (line ${e.lineno})`, done: true }));
+</script><script>
+const CASES = [/*CASES*/];
+const CASE_MS = 30000;
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const t = {
   sleep,
+  // Polls `test` every 10 ms until it holds or `ceiling` ms have passed; true if it held.
+  async until(test, ceiling = 3000) {
+    for (const end = performance.now() + ceiling; performance.now() < end; await sleep(10)) if (test()) return true;
+    return !!test();
+  },
+  // Nothing finite left animating in `d` (an infinite loop such as a skeleton's pulse is not
+  // motion that ends), within `ceiling` ms. Waiting on the animations rather than a fixed time
+  // keeps a loaded machine from failing a glide that is merely late. An animation reads as
+  // finished as soon as its time is up, but its `finished` callbacks (which may hide a menu or
+  // start the next motion) run in the page's next animation frame, so that frame is waited for.
+  async settled(d, ceiling = 3000) {
+    const end = performance.now() + ceiling;
+    const frame = () => new Promise((resolve) => { d.defaultView.requestAnimationFrame(() => resolve()); });
+    for (;;) {
+      if (!await t.until(() => !t.busy(d).length, Math.max(0, end - performance.now()))) return false;
+      await frame();
+      await frame();
+      if (!t.busy(d).length) return true;
+    }
+  },
+  // What is still animating in `d`, finite animations only, as "<element> <property or name>".
+  busy: (d) => d.getAnimations().filter((a) => a.playState === 'running' && a.effect?.getComputedTiming().endTime !== Infinity)
+    .map((a) => `${a.effect.target?.id || a.effect.target?.className || a.effect.target?.localName} ${a.transitionProperty || a.animationName || Object.keys(a.effect.getKeyframes()[0] ?? {}).filter((k) => !['offset', 'easing', 'composite', 'computedOffset'].includes(k)).join('+')}`),
+  // The admin pages' cards have all answered (no body is still busy).
+  loaded: (d, ceiling = 8000) => t.until(() => d.querySelector('.card') && !d.querySelector('.card .body[aria-busy="true"]'), ceiling),
+  // Height animations on `node` itself that are running.
+  heightEases: (node) => node.getAnimations().filter((a) => a.playState === 'running' && a.effect.getKeyframes().some((k) => 'height' in k)),
+  // Running animations on `node` and everything in it.
+  running: (node) => node.getAnimations({ subtree: true }).filter((a) => a.playState === 'running'),
+  // What a finished motion must not leave on `node` (named `what`): an inline height or overflow,
+  // a closing mark, anything still animating in it.
+  clean(node, what) {
+    const p = [];
+    if (node.style.height) p.push(`${what} keeps an inline height ${node.style.height}`);
+    if (node.style.overflow) p.push(`${what} keeps an inline overflow ${node.style.overflow}`);
+    if (node.hasAttribute('data-closing')) p.push(`${what} is still marked closing`);
+    const n = t.running(node).filter((a) => a.effect?.getComputedTiming().endTime !== Infinity).length;
+    if (n) p.push(`${what} has ${n} animation(s) still running`);
+    return p;
+  },
   // Clicks with click(), first noting where each card that the click will hide is drawn and how
   // opaque it is; ghostsAt(d) then compares each ghost (in the same order) with that. The ghost's
   // first opacity is checked at once, its rect when ghostsAt runs.
@@ -893,35 +946,50 @@ const t = {
 };
 (async () => {
   const out = { reduced: REDUCED };
-  for (const c of CASES) {
+  for (const [name, c] of CASES) {
     if (!!c.reduced !== REDUCED) continue;
+    let timer;
+    const hung = new Promise((resolve) => { timer = setTimeout(() => resolve([`steps did not finish in ${CASE_MS / 1000} s`]), CASE_MS); });
     try {
-      out[c.name] = await c.run(c.url ? await t.open(c.url, c.width) : null, t);
+      out[name] = await Promise.race([(async () => c.run(c.url ? await t.open(c.url, c.width) : null, t))(), hung]);
     } catch (e) {
-      out[c.name] = [`steps threw: ${e}`];
+      out[name] = [`steps threw: ${e}`];
     }
+    clearTimeout(timer);
     document.querySelectorAll('iframe:not([hidden])').forEach((f) => f.remove());
+    await post(out);
   }
-  await fetch('/__motion/result', { method: 'POST', body: JSON.stringify(out) });
+  await post({ ...out, done: true });
 })();
 </script></body></html>"""
 
 
-def motion_checks(public_root: Path, pages: list[str], redirects=None) -> None:
+def motion_checks(public_root: Path, pages: list[tuple[str, str]], redirects=None) -> None:
     """Drive the given pages' motion in headless Chrome and fail on anything their steps report.
 
     `public_root` is served on a free localhost port with Firebase's clean URLs (serve.py's
     route(); `redirects` defaults to firebase.json's public ones for public/, none otherwise),
     because root-relative scripts do not load from file://. Each entry of `pages` is one case,
-    a JavaScript object literal: {name, url, width (default 1280), reduced (true: run under
+    `(name, steps)`: the name, unique among the cases, is what the check reports; the steps are a
+    JavaScript object literal {url, width (default 1280), reduced (true: run under
     prefers-reduced-motion), run: async (iframe, t) => [problem, ...]}, `t` being the harness's
-    helpers (sleep, visible, open, only). Without a url, run gets no iframe and opens its own
-    with t.open. An empty list from run is a pass."""
-    print(f"motion (headless Chrome, {public_root.name}/)")
+    helpers (sleep, until, settled, loaded, heightEases, visible, open, only, ghostsStay,
+    ghostsAt). Without a url, run gets no iframe and opens its own with t.open. An empty list
+    from run is a pass; a case that throws or runs past CASE_MS (30 s) fails on its own."""
+    root = public_root.resolve()
+    print(f"motion (headless Chrome, {root.relative_to(ROOT) if root.is_relative_to(ROOT) else root}/)")
     if not Path(CHROME).exists():
         warn("Google Chrome not found — motion checks skipped")
         return
-    harness = (MOTION_HARNESS % ",\n".join(pages)).encode()
+    names = [name for name, _ in pages]
+    repeated = sorted({n for n in names if names.count(n) > 1})
+    if repeated:
+        fail(f"motion case names are not unique: {repeated}")
+        return
+    cases = ",\n".join(f"[{json.dumps(name)}, {steps}]" for name, steps in pages)
+    harness = MOTION_HARNESS.replace("/*CASES*/", cases).encode()
+    # Every case could run to its 30 s ceiling; a hang past that is Chrome's, not a case's.
+    budget = 20 + 35 * len(pages)
     posted, box = threading.Event(), {}
 
     class Handler(serve.Handler):
@@ -938,7 +1006,7 @@ def motion_checks(public_root: Path, pages: list[str], redirects=None) -> None:
             if self.path == "/__motion":
                 return self.reply(harness)
             if self.path == "/__motion/hold":
-                posted.wait(150)
+                posted.wait(budget)
                 return self.reply()
             super().do_GET()
 
@@ -946,7 +1014,11 @@ def motion_checks(public_root: Path, pages: list[str], redirects=None) -> None:
             if self.path != "/__motion/result":
                 return self.send_error(404)
             box["data"] = self.rfile.read(int(self.headers.get("Content-Length", 0)))
-            posted.set()
+            try:
+                if json.loads(box["data"]).get("done"):
+                    posted.set()
+            except json.JSONDecodeError:
+                pass
             self.reply()
 
         def log_message(self, *args):
@@ -965,23 +1037,31 @@ def motion_checks(public_root: Path, pages: list[str], redirects=None) -> None:
     results = {}
     try:
         for reduced in (False, True):
+            run = "reduced-motion run" if reduced else "motion run"
             posted.clear()
             box.clear()
             flags = ["--force-prefers-reduced-motion"] if reduced else []
-            subprocess.run([CHROME, "--headless=new", "--disable-gpu", *flags, "--dump-dom", url],
-                           capture_output=True, timeout=180)
+            try:
+                subprocess.run([CHROME, "--headless=new", "--disable-gpu", *flags, "--dump-dom", url],
+                               capture_output=True, timeout=budget + 30)
+            except subprocess.TimeoutExpired:
+                fail(f"motion harness ({run}): Chrome did not exit within {budget + 30} s")
             try:
                 data = json.loads(box["data"])
             except (KeyError, json.JSONDecodeError):
-                fail(f"motion harness{' (reduced motion)' if reduced else ''} produced no result")
+                fail(f"motion harness ({run}) produced no result")
                 continue
-            check(data.pop("reduced") == reduced, f"the {'reduced-motion' if reduced else 'full-motion'} run sees prefers-reduced-motion: {'reduce' if reduced else 'no-preference'}")
+            if "__error" in data:
+                fail(f"motion harness ({run}) failed to run: {data['__error']}")
+                continue
+            check(data.pop("reduced") == reduced, f"the {run} sees prefers-reduced-motion: {'reduce' if reduced else 'no-preference'}")
+            if not data.pop("done", False):
+                fail(f"motion harness ({run}) stopped part way; the cases after the last result did not run")
             results.update(data)
     finally:
         server.shutdown()
         server.server_close()
-    for page in pages:
-        name = re.search(r"name:\s*'([^']*)'", page).group(1)
+    for name in names:
         problems = results.get(name)
         check(problems == [], f"{name}: {'; '.join(problems) if problems else 'no result' if problems is None else 'as designed'}")
 
@@ -993,16 +1073,16 @@ def public_motion_pages(public=PUBLIC):
         # Review Focus 3: a link's ?filter= applies at load without a glide.
         # Watched from its first frame: a 150 ms chip fade would be over by the load event. First,
         # so the page loads cold, as from a link: the chips may be styled before filters.js runs.
-        """{ name: '/projects?filter=film opens filtered, with nothing animating', run: async (_, t) => {
+        ("/projects?filter=film opens filtered, with nothing animating", """{ run: async (_, t) => {
           const seen = new Set();
           const f = await t.open('/projects?filter=film', 1280, (d) => d.getAnimations().forEach((a) => seen.add(`${a.effect.target.className || a.effect.target.tagName} ${a.transitionProperty || 'animation'}`)));
           const d = f.contentDocument, p = [];
           if (seen.size) p.push(`animated while loading: ${[...seen].join(', ')}`);
           if (!d.getElementById('kind-film').checked) p.push('Film is not checked');
           return p.concat(t.only(d, '.project-list', (li) => li.matches('[data-kind~="film"]')));
-        } }""",
+        } }"""),
         # A chip click glides at once and settles on the filtered list alone.
-        """{ name: '/projects: a Film click glides, then only the films show', url: '/projects', run: async (f, t) => {
+        ("/projects: a Film click glides, then only the films show", """{ url: '/projects', run: async (f, t) => {
           const d = f.contentDocument, p = [];
           d.getElementById('kind-film').click();
           await t.sleep(30);
@@ -1012,66 +1092,66 @@ def public_motion_pages(public=PUBLIC):
           // While the list's height eases, its cards keep their own height (a grid would stretch them).
           const shown = [...d.querySelectorAll('.project-list > li:not([data-ghost])')].filter(t.visible);
           const mid = shown.map((li) => li.offsetHeight);
-          await t.sleep(600);
+          await t.settled(d);
           shown.forEach((li, i) => { if (Math.abs(li.offsetHeight - mid[i]) > 1) p.push(`${li.id} is ${mid[i]} px tall mid-glide, ${li.offsetHeight} px after`); });
           return p.concat(t.only(d, '.project-list', (li) => li.matches('[data-kind~="film"]')));
-        } }""",
+        } }"""),
         # Review Focus 1: a click during a glide cancels it and ends on the last click's state.
         # A card leaving mid-glide fades out where it is on screen, at the opacity it has: its ghost
         # starts on the card's drawn rect (place plus the move or rise in flight), not its layout place.
-        """{ name: '/projects: Film then Games within 100 ms ends on the game alone', url: '/projects', run: async (f, t) => {
+        ("/projects: Film then Games within 100 ms ends on the game alone", """{ url: '/projects', run: async (f, t) => {
           const d = f.contentDocument;
           d.getElementById('kind-film').click();
           await t.sleep(50);
           const p = t.ghostsStay(d, '.project-list', () => d.getElementById('kind-games').click());
           await t.sleep(20);
           p.push(...t.ghostsAt(d));
-          await t.sleep(700);
+          await t.settled(d);
           return p.concat(t.only(d, '.project-list', (li) => li.matches('[data-kind~="games"]')));
-        } }""",
-        """{ name: '/projects: films leaving mid-arrival fade from where and how they were', url: '/projects', run: async (f, t) => {
+        } }"""),
+        ("/projects: films leaving mid-arrival fade from where and how they were", """{ url: '/projects', run: async (f, t) => {
           const d = f.contentDocument;
           d.getElementById('kind-games').click();
-          await t.sleep(700);
+          await t.settled(d);
           d.getElementById('kind-film').click();
           await t.sleep(200);
           const p = t.ghostsStay(d, '.project-list', () => d.getElementById('kind-games').click());
           await t.sleep(20);
           p.push(...t.ghostsAt(d));
-          await t.sleep(700);
+          await t.settled(d);
           return p.concat(t.only(d, '.project-list', (li) => li.matches('[data-kind~="games"]')));
-        } }""",
-        """{ name: '/research: AI twice within 100 ms ends with every doc shown', url: '/research', run: async (f, t) => {
+        } }"""),
+        ("/research: AI twice within 100 ms ends with every doc shown", """{ url: '/research', run: async (f, t) => {
           const d = f.contentDocument;
           d.getElementById('cat-ai').click();
           await t.sleep(50);
           d.getElementById('cat-ai').click();
-          await t.sleep(700);
+          await t.settled(d);
           return t.only(d, '.all-docs', () => true);
-        } }""",
+        } }"""),
         # All is the form's reset: its glide starts from the places before the reset.
-        """{ name: '/research: All after AI glides back to every doc', url: '/research', run: async (f, t) => {
+        ("/research: All after AI glides back to every doc", """{ url: '/research', run: async (f, t) => {
           const d = f.contentDocument, p = [];
           d.getElementById('cat-ai').click();
-          await t.sleep(600);
+          await t.settled(d);
           d.querySelector('.filters .all').click();
           await t.sleep(30);
           if (!d.querySelector('.all-docs').getAnimations({ subtree: true }).length) p.push('nothing in the list animates 30 ms after All');
-          await t.sleep(700);
+          await t.settled(d);
           return p.concat(t.only(d, '.all-docs', () => true));
-        } }""",
+        } }"""),
         # Review Focus 2: reduced motion filters in the same frame, with no animation at all.
-        """{ name: '/projects under reduced motion: a Film click is final at once', url: '/projects', reduced: true, run: async (f, t) => {
+        ("/projects under reduced motion: a Film click is final at once", """{ url: '/projects', reduced: true, run: async (f, t) => {
           const d = f.contentDocument, p = [];
           d.getElementById('kind-film').click();
           await t.sleep(20);
           const n = d.getAnimations().filter((a) => a.playState === 'running').length;
           if (n) p.push(`${n} animation(s) running 20 ms after the click`);
           return p.concat(t.only(d, '.project-list', (li) => li.matches('[data-kind~="film"]')));
-        } }""",
+        } }"""),
         # Review Focus 4: after a resize, a glide starts from where the cards are now, not from
         # where they were at the old width.
-        """{ name: '/projects at 1280 then 390 px: an Apps click moves each card from its 390 px place', url: '/projects', run: async (f, t) => {
+        ("/projects at 1280 then 390 px: an Apps click moves each card from its 390 px place", """{ url: '/projects', run: async (f, t) => {
           const d = f.contentDocument, ul = d.querySelector('.project-list'), p = [];
           await t.sleep(100);
           f.style.width = '390px';
@@ -1086,20 +1166,20 @@ def public_motion_pages(public=PUBLIC):
             const a = li.getAnimations().find((a) => a.effect.getKeyframes()[0].transform);
             return [li, a ? new DOMMatrix(a.effect.getKeyframes()[0].transform) : new DOMMatrix()];
           }));
-          await t.sleep(600);
+          await t.settled(d);
           for (const li of staying) {
             const [x0, y0] = before.get(li), [x1, y1] = at(li), m = first.get(li);
             if (Math.abs(m.e - (x0 - x1)) > 1.5 || Math.abs(m.f - (y0 - y1)) > 1.5)
               p.push(`${li.id} starts at (${m.e}, ${m.f}), not at its offset (${x0 - x1}, ${y0 - y1})`);
           }
           return p.concat(t.only(d, '.project-list', (li) => li.matches('[data-kind~="apps"]')));
-        } }""",
+        } }"""),
     ]
     docs = sorted(((re.search(r'<meta property="article:published_time" content="([^"]+)"', p.read_text(encoding="utf-8")) or [None, ""])[1], p.stem)
                   for p in (public / DOCS_DIR).glob("*.html") if 'class="term-def"' in p.read_text(encoding="utf-8"))
     if docs:
         slug = docs[-1][1]
-        pages.append("""{ name: '/research/%s: a word definition fades in and out', url: '/research/%s', run: async (f, t) => {
+        pages.append((f"/research/{slug}: a word definition fades in and out", """{ url: '/research/%s', run: async (f, t) => {
           const el = f.contentDocument.querySelector('.term-def'), p = [];
           el.showPopover();
           if (!el.getAnimations().length) p.push('nothing animates as it opens');
@@ -1107,7 +1187,7 @@ def public_motion_pages(public=PUBLIC):
           el.hidePopover();
           if (!el.getAnimations().length) p.push('nothing animates as it closes');
           return p;
-        } }""" % (slug, slug))
+        } }""" % slug))
     return pages
 
 
@@ -1331,6 +1411,276 @@ def analytics_checks(pages):
 ADMIN = ROOT / "admin" / "public"
 
 
+def admin_motion_pages():
+    """The admin pages' motion cases (AGENTS.md "Admin pages", the motion rule), on the sample data
+    (`?preview`): the folds' accordion, the eased card heights and the heights they remember, the
+    account menu, the glide of a chip-filtered list and the paths' cross-fade, the same under
+    reduced motion, and a warm reload that moves nothing."""
+    pages = [
+        ("/csarko.sh/: a fold opens as an accordion", """{ url: '/csarko.sh/?preview', run: async (f, t) => {
+          const d = f.contentDocument, p = [];
+          if (!await t.loaded(d)) return ['the cards did not load'];
+          const fold = d.querySelector('#card-visitors details.folded');
+          if (!fold) return ['no fold in the Visitors card'];
+          fold.querySelector('summary').click();
+          await t.sleep(30);
+          if (!t.running(fold).length) p.push('nothing in the fold animates 30 ms after the click');
+          if (!t.heightEases(fold).length) p.push('its height does not ease');
+          await t.settled(d);
+          if (!fold.open) p.push('it is not open once it settles');
+          return p.concat(t.clean(fold, 'the fold'));
+        } }"""),
+        # Review Focus 1: a second click while it opens is the last word.
+        ("/csarko.sh/: a fold clicked twice within 50 ms ends closed", """{ url: '/csarko.sh/?preview', run: async (f, t) => {
+          const d = f.contentDocument, p = [];
+          if (!await t.loaded(d)) return ['the cards did not load'];
+          const fold = d.querySelector('#card-visitors details.folded'), summary = fold.querySelector('summary');
+          summary.click();
+          await t.sleep(50);
+          summary.click();
+          await t.settled(d);
+          if (fold.open) p.push('it is open after the second click');
+          return p.concat(t.clean(fold, 'the fold'));
+        } }"""),
+        # Review Focus 5. Enter or Space on a focused summary is the browser's click on it (detail 0);
+        # a page cannot send a trusted key, so the steps send that click and check nothing eats the key.
+        ("/csarko.sh/: Enter on a focused summary opens it like a click", """{ url: '/csarko.sh/?preview', run: async (f, t) => {
+          const d = f.contentDocument, p = [];
+          if (!await t.loaded(d)) return ['the cards did not load'];
+          const fold = d.querySelector('#card-referrers details.folded'), summary = fold.querySelector('summary');
+          summary.focus();
+          if (d.activeElement !== summary) p.push('the summary does not take focus');
+          const key = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+          summary.dispatchEvent(key);
+          if (key.defaultPrevented) p.push('a script swallows Enter on the summary');
+          summary.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 0 }));
+          await t.sleep(30);
+          if (!t.heightEases(fold).length) p.push('its height does not ease');
+          await t.settled(d);
+          if (!fold.open) p.push('it is not open');
+          if (d.activeElement !== summary) p.push('the summary lost focus');
+          return p.concat(t.clean(fold, 'the fold'));
+        } }"""),
+        # Review Focus 5: opened or closed by something else (find-in-page, a script), it just changes,
+        # and the next click still animates.
+        ("/csarko.sh/: a fold toggled by script just changes, and the next click still animates", """{ url: '/csarko.sh/?preview', run: async (f, t) => {
+          const d = f.contentDocument, p = [];
+          if (!await t.loaded(d)) return ['the cards did not load'];
+          const fold = d.querySelector('#card-pages details.folded'), summary = fold.querySelector('summary');
+          fold.open = true;
+          await t.sleep(30);
+          // Its arrow turns (CSS); the accordion itself does nothing: no ease, no fade.
+          if (t.heightEases(fold).length || [...fold.children].some((c) => c.localName !== 'summary' && t.running(c).length)) p.push('opened by script, the accordion animates it');
+          summary.click();
+          await t.sleep(30);
+          if (!t.heightEases(fold).length) p.push('the click after does not ease it shut');
+          await t.settled(d);
+          if (fold.open) p.push('the click after does not close it');
+          summary.click();
+          await t.sleep(50);
+          fold.open = false;
+          await t.settled(d);
+          if (fold.open) p.push('closed by script mid-open, it ends open');
+          p.push(...t.clean(fold, 'the fold'));
+          summary.click();
+          await t.sleep(30);
+          if (!t.heightEases(fold).length) p.push('the click after that does not ease it open');
+          await t.settled(d);
+          if (!fold.open) p.push('the click after that does not open it');
+          return p.concat(t.clean(fold, 'the fold'));
+        } }"""),
+        # A card whose height changes eases to it, and what it remembers is its final height.
+        ("/csarko.sh/: a range change eases a card's height and remembers final heights", """{ url: '/csarko.sh/?preview', run: async (f, t) => {
+          const d = f.contentDocument, w = d.defaultView, p = [];
+          if (!await t.loaded(d)) return ['the cards did not load'];
+          await t.settled(d);
+          // charts.js holdKey(): page, card, the query sorted, the width to 40 px.
+          const view = (search) => [...new URLSearchParams(search)].sort().map(([k, v]) => `${k}=${v}`).join('&');
+          const width = Math.round(w.innerWidth / 40);
+          const prefix = `admin:hold:${w.location.pathname}|`;
+          // A height for the 30-day view that the card does not have, so the change must move it.
+          const card = d.getElementById('card-visitors');
+          const next = new URL(w.location.href);
+          next.searchParams.set('range', '30');
+          w.localStorage.setItem(`${prefix}visitors|${view(next.search)}|${width}`, String(card.getBoundingClientRect().height + 120));
+          [...d.querySelectorAll('#range button')].find((b) => b.textContent === '30 days').click();
+          await t.sleep(30);
+          if (!t.heightEases(card).length) p.push('the Visitors card does not ease to the height remembered for the range');
+          await t.sleep(1000);
+          if (!await t.loaded(d) || !await t.settled(d)) p.push('the cards did not settle');
+          const suffix = `|${view(w.location.search)}|${width}`;
+          let n = 0;
+          for (let i = 0; i < w.localStorage.length; i += 1) {
+            const k = w.localStorage.key(i);
+            if (!k.startsWith(prefix) || !k.endsWith(suffix)) continue;
+            const id = k.slice(prefix.length, k.length - suffix.length), el = d.getElementById(`card-${id}`);
+            if (!el) continue;
+            n += 1;
+            const have = el.getBoundingClientRect().height, kept = Number(w.localStorage.getItem(k));
+            if (Math.abs(have - kept) > 1) p.push(`${id} is ${have.toFixed(1)} px tall, remembered as ${kept}`);
+            p.push(...t.clean(el, id));
+          }
+          const cards = d.querySelectorAll('.card').length;
+          if (n !== cards) p.push(`${n} of ${cards} cards remember a height for the 30-day view`);
+          return p;
+        } }"""),
+        ("/csarko.sh/: the account menu grows in and fades out", """{ url: '/csarko.sh/?preview', run: async (f, t) => {
+          const d = f.contentDocument, p = [];
+          if (!await t.until(() => d.querySelector('#account .avatar'))) return ['no account button'];
+          const button = d.querySelector('#account .avatar'), menu = d.getElementById('account-menu');
+          button.click();
+          await t.sleep(30);
+          if (menu.hidden) p.push('the menu is not shown');
+          if (!menu.getAnimations().length) p.push('nothing animates as it opens');
+          await t.settled(d);
+          d.body.click();
+          await t.sleep(30);
+          if (!menu.getAnimations().length) p.push('nothing animates as it closes');
+          if (!menu.inert) p.push('it can be clicked and focused while it fades out');
+          if (button.getAttribute('aria-expanded') !== 'false') p.push('the button still says expanded');
+          if (!await t.settled(d)) p.push(`still animating after 3 s: ${t.busy(d).join(', ')}`);
+          if (!menu.hidden) p.push('it is not hidden once it has faded');
+          if (menu.inert) p.push('it is left inert');
+          // Review Focus 1: open and closed again within 50 ms ends closed.
+          button.click();
+          await t.sleep(50);
+          button.click();
+          await t.settled(d);
+          if (!menu.hidden) p.push('opened and closed within 50 ms, it ends shown');
+          return p;
+        } }"""),
+        ("/csarko.sh/: Hide suspect glides the journeys and leaves no ghost", """{ url: '/csarko.sh/?preview', run: async (f, t) => {
+          const d = f.contentDocument, p = [];
+          if (!await t.loaded(d)) return ['the cards did not load'];
+          await t.settled(d);
+          const card = d.getElementById('card-journeys'), list = card.querySelector('.j-list');
+          const button = [...card.querySelectorAll('.j-filters button')].find((b) => b.textContent === 'Hide suspect');
+          const suspect = () => !!card.querySelector('li.journey.suspect:not([data-ghost])');
+          button.click();
+          await t.sleep(30);
+          if (!t.running(list).length) p.push('nothing in the list moves 30 ms after the click');
+          await t.sleep(600);
+          const ghosts = card.querySelectorAll('[data-ghost]').length;
+          if (ghosts) p.push(`${ghosts} ghost(s) left 600 ms after the click`);
+          await t.settled(d);
+          if (!suspect()) p.push('the suspect journey does not show');
+          // Review Focus 1: twice within 50 ms ends where it began.
+          button.click();
+          await t.sleep(50);
+          button.click();
+          await t.settled(d);
+          if (!suspect()) p.push('clicked twice more, the suspect journey is hidden');
+          if (card.querySelectorAll('[data-ghost]').length) p.push('ghosts left after two clicks');
+          return p.concat(t.clean(list, 'the list'), t.clean(card, 'the card'));
+        } }"""),
+        ("/ide-arkos/: a session filter glides; First sessions only cross-fades the paths", """{ url: '/ide-arkos/?preview', run: async (f, t) => {
+          const d = f.contentDocument, p = [];
+          if (!await t.loaded(d)) return ['the cards did not load'];
+          await t.settled(d);
+          const sessions = d.getElementById('card-sessions'), list = sessions.querySelector('.j-list');
+          [...sessions.querySelectorAll('.j-filters button')].find((b) => b.textContent === 'Only first sessions').click();
+          await t.sleep(30);
+          if (!t.running(list).length) p.push('nothing in the sessions moves 30 ms after the click');
+          await t.settled(d);
+          if (sessions.querySelectorAll('[data-ghost]').length) p.push('ghosts left in the sessions');
+          const shown = [...list.querySelectorAll('li.journey')];
+          if (!shown.length || shown.some((li) => !li.textContent.includes('first session'))) p.push('the sessions shown are not all first sessions');
+          const paths = d.getElementById('card-paths');
+          [...paths.querySelectorAll('.j-filters button')].find((b) => b.textContent === 'First sessions only').click();
+          await t.sleep(30);
+          if (!t.running(paths).some((a) => a.effect.getKeyframes().some((k) => 'opacity' in k))) p.push('the paths do not cross-fade');
+          await t.settled(d);
+          return p.concat(t.clean(list, 'the sessions'), t.clean(sessions, 'the sessions card'), t.clean(paths, 'the paths card'));
+        } }"""),
+        # Review Focus 1: a range changed twice quickly ends on the second, every card drawn.
+        ("/ide-arkos/: two range changes within 50 ms end on the second, every card drawn", """{ url: '/ide-arkos/?preview', run: async (f, t) => {
+          const d = f.contentDocument, p = [];
+          if (!await t.loaded(d)) return ['the cards did not load'];
+          await t.settled(d);
+          const range = (label) => [...d.querySelectorAll('#range button')].find((b) => b.textContent === label);
+          range('30 days').click();
+          await t.sleep(50);
+          range('90 days').click();
+          await t.sleep(100);
+          if (!await t.loaded(d) || !await t.settled(d, 4000)) p.push('the cards did not settle');
+          if (range('90 days').getAttribute('aria-pressed') !== 'true') p.push('90 days is not the range');
+          for (const card of d.querySelectorAll('.card')) {
+            const body = card.querySelector('.body');
+            if (body.querySelector('.skeleton')) p.push(`${card.id} still shows its skeleton`);
+            if (Number(getComputedStyle(body).opacity) !== 1) p.push(`${card.id}'s content is drawn at opacity ${getComputedStyle(body).opacity}`);
+            p.push(...t.clean(card, card.id));
+          }
+          return p;
+        } }"""),
+        # Review Focus 2: under reduced motion every change is final at once, and the same as with motion.
+        ("/csarko.sh/ under reduced motion: folds, the menu and the journeys are final at once", """{ url: '/csarko.sh/?preview', reduced: true, run: async (f, t) => {
+          const d = f.contentDocument, p = [];
+          if (!await t.loaded(d)) return ['the cards did not load'];
+          const running = (what) => { const n = t.running(d.documentElement).length; if (n) p.push(`${n} animation(s) running 20 ms after ${what}`); };
+          const fold = d.querySelector('#card-visitors details.folded'), summary = fold.querySelector('summary');
+          summary.click();
+          await t.sleep(20);
+          running('a fold click');
+          if (!fold.open) p.push('the fold is not open 20 ms after the click');
+          summary.click();
+          await t.sleep(20);
+          if (fold.open) p.push('the fold is not closed 20 ms after a second click');
+          p.push(...t.clean(fold, 'the fold'));
+          const button = d.querySelector('#account .avatar'), menu = d.getElementById('account-menu');
+          button.click();
+          await t.sleep(20);
+          running('opening the menu');
+          if (menu.hidden) p.push('the menu is not shown 20 ms after the click');
+          d.body.click();
+          await t.sleep(20);
+          if (!menu.hidden) p.push('the menu is not hidden 20 ms after a click outside');
+          const card = d.getElementById('card-journeys');
+          [...card.querySelectorAll('.j-filters button')].find((b) => b.textContent === 'Hide suspect').click();
+          await t.sleep(20);
+          running('a journeys filter click');
+          if (!card.querySelector('li.journey.suspect')) p.push('the suspect journey does not show 20 ms after the click');
+          if (card.querySelector('[data-ghost]')) p.push('a ghost is left');
+          [...d.querySelectorAll('#range button')].find((b) => b.textContent === '30 days').click();
+          await t.loaded(d);
+          await t.sleep(20);
+          running('the range change answered');
+          for (const c of d.querySelectorAll('.card')) p.push(...t.clean(c, c.id));
+          return p;
+        } }"""),
+    ]
+    # A view seen before loads with nothing moving (Cyrus, 2026-10-29: "Never jumps"); the content
+    # fades in where it will stay.
+    for url in ("/?preview", "/csarko.sh/?preview", "/ide-arkos/?preview"):
+        pages.append((f"{url}: a warm reload moves no card, and the content fades in", """{ run: async (_, t) => {
+          // The first visit remembers each card's height once its settling window (1.5 s) is over.
+          let f = await t.open('%s');
+          if (!await t.loaded(f.contentDocument)) return ['the cards did not load'];
+          await t.sleep(1800);
+          f.remove();
+          const seen = new Map();
+          let faded = false;
+          const look = (d) => d.querySelectorAll('.card').forEach((card, i) => {
+            const r = card.getBoundingClientRect(), s = seen.get(i) ?? { top: [r.top, r.top], height: [r.height, r.height] };
+            s.top = [Math.min(s.top[0], r.top), Math.max(s.top[1], r.top)];
+            s.height = [Math.min(s.height[0], r.height), Math.max(s.height[1], r.height)];
+            seen.set(i, s);
+            if (card.querySelector('.body').getAnimations().some((a) => a.effect.getKeyframes().some((k) => 'opacity' in k))) faded = true;
+          });
+          f = await t.open('%s', 1280, look);
+          const d = f.contentDocument;
+          for (const end = performance.now() + 1500; performance.now() < end; await t.sleep(1)) look(d);
+          const p = [];
+          if (!seen.size) p.push('no card was drawn');
+          for (const [i, s] of seen) {
+            const moved = Math.max(s.top[1] - s.top[0], s.height[1] - s.height[0]);
+            if (moved > 0.5) p.push(`card ${i + 1} moved or resized by ${moved.toFixed(1)} px`);
+          }
+          if (!faded) p.push('the content does not fade in');
+          return p;
+        } }""" % (url, url)))
+    return pages
+
+
 def admin_checks():
     """The admin pages inherit the site's look and bar, not its SEO. The tokens
     must be the home page's own (copied, never retyped), no colour may live
@@ -1348,6 +1698,8 @@ def admin_checks():
         rest = re.sub(r"/\*.*?\*/", "", theme.replace(gen.group(0), ""), flags=re.S)
         stray = sorted(set(COLOR_LITERAL.findall(rest)))
         check(not stray, f"theme.css: no colours outside the token block {stray or ''}")
+        bad = motion_literals(rest)
+        check(not bad, f"theme.css: transitions and animations use motion tokens, no bare easing or duration {bad or ''}")
     for ref in re.findall(r"url\(([^)]+)\)", theme):
         ref = ref.strip("'\"")
         check(ref.startswith("/") and (ADMIN / ref.lstrip("/")).exists(), f"theme.css asset is self-hosted and present: {ref}")
@@ -1393,6 +1745,7 @@ def admin_checks():
         if "game-dayhike" not in rel:
             for src in re.findall(r'<(?:script|link)[^>]+(?:src|href)="(/[^"]+)"', html):
                 check((ADMIN / src.lstrip("/")).exists(), f"{rel}: {src} exists")
+    motion_checks(ADMIN, admin_motion_pages())
 
 
 def main(argv):

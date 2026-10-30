@@ -12,8 +12,9 @@
  */
 
 import { accountMenu, requireSession } from '/auth.js';
-import { ago, bars, columns, compact, delta, el, errorLine, folded, hold, loading, pct, settle, shortDay, skeleton, status, table, tile } from '/charts.js';
+import { ago, bars, columns, compact, delta, el, errorLine, filteredList, folded, hold, loading, pct, settle, shortDay, skeleton, status, table, tile } from '/charts.js';
 import { RANGES, loadApps, preview, readRange, readToggles, source, utcMidnightHere, viewerZone, viewerZoneName, writeRange, writeToggles } from '/data.js';
+import { fadeIn, fadeOut, tokens } from '/motion.js';
 
 const SLUG = 'csarko.sh';
 const root = document.getElementById('top');
@@ -302,16 +303,19 @@ function journeysCard([journeys]) {
   const on = readToggles('journeys', JOURNEY_IDS, JOURNEY_DEFAULTS);
   const state = Object.fromEntries(JOURNEY_FILTERS.map((f) => [f.id, on.has(f.id)]));
   const hidden = el('span', { class: 'j-hidden', role: 'status' });
-  const host = el('div', { class: 'j-list' });
-  const list = (items) => el('ol', { class: 'journeys', role: 'list' }, ...items.map((j) => journey(j, now)));
+  // A journey is its start and its browser: the row carries no id of its own.
+  const list = filteredList(rows, {
+    id: (j) => `${str(j.started)}|${deviceLine(j.device)}`,
+    render: (j) => journey(j, now),
+    shown: JOURNEYS_SHOWN,
+    more: (n) => `More journeys · ${n}`,
+    empty: 'Every journey in this range is hidden by the filters.',
+  });
   const render = () => {
     const kept = rows.filter((j) => JOURNEY_FILTERS.every((f) => !state[f.id] || f.keep(j)));
     const n = rows.length - kept.length;
     hidden.textContent = n ? `${n} hidden` : '';
-    host.replaceChildren(...[
-      kept.length ? list(kept.slice(0, JOURNEYS_SHOWN)) : el('p', { class: 'empty' }, 'Every journey in this range is hidden by the filters.'),
-      kept.length > JOURNEYS_SHOWN ? folded(`More journeys · ${kept.length - JOURNEYS_SHOWN}`, list(kept.slice(JOURNEYS_SHOWN))) : null,
-    ].filter(Boolean));
+    list.update(kept);
   };
   const buttons = JOURNEY_FILTERS.map((f) => {
     const b = el('button', { type: 'button', 'aria-pressed': String(state[f.id]) }, f.label);
@@ -324,7 +328,7 @@ function journeysCard([journeys]) {
     return b;
   });
   render();
-  return [...errorLines(journeys), el('div', { class: 'j-filters', role: 'group', 'aria-label': 'Journey filters' }, ...buttons, hidden), host];
+  return [...errorLines(journeys), el('div', { class: 'j-filters', role: 'group', 'aria-label': 'Journey filters' }, ...buttons, hidden), list.node];
 }
 
 function searchCard([search], days) {
@@ -546,14 +550,24 @@ function cardShell(def) {
 
 async function loadCard(def, gen, card) {
   const body = card.querySelector('.body');
-  // A rendered card goes back to its skeleton while it reloads, held at the height this view
-  // had last (else the one it has now), so nothing under it moves; see hold() in charts.js.
-  const now = body.querySelector('.skeleton') ? 0 : card.getBoundingClientRect().height;
-  if (now) body.replaceChildren(el('p', { class: 'sr-only' }, 'Loading'), skeleton(def.skeleton));
-  hold(card, def.id, now);
   body.setAttribute('aria-busy', 'true');
+  const answers = Promise.all(def.queries.map((name) => data.query(app, name, range)));
+  answers.catch(() => {});
+  // A rendered card goes back to its skeleton while it reloads (its content fades out, the
+  // skeleton in), held at the height this view had last, else the one it has now, so nothing
+  // under it moves but by easing; see hold() in charts.js.
+  if (body.querySelector('.skeleton')) hold(card, def.id);
+  else {
+    const now = card.getBoundingClientRect().height;
+    hold(card, def.id, now);
+    await fadeOut(body)?.finished.catch(() => {});
+    if (gen !== generation) return;
+    body.replaceChildren(el('p', { class: 'sr-only' }, 'Loading'), skeleton(def.skeleton));
+    fadeIn(body, tokens().short3);
+    hold(card, def.id, now);
+  }
   try {
-    const results = await Promise.all(def.queries.map((name) => data.query(app, name, range)));
+    const results = await answers;
     if (gen !== generation) return;
     const sub = def.sub(range, results[0]);
     card.querySelector('.sub').textContent = sub;
@@ -565,6 +579,7 @@ async function loadCard(def, gen, card) {
   } finally {
     if (gen === generation) {
       body.removeAttribute('aria-busy');
+      fadeIn(body);
       settle(card, def.id);
     }
   }

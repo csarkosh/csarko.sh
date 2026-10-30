@@ -27,6 +27,8 @@
  * ?preview, as the game's page did.
  */
 
+import { fadeIn, fadeOut, hideMenu, showMenu, tokens } from '/motion.js';
+
 // generated:vendor
 const VENDOR = '/vendor/firebase-auth.febf56d0.js';
 // /generated:vendor
@@ -132,7 +134,9 @@ export function initialsOf(account) {
  * that toggles a small menu with the Live or Sample badge, the signed-in email and Sign out.
  * Rendered into `host`, the nav's `#account`, by each page once it is ready. Under
  * `?preview` there is no account: the menu says so and has no Sign out. The menu closes on
- * Escape, on a click elsewhere, and when Sign out is pressed; the gate then returns.
+ * Escape, on a click elsewhere, and when Sign out is pressed; the gate then returns. It grows
+ * in from the button's corner and fades out (motion.js showMenu, hideMenu); the button's
+ * `aria-expanded` says where it is going, so a click while it moves turns it round.
  */
 export function accountMenu(host, { account = null, preview = false } = {}) {
   menuHost = host;
@@ -156,16 +160,17 @@ export function accountMenu(host, { account = null, preview = false } = {}) {
     make('span', { class: `badge ${preview ? 'sample' : 'live'}` }, preview ? 'Sample data' : 'Live'),
     ...(account?.name ? [make('p', { class: 'name' }, account.name)] : []),
     account ? make('p', { class: 'email' }, account.email) : make('p', { class: 'note' }, 'Nobody is signed in: the page shows the sample data set.'));
-  const close = () => { menu.hidden = true; button.setAttribute('aria-expanded', 'false'); };
-  const open = () => { menu.hidden = false; button.setAttribute('aria-expanded', 'true'); };
+  const isOpen = () => button.getAttribute('aria-expanded') === 'true';
+  const close = () => { hideMenu(menu); button.setAttribute('aria-expanded', 'false'); };
+  const open = () => { showMenu(menu); button.setAttribute('aria-expanded', 'true'); };
   if (account) {
     const out = make('button', { class: 'btn ghost small', type: 'button' }, 'Sign out');
     out.addEventListener('click', () => { close(); signOut(); });
     menu.append(out);
   }
-  button.addEventListener('click', () => { if (menu.hidden) open(); else close(); });
-  document.addEventListener('click', (event) => { if (!menu.hidden && !host.contains(event.target)) close(); });
-  document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !menu.hidden) { close(); button.focus(); } });
+  button.addEventListener('click', () => { if (isOpen()) close(); else open(); });
+  document.addEventListener('click', (event) => { if (isOpen() && !host.contains(event.target)) close(); });
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && isOpen()) { close(); button.focus(); } });
   host.replaceChildren(button, menu);
 }
 
@@ -188,39 +193,88 @@ function gateMarkup({ note, refused, disabled }) {
   return { root, signIn, signOutButton, line };
 }
 
+// Material's fade through, for a full change of what the page shows (page ↔ gate): what leaves
+// fades out over short2, then `change()` swaps them and what arrives fades in over short4
+// (`arrive`). `current()` says whether this swap is still the latest, so a later one supersedes
+// a waiting one. Under reduced motion it swaps at once.
+function fadeThrough(leaving, change, current) {
+  const outs = leaving.map((node) => fadeOut(node, tokens().short2)).filter(Boolean);
+  const go = () => { if (current()) change(); };
+  if (!outs.length) go();
+  else Promise.allSettled(outs.map((a) => a.finished)).then(go);
+}
+// The gate also grows from a slight scale; the page only fades, since its cards measure their
+// heights as they load (charts.js hold, settle) and a scale would skew what they remember.
+function arrive(node, { grow = false } = {}) {
+  const t = tokens();
+  fadeIn(node, t.short4);
+  if (grow && t.short4 && typeof node.animate === 'function') {
+    node.animate([{ transform: 'scale(0.92)' }, { transform: 'none' }], { duration: t.short4, easing: t.decelerate });
+  }
+}
+
 /**
  * Show the gate until someone is signed in, then call onReady({ email }). The page's
  * existing content (the children of `root`) is hidden behind the gate rather than thrown
  * away, so the static header and nav come back as they were. The gate returns on sign-out,
- * and on `admin:unauthorized` with "<email> is not on the list." and a Sign out.
+ * and on `admin:unauthorized` with "<email> is not on the list." and a Sign out. Page and
+ * gate swap with a fade through; onReady runs once the page is back, at once when no gate
+ * was up (a session restored on load).
  */
 export function requireSession(root, onReady) {
   let gate = null;
+  /** The page's own nodes, hidden behind the gate or fading out for it. */
   let hidden = [];
+  let turns = 0;
   /** The uid onReady last ran for, so a repeated auth event does not load the page twice. */
   let active = null;
   let s = null;
 
-  const hide = () => {
-    if (gate) gate.remove();
-    gate = null;
-    for (const node of hidden) node.hidden = false;
-    hidden = [];
+  const hide = (then) => {
+    const mine = ++turns;
+    const leaving = gate;
+    const back = hidden;
+    const done = () => {
+      leaving?.remove();
+      if (gate === leaving) gate = null;
+      hidden = [];
+      for (const node of back) {
+        node.hidden = false;
+        arrive(node);
+      }
+      then();
+    };
+    if (leaving) fadeThrough([leaving], done, () => mine === turns);
+    else {
+      // Fading out for a gate that has not come up yet: they come straight back.
+      for (const node of back) fadeIn(node);
+      hidden = [];
+      then();
+    }
   };
   const ready = (account) => {
     active = account.uid;
     current = { email: account.email ?? '', name: account.displayName || null };
-    hide();
-    onReady(current);
+    hide(() => onReady(current));
   };
   const show = (state) => {
-    if (gate) gate.remove();
-    else {
-      hidden = Array.from(root.children).filter((node) => !node.hidden);
-      for (const node of hidden) node.hidden = true;
-    }
+    const mine = ++turns;
     const { root: node, signIn, signOutButton, line } = gateMarkup(state);
-    gate = node;
+    const up = () => {
+      if (gate) gate.replaceWith(node);
+      else {
+        for (const page of hidden) page.hidden = true;
+        root.append(node);
+      }
+      gate = node;
+      arrive(node, { grow: true });
+      signIn.focus({ preventScroll: true });
+    };
+    if (gate) up();
+    else {
+      if (!hidden.length) hidden = Array.from(root.children).filter((child) => !child.hidden);
+      fadeThrough(hidden, up, () => mine === turns);
+    }
     signIn.addEventListener('click', async () => {
       if (!s) return;
       signIn.disabled = true;
@@ -238,8 +292,6 @@ export function requireSession(root, onReady) {
       }
     });
     signOutButton?.addEventListener('click', () => { signOut(); });
-    root.append(gate);
-    signIn.focus({ preventScroll: true });
   };
 
   window.addEventListener(UNAUTHORIZED, (event) => {

@@ -15,8 +15,9 @@
  */
 
 import { accountMenu, requireSession } from '/auth.js';
-import { ago, bars, columns, compact, delta, el, errorLine, folded, hold, loading, pct, settle, shortDay, skeleton, table, tile } from '/charts.js';
+import { ago, bars, columns, compact, delta, el, errorLine, filteredList, folded, hold, loading, pct, settle, shortDay, skeleton, table, tile } from '/charts.js';
 import { RANGES, loadApps, preview, readParam, readRange, readToggles, source, utcMidnightHere, viewerZone, viewerZoneName, writeParam, writeRange, writeToggles } from '/data.js';
+import { easeHeight, fadeIn, fadeOut, tokens } from '/motion.js';
 
 const SLUG = 'ide-arkos';
 const root = document.getElementById('top');
@@ -275,14 +276,11 @@ function pathsCard([journey]) {
   // ?paths=first keeps the row on first sessions across a refresh.
   let showFirst = readParam('paths') === 'first';
   const host = el('div');
-  const render = () => {
+  const draw = () => {
     const paths = showFirst ? journey.paths.first : journey.paths;
     const n = showFirst ? num(journey.firstSessions) : num(journey.sessions);
-    if (!paths?.columns?.length || !n) {
-      host.replaceChildren(el('p', { class: 'empty' }, 'No first sessions in this range.'));
-      return;
-    }
-    host.replaceChildren(
+    if (!paths?.columns?.length || !n) return [el('p', { class: 'empty' }, 'No first sessions in this range.')];
+    return [
       flow(paths, { label: `The first steps of ${n} ${showFirst ? 'first ' : ''}sessions after the launch, left to right; the table below has every band.` }),
       folded('Paths as a table', table([
         { key: 'step', label: 'Step' },
@@ -290,19 +288,34 @@ function pathsCard([journey]) {
         { key: 'to', label: 'Then', wrap: true },
         { key: 'sessions', label: 'Sessions', num: true },
         { key: 'ends', label: 'How it ended' },
-      ], pathRows(paths))));
+      ], pathRows(paths))),
+    ];
+  };
+  // The chip swaps the drawing: the old fades out quickly, the new fades in (medium2, standard),
+  // and the space between eases from one height to the other. A click during the fade out
+  // draws its own choice; the fade out in flight carries on into it.
+  let turn = 0;
+  const swap = async () => {
+    const mine = ++turn;
+    await fadeOut(host, tokens().short2)?.finished.catch(() => {});
+    if (mine !== turn) return;
+    const from = host.getBoundingClientRect().height;
+    host.replaceChildren(...draw());
+    fadeIn(host);
+    easeHeight(host, from, host.getBoundingClientRect().height);
   };
   const buttons = [['All sessions', false], ['First sessions only', true]].map(([text, first]) => {
     const b = el('button', { type: 'button', 'aria-pressed': String(first === showFirst) }, text);
     b.addEventListener('click', () => {
+      if (showFirst === first) return;
       showFirst = first;
       writeParam('paths', first ? 'first' : null);
       for (const other of buttons) other.setAttribute('aria-pressed', String(other === b));
-      render();
+      swap();
     });
     return b;
   });
-  render();
+  host.replaceChildren(...draw());
   const capped = journey.capped ? el('p', { class: 'note' }, 'Only the 5,000 newest sessions in this range are counted.') : null;
   return [...errorLines(journey), el('div', { class: 'j-filters', role: 'group', 'aria-label': 'Which sessions' }, ...buttons), host, capped].filter(Boolean);
 }
@@ -541,16 +554,19 @@ function sessionsCard([sessions]) {
   const on = readToggles('sessions', ids, []);
   const state = Object.fromEntries(ids.map((id) => [id, on.has(id)]));
   const hidden = el('span', { class: 'j-hidden', role: 'status' });
-  const host = el('div', { class: 'j-list' });
-  const list = (items) => el('ol', { class: 'journeys', role: 'list' }, ...items.map((s) => session(s, now)));
+  // A session is when it arrived and the copy that sent it: the report carries no id of its own.
+  const list = filteredList(sessions.rows, {
+    id: (s) => [s.received, s.ver, s.osv, s.arch, s.iw].map(str).join('|'),
+    render: (s) => session(s, now),
+    shown: SESSIONS_SHOWN,
+    more: (n) => `More sessions · ${n}`,
+    empty: 'Every session in this range is hidden by the filters.',
+  });
   const render = () => {
     const kept = sessions.rows.filter((s) => SESSION_FILTERS.every((f) => !state[f.id] || f.keep(s)));
     const n = sessions.rows.length - kept.length;
     hidden.textContent = n ? `${n} hidden` : '';
-    host.replaceChildren(...[
-      kept.length ? list(kept.slice(0, SESSIONS_SHOWN)) : el('p', { class: 'empty' }, 'Every session in this range is hidden by the filters.'),
-      kept.length > SESSIONS_SHOWN ? folded(`More sessions · ${kept.length - SESSIONS_SHOWN}`, list(kept.slice(SESSIONS_SHOWN))) : null,
-    ].filter(Boolean));
+    list.update(kept);
   };
   const buttons = SESSION_FILTERS.map((f) => {
     const b = el('button', { type: 'button', 'aria-pressed': String(state[f.id]) }, f.label);
@@ -563,7 +579,7 @@ function sessionsCard([sessions]) {
     return b;
   });
   render();
-  return [...errorLines(sessions), el('div', { class: 'j-filters', role: 'group', 'aria-label': 'Session filters' }, ...buttons, hidden), host];
+  return [...errorLines(sessions), el('div', { class: 'j-filters', role: 'group', 'aria-label': 'Session filters' }, ...buttons, hidden), list.node];
 }
 
 // ---------------------------------------------------------------- the cards
@@ -592,14 +608,24 @@ function cardShell(def) {
 
 async function loadCard(def, gen, card) {
   const body = card.querySelector('.body');
-  // A rendered card goes back to its skeleton while it reloads, held at the height this view
-  // had last (else the one it has now), so nothing under it moves; see hold() in charts.js.
-  const now = body.querySelector('.skeleton') ? 0 : card.getBoundingClientRect().height;
-  if (now) body.replaceChildren(el('p', { class: 'sr-only' }, 'Loading'), skeleton(def.skeleton));
-  hold(card, def.id, now);
   body.setAttribute('aria-busy', 'true');
+  const answers = Promise.all(def.queries.map((name) => query(name, range)));
+  answers.catch(() => {});
+  // A rendered card goes back to its skeleton while it reloads (its content fades out, the
+  // skeleton in), held at the height this view had last, else the one it has now, so nothing
+  // under it moves but by easing; see hold() in charts.js.
+  if (body.querySelector('.skeleton')) hold(card, def.id);
+  else {
+    const now = card.getBoundingClientRect().height;
+    hold(card, def.id, now);
+    await fadeOut(body)?.finished.catch(() => {});
+    if (gen !== generation) return;
+    body.replaceChildren(el('p', { class: 'sr-only' }, 'Loading'), skeleton(def.skeleton));
+    fadeIn(body, tokens().short3);
+    hold(card, def.id, now);
+  }
   try {
-    const results = await Promise.all(def.queries.map((name) => query(name, range)));
+    const results = await answers;
     if (gen !== generation) return;
     const sub = def.sub(range, results[0]);
     card.querySelector('.sub').textContent = sub;
@@ -611,6 +637,7 @@ async function loadCard(def, gen, card) {
   } finally {
     if (gen === generation) {
       body.removeAttribute('aria-busy');
+      fadeIn(body);
       settle(card, def.id);
     }
   }

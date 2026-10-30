@@ -7,7 +7,12 @@
  * previous range a ghost of --faint, the chrome hairlines; the ordinal ramp for a funnel
  * is the accent mixed toward the surface. Text is text tokens, never the series colour.
  * Every value shown in a tooltip is also in a label or a table, so nothing is gated.
+ *
+ * Motion is motion.js's (Material 3, on the theme's tokens): a fold is an accordion, and a card
+ * whose height changes eases to it.
  */
+
+import { accordion, easeHeight, fadeIn, fadeOut, glideList } from '/motion.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -134,18 +139,29 @@ export function tile(label, value, { delta: change, trend, note, unit = '', tren
   return node;
 }
 
+/**
+ * The chart's tooltip. It fades and lifts in (theme.css `.tooltip.on`); moving from one mark to
+ * the next glides it there (`.glide`) instead of fading it out and in again, so a hide is held for
+ * a frame in case a show follows straight away, as it does between neighbouring marks.
+ */
 function tooltip(host) {
   const node = el('div', { class: 'tooltip', 'aria-hidden': 'true' });
   host.append(node);
+  let leaving = 0;
   return {
     show(x, y, lines) {
+      cancelAnimationFrame(leaving);
+      node.classList.toggle('glide', node.classList.contains('on'));
       node.replaceChildren(...lines.map((line) => el('div', {}, el('span', { class: `key${line.ghost ? ' ghost' : ''}` }), el('span', { class: 'v' }, line.v), ' ', el('span', { class: 'k' }, line.k))));
-      node.style.display = 'block';
+      node.classList.add('on');
       const w = host.clientWidth;
       node.style.left = `${Math.max(0, Math.min(x + 12, w - node.offsetWidth - 4))}px`;
       node.style.top = `${Math.max(0, y - node.offsetHeight - 10)}px`;
     },
-    hide() { node.style.display = 'none'; },
+    hide() {
+      cancelAnimationFrame(leaving);
+      leaving = requestAnimationFrame(() => node.classList.remove('on', 'glide'));
+    },
   };
 }
 
@@ -304,11 +320,98 @@ export function table(columns, rows, empty = 'Nothing in this range.') {
   return el('div', { class: 'scroll', tabindex: 0 }, el('table', {}, el('thead', {}, head), el('tbody', {}, ...body)));
 }
 
-/** The folded table under a chart: a <details> whose summary names it. */
+/** The folded table under a chart: a <details> whose summary names it, opening as an accordion. */
 export function folded(summary, body, { open = false } = {}) {
   const node = el('details', { class: 'folded', open: open || null }, el('summary', {}, summary));
   for (const part of Array.isArray(body) ? body : [body]) if (part) node.append(part);
+  accordion(node);
   return node;
+}
+
+/**
+ * A list a chip row filters (csarko.sh's journeys, Arkos's recent sessions): the first `shown`
+ * of the rows kept, the rest folded under `more(n)`, and `empty` when none is kept. `update(kept)`
+ * draws a new set, a subset of `rows` in order: after the first, the entries glide (motion.js
+ * glideList) and the fold and the empty line fade in or out with the space they take easing. Each
+ * row's node is made once by `render(row)`, so a fold the reader opened inside it stays open,
+ * and is matched across a change by `id(row)`, a string from the row's own fields, made unique
+ * here by a repeat count. Returns `{ node, update }`.
+ */
+export function filteredList(rows, { id, render, shown, more, empty }) {
+  const keys = new Map();
+  const repeats = new Map();
+  for (const row of rows) {
+    const base = id(row);
+    const n = repeats.get(base) ?? 0;
+    repeats.set(base, n + 1);
+    keys.set(row, n ? `${base}#${n}` : base);
+  }
+  const nodes = new Map();
+  const item = (row) => {
+    if (!nodes.has(row)) {
+      const node = render(row);
+      node.dataset.key = keys.get(row);
+      nodes.set(row, node);
+    }
+    return nodes.get(row);
+  };
+  const keyOf = (node) => node.dataset.key ?? null;
+  const head = el('ol', { class: 'journeys', role: 'list' });
+  const rest = el('ol', { class: 'journeys', role: 'list' });
+  const fold = folded('', rest);
+  const none = el('p', { class: 'empty' }, empty);
+  fold.hidden = true;
+  none.hidden = true;
+  const tail = el('div', { class: 'j-tail' }, none, fold);
+  // Parts fading out, hidden once the fade is done.
+  const leaving = new Set();
+  const toggle = (part, on, animate) => {
+    if (on) {
+      if (!part.hidden && !leaving.has(part)) return;
+      leaving.delete(part);
+      part.hidden = false;
+      if (animate) fadeIn(part);
+      return;
+    }
+    if (part.hidden || leaving.has(part)) return;
+    const out = animate ? fadeOut(part) : null;
+    if (!out) {
+      part.hidden = true;
+      return;
+    }
+    leaving.add(part);
+    out.finished.then(() => { if (leaving.delete(part)) part.hidden = true; }, () => {});
+  };
+  // The tail's height once what is leaving has gone.
+  const tailHeight = () => {
+    const going = [...leaving];
+    going.forEach((part) => { part.hidden = true; });
+    const height = tail.getBoundingClientRect().height;
+    going.forEach((part) => { part.hidden = false; });
+    return height;
+  };
+  let drawn = false;
+  const update = (kept) => {
+    const animate = drawn;
+    drawn = true;
+    const first = kept.slice(0, shown).map(item);
+    const after = kept.slice(shown).map(item);
+    const from = tail.getBoundingClientRect().height;
+    const fill = (list, items) => () => list.replaceChildren(...items);
+    if (animate) {
+      glideList(head, fill(head, first), keyOf);
+      glideList(rest, fill(rest, after), keyOf);
+    } else {
+      fill(head, first)();
+      fill(rest, after)();
+    }
+    fold.querySelector('summary').textContent = more(after.length);
+    toggle(none, !kept.length, animate);
+    toggle(fold, after.length > 0, animate);
+    const to = tailHeight();
+    if (animate && Math.abs(to - from) >= 1) easeHeight(tail, from, to);
+  };
+  return { node: el('div', { class: 'j-list' }, head, tail), update };
 }
 
 /** A status mark: dot and word together. */
@@ -387,6 +490,11 @@ export function loading(shape) {
  * lets it go and remembers the new height. A view seen before therefore loads in place; a
  * view never seen falls back to the skeleton's own shape. Storage refused (a private
  * window) costs only the memory.
+ *
+ * Where a card's height does change (a view never seen, a range whose height is another), it
+ * eases there (motion.js easeHeight) rather than snapping, and what it remembers is always the
+ * height it ends at, never one from the middle of an ease. A card not yet drawn (the shells
+ * before the first frame) takes its height at once: nothing was on screen to move from.
  */
 const HOLD = 'admin:hold:';
 const holdKey = (id) => `${HOLD}${location.pathname}|${id}|${[...new URLSearchParams(location.search)].sort().map(([k, v]) => `${k}=${v}`).join('&')}|${Math.round(innerWidth / 40)}`;
@@ -398,25 +506,52 @@ const recall = (id) => {
   }
 };
 
+// The cards that have been on screen: they ease to a new height, the rest take it.
+const drawn = new WeakSet();
+function markDrawn(card) {
+  if (drawn.has(card)) return true;
+  // Two frames: the first runs before the paint that shows the card, the second after it.
+  requestAnimationFrame(() => requestAnimationFrame(() => drawn.add(card)));
+  return false;
+}
+
+// A height ease in flight on `card` itself, or with `within`, on anything in it (a fold, a list's glide).
+const heightEases = (card, within = false) => card.getAnimations({ subtree: within })
+  .filter((a) => a.playState === 'running' && a.effect?.getKeyframes().some((k) => 'height' in k));
+
+// From the height `card` is drawn at to the one it has now (`from` read before the change), when
+// it has been on screen and the change is a pixel or more.
+function easeTo(card, from, ease) {
+  const to = card.getBoundingClientRect().height;
+  return ease && Math.abs(to - from) >= 1 ? easeHeight(card, from, to) : null;
+}
+
 /**
  * Hold `card` at the height it last had in this view (else at `fallback`, its height now,
  * on a reload): exactly that height, the skeleton filled down to it with lines or clipped
- * at it, so the space is the content's before the content comes.
+ * at it, so the space is the content's before the content comes. A card on screen eases from
+ * the height it is drawn at.
  */
 export function hold(card, id, fallback = 0) {
   watching.get(card)?.disconnect();
+  watching.delete(card);
   const height = recall(id) || fallback;
   if (!height) return;
+  const ease = markDrawn(card);
+  const from = card.getBoundingClientRect().height;
+  heightEases(card).forEach((a) => a.cancel());
   card.style.height = `${height}px`;
   card.style.overflow = 'hidden';
+  easeTo(card, from, ease);
   const shape = card.querySelector('.skeleton');
   if (!shape) return;
-  // As many text lines as fit between the skeleton's foot and the card's padding.
+  // As many text lines as fit between the skeleton's foot and the card's padding, at the height
+  // it is going to (an ease draws it at another meanwhile).
   const probe = shape.appendChild(el('div', { class: 'skel text' }));
   const box = probe.getBoundingClientRect();
   const step = box.height + parseFloat(getComputedStyle(probe).marginTop) + parseFloat(getComputedStyle(probe).marginBottom);
   probe.remove();
-  const room = card.getBoundingClientRect().bottom - parseFloat(getComputedStyle(card).paddingBottom) - shape.getBoundingClientRect().bottom;
+  const room = card.getBoundingClientRect().top + height - parseFloat(getComputedStyle(card).paddingBottom) - shape.getBoundingClientRect().bottom;
   const n = step > 0 ? Math.max(0, Math.min(400, Math.floor(room / step))) : 0;
   for (let i = 0; i < n; i += 1) shape.append(el('div', { class: `skel text${i % 4 === 3 ? ' short' : ''}` }));
 }
@@ -427,24 +562,38 @@ export function hold(card, id, fallback = 0) {
 const watching = new WeakMap();
 const SETTLING_MS = 1500;
 
-/** The content is in: let the card take its own height, and remember it for this view. */
+/**
+ * The content is in: let the card take its own height, and remember it for this view. The
+ * height is measured before the card eases to it, and while anything in the card eases its
+ * height, the readings after are skipped: what is remembered is where the card ends.
+ */
 export function settle(card, id) {
+  watching.get(card)?.disconnect();
+  watching.delete(card);
+  const ease = markDrawn(card);
+  const from = card.getBoundingClientRect().height;
+  heightEases(card).forEach((a) => a.cancel());
   card.style.height = '';
   card.style.overflow = '';
   const key = holdKey(id);
   const keep = () => {
+    const height = card.getBoundingClientRect().height;
+    // Hidden (the sign-in gate is up) it measures 0, which is no height to come back to.
+    if (!height) return;
     try {
-      localStorage.setItem(key, String(Math.round(card.getBoundingClientRect().height * 100) / 100));
+      localStorage.setItem(key, String(Math.round(height * 100) / 100));
     } catch {
       // No storage: the next load falls back to the skeleton's shape.
     }
   };
   keep();
+  const eased = easeTo(card, from, ease);
   if (typeof ResizeObserver !== 'function') return;
-  watching.get(card)?.disconnect();
-  const watch = new ResizeObserver(keep);
+  const watch = new ResizeObserver(() => { if (!heightEases(card, true).length) keep(); });
   watch.observe(card);
   watching.set(card, watch);
+  // The last frame of an ease draws the height it ends at, which the observer may not report again.
+  eased?.finished.then(() => { if (watching.get(card) === watch) keep(); }, () => {});
   setTimeout(() => { if (watching.get(card) === watch) { watch.disconnect(); watching.delete(card); } }, SETTLING_MS);
 }
 
