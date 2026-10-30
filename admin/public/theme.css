@@ -499,6 +499,8 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .j-node.edge { background: var(--accent-tint); border-color: var(--accent-border); }
 .j-arrow { flex: 0 0 22px; display: flex; align-items: center; justify-content: center; color: var(--faint); }
 .j-kicker { font-family: var(--mono); font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--faint); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+/* On an edge node's accent tint --faint reads 4.35:1 in the dark theme, under 4.5; --muted reads 6.74 (7.03 light). */
+.j-node.edge .j-kicker { color: var(--muted); }
 .j-tag { display: inline-block; font-size: 10px; letter-spacing: .04em; color: var(--muted); border: 1px solid var(--border-strong); border-radius: 999px; padding: 0 6px; line-height: 1.5; }
 .j-main { font-size: 14px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
 .j-title { font-size: 14px; font-weight: 600; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
