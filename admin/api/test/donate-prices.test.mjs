@@ -1,7 +1,7 @@
 // admin/api/test/donate-prices.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { TIERS, CUSTOM, TIER_KEYS, DOORS, doorOf, doorByKey, shippedDoors, DONATE_URL, PRICES_URL, DONATE_FROM, WINDOW_DAYS, REPRICE_DAYS, KEEP_DAYS } from "../src/donate/doors.mjs";
+import { TIERS, CUSTOM, TIER_KEYS, DOORS, doorOf, doorByKey, shippedDoors, DONATE_URL, PRICES_URL, DONATE_FROM, WINDOW_DAYS, REPRICE_DAYS, KEEP_DAYS, GCP_LAG_DAYS } from "../src/donate/doors.mjs";
 import { windowOf, poolOf, priceOf, pricesOf, decide } from "../src/donate/prices.mjs";
 
 test("three tiers at 1, 3 and 10 percent, then the custom row", () => {
@@ -77,11 +77,12 @@ test("decide: a failed provider holds a due turn up to three days late, then it 
   assert.equal(decide({ today: "2026-11-03", current: at("2026-10-31", ["arkos"]), failed: ["aws"], doors: DOORS2 }).reason, "doors added", "a door added is not a turn");
 });
 
-test("decide: a due turn waits on GCP rows through the window's end less two days", () => {
+test("decide: a due turn waits on GCP rows through the window's end less six days", () => {
   const base = { today: "2026-11-07", current: at("2026-10-31"), doors: DOORS2, gcpConfigured: true };
-  assert.deepEqual(decide({ ...base, gcpLastDay: "2026-11-03" }), { run: false, reason: "waiting on GCP rows through 2026-11-04", window: W("2026-11-07"), newPeriod: false, pending: [] });
-  assert.equal(decide({ ...base, gcpLastDay: null }).reason, "waiting on GCP rows through 2026-11-04");
-  assert.equal(decide({ ...base, gcpLastDay: "2026-11-04" }).run, true);
+  assert.deepEqual(decide({ ...base, gcpLastDay: "2026-10-30" }), { run: false, reason: "waiting on GCP rows through 2026-10-31", window: W("2026-11-07"), newPeriod: false, pending: [] });
+  assert.equal(decide({ ...base, gcpLastDay: null }).reason, "waiting on GCP rows through 2026-10-31");
+  assert.equal(decide({ ...base, gcpLastDay: "2026-10-31" }).run, true);
+  assert.equal(GCP_LAG_DAYS, 6);
   assert.equal(decide({ ...base, gcpConfigured: false, gcpLastDay: null }).run, true, "GCP not configured: nothing to wait on");
   assert.equal(decide({ ...base, today: "2026-11-06", gcpLastDay: null }).reason, "done", "a period not due still sweeps");
 });

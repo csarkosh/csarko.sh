@@ -24,6 +24,12 @@ export const REPRICE_DAYS = 7;
  * current one, so the deployed pages' baked links still pay for a month after a turn.
  */
 export const KEEP_DAYS = 35;
+/**
+ * How many days the GCP billing export may lag the window's end before the step waits (Cyrus,
+ * 2026-10-31: launched with the export six days behind rather than wait a week; the export's own
+ * lag is a day or two, so this still guards against a stalled export).
+ */
+export const GCP_LAG_DAYS = 6;
 
 /**
  * The launch flag. Flipped to `true` by the launch commit (plan Task 9 Step 3) once donate.csarko.sh

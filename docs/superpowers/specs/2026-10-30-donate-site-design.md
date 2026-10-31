@@ -163,8 +163,8 @@ a small month cannot fall under Stripe's minimum charge (my call). The fourth ro
 pricing the window that ends the day before *(amended Oct 31: Cyrus chose a rolling 30-day bill
 repriced weekly so the site could launch without waiting for a closed month; it was once a month,
 on or after the 3rd)*. The GCP billing export runs a day or two behind, so a due turn waits until
-the export has rows through two days before the window's end (three days behind is the most
-tolerated); a failed collector holds a due turn up to three days, then it runs with what is
+the export has rows through six days before the window's end (six days behind is the most
+tolerated, Cyrus, Oct 31, to launch that day); a failed collector holds a due turn up to three days, then it runs with what is
 there. A turn names its period by the day it ran (`repricedOn`). (The Finance data's "partial"
 mark means something else: months before the GCP export began on 2026-10-29.)
 
@@ -182,7 +182,7 @@ calling the admin API's snapshot route once a day) gains one idempotent step, **
 
 1. If the current period is under seven days old and has prices for every door that builds,
    stop (a door added between turns gets the current period's links at the next snapshot).
-2. Before the launch day, stop. If a turn is due and GCP's export has no rows through two days
+2. Before the launch day, stop. If a turn is due and GCP's export has no rows through six days
    before the window's end, stop. If a turn is due and any configured provider's collector failed
    today, stop and try tomorrow, up to three days late; then run with what is there. *(Amended
    Oct 31: a rolling 30-day bill repriced weekly; it was the 3rd to the 7th of each month.)* A provider that is not configured,

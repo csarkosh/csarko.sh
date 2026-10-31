@@ -4,19 +4,17 @@
  * share of it rounded up to the dollar, and `decide` says whether today's snapshot run should
  * publish new prices. Prices turn every seven days from the last repricing, from the launch day
  * `DONATE_FROM` on; a due turn waits while a collector failed, up to three days late, and while
- * GCP's export has no rows through two days before the window's end (it runs a day or two behind;
- * three is the most tolerated). A door added between turns gets the current prices at the next run.
+ * GCP's export has no rows through six days before the window's end (it runs a day or two behind;
+ * six is the most tolerated, `GCP_LAG_DAYS`). A door added between turns gets the current prices at the next run.
  */
 
 import { addDays } from "../time.mjs";
 import { projectOf } from "../finance/projects.mjs";
-import { TIERS, DONATE_FROM, WINDOW_DAYS, REPRICE_DAYS } from "./doors.mjs";
+import { TIERS, DONATE_FROM, WINDOW_DAYS, REPRICE_DAYS, GCP_LAG_DAYS } from "./doors.mjs";
 
 export const FLOOR_USD = 1;
 /** How many days late a due turn may wait on a failed collector. */
 const LATE_DAYS = 3;
-/** How far behind the window's end GCP's export may run. */
-const GCP_LAG_DAYS = 2;
 
 /** The window priced on `today`: the 30 days ending yesterday. */
 export const windowOf = (today) => ({ from: addDays(today, -WINDOW_DAYS), to: addDays(today, -1) });

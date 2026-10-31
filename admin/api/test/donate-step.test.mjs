@@ -47,7 +47,7 @@ test("a new period: four products, four prices, four links a door, one JSON, the
   const calls = [];
   const bucket = fakeBucket();
   const step = createDonateStep({ writer: fakeWriter(calls), bucket, now: () => NOW, log: quiet });
-  const out = await step.run({ dailyRows: ROWS, failed: [], today: TODAY, gcpConfigured: true, gcpLastDay: "2026-10-28" });
+  const out = await step.run({ dailyRows: ROWS, failed: [], today: TODAY, gcpConfigured: true, gcpLastDay: "2026-10-24" });
   assert.equal(out.ran, true);
   assert.deepEqual(out.record, { period: PERIOD, pool: 287.4, at: "2026-10-31T10:00:12.000Z", doors: SHIPPED });
   const j = bucket.json;
@@ -90,8 +90,8 @@ test("done, a failed provider and the GCP hold leave Stripe and the bucket alone
   assert.deepEqual(await step.run({ dailyRows: ROWS, failed: [], today: "2026-11-06" }), { ran: false, reason: "done", record: { period: PERIOD, pool: 288, at: "2026-10-31T10:00:12.000Z", doors: SHIPPED }, swept: { links: 0, prices: 0 } });
   const fresh = () => createDonateStep({ writer: fakeWriter(calls), bucket: fakeBucket(), now: () => NOW, log: quiet });
   assert.equal((await fresh().run({ dailyRows: ROWS, failed: ["gcp"], today: TODAY })).reason, "waiting on gcp");
-  assert.equal((await fresh().run({ dailyRows: ROWS, failed: [], today: TODAY, gcpConfigured: true, gcpLastDay: "2026-10-27" })).reason, "waiting on GCP rows through 2026-10-28");
-  assert.equal((await fresh().run({ dailyRows: ROWS, failed: [], today: TODAY, gcpConfigured: true, gcpLastDay: null })).reason, "waiting on GCP rows through 2026-10-28");
+  assert.equal((await fresh().run({ dailyRows: ROWS, failed: [], today: TODAY, gcpConfigured: true, gcpLastDay: "2026-10-23" })).reason, "waiting on GCP rows through 2026-10-24");
+  assert.equal((await fresh().run({ dailyRows: ROWS, failed: [], today: TODAY, gcpConfigured: true, gcpLastDay: null })).reason, "waiting on GCP rows through 2026-10-24");
   assert.equal(calls.length, 0);
   assert.equal(bucket.writes, 0);
 });

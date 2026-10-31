@@ -104,7 +104,7 @@ links and publishes the prices object, and stores `finance.donate = { period, po
 does nothing; without the key it is `notConfigured.donate`, and a failure is `errors.donate`. The
 first day it ever prices is the `DONATE_FROM` constant in `src/donate/doors.mjs` (2026-10-31, the
 launch day). A due turn holds with `waiting on GCP rows through <day>` until the GCP export has rows
-through two days before the window's end, and with `waiting on <providers>` while a collector failed,
+through six days before the window's end (`GCP_LAG_DAYS`), and with `waiting on <providers>` while a collector failed,
 up to three days late. A done run sweeps the links and prices of periods repriced more than 35 days
 before the current one (`KEEP_DAYS`).
 The job also stores the day's KPI values as `finance.kpi` (`monthToDate`, `idleRunRate`, `last30`,
