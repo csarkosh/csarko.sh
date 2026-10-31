@@ -872,3 +872,29 @@ test('/projects carries Apps, Film and Games chips with counts, All as a reset, 
   assert.ok(html.includes('id="a" data-kind="film"'));
   assert.ok(html.indexOf('<form class="filters"') < html.indexOf('<ul class="project-list"'), 'the chips sit above the cards');
 });
+
+test('a film may carry focus, a fraction from 0 to 1 that the phone crop centres on', () => {
+  assert.equal(film('x').focus, undefined);
+  assert.equal(film('x', ['focus: 0.42']).focus, 0.42);
+  assert.equal(film('x', ['focus: 0']).focus, 0);
+  assert.equal(film('x', ['focus: 1']).focus, 1);
+  rejectsFilm('x', ['focus: 1.5'], /focus/);
+  rejectsFilm('x', ['focus: -0.1'], /focus/);
+  rejectsFilm('x', ['focus: high'], /focus/);
+});
+
+test('a film card sets --focus inline from focus, and no style without it', () => {
+  const withFocus = projectsPage([film('hallway', ['focus: 0.42'])], themeBlocks(INDEX));
+  assert.match(withFocus, /<div class="project-media film-poster" style="--focus: 42%">/);
+  const without = projectsPage([film('hallway')], themeBlocks(INDEX));
+  assert.match(without, /<div class="project-media film-poster">/);
+  assert.doesNotMatch(without, /style="--focus/);
+});
+
+test('on a phone a film poster is a 16 / 9 crop around its focus point', () => {
+  const html = projectsPage([film('hallway')], themeBlocks(INDEX));
+  const phone = html.slice(html.indexOf('@media (max-width: 640px) {\n      .project-card'));
+  assert.match(phone, /aspect-ratio: 16 \/ 9/);
+  assert.match(phone, /object-position: center var\(--focus, 50%\)/);
+  assert.match(phone, /object-fit: cover/);
+});

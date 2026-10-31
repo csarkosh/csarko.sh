@@ -76,7 +76,7 @@ const APP_FIELDS = { description: true, status: true, page: true, platforms: tru
 // A film is a video hosted on YouTube: the page carries its poster and links out, so every field
 // here but "order" is needed to build the card and its VideoObject. "alt" describes the poster.
 // There is no warning field: every film card carries the same notice (FILM_NOTICE).
-const FILM_FIELDS = { description: true, watch: true, released: true, runtime: true, alt: true, tags: true, model: true, order: false };
+const FILM_FIELDS = { description: true, watch: true, released: true, runtime: true, alt: true, tags: true, model: true, order: false, focus: false };
 // A film's main AI model, shown as the first tag on its card (Cyrus, 2026-10-29), written the way
 // the tag reads: "Video model: Veo 3.1", or "Image model: ..." for a film animated from stills with
 // no video model. Only the one model may be named in public (film-generation's AGENTS.md, "What the
@@ -213,10 +213,16 @@ export function parseFilmFrontMatter(text, file) {
   if (!tags.length || tags.length > 5) throw new DocError(`${file}: tags must be 1 to 5 comma-separated names`);
   if (!FILM_MODEL.test(meta.model)) throw new DocError(`${file}: model must read "Video model: <name>" or "Image model: <name>"`);
   const [, minutes, seconds] = runtime;
+  let focus;
+  if (meta.focus !== undefined) {
+    focus = /^\d+(\.\d+)?$|^\.\d+$/.test(meta.focus) ? Number(meta.focus) : NaN;
+    if (!(focus >= 0 && focus <= 1)) throw new DocError(`${file}: focus must be a number from 0 to 1, the fraction of the poster's height the phone crop centres on`);
+  }
   return {
     meta: {
       ...meta,
       tags,
+      focus,
       order: parseOrder(meta, file),
       videoId: watch[1],
       // ISO 8601, which is the only duration schema.org reads.
@@ -879,7 +885,8 @@ const PROJECTS_CSS = `
       .project-card .project-title { order: 2; margin-bottom: 14px; }
       .project-card .film-notice { order: 3; }
       .project-card .project-media { order: 4; width: 100%; margin-bottom: 18px; }
-      .project-card .project-media.film-poster { width: 200px; align-self: flex-start; }
+      .project-card .project-media.film-poster { aspect-ratio: 16 / 9; }
+      .project-card .project-media.film-poster img { height: 100%; object-fit: cover; object-position: center var(--focus, 50%); }
       .project-card .project-desc { order: 5; }
       .project-card .tags { order: 6; }
       .project-card .card-links { order: 7; }
@@ -1305,7 +1312,9 @@ ${pad}</div>`;
 // the home page). Until it runs, and in any copy of the page that never goes through it, the plain
 // <img> inside is already the right image at the right shape, and it carries the alt text the
 // Markdown gave: build_assets.py reads that attribute back out rather than parsing the front matter.
-const filmPoster = (film, pad) => `${pad}<div class="project-media film-poster">
+// focus (0 to 1) is where the phone's landscape crop centres on the poster's height.
+const focusStyle = (focus) => (focus === undefined ? '' : ` style="--focus: ${Number((focus * 100).toFixed(2))}%"`);
+const filmPoster = (film, pad) => `${pad}<div class="project-media film-poster"${focusStyle(film.focus)}>
 ${pad}  <!-- generated:film-poster:${film.slug} -->
 ${pad}  <img src="${film.poster}" width="1080" height="1920" alt="${escapeHtml(film.alt)}" loading="lazy" decoding="async" />
 ${pad}  <!-- /generated:film-poster:${film.slug} -->

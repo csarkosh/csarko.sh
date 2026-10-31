@@ -18,7 +18,7 @@ Sources (in .agents/skills/site-quality/assets/):
 
 Outputs (in public/):
   assets/portrait-<w>.<hash>.{avif,webp,jpg}   w = 240, 360, 480, 720
-  assets/film-<slug>-<w>.<hash>.{avif,webp,jpg}   w = 200, 240, 400, 480
+  assets/film-<slug>-<w>.<hash>.{avif,webp,jpg}   w = 240, 480, 720
   assets/<font>.<hash>.woff2
   assets/visits.<hash>.js, assets/vitals.<hash>.js   (the vendored files without their provenance line)
   portrait.jpg                                 stable 720px URL for JSON-LD / sharing
@@ -69,15 +69,15 @@ WIDTHS = (240, 360, 480, 720)
 # Rendered size: 230px wide on desktop, a 120px circle at <=640px viewports.
 SIZES = "(max-width: 640px) 120px, 230px"
 FALLBACK_WIDTH = 480
-# A film poster is 240px wide in its card, 200px once the card stacks on a phone, so these are
-# those two sizes and their 2x. PROJECTS_DIR mirrors docs_lib.mjs, which builds the page: a film's
+# A film poster is 240px wide in its card, and the card's full width (a 16 / 9 crop) once it stacks
+# on a phone, so these are the 240px and its 2x, and 720 for a 390px phone at 2x. PROJECTS_DIR mirrors docs_lib.mjs, which builds the page: a film's
 # poster and a preview each have a stable copy there, by slug (the slugs are unique across kinds).
 PROJECTS_DIR = "projects"
 # Where those stable copies lived until /film and /apps became /projects (2026-10-26): emptied and
 # removed, since firebase.json now 301s both paths.
 LEGACY_DIRS = ("film", "apps")
-FILM_WIDTHS = (200, 240, 400, 480)
-FILM_SIZES = "(max-width: 640px) 200px, 240px"
+FILM_WIDTHS = (240, 480, 720)
+FILM_SIZES = "(max-width: 640px) calc(100vw - 94px), 240px"
 FILM_FALLBACK_WIDTH = 240
 # An app's preview is 360px wide beside its card's text, and the card's full width once it stacks
 # on a phone (at most 640px less the page's and the card's padding).

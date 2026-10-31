@@ -467,7 +467,8 @@
       .project-card .project-title { order: 2; margin-bottom: 14px; }
       .project-card .film-notice { order: 3; }
       .project-card .project-media { order: 4; width: 100%; margin-bottom: 18px; }
-      .project-card .project-media.film-poster { width: 200px; align-self: flex-start; }
+      .project-card .project-media.film-poster { aspect-ratio: 16 / 9; }
+      .project-card .project-media.film-poster img { height: 100%; object-fit: cover; object-position: center var(--focus, 50%); }
       .project-card .project-desc { order: 5; }
       .project-card .tags { order: 6; }
       .project-card .card-links { order: 7; }
@@ -586,12 +587,12 @@ people read and where they came from, straight from the command line.</p>
         </div>
       </li>
       <li class="card project-card" id="the-last-trail" data-kind="film">
-        <div class="project-media film-poster">
+        <div class="project-media film-poster" style="--focus: 42%">
           <!-- generated:film-poster:the-last-trail -->
           <picture>
-            <source type="image/avif" srcset="/assets/film-the-last-trail-200.3197090a.avif 200w, /assets/film-the-last-trail-240.fb76a9d8.avif 240w, /assets/film-the-last-trail-400.80028675.avif 400w, /assets/film-the-last-trail-480.03b38421.avif 480w" sizes="(max-width: 640px) 200px, 240px" />
-            <source type="image/webp" srcset="/assets/film-the-last-trail-200.a6c21861.webp 200w, /assets/film-the-last-trail-240.23ae271f.webp 240w, /assets/film-the-last-trail-400.7e83da90.webp 400w, /assets/film-the-last-trail-480.9b2b1241.webp 480w" sizes="(max-width: 640px) 200px, 240px" />
-            <img src="/assets/film-the-last-trail-240.bc390bfd.jpg" srcset="/assets/film-the-last-trail-200.dada878c.jpg 200w, /assets/film-the-last-trail-240.bc390bfd.jpg 240w, /assets/film-the-last-trail-400.02c9e91f.jpg 400w, /assets/film-the-last-trail-480.17b0d9bc.jpg 480w" sizes="(max-width: 640px) 200px, 240px" width="240" height="320" alt="A woman in a red jacket in dark woods at dusk, holding a ranger radio with a green light, looking down at it." loading="lazy" decoding="async" />
+            <source type="image/avif" srcset="/assets/film-the-last-trail-240.fb76a9d8.avif 240w, /assets/film-the-last-trail-480.03b38421.avif 480w, /assets/film-the-last-trail-720.46aaa288.avif 720w" sizes="(max-width: 640px) calc(100vw - 94px), 240px" />
+            <source type="image/webp" srcset="/assets/film-the-last-trail-240.23ae271f.webp 240w, /assets/film-the-last-trail-480.9b2b1241.webp 480w, /assets/film-the-last-trail-720.f74b87ac.webp 720w" sizes="(max-width: 640px) calc(100vw - 94px), 240px" />
+            <img src="/assets/film-the-last-trail-240.bc390bfd.jpg" srcset="/assets/film-the-last-trail-240.bc390bfd.jpg 240w, /assets/film-the-last-trail-480.17b0d9bc.jpg 480w, /assets/film-the-last-trail-720.c6a88589.jpg 720w" sizes="(max-width: 640px) calc(100vw - 94px), 240px" width="240" height="320" alt="A woman in a red jacket in dark woods at dusk, holding a ranger radio with a green light, looking down at it." loading="lazy" decoding="async" />
           </picture>
           <!-- /generated:film-poster:the-last-trail -->
         </div>
@@ -610,12 +611,12 @@ and on his ranger radio a voice that sounds like him starts giving her direction
         </div>
       </li>
       <li class="card project-card" id="who-is-standing-in-my-hallway" data-kind="film">
-        <div class="project-media film-poster">
+        <div class="project-media film-poster" style="--focus: 25%">
           <!-- generated:film-poster:who-is-standing-in-my-hallway -->
           <picture>
-            <source type="image/avif" srcset="/assets/film-who-is-standing-in-my-hallway-200.b5e0f11c.avif 200w, /assets/film-who-is-standing-in-my-hallway-240.a25dd71f.avif 240w, /assets/film-who-is-standing-in-my-hallway-400.5e4ecbfa.avif 400w, /assets/film-who-is-standing-in-my-hallway-480.79c4229f.avif 480w" sizes="(max-width: 640px) 200px, 240px" />
-            <source type="image/webp" srcset="/assets/film-who-is-standing-in-my-hallway-200.2f377770.webp 200w, /assets/film-who-is-standing-in-my-hallway-240.06bed0a3.webp 240w, /assets/film-who-is-standing-in-my-hallway-400.f31c03e0.webp 400w, /assets/film-who-is-standing-in-my-hallway-480.59d8199d.webp 480w" sizes="(max-width: 640px) 200px, 240px" />
-            <img src="/assets/film-who-is-standing-in-my-hallway-240.b0a536b6.jpg" srcset="/assets/film-who-is-standing-in-my-hallway-200.df13b2a7.jpg 200w, /assets/film-who-is-standing-in-my-hallway-240.b0a536b6.jpg 240w, /assets/film-who-is-standing-in-my-hallway-400.0b8edb18.jpg 400w, /assets/film-who-is-standing-in-my-hallway-480.ed57257f.jpg 480w" sizes="(max-width: 640px) 200px, 240px" width="240" height="320" alt="A woman in dark pyjamas, lit from below by her phone, staring past the camera in a dim hallway." loading="lazy" decoding="async" />
+            <source type="image/avif" srcset="/assets/film-who-is-standing-in-my-hallway-240.a25dd71f.avif 240w, /assets/film-who-is-standing-in-my-hallway-480.79c4229f.avif 480w, /assets/film-who-is-standing-in-my-hallway-720.e27f76d0.avif 720w" sizes="(max-width: 640px) calc(100vw - 94px), 240px" />
+            <source type="image/webp" srcset="/assets/film-who-is-standing-in-my-hallway-240.06bed0a3.webp 240w, /assets/film-who-is-standing-in-my-hallway-480.59d8199d.webp 480w, /assets/film-who-is-standing-in-my-hallway-720.93e5b525.webp 720w" sizes="(max-width: 640px) calc(100vw - 94px), 240px" />
+            <img src="/assets/film-who-is-standing-in-my-hallway-240.b0a536b6.jpg" srcset="/assets/film-who-is-standing-in-my-hallway-240.b0a536b6.jpg 240w, /assets/film-who-is-standing-in-my-hallway-480.ed57257f.jpg 480w, /assets/film-who-is-standing-in-my-hallway-720.88d9f458.jpg 720w" sizes="(max-width: 640px) calc(100vw - 94px), 240px" width="240" height="320" alt="A woman in dark pyjamas, lit from below by her phone, staring past the camera in a dim hallway." loading="lazy" decoding="async" />
           </picture>
           <!-- /generated:film-poster:who-is-standing-in-my-hallway -->
         </div>
