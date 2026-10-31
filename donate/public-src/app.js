@@ -1,9 +1,9 @@
 // The donate site's one script. On a door page: the selected tier sets the button's link and
-// words, and this month's prices replace the baked ones when the bucket answers. On /thanks: the
+// words, and the current period's prices replace the baked ones when the bucket answers. On /thanks: the
 // door in the address picks the thanks line and the link back. Every value reaches the page through
 // textContent or setAttribute, never as markup. Without this script both pages still work: the
 // button pays the default tier and the thanks page links to the projects page.
-import { DEFAULT_TIER, backLink, billParts, buttonLabel, monthName, pickPrices, thanksLine } from '/view.js';
+import { DEFAULT_TIER, backLink, billParts, buttonLabel, dayLabel, pickPrices, thanksLine } from '/view.js';
 
 // PRICES_URL in admin/api/src/donate/doors.mjs; build.mjs fails if the two differ.
 const PRICES_URL = 'https://storage.googleapis.com/csarko-sh-donate-prices/prices.json';
@@ -55,7 +55,7 @@ function doorPage(pay, baked) {
     if (stale && bill && !document.querySelector('.note')) {
       const note = document.createElement('p');
       note.className = 'note';
-      note.textContent = `Prices are from ${monthName(next.month)}.`;
+      note.textContent = `Prices are from ${dayLabel(next.period?.repricedOn)}.`;
       bill.after(note);
     }
     setButton();
@@ -65,7 +65,7 @@ function doorPage(pay, baked) {
     .then((res) => (res.ok ? res.json() : null))
     .catch(() => null)
     .then((fetched) => apply(pickPrices(baked, fetched, baked.door)))
-    // Anything the live prices break leaves the baked ones, said to be from their month.
+    // Anything the live prices break leaves the baked ones, said to be from their day.
     .catch(() => apply({ prices: baked, stale: true }));
   setButton();
 }

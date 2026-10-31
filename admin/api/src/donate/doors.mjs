@@ -2,7 +2,7 @@
  * The donate site's fixed vocabulary: where it lives, the three tiers every door shares, and the
  * seven doors (one per project, plus the bare door for the whole body of work). A door is a page
  * on donate.csarko.sh that shows the project's own picture and words over the same bill, so only
- * the copy here differs from door to door; the prices come from prices.mjs and the month's pool.
+ * the copy here differs from door to door; the prices come from prices.mjs and the last 30 days' pool.
  * The repository is public, so everything written here is public copy: Cyrus's register (first
  * person, dry, short), no em-dash, no address.
  *
@@ -11,10 +11,19 @@
  */
 
 /**
- * The first month the step prices (the spec's section 3, "The first pool and the launch"). An earlier
- * closed month is never priced, so a run before Nov 3 does nothing.
+ * The first day the step may price, the launch day (the spec's section 3, "The first pool and the
+ * launch"): a run before it does nothing.
  */
-export const DONATE_FROM_MONTH = "2026-10";
+export const DONATE_FROM = "2026-10-31";
+/** The bill is the 30 days ending yesterday (UTC). */
+export const WINDOW_DAYS = 30;
+/** Prices turn every seven days from the last repricing. */
+export const REPRICE_DAYS = 7;
+/**
+ * A sweep retires the Stripe objects of a period repriced more than this many days before the
+ * current one, so the deployed pages' baked links still pay for a month after a turn.
+ */
+export const KEEP_DAYS = 35;
 
 /**
  * The launch flag. Flipped to `true` by the launch commit (plan Task 9 Step 3) once donate.csarko.sh
@@ -27,7 +36,7 @@ export const PRICES_BUCKET = "csarko-sh-donate-prices";
 export const PRICES_OBJECT = "prices.json";
 export const PRICES_URL = `https://storage.googleapis.com/${PRICES_BUCKET}/${PRICES_OBJECT}`;
 
-/** The three tiers, each a share of last month's pool. */
+/** The three tiers, each a share of the last 30 days' pool. */
 export const TIERS = [
   { key: "prompt", name: "A prompt", share: 0.01 },
   { key: "context", name: "A long context window", share: 0.03 },

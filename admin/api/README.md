@@ -96,12 +96,17 @@ without the key every income part is null with `notConfigured.stripe = "STRIPE_K
 The balance transactions are listed with `expand[]=data.source` so each carries its charge, and the
 only field kept from it is the **door** (`metadata.door`): the `income` query's `byDoor` splits the
 range by door, `unknown` for a charge without one.
-The daily snapshot also runs the **donate step** (`src/donate/step.mjs`, `STRIPE_WRITE_KEY`): once a
-month it makes the next month's prices and payment links and publishes the prices object, and stores
-`finance.donate = { month, pool, at, doors }` (the `income` query's `prices`), carried forward on the
-days it does nothing; without the key it is `notConfigured.donate`, and a failure is `errors.donate`. The first month it ever prices is the `DONATE_FROM_MONTH` constant in `src/donate/doors.mjs` (2026-10), so an earlier closed month is never priced.
-While the GCP export's first usage day is after the first of the month being priced, the step holds
-with the reason `waiting on GCP history for <month>`, whatever the day of the month.
+The daily snapshot also runs the **donate step** (`src/donate/step.mjs`, `STRIPE_WRITE_KEY`): every
+seven days from the last repricing (amended Oct 31; it was once a month) it prices the last 30 days'
+spend (the 30 days ending yesterday, from the daily rows), makes the period's prices and payment
+links and publishes the prices object, and stores `finance.donate = { period, pool, at, doors }`
+(`period = { from, to, repricedOn }`; the `income` query's `prices`), carried forward on the days it
+does nothing; without the key it is `notConfigured.donate`, and a failure is `errors.donate`. The
+first day it ever prices is the `DONATE_FROM` constant in `src/donate/doors.mjs` (2026-10-31, the
+launch day). A due turn holds with `waiting on GCP rows through <day>` until the GCP export has rows
+through two days before the window's end, and with `waiting on <providers>` while a collector failed,
+up to three days late. A done run sweeps the links and prices of periods repriced more than 35 days
+before the current one (`KEEP_DAYS`).
 The job also stores the day's KPI values as `finance.kpi` (`monthToDate`, `idleRunRate`, `last30`,
 `forecast`, `donations`; `last30` left the card on 2026-10-30 but keeps its history), which the index
 card's trends read, a small `finance.stripe = { at, mtdNet, count, lastDay }` read live, and
@@ -133,20 +138,23 @@ lib-visits counts a visit as one browser on one day (a stateless daily hash), no
 pageview, so every `pageviews` field is `null`. The pre-cutover history keeps
 the old unit (a browser once per page per session) and is merged by day, path and name.
 
-## Redo a month's tip prices
+## Redo a period's tip prices
 
-The step reuses whatever Stripe holds for the month: its lookups find the active prices by
-`lookup_key` and the active links by `metadata.month`, so a rerun alone changes nothing. To make
-the month's prices again (a wrong pool, a fixed bill):
+A period is named by the day it was repriced on, its `repricedOn` date (`period.repricedOn` in the
+prices object). The step reuses whatever Stripe holds for that day: its lookups find the active
+prices by `lookup_key` and the active links by `metadata.period`, so a rerun alone changes nothing.
+To make the period's prices again (a wrong pool, a fixed bill):
 
-1. Archive the month's prices: every active price whose `lookup_key` starts with `donate:<month>:`
-   (`active=false`; a new price takes the key over).
-2. Deactivate the month's payment links: every active link whose `metadata.month` is the month.
+1. Archive the period's prices: every active price whose `lookup_key` starts with
+   `donate:<repricedOn>:` (`active=false`; a new price takes the key over).
+2. Deactivate the period's payment links: every active link whose `metadata.period` is that date.
 3. Delete the prices object: `gcloud storage rm gs://csarko-sh-donate-prices/prices.json`.
 4. Let the next snapshot recompute it (or call `POST /admin/snapshot`), then run `donate/deploy.sh` so
    the pages' baked fallback points at the new links.
 
 Until step 4 the pages' fallback points at the retired links, so do it in one sitting.
+The new period is repriced on the day the step runs, so its window is the 30 days before that day
+and its next turn seven days on.
 
 ## Environment
 
@@ -170,7 +178,7 @@ variables from Secret Manager. A credential whose value is empty or the placehol
 | `BILLING_DATASET`, `BILLING_TABLE` | | the GCP billing export's dataset (`billing`) and table (`gcp_billing_export_v1_013AA0_554DB9_BBF90D`); either empty means the GCP part is not configured |
 | `FAL_ADMIN_KEY` | | a fal API key with the Admin scope, for the credit balance; empty means the fal part is not configured |
 | `STRIPE_KEY` | | a **restricted** Stripe key (read on balance transactions, charges and payouts, nothing else; never the secret key), for the donations; empty means the income parts (`summary.income`, `total.net`, the `income` query, the `donations` KPI) are not configured |
-| `STRIPE_WRITE_KEY` | | a second **restricted** Stripe key that can write products, prices and payment links (nothing else), for the monthly tip prices; empty means the donate step is not configured (`notConfigured.donate`) and the snapshot skips it |
+| `STRIPE_WRITE_KEY` | | a second **restricted** Stripe key that can write products, prices and payment links (nothing else), for the weekly tip prices; empty means the donate step is not configured (`notConfigured.donate`) and the snapshot skips it |
 | `DONATE_BUCKET` | | the public GCS bucket the donate step writes the prices object into (`csarko-sh-donate-prices`); empty means the donate step is not configured either (it needs both this and the write key) |
 | `DONATE_URL` | `https://donate.csarko.sh` | the donate site's address, read into the config; the step's payment links currently return to the same address from `src/donate/doors.mjs` |
 | `FILM_LEDGERS_BUCKET` | | the private GCS bucket holding `<film>/ledger.json` (`csarko-sh-film-ledgers`); empty means the Films card is not configured |

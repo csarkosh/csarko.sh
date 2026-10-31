@@ -1,26 +1,32 @@
 /**
- * The price rule of the donate site, pure: last month's spend (less the commercial project, which
- * is not free public work) is the pool, each tier is a share of it rounded up to the dollar, and
- * `decide` says whether today's snapshot run should publish new prices. Prices are made once a
- * month, on the 3rd (after the billing sources have settled), later if a collector failed and not
- * past the 7th; a door added mid-month gets that month's prices at the next run. While GCP's billing
- * export starts after the first day of the month being priced, the month waits, with no
- * day-of-month override: a pool without GCP's whole month would undercount it for a month.
+ * The price rule of the donate site, pure: the last 30 days' spend (the 30 days ending yesterday,
+ * UTC, less the commercial project, which is not free public work) is the pool, each tier is a
+ * share of it rounded up to the dollar, and `decide` says whether today's snapshot run should
+ * publish new prices. Prices turn every seven days from the last repricing, from the launch day
+ * `DONATE_FROM` on; a due turn waits while a collector failed, up to three days late, and while
+ * GCP's export has no rows through two days before the window's end (it runs a day or two behind;
+ * three is the most tolerated). A door added between turns gets the current prices at the next run.
  */
 
-import { addMonths, monthOf } from "../finance/rows.mjs";
+import { addDays } from "../time.mjs";
 import { projectOf } from "../finance/projects.mjs";
-import { TIERS, DONATE_FROM_MONTH } from "./doors.mjs";
+import { TIERS, DONATE_FROM, WINDOW_DAYS, REPRICE_DAYS } from "./doors.mjs";
 
-export const PRICE_DAY = 3;
-export const LATE_DAY = 7;
 export const FLOOR_USD = 1;
+/** How many days late a due turn may wait on a failed collector. */
+const LATE_DAYS = 3;
+/** How far behind the window's end GCP's export may run. */
+const GCP_LAG_DAYS = 2;
 
-/** The unrounded sum of `month`'s rows outside the commercial project, never below 0. */
-export function poolOf(monthlyRows, month) {
+/** The window priced on `today`: the 30 days ending yesterday. */
+export const windowOf = (today) => ({ from: addDays(today, -WINDOW_DAYS), to: addDays(today, -1) });
+
+/** The unrounded sum of the window's daily rows outside the commercial project, never below 0. */
+export function poolOf(dailyRows, window) {
   let sum = 0;
-  for (const r of monthlyRows) {
-    if (r.month !== month || r.project === "commercial" || projectOf(r) === "commercial") continue;
+  for (const r of dailyRows) {
+    if (typeof r.day !== "string" || r.day < window.from || r.day > window.to) continue;
+    if (r.project === "commercial" || projectOf(r) === "commercial") continue;
     sum += r.amount;
   }
   return Math.max(0, sum);
@@ -35,20 +41,23 @@ export function pricesOf(pool) {
 }
 
 /**
- * Whether to publish prices today. `current` is the published JSON or null, `failed` the providers
- * whose collector failed today, `doors` the shipped door keys, `gcpFirstDay` the GCP export's first
- * usage day (null when GCP is not configured).
+ * Whether to publish prices today. `current` is the published JSON (its `period` and door keys) or
+ * null, `failed` the providers whose collector failed today, `doors` the shipped door keys,
+ * `gcpLastDay` the newest day of GCP's export (read only when `gcpConfigured`).
  */
-export function decide({ today, current, failed, doors, gcpFirstDay = null, fromMonth = DONATE_FROM_MONTH }) {
-  const month = addMonths(monthOf(today), -1);
-  const published = current?.month === month ? current.doors ?? [] : [];
-  const missing = doors.filter((d) => !published.includes(d));
-  if (current?.month === month && missing.length === 0) return { run: false, reason: "done", month, newMonth: false, pending: [] };
-  if (month < fromMonth) return { run: false, reason: "before the first priced month", month, newMonth: false, pending: [] };
-  if (gcpFirstDay !== null && gcpFirstDay > `${month}-01`) return { run: false, reason: `waiting on GCP history for ${month}`, month, newMonth: false, pending: [] };
-  const day = Number(today.slice(8, 10));
-  if (day < PRICE_DAY) return { run: false, reason: "before the 3rd", month, newMonth: false, pending: [] };
-  if (failed.length > 0 && day < LATE_DAY) return { run: false, reason: `waiting on ${failed.join(", ")}`, month, newMonth: false, pending: [] };
-  const newMonth = current?.month !== month;
-  return { run: true, reason: newMonth ? "new month" : "doors added", month, newMonth, pending: newMonth ? [...doors] : missing };
+export function decide({ today, current, failed = [], doors, gcpConfigured = false, gcpLastDay = null, from = DONATE_FROM }) {
+  const window = windowOf(today);
+  const hold = (reason) => ({ run: false, reason, window, newPeriod: false, pending: [] });
+  if (today < from) return hold("before the launch day");
+  const due = current === null || addDays(current.period.repricedOn, REPRICE_DAYS) <= today;
+  if (!due) {
+    const published = current.doors ?? [];
+    const missing = doors.filter((d) => !published.includes(d));
+    if (missing.length === 0) return hold("done");
+    return { run: true, reason: "doors added", window, newPeriod: false, pending: missing };
+  }
+  const gcpThrough = addDays(window.to, -GCP_LAG_DAYS);
+  if (gcpConfigured && (gcpLastDay === null || gcpLastDay < gcpThrough)) return hold(`waiting on GCP rows through ${gcpThrough}`);
+  if (failed.length > 0 && (current === null || today < addDays(current.period.repricedOn, REPRICE_DAYS + LATE_DAYS))) return hold(`waiting on ${failed.join(", ")}`);
+  return { run: true, reason: "new period", window, newPeriod: true, pending: [...doors] };
 }

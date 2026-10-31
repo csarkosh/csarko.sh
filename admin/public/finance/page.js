@@ -238,8 +238,8 @@ function donationsCard([income], r) {
     : null;
   const pr = income.prices && typeof income.prices === 'object' ? income.prices : null;
   const prices = el('p', { class: 'note' }, pr
-    ? `Tip prices follow ${monthName(pr.month)}'s bill, ${money(pr.pool)}, set ${ago(pr.at)}.`
-    : 'Tip prices: not set yet; the donate step runs on the first snapshot on or after the 3rd.');
+    ? `Tip prices follow the last 30 days' bill, ${money(pr.pool)}, set ${ago(pr.at)}; they turn weekly.`
+    : 'Tip prices: not set yet; the donate step reprices weekly from its launch day.');
   const days = income.days;
   const given = days.reduce((n, d) => n + num(d.count), 0);
   const total = days.reduce((n, d) => n + num(d.net), 0);

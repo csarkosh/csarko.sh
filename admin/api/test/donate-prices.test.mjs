@@ -1,8 +1,8 @@
 // admin/api/test/donate-prices.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { TIERS, CUSTOM, TIER_KEYS, DOORS, doorOf, doorByKey, shippedDoors, DONATE_URL, PRICES_URL, DONATE_FROM_MONTH } from "../src/donate/doors.mjs";
-import { poolOf, priceOf, pricesOf, decide, PRICE_DAY, LATE_DAY } from "../src/donate/prices.mjs";
+import { TIERS, CUSTOM, TIER_KEYS, DOORS, doorOf, doorByKey, shippedDoors, DONATE_URL, PRICES_URL, DONATE_FROM, WINDOW_DAYS, REPRICE_DAYS, KEEP_DAYS } from "../src/donate/doors.mjs";
+import { windowOf, poolOf, priceOf, pricesOf, decide } from "../src/donate/prices.mjs";
 
 test("three tiers at 1, 3 and 10 percent, then the custom row", () => {
   assert.deepEqual(TIERS.map((t) => [t.key, t.name, t.share]), [["prompt", "A prompt", 0.01], ["context", "A long context window", 0.03], ["run", "A whole agent run", 0.1]]);
@@ -10,21 +10,30 @@ test("three tiers at 1, 3 and 10 percent, then the custom row", () => {
   assert.deepEqual(TIER_KEYS, ["prompt", "context", "run", "own"]);
 });
 
-test("a $287.40 month gives $3, $9 and $29, labelled about n%", () => {
+test("a $287.40 bill gives $3, $9 and $29, labelled about n%", () => {
   assert.deepEqual(pricesOf(287.4).map((p) => [p.tier, p.usd, p.label]), [["prompt", 3, "about 1%"], ["context", 9, "about 3%"], ["run", 29, "about 10%"]]);
   assert.equal(priceOf(300, 0.01), 3, "an exact dollar is not rounded up to the next");
   assert.equal(priceOf(0, 0.1), 1, "the floor");
 });
 
-test("the pool is last month's rows less the commercial project, never negative", () => {
+test("the window is the 30 days ending yesterday", () => {
+  assert.deepEqual([DONATE_FROM, WINDOW_DAYS, REPRICE_DAYS, KEEP_DAYS], ["2026-10-31", 30, 7, 35]);
+  assert.deepEqual(windowOf("2026-10-31"), { from: "2026-10-01", to: "2026-10-30" });
+  assert.deepEqual(windowOf("2026-03-01"), { from: "2026-01-30", to: "2026-02-28" });
+});
+
+test("the pool is the window's daily rows less the commercial project, never negative", () => {
+  const w = { from: "2026-10-01", to: "2026-10-30" };
   const rows = [
-    { month: "2026-10", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 200 },
-    { month: "2026-10", provider: "gcp", where: "csarko-sh", service: "Cloud Run", amount: 87.4 },
-    { month: "2026-09", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 999 },
-    { month: "2026-10", provider: "gcp", where: "magicpixel-487014", service: "Compute Engine", amount: 50, project: "commercial" },
+    { day: "2026-10-01", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 200 },
+    { day: "2026-10-30", provider: "gcp", where: "csarko-sh", service: "Cloud Run", amount: 87.4 },
+    { day: "2026-09-30", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 999 },
+    { day: "2026-10-31", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 999 },
+    { month: "2026-10", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 999 },
+    { day: "2026-10-15", provider: "gcp", where: "magicpixel-487014", service: "Compute Engine", amount: 50, project: "commercial" },
   ];
-  assert.equal(poolOf(rows, "2026-10"), 287.4);
-  assert.equal(poolOf([{ month: "2026-10", provider: "gcp", where: "csarko-sh", amount: -12 }], "2026-10"), 0);
+  assert.equal(poolOf(rows, w), 287.4);
+  assert.equal(poolOf([{ day: "2026-10-12", provider: "gcp", where: "csarko-sh", amount: -12 }], w), 0);
   assert.deepEqual(pricesOf(0).map((p) => p.usd), [1, 1, 1]);
 });
 
@@ -49,35 +58,36 @@ test("the doors: seven, their URLs and sources, Day Hike not shipped", () => {
   assert.equal(PRICES_URL, "https://storage.googleapis.com/csarko-sh-donate-prices/prices.json");
 });
 
-test("decide: done, before the 3rd, waiting on a provider until the 7th, a new month, a door added mid-month", () => {
-  const doors = ["arkos", "all"];
-  const oct = { month: "2026-10", doors: ["arkos", "all"] };
-  assert.deepEqual(decide({ today: "2026-11-05", current: oct, failed: [], doors }), { run: false, reason: "done", month: "2026-10", newMonth: false, pending: [] });
-  assert.equal(decide({ today: "2026-11-02", current: null, failed: [], doors }).reason, "before the 3rd");
-  assert.equal(decide({ today: "2026-11-03", current: null, failed: ["aws"], doors }).reason, "waiting on aws");
-  assert.equal(decide({ today: "2026-11-07", current: null, failed: ["aws"], doors }).run, true, "from the 7th it runs with what is there");
-  assert.deepEqual(decide({ today: "2026-11-03", current: { month: "2026-09", doors }, failed: [], doors }), { run: true, reason: "new month", month: "2026-10", newMonth: true, pending: doors });
-  assert.deepEqual(decide({ today: "2026-11-12", current: { month: "2026-10", doors: ["arkos"] }, failed: [], doors: ["arkos", "all", "dayhike"] }), { run: true, reason: "doors added", month: "2026-10", newMonth: false, pending: ["all", "dayhike"] });
+const DOORS2 = ["arkos", "all"];
+const at = (repricedOn, doors = DOORS2) => ({ period: { from: "x", to: "y", repricedOn }, doors });
+const W = (today) => windowOf(today);
+
+test("decide: a first run, done until seven days on, then a new period; a door added between turns", () => {
+  assert.deepEqual(decide({ today: "2026-10-31", current: null, doors: DOORS2 }), { run: true, reason: "new period", window: W("2026-10-31"), newPeriod: true, pending: DOORS2 });
+  assert.deepEqual(decide({ today: "2026-11-06", current: at("2026-10-31"), doors: DOORS2 }), { run: false, reason: "done", window: W("2026-11-06"), newPeriod: false, pending: [] });
+  assert.deepEqual(decide({ today: "2026-11-07", current: at("2026-10-31"), doors: DOORS2 }), { run: true, reason: "new period", window: W("2026-11-07"), newPeriod: true, pending: DOORS2 });
+  assert.deepEqual(decide({ today: "2026-11-03", current: at("2026-10-31", ["arkos"]), doors: ["arkos", "all", "dayhike"] }), { run: true, reason: "doors added", window: W("2026-11-03"), newPeriod: false, pending: ["all", "dayhike"] });
 });
 
-test("decide: holds while GCP's export starts after the first day of the month being priced, at any day of the month", () => {
-  const doors = ["arkos", "all"];
-  assert.deepEqual(decide({ today: "2026-11-03", current: null, failed: [], doors, gcpFirstDay: "2026-10-02" }), { run: false, reason: "waiting on GCP history for 2026-10", month: "2026-10", newMonth: false, pending: [] });
-  assert.equal(decide({ today: "2026-11-28", current: null, failed: [], doors, gcpFirstDay: "2026-10-29" }).reason, "waiting on GCP history for 2026-10", "no day-of-month override");
-  assert.equal(decide({ today: "2026-11-03", current: null, failed: [], doors, gcpFirstDay: "2026-10-01" }).run, true, "an export from the 1st covers the month");
-  assert.equal(decide({ today: "2026-12-03", current: null, failed: [], doors, gcpFirstDay: "2026-10-02" }).run, true, "November is covered");
-  assert.equal(decide({ today: "2026-11-03", current: null, failed: [], doors, gcpFirstDay: null }).run, true, "GCP not configured: nothing to wait on");
-  assert.equal(decide({ today: "2026-11-05", current: { month: "2026-10", doors }, failed: [], doors, gcpFirstDay: "2026-10-29" }).reason, "done", "a done month still sweeps");
-  assert.equal(decide({ today: "2026-11-02", current: null, failed: [], doors, gcpFirstDay: "2026-10-01" }).reason, "before the 3rd");
-  assert.equal(PRICE_DAY, 3);
-  assert.equal(LATE_DAY, 7);
+test("decide: a failed provider holds a due turn up to three days late, then it runs with what is there", () => {
+  assert.deepEqual(decide({ today: "2026-11-07", current: at("2026-10-31"), failed: ["aws"], doors: DOORS2 }), { run: false, reason: "waiting on aws", window: W("2026-11-07"), newPeriod: false, pending: [] });
+  assert.equal(decide({ today: "2026-11-09", current: at("2026-10-31"), failed: ["aws", "gcp"], doors: DOORS2 }).reason, "waiting on aws, gcp");
+  assert.equal(decide({ today: "2026-11-10", current: at("2026-10-31"), failed: ["aws"], doors: DOORS2 }).run, true, "three days late it runs");
+  assert.equal(decide({ today: "2026-11-15", current: null, failed: ["aws"], doors: DOORS2 }).reason, "waiting on aws", "a first run always waits");
+  assert.equal(decide({ today: "2026-11-03", current: at("2026-10-31", ["arkos"]), failed: ["aws"], doors: DOORS2 }).reason, "doors added", "a door added is not a turn");
 });
 
-test("decide never prices a month before the launch month", () => {
-  assert.equal(DONATE_FROM_MONTH, "2026-10");
-  const doors = ["arkos", "all"];
-  const sep = decide({ today: "2026-10-30", current: null, failed: [], doors });
-  assert.deepEqual(sep, { run: false, reason: "before the first priced month", month: "2026-09", newMonth: false, pending: [] });
-  assert.equal(decide({ today: "2026-11-03", current: null, failed: [], doors }).run, true);
-  assert.equal(decide({ today: "2026-10-30", current: null, failed: [], doors, fromMonth: "2026-09" }).run, true, "the default guards, not the date");
+test("decide: a due turn waits on GCP rows through the window's end less two days", () => {
+  const base = { today: "2026-11-07", current: at("2026-10-31"), doors: DOORS2, gcpConfigured: true };
+  assert.deepEqual(decide({ ...base, gcpLastDay: "2026-11-03" }), { run: false, reason: "waiting on GCP rows through 2026-11-04", window: W("2026-11-07"), newPeriod: false, pending: [] });
+  assert.equal(decide({ ...base, gcpLastDay: null }).reason, "waiting on GCP rows through 2026-11-04");
+  assert.equal(decide({ ...base, gcpLastDay: "2026-11-04" }).run, true);
+  assert.equal(decide({ ...base, gcpConfigured: false, gcpLastDay: null }).run, true, "GCP not configured: nothing to wait on");
+  assert.equal(decide({ ...base, today: "2026-11-06", gcpLastDay: null }).reason, "done", "a period not due still sweeps");
+});
+
+test("decide never prices before the launch day", () => {
+  assert.deepEqual(decide({ today: "2026-10-30", current: null, doors: DOORS2 }), { run: false, reason: "before the launch day", window: W("2026-10-30"), newPeriod: false, pending: [] });
+  assert.equal(decide({ today: "2026-10-31", current: null, doors: DOORS2 }).run, true);
+  assert.equal(decide({ today: "2026-10-30", current: null, doors: DOORS2, from: "2026-10-01" }).run, true, "the default guards, not the date");
 });

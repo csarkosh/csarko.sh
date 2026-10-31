@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-30-donate-site-design.md`
 
+**Amended Oct 31:** Cyrus chose a rolling 30-day bill repriced weekly ("Let's go with the rolling last 30 days figure, repriced weekly"), so the site can launch on Oct 31 without waiting for a closed month. Where this plan says last month's bill, the 3rd, the 7th, `DONATE_FROM_MONTH` or `month`, the spec's amended sections 3 and 4 rule instead: the pool is the 30 days ending yesterday, prices turn every seven days from `DONATE_FROM` (2026-10-31), a due turn waits on GCP's export and on failed collectors, and the JSON and the snapshot record carry a `period` (`{ from, to, repricedOn }`).
+
 ## Global Constraints
 
 - No em-dash anywhere in page copy, docs or code comments that reach a page; `deploy.sh` and `apps/deploy.sh` already refuse one, `donate/deploy.sh` does too.
@@ -1020,6 +1022,8 @@ git commit -m "finance: tips by door and the month's tip prices on the Donations
 ---
 
 ### Task 12: October's GCP history, only if the export does not fill it
+
+**Not needed:** the export backfilled October on its own (through Oct 23 as of Oct 31).
 
 The export already backfills: on 2026-10-30 it held August in full and September to the 25th, nothing of October yet. This task exists in case October 1 to 28 never arrives.
 

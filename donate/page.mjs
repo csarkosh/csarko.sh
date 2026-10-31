@@ -71,7 +71,7 @@ function pictureHtml(picture, alt) {
 }
 
 /**
- * A door's page. `door` is the DOORS entry, `prices` this door's prices ({ month, pool, tiers:
+ * A door's page. `door` is the DOORS entry, `prices` this door's prices ({ period, pool, tiers:
  * [{ tier, usd, label, ... }], links: { <tier>: url } }), `picture` pictures.py's output (srcset
  * entries as the page should request them, plus an optional `alt`), `theme` themeBlocks().
  */
@@ -95,7 +95,7 @@ export function doorPage({ door, prices, picture, theme }) {
   rows.push(`        <label class="tier own"><input type="radio" name="tier" value="${CUSTOM.key}" /><span class="what"><b>${escapeHtml(CUSTOM.name)}</b><small>${OWN_CAPTION}</small></span><span class="price">any<small>$${CUSTOM.minimumUsd} or more</small></span></label>`);
   const baked = {
     door: door.door,
-    month: prices.month,
+    period: prices.period,
     pool: prices.pool,
     tiers: TIERS.map((t) => { const p = tierOf(t.key); return { tier: p.tier, usd: p.usd, label: p.label }; }),
     links: Object.fromEntries([...TIERS, CUSTOM].map((t) => [t.key, linkOf(t.key)])),

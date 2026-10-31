@@ -86,10 +86,11 @@ your own number, one button), in the site's dark theme with its light theme by
    must be wider than tall, or the door must declare a crop (the focal point), in which case
    the cropped frame is what is checked; a door with no picture does not build, and a door
    that does not build gets no Stripe links and no entry in the prices JSON that month.
-4. **The bill sentence**, the one line that makes the prices mean something: "In October the
-   cloud behind all this cost **$288**. Each tier is a slice of that bill." (Cyrus, Oct 30: the
-   first wording felt too demanding.) The figure is the pool (section 3), rounded to the dollar,
-   the month named.
+4. **The bill sentence**, the one line that makes the prices mean something: "Over the last 30
+   days the cloud behind all this cost **$288**. Each tier is a slice of that bill." (Cyrus, Oct
+   30: the first wording felt too demanding.) The figure is the pool (section 3), rounded to the
+   dollar. *(Amended Oct 31: the window in place of the month; it read "In October the cloud
+   behind all this cost $288.")*
 5. **Three tiers** (Cyrus, Oct 31: the 30% tier was dropped; three tiers and the custom row),
    each a row: the name in bold, a one-line caption under it in the door's words, the price on
    the right in monospace accent, and under the price its share: "about 1%", "about 3%", "about
@@ -132,10 +133,12 @@ The door slugs are mine (short, human, no prefixes); every project card's slug m
 
 ## 3. The bill: one pool, exponential shares
 
-**The pool** is last month's total spend on everything Cyrus gives away, as the Finance page
-counts it: every provider (AWS, GCP, GitHub, Modal, fal, Claude Code), every category including
-the fixed ones (domains, the Claude Code subscription), net of credits, in USD, for the
-calendar month that most recently closed. It is one number for every door (Cyrus: "It should
+**The pool** is the total spend on everything Cyrus gives away, as the Finance page counts it:
+every provider (AWS, GCP, GitHub, Modal, fal, Claude Code), every category including the fixed
+ones (domains, the Claude Code subscription), net of credits, in USD, over the 30 days ending
+yesterday (UTC), summed from the Finance page's daily rows *(amended Oct 31: Cyrus chose a
+rolling 30-day bill repriced weekly so the site could launch without waiting for a closed month;
+it was the calendar month that most recently closed)*. It is one number for every door (Cyrus: "It should
 be my total spend across all my work. I view things like tipping on Arkos IDE / MacStats /
 Films / etc as different funnels for tipping").
 
@@ -156,32 +159,33 @@ dollar and say about 1%"). A $287.40 month gives $3, $9 and $29. The lowest tier
 a small month cannot fall under Stripe's minimum charge (my call). The fourth row is a Stripe
 "customer chooses what to pay" price with a $1 minimum and no preset (my call).
 
-**When they change.** Once a month, when the previous month's data is complete. The GCP
-billing export lands a day or two late and Cost Explorer's month settles over the first days,
-so the month's prices are computed by the first daily snapshot on or after the 3rd (my call;
-one constant). Until then the page shows the month before. The bill sentence always names the
-month the figure is for. (The Finance data's "partial" mark means something else: months before
-the GCP export began on 2026-10-29.)
+**When they change.** Every seven days from the last repricing (`REPRICE_DAYS`), each turn
+pricing the window that ends the day before *(amended Oct 31: Cyrus chose a rolling 30-day bill
+repriced weekly so the site could launch without waiting for a closed month; it was once a month,
+on or after the 3rd)*. The GCP billing export runs a day or two behind, so a due turn waits until
+the export has rows through two days before the window's end (three days behind is the most
+tolerated); a failed collector holds a due turn up to three days, then it runs with what is
+there. A turn names its period by the day it ran (`repricedOn`). (The Finance data's "partial"
+mark means something else: months before the GCP export began on 2026-10-29.)
 
-**The first pool and the launch** (Cyrus, Oct 30: "Go with option 2"). The first month the pool
-can be computed from is October 2026, available around Nov 3. The GCP billing export began on
-2026-10-29, so on its own the export holds three days of October; before the site launches,
-October's GCP spend for Oct 1 to 28 is loaded once from the console's cost table as the CSV the
-Finance spec already allows for history, so the first bill sentence names an honest October.
-The site launches when the step's first run has written October's JSON, around Nov 3; it does
-not ship with a hand-typed or seeded pool, and the hand load happens once, for that one month,
-never again (the step's `DONATE_FROM_MONTH` constant, 2026-10, enforces it; a run before then prices nothing).
+**The first pool and the launch** (Cyrus, Oct 30: "Go with option 2"; *amended Oct 31: Cyrus
+chose a rolling 30-day bill repriced weekly so the site could launch without waiting for a closed
+month*). The first day the step may price is the launch day, 2026-10-31 (`DONATE_FROM`; a run
+before it prices nothing). Its window is Oct 1 to Oct 30. The export backfilled October on its
+own, so no hand load is needed. The site does not ship with a hand-typed or seeded pool: it
+launches once the step's first run has written the JSON.
 
 ## 4. The monthly step and the money
 
 Nothing new runs on a schedule. The admin snapshot (Cloud Scheduler `csarko-admin-snapshot`
 calling the admin API's snapshot route once a day) gains one idempotent step, **donate**:
 
-1. If this month's prices already exist for every door that builds, stop (the record is per
-   door per month, so a door added mid-month gets that month's links at the next snapshot).
-2. If today is before the 3rd, stop. If any configured provider's collector failed today, stop
-   and try tomorrow, up to the 7th; from the 7th run with what is there (my call: a late
-   provider must not hold the month's prices past a week). A provider that is not configured,
+1. If the current period is under seven days old and has prices for every door that builds,
+   stop (a door added between turns gets the current period's links at the next snapshot).
+2. Before the launch day, stop. If a turn is due and GCP's export has no rows through two days
+   before the window's end, stop. If a turn is due and any configured provider's collector failed
+   today, stop and try tomorrow, up to three days late; then run with what is there. *(Amended
+   Oct 31: a rolling 30-day bill repriced weekly; it was the 3rd to the 7th of each month.)* A provider that is not configured,
    and a Claude Code fee with no entry for the month, contribute $0 and the Finance page's own
    "not configured" and "missing" marks say so; the step does not second-guess them.
 3. Read the pool (section 3), compute the three prices.
@@ -191,32 +195,37 @@ calling the admin API's snapshot route once a day) gains one idempotent step, **
    tier, created once: "A prompt", "A long context window", "A whole agent run";
    and one "Your own number" Product whose Price has `custom_unit_amount` enabled with the $1
    minimum), then for each door and each tier a Payment Link whose metadata and whose
-   `payment_intent_data.metadata` carry `door`, `tier`, `month` and `share`, whose
+   `payment_intent_data.metadata` carry `door`, `tier`, `period` (the day the period was repriced
+   on; `month` until Oct 31) and `share`, whose
    `after_completion` redirects to the thanks page with the door, and which collects the
    payer's email for the receipt (Stripe's default). Four links per door, six shipped doors
    today: 24 links a month, seven doors and 28 links with Day Hike.
-5. Last month's links stay live for one more month and are swept on the first snapshot after
-   that, once the following month's prices have landed (links `active: false`, Prices archived:
-   anything two or more months older than the published month), so the baked fallback on the
-   deployed pages always pays. *(Amended Oct 30 after the branch review: the sweep retired them the day after
-   the new month published.)*
-6. Write **one JSON** the page reads: the month, the pool rounded to the dollar, and per door
-   the four prices, shares and link URLs. It is published to a public Cloud Storage object with
+5. A period's links stay live for 35 days after the current period's repricing (`KEEP_DAYS`)
+   and are swept by the first snapshot that finds the current period done (links
+   `active: false`, Prices archived: every period repriced more than 35 days before the current
+   one), so the baked fallback on the deployed pages pays for a month after a turn. *(Amended Oct
+   30 after the branch review: the sweep retired them the day after the new month published.
+   Amended Oct 31 for the weekly turn: it kept one previous month.)*
+6. Write **one JSON** the page reads: the `period` (`{ from, to, repricedOn }`, amended Oct 31
+   from the month), the pool rounded to the dollar, and per door the four prices, shares and link
+   URLs. It is published to a public Cloud Storage object with
    CORS for `https://donate.csarko.sh` (my call; a Hosting rewrite cannot reach a bucket, and the
    admin API stays private). The page fetches it at load; if the fetch fails, the page shows the
-   last prices baked into its build and a plain "prices are from <month>" line, never an empty
-   card.
+   last prices baked into its build and a plain "Prices are from <Month D>." line (the day they
+   were repriced on), never an empty card.
 
 The step is a module next to the Finance ones (`admin/api/src/donate/`), pure functions over
 the Finance rows and Stripe's objects, with the Stripe calls behind the same collector shape as
 `collectors/stripe.mjs`. It writes its last run into the daily snapshot so the Finance page can
 show when prices last turned and refuse a second run in a month: the snapshot record is
-`{ month, pool, at, doors }`, and the bucket JSON is the source of truth for the ids.
+`{ period, pool, at, doors }` (`month` until Oct 31), and the bucket JSON is the source of truth for the ids.
 
 **The monthly redeploy** *(amended Oct 30 after the branch review)*. The pages bake the month's
 prices and links in as their fallback, so `donate/deploy.sh` is re-run after each month's prices
 land: a line in Cyrus's monthly routine, on or after the day the Finance page's prices line says
 they turned. Until then the fallback points at last month's links, which step 5 keeps live.
+*(Amended Oct 31: prices turn weekly, and step 5 keeps a period's links live for 35 days, so one
+redeploy within a month of a turn keeps the fallback paying.)*
 
 **Tips as income.** The Finance page's donations (`finance/income.mjs`, amounts and days only)
 gain a by-door split read from each payment's `metadata.door`, so the funnels are visible to
@@ -297,10 +306,12 @@ service excluded; three exponential tiers, rounded up to the dollar, "about n%"
 on the card, no running score; the picture under the headline, landscape only, films cropped
 on the page with the subject kept; every project gets a door, Day Hike last with his
 screenshot; the bare door shows a generated graphic of his interests; a static page and a
-monthly job, no checkout service; "Buy me tokens" with a 32-bit heart-and-token icon as prefix;
-the placements in section 5; the film entrance as suggested; the launch waits for October's
-real prices around Nov 3, with October's GCP history loaded by hand once beforehand; the card
-statement reads CSARKO* DONATION; above all, nothing that begs.
+job in the daily snapshot, no checkout service; "Buy me tokens" with a 32-bit heart-and-token icon as prefix;
+the placements in section 5; the film entrance as suggested; the bill is the last 30 days,
+repriced weekly, from the launch day (Oct 31: "Let's go with the rolling last 30 days figure,
+repriced weekly"; it was last month's bill, priced on the 3rd, with the launch waiting for
+October's prices around Nov 3); the card statement reads CSARKO* DONATION; above all, nothing
+that begs.
 
 My calls, open to change: the 1/3/10/30 ratio; the $1 floor and the $1 minimum on the free
 row; the door slugs; the same four tier names on every door; the thanks page's copy and the

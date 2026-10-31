@@ -21,9 +21,10 @@
  * and days only. `summary` carries them as `income` and `total.net`, the `income` query is the
  * page's card, `donations` is the third KPI, and the snapshot stores the day's net
  * (`finance.kpi.donations`) and a small `finance.stripe` summary for the trend. Tips by door
- * (2026-10-30): the snapshot also runs the donate step (`donate/step.mjs`), once a month makes the
- * next month's Stripe prices from the month's spend and stores its record as `finance.donate`
- * (carried forward on the days it does nothing); the `income` query splits the range by door.
+ * (2026-10-30): the snapshot also runs the donate step (`donate/step.mjs`), which every seven days
+ * makes new Stripe prices from the last 30 days' spend (amended Oct 31; it was once a month from the
+ * month's) and stores its record as `finance.donate` (carried forward on the days it does nothing);
+ * the `income` query splits the range by door.
  *
  * The shaping is pure, in `src/finance/`: categories, rows, months (the range and the
  * categories table), idle, daily, activity, projects, films, fal (the series), claude (the fee's
@@ -402,7 +403,7 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
         months: incomeMonths(income.rows, { today }),
         recent: recentOf(income.rows, RECENT_COUNT),
         byDoor: incomeByDoor(income.rows, months),
-        prices: record === null ? null : { month: record.month, pool: record.pool, at: record.at },
+        prices: record === null ? null : { period: record.period, pool: record.pool, at: record.at },
         payouts: income.payouts,
         balance: income.balance,
       }, h);
@@ -665,11 +666,9 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
       const values = kpiValues(loaded, today);
       // A provider whose read failed has a partial month; the step holds off on it (`donate/step.mjs`).
       const failed = PROVIDERS.filter((p) => h.errors[p] !== undefined || modalHints.errors[p] !== undefined);
-      // It also waits while GCP's export starts after the first day of the month it would price.
-      const donateOut = donate === null ? null : await part(h, "donate", donate.configured, async () => {
-        const gcpFirstDay = gcpBilling.configured ? await exportFirstDay() : null;
-        return donate.run({ monthlyRows: loaded.monthlyRows, failed, today, gcpFirstDay });
-      });
+      // A due turn also waits while GCP's export has no rows through two days before the window's end.
+      const donateOut = donate === null ? null : await part(h, "donate", donate.configured, () =>
+        donate.run({ dailyRows: loaded.dailyRows, failed, today, gcpConfigured: gcpBilling.configured, gcpLastDay: loaded.lastDays.gcp }));
       // last30 left the card (2026-10-30) but stays in the day's values, so its history is unbroken should it return.
       const kpi = {
         ...(values === null

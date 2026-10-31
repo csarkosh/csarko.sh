@@ -101,5 +101,5 @@
     { "door": "dayhike", "label": "Day Hike", "gross": 20, "fees": 1.17, "net": 18.83, "count": 2 },
     { "door": "unknown", "label": "Unknown", "gross": 10, "fees": 0.75, "net": 9.25, "count": 1 }
   ],
-  "prices": { "month": "2026-09", "pool": 412.5, "at": "2026-10-03T06:10:00.000Z" }
+  "prices": { "period": { "from": "2026-09-27", "to": "2026-10-26", "repricedOn": "2026-10-27" }, "pool": 412.5, "at": "2026-10-27T06:10:00.000Z" }
 }

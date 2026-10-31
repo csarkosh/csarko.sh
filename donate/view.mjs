@@ -8,15 +8,16 @@ export const OWN_TIER = 'own';
 export const PROJECTS_BACK = Object.freeze({ label: 'Back to the projects', href: 'https://csarko.sh/projects' });
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+const DAY = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 
 const isObject = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
 const own = (obj, key) => isObject(obj) && typeof key === 'string' && Object.hasOwn(obj, key);
+const isDay = (v) => typeof v === 'string' && DAY.test(v);
 
-/** "2026-10" → "October"; anything else → "". */
-export function monthName(month) {
-  const m = MONTH.exec(String(month ?? ''));
-  return m ? MONTHS[Number(m[1]) - 1] : '';
+/** "2026-10-31" → "October 31"; anything else → "". */
+export function dayLabel(iso) {
+  const m = DAY.exec(String(iso ?? ''));
+  return m ? `${MONTHS[Number(m[1]) - 1]} ${Number(m[2])}` : '';
 }
 
 const httpsUrl = (u) => {
@@ -28,17 +29,18 @@ const httpsUrl = (u) => {
 };
 
 /**
- * The prices a door shows. `baked` is the build's copy for this door ({ door, month, pool, tiers:
- * [{ tier, usd, label }], links: { <tier>: url } }); `fetched` is the bucket's whole prices.json,
- * or whatever the fetch produced. The live one wins when it is a month at least as new as the baked
- * one and carries this door with an https link for every tier the baked one has (so the button can
- * never say one tier's price and pay another's); it is reshaped to the baked shape. Otherwise the
- * baked prices stand, marked stale, so the page says which month they are from.
+ * The prices a door shows. `baked` is the build's copy for this door ({ period, pool, door, tiers:
+ * [{ tier, usd, label }], links: { <tier>: url } }, `period` being { from, to, repricedOn });
+ * `fetched` is the bucket's whole prices.json, or whatever the fetch produced. The live one wins when
+ * its period was repriced on the baked one's day or later and it carries this door with an https link
+ * for every tier the baked one has (so the button can never say one tier's price and pay another's);
+ * it is reshaped to the baked shape. Otherwise the baked prices stand, marked stale, so the page says
+ * which day they are from.
  */
 export function pickPrices(baked, fetched, door) {
   const fallback = { prices: baked, stale: true };
-  if (!isObject(fetched) || typeof fetched.month !== 'string' || !MONTH.test(fetched.month)) return fallback;
-  if (fetched.month < baked.month || !own(fetched.doors, door) || !isObject(fetched.doors[door])) return fallback;
+  if (!isObject(fetched) || !isObject(fetched.period) || !isDay(fetched.period.repricedOn)) return fallback;
+  if (fetched.period.repricedOn < baked.period.repricedOn || !own(fetched.doors, door) || !isObject(fetched.doors[door])) return fallback;
   const live = fetched.doors[door].links;
   if (!isObject(live)) return fallback;
   const links = {};
@@ -55,17 +57,19 @@ export function pickPrices(baked, fetched, door) {
     tiers.push({ tier, usd: t.usd, label: String(t.label ?? '') });
   }
   if (!Number.isFinite(fetched.pool)) return fallback;
-  return { prices: { door, month: fetched.month, pool: fetched.pool, tiers, links }, stale: false };
+  const { from, to, repricedOn } = fetched.period;
+  return { prices: { door, period: { from: String(from), to: String(to), repricedOn }, pool: fetched.pool, tiers, links }, stale: false };
 }
 
 /**
  * The bill sentence in three parts, the figure being the part in <b>: page.mjs bakes it and
  * app.js rewrites the same three parts when the live prices win, so the two never drift.
- * Cyrus, Oct 30: "In October the cloud behind all this cost $288. Each tier is a slice of that bill."
+ * Cyrus's shape (Oct 30), the window in place of the month (Oct 31): "Over the last 30 days the
+ * cloud behind all this cost $288. Each tier is a slice of that bill."
  */
 export function billParts(prices) {
   return {
-    before: `In ${monthName(prices.month)} the cloud behind all this cost `,
+    before: 'Over the last 30 days the cloud behind all this cost ',
     figure: `$${Math.round(prices.pool)}`,
     after: '. Each tier is a slice of that bill.',
   };

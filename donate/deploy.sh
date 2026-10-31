@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # donate/deploy.sh: build donate.csarko.sh (donate/build.mjs) and publish it to the Firebase
-# Hosting site csarko-sh-donate, then prove it is live. The build fetches the month's prices
+# Hosting site csarko-sh-donate, then prove it is live. The build fetches the current prices
 # from the prices bucket and refuses to run without them, so this script cannot ship a page
 # that has no prices.
 #

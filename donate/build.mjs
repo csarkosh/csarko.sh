@@ -4,14 +4,14 @@
  * pictures (donate/pictures.py).
  *
  *   node donate/build.mjs                        the prices from the bucket (PRICES_URL); fails
- *                                                until the monthly step has written them
+ *                                                until the weekly step has written them
  *   node donate/build.mjs --prices <file>        the prices from a file, to look before they exist:
  *                                                --prices donate/test/fixtures/prices.json
  *
  * Tests: node --test donate/test/*.test.mjs
  *
  * One page per shipped door (DOORS in admin/api/src/donate/doors.mjs): index.html for the bare
- * door and <door>/index.html for the others (donate/page.mjs), each with this month's prices baked
+ * door and <door>/index.html for the others (donate/page.mjs), each with the period's prices baked
  * in as its fallback and its picture beside it in assets/ (pictures.py: landscape, a poster
  * cropped to 16:9, AVIF, WebP and JPEG at 640 and 1280 wide, hashed). Around the pages:
  *   thanks/index.html             where Stripe sends a payer back, every door's line and link
@@ -75,7 +75,10 @@ async function loadPrices(file) {
 }
 
 function checkPrices(json) {
-  if (typeof json?.month !== 'string' || !/^\d{4}-\d{2}$/.test(json.month)) fail('prices.json: no month');
+  for (const key of ['from', 'to', 'repricedOn']) {
+    const v = json?.period?.[key];
+    if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) fail(`prices.json: no period.${key}`);
+  }
   if (!Number.isFinite(json.pool)) fail('prices.json: no pool');
   for (const t of TIERS) {
     if (!Number.isFinite(json.tiers?.find((x) => x.tier === t.key)?.usd)) fail(`prices.json: no price for the ${t.key} tier`);
@@ -91,7 +94,7 @@ function doorPrices(json, door) {
     if (typeof url !== 'string' || !url.startsWith('https://')) fail(`${door}: prices.json has no ${key} link`);
     links[key] = url;
   }
-  return { month: json.month, pool: json.pool, tiers: json.tiers.map(({ tier, usd, label }) => ({ tier, usd, label })), links };
+  return { period: json.period, pool: json.pool, tiers: json.tiers.map(({ tier, usd, label }) => ({ tier, usd, label })), links };
 }
 
 /** A project's own alt text, from its docs/apps or docs/films front matter, when it has one. */
@@ -216,7 +219,7 @@ async function main() {
   writeFileSync(path.join(OUT, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${DONATE_URL}/sitemap.xml\n`);
   writeFileSync(path.join(OUT, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url>\n    <loc>${u}</loc>\n  </url>`).join('\n')}\n</urlset>\n`);
   writeFileSync(path.join(OUT, '404.html'), notFound);
-  console.log(`donate: ${doors.length} door(s), ${json.month} prices → donate/public/`);
+  console.log(`donate: ${doors.length} door(s), prices of ${json.period.repricedOn} (${json.period.from} to ${json.period.to}) → donate/public/`);
 }
 
 main().catch((e) => {

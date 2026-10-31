@@ -106,8 +106,8 @@ export function createStripeWriter({ key: apiKey, fetch, log = console }) {
       const p = await post("/prices", { product, currency: "usd", "custom_unit_amount[enabled]": "true", "custom_unit_amount[minimum]": minimumUsd * 100, ...tagging(lookupKey, metadata) }, key);
       return { id: p.id };
     },
-    async createLink({ priceId, door, tier, month, share, redirectUrl, key }) {
-      const meta = { door, tier, month, share: String(share) };
+    async createLink({ priceId, door, tier, period, share, redirectUrl, key }) {
+      const meta = { door, tier, period, share: String(share) };
       const fields = { "line_items[0][price]": priceId, "line_items[0][quantity]": 1, submit_type: "donate", "metadata[donate]": "1" };
       for (const [k, v] of Object.entries(meta)) fields[`metadata[${k}]`] = v;
       for (const [k, v] of Object.entries(meta)) fields[`payment_intent_data[metadata][${k}]`] = v;
