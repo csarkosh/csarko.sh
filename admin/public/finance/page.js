@@ -152,6 +152,7 @@ const PROJECTS = [
   { key: 'films', label: 'Films', tone: 'j1' },
   { key: 'dayhike', label: 'Day Hike', tone: 'j2' },
   { key: 'site', label: 'csarko.sh and admin', tone: 'j3' },
+  { key: 'commercial', label: 'Commercial', tone: 'j5' },
   { key: 'other', label: 'Other', tone: 'j4' },
 ];
 const projectName = (key, answer) => answer?.projects?.find((p) => p.key === key)?.label ?? PROJECTS.find((p) => p.key === key)?.label ?? str(key);
@@ -235,6 +236,10 @@ function donationsCard([income], r) {
   const balance = b
     ? el('p', { class: 'note' }, `Balance at Stripe: ${money(b.available)} available, ${money(b.pending)} pending${b.currency ? ` (${str(b.currency).toUpperCase()})` : ''}; a payout moves the available balance to the bank.`)
     : null;
+  const pr = income.prices && typeof income.prices === 'object' ? income.prices : null;
+  const prices = el('p', { class: 'note' }, pr
+    ? `Tip prices follow the last 30 days' bill, ${money(pr.pool)}, set ${ago(pr.at)}; they turn weekly.`
+    : 'Tip prices: not set yet; the donate step reprices weekly from its launch day.');
   const days = income.days;
   const given = days.reduce((n, d) => n + num(d.count), 0);
   const total = days.reduce((n, d) => n + num(d.net), 0);
@@ -254,6 +259,14 @@ function donationsCard([income], r) {
     { key: 'gross', label: 'Gross', num: true, render: (v) => money(v) },
     { key: 'net', label: 'Net', num: true, render: (v) => money(v) },
   ], recent, 'No donations yet.'));
+  const byDoor = Array.isArray(income.byDoor) ? income.byDoor : [];
+  const doorFold = folded(`By door · ${byDoor.length}`, table([
+    { key: 'label', label: 'Door', wrap: true, render: (v) => str(v) },
+    { key: 'gross', label: 'Gross', num: true, render: (v) => money(v) },
+    { key: 'fees', label: 'Fees', num: true, render: (v) => money(v) },
+    { key: 'net', label: 'Net', num: true, render: (v) => money(v) },
+    { key: 'count', label: 'Donations', num: true, render: (v) => count(v) },
+  ], byDoor, 'No tips through a door yet.'));
   const payoutsFold = folded(`Payouts · ${payouts.length}`, table([
     { key: 'day', label: 'Day', render: (v) => shortDay(v) },
     { key: 'amount', label: 'Amount', num: true, render: (v) => money(v) },
@@ -266,7 +279,7 @@ function donationsCard([income], r) {
     { key: 'net', label: 'Net', num: true, render: (v) => money(v) },
     { key: 'count', label: 'Donations', num: true, render: (v) => count(v) },
   ], [...months].reverse(), 'No months yet.'));
-  return [...errorLines(income), tiles, balance, chart, recentFold, payoutsFold, monthsFold].filter(Boolean);
+  return [...errorLines(income), tiles, balance, prices, chart, doorFold, recentFold, payoutsFold, monthsFold].filter(Boolean);
 }
 
 // ---------------------------------------------------------------- 3. by category, 4. by project
@@ -660,7 +673,7 @@ function sourcesCard([sources]) {
 
 const CARDS = [
   { id: 'summary', title: (r) => (r === 'last' ? 'Last month' : 'This month'), queries: ['summary'], sub: (r, a) => `${a?.month ? `${monthName(a.month)}${r === 'last' ? '' : ' so far'}` : r === 'last' ? 'The previous calendar month' : 'The current calendar month'}, every provider, net of credits${a?.at ? `, as of ${ago(a.at)}` : ''}. Donations through Stripe count as income against the spend: Net is what the month cost after them. The AI short films drive the activity spend on purpose, so the page keeps it apart from the idle spend: the idle run-rate is what bills while nothing runs, the rest is what the films, Day Hike and the site bought. The forecast is AWS's own plus Google Cloud's run-rate plus the other providers' month to date. Claude Code's row is the claude.ai fee, with what the month's tokens would cost at API list price under it.`, render: summaryCard, skeleton: { tiles: 6, across: 3, rows: 6, row: 56 } },
-  { id: 'donations', title: () => 'Donations', queries: ['income'], sub: (r, a) => `Donations arrive through Stripe and are read live with a restricted key that can only read the balance, its transactions and the payouts. The tiles are ${incomePeriod(r, a)}, the chart the last 60 days, the folds the newest donations, the payouts and the months; amounts are dollars after refunds, on Stripe's UTC days. Nothing about who gave is shown: no name, email, card or message, only amounts and days.`, render: donationsCard, skeleton: { tiles: 5, lines: 1, chart: 220, folds: 3 } },
+  { id: 'donations', title: () => 'Donations', queries: ['income'], sub: (r, a) => `Donations arrive through Stripe and are read live with a restricted key that can only read the balance, its transactions and the payouts. The tiles are ${incomePeriod(r, a)}, the chart the last 60 days, the folds the newest donations, the payouts and the months; amounts are dollars after refunds, on Stripe's UTC days. Nothing about who gave is shown: no name, email, card or message, only amounts and days. By door says which project's page the tip came through; nothing more about the giver.`, render: donationsCard, skeleton: { tiles: 5, lines: 2, chart: 220, folds: 4 } },
   { id: 'categories', title: () => 'By category', queries: ['categories'], sub: (r, a) => `One column a month for ${rangeText(r, a?.months)}, split by category in a fixed order; CI, tax and unmapped lines fold into Other, listed below. Compute, serverless, hosting and AI generation bill because something ran (a Modal app is Compute, named by its app; fal is AI generation); load balancing, storage, DNS and keys bill while nothing does; domains are a yearly fee shown a twelfth a month, and Claude Code is the subscription, a fixed fee a month.`, render: categoriesCard, skeleton: { chart: 240, lines: 2, folds: 2 } },
   { id: 'projects', title: () => 'By project', queries: ['projects'], sub: (r, a) => `The same months as By category for ${rangeText(r, a?.months)}, every line sorted by what it was for. A line is a film cost when it is Vertex AI, a cinema-* Modal app or fal; Day Hike is the rest of fps-csarko, the rigs and the dayhike-* Modal apps; csarko.sh and admin is the csarko-sh project with the domain and its zone; everything else is Other.`, render: projectsCard, skeleton: { chart: 240, lines: 1, folds: 1 } },
   { id: 'films', title: () => 'Films', queries: ['films'], sub: (r, a) => `Each film's cost from the pipeline's own ledgers: every paid call is priced before it is made and written to the film's ledger on the SSD, synced to the bucket${a?.asOf ? ` (newest ${ago(a.asOf)})` : ''}. The rows carry no dates, so they attribute cost by film and by model and never feed the Daily chart; the Veo rows are at list rate, so a film's Google Cloud figure can read higher than Google's bill. The pipeline's cap is ${moneyShort(DEFAULT_CAP)} a film. The same for every range.`, render: filmsCard, skeleton: { tiles: 3, bars: 4, folds: 4 } },

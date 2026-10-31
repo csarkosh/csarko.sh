@@ -78,6 +78,10 @@ variable "secret_ids" {
     psi-key       = "PSI_KEY"
     fal-admin-key = "FAL_ADMIN_KEY"
     stripe-key    = "STRIPE_KEY"
+    # The donate site's write key (2026-10-30): a restricted Stripe key with Products and
+    # Payment Links write, apart from the read key above so the Finance page's key never
+    # gains a write permission.
+    stripe-write-key = "STRIPE_WRITE_KEY"
   }
 }
 
@@ -103,7 +107,7 @@ variable "seeded_secret_ids" {
     the service existed.
   EOT
   type        = set(string)
-  default     = ["fal-admin-key", "modal-token-id", "modal-token-secret", "stripe-key"]
+  default     = ["fal-admin-key", "modal-token-id", "modal-token-secret", "stripe-key", "stripe-write-key"]
 }
 
 variable "job_image" {
@@ -128,6 +132,17 @@ variable "film_ledgers_bucket" {
   description = "Name of the private GCS bucket the film pipeline syncs <film>/ledger.json into (FILM_LEDGERS_BUCKET on the service). Bucket names are global."
   type        = string
   default     = "csarko-sh-film-ledgers"
+}
+
+variable "donate_prices_bucket" {
+  description = "Name of the public GCS bucket the admin API publishes the donate site's prices to (DONATE_BUCKET on the service; admin/api/src/donate/doors.mjs names the same constant). Bucket names are global."
+  type        = string
+  default     = "csarko-sh-donate-prices"
+}
+
+variable "donate_origin" {
+  description = "Origin of the donate site, https://donate.csarko.sh: the prices bucket's CORS allows it, and it is DONATE_URL on the service."
+  type        = string
 }
 
 variable "snapshot_schedule" {

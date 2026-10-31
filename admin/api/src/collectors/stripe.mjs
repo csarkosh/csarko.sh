@@ -9,6 +9,10 @@
  *
  * A refused or failed call is an `UpstreamError` with the status and the first 200 characters of
  * Stripe's body, with the key itself blanked should Stripe ever echo it.
+ *
+ * The balance transactions are listed with `expand[]=data.source`, so each carries its charge
+ * (the door a tip came in by is in the charge's metadata). The expansion brings the charge's
+ * billing details into memory; `finance/income.mjs` keeps only `door` and drops the rest.
  */
 
 import { UpstreamError } from "../http.mjs";
@@ -36,11 +40,12 @@ export function createStripe({ key, fetch, cache, now = Date.now, ttlMs = 300_00
   }
 
   /** Every page of a list endpoint created at or after `sinceUnix`, newest first. */
-  async function listAll(path, sinceUnix) {
+  async function listAll(path, sinceUnix, expand = null) {
     const out = [];
     let after = null;
     for (;;) {
       const params = new URLSearchParams({ limit: String(PAGE_LIMIT), "created[gte]": String(sinceUnix) });
+      if (expand) params.set("expand[]", expand);
       if (after !== null) params.set("starting_after", after);
       const page = await get(path, params.toString());
       const data = Array.isArray(page?.data) ? page.data : [];
@@ -57,7 +62,7 @@ export function createStripe({ key, fetch, cache, now = Date.now, ttlMs = 300_00
     },
     /** The balance transactions created at or after `sinceUnix` (seconds), every page, newest first. */
     transactions(sinceUnix = defaultSince()) {
-      return cache.get(`stripe:balance_transactions:${sinceUnix}`, ttlMs, () => listAll("/balance_transactions", sinceUnix));
+      return cache.get(`stripe:balance_transactions:${sinceUnix}`, ttlMs, () => listAll("/balance_transactions", sinceUnix, "data.source"));
     },
     /** The payouts created at or after `sinceUnix` (seconds), every page, newest first. */
     payouts(sinceUnix = defaultSince()) {

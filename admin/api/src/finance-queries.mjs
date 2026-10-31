@@ -20,7 +20,11 @@
  * key (`collectors/stripe.mjs`, cached five minutes), shaped by `finance/income.mjs` into amounts
  * and days only. `summary` carries them as `income` and `total.net`, the `income` query is the
  * page's card, `donations` is the third KPI, and the snapshot stores the day's net
- * (`finance.kpi.donations`) and a small `finance.stripe` summary for the trend.
+ * (`finance.kpi.donations`) and a small `finance.stripe` summary for the trend. Tips by door
+ * (2026-10-30): the snapshot also runs the donate step (`donate/step.mjs`), which every seven days
+ * makes new Stripe prices from the last 30 days' spend (amended Oct 31; it was once a month from the
+ * month's) and stores its record as `finance.donate` (carried forward on the days it does nothing);
+ * the `income` query splits the range by door.
  *
  * The shaping is pure, in `src/finance/`: categories, rows, months (the range and the
  * categories table), idle, daily, activity, projects, films, fal (the series), claude (the fee's
@@ -37,7 +41,7 @@ import { filmsOf } from "./finance/films.mjs";
 import { falSeries } from "./finance/fal.mjs";
 import { CLAUDE_SUBSCRIPTION_KEY, subscriptionSeries, subscriptionFor, claudeRows, claudeUsage, usageForMonths, usageDays } from "./finance/claude.mjs";
 import { financeHealth } from "./finance/kpis.mjs";
-import { donationsOf, incomeDays, incomeMonths, incomeFor, recentOf, payoutsOf, balanceOf, lastDonationDay, INCOME_DAYS, RECENT_COUNT } from "./finance/income.mjs";
+import { donationsOf, incomeDays, incomeMonths, incomeFor, incomeByDoor, recentOf, payoutsOf, balanceOf, lastDonationDay, INCOME_DAYS, RECENT_COUNT } from "./finance/income.mjs";
 import { CALL_COST_USD } from "./collectors/aws-cost.mjs";
 import { weeklyTrend, TREND_WEEKS } from "./queries.mjs";
 import { addDays, isoDate } from "./time.mjs";
@@ -48,8 +52,8 @@ export const FINANCE_QUERY_NAMES = ["summary", "categories", "idle", "daily", "a
 export const FINANCE_MANUAL_KEYS = [CLAUDE_SUBSCRIPTION_KEY];
 export const FINANCE_APP = "finance";
 /** What configures each source, for `notConfigured`: an environment variable, except Modal's (the job's secret: the API reports it from the snapshot) and Claude Code's (the manual series the fee is entered in). */
-export const SOURCE_ENV = { aws: "AWS_COST_ROLE_ARN", gcp: "BILLING_DATASET", github: "GITHUB_TOKEN", modal: "MODAL_TOKEN_ID", fal: "FAL_ADMIN_KEY", claude: CLAUDE_SUBSCRIPTION_KEY, ledgers: "FILM_LEDGERS_BUCKET", stripe: "STRIPE_KEY" };
-export const SOURCE_LABELS = { aws: "AWS Cost Explorer", gcp: "Google Cloud billing export", github: "GitHub usage", modal: "Modal billing report", fal: "fal credit balance", claude: "Claude Code transcripts", ledgers: "Film ledgers", stripe: "Stripe donations" };
+export const SOURCE_ENV = { aws: "AWS_COST_ROLE_ARN", gcp: "BILLING_DATASET", github: "GITHUB_TOKEN", modal: "MODAL_TOKEN_ID", fal: "FAL_ADMIN_KEY", claude: CLAUDE_SUBSCRIPTION_KEY, ledgers: "FILM_LEDGERS_BUCKET", stripe: "STRIPE_KEY", donate: "STRIPE_WRITE_KEY" };
+export const SOURCE_LABELS = { aws: "AWS Cost Explorer", gcp: "Google Cloud billing export", github: "GitHub usage", modal: "Modal billing report", fal: "fal credit balance", claude: "Claude Code transcripts", ledgers: "Film ledgers", stripe: "Stripe donations", donate: "Tip prices" };
 /** The Sources card's note for Stripe: the privacy rule, in one line. */
 export const STRIPE_NOTE = "Read live from Stripe with a restricted key; amounts only, never who gave.";
 /** The error when the subscription is entered but no snapshot carries the transcripts' usage. */
@@ -67,7 +71,7 @@ export function isFinanceManualKey(key) {
 
 const quiet = { configured: false };
 
-export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal = quiet, ledgers = quiet, stripe = quiet, modalConfigured = false, store, now = Date.now, log = console }) {
+export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal = quiet, ledgers = quiet, stripe = quiet, donate = null, modalConfigured = false, store, now = Date.now, log = console }) {
   const hints = () => ({ notConfigured: {}, errors: {} });
   const withHints = (body, h) => ({
     ...body,
@@ -387,8 +391,10 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
       const month = months.at(-1);
       const income = await loadIncome(h, today, { payouts: true });
       if (income === null) {
-        return withHints({ month, gross: null, fees: null, net: null, count: null, average: null, lastDay: null, days: null, months: null, recent: null, payouts: null, balance: null }, h);
+        return withHints({ month, gross: null, fees: null, net: null, count: null, average: null, lastDay: null, days: null, months: null, recent: null, byDoor: null, prices: null, payouts: null, balance: null }, h);
       }
+      const snapshot = await store.latestSnapshot();
+      const record = snapshot?.finance?.donate ?? null;
       return withHints({
         month,
         ...incomeFor(income.rows, months),
@@ -396,6 +402,8 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
         days: incomeDays(income.rows, { today }),
         months: incomeMonths(income.rows, { today }),
         recent: recentOf(income.rows, RECENT_COUNT),
+        byDoor: incomeByDoor(income.rows, months),
+        prices: record === null ? null : { period: record.period, pool: record.pool, at: record.at },
         payouts: income.payouts,
         balance: income.balance,
       }, h);
@@ -654,7 +662,13 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
       const falData = falPart === null ? null : falFromSnapshots(falHints, snapshots, { date: today, finance: { fal: falPart } });
       // The fee counts in the day's KPIs; a missing sync is not the job's failure, so its hints stay out of the snapshot.
       const claude = claudeFrom(hints(), claudePart === null ? todays : { ...todays, finance: { ...(todays?.finance ?? {}), claude: claudePart } }, claudeSeries);
-      const values = kpiValues(assemble({ snapshot: null, aws, gcp, github, modal, fal: falData, claude, today }), today);
+      const loaded = assemble({ snapshot: null, aws, gcp, github, modal, fal: falData, claude, today });
+      const values = kpiValues(loaded, today);
+      // A provider whose read failed has a partial month; the step holds off on it (`donate/step.mjs`).
+      const failed = PROVIDERS.filter((p) => h.errors[p] !== undefined || modalHints.errors[p] !== undefined);
+      // A due turn also waits while GCP's export has no rows through two days before the window's end.
+      const donateOut = donate === null ? null : await part(h, "donate", donate.configured, () =>
+        donate.run({ dailyRows: loaded.dailyRows, failed, today, gcpConfigured: gcpBilling.configured, gcpLastDay: loaded.lastDays.gcp }));
       // last30 left the card (2026-10-30) but stays in the day's values, so its history is unbroken should it return.
       const kpi = {
         ...(values === null
@@ -671,6 +685,7 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
           stripe: stripePart,
           ...(modalPart !== null ? { modal: modalPart } : {}),
           ...(claudePart !== null ? { claude: claudePart } : {}),
+          donate: donateOut?.record ?? latest?.finance?.donate ?? null,
           awsCalls,
           kpi,
         }, h),

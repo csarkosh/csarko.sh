@@ -86,6 +86,8 @@ export function readConfig(env = process.env, log = console) {
     fal: { adminKey: secret(env.FAL_ADMIN_KEY) },
     // Donations (Cyrus, 2026-10-30): a restricted Stripe key, read-only on balance transactions, charges and payouts.
     stripe: { key: secret(env.STRIPE_KEY) },
+    // Tips by door (Cyrus, 2026-10-30): the write key that makes the month's prices, the bucket the public prices object goes in and the donate site's address.
+    donate: { bucket: text(env.DONATE_BUCKET), url: text(env.DONATE_URL, "https://donate.csarko.sh"), stripeWriteKey: secret(env.STRIPE_WRITE_KEY) },
     siteUrl,
     sitemapUrl: text(env.SITEMAP_URL, `${siteUrl}/sitemap.xml`),
     hostingSite: text(env.HOSTING_SITE, "csarko-sh"),

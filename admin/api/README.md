@@ -93,6 +93,20 @@ currency and a day of each transaction and nothing else: no name, email, card, r
 description, customer or Stripe id; `recent` is `day, gross, net, currency` and the tests fail on
 any other field. A Stripe read that fails is `errors.stripe`, a health warning like any source's;
 without the key every income part is null with `notConfigured.stripe = "STRIPE_KEY"`.
+The balance transactions are listed with `expand[]=data.source` so each carries its charge, and the
+only field kept from it is the **door** (`metadata.door`): the `income` query's `byDoor` splits the
+range by door, `unknown` for a charge without one.
+The daily snapshot also runs the **donate step** (`src/donate/step.mjs`, `STRIPE_WRITE_KEY`): every
+seven days from the last repricing (amended Oct 31; it was once a month) it prices the last 30 days'
+spend (the 30 days ending yesterday, from the daily rows), makes the period's prices and payment
+links and publishes the prices object, and stores `finance.donate = { period, pool, at, doors }`
+(`period = { from, to, repricedOn }`; the `income` query's `prices`), carried forward on the days it
+does nothing; without the key it is `notConfigured.donate`, and a failure is `errors.donate`. The
+first day it ever prices is the `DONATE_FROM` constant in `src/donate/doors.mjs` (2026-10-31, the
+launch day). A due turn holds with `waiting on GCP rows through <day>` until the GCP export has rows
+through six days before the window's end (`GCP_LAG_DAYS`), and with `waiting on <providers>` while a collector failed,
+up to three days late. A done run sweeps the links and prices of periods repriced more than 35 days
+before the current one (`KEEP_DAYS`).
 The job also stores the day's KPI values as `finance.kpi` (`monthToDate`, `idleRunRate`, `last30`,
 `forecast`, `donations`; `last30` left the card on 2026-10-30 but keeps its history), which the index
 card's trends read, a small `finance.stripe = { at, mtdNet, count, lastDay }` read live, and
@@ -124,6 +138,34 @@ lib-visits counts a visit as one browser on one day (a stateless daily hash), no
 pageview, so every `pageviews` field is `null`. The pre-cutover history keeps
 the old unit (a browser once per page per session) and is merged by day, path and name.
 
+## Redo a period's tip prices
+
+A period is named by the day it was repriced on, its `repricedOn` date (`period.repricedOn` in the
+prices object). The step reuses whatever Stripe holds for that day: its lookups find the active
+prices by `lookup_key` and the active links by `metadata.period`, so a rerun alone changes nothing.
+To make the prices again (a wrong pool, a fixed bill):
+
+1. Delete the prices object: `gcloud storage rm gs://csarko-sh-donate-prices/prices.json`. The
+   pages' live fetch then fails and they fall back to their baked links, the wrong period's, which
+   still pay.
+2. Let the next daily snapshot price a new period, on the following UTC day at the earliest. It is
+   repriced on the day it runs, so its lookup keys and idempotency keys are new.
+3. Run `donate/deploy.sh`, so the pages' baked fallback points at the new links.
+4. Then retire the wrong period: archive every active price whose `lookup_key` starts with
+   `donate:<repricedOn>:` (`active=false`) and deactivate every active link whose `metadata.period`
+   is that date. The 35-day sweep would otherwise do it on its own.
+
+**Never trigger the snapshot by hand (`POST /admin/snapshot`) on the same UTC day** as step 1.
+Every price's and link's idempotency key carries the day (`donate:price:<repricedOn>:<tier>:<today>`,
+`donate:link:<repricedOn>:<door>:<tier>:<today>`), and a same-day recompute of a period repriced
+that day sends the same keys again: Stripe replays its first answer for 24 hours, so with the same
+pool the step gets back the period it already made, and with a changed pool Stripe refuses the
+reused key, after `prices.json` is already gone. On a later day the keys and the lookup keys are new.
+
+The trade-off: tips keep working at the old prices for a day, instead of a day with no working
+checkout. The new period's window is that day's 30 days (the 30 days before it), not the original
+period's, and its next turn is seven days on.
+
 ## Environment
 
 All of it is set by Terraform on the Cloud Run service; the secrets arrive as environment
@@ -146,6 +188,9 @@ variables from Secret Manager. A credential whose value is empty or the placehol
 | `BILLING_DATASET`, `BILLING_TABLE` | | the GCP billing export's dataset (`billing`) and table (`gcp_billing_export_v1_013AA0_554DB9_BBF90D`); either empty means the GCP part is not configured |
 | `FAL_ADMIN_KEY` | | a fal API key with the Admin scope, for the credit balance; empty means the fal part is not configured |
 | `STRIPE_KEY` | | a **restricted** Stripe key (read on balance transactions, charges and payouts, nothing else; never the secret key), for the donations; empty means the income parts (`summary.income`, `total.net`, the `income` query, the `donations` KPI) are not configured |
+| `STRIPE_WRITE_KEY` | | a second **restricted** Stripe key that can write products, prices and payment links (nothing else), for the weekly tip prices; empty means the donate step is not configured (`notConfigured.donate`) and the snapshot skips it |
+| `DONATE_BUCKET` | | the public GCS bucket the donate step writes the prices object into (`csarko-sh-donate-prices`); empty means the donate step is not configured either (it needs both this and the write key) |
+| `DONATE_URL` | `https://donate.csarko.sh` | the donate site's address, read into the config; the step's payment links currently return to the same address from `src/donate/doors.mjs` |
 | `FILM_LEDGERS_BUCKET` | | the private GCS bucket holding `<film>/ledger.json` (`csarko-sh-film-ledgers`); empty means the Films card is not configured |
 | `MODAL_CONFIGURED` | | `1` when Terraform has created the Modal job (`csarko-finance-modal`), so a snapshot without its part is an error rather than "Not configured (MODAL_TOKEN_ID)"; the job's own secrets are `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET`, never read here |
 | (none for Claude Code) | | the provider is configured by the manual series `claude-subscription` in Firestore, entered on the page, and its usage part is written by `tools/claude-usage-sync.py` with Cyrus's own `gcloud` token: nothing on the service |

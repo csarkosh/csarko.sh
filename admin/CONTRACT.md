@@ -790,6 +790,8 @@ The index card's four KPIs become `monthToDate`, `idleRunRate` (`good: "down"`),
   "days": [ { "day": "2026-10-30", "gross": 25, "fees": 1.03, "net": 23.97, "count": 1 } ],
   "months": [ { "month": "2026-10", "gross": 85, "fees": 2.77, "net": 82.23, "count": 4 } ],
   "recent": [ { "day": "2026-10-30", "gross": 25, "net": 23.97, "currency": "usd" } ],
+  "byDoor": [ { "door": "arkos", "label": "Arkos IDE", "gross": 60, "fees": 2.04, "net": 57.96, "count": 3 } ],
+  "prices": { "period": { "from": "2026-09-24", "to": "2026-10-23", "repricedOn": "2026-10-24" }, "pool": 150, "at": "2026-10-24T10:00:00Z" },
   "payouts": [ { "day": "2026-11-02", "amount": 82.23, "status": "pending" } ],
   "balance": { "available": 0, "pending": 82.23, "currency": "usd" }
 }
@@ -803,8 +805,17 @@ and `days`, `months`, `recent`, `payouts`, `lastDay` and `balance` ignore it. `c
 donations: a refund moves `gross`, `fees` and `net`, never the count, and `average` is `gross /
 count` (null at 0). In `summary`, `income.mtd` is the range's month and `income.lastMonth` the one
 before it, so `range=last` reads the previous month's donations; `total.net` is `0` less the net
-when no spend source is configured. A Stripe read that fails is `errors.stripe` with `income`,
-`total.net` and every `income` part `null`, a health `warning` like any source's; not configured,
+when no spend source is configured. `byDoor` splits the range's donations by the door a tip came in by, `door` the
+charge's `metadata.door` (`"unknown"` for a charge without one, labelled "Unknown"; `"all"` is "The
+whole body of work"; the others take the door's name), biggest `net` first, then by `door`; its
+`gross`, `fees`, `net` and `count` sum to the range's totals. The door is the one field the API
+takes from the charge (the balance transactions are listed with `expand[]=data.source`; the rest
+of the charge, its billing details included, is dropped in memory). `prices` is the donate step's
+last record from the latest snapshot (`finance.donate`, below): `period` the window the prices were
+made from (`from` and `to`, the 30 days ending the day before) and the day they were made
+(`repricedOn`), `pool` the dollars split among the doors and `at` when; `null` before the first run.
+A Stripe read that fails is `errors.stripe` with `income`,
+`total.net` and every `income` part (`byDoor` and `prices` too) `null`, a health `warning` like any source's; not configured,
 the `donations` KPI is `null` with `notConfigured.donations = "STRIPE_KEY"` (so the tile shows it),
 beside `notConfigured.stripe`. `sources` gains an eighth row, last, `stripe` ("Stripe donations",
 `configured`, `lastDay` the newest donation's day, `snapshotAt` null since it is read live, note
@@ -812,6 +823,17 @@ beside `notConfigured.stripe`. `sources` gains an eighth row, last, `stripe` ("S
 stores the day's net as `finance.kpi.donations` (the trend; `last30` stays in `finance.kpi` so its
 history is unbroken) and a summary `finance.stripe = { at, mtdNet, count, lastDay }`, read live by
 the job.
+
+Tips by door (Cyrus, 2026-10-30; amended Oct 31 to a rolling 30-day bill repriced weekly): the
+same job then runs the donate step, which every seven days makes new Stripe prices and payment
+links from the last 30 days' spend and publishes the donate site's prices object. It runs with the
+daily rows, the providers whose read failed that day and GCP's newest export day (a due turn waits
+on either, up to three days for a failed provider), and stores what it did as
+`finance.donate = { period, pool, at, doors }` (`doors` the door keys it made prices for). A run that does nothing (done
+already, or held off) keeps the previous record, as `finance.claude` is kept. It needs
+`STRIPE_WRITE_KEY` (a second, restricted key that can write products, prices and payment links)
+and `DONATE_BUCKET`; without the key `notConfigured.donate = "STRIPE_WRITE_KEY"`, and a step that
+throws is `errors.donate`, neither failing the snapshot.
 
 ## Auth: what `/auth.js` exports
 

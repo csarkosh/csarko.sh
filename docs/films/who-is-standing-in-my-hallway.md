@@ -7,6 +7,7 @@ alt: A woman in dark pyjamas, lit from below by her phone, staring past the came
 tags: Analog horror, Found footage, AI generated
 model: Image model: Qwen-Image-Edit
 order: 5
+focus: 0.25
 ---
 # Who is standing in my hallway?
 

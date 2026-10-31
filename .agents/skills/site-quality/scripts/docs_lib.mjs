@@ -2,6 +2,8 @@
 // build_docs.mjs does the file I/O. Nothing here reads the clock or the disk, so the same
 // sources always produce the same bytes. Tests: ../tests/docs_lib.test.mjs (node --test).
 import { Marked } from './vendor/marked.esm.mjs';
+import { doorOf, DONATE_LIVE, DONATE_URL } from '../../../../admin/api/src/donate/doors.mjs';
+import { ICON_CSS, iconSymbol, iconUse } from '../../../../donate/icon.mjs';
 
 export const SITE = 'https://csarko.sh';
 // Where the docs are served: /research/<slug> and the /research index, built into public/research/.
@@ -74,7 +76,7 @@ const APP_FIELDS = { description: true, status: true, page: true, platforms: tru
 // A film is a video hosted on YouTube: the page carries its poster and links out, so every field
 // here but "order" is needed to build the card and its VideoObject. "alt" describes the poster.
 // There is no warning field: every film card carries the same notice (FILM_NOTICE).
-const FILM_FIELDS = { description: true, watch: true, released: true, runtime: true, alt: true, tags: true, model: true, order: false };
+const FILM_FIELDS = { description: true, watch: true, released: true, runtime: true, alt: true, tags: true, model: true, order: false, focus: false };
 // A film's main AI model, shown as the first tag on its card (Cyrus, 2026-10-29), written the way
 // the tag reads: "Video model: Veo 3.1", or "Image model: ..." for a film animated from stills with
 // no video model. Only the one model may be named in public (film-generation's AGENTS.md, "What the
@@ -211,10 +213,16 @@ export function parseFilmFrontMatter(text, file) {
   if (!tags.length || tags.length > 5) throw new DocError(`${file}: tags must be 1 to 5 comma-separated names`);
   if (!FILM_MODEL.test(meta.model)) throw new DocError(`${file}: model must read "Video model: <name>" or "Image model: <name>"`);
   const [, minutes, seconds] = runtime;
+  let focus;
+  if (meta.focus !== undefined) {
+    focus = /^\d+(\.\d+)?$|^\.\d+$/.test(meta.focus) ? Number(meta.focus) : NaN;
+    if (!(focus >= 0 && focus <= 1)) throw new DocError(`${file}: focus must be a number from 0 to 1, the fraction of the poster's height the phone crop centres on`);
+  }
   return {
     meta: {
       ...meta,
       tags,
+      focus,
       order: parseOrder(meta, file),
       videoId: watch[1],
       // ISO 8601, which is the only duration schema.org reads.
@@ -877,11 +885,19 @@ const PROJECTS_CSS = `
       .project-card .project-title { order: 2; margin-bottom: 14px; }
       .project-card .film-notice { order: 3; }
       .project-card .project-media { order: 4; width: 100%; margin-bottom: 18px; }
-      .project-card .project-media.film-poster { width: 200px; align-self: flex-start; }
+      .project-card .project-media.film-poster { aspect-ratio: 16 / 9; }
+      .project-card .project-media.film-poster img { height: 100%; object-fit: cover; object-position: center var(--focus, 50%); }
       .project-card .project-desc { order: 5; }
       .project-card .tags { order: 6; }
       .project-card .card-links { order: 7; }
     }`;
+
+// Buy me tokens: last in the row, body-text weight, grey until hovered; never the accent. Only on
+// a page that carries the line (DONATE_LIVE), so until launch the page has none of it.
+const TOKENS_CSS = `
+    .card-tokens { position: relative; z-index: 1; display: inline-flex; align-items: center; font-size: 14px; font-weight: 400; color: var(--muted); text-decoration: none; }
+    .card-tokens:hover, .card-tokens:focus-visible { color: var(--text); }
+    ${ICON_CSS}`;
 
 // Only pages with IEEE references carry these rules, so adding them changed no other page.
 const REFERENCES_CSS = `
@@ -1296,7 +1312,9 @@ ${pad}</div>`;
 // the home page). Until it runs, and in any copy of the page that never goes through it, the plain
 // <img> inside is already the right image at the right shape, and it carries the alt text the
 // Markdown gave: build_assets.py reads that attribute back out rather than parsing the front matter.
-const filmPoster = (film, pad) => `${pad}<div class="project-media film-poster">
+// focus (0 to 1) is where the phone's landscape crop centres on the poster's height.
+const focusStyle = (focus) => (focus === undefined ? '' : ` style="--focus: ${Number((focus * 100).toFixed(2))}%"`);
+const filmPoster = (film, pad) => `${pad}<div class="project-media film-poster"${focusStyle(film.focus)}>
 ${pad}  <!-- generated:film-poster:${film.slug} -->
 ${pad}  <img src="${film.poster}" width="1080" height="1920" alt="${escapeHtml(film.alt)}" loading="lazy" decoding="async" />
 ${pad}  <!-- /generated:film-poster:${film.slug} -->
@@ -1328,13 +1346,24 @@ function sourceLink(project) {
     : '';
 }
 
+// Last in the row, one quiet line to the project's door on donate.csarko.sh, once the door has
+// shipped (Day Hike's has not) and the site is live (DONATE_LIVE). Lifted above the overlay like
+// the source link; counts tokens-<slug>.
+function tokensLink(project, live = DONATE_LIVE) {
+  if (!live) return '';
+  const door = doorOf(project.slug);
+  return door?.shipped
+    ? `<a class="card-tokens" href="${DONATE_URL}${door.path}" data-visits-event="tokens-${project.slug}">${iconUse()}Buy me tokens</a>`
+    : '';
+}
+
 // One card, whatever the kind: its picture (a film's poster, or a game's or an app's preview when
 // it has an alt), the kicker (a game's status, an app's status and licence, a film's runtime), the
 // title, a film's content warning, the copy, the tags and the link. Its id is the slug, so
 // /projects#<slug> lands on it.
-function projectCard(project, pad) {
+function projectCard(project, pad, { live = DONATE_LIVE } = {}) {
   const media = project.kind === 'film' ? filmPoster(project, `${pad}  `) : project.alt ? preview(project, `${pad}  `) : '';
-  const links = [cardLink(project), sourceLink(project)].filter(Boolean);
+  const links = [cardLink(project), sourceLink(project), tokensLink(project, live)].filter(Boolean);
   const link = links.length ? `<div class="card-links">${links.join(' ')}</div>` : '';
   const notice = project.kind === 'film' ? `${pad}    <p class="film-notice">${WARNING_ICON}${escapeHtml(FILM_NOTICE)}</p>\n` : '';
   return `${pad}<li class="card${media ? ' project-card' : ''}" id="${project.slug}" data-kind="${kindValue(project.kind)}">
@@ -1375,7 +1404,7 @@ function projectItem(project) {
   };
 }
 
-export function projectsPage(projects, theme) {
+export function projectsPage(projects, theme, { live = DONATE_LIVE } = {}) {
   const url = `${SITE}/${PROJECTS_DIR}`;
   const trail = [HOME_CRUMB, [PROJECTS_TITLE, url]];
   const graph = [
@@ -1394,20 +1423,21 @@ export function projectsPage(projects, theme) {
     },
     breadcrumbs(trail),
   ];
-  return `${head({ title: `${PROJECTS_HEADING} · Cyrus Sarkosh`, ogTitle: PROJECTS_TITLE, description: PROJECTS_DESCRIPTION, canonical: url, ogType: 'website', extraCss: filterCss('.project-list', 'kind', 'kind', PROJECT_KINDS.map(([v]) => v)) + PROJECTS_CSS, graph, theme })}
+  const tokens = projects.some((p) => tokensLink(p, live));
+  return `${head({ title: `${PROJECTS_HEADING} · Cyrus Sarkosh`, ogTitle: PROJECTS_TITLE, description: PROJECTS_DESCRIPTION, canonical: url, ogType: 'website', extraCss: filterCss('.project-list', 'kind', 'kind', PROJECT_KINDS.map(([v]) => v)) + PROJECTS_CSS + (tokens ? TOKENS_CSS : ''), graph, theme })}
 <body>
 ${nav(`/${PROJECTS_DIR}`)}
 ${crumbs(trail)}
 
   <main id="top" class="wrap docs-index" tabindex="-1">
-    <header class="doc-header">
+${tokens ? `    ${iconSymbol()}\n` : ''}    <header class="doc-header">
       <p class="eyebrow">${PROJECTS_TITLE}</p>
       <h1>${escapeHtml(PROJECTS_HEADING)}</h1>
       <p class="lead">${escapeHtml(PROJECTS_LEAD)}</p>
     </header>
 ${projectFilters(projects, '    ')}
     <ul class="project-list" role="list">
-${projects.map((project) => projectCard(project, '      ')).join('\n')}
+${projects.map((project) => projectCard(project, '      ', { live })).join('\n')}
     </ul>
   </main>
 
@@ -1419,12 +1449,13 @@ ${FOOTER}`;
  * games.csarko.sh/dayhike is the game's. It shares the site's head, tokens, fonts and type, but
  * none of its chrome: no nav, no trail, no wordmark. Its bar carries the app's name and a few
  * links of its own; its footer credits the maker once and names the licence. `main` is the
- * page's own markup inside <body>.
+ * page's own markup inside <body>. A link is [label, href, external, icon], the icon's HTML
+ * drawn inside the anchor before the label.
  */
 export function standaloneShell({ title, ogTitle, description, canonical, ogType = 'website', extraCss = '', graph, theme, name, links = [], licence = '', main, bodyClass = '' }) {
-  const bar = links.map(([label, href, external]) =>
-    `        <li><a href="${escapeHtml(href)}"${external ? ' class="external" target="_blank" rel="noopener"' : ''}>${escapeHtml(label)}</a></li>`).join('\n');
-  return `${head({ title, ogTitle, description, canonical, ogType, extraCss, graph, theme })}
+  const bar = links.map(([label, href, external, icon = '']) =>
+    `        <li><a href="${escapeHtml(href)}"${external ? ' class="external" target="_blank" rel="noopener"' : ''}>${icon}${escapeHtml(label)}</a></li>`).join('\n');
+  return `${head({ title, ogTitle, description, canonical, ogType, extraCss: `${extraCss}\n    ${ICON_CSS}`, graph, theme })}
 <body${bodyClass ? ` class="${bodyClass}"` : ''}>
   <a class="skip-link" href="#top">Skip to content</a>
   <header class="app-bar">
@@ -1539,7 +1570,7 @@ export function docLinks(docs, games = []) {
 
 // `figures` maps a doc's slug to its figure files (name -> { width, height }); build_docs.mjs
 // reads them from the site-quality skill's assets/research/<slug>/.
-export function buildSite({ sources, gameSources = [], filmSources = [], appSources = [], indexHtml, figures = new Map() }) {
+export function buildSite({ sources, gameSources = [], filmSources = [], appSources = [], indexHtml, figures = new Map(), live = DONATE_LIVE }) {
   const docs = sortDocs(sources.map(({ name, text }) => loadDoc(name, text, figures.get(parseDocFileName(name).slug))));
   const projects = sortProjects([
     ...gameSources.map(({ name, text }) => loadGame(name, text)),
@@ -1577,7 +1608,7 @@ export function buildSite({ sources, gameSources = [], filmSources = [], appSour
     files.set(`${DOCS_DIR}/index.html`, indexPage(docs, theme));
     files.set(`${DOCS_DIR}/feed.xml`, feed(docs));
   }
-  if (projects.length) files.set(`${PROJECTS_DIR}/index.html`, projectsPage(projects, theme));
+  if (projects.length) files.set(`${PROJECTS_DIR}/index.html`, projectsPage(projects, theme, { live }));
   files.set('sitemap.xml', sitemap(docs, projects));
   return files;
 }

@@ -1,6 +1,6 @@
 /**
  * The second axis of the finance page: which project a line paid for (the contract's `projects`
- * query). Four fixed projects in the page's order and one rule table over the line rows
+ * query). Five fixed projects in the page's order and one rule table over the line rows
  * (rows.mjs), by provider:
  *
  *   aws     the domains, the `csarko.sh` zone and its queries are the site; everything else is
@@ -20,6 +20,8 @@ export const PROJECTS = [
   { key: "films", label: "Films" },
   { key: "dayhike", label: "Day Hike" },
   { key: "site", label: "csarko.sh and admin" },
+  // The commercial work, kept out of the donate site's pool. No rule below routes to it yet.
+  { key: "commercial", label: "Commercial" },
   { key: "other", label: "Other" },
 ];
 export const PROJECT_KEYS = PROJECTS.map((p) => p.key);

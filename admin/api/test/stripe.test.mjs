@@ -46,8 +46,9 @@ test("transactions: every page with created[gte] and limit 100, paged by startin
   assert.equal(calls.length, 2);
   assert.equal(calls[0].path, "/v1/balance_transactions");
   assert.ok(calls[0].url.startsWith(`${STRIPE_API}/balance_transactions?`));
-  assert.deepEqual(calls[0].params, { limit: "100", "created[gte]": String(since) });
-  assert.deepEqual(calls[1].params, { limit: "100", "created[gte]": String(since), starting_after: c.id }, "the second page starts after the first's last id");
+  assert.deepEqual(calls[0].params, { limit: "100", "created[gte]": String(since), "expand[]": "data.source" });
+  assert.equal(calls[0].params["expand[]"], "data.source");
+  assert.deepEqual(calls[1].params, { limit: "100", "created[gte]": String(since), "expand[]": "data.source", starting_after: c.id }, "the second page starts after the first's last id");
   assert.deepEqual(calls[0].headers, { accept: "application/json", authorization: `Bearer ${KEY}`, "user-agent": "csarko-admin" }, "no Stripe-Version: the account's default applies");
   await stripe.transactions(since);
   assert.equal(calls.length, 2, "cached");
@@ -60,6 +61,7 @@ test("transactions with no since reaches 400 days back; payouts page the same wa
   const stripe = make(calls, { pages: { "/v1/payouts": [{ object: "list", data: STRIPE.payouts, has_more: false }] } });
   await stripe.transactions();
   assert.equal(calls[0].params["created[gte]"], String(Math.floor(NOW / 1000) - DEFAULT_SINCE_DAYS * 86_400));
+  assert.equal(calls[0].params["expand[]"], "data.source");
   const payouts = await stripe.payouts(1788000000);
   assert.deepEqual(payouts.map((p) => p.id), ["po_1Qp2", "po_1Qp1"]);
   assert.equal(calls[1].path, "/v1/payouts");

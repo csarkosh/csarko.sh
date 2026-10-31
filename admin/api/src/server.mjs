@@ -27,6 +27,9 @@ import { createGcpBilling } from "./collectors/gcp-billing.mjs";
 import { createGitHubBilling } from "./collectors/github-billing.mjs";
 import { createFal } from "./collectors/fal.mjs";
 import { createStripe } from "./collectors/stripe.mjs";
+import { createStripeWriter } from "./collectors/stripe-write.mjs";
+import { createPricesBucket } from "./donate/bucket.mjs";
+import { createDonateStep } from "./donate/step.mjs";
 import { createLedgers } from "./collectors/ledgers.mjs";
 import { createGsc } from "./collectors/gsc.mjs";
 import { createYouTube } from "./collectors/youtube.mjs";
@@ -53,12 +56,18 @@ const bigquery = config.visits.dataset || config.finance.billingDataset ? new Bi
 // snapshot job again), Modal's report (written into the snapshot by its own job), the film
 // ledgers in their bucket (live, cached) and the donations through Stripe (live, cached, a
 // restricted key).
+const donate = createDonateStep({
+  writer: createStripeWriter({ key: config.donate.stripeWriteKey, fetch, log }),
+  bucket: createPricesBucket({ bucket: config.donate.bucket, projectId: config.projectId, log }),
+  log,
+});
 const finance = createFinanceQueries({
   awsCost: createAwsCost({ roleArn: config.finance.awsRoleArn, audience: config.finance.awsAudience, local: config.finance.awsLocal, fetch, log }),
   gcpBilling: createGcpBilling({ bigquery, projectId: config.projectId, dataset: config.finance.billingDataset, table: config.finance.billingTable, cache }),
   githubBilling: createGitHubBilling({ token: config.github.token, owner: config.github.owner, fetch, cache }),
   fal: createFal({ adminKey: config.fal.adminKey, fetch, cache }),
   stripe: createStripe({ key: config.stripe.key, fetch, cache }),
+  donate,
   ledgers: createLedgers({ bucket: config.finance.ledgersBucket, projectId: config.projectId, cache, log }),
   modalConfigured: config.finance.modalConfigured,
   store,
@@ -112,6 +121,8 @@ const unconfigured = [
   config.fal.adminKey === null && "FAL_ADMIN_KEY",
   !config.finance.ledgersBucket && "FILM_LEDGERS_BUCKET",
   config.stripe.key === null && "STRIPE_KEY",
+  config.donate.stripeWriteKey === null && "STRIPE_WRITE_KEY",
+  !config.donate.bucket && "DONATE_BUCKET",
 ].filter(Boolean);
 if (unconfigured.length > 0) log.warn(`admin: not configured, their sections will read null: ${unconfigured.join(", ")}`);
 

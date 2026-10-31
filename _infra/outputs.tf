@@ -63,6 +63,31 @@ output "apps_site_url" {
   value       = "https://${var.apps_domain_name}"
 }
 
+output "donate_hosting_site_id" {
+  description = "Firebase Hosting site id of the donate site"
+  value       = module.gcp_hosting_donate.site_id
+}
+
+output "donate_hosting_default_url" {
+  description = "The donate site's own web.app URL, usable before DNS is live"
+  value       = module.gcp_hosting_donate.default_url
+}
+
+output "donate_custom_domain_state" {
+  description = "Host, ownership and certificate state of the donate domain. All ACTIVE means done."
+  value       = module.gcp_hosting_donate.custom_domain_state
+}
+
+output "donate_site_url" {
+  description = "URL of the donate site"
+  value       = "https://${var.donate_domain_name}"
+}
+
+output "donate_prices_bucket" {
+  description = "The public bucket the admin API publishes the donate site's prices to"
+  value       = module.gcp_admin_api.donate_prices_bucket
+}
+
 output "admin_hosting_site_id" {
   description = "Firebase Hosting site id of the admin dashboard"
   value       = module.gcp_hosting_admin.site_id

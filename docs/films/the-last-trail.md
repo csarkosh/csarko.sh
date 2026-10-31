@@ -7,6 +7,7 @@ alt: A woman in a red jacket in dark woods at dusk, holding a ranger radio with 
 tags: Horror, Short film, AI generated
 model: Video model: Veo 3.1
 order: 4
+focus: 0.42
 ---
 # The Last Trail
 

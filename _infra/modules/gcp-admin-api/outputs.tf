@@ -38,6 +38,11 @@ output "film_ledgers_bucket" {
   value       = google_storage_bucket.film_ledgers.name
 }
 
+output "donate_prices_bucket" {
+  description = "The public bucket the admin API publishes the donate site's prices to; the service's DONATE_BUCKET"
+  value       = google_storage_bucket.donate_prices.name
+}
+
 output "service_account_unique_id" {
   description = "The service's identity as its numeric unique id: the `sub` claim of the ID tokens it mints, which the AWS costs role's trust policy names"
   value       = google_service_account.admin.unique_id

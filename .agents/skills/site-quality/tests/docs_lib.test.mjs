@@ -667,6 +667,21 @@ test('an app card links out to its page, with SoftwareApplication JSON-LD', () =
   assert.equal(first.item.operatingSystem, 'Linux, macOS');
 });
 
+test('every shipped project card carries one quiet Buy me tokens link to its door; Day Hike none yet; the symbol once', () => {
+  const projects = [game('day-hike'), app('ide-arkos', ['repo: https://github.com/csarkosh/ide-arkos']), film('the-last-trail')];
+  const html = projectsPage(projects, themeBlocks(INDEX), { live: true });
+  assert.equal((html.match(/<symbol id="tokens-icon"/g) || []).length, 1);
+  assert.ok(html.includes('<a class="card-tokens" href="https://donate.csarko.sh/arkos" data-visits-event="tokens-ide-arkos"><svg class="tokens-icon" aria-hidden="true"><use href="#tokens-icon"/></svg>Buy me tokens</a>'));
+  assert.ok(html.includes('href="https://donate.csarko.sh/last-trail" data-visits-event="tokens-the-last-trail"'));
+  assert.ok(!html.includes('tokens-day-hike'));
+  const card = html.slice(html.indexOf('id="ide-arkos"'), html.indexOf('</li>\n', html.indexOf('id="ide-arkos"')));
+  assert.equal((card.match(/Buy me tokens/g) || []).length, 1);
+  assert.ok(html.indexOf('card-source') < html.indexOf('card-tokens'), 'after Source on GitHub');
+  // With the flag off (as before launch) no card carries the line and the page no symbol.
+  const before = projectsPage(projects, themeBlocks(INDEX), { live: false });
+  assert.ok(!before.includes('card-tokens') && !before.includes('<symbol id="tokens-icon"'));
+});
+
 test('standaloneShell wears none of the site\'s chrome: its own bar, its own footer, one credit', () => {
   const html = standaloneShell({ title: 'x: a thing', ogTitle: 'x', description: 'd', canonical: 'https://apps.csarko.sh/x', graph: [], theme: themeBlocks(INDEX),
     name: 'x', links: [['Download', '#setup'], ['GitHub', 'https://github.com/o/r', true]], licence: 'MIT', main: '<main id="top"></main>' });
@@ -856,4 +871,30 @@ test('/projects carries Apps, Film and Games chips with counts, All as a reset, 
   assert.ok(html.includes('id="lib-visits" data-kind="apps"'));
   assert.ok(html.includes('id="a" data-kind="film"'));
   assert.ok(html.indexOf('<form class="filters"') < html.indexOf('<ul class="project-list"'), 'the chips sit above the cards');
+});
+
+test('a film may carry focus, a fraction from 0 to 1 that the phone crop centres on', () => {
+  assert.equal(film('x').focus, undefined);
+  assert.equal(film('x', ['focus: 0.42']).focus, 0.42);
+  assert.equal(film('x', ['focus: 0']).focus, 0);
+  assert.equal(film('x', ['focus: 1']).focus, 1);
+  rejectsFilm('x', ['focus: 1.5'], /focus/);
+  rejectsFilm('x', ['focus: -0.1'], /focus/);
+  rejectsFilm('x', ['focus: high'], /focus/);
+});
+
+test('a film card sets --focus inline from focus, and no style without it', () => {
+  const withFocus = projectsPage([film('hallway', ['focus: 0.42'])], themeBlocks(INDEX));
+  assert.match(withFocus, /<div class="project-media film-poster" style="--focus: 42%">/);
+  const without = projectsPage([film('hallway')], themeBlocks(INDEX));
+  assert.match(without, /<div class="project-media film-poster">/);
+  assert.doesNotMatch(without, /style="--focus/);
+});
+
+test('on a phone a film poster is a 16 / 9 crop around its focus point', () => {
+  const html = projectsPage([film('hallway')], themeBlocks(INDEX));
+  const phone = html.slice(html.indexOf('@media (max-width: 640px) {\n      .project-card'));
+  assert.match(phone, /aspect-ratio: 16 \/ 9/);
+  assert.match(phone, /object-position: center var\(--focus, 50%\)/);
+  assert.match(phone, /object-fit: cover/);
 });

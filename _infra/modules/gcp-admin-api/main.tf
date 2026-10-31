@@ -445,6 +445,17 @@ resource "google_cloud_run_v2_service" "admin" {
         value = google_storage_bucket.film_ledgers.name
       }
 
+      # The donate site (2026-10-30): where the service publishes prices, and the site's
+      # address. STRIPE_WRITE_KEY arrives with the other secrets, from secret_ids.
+      env {
+        name  = "DONATE_BUCKET"
+        value = google_storage_bucket.donate_prices.name
+      }
+      env {
+        name  = "DONATE_URL"
+        value = var.donate_origin
+      }
+
       # The Modal part is the job's, not the service's: this says the job exists,
       # so the API reports Modal from the snapshot instead of "not configured"
       # (whether the token itself is set, the job says in the snapshot).
@@ -724,6 +735,46 @@ resource "google_storage_bucket" "film_ledgers" {
 resource "google_storage_bucket_iam_member" "admin_reads_ledgers" {
   bucket = google_storage_bucket.film_ledgers.name
   role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_service_account.admin.email}"
+}
+
+# ---- the donate prices ------------------------------------------------------------
+
+# The donate site's prices (2026-10-30): objects the admin API writes and the page reads
+# from the browser.
+#
+# Public on purpose, unlike the ledgers above: allUsers reads it, so public access
+# prevention is inherited (off) rather than enforced, which would refuse that grant. Uniform
+# bucket-level access still holds, no object ACLs. The page fetches it across origins, so
+# CORS allows GET from the donate site and from the local preview port, and nothing else.
+# Only the admin service account writes (objectUser: create, overwrite and delete objects,
+# no bucket settings). force_destroy stays off so a stray destroy cannot take the prices.
+resource "google_storage_bucket" "donate_prices" {
+  project  = var.project_id
+  name     = var.donate_prices_bucket
+  location = var.region
+
+  uniform_bucket_level_access = true
+  public_access_prevention    = "inherited"
+  force_destroy               = false
+
+  cors {
+    origin          = [var.donate_origin, "http://localhost:8789"]
+    method          = ["GET"]
+    response_header = ["Content-Type"]
+    max_age_seconds = 3600
+  }
+}
+
+resource "google_storage_bucket_iam_member" "donate_public" {
+  bucket = google_storage_bucket.donate_prices.name
+  role   = "roles/storage.objectViewer"
+  member = "allUsers"
+}
+
+resource "google_storage_bucket_iam_member" "admin_writes_donate" {
+  bucket = google_storage_bucket.donate_prices.name
+  role   = "roles/storage.objectUser"
   member = "serviceAccount:${google_service_account.admin.email}"
 }
 

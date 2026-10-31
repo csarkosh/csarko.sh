@@ -12,7 +12,7 @@ import { falSeries } from "../src/finance/fal.mjs";
 import { PROJECTS, PROJECT_KEYS, projectOf, projectsTable } from "../src/finance/projects.mjs";
 import { filmLabel, providerOf, filmOf, filmsOf, DEFAULT_CAP_USD } from "../src/finance/films.mjs";
 import { CLAUDE_SUBSCRIPTION_KEY, CLAUDE_LINE, subscriptionSeries, subscriptionFor, claudeRows, claudeUsage, usageForMonths, usageDays } from "../src/finance/claude.mjs";
-import { donationsOf, incomeFor, incomeDays, incomeMonths, recentOf, payoutsOf, balanceOf, lastDonationDay } from "../src/finance/income.mjs";
+import { donationsOf, incomeFor, incomeDays, incomeMonths, recentOf, payoutsOf, balanceOf, lastDonationDay, incomeByDoor } from "../src/finance/income.mjs";
 
 /* ---- categories ---- */
 
@@ -367,8 +367,9 @@ test("fal series: a fall is the earlier day's spend, a rise a purchase, a skippe
 /* ---- projects ---- */
 
 test("projects: the four in order, and the rule table over every provider", () => {
-  assert.deepEqual(PROJECT_KEYS, ["films", "dayhike", "site", "other"]);
-  assert.deepEqual(PROJECTS.map((p) => p.label), ["Films", "Day Hike", "csarko.sh and admin", "Other"]);
+  assert.deepEqual(PROJECT_KEYS, ["films", "dayhike", "site", "commercial", "other"]);
+  assert.deepEqual(PROJECTS.map((p) => p.label), ["Films", "Day Hike", "csarko.sh and admin", "Commercial", "Other"]);
+  assert.equal(projectOf({ provider: "gcp", where: "magicpixel-487014" }), "other", "nothing is routed to commercial yet");
   const aws = (line, service = "EC2 - Other") => awsRows([{ month: "2026-10", service, line, amount: 1 }])[0];
   assert.equal(projectOf(aws("Route53-Domains", "Amazon Registrar")), "site");
   assert.equal(projectOf(aws("HostedZone", "Amazon Route 53")), "site");
@@ -402,6 +403,7 @@ test("projects: the four in order, and the rule table over every provider", () =
       { key: "films", label: "Films", byMonth: [0, 0, 155.93] },
       { key: "dayhike", label: "Day Hike", byMonth: [0, 0, 33.74] },
       { key: "site", label: "csarko.sh and admin", byMonth: [0, 1, 19.76] },
+      { key: "commercial", label: "Commercial", byMonth: [0, 0, 0] },
       { key: "other", label: "Other", byMonth: [0, 0, 10.96] },
     ],
     partial: ["2026-08", "2026-09"],
@@ -549,11 +551,11 @@ const STRIPE = JSON.parse(readFileSync(new URL("./fixtures/finance-stripe.json",
 test("donationsOf: charges and payments are donations in dollars on their UTC day, a refund subtracts (gross and net negative, fee as given), a payout is not income, newest first, no identity", () => {
   const rows = donationsOf(STRIPE.transactions);
   assert.equal(rows.length, 7, "eight transactions less the payout");
-  assert.deepEqual(rows[0], { day: "2026-10-28", created: 1793212930, gross: 25, fees: 1.03, net: 23.97, currency: "usd", refund: false });
+  assert.deepEqual(rows[0], { day: "2026-10-28", created: 1793212930, gross: 25, fees: 1.03, net: 23.97, currency: "usd", refund: false, door: "arkos" });
   assert.deepEqual(rows.map((r) => r.day), ["2026-10-28", "2026-10-25", "2026-10-20", "2026-10-13", "2026-10-07", "2026-10-06", "2026-09-29"]);
   const refund = rows.find((r) => r.refund);
-  assert.deepEqual(refund, { day: "2026-10-07", created: 1791370800, gross: -15, fees: 0, net: -15, currency: "usd", refund: true });
-  assert.deepEqual(Object.keys(rows[0]).sort(), ["created", "currency", "day", "fees", "gross", "net", "refund"], "no description, source or customer");
+  assert.deepEqual(refund, { day: "2026-10-07", created: 1791370800, gross: -15, fees: 0, net: -15, currency: "usd", refund: true, door: null });
+  assert.deepEqual(Object.keys(rows[0]).sort(), ["created", "currency", "day", "door", "fees", "gross", "net", "refund"], "no description, source or customer: the door is the one thing taken from the charge");
   assert.deepEqual(donationsOf([{ type: "payment_refund", amount: 500, fee: 0, net: 500, created: 1791370800, currency: "usd" }])[0].gross, -5, "a refund is negative whichever sign Stripe gives it");
   assert.deepEqual(donationsOf([{ type: "stripe_fee", amount: -200, fee: 0, net: -200, created: 1791370800 }, { type: "adjustment", amount: 100, created: 1791370800 }, null, { type: "charge" }]), [], "nothing else counts, and a transaction without a time is skipped");
   assert.deepEqual(donationsOf([]), []);
@@ -613,4 +615,17 @@ test("payoutsOf and balanceOf: arrival days in dollars with Stripe's status, new
   assert.equal(lastDonationDay(donationsOf(STRIPE.transactions)), "2026-10-28");
   assert.equal(lastDonationDay(donationsOf([STRIPE.transactions[5]])), null, "a refund alone names no donation day");
   assert.equal(lastDonationDay([]), null);
+});
+
+test("income rows carry the charge's door and nothing else from the charge; the by-door split sums to the totals, unknown for a charge without one", () => {
+  const rows = donationsOf(STRIPE.transactions);
+  assert.ok(rows.some((r) => r.door === "arkos"));
+  assert.ok(rows.every((r) => !("source" in r) && !("email" in r) && !("name" in r)));
+  const by = incomeByDoor(rows, ["2026-10"]);
+  const all = incomeFor(rows, ["2026-10"]);
+  assert.equal(by.reduce((n, d) => n + d.net, 0).toFixed(2), all.net.toFixed(2));
+  assert.equal(by.reduce((n, d) => n + d.count, 0), all.count);
+  assert.deepEqual(by.find((d) => d.door === "unknown").label, "Unknown");
+  assert.equal(by.find((d) => d.door === "arkos").label, "Arkos IDE");
+  assert.ok(by.every((d, i) => i === 0 || by[i - 1].net >= d.net));
 });
