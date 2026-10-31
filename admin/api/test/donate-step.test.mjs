@@ -8,7 +8,7 @@ import { TIER_KEYS } from "../src/donate/doors.mjs";
 const NOW = Date.parse("2026-10-31T10:00:12Z");
 const TODAY = "2026-10-31";
 const PERIOD = { from: "2026-10-01", to: "2026-10-30", repricedOn: "2026-10-31" };
-const SHIPPED = ["arkos", "macstats", "visits", "last-trail", "hallway", "all"];
+const SHIPPED = ["arkos", "macstats", "visits", "last-trail", "hallway", "all", "dayhike"];
 // The window on Oct 31 is Oct 1 to Oct 30: the row of Sep 30 and the row of Oct 31 fall outside it.
 const ROWS = [
   { day: "2026-10-05", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 200 },
@@ -58,7 +58,7 @@ test("a new period: four products, four prices, four links a door, one JSON, the
   assert.deepEqual(Object.keys(j.products), TIER_KEYS);
   assert.equal(j.custom.minimumUsd, 1);
   assert.deepEqual(Object.keys(j.doors["arkos"].links), TIER_KEYS);
-  assert.equal(calls.filter((c) => c[0] === "createLink").length, 24);
+  assert.equal(calls.filter((c) => c[0] === "createLink").length, 28);
   const own = calls.find((c) => c[0] === "createLink" && c[1].tier === "own" && c[1].door === "all")[1];
   assert.equal(own.redirectUrl, "https://donate.csarko.sh/thanks?door=all");
   assert.equal(own.key, "donate:link:2026-10-31:all:own:2026-10-31");
@@ -201,7 +201,7 @@ test("a door added between turns gets its links at the current period's prices; 
   assert.ok(calls.every((c) => c[1].door === "all" && c[1].period === "2026-10-31"));
   assert.equal(calls.find((c) => c[1].tier === "context")[1].priceId, "price_2");
   assert.equal(calls.find((c) => c[1].tier === "context")[1].key, "donate:link:2026-10-31:all:context:2026-11-03");
-  assert.deepEqual(Object.keys(bucket.json.doors), SHIPPED);
+  assert.deepEqual(Object.keys(bucket.json.doors), [...SHIPPED.filter((d) => d !== "all"), "all"], "the new door is appended");
   assert.deepEqual([bucket.json.period, bucket.json.pool, bucket.json.at], [PERIOD, 288, "2026-10-31T10:00:12.000Z"]);
 });
 

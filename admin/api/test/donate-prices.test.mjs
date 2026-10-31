@@ -37,17 +37,17 @@ test("the pool is the window's daily rows less the commercial project, never neg
   assert.deepEqual(pricesOf(0).map((p) => p.usd), [1, 1, 1]);
 });
 
-test("the doors: seven, their URLs and sources, Day Hike not shipped", () => {
+test("the doors: seven, their URLs and sources, all shipped", () => {
   assert.deepEqual(DOORS.map((d) => [d.door, d.slug, d.path]), [
     ["arkos", "ide-arkos", "/arkos"], ["macstats", "app-macstats", "/macstats"], ["visits", "lib-visits", "/visits"],
     ["last-trail", "the-last-trail", "/last-trail"], ["hallway", "who-is-standing-in-my-hallway", "/hallway"], ["all", null, "/"], ["dayhike", "day-hike", "/dayhike"],
   ]);
-  assert.deepEqual(shippedDoors().map((d) => d.door), ["arkos", "macstats", "visits", "last-trail", "hallway", "all"]);
+  assert.deepEqual(shippedDoors().map((d) => d.door), ["arkos", "macstats", "visits", "last-trail", "hallway", "all", "dayhike"]);
   assert.equal(doorOf("ide-arkos").door, "arkos");
   assert.equal(doorOf("nope"), null);
   assert.equal(doorByKey("all").picture.source, "donate/body-of-work.png");
   assert.equal(doorByKey("last-trail").picture.focusY, 0.42);
-  assert.equal(doorByKey("dayhike").picture, null);
+  assert.deepEqual(doorByKey("dayhike").picture, { source: "donate/day-hike.png" });
   for (const d of DOORS) {
     assert.equal(d.captions.length, 3, d.door);
     assert.ok(d.headline && d.lead && d.thanks && d.back.label && d.back.href.startsWith("https://"), d.door);

@@ -111,13 +111,14 @@ export const DOORS = [
     picture: { source: "donate/body-of-work.png" },
   },
   {
-    door: "dayhike", slug: "day-hike", name: "Day Hike", kind: "game", shipped: false, path: "/dayhike",
+    door: "dayhike", slug: "day-hike", name: "Day Hike", kind: "game", shipped: true, path: "/dayhike",
     headline: "Fund the next build",
     lead: "Day Hike is free and plays in your browser. If you made it back from the woods, cover a slice of the cloud bill that runs it.",
     captions: ["a bug fix, a good question", "a whole system, read end to end", "a build, start to merge"],
     thanks: "Tokens received. The next build is on you.",
     back: { label: "Back to Day Hike", href: "https://games.csarko.sh/dayhike/" },
-    picture: null,
+    // Shipped 2026-10-31 with the game's cover still: a landscape 1920 by 1080, so no focusY.
+    picture: { source: "donate/day-hike.png" },
   },
 ];
 

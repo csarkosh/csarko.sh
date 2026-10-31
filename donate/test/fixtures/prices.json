@@ -162,6 +162,26 @@
      "url": "https://buy.stripe.com/test_all_own"
     }
    }
+  },
+  "dayhike": {
+   "links": {
+    "prompt": {
+     "id": "plink_test_dayhike_prompt",
+     "url": "https://buy.stripe.com/test_dayhike_prompt"
+    },
+    "context": {
+     "id": "plink_test_dayhike_context",
+     "url": "https://buy.stripe.com/test_dayhike_context"
+    },
+    "run": {
+     "id": "plink_test_dayhike_run",
+     "url": "https://buy.stripe.com/test_dayhike_run"
+    },
+    "own": {
+     "id": "plink_test_dayhike_own",
+     "url": "https://buy.stripe.com/test_dayhike_own"
+    }
+   }
   }
  }
 }

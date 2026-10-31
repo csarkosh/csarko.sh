@@ -126,7 +126,7 @@ on is Cyrus's click, section 8.)
 | The Last Trail | `/last-trail` | poster, cropped landscape on the page | with the apps |
 | Who is standing in my hallway? | `/hallway` | poster, cropped landscape on the page | with the apps |
 | The whole body of work | `/` | the generated graphic (section 6) | with the apps |
-| Day Hike | `/dayhike` | a screenshot Cyrus is yet to make | last (Cyrus: "hold off on that one and do it last") |
+| Day Hike | `/dayhike` | a screenshot Cyrus is yet to make | shipped Oct 31 with the game's cover still |
 
 The door slugs are mine (short, human, no prefixes); every project card's slug maps to one.
 `/film` is not a door: it was the Oct 29 name for The Last Trail when there was one film.
