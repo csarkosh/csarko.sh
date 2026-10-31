@@ -120,8 +120,8 @@ test('the bar carries Buy me tokens with the icon, and the README snippet is dro
   assert.equal((html.match(/Buy me tokens/g) || []).length, 1);
   assert.ok(/<li><a href="https:\/\/donate\.csarko\.sh\/visits" class="external" target="_blank" rel="noopener"><svg viewBox="0 0 32 22" shape-rendering="crispEdges"[^>]*><path [\s\S]*?<\/svg>Buy me tokens<\/a><\/li>/.test(html));
   assert.ok(html.indexOf('>GitHub</a>') < html.indexOf('Buy me tokens') && html.indexOf('Buy me tokens') < html.indexOf(`>${RELEASE.tag}</a>`));
-  // Until launch (DONATE_LIVE false by default) the bar carries no Buy me tokens at all.
-  assert.ok(!productPage({ app, prepared, release: RELEASE, images, theme: THEME }).includes('Buy me tokens'));
+  // With the flag off (as before launch) the bar carries no Buy me tokens at all.
+  assert.ok(!productPage({ app, prepared, release: RELEASE, images, theme: THEME, live: false }).includes('Buy me tokens'));
 });
 
 // MacStats' README: an HTML title and hero, a centred paragraph, a table of panels, an Install

@@ -677,8 +677,8 @@ test('every shipped project card carries one quiet Buy me tokens link to its doo
   const card = html.slice(html.indexOf('id="ide-arkos"'), html.indexOf('</li>\n', html.indexOf('id="ide-arkos"')));
   assert.equal((card.match(/Buy me tokens/g) || []).length, 1);
   assert.ok(html.indexOf('card-source') < html.indexOf('card-tokens'), 'after Source on GitHub');
-  // Until launch (DONATE_LIVE false by default) no card carries the line and the page no symbol.
-  const before = projectsPage(projects, themeBlocks(INDEX));
+  // With the flag off (as before launch) no card carries the line and the page no symbol.
+  const before = projectsPage(projects, themeBlocks(INDEX), { live: false });
   assert.ok(!before.includes('card-tokens') && !before.includes('<symbol id="tokens-icon"'));
 });
 
