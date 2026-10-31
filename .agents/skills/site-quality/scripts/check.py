@@ -56,7 +56,7 @@ BUDGET_ANY_PORTRAIT = 90_000
 BUDGET_SCRIPTS = 10_000  # all JavaScript the page loads, first- and third-party (third-party measured live)
 
 BUDGET_HTML_DOCS_INDEX = 80_000  # the research index lists every doc with its card, about 1.7 KB each; 29 docs crossed BUDGET_HTML on 2026-10-14
-BUDGET_HTML_PROJECTS = 60_000  # /projects carries the shared theme blocks, now with the Material 3 motion tokens (+1.2 KB took it from 49.2 KB past BUDGET_HTML) (2026-10-29); the Buy me tokens link and its one symbol: 54,538 B with the five Buy me tokens lines, about 50.6 KB without (they render only once DONATE_LIVE), the icon drawn as one path per colour (2026-10-30)
+BUDGET_HTML_PROJECTS = 60_000  # /projects carries the shared theme blocks, now with the Material 3 motion tokens (+1.2 KB took it from 49.2 KB past BUDGET_HTML) (2026-10-29); raised 2026-10-30 for the Buy me tokens lines, which were removed 2026-10-31 (size about 50.6 KB)
 BUDGET_HTML_DOC = 260_000  # a doc page is mostly prose, so long research docs get more room than BUDGET_HTML; the longest, with 146 sources, was 197 KB (55 KB gzipped) and is 210 KB since every doc page carries its contents list, Keep reading block and their rules (2026-10-23); the horror sound doc, 21,000 words and 191 sources, is 251 KB (70 KB gzipped) (2026-10-24)
 
 BUILD_DOCS = SKILL / "scripts/build_docs.mjs"

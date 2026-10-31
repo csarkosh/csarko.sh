@@ -247,14 +247,14 @@ placement (Oct 30):
 | lib-visits | the GitHub README; its apps.csarko.sh page | `/visits` |
 | Day Hike | bottom left of the title screen, moving under the PARTY widget when the layout collapses; the GitHub README | `/dayhike` |
 | The films | one "Buy me tokens" link among the channel's profile links on YouTube; the plain URL as the last line of each Short's description, since YouTube makes URLs in Shorts descriptions non-clickable; the film cards on csarko.sh/projects | `/last-trail`, `/hallway` |
-| Every project | its card on `csarko.sh/projects` | its door |
+| Every project | its card on `csarko.sh/projects` (removed Oct 31, Cyrus: it reads as asking on the cards) | its door |
 
 Checked Oct 30: YouTube's External links policy bans links to content that breaks its
 Community Guidelines and says nothing against tipping or donation sites; its help page says
 URLs in Shorts descriptions and comments are non-clickable, channel pages show up to 14 links,
 and long-form descriptions are clickable once a channel has advanced features.
 
-**Scope.** This plan builds csarko.sh's entrances: the line on every project card, the line in
+**Scope.** This plan builds csarko.sh's entrances: the line on every project card (removed Oct 31, Cyrus: it reads as asking on the cards), the line in
 each apps.csarko.sh page's bar (the standalone shell's own element, beside GitHub and the
 version), the README snippet's format, and the icon served at `donate.csarko.sh/icon.svg` for
 READMEs to embed as an `<img>` (a README cannot inline an SVG). An apps page renders its app's
