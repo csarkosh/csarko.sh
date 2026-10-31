@@ -224,6 +224,15 @@ function pictureHtml({ light, dark, alt }, images, { lazy = true } = {}) {
   return `<picture>${dark !== light ? `<source media="(prefers-color-scheme: dark)" srcset="${d.url}" />` : ''}<img src="${l.url}" width="${l.width}" height="${l.height}" alt="${escapeHtml(alt)}" decoding="async"${lazy ? ' loading="lazy"' : ' fetchpriority="high"'} /></picture>`;
 }
 
+/**
+ * The app's loop: a muted video that plays on its own and repeats, its poster the first frame,
+ * fetched only once it is near (preload none) so the page's first paint owes it nothing. It is
+ * what it shows for a screen reader, through its label.
+ */
+export function recordingHtml({ url, poster, width, height, alt }) {
+  return `<figure class="recording"><video autoplay muted loop playsinline preload="none" poster="${escapeHtml(poster)}" width="${width}" height="${height}" aria-label="${escapeHtml(alt)}"><source src="${escapeHtml(url)}" type="video/mp4" /></video></figure>`;
+}
+
 /** Every README image the page shows, for build.mjs to copy. */
 export const imagesOf = ({ hero, panels, figures = [] }) => [...new Set([hero, ...panels, ...figures].filter(Boolean).flatMap((p) => [p.light, p.dark]))];
 
@@ -231,9 +240,11 @@ export const imagesOf = ({ hero, panels, figures = [] }) => [...new Set([hero, .
  * app: the docs/apps entry (loadApp: title, description, kicker, license, repo, slug); prepared:
  * prepareReadme's result; release: { tag, url, published, assets: [{ name, size, url }] };
  * images: README path → { url, width, height } on this host; theme: themeBlocks() of public/index.html;
+ * recording: the app's loop, { url, poster, width, height, under, alt } (the front matter's
+ * `recording`, copied beside the page by build.mjs), played under the README's `under` heading;
  * live: whether donate.csarko.sh serves the doors yet (DONATE_LIVE), without which the bar has no Buy me tokens.
  */
-export function productPage({ app, prepared, release, images, theme, live = DONATE_LIVE }) {
+export function productPage({ app, prepared, release, images, theme, recording = null, live = DONATE_LIVE }) {
   const { text, hero, caption, panels, flows, figures = [] } = prepared;
   const doc = renderMarkdown(text, `${app.slug} README`);
   let html = doc.html;
@@ -241,6 +252,13 @@ export function productPage({ app, prepared, release, images, theme, live = DONA
     if (!html.includes(from)) throw new ProductError(`README: the rendered page lost the marker ${from}`);
     html = html.replace(from, to);
   };
+  if (recording) {
+    const section = doc.rail.find((s) => s.text.toLowerCase() === recording.under.toLowerCase());
+    if (!section) throw new ProductError(`README: no "## ${recording.under}" section to play the recording under`);
+    const head = new RegExp(`(<div class="section-head"[^>]*>(?:(?!</div>)[\\s\\S])*?<h2 id="${section.id}">[\\s\\S]*?</h2></div>\\n)`);
+    if (!head.test(html)) throw new ProductError(`README: the "## ${recording.under}" heading was not where the page expected it`);
+    html = html.replace(head, `$1${recordingHtml(recording)}\n`);
+  }
   if (prepared.downloads) swap(DOWNLOADS, downloadsHtml(release));
   else swap(`<p>${RELEASE}</p>`, downloadsHtml(release, { strict: false }));
   flows.forEach((flow, i) => swap(`<p>${FLOW(i)}</p>`, flowHtml(flow)));
@@ -363,6 +381,8 @@ const PRODUCT_CSS = `
     .panel-image img { display: block; width: 100%; height: auto; border-radius: 12px; }
     .figure { margin: 24px 0 32px; }
     .figure img { display: block; width: 100%; height: auto; border-radius: 12px; }
+    .recording { margin: 16px 0 32px; }
+    .recording video { display: block; width: 100%; height: auto; border-radius: 12px; background: var(--surface); }
     .panel-body > :first-child { margin-top: 0; }
     /* On a phone the panel's heading leads, then its screenshot, then the rest of its text. */
     @media (max-width: 640px) {

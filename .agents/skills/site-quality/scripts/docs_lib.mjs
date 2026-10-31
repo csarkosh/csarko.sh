@@ -71,7 +71,10 @@ const GAME_FIELDS = { description: true, status: true, tags: true, play: false, 
 // card's link to the page ("Download and docs" unless it says otherwise, e.g. "Install and docs").
 // "order" places it on /projects (1 first); "sections" names the README's H2 sections
 // its page keeps, in the README's words, when the whole README is not the page.
-const APP_FIELDS = { description: true, status: true, page: true, platforms: true, tags: true, license: false, repo: false, released: false, alt: false, link: false, order: false, sections: false };
+// `recording` is a loop the app's page plays (an .mp4 in the app's repository, its poster the same
+// name as .jpg), `recording-under` the README's `## ` heading it goes under, `recording-alt` what
+// it shows (Cyrus, 2026-10-31: Arkos IDE's window through its themes, under "Who it's for").
+const APP_FIELDS = { description: true, status: true, page: true, platforms: true, tags: true, license: false, repo: false, released: false, alt: false, link: false, order: false, sections: false, recording: false, 'recording-under': false, 'recording-alt': false };
 // A film is a video hosted on YouTube: the page carries its poster and links out, so every field
 // here but "order" is needed to build the card and its VideoObject. "alt" describes the poster.
 // There is no warning field: every film card carries the same notice (FILM_NOTICE).
@@ -105,7 +108,7 @@ function parseBlock(text, file, fields) {
   const meta = {};
   for (const line of block[1].split('\n')) {
     if (!line.trim()) continue;
-    const kv = /^([a-z]+):\s*(.*)$/.exec(line);
+    const kv = /^([a-z]+(?:-[a-z]+)*):\s*(.*)$/.exec(line);
     if (!kv) throw new DocError(`${file}: front matter line is not "key: value": ${line}`);
     const [, key, value] = kv;
     if (!(key in fields)) throw new DocError(`${file}: unknown front matter key "${key}"`);
@@ -196,7 +199,15 @@ export function parseAppFrontMatter(text, file) {
   const order = parseOrder(meta, file);
   const sections = meta.sections === undefined ? undefined : meta.sections.split(',').map((s) => s.trim()).filter(Boolean);
   if (sections !== undefined && !sections.length) throw new DocError(`${file}: sections names at least one heading`);
-  return { meta: { ...meta, tags, order, sections }, body };
+  let recording;
+  if (meta.recording !== undefined || meta['recording-under'] !== undefined || meta['recording-alt'] !== undefined) {
+    if (!/^[\w./-]+\.mp4$/.test(meta.recording ?? '') || meta.recording.includes('..') || meta.recording.startsWith('/')) {
+      throw new DocError(`${file}: recording must be the .mp4's path inside the repository`);
+    }
+    if (!meta['recording-under'] || !meta['recording-alt']) throw new DocError(`${file}: a recording needs recording-under (the README heading it goes under) and recording-alt (what it shows)`);
+    recording = { file: meta.recording, under: meta['recording-under'], alt: meta['recording-alt'] };
+  }
+  return { meta: { ...meta, tags, order, sections, recording }, body };
 }
 
 export function parseFilmFrontMatter(text, file) {

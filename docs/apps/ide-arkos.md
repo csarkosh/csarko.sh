@@ -10,6 +10,9 @@ order: 2
 link: Install and docs
 tags: Rust, GPUI, macOS, Claude Code
 alt: Three Arkos IDE windows fanned out like postcards: in front the multi tasker, three Claude Code sessions each running its own subagents on an unrelated project; behind, the web developer with the app's page in a web tab, and the blogger with posts open in the markdown editor
+recording: docs/images/multitasker-themes.mp4
+recording-under: Who it's for
+recording-alt: One Arkos IDE window, three Claude Code sessions side by side, cycling through four of the built-in themes: Navy with its rune rain, Lavender Light and Peach Light with their watercolor washes, and Matrix, black with phosphor green rain, each fading into the next
 ---
 # Arkos IDE
 

@@ -233,6 +233,20 @@ GPL-3.0.
   assert.ok(!html.includes('## Status') && !html.includes('How a release is made'));
 });
 
+test('a recording plays under the heading its front matter names, and a heading the README lacks fails the build', () => {
+  const app = { slug: 'lib-visits', title: 'lib-visits', description: 'Cookieless web analytics: a script.', kicker: 'Released', platforms: 'Linux, macOS' };
+  const prepared = prepareReadme(README, { blob: BLOB });
+  const images = Object.fromEntries(imagesOf(prepared).map((p) => [p, { url: `/lib-visits/${p.split('/').pop().replace('.png', '.webp')}`, width: 1904, height: 893 }]));
+  const recording = { url: '/lib-visits/themes.mp4', poster: '/lib-visits/themes.jpg', width: 1320, height: 860, under: 'Running it in the cloud', alt: 'The window through its themes' };
+  const html = productPage({ app, prepared, release: RELEASE, images, theme: THEME, recording });
+  const figure = '<figure class="recording"><video autoplay muted loop playsinline preload="none" poster="/lib-visits/themes.jpg" width="1320" height="860" aria-label="The window through its themes"><source src="/lib-visits/themes.mp4" type="video/mp4" /></video></figure>';
+  assert.ok(html.includes(figure), 'the video, muted and looping, with its poster and label');
+  assert.ok(new RegExp(`<h2 id="running-it-in-the-cloud">[\\s\\S]*?</h2></div>\\n${figure.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}\\n<p><strong>GCP</strong>`).test(html), 'right under its heading, before the section\'s first paragraph');
+  assert.ok(!/<script\b(?![^>]*application\/ld\+json)/.test(html), 'no script plays it');
+  assert.throws(() => productPage({ app, prepared, release: RELEASE, images, theme: THEME, recording: { ...recording, under: 'Themes' } }), /no "## Themes" section to play the recording under/);
+  assert.ok(!productPage({ app, prepared, release: RELEASE, images, theme: THEME }).includes('<video'), 'no recording, no video');
+});
+
 test('a picture on its own inside a section is a figure, and the page draws it', () => {
   const readme = `# App\n\nIntro.\n\n## Who\n\nText.\n\n<picture>\n  <source media="(prefers-color-scheme: dark)" srcset="docs/images/a-dark.png">\n  <img alt="A" src="docs/images/a-light.png" width="760">\n</picture>\n\n## Install\n\nSteps.\n`;
   const prepared = prepareReadme(readme, { blob: 'https://github.com/o/r/blob/main/' });

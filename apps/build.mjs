@@ -114,7 +114,16 @@ for (const name of sources) {
     rmSync(tmp);
   }
 
-  let html = productPage({ app, prepared, release, images, theme });
+  // The app's recording (its front matter): the .mp4 and its .jpg poster copied beside the page.
+  let recording = null;
+  if (app.recording) {
+    const stem = path.basename(app.recording.file, '.mp4');
+    writeFileSync(path.join(dir, `${stem}.mp4`), await fetchFile(app.recording.file));
+    writeFileSync(path.join(dir, `${stem}.jpg`), await fetchFile(app.recording.file.replace(/\.mp4$/, '.jpg')));
+    const size = JSON.parse(execFileSync('python3', ['-I', '-c', 'import sys, json\nfrom PIL import Image\nim = Image.open(sys.argv[1])\nprint(json.dumps({"width": im.width, "height": im.height}))', path.join(dir, `${stem}.jpg`)], { encoding: 'utf8' }));
+    recording = { url: `/${app.slug}/${stem}.mp4`, poster: `/${app.slug}/${stem}.jpg`, ...size, under: app.recording.under, alt: app.recording.alt };
+  }
+  let html = productPage({ app, prepared, release, images, theme, recording });
   html = html.replace(/\/\* generated:fonts \*\/\n\s*\/\* \/generated:fonts \*\//,
     `/* generated:fonts */\n${fonts}\n    /* /generated:fonts */`);
   html = html.replace(/<!-- generated:head -->\n\s*<!-- \/generated:head -->/,
