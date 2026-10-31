@@ -146,15 +146,24 @@ prices by `lookup_key` and the active links by `metadata.period`, so a rerun alo
 To make the period's prices again (a wrong pool, a fixed bill):
 
 1. Archive the period's prices: every active price whose `lookup_key` starts with
-   `donate:<repricedOn>:` (`active=false`; a new price takes the key over).
+   `donate:<repricedOn>:` (`active=false`).
 2. Deactivate the period's payment links: every active link whose `metadata.period` is that date.
 3. Delete the prices object: `gcloud storage rm gs://csarko-sh-donate-prices/prices.json`.
-4. Let the next snapshot recompute it (or call `POST /admin/snapshot`), then run `donate/deploy.sh` so
-   the pages' baked fallback points at the new links.
+4. Let the next daily snapshot recompute it, on the following UTC day at the earliest, then run
+   `donate/deploy.sh` so the pages' baked fallback points at the new links.
 
-Until step 4 the pages' fallback points at the retired links, so do it in one sitting.
-The new period is repriced on the day the step runs, so its window is the 30 days before that day
-and its next turn seven days on.
+**Never trigger the snapshot by hand (`POST /admin/snapshot`) on the same UTC day** as steps 1 to 3.
+Every price's and link's idempotency key carries the day (`donate:price:<repricedOn>:<tier>:<today>`,
+`donate:link:<repricedOn>:<door>:<tier>:<today>`), and a same-day recompute of a period repriced
+that day sends the same keys again: Stripe replays its first answer for 24 hours, so with the same
+pool the step gets back the prices and links just archived and deactivated and publishes dead
+checkouts, and with a changed pool Stripe refuses the reused key, after `prices.json` is already
+gone. On a later day the keys and the lookup keys are new.
+
+The recompute is a new period repriced on the day it runs: its window is that day's 30 days (the
+30 days before it), not the original period's, and its next turn is seven days on. Between step 2
+and the redeploy the pages' checkouts point at the deactivated links, so start right after a day's
+snapshot has run and redeploy as soon as the next one has.
 
 ## Environment
 
