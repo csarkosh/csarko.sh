@@ -680,6 +680,7 @@ ${items.join('\n')}
 }
 
 // A content warning's mark. Decorative: the warning's own sentence says what it means.
+const GITHUB_ICON = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.82 1.19 3.08 0 4.41-2.69 5.38-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>';
 const WARNING_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>';
 const EXTERNAL_ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>';
 
@@ -873,10 +874,12 @@ const PROJECTS_CSS = `
     .card-link { font-size: 14px; font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
     .card-link svg { width: 14px; height: 14px; transition: transform var(--md-duration-short3) var(--md-easing-standard); }
     .card:hover .card-link svg { transform: translate(2px, -2px); }
-    /* The repo link: lifted above the card's overlay, quieter than the card's own link. */
-    .card-source { position: relative; z-index: 1; font-size: 14px; font-weight: 500; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; transition: color var(--md-duration-short3) var(--md-easing-standard), text-decoration-color var(--md-duration-short3) var(--md-easing-standard); }
-    .card-source:hover, .card-source:focus-visible { color: var(--accent); text-decoration-color: var(--accent); }
-    .card-source svg { width: 14px; height: 14px; }
+    /* The repo link: a faint GitHub mark in the card's top right, lifted above the card's overlay;
+       a 32px target round an 18px mark. The kicker and title keep clear of it. */
+    .card-source { position: absolute; top: 12px; right: 12px; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; color: var(--faint); transition: color var(--md-duration-short3) var(--md-easing-standard); }
+    .card-source:hover, .card-source:focus-visible { color: var(--accent); }
+    .card-source svg { width: 18px; height: 18px; }
+    .card-source ~ .project-body .project-kicker, .card-source ~ .project-body .project-title { padding-right: 28px; }
     @media (max-width: 640px) {
       .project-card { flex-direction: column; gap: 0; }
       .project-card .project-body { display: contents; }
@@ -1329,12 +1332,14 @@ function cardLink(project) {
   return `<a class="card-link stretch" href="${escapeHtml(project.watch)}" target="_blank" rel="noopener" data-visits-event="watch-${project.slug}">Watch on YouTube ${EXTERNAL_ARROW}</a>`;
 }
 
-// A second, smaller link beside it to the code, for a project with a public repo (Cyrus, 2026-10-26:
-// the cards should show the work to engineers reading them). It sits above the stretched link's
-// overlay, so it stays its own click target, and counts as source-<slug>.
-function sourceLink(project) {
+// The code, for a project with a public repo (Cyrus, 2026-10-26: the cards should show the work to
+// engineers reading them): a small, faint GitHub mark in the card's top right corner, not a second
+// link in the row (Cyrus, 2026-10-31: quieter), named "Source on GitHub" for screen readers and in
+// its tooltip. It sits above the stretched link's overlay, so it stays its own click target, and
+// counts as source-<slug>.
+function sourceLink(project, pad) {
   return project.repo
-    ? `<a class="card-source" href="${escapeHtml(project.repo)}" target="_blank" rel="noopener" data-visits-event="source-${project.slug}">Source on GitHub ${EXTERNAL_ARROW}</a>`
+    ? `${pad}<a class="card-source" href="${escapeHtml(project.repo)}" target="_blank" rel="noopener" aria-label="Source on GitHub" title="Source on GitHub" data-visits-event="source-${project.slug}">${GITHUB_ICON}</a>\n`
     : '';
 }
 
@@ -1344,11 +1349,11 @@ function sourceLink(project) {
 // /projects#<slug> lands on it.
 function projectCard(project, pad) {
   const media = project.kind === 'film' ? filmPoster(project, `${pad}  `) : project.alt ? preview(project, `${pad}  `) : '';
-  const links = [cardLink(project), sourceLink(project)].filter(Boolean);
-  const link = links.length ? `<div class="card-links">${links.join(' ')}</div>` : '';
+  const own = cardLink(project);
+  const link = own ? `<div class="card-links">${own}</div>` : '';
   const notice = project.kind === 'film' ? `${pad}    <p class="film-notice">${WARNING_ICON}${escapeHtml(FILM_NOTICE)}</p>\n` : '';
   return `${pad}<li class="card${media ? ' project-card' : ''}" id="${project.slug}" data-kind="${kindValue(project.kind)}">
-${media ? `${media}\n` : ''}${pad}  <div class="project-body">
+${sourceLink(project, `${pad}  `)}${media ? `${media}\n` : ''}${pad}  <div class="project-body">
 ${pad}    <p class="project-kicker">${escapeHtml(project.kicker)}</p>
 ${pad}    <h2 class="project-title">${project.titleHtml}</h2>
 ${notice}${pad}    <div class="project-desc prose">

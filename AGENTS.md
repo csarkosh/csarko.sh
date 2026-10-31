@@ -291,9 +291,10 @@ three from the command line):
   Each card carries its kind's kicker (a game's status, an app's status and licence, `Short film ·
   <runtime>`), title, copy, tags and one link stretched over the card: "Play in your browser"
   (`play-<slug>`), the app's page (`app-<slug>`) or "Watch on YouTube" (`watch-<slug>`). A project
-  with a public `repo` also gets a smaller "Source on GitHub" link beside it (`source-<slug>`),
-  lifted above the card's overlay *(Cyrus, 2026-10-26: recruiters and interviewers should reach the
-  code from the card)*. A card
+  with a public `repo` also gets a small, faint GitHub mark in the card's top right corner
+  (`source-<slug>`, named "Source on GitHub" for screen readers and in its tooltip), lifted above
+  the card's overlay *(Cyrus, 2026-10-26: recruiters and interviewers should reach the code from the
+  card; a mark in the corner rather than a worded link beside the card's own, 2026-10-31: quieter)*. A card
   with a picture (a film's poster; a game's or an app's preview when it has an `alt`) lays it
   beside the text on a desktop; **on a phone the kicker and title come first and the picture sits
   under them** (a film's poster as a full-width landscape crop around its `focus:` point, Cyrus 2026-10-31; a game's or app's preview as before) *(Cyrus, 2026-09-19, from the film page)*, since a picture alone does not say which
@@ -508,7 +509,7 @@ dropped because its host went down and took the numbers with it.)*
   `nav-research` in both navs (never on the page you are on; `nav-apps`, `nav-film` and
   `nav-games` until 2026-10-26, when those pages became `/projects`); a game card's "Play in your
   browser" counts `play-<slug>`, an app card's link `app-<slug>`, a film card's "Watch on YouTube" `watch-<slug>`,
-  and a card's "Source on GitHub" `source-<slug>` *(2026-10-26)* (`docs_lib.mjs`; a `tokens-<slug>` event for the card line existed 2026-10-30 to 31 and was removed with it); on `/research`, a category chip
+  and a card's GitHub mark, "Source on GitHub", `source-<slug>` *(2026-10-26)* (`docs_lib.mjs`; a `tokens-<slug>` event for the card line existed 2026-10-30 to 31 and was removed with it); on `/research`, a category chip
   `filter-<category>` (`filter-all` for All; a click that clears a chip counts too) *(2026-10-18,
   to see what the index's visitors do before they leave)*, and on `/projects` a kind chip
   `filter-apps`, `filter-film` or `filter-games` *(2026-10-29)*. All are `data-visits-event` attributes. `read-<slug>` needs no script of

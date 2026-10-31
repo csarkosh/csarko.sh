@@ -454,19 +454,23 @@ test('a game card: its kicker, tags and play link, stretched over the card, and 
   // No alt, no preview: a plain card. Its id is the slug, so /projects#day-hike lands on it.
   assert.ok(html.includes('<li class="card" id="day-hike" data-kind="games">'));
   assert.ok(html.includes('<a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play in your browser <svg'));
-  // The repo gets its own smaller link beside it, above the overlay (2026-10-26).
-  assert.ok(html.includes('<a class="card-source" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener" data-visits-event="source-day-hike">Source on GitHub <svg'));
-  assert.ok(html.includes('<div class="card-links"><a class="card-link stretch"'), 'the card link leads the row');
+  // The repo is a faint GitHub mark in the card's corner, above the overlay, named for screen
+  // readers (2026-10-26; an icon, not a second link in the row, 2026-10-31).
+  assert.ok(html.includes('<a class="card-source" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener" aria-label="Source on GitHub" title="Source on GitHub" data-visits-event="source-day-hike"><svg'));
+  assert.ok(html.includes('<li class="card" id="day-hike" data-kind="games">\n') && /data-kind="games">\s*<a class="card-source"/.test(html), 'the mark comes first in the card');
+  assert.ok(/<div class="card-links"><a class="card-link stretch"[^]*?<\/a><\/div>/.test(html), 'the row holds the card link alone');
+  assert.ok(!html.includes('Source on GitHub <svg'), 'no worded source link');
   const [first] = jsonLd(html).find((n) => n['@type'] === 'CollectionPage').mainEntity.itemListElement;
   assert.equal(first.item['@type'], 'VideoGame');
   assert.equal(first.item.url, 'https://games.csarko.sh/dayhike/');
   assert.equal(first.item.gamePlatform, 'Web browser');
 });
 
-test('a game with only a repo gets only the source link; with no links, none, and the page URL in JSON-LD', () => {
+test('a game with only a repo gets only the GitHub mark; with no links, none, and the page URL in JSON-LD', () => {
   const repoOnly = projectsPage([game('x', ['repo: https://github.com/csarkosh/x'])], themeBlocks(INDEX));
   assert.ok(!repoOnly.includes('class="card-link stretch'));
-  assert.ok(repoOnly.includes('<div class="card-links"><a class="card-source" href="https://github.com/csarkosh/x"'));
+  assert.ok(repoOnly.includes('<a class="card-source" href="https://github.com/csarkosh/x"'));
+  assert.ok(!repoOnly.includes('class="card-links"'), 'no links row for the mark alone');
   const html = projectsPage([game('secret')], themeBlocks(INDEX));
   assert.ok(!html.includes('class="card-link') && !html.includes('class="card-source'), 'no links row at all');
   assert.equal(jsonLd(html).find((n) => n['@type'] === 'CollectionPage').mainEntity.itemListElement[0].item.url, 'https://csarko.sh/projects');
