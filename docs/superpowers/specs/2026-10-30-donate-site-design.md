@@ -208,7 +208,8 @@ calling the admin API's snapshot route once a day) gains one idempotent step, **
    Amended Oct 31 for the weekly turn: it kept one previous month.)*
 6. Write **one JSON** the page reads: the `period` (`{ from, to, repricedOn }`, amended Oct 31
    from the month), the pool rounded to the dollar, and per door the four prices, shares and link
-   URLs. It is published to a public Cloud Storage object with
+   URLs. It is published to a public Cloud Storage object (served with Cache-Control no-cache,
+   since a cached copy can lack its CORS header; Oct 31) with
    CORS for `https://donate.csarko.sh` (my call; a Hosting rewrite cannot reach a bucket, and the
    admin API stays private). The page fetches it at load; if the fetch fails, the page shows the
    last prices baked into its build and a plain "Prices are from <Month D>." line (the day they

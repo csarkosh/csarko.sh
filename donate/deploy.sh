@@ -81,9 +81,9 @@ verify() {
 }
 prices_cors() {
   local head
-  head="$(curl -sI -m 20 -H "Origin: $SITE_URL" "https://storage.googleapis.com/$BUCKET/prices.json")" || return 1
+  head="$(curl -sI -m 20 -H "Origin: $SITE_URL" "https://storage.googleapis.com/$BUCKET/prices.json?check=$(date +%s)")" || return 1
   grep -qE '^HTTP/[0-9.]+ 200' <<<"$head" || { echo "✗ prices.json did not answer 200"; return 1; }
-  grep -qi '^access-control-allow-origin:' <<<"$head" || { echo "✗ prices.json sent no access-control-allow-origin for $SITE_URL"; return 1; }
+  grep -qi '^access-control-allow-origin:' <<<"$head" || { echo "✗ prices.json sent no access-control-allow-origin for $SITE_URL (a false negative looks like this when a plain fetch primed the cache; the remedy is gcloud storage objects update gs://$BUCKET/prices.json --cache-control=no-cache)"; return 1; }
   echo "✓ prices.json answers 200 with access-control-allow-origin for $SITE_URL"
 }
 

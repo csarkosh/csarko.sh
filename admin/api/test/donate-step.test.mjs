@@ -222,7 +222,7 @@ test("a Stripe failure midway writes nothing and rethrows; a same-day rerun uses
   assert.equal(keys(next).filter((k) => keys(calls).includes(k)).length, 4, "only the four product keys repeat");
 });
 
-test("the bucket: a missing object reads as null, a write carries the content type and a five-minute cache", async () => {
+test("the bucket: a missing object reads as null, a write carries the content type and a no-cache header", async () => {
   const saved = [];
   const storage = { bucket: (name) => ({ file: (obj) => ({
     async download() { const e = new Error("No such object"); e.code = 404; throw e; },
@@ -236,7 +236,7 @@ test("the bucket: a missing object reads as null, a write carries the content ty
   assert.equal(saved[0].obj, "prices.json");
   assert.deepEqual(saved[0].body, { period: { from: "2026-10-01", to: "2026-10-30", repricedOn: "2026-10-31" } });
   assert.equal(saved[0].opts.contentType, "application/json");
-  assert.equal(saved[0].opts.metadata.cacheControl, "public, max-age=300");
+  assert.equal(saved[0].opts.metadata.cacheControl, "no-cache");
   assert.equal(createPricesBucket({ bucket: null, projectId: "csarko-sh" }).configured, false);
 });
 
