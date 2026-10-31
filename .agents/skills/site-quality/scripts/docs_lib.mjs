@@ -875,11 +875,11 @@ const PROJECTS_CSS = `
     .card-link svg { width: 14px; height: 14px; transition: transform var(--md-duration-short3) var(--md-easing-standard); }
     .card:hover .card-link svg { transform: translate(2px, -2px); }
     /* The repo link: a faint GitHub mark in the card's top right, lifted above the card's overlay;
-       a 32px target round an 18px mark. The kicker and title keep clear of it. */
-    .card-source { position: absolute; top: 12px; right: 12px; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; color: var(--faint); transition: color var(--md-duration-short3) var(--md-easing-standard); }
+       a 28px target round a 15px mark, centred on the kicker's line with the mark's edge on the content edge. The kicker and title keep clear of it. */
+    .card-source { position: absolute; top: 18px; right: 15.5px; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; color: var(--faint); transition: color var(--md-duration-short3) var(--md-easing-standard); }
     .card-source:hover, .card-source:focus-visible { color: var(--accent); }
-    .card-source svg { width: 18px; height: 18px; }
-    .card-source ~ .project-body .project-kicker, .card-source ~ .project-body .project-title { padding-right: 28px; }
+    .card-source svg { width: 15px; height: 15px; }
+    .card-source ~ .project-body .project-kicker, .card-source ~ .project-body .project-title { padding-right: 32px; }
     @media (max-width: 640px) {
       .project-card { flex-direction: column; gap: 0; }
       .project-card .project-body { display: contents; }
