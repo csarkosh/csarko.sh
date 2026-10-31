@@ -4,16 +4,16 @@ import assert from "node:assert/strict";
 import { TIERS, CUSTOM, TIER_KEYS, DOORS, doorOf, doorByKey, shippedDoors, DONATE_URL, PRICES_URL, DONATE_FROM_MONTH } from "../src/donate/doors.mjs";
 import { poolOf, priceOf, pricesOf, decide, PRICE_DAY, LATE_DAY } from "../src/donate/prices.mjs";
 
-test("four tiers at 1, 3, 10 and 30 percent, then the custom row", () => {
-  assert.deepEqual(TIERS.map((t) => [t.key, t.name, t.share]), [["prompt", "A prompt", 0.01], ["context", "A long context window", 0.03], ["run", "A whole agent run", 0.1], ["finetune", "A fine-tune", 0.3]]);
+test("three tiers at 1, 3 and 10 percent, then the custom row", () => {
+  assert.deepEqual(TIERS.map((t) => [t.key, t.name, t.share]), [["prompt", "A prompt", 0.01], ["context", "A long context window", 0.03], ["run", "A whole agent run", 0.1]]);
   assert.deepEqual(CUSTOM, { key: "own", name: "Your own number", minimumUsd: 1 });
-  assert.deepEqual(TIER_KEYS, ["prompt", "context", "run", "finetune", "own"]);
+  assert.deepEqual(TIER_KEYS, ["prompt", "context", "run", "own"]);
 });
 
-test("a $287.40 month gives $3, $9, $29 and $87, labelled about n%", () => {
-  assert.deepEqual(pricesOf(287.4).map((p) => [p.tier, p.usd, p.label]), [["prompt", 3, "about 1%"], ["context", 9, "about 3%"], ["run", 29, "about 10%"], ["finetune", 87, "about 30%"]]);
+test("a $287.40 month gives $3, $9 and $29, labelled about n%", () => {
+  assert.deepEqual(pricesOf(287.4).map((p) => [p.tier, p.usd, p.label]), [["prompt", 3, "about 1%"], ["context", 9, "about 3%"], ["run", 29, "about 10%"]]);
   assert.equal(priceOf(300, 0.01), 3, "an exact dollar is not rounded up to the next");
-  assert.equal(priceOf(0, 0.3), 1, "the floor");
+  assert.equal(priceOf(0, 0.1), 1, "the floor");
 });
 
 test("the pool is last month's rows less the commercial project, never negative", () => {
@@ -25,7 +25,7 @@ test("the pool is last month's rows less the commercial project, never negative"
   ];
   assert.equal(poolOf(rows, "2026-10"), 287.4);
   assert.equal(poolOf([{ month: "2026-10", provider: "gcp", where: "csarko-sh", amount: -12 }], "2026-10"), 0);
-  assert.deepEqual(pricesOf(0).map((p) => p.usd), [1, 1, 1, 1]);
+  assert.deepEqual(pricesOf(0).map((p) => p.usd), [1, 1, 1]);
 });
 
 test("the doors: seven, their URLs and sources, Day Hike not shipped", () => {
@@ -40,7 +40,7 @@ test("the doors: seven, their URLs and sources, Day Hike not shipped", () => {
   assert.equal(doorByKey("last-trail").picture.focusY, 0.42);
   assert.equal(doorByKey("dayhike").picture, null);
   for (const d of DOORS) {
-    assert.equal(d.captions.length, 4, d.door);
+    assert.equal(d.captions.length, 3, d.door);
     assert.ok(d.headline && d.lead && d.thanks && d.back.label && d.back.href.startsWith("https://"), d.door);
     assert.ok(!/—|@/.test(JSON.stringify(d)), `${d.door}: no em-dash, no address`);
   }

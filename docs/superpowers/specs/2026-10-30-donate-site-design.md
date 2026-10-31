@@ -16,8 +16,8 @@ One static page, in versions, where someone who got something out of a project c
 dollars toward the bill that produced it. The bill is real: every tier on the page is a share
 of what all of Cyrus's free, public work cost to run last month, read from the Finance data the
 admin dashboard already keeps. The joke is the point and the persona: a tip buys tokens, in the
-units the projects are built from (a prompt, a long context window, a whole agent run, a
-fine-tune), and the prices move with the real bill, which keeps the joke honest.
+units the projects are built from (a prompt, a long context window, a whole agent run), and the
+prices move with the real bill, which keeps the joke honest.
 
 Every project is a door into the same room. `donate.csarko.sh/arkos`, `/macstats`, `/visits`,
 `/dayhike`, `/last-trail` and `/hallway` show the project's own picture and words; the bill,
@@ -64,10 +64,10 @@ which door people came through, and that is all it does.
 
 ## 2. The page
 
-One card, layout A from the Oct 29 mockups (the "tip card": one centred column, four tiers, one
-button), in the site's dark theme with its light theme by `prefers-color-scheme`, built from the
-site's tokens and fonts the way the apps pages are (`standaloneShell`: head, tokens, fonts; no
-nav, trail or wordmark). Top to bottom:
+One card, layout A from the Oct 29 mockups (the "tip card": one centred column, three tiers and
+your own number, one button), in the site's dark theme with its light theme by
+`prefers-color-scheme`, built from the site's tokens and fonts the way the apps pages are
+(`standaloneShell`: head, tokens, fonts; no nav, trail or wordmark). Top to bottom:
 
 1. **Kicker**, monospace, uppercase: `Buy Me Tokens · Arkos IDE` (the project's name; the bare
    door says `Buy Me Tokens`).
@@ -90,15 +90,15 @@ nav, trail or wordmark). Top to bottom:
    cloud behind all this cost **$288**. Each tier is a slice of that bill." (Cyrus, Oct 30: the
    first wording felt too demanding.) The figure is the pool (section 3), rounded to the dollar,
    the month named.
-5. **Four tiers**, each a row: the name in bold, a one-line caption under it in the door's
-   words, the price on the right in monospace accent, and under the price its share: "about
-   1%", "about 3%", "about 10%", "about 30%". The second tier is selected by default. The names
-   are the same on every door, because everything here is built with tokens: **A prompt**,
-   **A long context window**, **A whole agent run**, **A fine-tune**. Only the captions change
-   per door (Arkos: "a quick fix, a good question", "a whole feature, read end to end", "a
-   milestone, start to merge", "you really like it"; a film: "one more take", "a scene, start to
-   end", "a cut", "you really like it").
-6. **A fifth, dashed row**: "Your own number", any amount.
+5. **Three tiers** (Cyrus, Oct 31: the 30% tier was dropped; three tiers and the custom row),
+   each a row: the name in bold, a one-line caption under it in the door's words, the price on
+   the right in monospace accent, and under the price its share: "about 1%", "about 3%", "about
+   10%". The second tier is selected by default. The names are the same on every door, because
+   everything here is built with tokens: **A prompt**, **A long context window**, **A whole
+   agent run**. Only the captions change per door (Arkos: "a quick fix, a good question", "a
+   whole feature, read end to end", "a milestone, start to merge"; a film: "one more take", "a
+   scene, start to end", "a cut").
+6. **A fourth, dashed row**: "Your own number", any amount.
 7. **One button**: "Tip $9" (the selected tier's price). It opens that tier's Stripe Payment
    Link in the same tab.
 8. **Footer**: "Payments by Stripe · no account needed".
@@ -147,13 +147,14 @@ pool the same day (Cyrus: "I want its operational costs excluded from the tippin
 should just be for work I put out for free for the public benefit"). The Finance page itself
 keeps showing it.
 
-**The shares.** Four tiers at 1%, 3%, 10% and 30% of the pool (Cyrus: "4 exponentially
-increasing percentiles"; the ratio is mine, about threefold per step, close to the $3, $10,
-$25, $100 ladder he picked on the mockup). Each price is the pool times its share, **rounded up
-to the next whole dollar**, and labelled "about 1%" and so on (Cyrus: "Round-up to the nearest
-dollar and say about 1%"). A $287.40 month gives $3, $9, $29 and $87. The lowest tier floors at
-$1 so a small month cannot fall under Stripe's minimum charge (my call). The fifth row is a
-Stripe "customer chooses what to pay" price with a $1 minimum and no preset (my call).
+**The shares.** Three tiers at 1%, 3% and 10% of the pool (Cyrus, Oct 31: the 30% tier was
+dropped; three tiers and the custom row). They began as four (Cyrus, Oct 30: "4 exponentially
+increasing percentiles"; the ratio is mine, about threefold per step, close to the $3, $10, $25,
+$100 ladder he picked on the mockup). Each price is the pool times its share, **rounded up to
+the next whole dollar**, and labelled "about 1%" and so on (Cyrus: "Round-up to the nearest
+dollar and say about 1%"). A $287.40 month gives $3, $9 and $29. The lowest tier floors at $1 so
+a small month cannot fall under Stripe's minimum charge (my call). The fourth row is a Stripe
+"customer chooses what to pay" price with a $1 minimum and no preset (my call).
 
 **When they change.** Once a month, when the previous month's data is complete. The GCP
 billing export lands a day or two late and Cost Explorer's month settles over the first days,
@@ -183,24 +184,24 @@ calling the admin API's snapshot route once a day) gains one idempotent step, **
    provider must not hold the month's prices past a week). A provider that is not configured,
    and a Claude Code fee with no entry for the month, contribute $0 and the Finance page's own
    "not configured" and "missing" marks say so; the step does not second-guess them.
-3. Read the pool (section 3), compute the four prices.
+3. Read the pool (section 3), compute the three prices.
 4. In Stripe, with a restricted key that may write payment links, prices and products and
    nothing else (a new Secret Manager secret on the API, like the read-only Stripe key the
    income collector uses): for each tier, a new Price on that tier's Product (one Product per
-   tier, created once: "A prompt", "A long context window", "A whole agent run", "A fine-tune";
+   tier, created once: "A prompt", "A long context window", "A whole agent run";
    and one "Your own number" Product whose Price has `custom_unit_amount` enabled with the $1
    minimum), then for each door and each tier a Payment Link whose metadata and whose
    `payment_intent_data.metadata` carry `door`, `tier`, `month` and `share`, whose
    `after_completion` redirects to the thanks page with the door, and which collects the
-   payer's email for the receipt (Stripe's default). Five links per door, six shipped doors
-   today: 30 links a month, seven doors and 35 links with Day Hike.
+   payer's email for the receipt (Stripe's default). Four links per door, six shipped doors
+   today: 24 links a month, seven doors and 28 links with Day Hike.
 5. Last month's links stay live for one more month and are swept on the first snapshot after
    that, once the following month's prices have landed (links `active: false`, Prices archived:
    anything two or more months older than the published month), so the baked fallback on the
    deployed pages always pays. *(Amended Oct 30 after the branch review: the sweep retired them the day after
    the new month published.)*
 6. Write **one JSON** the page reads: the month, the pool rounded to the dollar, and per door
-   the five prices, shares and link URLs. It is published to a public Cloud Storage object with
+   the four prices, shares and link URLs. It is published to a public Cloud Storage object with
    CORS for `https://donate.csarko.sh` (my call; a Hosting rewrite cannot reach a bucket, and the
    admin API stays private). The page fetches it at load; if the fetch fails, the page shows the
    last prices baked into its build and a plain "prices are from <month>" line, never an empty
@@ -291,7 +292,8 @@ before it ships (my call: nothing generated goes live unseen).
 
 By Cyrus (Oct 29 and 30): one-off tips only, Stripe only, no GitHub Sponsors; layout A; the
 tip is a share of his total spend on free public work, one pool for every door, the commercial
-service excluded; four exponential tiers, rounded up to the dollar, "about n%"; the bill named
+service excluded; three exponential tiers, rounded up to the dollar, "about n%"
+(Cyrus, Oct 31: the 30% tier was dropped; three tiers and the custom row); the bill named
 on the card, no running score; the picture under the headline, landscape only, films cropped
 on the page with the subject kept; every project gets a door, Day Hike last with his
 screenshot; the bare door shows a generated graphic of his interests; a static page and a

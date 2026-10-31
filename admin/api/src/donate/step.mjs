@@ -1,5 +1,5 @@
 /**
- * The monthly step of the donate site: once last month's bill is in, turn its pool into four prices
+ * The monthly step of the donate site: once last month's bill is in, turn its pool into three prices
  * (a share each) and a custom one, make a Stripe payment link for every door and tier, and publish
  * the result as the one JSON object the pages read. It is safe to rerun at any hour. The lookups
  * are the duplicate guard: before creating anything the step looks for what an earlier run made, a
@@ -11,8 +11,8 @@
  * included, and a key without the day would make the next day's run meet the same failure.
  *
  * The budget: the snapshot route has 60 s for everything it does, so the step must stay well under
- * 30 s. A first run is about ten sequential creates (the products and prices) and then one batch of
- * five concurrent link creates per door, the doors still one after another, instead of about forty
+ * 30 s. A first run is about eight sequential creates (the products and prices) and then one batch of
+ * four concurrent link creates per door, the doors still one after another, instead of about thirty
  * sequential calls.
  *
  * Nothing is written to the bucket until every create has succeeded. A run that writes a month
@@ -72,7 +72,7 @@ export function createDonateStep({ writer, bucket, now = Date.now, log = console
   }
 
   /**
-   * A door's five links: the active ones already made for this month reused, the rest created
+   * A door's four links: the active ones already made for this month reused, the rest created
    * concurrently (one batch a door, for the budget above).
    */
   async function linksFor(door, month, tiers, custom, existing, today) {

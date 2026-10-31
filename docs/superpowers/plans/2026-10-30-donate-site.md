@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A static tip page at donate.csarko.sh whose four prices are shares of last month's real cloud bill, set once a month by the admin snapshot through Stripe Payment Links, with one quiet "Buy me tokens" entrance on every csarko.sh project card and apps page.
+**Goal:** A static tip page at donate.csarko.sh whose three prices are shares of last month's real cloud bill, set once a month by the admin snapshot through Stripe Payment Links, with one quiet "Buy me tokens" entrance on every csarko.sh project card and apps page.
 
 **Architecture:** Three pieces. (1) The admin API (`admin/api`, Node 22, Cloud Run) gains a `donate` step inside the Finance snapshot: it reads the pool from the Finance rows, writes Products, Prices and Payment Links through a restricted Stripe key, and publishes one `prices.json` to a public GCS bucket. (2) A fourth Firebase Hosting site, built by `donate/build.mjs` from the shared `standaloneShell`, with the pictures the projects page already uses, the baked prices as fallback and a fetch of the live JSON. (3) Entrances: a `tokensLink` on each `/projects` card, a bar link on each apps page, and a README snippet format that the apps build drops. Everything in Terraform.
 
@@ -15,7 +15,7 @@
 - No em-dash anywhere in page copy, docs or code comments that reach a page; `deploy.sh` and `apps/deploy.sh` already refuse one, `donate/deploy.sh` does too.
 - No email address or phone number on any page, in any JSON the page reads, or in any test fixture committed to the repo. Both repos are public.
 - Every colour on a page is a theme token in both blocks, except the icon's ten fixed fills, which live in SVG attributes, not CSS (`check.py` scans CSS only).
-- The tiers are exactly: `A prompt` 1%, `A long context window` 3%, `A whole agent run` 10%, `A fine-tune` 30%; each price is the pool times its share **rounded up** to the next whole dollar, floored at $1; the fifth row is "Your own number" with a $1 minimum.
+- The tiers are exactly: `A prompt` 1%, `A long context window` 3%, `A whole agent run` 10% (Cyrus, Oct 31: the 30% tier was dropped; three tiers and the custom row); each price is the pool times its share **rounded up** to the next whole dollar, floored at $1; the fourth row is "Your own number" with a $1 minimum.
 - Prices are computed from the month that most recently closed, by the first daily snapshot on or after the 3rd; a failed configured provider delays a day, up to the 7th.
 - The pool excludes rows whose project is `commercial`; nothing is routed there yet.
 - The charge statement is `CSARKO* DONATION`: the account's shortened descriptor is already `CSARKO`, so every link sets `payment_intent_data[statement_descriptor_suffix]=DONATION`.
@@ -31,7 +31,7 @@
 
 ## Review Focus
 
-1. **A month whose net is zero or negative** (credits larger than spend): the four prices must all be $1, the bill sentence must read $0, nothing may throw. Test in Task 1.
+1. **A month whose net is zero or negative** (credits larger than spend): the three prices must all be $1, the bill sentence must read $0, nothing may throw. Test in Task 1.
 2. **The step dies halfway through Stripe** (links made for two doors, then a 500): tomorrow's run must finish the month with no duplicate Products, Prices or Links, and `prices.json` must not have been written by the failed run. Test in Task 3.
 3. **The live JSON is unreachable or older than the baked one**: the page must show the baked prices and say which month they are from, never an empty card or a $NaN button. Test in Task 7.
 4. **A charge with no `door` metadata** (a Stripe dashboard payment, an old link): the by-door split must count it under `unknown`, and the totals must still equal the plain income totals. Test in Task 4.
@@ -40,6 +40,8 @@
 ---
 
 ### Task 1: Doors, tiers and prices (pure)
+
+> **Oct 31:** the fourth tier, `finetune` ("A fine-tune", 30%), was dropped at Cyrus's word; three tiers and the custom row remain, and this plan's text and tests below are updated to match.
 
 **Files:**
 - Create: `admin/api/src/donate/doors.mjs`
@@ -52,8 +54,8 @@
 - Consumes: `projectOf(row)`, `cents`, `monthOf`, `addMonths` from `admin/api/src/finance/`.
 - Produces (`doors.mjs`):
   - `DONATE_URL = "https://donate.csarko.sh"`, `PRICES_BUCKET = "csarko-sh-donate-prices"`, `PRICES_OBJECT = "prices.json"`, `PRICES_URL = "https://storage.googleapis.com/csarko-sh-donate-prices/prices.json"`.
-  - `TIERS: [{ key, name, share }]` in order `prompt` 0.01, `context` 0.03, `run` 0.10, `finetune` 0.30; `CUSTOM = { key: "own", name: "Your own number", minimumUsd: 1 }`; `TIER_KEYS = ["prompt","context","run","finetune","own"]`.
-  - `DOORS: [{ door, slug, name, kind, shipped, path, headline, lead, captions: [4 strings], thanks, back: { label, href }, picture: { source, dark?, focusY? } }]` for the seven doors. `path` is `/` for `all`, else `/${door}`. `picture.source` is relative to `.agents/skills/site-quality/assets/` (`apps/ide-arkos.png`, `apps/app-macstats.png`, `apps/lib-visits.png` with `dark: "apps/lib-visits-dark.png"`, `films/the-last-trail.jpg` with `focusY: 0.3`, `films/who-is-standing-in-my-hallway.jpg` with a `focusY` the builder picks, `donate/body-of-work.png` for `all`, `null` for `dayhike`). `shipped` is `true` for all but `dayhike`. The Arkos `lead`, its four captions and its `thanks` are the spec's sentences verbatim; the films' captions are the spec's; the other copy is the builder's, in the same register.
+  - `TIERS: [{ key, name, share }]` in order `prompt` 0.01, `context` 0.03, `run` 0.10; `CUSTOM = { key: "own", name: "Your own number", minimumUsd: 1 }`; `TIER_KEYS = ["prompt","context","run","own"]`.
+  - `DOORS: [{ door, slug, name, kind, shipped, path, headline, lead, captions: [3 strings], thanks, back: { label, href }, picture: { source, dark?, focusY? } }]` for the seven doors. `path` is `/` for `all`, else `/${door}`. `picture.source` is relative to `.agents/skills/site-quality/assets/` (`apps/ide-arkos.png`, `apps/app-macstats.png`, `apps/lib-visits.png` with `dark: "apps/lib-visits-dark.png"`, `films/the-last-trail.jpg` with `focusY: 0.3`, `films/who-is-standing-in-my-hallway.jpg` with a `focusY` the builder picks, `donate/body-of-work.png` for `all`, `null` for `dayhike`). `shipped` is `true` for all but `dayhike`. The Arkos `lead`, its three captions and its `thanks` are the spec's sentences verbatim; the films' captions are the spec's; the other copy is the builder's, in the same register.
   - `doorOf(slug)` → the door whose `slug` matches, else `null`; `doorByKey(door)` → by `door`, else `null`; `shippedDoors()`.
 - Produces (`prices.mjs`):
   - `PRICE_DAY = 3`, `LATE_DAY = 7`, `FLOOR_USD = 1`.
@@ -71,16 +73,16 @@ import assert from "node:assert/strict";
 import { TIERS, CUSTOM, TIER_KEYS, DOORS, doorOf, doorByKey, shippedDoors, DONATE_URL, PRICES_URL } from "../src/donate/doors.mjs";
 import { poolOf, priceOf, pricesOf, decide, PRICE_DAY, LATE_DAY } from "../src/donate/prices.mjs";
 
-test("four tiers at 1, 3, 10 and 30 percent, then the custom row", () => {
-  assert.deepEqual(TIERS.map((t) => [t.key, t.name, t.share]), [["prompt", "A prompt", 0.01], ["context", "A long context window", 0.03], ["run", "A whole agent run", 0.1], ["finetune", "A fine-tune", 0.3]]);
+test("three tiers at 1, 3 and 10 percent, then the custom row", () => {
+  assert.deepEqual(TIERS.map((t) => [t.key, t.name, t.share]), [["prompt", "A prompt", 0.01], ["context", "A long context window", 0.03], ["run", "A whole agent run", 0.1]]);
   assert.deepEqual(CUSTOM, { key: "own", name: "Your own number", minimumUsd: 1 });
-  assert.deepEqual(TIER_KEYS, ["prompt", "context", "run", "finetune", "own"]);
+  assert.deepEqual(TIER_KEYS, ["prompt", "context", "run", "own"]);
 });
 
-test("a $287.40 month gives $3, $9, $29 and $87, labelled about n%", () => {
-  assert.deepEqual(pricesOf(287.4).map((p) => [p.tier, p.usd, p.label]), [["prompt", 3, "about 1%"], ["context", 9, "about 3%"], ["run", 29, "about 10%"], ["finetune", 87, "about 30%"]]);
+test("a $287.40 month gives $3, $9 and $29, labelled about n%", () => {
+  assert.deepEqual(pricesOf(287.4).map((p) => [p.tier, p.usd, p.label]), [["prompt", 3, "about 1%"], ["context", 9, "about 3%"], ["run", 29, "about 10%"]]);
   assert.equal(priceOf(300, 0.01), 3, "an exact dollar is not rounded up to the next");
-  assert.equal(priceOf(0, 0.3), 1, "the floor");
+  assert.equal(priceOf(0, 0.1), 1, "the floor");
 });
 
 test("the pool is last month's rows less the commercial project, never negative", () => {
@@ -92,7 +94,7 @@ test("the pool is last month's rows less the commercial project, never negative"
   ];
   assert.equal(poolOf(rows, "2026-10"), 287.4);
   assert.equal(poolOf([{ month: "2026-10", provider: "gcp", where: "csarko-sh", amount: -12 }], "2026-10"), 0);
-  assert.deepEqual(pricesOf(0).map((p) => p.usd), [1, 1, 1, 1]);
+  assert.deepEqual(pricesOf(0).map((p) => p.usd), [1, 1, 1]);
 });
 
 test("the doors: seven, their URLs and sources, Day Hike not shipped", () => {
@@ -107,7 +109,7 @@ test("the doors: seven, their URLs and sources, Day Hike not shipped", () => {
   assert.equal(doorByKey("last-trail").picture.focusY, 0.3);
   assert.equal(doorByKey("dayhike").picture, null);
   for (const d of DOORS) {
-    assert.equal(d.captions.length, 4, d.door);
+    assert.equal(d.captions.length, 3, d.door);
     assert.ok(d.headline && d.lead && d.thanks && d.back.label && d.back.href.startsWith("https://"), d.door);
     assert.ok(!/—|@/.test(JSON.stringify(d)), `${d.door}: no em-dash, no address`);
   }
@@ -168,7 +170,7 @@ git commit -m "donate: doors, tiers and the price rule, pure"
 **Interfaces:**
 - Consumes: `UpstreamError` from `admin/api/src/http.mjs`; the `blank` and `headers` pattern from `collectors/stripe.mjs`.
 - Produces: `createStripeWriter({ key, fetch, log = console })` with `configured` and these async methods, every write a `POST` to `https://api.stripe.com/v1/...` with body `application/x-www-form-urlencoded` and an `Idempotency-Key` header when `key` is given:
-  - `listProducts(): [{ id, name, metadata }]` → `GET /products?active=true&limit=100`, the response's `data` (one page is enough: five products).
+  - `listProducts(): [{ id, name, metadata }]` → `GET /products?active=true&limit=100`, the response's `data` (one page is enough: four products).
   - `createProduct({ name, tier, key }): { id }` → `POST /products` with `name`, `metadata[tier]`.
   - `createPrice({ product, usd, key }): { id }` → `POST /prices` with `product`, `currency=usd`, `unit_amount=${usd * 100}`.
   - `createCustomPrice({ product, minimumUsd, key }): { id }` → `POST /prices` with `product`, `currency=usd`, `custom_unit_amount[enabled]=true`, `custom_unit_amount[minimum]=${minimumUsd * 100}`.
@@ -288,14 +290,14 @@ git commit -m "donate: the Stripe writer, products, prices and payment links beh
   "month": "2026-10", "pool": 288, "at": "2026-11-03T10:00:12.000Z",
   "tiers": [{ "tier": "prompt", "name": "A prompt", "share": 0.01, "label": "about 1%", "usd": 3, "priceId": "price_..." }],
   "custom": { "priceId": "price_...", "minimumUsd": 1 },
-  "products": { "prompt": "prod_...", "context": "prod_...", "run": "prod_...", "finetune": "prod_...", "own": "prod_..." },
+  "products": { "prompt": "prod_...", "context": "prod_...", "run": "prod_...", "own": "prod_..." },
   "doors": { "arkos": { "links": { "prompt": { "id": "plink_...", "url": "https://buy.stripe.com/..." }, "own": { "id": "...", "url": "..." } } } }
 }
 ```
 
   `record` is `{ month, pool, at, doors: Object.keys(json.doors) }` of the JSON now in the bucket (the new one when it ran, the current one when it did not, `null` when none).
 
-  The algorithm of `run`: `current = await bucket.read()`; `d = decide({ today, current, failed, doors: shippedDoors().map((x) => x.door) })`; if `!d.run` return `{ ran: false, reason: d.reason, record }`. If `d.newMonth`: `pool = cents(poolOf(monthlyRows, d.month))`, `tiers = pricesOf(pool)`; `products` = for each of `[...TIERS, CUSTOM]` the id of the active product whose `metadata.tier` matches from `listProducts()`, else `createProduct({ name, tier, key: "donate:product:<tier>" })`; each tier's `priceId` from `createPrice({ product, usd, key: "donate:price:<month>:<tier>" })`; `custom.priceId` from `createCustomPrice({ product: products.own, minimumUsd: 1, key: "donate:price:<month>:own" })`. Else reuse `current.tiers`, `current.custom`, `current.products`, `current.pool`. For every door in `d.pending`, for each of the five tier keys: `createLink({ priceId, door, tier, month, share (0 for own), redirectUrl: `${DONATE_URL}/thanks?door=${door}`, key: "donate:link:<month>:<door>:<tier>" })`. Build `next` (the current doors kept when not a new month, the pending added). If `d.newMonth && current !== null`: deactivate every link id in `current.doors[*].links[*].id`, archive every `current.tiers[*].priceId` and `current.custom.priceId`, each failure logged and not fatal. `await bucket.write(next)`. Return `{ ran: true, reason: d.reason, record }`. Any Stripe failure before `write` propagates (the caller records it as `errors.donate`), and nothing is written.
+  The algorithm of `run`: `current = await bucket.read()`; `d = decide({ today, current, failed, doors: shippedDoors().map((x) => x.door) })`; if `!d.run` return `{ ran: false, reason: d.reason, record }`. If `d.newMonth`: `pool = cents(poolOf(monthlyRows, d.month))`, `tiers = pricesOf(pool)`; `products` = for each of `[...TIERS, CUSTOM]` the id of the active product whose `metadata.tier` matches from `listProducts()`, else `createProduct({ name, tier, key: "donate:product:<tier>" })`; each tier's `priceId` from `createPrice({ product, usd, key: "donate:price:<month>:<tier>" })`; `custom.priceId` from `createCustomPrice({ product: products.own, minimumUsd: 1, key: "donate:price:<month>:own" })`. Else reuse `current.tiers`, `current.custom`, `current.products`, `current.pool`. For every door in `d.pending`, for each of the four tier keys: `createLink({ priceId, door, tier, month, share (0 for own), redirectUrl: `${DONATE_URL}/thanks?door=${door}`, key: "donate:link:<month>:<door>:<tier>" })`. Build `next` (the current doors kept when not a new month, the pending added). If `d.newMonth && current !== null`: deactivate every link id in `current.doors[*].links[*].id`, archive every `current.tiers[*].priceId` and `current.custom.priceId`, each failure logged and not fatal. `await bucket.write(next)`. Return `{ ran: true, reason: d.reason, record }`. Any Stripe failure before `write` propagates (the caller records it as `errors.donate`), and nothing is written.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -331,7 +333,7 @@ function fakeBucket(initial = null) {
   return { configured: true, writes: 0, async read() { return json; }, async write(j) { json = j; this.writes += 1; }, get json() { return json; } };
 }
 
-test("a new month: five products, five prices, five links a door, one JSON, the record", async () => {
+test("a new month: four products, four prices, four links a door, one JSON, the record", async () => {
   const calls = [];
   const bucket = fakeBucket();
   const step = createDonateStep({ writer: fakeWriter(calls), bucket, now: () => NOW, log: { error() {}, warn() {} } });
@@ -339,12 +341,12 @@ test("a new month: five products, five prices, five links a door, one JSON, the 
   assert.equal(out.ran, true);
   assert.deepEqual(out.record, { month: "2026-10", pool: 287.4, at: "2026-11-03T10:00:12.000Z", doors: ["arkos", "macstats", "visits", "last-trail", "hallway", "all"] });
   const j = bucket.json;
-  assert.deepEqual(j.tiers.map((t) => [t.tier, t.usd, t.label]), [["prompt", 3, "about 1%"], ["context", 9, "about 3%"], ["run", 29, "about 10%"], ["finetune", 87, "about 30%"]]);
+  assert.deepEqual(j.tiers.map((t) => [t.tier, t.usd, t.label]), [["prompt", 3, "about 1%"], ["context", 9, "about 3%"], ["run", 29, "about 10%"]]);
   assert.ok(j.tiers.every((t) => t.priceId.startsWith("price_")));
   assert.deepEqual(Object.keys(j.products), TIER_KEYS);
   assert.equal(j.custom.minimumUsd, 1);
   assert.deepEqual(Object.keys(j.doors["arkos"].links), TIER_KEYS);
-  assert.equal(calls.filter((c) => c[0] === "createLink").length, 30);
+  assert.equal(calls.filter((c) => c[0] === "createLink").length, 24);
   const own = calls.find((c) => c[0] === "createLink" && c[1].tier === "own" && c[1].door === "all")[1];
   assert.equal(own.redirectUrl, "https://donate.csarko.sh/thanks?door=all");
   assert.equal(own.key, "donate:link:2026-10:all:own");
@@ -375,7 +377,7 @@ test("done, before the 3rd and a failed provider leave Stripe and the bucket alo
 
 test("the next month: new prices and links first, then last month's links deactivated and prices archived", async () => {
   const calls = [];
-  const oct = { month: "2026-10", pool: 288, at: "x", tiers: [{ tier: "prompt", priceId: "price_o1" }, { tier: "context", priceId: "price_o2" }, { tier: "run", priceId: "price_o3" }, { tier: "finetune", priceId: "price_o4" }], custom: { priceId: "price_o5", minimumUsd: 1 }, products: {}, doors: { arkos: { links: { prompt: { id: "plink_o1", url: "u" } } }, all: { links: { own: { id: "plink_o2", url: "u" } } } } };
+  const oct = { month: "2026-10", pool: 288, at: "x", tiers: [{ tier: "prompt", priceId: "price_o1" }, { tier: "context", priceId: "price_o2" }, { tier: "run", priceId: "price_o3" }], custom: { priceId: "price_o4", minimumUsd: 1 }, products: {}, doors: { arkos: { links: { prompt: { id: "plink_o1", url: "u" } } }, all: { links: { own: { id: "plink_o2", url: "u" } } } } };
   const bucket = fakeBucket(oct);
   const nov = [{ month: "2026-11", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 100 }];
   await createDonateStep({ writer: fakeWriter(calls), bucket, now: () => Date.parse("2026-12-03T10:00:00Z"), log: { error() {}, warn() {} } }).run({ monthlyRows: nov, failed: [], today: "2026-12-03" });
@@ -384,16 +386,16 @@ test("the next month: new prices and links first, then last month's links deacti
   const names = calls.map((c) => c[0]);
   assert.ok(names.lastIndexOf("createLink") < names.indexOf("deactivateLink"), "the new links exist before the old go");
   assert.deepEqual(calls.filter((c) => c[0] === "deactivateLink").map((c) => c[1]), ["plink_o1", "plink_o2"]);
-  assert.deepEqual(calls.filter((c) => c[0] === "archivePrice").map((c) => c[1]), ["price_o1", "price_o2", "price_o3", "price_o4", "price_o5"]);
+  assert.deepEqual(calls.filter((c) => c[0] === "archivePrice").map((c) => c[1]), ["price_o1", "price_o2", "price_o3", "price_o4"]);
 });
 
 test("a door added mid-month gets its links at the current prices; nothing else is touched", async () => {
   const calls = [];
-  const oct = { month: "2026-10", pool: 288, at: "x", tiers: [{ tier: "prompt", share: 0.01, priceId: "price_1" }, { tier: "context", share: 0.03, priceId: "price_2" }, { tier: "run", share: 0.1, priceId: "price_3" }, { tier: "finetune", share: 0.3, priceId: "price_4" }], custom: { priceId: "price_5", minimumUsd: 1 }, products: {}, doors: Object.fromEntries(["arkos", "macstats", "visits", "last-trail", "hallway"].map((d) => [d, { links: {} }])) };
+  const oct = { month: "2026-10", pool: 288, at: "x", tiers: [{ tier: "prompt", share: 0.01, priceId: "price_1" }, { tier: "context", share: 0.03, priceId: "price_2" }, { tier: "run", share: 0.1, priceId: "price_3" }], custom: { priceId: "price_4", minimumUsd: 1 }, products: {}, doors: Object.fromEntries(["arkos", "macstats", "visits", "last-trail", "hallway"].map((d) => [d, { links: {} }])) };
   const bucket = fakeBucket(oct);
   await createDonateStep({ writer: fakeWriter(calls), bucket, now: () => NOW, log: { error() {}, warn() {} } }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-12" });
   assert.deepEqual(calls.map((c) => c[0]).filter((n) => n !== "createLink"), []);
-  assert.equal(calls.length, 5);
+  assert.equal(calls.length, 4);
   assert.ok(calls.every((c) => c[1].door === "all"));
   assert.equal(calls.find((c) => c[1].tier === "context")[1].priceId, "price_2");
   assert.deepEqual(Object.keys(bucket.json.doors), ["arkos", "macstats", "visits", "last-trail", "hallway", "all"]);
@@ -740,7 +742,7 @@ git commit -m "donate: the heart and token icon, one pixel map"
 **Interfaces:**
 - Consumes: `DOORS`, `TIERS`, `CUSTOM`, `TIER_KEYS`, `PRICES_URL`, `DONATE_URL`, `doorByKey`, `shippedDoors` from `admin/api/src/donate/doors.mjs` (relative import `../admin/api/src/donate/doors.mjs`); `standaloneShell`, `themeBlocks`, `escapeHtml` from `.agents/skills/site-quality/scripts/docs_lib.mjs`; `iconSvg`, `ICON_CSS` (Task 6); the `prices.json` shape (Task 3).
 - Produces (`view.mjs`): `pickPrices(baked, fetched, door): { prices, stale: boolean }` (`fetched` is the bucket's whole JSON; it wins when it is an object whose `month` is a string `>=` the baked one and whose `doors[door]` exists, reshaped to the baked shape `{ month, pool, tiers: [{ tier, usd, label }], links: { <tierKey>: url } }`; else `baked` with `stale: true`); `buttonLabel(tierKey, prices): string` (`Tip $9` for a tier, `Tip what you like` for `own`); `backLink(door, doors): { label, href }` (the door's `back` when `door` is a key in `doors`, else `{ label: "Back to the projects", href: "https://csarko.sh/projects" }`); `monthName("2026-10")` → `October`.
-- Produces (`page.mjs`): `doorPage({ door, prices, picture, theme }): string` and `thanksPage({ theme, doors }): string` (door keys to `back` and `thanks`, baked as `<script type="application/json" id="doors">`; the markup without a script shows `<p class="lead" id="line">Tokens received.</p>` and `<a id="back" href="https://csarko.sh/projects">Back to the projects</a>`, which `app.js` replaces from the door), `DONATE_CSS`. The door page's markup, top to bottom inside `<main id="top" class="wrap"><article class="tip">`: `<p class="kicker">Buy Me Tokens · Arkos IDE</p>` (`Buy Me Tokens` alone for `all`), `<h1>` the headline, `<p class="lead">`, `<picture class="shot">` from `picture`, `<p class="bill">In October the cloud behind all this cost <b>$288</b>. Each tier is a slice of that bill.</p>` (the figure is `Math.round(prices.pool)`, the month `monthName(prices.month)`), a `<fieldset class="tiers">` of five `<label class="tier">` each with `<input type="radio" name="tier" value="<key>">` (`context` checked), the name in `<b>`, the caption in `<small>`, the price in `<span class="price">$9<small>about 3%</small></span>` (the custom row: `<span class="price">any<small>$1 or more</small></span>`, class `tier own`), `<a id="pay" class="btn" href="<context link url>">Tip $9</a>`, `<p class="foot">Payments by Stripe · no account needed</p>`, then `<script type="application/json" id="prices">` holding `{ month, pool, tiers: [{tier, usd, label}], links: { <tierKey>: url } }` for this door only (no ids), and `<script type="module" src="/app.js">`. Styles: the mockup's tip card (`.superpowers/brainstorm/42116-1793373577/content/picture-placement.html`, the `.bmt` rules) rewritten on the site's tokens and type scale; `.tier:has(:checked)` for the selected row; the picture takes the source's shape (no fixed `aspect-ratio`): a landscape source as it was made, a portrait source cropped 16:9 around `focusY` by `pictures.py`. Everything escaped through `escapeHtml`.
+- Produces (`page.mjs`): `doorPage({ door, prices, picture, theme }): string` and `thanksPage({ theme, doors }): string` (door keys to `back` and `thanks`, baked as `<script type="application/json" id="doors">`; the markup without a script shows `<p class="lead" id="line">Tokens received.</p>` and `<a id="back" href="https://csarko.sh/projects">Back to the projects</a>`, which `app.js` replaces from the door), `DONATE_CSS`. The door page's markup, top to bottom inside `<main id="top" class="wrap"><article class="tip">`: `<p class="kicker">Buy Me Tokens · Arkos IDE</p>` (`Buy Me Tokens` alone for `all`), `<h1>` the headline, `<p class="lead">`, `<picture class="shot">` from `picture`, `<p class="bill">In October the cloud behind all this cost <b>$288</b>. Each tier is a slice of that bill.</p>` (the figure is `Math.round(prices.pool)`, the month `monthName(prices.month)`), a `<fieldset class="tiers">` of four `<label class="tier">` each with `<input type="radio" name="tier" value="<key>">` (`context` checked), the name in `<b>`, the caption in `<small>`, the price in `<span class="price">$9<small>about 3%</small></span>` (the custom row: `<span class="price">any<small>$1 or more</small></span>`, class `tier own`), `<a id="pay" class="btn" href="<context link url>">Tip $9</a>`, `<p class="foot">Payments by Stripe · no account needed</p>`, then `<script type="application/json" id="prices">` holding `{ month, pool, tiers: [{tier, usd, label}], links: { <tierKey>: url } }` for this door only (no ids), and `<script type="module" src="/app.js">`. Styles: the mockup's tip card (`.superpowers/brainstorm/42116-1793373577/content/picture-placement.html`, the `.bmt` rules) rewritten on the site's tokens and type scale; `.tier:has(:checked)` for the selected row; the picture takes the source's shape (no fixed `aspect-ratio`): a landscape source as it was made, a portrait source cropped 16:9 around `focusY` by `pictures.py`. Everything escaped through `escapeHtml`.
 - Produces (`app.js`): on a door page, listens to the radios and sets `#pay`'s `href` and text; fetches `PRICES_URL` (`cache: "no-cache"`), applies `pickPrices`, rewrites the bill's `<b>` and month, each `.price`, each link, and when `stale` appends `<p class="note">Prices are from <month>.</p>` after the bill. On `/thanks`, reads `new URL(location).searchParams.get("door")`, looks it up in `#doors`, and sets the one link's text and `href` through `textContent`/`setAttribute` (never `innerHTML`), and the thanks line.
 - Produces (`pictures.py`): `python3 -I donate/pictures.py --source <png|jpg> [--dark <png>] [--focus-y 0.3] --out <dir> --stem <door>` → writes `<stem>-<w>.<hash8>.{avif,webp,jpg}` for widths `(640, 1280)` (plus `<stem>-dark-...` when `--dark`), cropping a source taller than wide to 16:9 with the crop's centre at `focus_y` of the height (clamped), refusing a source that is taller than wide without `--focus-y`; prints JSON `{ "sets": { "light": { "avif": [...], "webp": [...], "jpg": [...] }, "dark": {...} }, "width": 1280, "height": 720 }` where each list is `"<file> <w>w"` srcset entries. Encoding as `build_assets.py`'s `encode()` (import it: `sys.path.insert(0, ".agents/skills/site-quality/scripts")`).
 - Produces (`build.mjs`): `node donate/build.mjs [--prices <file>]` → `donate/public/`: fonts and favicons copied as `apps/build.mjs` does, `index.html` (door `all`), `<door>/index.html` per shipped door, `thanks/index.html`, `icon.svg` (`iconSvg()` with an XML prolog, no class), `view.js` (a copy of `view.mjs`), `app.js`, `404.html` (as the apps build makes it), `robots.txt`, `sitemap.xml` listing the door pages. Without `--prices` it fetches `PRICES_URL` and **fails** when the object is missing (`donate: no prices.json yet; the step has not run. Preview with --prices donate/test/fixtures/prices.json`). A shipped door without a picture source on disk fails the build by door name; a portrait source without `focusY` fails by door name; a door that is in `prices.doors` but not shipped is skipped with a log line; a shipped door missing from `prices.doors` fails (`no links for <door> yet; the next snapshot adds them`).
@@ -753,7 +755,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { pickPrices, buttonLabel, backLink, monthName } from '../view.mjs';
 
-const BAKED = { month: '2026-10', pool: 288, tiers: [{ tier: 'prompt', usd: 3, label: 'about 1%' }, { tier: 'context', usd: 9, label: 'about 3%' }, { tier: 'run', usd: 29, label: 'about 10%' }, { tier: 'finetune', usd: 87, label: 'about 30%' }], links: { prompt: 'a', context: 'b', run: 'c', finetune: 'd', own: 'e' } };
+const BAKED = { month: '2026-10', pool: 288, tiers: [{ tier: 'prompt', usd: 3, label: 'about 1%' }, { tier: 'context', usd: 9, label: 'about 3%' }, { tier: 'run', usd: 29, label: 'about 10%' }], links: { prompt: 'a', context: 'b', run: 'c', own: 'd' } };
 
 test('the live JSON wins when it is this month or newer, the baked one otherwise, marked stale', () => {
   assert.deepEqual(pickPrices(BAKED, null), { prices: BAKED, stale: true });
@@ -788,7 +790,7 @@ import { doorByKey } from '../../admin/api/src/donate/doors.mjs';
 
 const THEME = ':root { --bg: #0a0b0e; }\n    @media (prefers-color-scheme: light) { :root { --bg: #f6f7f9; } }';
 const PICTURE = { sets: { light: { avif: ['arkos-640.abc.avif 640w', 'arkos-1280.abc.avif 1280w'], webp: ['arkos-640.abc.webp 640w'], jpg: ['arkos-640.abc.jpg 640w', 'arkos-1280.abc.jpg 1280w'] } }, width: 1280, height: 720 };
-const PRICES = { month: '2026-10', pool: 288, tiers: [{ tier: 'prompt', name: 'A prompt', share: 0.01, label: 'about 1%', usd: 3 }, { tier: 'context', name: 'A long context window', share: 0.03, label: 'about 3%', usd: 9 }, { tier: 'run', name: 'A whole agent run', share: 0.1, label: 'about 10%', usd: 29 }, { tier: 'finetune', name: 'A fine-tune', share: 0.3, label: 'about 30%', usd: 87 }], links: { prompt: 'https://buy.stripe.com/p', context: 'https://buy.stripe.com/c', run: 'https://buy.stripe.com/r', finetune: 'https://buy.stripe.com/f', own: 'https://buy.stripe.com/o' } };
+const PRICES = { month: '2026-10', pool: 288, tiers: [{ tier: 'prompt', name: 'A prompt', share: 0.01, label: 'about 1%', usd: 3 }, { tier: 'context', name: 'A long context window', share: 0.03, label: 'about 3%', usd: 9 }, { tier: 'run', name: 'A whole agent run', share: 0.1, label: 'about 10%', usd: 29 }], links: { prompt: 'https://buy.stripe.com/p', context: 'https://buy.stripe.com/c', run: 'https://buy.stripe.com/r', own: 'https://buy.stripe.com/o' } };
 
 test('the Arkos door, top to bottom', () => {
   const html = doorPage({ door: doorByKey('arkos'), prices: PRICES, picture: PICTURE, theme: THEME });
@@ -798,7 +800,7 @@ test('the Arkos door, top to bottom', () => {
   at('<p class="bill">In October the cloud behind all this cost <b>$288</b>. Each tier is a slice of that bill.</p>');
   assert.ok(html.includes('srcset="arkos-640.abc.avif 640w, arkos-1280.abc.avif 1280w"'));
   assert.ok(html.includes('width="1280" height="720"'));
-  assert.equal((html.match(/<input type="radio" name="tier"/g) || []).length, 5);
+  assert.equal((html.match(/<input type="radio" name="tier"/g) || []).length, 4);
   assert.ok(html.includes('value="context" checked'));
   assert.ok(html.includes('<b>A long context window</b><small>a whole feature, read end to end</small>'));
   assert.ok(html.includes('<span class="price">$9<small>about 3%</small></span>'));
@@ -1061,7 +1063,7 @@ git commit -m "finance: a history table for the months the GCP export does not h
 - The monthly redeploy, a line in Cyrus's monthly routine and in the message: once the Finance page's prices line says the month's prices have turned (on or after the 3rd), run `donate/deploy.sh`, so the pages' baked fallback points at the new month's links; the sweep keeps last month's live for one more month, so the fallback pays in between (spec section 4, amended Oct 30).
 - The four other repositories' entrances (ide-arkos About menu and README, app-macstats README and install caveat, lib-visits README, game-dayhike title screen and README) are follow-ups in their own repositories with the snippet from Task 10.
 
-- [ ] **Step 1: Walk the spec's section 2 list against the live pages**: every shipped door opens, shows its picture landscape, the October bill, four prices and the custom row, and its button opens Stripe with the right amount; `/thanks?door=arkos` links back to Arkos; `/icon.svg` serves; `/projects` cards and the three apps pages carry the line once.
+- [ ] **Step 1: Walk the spec's section 2 list against the live pages**: every shipped door opens, shows its picture landscape, the October bill, three prices and the custom row, and its button opens Stripe with the right amount; `/thanks?door=arkos` links back to Arkos; `/icon.svg` serves; `/projects` cards and the three apps pages carry the line once.
 
 - [ ] **Step 2: Write the memory file and the message to Cyrus with his clicks**
 

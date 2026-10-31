@@ -26,14 +26,6 @@
    "label": "about 10%",
    "usd": 29,
    "priceId": "price_test_2026-10_run"
-  },
-  {
-   "tier": "finetune",
-   "name": "A fine-tune",
-   "share": 0.3,
-   "label": "about 30%",
-   "usd": 87,
-   "priceId": "price_test_2026-10_finetune"
   }
  ],
  "custom": {
@@ -44,7 +36,6 @@
   "prompt": "prod_test_prompt",
   "context": "prod_test_context",
   "run": "prod_test_run",
-  "finetune": "prod_test_finetune",
   "own": "prod_test_own"
  },
  "doors": {
@@ -61,10 +52,6 @@
     "run": {
      "id": "plink_test_arkos_run",
      "url": "https://buy.stripe.com/test_arkos_run"
-    },
-    "finetune": {
-     "id": "plink_test_arkos_finetune",
-     "url": "https://buy.stripe.com/test_arkos_finetune"
     },
     "own": {
      "id": "plink_test_arkos_own",
@@ -86,10 +73,6 @@
      "id": "plink_test_macstats_run",
      "url": "https://buy.stripe.com/test_macstats_run"
     },
-    "finetune": {
-     "id": "plink_test_macstats_finetune",
-     "url": "https://buy.stripe.com/test_macstats_finetune"
-    },
     "own": {
      "id": "plink_test_macstats_own",
      "url": "https://buy.stripe.com/test_macstats_own"
@@ -109,10 +92,6 @@
     "run": {
      "id": "plink_test_visits_run",
      "url": "https://buy.stripe.com/test_visits_run"
-    },
-    "finetune": {
-     "id": "plink_test_visits_finetune",
-     "url": "https://buy.stripe.com/test_visits_finetune"
     },
     "own": {
      "id": "plink_test_visits_own",
@@ -134,10 +113,6 @@
      "id": "plink_test_last-trail_run",
      "url": "https://buy.stripe.com/test_last-trail_run"
     },
-    "finetune": {
-     "id": "plink_test_last-trail_finetune",
-     "url": "https://buy.stripe.com/test_last-trail_finetune"
-    },
     "own": {
      "id": "plink_test_last-trail_own",
      "url": "https://buy.stripe.com/test_last-trail_own"
@@ -158,10 +133,6 @@
      "id": "plink_test_hallway_run",
      "url": "https://buy.stripe.com/test_hallway_run"
     },
-    "finetune": {
-     "id": "plink_test_hallway_finetune",
-     "url": "https://buy.stripe.com/test_hallway_finetune"
-    },
     "own": {
      "id": "plink_test_hallway_own",
      "url": "https://buy.stripe.com/test_hallway_own"
@@ -181,10 +152,6 @@
     "run": {
      "id": "plink_test_all_run",
      "url": "https://buy.stripe.com/test_all_run"
-    },
-    "finetune": {
-     "id": "plink_test_all_finetune",
-     "url": "https://buy.stripe.com/test_all_finetune"
     },
     "own": {
      "id": "plink_test_all_own",

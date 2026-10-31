@@ -5,7 +5,7 @@ import { doorByKey } from '../../admin/api/src/donate/doors.mjs';
 
 const THEME = ':root { --bg: #0a0b0e; }\n    @media (prefers-color-scheme: light) { :root { --bg: #f6f7f9; } }';
 const PICTURE = { sets: { light: { avif: ['arkos-640.abc.avif 640w', 'arkos-1280.abc.avif 1280w'], webp: ['arkos-640.abc.webp 640w'], jpg: ['arkos-640.abc.jpg 640w', 'arkos-1280.abc.jpg 1280w'] } }, width: 1280, height: 720 };
-const PRICES = { month: '2026-10', pool: 288, tiers: [{ tier: 'prompt', name: 'A prompt', share: 0.01, label: 'about 1%', usd: 3 }, { tier: 'context', name: 'A long context window', share: 0.03, label: 'about 3%', usd: 9 }, { tier: 'run', name: 'A whole agent run', share: 0.1, label: 'about 10%', usd: 29 }, { tier: 'finetune', name: 'A fine-tune', share: 0.3, label: 'about 30%', usd: 87 }], links: { prompt: 'https://buy.stripe.com/p', context: 'https://buy.stripe.com/c', run: 'https://buy.stripe.com/r', finetune: 'https://buy.stripe.com/f', own: 'https://buy.stripe.com/o' } };
+const PRICES = { month: '2026-10', pool: 288, tiers: [{ tier: 'prompt', name: 'A prompt', share: 0.01, label: 'about 1%', usd: 3 }, { tier: 'context', name: 'A long context window', share: 0.03, label: 'about 3%', usd: 9 }, { tier: 'run', name: 'A whole agent run', share: 0.1, label: 'about 10%', usd: 29 }], links: { prompt: 'https://buy.stripe.com/p', context: 'https://buy.stripe.com/c', run: 'https://buy.stripe.com/r', own: 'https://buy.stripe.com/o' } };
 
 test('the Arkos door, top to bottom', () => {
   const html = doorPage({ door: doorByKey('arkos'), prices: PRICES, picture: PICTURE, theme: THEME });
@@ -15,7 +15,7 @@ test('the Arkos door, top to bottom', () => {
   at('<p class="bill">In October the cloud behind all this cost <b>$288</b>. Each tier is a slice of that bill.</p>');
   assert.ok(html.includes('srcset="arkos-640.abc.avif 640w, arkos-1280.abc.avif 1280w"'));
   assert.ok(html.includes('width="1280" height="720"'));
-  assert.equal((html.match(/<input type="radio" name="tier"/g) || []).length, 5);
+  assert.equal((html.match(/<input type="radio" name="tier"/g) || []).length, 4);
   assert.ok(html.includes('value="context" checked'));
   assert.ok(html.includes('<b>A long context window</b><small>a whole feature, read end to end</small>'));
   assert.ok(html.includes('<span class="price">$9<small>about 3%</small></span>'));

@@ -2,7 +2,7 @@
  * page.mjs: the donate site's pages, pure. A door's prices, its picture's srcsets and the site's
  * theme in, HTML out; build.mjs does the file work. Each page is a standalone page in the apps
  * pages' shell (standaloneShell: the site's head, tokens and fonts, no nav or trail), holding one
- * centred tip card: kicker, headline, lead, the picture, the bill sentence, four tiers and the free
+ * centred tip card: kicker, headline, lead, the picture, the bill sentence, three tiers and the free
  * row, the button and the Stripe line. The prices this door was built with are baked into the page
  * as JSON so it never shows an empty card; /app.js swaps in the live ones when they load.
  */

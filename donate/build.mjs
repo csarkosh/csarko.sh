@@ -83,7 +83,7 @@ function checkPrices(json) {
   if (typeof json.doors !== 'object' || json.doors === null) fail('prices.json: no doors');
 }
 
-/** A door's prices in the page's shape: its own five link URLs, no Stripe ids. */
+/** A door's prices in the page's shape: its own four link URLs, no Stripe ids. */
 function doorPrices(json, door) {
   const links = {};
   for (const key of TIER_KEYS) {

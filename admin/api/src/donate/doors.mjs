@@ -1,5 +1,5 @@
 /**
- * The donate site's fixed vocabulary: where it lives, the four tiers every door shares, and the
+ * The donate site's fixed vocabulary: where it lives, the three tiers every door shares, and the
  * seven doors (one per project, plus the bare door for the whole body of work). A door is a page
  * on donate.csarko.sh that shows the project's own picture and words over the same bill, so only
  * the copy here differs from door to door; the prices come from prices.mjs and the month's pool.
@@ -27,20 +27,19 @@ export const PRICES_BUCKET = "csarko-sh-donate-prices";
 export const PRICES_OBJECT = "prices.json";
 export const PRICES_URL = `https://storage.googleapis.com/${PRICES_BUCKET}/${PRICES_OBJECT}`;
 
-/** The four tiers, each a share of last month's pool. */
+/** The three tiers, each a share of last month's pool. */
 export const TIERS = [
   { key: "prompt", name: "A prompt", share: 0.01 },
   { key: "context", name: "A long context window", share: 0.03 },
   { key: "run", name: "A whole agent run", share: 0.1 },
-  { key: "finetune", name: "A fine-tune", share: 0.3 },
 ];
-/** The fifth, dashed row: any amount from the minimum up. */
+/** The fourth, dashed row: any amount from the minimum up. */
 export const CUSTOM = { key: "own", name: "Your own number", minimumUsd: 1 };
 export const TIER_KEYS = [...TIERS.map((t) => t.key), CUSTOM.key];
 
 const APP_THANKS = "Tokens received. The next agent run is on you.";
-const APP_CAPTIONS = ["a quick fix, a good question", "a whole feature, read end to end", "a milestone, start to merge", "you really like it"];
-const FILM_CAPTIONS = ["one more take", "a scene, start to end", "a cut", "you really like it"];
+const APP_CAPTIONS = ["a quick fix, a good question", "a whole feature, read end to end", "a milestone, start to merge"];
+const FILM_CAPTIONS = ["one more take", "a scene, start to end", "a cut"];
 
 export const DOORS = [
   {
@@ -55,7 +54,7 @@ export const DOORS = [
     door: "macstats", slug: "app-macstats", name: "MacStats", kind: "app", shipped: true, path: "/macstats",
     headline: "Fund my next agent run",
     lead: "MacStats is free and runs on your Mac. If it told you something useful, cover a slice of the agent time that builds it.",
-    captions: ["a quick fix, a good question", "a new panel, read end to end", "a release, start to merge", "you really like it"],
+    captions: ["a quick fix, a good question", "a new panel, read end to end", "a release, start to merge"],
     thanks: APP_THANKS,
     back: { label: "Back to MacStats", href: "https://apps.csarko.sh/app-macstats" },
     picture: { source: "apps/app-macstats.png" },
@@ -100,7 +99,7 @@ export const DOORS = [
     door: "dayhike", slug: "day-hike", name: "Day Hike", kind: "game", shipped: false, path: "/dayhike",
     headline: "Fund the next build",
     lead: "Day Hike is free and plays in your browser. If you made it back from the woods, cover a slice of the cloud bill that runs it.",
-    captions: ["a bug fix, a good question", "a whole system, read end to end", "a build, start to merge", "you really like it"],
+    captions: ["a bug fix, a good question", "a whole system, read end to end", "a build, start to merge"],
     thanks: "Tokens received. The next build is on you.",
     back: { label: "Back to Day Hike", href: "https://games.csarko.sh/dayhike/" },
     picture: null,

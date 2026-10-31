@@ -2,13 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { pickPrices, buttonLabel, backLink, monthName, billParts } from '../view.mjs';
 
-const BAKED = { month: '2026-10', pool: 288, tiers: [{ tier: 'prompt', usd: 3, label: 'about 1%' }, { tier: 'context', usd: 9, label: 'about 3%' }, { tier: 'run', usd: 29, label: 'about 10%' }, { tier: 'finetune', usd: 87, label: 'about 30%' }], links: { prompt: 'a', context: 'b', run: 'c', finetune: 'd', own: 'e' } };
+const BAKED = { month: '2026-10', pool: 288, tiers: [{ tier: 'prompt', usd: 3, label: 'about 1%' }, { tier: 'context', usd: 9, label: 'about 3%' }, { tier: 'run', usd: 29, label: 'about 10%' }], links: { prompt: 'a', context: 'b', run: 'c', own: 'd' } };
 
 test('the live JSON wins when it is this month or newer, the baked one otherwise, marked stale', () => {
   assert.deepEqual(pickPrices(BAKED, null), { prices: BAKED, stale: true });
   assert.deepEqual(pickPrices(BAKED, { month: '2026-09', doors: {} }), { prices: BAKED, stale: true });
   assert.deepEqual(pickPrices(BAKED, 'garbage'), { prices: BAKED, stale: true });
-  const links = (over = {}) => Object.fromEntries(['prompt', 'context', 'run', 'finetune', 'own'].map((t) => [t, { url: `https://buy.stripe.com/${t}` }]).concat(Object.entries(over)));
+  const links = (over = {}) => Object.fromEntries(['prompt', 'context', 'run', 'own'].map((t) => [t, { url: `https://buy.stripe.com/${t}` }]).concat(Object.entries(over)));
   const live = { month: '2026-11', pool: 300, tiers: BAKED.tiers, doors: { arkos: { links: links() } } };
   assert.equal(pickPrices(BAKED, live, 'arkos').stale, false);
   assert.equal(pickPrices(BAKED, live, 'arkos').prices.links.prompt, 'https://buy.stripe.com/prompt');

@@ -1,6 +1,6 @@
 /**
  * The public prices object, `prices.json` in the bucket `PRICES_BUCKET`: the one file the donate
- * site's pages read to show this month's four prices and to find each door's payment links, so the
+ * site's pages read to show this month's three prices and to find each door's payment links, so the
  * site never talks to Stripe itself. The monthly step reads it to know what is already published
  * and writes the next one; it is cached five minutes, which is how long a new month's prices can
  * take to show. The Storage SDK is imported when first needed, so the tests, which inject a fake

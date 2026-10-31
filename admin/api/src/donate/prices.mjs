@@ -29,7 +29,7 @@ export function poolOf(monthlyRows, month) {
 /** One tier's price in whole dollars: a share of the pool rounded up, never under the floor. */
 export const priceOf = (pool, share) => Math.max(FLOOR_USD, Math.ceil(pool * share - 1e-9));
 
-/** The four tiers priced from the pool. */
+/** The three tiers priced from the pool. */
 export function pricesOf(pool) {
   return TIERS.map((t) => ({ tier: t.key, name: t.name, share: t.share, label: `about ${Math.round(t.share * 100)}%`, usd: priceOf(pool, t.share) }));
 }
