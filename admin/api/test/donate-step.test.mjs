@@ -257,3 +257,27 @@ test("the launch-day hold: a run on Oct 30 touches neither Stripe nor the bucket
   const on = await createDonateStep({ writer: fakeWriter(calls), bucket, now: () => NOW, log: quiet }).run({ dailyRows: ROWS, failed: [], today: TODAY });
   assert.deepEqual([on.ran, on.record.period], [true, PERIOD]);
 });
+
+test("a sweep spares the period the live pages bake in, however old, and retires the rest past the horizon", async () => {
+  const calls = [];
+  const tag = (period, id) => ({ id, url: "u", metadata: { donate: "1", period, door: "arkos", tier: "prompt" } });
+  const links = [tag("2026-10-24", "plink_old"), tag("2026-10-31", "plink_baked")];
+  const prices = [{ id: "price_old", lookup_key: "donate:2026-10-24:prompt" }, { id: "price_baked", lookup_key: "donate:2026-10-31:prompt" }];
+  const current = published({ from: "2026-11-05", to: "2026-12-04", repricedOn: "2026-12-12" });
+  const out = await createDonateStep({ writer: fakeWriter(calls, { links, prices }), bucket: fakeBucket(current), baked: async () => "2026-10-31", now: () => Date.parse("2026-12-13T10:00:00Z"), log: quiet }).run({ dailyRows: ROWS, failed: [], today: "2026-12-13" });
+  assert.deepEqual(out.swept, { links: 1, prices: 1, kept: "2026-10-31" });
+  assert.deepEqual(calls.filter((c) => c[0] === "deactivateLink").map((c) => c[1]), ["plink_old"]);
+  assert.deepEqual(calls.filter((c) => c[0] === "archivePrice").map((c) => c[1]), ["price_old"]);
+});
+
+test("a sweep that cannot tell which period the live pages bake in retires nothing", async () => {
+  const tag = (id) => ({ id, url: "u", metadata: { donate: "1", period: "2026-09-01", door: "arkos", tier: "prompt" } });
+  for (const baked of [async () => null, async () => { throw new Error("donate.csarko.sh did not answer"); }]) {
+    const calls = [];
+    const warnings = [];
+    const out = await createDonateStep({ writer: fakeWriter(calls, { links: [tag("plink_a")], prices: [{ id: "price_a", lookup_key: "donate:2026-09-01:prompt" }] }), bucket: fakeBucket(published(PERIOD)), baked, now: () => NOW, log: { error() {}, warn: (...a) => warnings.push(a) } }).run({ dailyRows: ROWS, failed: [], today: "2026-11-02" });
+    assert.deepEqual(out.swept, { links: 0, prices: 0, held: "the live pages' period is unknown" });
+    assert.equal(calls.length, 0);
+    assert.equal(warnings.length, 1);
+  }
+});

@@ -30,6 +30,7 @@ import { createStripe } from "./collectors/stripe.mjs";
 import { createStripeWriter } from "./collectors/stripe-write.mjs";
 import { createPricesBucket } from "./donate/bucket.mjs";
 import { createDonateStep } from "./donate/step.mjs";
+import { createBakedPeriod } from "./donate/baked.mjs";
 import { createLedgers } from "./collectors/ledgers.mjs";
 import { createGsc } from "./collectors/gsc.mjs";
 import { createYouTube } from "./collectors/youtube.mjs";
@@ -60,6 +61,7 @@ const bigquery = config.visits.dataset || config.finance.billingDataset ? new Bi
 const donate = createDonateStep({
   writer: createStripeWriter({ key: config.donate.stripeWriteKey, fetch, log }),
   bucket: createPricesBucket({ bucket: config.donate.bucket, projectId: config.projectId, log }),
+  baked: createBakedPeriod({ fetch }),
   log,
 });
 const finance = createFinanceQueries({

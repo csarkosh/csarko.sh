@@ -227,6 +227,11 @@ land: a line in Cyrus's monthly routine, on or after the day the Finance page's 
 they turned. Until then the fallback points at last month's links, which step 5 keeps live.
 *(Amended Oct 31: prices turn weekly, and step 5 keeps a period's links live for 35 days, so one
 redeploy within a month of a turn keeps the fallback paying.)*
+*(Amended Nov 1, Cyrus: "the pricing updates should be automatic because I will not remember to do
+it every N days". No redeploy is needed any more: step 5's sweep reads the period the live pages
+bake in from the front page (`admin/api/src/donate/baked.mjs`) and never retires it, however old,
+and retires nothing on a day it cannot read it. The pages read the live prices on every visit, so a
+redeploy only refreshes the fallback; `donate/deploy.sh` is for a door's copy or picture.)*
 
 **Tips as income.** The Finance page's donations (`finance/income.mjs`, amounts and days only)
 gain a by-door split read from each payment's `metadata.door`, so the funnels are visible to

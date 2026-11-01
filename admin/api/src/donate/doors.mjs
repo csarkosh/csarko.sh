@@ -21,7 +21,7 @@ export const WINDOW_DAYS = 30;
 export const REPRICE_DAYS = 7;
 /**
  * A sweep retires the Stripe objects of a period repriced more than this many days before the
- * current one, so the deployed pages' baked links still pay for a month after a turn.
+ * current one; the period the live pages bake in is spared however old (`baked.mjs`).
  */
 export const KEEP_DAYS = 35;
 /**

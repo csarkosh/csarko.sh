@@ -20,10 +20,12 @@
  * Nothing is written to the bucket until every create has succeeded. A run that writes a period
  * retires nothing. The first later run that finds the period done sweeps instead, deactivating the
  * links and archiving the prices of every period repriced more than `KEEP_DAYS` (35) days before the
- * current one, each failure logged and left for the next day. Everything newer stays live: the
- * deployed pages bake a period's links in as their fallback, so a visitor whose fetch fails still
- * meets a live checkout for a month after a turn. A door shipped between turns gets its links at the
- * current period's prices and touches nothing else.
+ * current one, each failure logged and left for the next day. Everything newer stays live, and so
+ * does the period the live pages bake in as their fallback (`baked`, read from the front page by
+ * `baked.mjs`), however old: a visitor whose fetch fails still meets a live checkout, and no redeploy
+ * is needed after a turn. When that period cannot be read the sweep retires nothing and tries again
+ * the next day. A door shipped between turns gets its links at the current period's prices and
+ * touches nothing else.
  */
 
 import { cents } from "../finance/rows.mjs";
@@ -39,7 +41,7 @@ function need(value, what) {
   return value;
 }
 
-export function createDonateStep({ writer, bucket, now = Date.now, log = console }) {
+export function createDonateStep({ writer, bucket, baked = null, now = Date.now, log = console }) {
   const recordOf = (json) =>
     json ? { period: json.period, pool: json.pool, at: json.at, doors: Object.keys(json.doors ?? {}) } : null;
 
@@ -99,7 +101,23 @@ export function createDonateStep({ writer, bucket, now = Date.now, log = console
    */
   async function sweep(repricedOn) {
     const swept = { links: 0, prices: 0 };
+    let kept = null;
+    if (baked !== null) {
+      const held = { ...swept, held: "the live pages' period is unknown" };
+      try {
+        kept = await baked();
+      } catch (error) {
+        log.warn?.("donate: reading the live pages' period failed; nothing retired today", error);
+        return held;
+      }
+      if (kept === null) {
+        log.warn?.("donate: the live pages name no period; nothing retired today");
+        return held;
+      }
+      swept.kept = kept;
+    }
     const horizon = addDays(repricedOn, -KEEP_DAYS);
+    const retire = (period) => period < horizon && period !== kept;
     const periodOfKey = (key) => /^donate:(\d{4}-\d{2}-\d{2}):[a-z]+$/.exec(key)?.[1] ?? null;
     try {
       const attempt = async (what, fn, counter) => {
@@ -111,11 +129,11 @@ export function createDonateStep({ writer, bucket, now = Date.now, log = console
         }
       };
       for (const l of await writer.listLinks()) {
-        if (l.metadata?.donate === "1" && typeof l.metadata.period === "string" && l.metadata.period < horizon) await attempt(`link ${l.id}`, () => writer.deactivateLink(l.id), "links");
+        if (l.metadata?.donate === "1" && typeof l.metadata.period === "string" && retire(l.metadata.period)) await attempt(`link ${l.id}`, () => writer.deactivateLink(l.id), "links");
       }
       for (const p of await writer.listPrices()) {
         const old = typeof p.lookup_key === "string" ? periodOfKey(p.lookup_key) : null;
-        if (old !== null && old < horizon) await attempt(`price ${p.id}`, () => writer.archivePrice(p.id), "prices");
+        if (old !== null && retire(old)) await attempt(`price ${p.id}`, () => writer.archivePrice(p.id), "prices");
       }
     } catch (error) {
       log.error("donate: listing the old periods' objects to retire failed", error);
