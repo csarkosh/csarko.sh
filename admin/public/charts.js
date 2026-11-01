@@ -346,6 +346,100 @@ export function columns(bars, { height = 180, width = null, unit = '', previous 
 }
 
 /**
+ * One series as a line over evenly spaced points (the Films card's retention curve): 2px in the
+ * accent with a 10% wash under it down to the one baseline, clean y ticks from 0 (`format`), x
+ * ticks where `xTicks` says ([{ at: index, label }]), and the last point direct-labelled. A
+ * crosshair finds the x: a hairline snaps to the nearest point under the pointer, and the chart
+ * itself takes focus and steps with the arrow keys (Home and End for the ends), the tooltip
+ * reading the point's `lines` ([{ v, k }], the first the series'). `points` is [{ value, lines }];
+ * `min` is the least the y axis reaches. Redrawn at the host's width, at its own height.
+ */
+export function curve(points, { height = 180, label = '', format = compact, xTicks = [], min = 0 } = {}) {
+  const host = el('div', { class: 'chart' });
+  const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+  const values = points.map((p) => (isNum(p.value) ? p.value : 0));
+  const tip = tooltip(host);
+  let drawn = 0;
+  let at = -1;
+
+  const draw = (W) => {
+    const pad = { l: 40, r: 40, t: 16, b: 26 };
+    const innerW = W - pad.l - pad.r;
+    const innerH = height - pad.t - pad.b;
+    const ticks = ticksFor(Math.max(min, ...values));
+    const max = ticks[ticks.length - 1] || 1;
+    const root = svg('svg', { viewBox: `0 0 ${W} ${height}`, width: W, height, role: 'img', 'aria-label': label, tabindex: 0 });
+    root.style.height = `${height}px`;
+    const x = (i) => pad.l + (points.length > 1 ? (i / (points.length - 1)) * innerW : innerW / 2);
+    const y = (v) => pad.t + innerH - (v / max) * innerH;
+    ticks.forEach((v, i) => {
+      root.append(svg('line', { x1: pad.l, x2: W - pad.r, y1: y(v), y2: y(v), class: i === 0 ? 'axis-line' : 'grid-line' }));
+      const tick = svg('text', { x: pad.l - 8, y: y(v) + 4, 'text-anchor': 'end', class: 'tick' });
+      tick.textContent = format(v);
+      root.append(tick);
+    });
+    for (const t of xTicks) {
+      const tick = svg('text', { x: x(t.at), y: height - 8, 'text-anchor': t.at === 0 ? 'start' : t.at === points.length - 1 ? 'end' : 'middle', class: 'tick' });
+      tick.textContent = t.label;
+      root.append(tick);
+    }
+    if (points.length) {
+      const line = values.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+      root.append(svg('path', { class: 'wash', d: `${line} L${x(points.length - 1).toFixed(1)},${y(0)} L${x(0).toFixed(1)},${y(0)} Z` }));
+      root.append(svg('path', { class: 'curve', d: line }));
+      const last = points.length - 1;
+      root.append(svg('circle', { class: 'end', cx: x(last), cy: y(values[last]), r: 4 }));
+      const dl = svg('text', { x: x(last) + 8, y: y(values[last]) + 4, class: 'dlabel' });
+      dl.textContent = format(values[last]);
+      root.append(dl);
+    }
+    const cross = svg('line', { class: 'cross', x1: 0, x2: 0, y1: pad.t, y2: pad.t + innerH, visibility: 'hidden' });
+    const dot = svg('circle', { class: 'point', cx: 0, cy: 0, r: 4, visibility: 'hidden' });
+    const hit = svg('rect', { class: 'hit', x: pad.l, y: pad.t, width: Math.max(0, innerW), height: innerH });
+    root.append(cross, dot, hit);
+    const show = (i) => {
+      if (!points.length) return;
+      at = Math.max(0, Math.min(points.length - 1, i));
+      const cx = x(at);
+      const cy = y(values[at]);
+      cross.setAttribute('x1', cx); cross.setAttribute('x2', cx); cross.setAttribute('visibility', 'visible');
+      dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('visibility', 'visible');
+      const lines = points[at].lines ?? [{ v: format(values[at]), k: '' }];
+      tip.show(cx, cy, lines.map((l, k) => ({ ...l, tone: k === 0 ? undefined : 'none' })));
+    };
+    const hide = () => { cross.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); tip.hide(); };
+    const nearest = (event) => {
+      const box = root.getBoundingClientRect();
+      const px = ((event.clientX - box.left) / box.width) * W;
+      return Math.round(((px - pad.l) / Math.max(1, innerW)) * (points.length - 1));
+    };
+    hit.addEventListener('pointermove', (event) => show(nearest(event)));
+    hit.addEventListener('pointerleave', hide);
+    root.addEventListener('focus', () => show(at < 0 ? 0 : at));
+    root.addEventListener('blur', hide);
+    root.addEventListener('keydown', (event) => {
+      const step = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[event.key];
+      if (step) show(at + step);
+      else if (event.key === 'Home') show(0);
+      else if (event.key === 'End') show(points.length - 1);
+      else return;
+      event.preventDefault();
+    });
+    const old = host.querySelector('svg');
+    if (old) old.replaceWith(root); else host.prepend(root);
+    drawn = W;
+  };
+
+  draw(640);
+  const observer = new ResizeObserver(() => {
+    const W = Math.max(240, Math.round(host.clientWidth));
+    if (W && Math.abs(W - drawn) > 1) draw(W);
+  });
+  observer.observe(host);
+  return host;
+}
+
+/**
  * Horizontal bars: a name, a track and the value at the tip, each row focusable with a
  * title. `ramp` colours the rows down the ordinal ramp (a funnel); otherwise every bar is
  * the accent. `share` adds each row's share of `total` (or of the first row) after the value.

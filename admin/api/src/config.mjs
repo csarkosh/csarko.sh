@@ -59,6 +59,29 @@ export function parseServiceAccountKey(raw, log = console) {
   }
 }
 
+/**
+ * The YouTube Analytics credential (2026-11-01): the channel owner's consent as JSON
+ * `{ client_id, client_secret, refresh_token }`, written into Secret Manager by
+ * admin/tools/youtube-consent.mjs and never typed by hand. Anything else is logged (the
+ * shape, never the value) and treated as missing, as the Search Console key is.
+ */
+export function parseOAuth(raw, log = console) {
+  const value = secret(raw);
+  if (value === null) return null;
+  try {
+    const oauth = JSON.parse(value);
+    const fields = ["client_id", "client_secret", "refresh_token"];
+    if (oauth === null || typeof oauth !== "object" || fields.some((f) => typeof oauth[f] !== "string" || oauth[f].trim() === "")) {
+      log.error("YOUTUBE_OAUTH is JSON but not { client_id, client_secret, refresh_token }; treating as unset");
+      return null;
+    }
+    return { client_id: oauth.client_id.trim(), client_secret: oauth.client_secret.trim(), refresh_token: oauth.refresh_token.trim() };
+  } catch {
+    log.error("YOUTUBE_OAUTH is not JSON; run admin/tools/youtube-consent.mjs to write it; treating as unset");
+    return null;
+  }
+}
+
 export function readConfig(env = process.env, log = console) {
   const siteUrl = text(env.SITE_URL, "https://csarko.sh").replace(/\/+$/, "");
   return {
@@ -67,6 +90,8 @@ export function readConfig(env = process.env, log = console) {
     visits: { dataset: text(env.VISITS_DATASET, ""), historyDataset: text(env.VISITS_HISTORY_DATASET, ""), historyUntil: text(env.VISITS_HISTORY_UNTIL, "") || null },
     gsc: { key: parseServiceAccountKey(env.GSC_SA_KEY, log), property: text(env.GSC_PROPERTY, "sc-domain:csarko.sh") },
     youtube: { key: secret(env.YOUTUBE_KEY), handle: text(env.YOUTUBE_HANDLE, "csarkosh") },
+    // The channel owner's OAuth consent, for YouTube Analytics (the Films card, 2026-11-01).
+    youtubeAnalytics: parseOAuth(env.YOUTUBE_OAUTH, log),
     github: { token: secret(env.GITHUB_TOKEN), owner: text(env.GITHUB_OWNER, DEFAULT_GITHUB_OWNER) },
     psiKey: secret(env.PSI_KEY),
     // The finance page: the AWS role the service assumes by web identity federation (no key

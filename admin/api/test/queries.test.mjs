@@ -329,3 +329,101 @@ test("manual appends with the time and the store caps the series", async () => {
   for (let i = 0; i < 450; i += 1) await deps.store.appendManual("substack", { at: "x", value: i });
   assert.equal((await deps.store.getManual("substack")).length, 400);
 });
+
+/* ---- the Films card (YouTube Analytics, 2026-11-01) ---- */
+
+/** A YouTube Analytics fake that counts its calls and can be made to fail. */
+function fakeAnalytics() {
+  const state = { calls: 0, fail: null };
+  const call = (value) => { state.calls += 1; if (state.fail) throw new Error(state.fail); return value; };
+  return {
+    state,
+    configured: true,
+    async totals() { return call(new Map([["C1XsDuJE4MQ", { views: 70, estimatedMinutesWatched: 40, averageViewDuration: 41, averageViewPercentage: 74, subscribersGained: 2, likes: 5, shares: 1, comments: 0 }]])); },
+    async daily(id, start, end) { return call([{ day: end, views: 10 }]); },
+    async retention() { return call([{ ratio: 0.01, watch: 1, relative: 0.5 }]); },
+    async sources() { return call([{ source: "SHORTS", views: 60, minutes: 30 }]); },
+    async external() { return call([]); },
+  };
+}
+
+test("films reads the snapshot's part and makes no YouTube call; live once an hour before the first", async () => {
+  const deps = fakes();
+  const yta = fakeAnalytics();
+  let t = NOW;
+  const q = createQueries({ ...deps, youtubeAnalytics: yta, now: () => t });
+
+  const live = await q.films(7);
+  assert.equal(live.days, 7);
+  assert.equal(live.to, "2026-10-10", "two days back");
+  assert.equal(live.at, "2026-10-12T15:30:00.000Z");
+  assert.equal(live.films[0].slug, "the-last-trail");
+  assert.equal(live.films[0].totals.views, 70);
+  assert.equal(live.lag, "YouTube Analytics runs 1 to 2 days behind");
+  const liveCalls = yta.state.calls;
+  assert.ok(liveCalls > 0);
+  t += 30 * 60_000;
+  await q.films(30);
+  assert.equal(yta.state.calls, liveCalls, "the live reports are made once an hour at most");
+
+  await q.snapshot();
+  const afterSnapshot = yta.state.calls;
+  t += 2 * 3_600_000;
+  const read = await q.films(90);
+  assert.equal(yta.state.calls, afterSnapshot, "a page load costs no YouTube call once a snapshot holds the part");
+  assert.equal(read.days, 90);
+  assert.equal(read.at, "2026-10-12T16:00:00.000Z", "the snapshot's time");
+  assert.equal(read.errors, undefined);
+  assert.equal((await q.films(1)).days, 7, "no day view");
+});
+
+test("films without the consent is not configured, never a 500", async () => {
+  const off = await createQueries({ ...fakes(), youtubeAnalytics: { configured: false } }).films(7);
+  assert.equal(off.films, null);
+  assert.deepEqual(off.notConfigured, { films: "YOUTUBE_OAUTH" });
+  const absent = await createQueries(fakes()).films(30);
+  assert.deepEqual(absent.notConfigured, { films: "YOUTUBE_OAUTH" });
+  assert.equal(absent.days, 30);
+
+  const doc = await createQueries({ ...fakes(), youtubeAnalytics: { configured: false } }).snapshot();
+  assert.equal(doc.films, undefined);
+  assert.equal(doc.notConfigured.films, "YOUTUBE_OAUTH");
+});
+
+test("a failed films step keeps the last good part with its age, and the rest of the day is still written", async () => {
+  const deps = fakes();
+  const yta = fakeAnalytics();
+  let t = NOW;
+  const q = createQueries({ ...deps, youtubeAnalytics: yta, now: () => t });
+  const first = await q.snapshot();
+  assert.equal(first.films.at, "2026-10-12T15:30:00.000Z");
+  assert.equal(first.errors, undefined);
+
+  // The next day the consent has been revoked.
+  t += 86_400_000;
+  yta.state.fail = "YouTube consent expired or was revoked: run admin/tools/youtube-consent.mjs";
+  const second = await q.snapshot();
+  assert.equal(second.date, "2026-10-13");
+  assert.equal(second.visits7, 181, "the rest of the snapshot is written");
+  assert.equal(second.errors.films, yta.state.fail);
+  assert.equal(second.films.at, "2026-10-12T15:30:00.000Z", "the last good numbers, with their own time");
+  assert.equal(second.films.error, yta.state.fail);
+  assert.equal(second.films.films[0].periods["7"].totals.views, 70);
+
+  const answer = await q.films(7);
+  assert.equal(answer.at, "2026-10-12T15:30:00.000Z");
+  assert.equal(answer.films[0].totals.views, 70);
+  assert.deepEqual(answer.errors, { films: yta.state.fail });
+
+  // With no good part to keep, nothing is written and the query says why.
+  const fresh = fakes();
+  const broken = fakeAnalytics();
+  broken.state.fail = "youtube analytics 500: boom";
+  const q2 = createQueries({ ...fresh, youtubeAnalytics: broken });
+  const doc = await q2.snapshot();
+  assert.equal(doc.films, undefined);
+  assert.equal(doc.errors.films, "youtube analytics 500: boom");
+  const none = await q2.films(7);
+  assert.equal(none.films, null);
+  assert.deepEqual(none.errors, { films: "youtube analytics 500: boom" });
+});

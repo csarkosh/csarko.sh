@@ -15,10 +15,11 @@
 # million requests a month and the job's one short run a day, Firestore's free
 # (default) database, the two Scheduler jobs of three free, and the bucket's
 # few KB. Secret Manager is the one that steps past its free tier: six free
-# active versions, and the seven secrets below plus gcp-visits' one carry eight
-# or more (the three seeded ones hold two each until the `unset` version is
-# disabled), at $0.06 a version-month past six. The budget at the end is the
-# alarm if that ever stops being a few cents.
+# active versions, and the eight secrets below plus gcp-visits' one carry nine
+# or more (the seeded ones hold two each until the `unset` version is
+# disabled), at $0.06 a version-month past six; youtube-oauth (2026-11-01, the
+# YouTube Analytics refresh token) is one more, about $0.06 a month. The budget
+# at the end is the alarm if that ever stops being a few cents.
 
 terraform {
   required_providers {
@@ -39,7 +40,8 @@ terraform {
 # cloudbuild and artifactregistry are for `gcloud run deploy --source`, which
 # builds the image with Cloud Build and keeps it in Artifact Registry; iam for
 # the service accounts; youtube and pagespeedonline are the two Google APIs the
-# collectors call with a key. firebasehosting (the last-deploy check) and
+# collectors call with a key, and youtubeanalytics the one called with the
+# channel owner's OAuth refresh token (youtube-oauth, 2026-11-01). firebasehosting (the last-deploy check) and
 # searchconsole are already on. Never disabled on destroy: a disabled API
 # takes every resource behind it with it.
 resource "google_project_service" "apis" {
@@ -53,6 +55,7 @@ resource "google_project_service" "apis" {
     "iam.googleapis.com",
     "youtube.googleapis.com",
     "pagespeedonline.googleapis.com",
+    "youtubeanalytics.googleapis.com",
   ])
 
   project            = var.project_id

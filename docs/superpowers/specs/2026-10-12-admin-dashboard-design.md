@@ -96,7 +96,7 @@ series.
 |---|---|---|---|
 | **Google Search Console** | impressions, clicks, CTR, average position, by query, by page, by day; pages indexed vs pages in the sitemap; sitemap last fetched | `searchAnalytics.query` and `urlInspection.index.inspect`, service account `gsc-reader@csarko-sh` with key at `~/.config/csarko-sh/gsc-sa.json`. Quotas: 1,200 queries/min per site; URL inspection 2,000/day per site (29 URLs, fine). Data lags 2 to 3 days and keeps 16 months. | **Wired** (`general:search-console`'s `gsc.py`); the admin API reuses the same key and calls |
 | **YouTube Data API** | channel subscribers, total views, video count; per-video views and likes for the films | API key, public data, `channels.list` and `videos.list` cost 1 unit each of 10,000 a day | New: one API key in the `csarko-sh` project |
-| **YouTube Analytics API** | watch time, average view duration, traffic sources per video | Channel owner OAuth (`yt-analytics.readonly` + `youtube.readonly`) | Phase 2: needs a one-time consent and a stored refresh token; the Data API numbers come first |
+| **YouTube Analytics API** | watch time, average view duration, traffic sources per video | Channel owner OAuth (`yt-analytics.readonly` alone; the titles still come from the Data API key) | **Built 2026-11-01** (plan `docs/superpowers/plans/2026-11-01-youtube-analytics.md`): the csarko.sh page's Films card, made once a day by the snapshot from the refresh token in `youtube-oauth`, which `admin/tools/youtube-consent.mjs` writes; live once its consent is given |
 | **GitHub** | stars, forks, watchers on `game-dayhike` and `electron-gamepatch`; repo traffic: views, unique visitors, clones, top referrers, top paths, **last 14 days only** | public REST for stars; traffic needs a fine-grained token with read access to the repos | New: one read-only PAT; the daily snapshot keeps traffic beyond 14 days |
 | **Hacker News** | mentions of `csarko.sh` (stories and comments) | Algolia HN search API, free, no auth | New, trivial |
 | **Reddit, LinkedIn, Bluesky** | mentions, profile views | no usable free API for a personal profile; Reddit's API requires an app and has tightened | Not built. Referrers in GoatCounter show when a mention sends traffic, which is what matters |
@@ -313,7 +313,7 @@ also in `AGENTS.md`.
 | 2. Shell and csarko.sh page | `auth.js`, `charts.js`, index, the eight cards, `?preview` sample data | review of the screenshots | the portfolio dashboard |
 | 3. The csarko.sh API | collectors, `/admin/kpis`, snapshot job, manual entry | the credentials above, into Secret Manager | live numbers, history begins |
 | 4. Move Day Hike | the four changes of 2.6, the redirect | approve the change in `game-dayhike` | one place for both apps |
-| 5. Phase 2 | YouTube Analytics (watch time), Bing Webmaster Tools (free, has an API, a second search engine's view), Lighthouse history chart | a one-time YouTube consent | deeper exposure data |
+| 5. Phase 2 | YouTube Analytics (watch time; **built 2026-11-01**, the Films card), Bing Webmaster Tools (free, has an API, a second search engine's view), Lighthouse history chart | a one-time YouTube consent | deeper exposure data |
 
 ## Costs
 

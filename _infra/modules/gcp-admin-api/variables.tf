@@ -82,6 +82,9 @@ variable "secret_ids" {
     # Payment Links write, apart from the read key above so the Finance page's key never
     # gains a write permission.
     stripe-write-key = "STRIPE_WRITE_KEY"
+    # YouTube Analytics (2026-11-01): JSON { client_id, client_secret, refresh_token } for the
+    # channel owner's read-only consent, written by admin/tools/youtube-consent.mjs.
+    youtube-oauth = "YOUTUBE_OAUTH"
   }
 }
 
@@ -107,7 +110,7 @@ variable "seeded_secret_ids" {
     the service existed.
   EOT
   type        = set(string)
-  default     = ["fal-admin-key", "modal-token-id", "modal-token-secret", "stripe-key", "stripe-write-key"]
+  default     = ["fal-admin-key", "modal-token-id", "modal-token-secret", "stripe-key", "stripe-write-key", "youtube-oauth"]
 }
 
 variable "job_image" {

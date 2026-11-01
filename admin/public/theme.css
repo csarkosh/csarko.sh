@@ -413,6 +413,18 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
 .chart .stack.hover .seg { filter: brightness(1.15); }
 .chart .median { fill: none; stroke: var(--faint); stroke-width: 1.5; stroke-dasharray: 3 3; stroke-linejoin: round; }
 .chart .flag { fill: var(--warning); stroke: var(--surface); stroke-width: 1.5; }
+/* A line (charts.js curve(), the Films card's retention): 2px in the accent over a 10% wash, the end
+   dot ringed in the surface, and the crosshair a hairline that snaps to the nearest point. */
+.chart .curve { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .wash { fill: var(--accent); fill-opacity: 0.1; }
+.chart .end, .chart .point { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+.chart .cross { stroke: var(--faint); stroke-width: 1; }
+.chart svg:focus-visible { outline: 1.5px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
+/* The Films card: a film's title links to it on YouTube, its release day beside it in the label face. */
+.film + .film { margin-top: 26px; }
+.film-title a { color: var(--text); text-decoration: none; }
+.film-title a:hover { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+.film-title small { margin-left: 8px; font-family: var(--mono); font-size: 11.5px; font-weight: 400; color: var(--faint); }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 8px 0 0; padding: 0; list-style: none; font-family: var(--mono); font-size: 11.5px; color: var(--faint); }
 .legend li { display: inline-flex; align-items: center; gap: 6px; }
 .legend .swatch { width: 10px; height: 10px; border-radius: 3px; background: var(--accent); flex: none; }

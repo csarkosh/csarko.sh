@@ -134,7 +134,22 @@ const sum = (rows, key) => rows.reduce((n, r) => n + (r[key] ?? 0), 0);
 function sampleRange(name, data, days) {
   // A page that scopes by something other than days (finance's `range`) gets the file as it is.
   if (days === 7 || days === null || days === undefined) return data;
+  // The Films card has no day view: the API answers 1 as 7.
+  if (name === 'films' && days === 1) return data;
   const scale = days / 7;
+  if (name === 'films') {
+    const counts = ['views', 'estimatedMinutesWatched', 'subscribersGained', 'likes', 'shares', 'comments'];
+    const scaled = (m) => (m ? { ...m, ...Object.fromEntries(counts.map((k) => [k, Math.round((m[k] ?? 0) * scale)])) } : m);
+    const rows = (list) => (list ? list.map((r) => ({ ...r, views: Math.round(r.views * scale), minutes: Math.round(r.minutes * scale) })) : list);
+    const end = Date.parse(data.to);
+    return {
+      ...data,
+      days,
+      from: isoDay(end - (days - 1) * DAY),
+      films: data.films.map((f) => ({ ...f, totals: scaled(f.totals), prev: scaled(f.prev), daily: tileDays(f.daily, days, [...counts, 'averageViewDuration', 'averageViewPercentage']), sources: rows(f.sources), external: rows(f.external) })),
+      others: (data.others ?? []).map((o) => ({ ...o, totals: scaled(o.totals), prev: scaled(o.prev) })),
+    };
+  }
   if (name === 'visits') {
     const cur = tileDays(data.current.perDay, days, ['visits', 'pageviews']);
     const prev = tileDays(data.previous.perDay, days, ['visits', 'pageviews']).map((r) => ({ ...r, day: isoDay(Date.parse(r.day) - days * DAY) }));

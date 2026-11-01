@@ -2,7 +2,7 @@
 
 What `admin/public/` (the shell and the csarko.sh dashboard) reads, and what each app's
 API serves. The shell's index needs only `/admin/kpis` from every app; the csarko.sh page
-needs the eight queries and one manual route from `csarko-admin` (`admin/api/`). The fixed
+needs the ten queries and one manual route from `csarko-admin` (`admin/api/`). The fixed
 sample under `admin/public/sample/` mirrors the examples here one for one, so
 `?preview` renders exactly these shapes.
 
@@ -82,7 +82,7 @@ trend, and the health dot.
 takes from its browser and sends on every request (and on `/admin/kpis`, for the apps whose
 card has days in it); absent it is `UTC`, and a name that is not a zone is a 400. Only `visits`
 cuts days, so only it reads `tz`; every other answer is instants, which the page shows on the
-reader's clock *(2026-10-22: the owner reads the page away from New York)*. Query names are exactly these nine.
+reader's clock *(2026-10-22: the owner reads the page away from New York)*. Query names are exactly these ten.
 The sample files are `admin/public/sample/csarko.sh/<name>.json`, each for `days=7`
 (the preview tiles that week for the other ranges).
 
@@ -307,6 +307,63 @@ fetched the feed.
 `notConfigured.indexed`; `sitemapFetchedAt` with `notConfigured.sitemapState`.
 `overall` is always present (an unknown check does not degrade the status; the note
 says what is unknown).
+
+### `films`
+
+*(2026-11-01, YouTube Analytics; plan `docs/superpowers/plans/2026-11-01-youtube-analytics.md`.)*
+
+```json
+{
+  "days": 7, "from": "2026-11-02", "to": "2026-11-08",
+  "at": "2026-11-10T06:04:00Z",
+  "lag": "YouTube Analytics runs 1 to 2 days behind",
+  "films": [ {
+    "slug": "the-last-trail", "title": "The Last Trail", "videoId": "C1XsDuJE4MQ", "published": "2026-10-29", "runtime": "0:56",
+    "totals": { "views": 1312, "estimatedMinutesWatched": 940, "averageViewDuration": 43, "averageViewPercentage": 76.8, "subscribersGained": 9, "likes": 61, "shares": 7, "comments": 4 },
+    "prev": { "views": 980, "estimatedMinutesWatched": 670, "averageViewDuration": 41, "averageViewPercentage": 73.5, "subscribersGained": 6, "likes": 44, "shares": 5, "comments": 3 },
+    "daily": [ { "day": "2026-11-02", "views": 310, "estimatedMinutesWatched": 222, "averageViewDuration": 43, "averageViewPercentage": 75.6, "subscribersGained": 3, "likes": 14, "shares": 2, "comments": 1 } ],
+    "retention": [ { "ratio": 0.01, "watch": 0.965, "relative": 0.678 } ],
+    "sources": [ { "source": "SHORTS", "views": 1004, "minutes": 721 }, { "source": "EXT_URL", "views": 141, "minutes": 104 } ],
+    "external": [ { "url": "https://www.reddit.com/r/horror/comments/1okq2xa/the_last_trail_a_56_second_horror_short/", "views": 74, "minutes": 56 } ]
+  } ],
+  "others": [ { "videoId": "pQ7sTrAiLr0", "title": "The Last Trail, a ten second teaser", "totals": { "views": 38 }, "prev": { "views": 52 } } ]
+}
+```
+
+The channel owner's numbers per film, from the YouTube Analytics API with the owner's consent.
+**Read from the daily snapshot** (its `films` part), so a page load makes no YouTube call; the
+query makes the reports itself only before the first snapshot holds the part (at most once an
+hour). `at` is when the numbers were made: the snapshot's time, or now for a live answer.
+
+- `days` is 7, 30 or 90. There is no day view (the data runs behind), so `days=1` answers 7 and
+  says so in `days`. The range is `days` whole YouTube days (Pacific Time's, whatever the page's
+  `tz`) ending on `to`, two days before the snapshot's day (YouTube is complete about two days
+  back; today and yesterday are partial); `prev` is the equal range before `from`.
+- `films` is the list in `admin/api/src/films.json` (from `docs/films/*.md`, newest first).
+  `totals` and `prev` carry the API's metric names: `estimatedMinutesWatched` in minutes,
+  `averageViewDuration` in seconds, `averageViewPercentage` a percentage of the runtime (a Short
+  that loops passes 100). A film with no views in the range has every metric 0.
+- `daily` is the range's days, every day present (a day without views is zeros).
+- `retention` is 100 points over the film's life, not the range: `ratio` the elapsed share of the
+  runtime (0.01 to 1, a hundredth each), `watch` the API's `audienceWatchRatio` (the share of views
+  still watching; past 1 where people rewatched that moment) and `relative` its
+  `relativeRetentionPerformance` (0 to 1 against videos of a similar length, 0.5 the median, or
+  `null`). `runtime` (m:ss, from the film's page) lets the page label the steps in seconds.
+- `sources` is views and watch time (`minutes`) by YouTube's `insightTrafficSourceType` (`SHORTS`,
+  `YT_SEARCH`, `EXT_URL`, `RELATED_VIDEO`, `SUBSCRIBER`...), most views first. `external` is
+  External's detail (`insightTrafficSourceDetail`), at most 25 entries, most views first: each a
+  full URL or a bare host, as YouTube reports it; a Reddit post appears by its URL, and the page
+  groups every reddit.com host as one site.
+- `retention`, `sources` and `external` are `null` on a film whose report failed, with the film's
+  own `errors: { retention | sources | external: "<message>" }`; the rest of the film stands.
+- `others` is every other upload on the channel, never dropped: each with `totals` and `prev`
+  (the same metrics as a film's) and its `title` from the Data API, or `null` without
+  `YOUTUBE_KEY`. Most views over 90 days first.
+- Everything but `days` and `lag` is `null` with `notConfigured.films = "YOUTUBE_OAUTH"`. A
+  snapshot whose films step failed keeps the last good numbers: the answer is that part, its own
+  `at`, and `errors.films` with the failure (`"YouTube consent expired or was revoked: run
+  admin/tools/youtube-consent.mjs"` when the refresh token is refused). With no good part to keep,
+  `films` is `null` with `errors.films`.
 
 ## `POST <api>/admin/manual/substack` (csarko.sh)
 

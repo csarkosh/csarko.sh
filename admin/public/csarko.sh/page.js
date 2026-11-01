@@ -1,7 +1,7 @@
 /**
- * The csarko.sh dashboard (spec 2.5): a range row, then nine cards in order, each
+ * The csarko.sh dashboard (spec 2.5): a range row, then ten cards in order, each
  * loading its own query (or two) and showing its own error line. Visitors, where they
- * come from, what they read, where they go next, journeys, search, reach, health, audience.
+ * come from, what they read, where they go next, journeys, search, reach, films, health, audience.
  *
  * The API (admin/api, shapes in admin/CONTRACT.md) answers `null` for any part whose
  * credential is missing, with `notConfigured: { <part>: "<ENV NAME>" }` naming the secret
@@ -12,7 +12,7 @@
  */
 
 import { accountMenu, requireSession } from '/auth.js';
-import { ago, bars, columns, compact, delta, el, errorLine, filteredList, folded, hold, loading, pct, settle, shortDay, skeleton, status, table, tile } from '/charts.js';
+import { ago, bars, columns, compact, curve, delta, el, errorLine, filteredList, folded, hold, loading, pct, settle, shortDay, skeleton, status, table, tile } from '/charts.js';
 import { RANGES, loadApps, preview, readRange, readToggles, source, utcMidnightHere, viewerZone, viewerZoneName, writeRange, writeToggles } from '/data.js';
 import { fadeIn, fadeOut, tokens } from '/motion.js';
 
@@ -481,6 +481,143 @@ function reachCard([reach], days, reload) {
   return parts;
 }
 
+// ---------------------------------------------------------------- films (YouTube Analytics)
+
+/** YouTube's traffic source types in its own Studio words. */
+const TRAFFIC_SOURCES = {
+  SHORTS: 'Shorts feed', YT_SEARCH: 'YouTube search', EXT_URL: 'External', RELATED_VIDEO: 'Suggested videos', YT_CHANNEL: 'Channel pages',
+  SUBSCRIBER: 'Browse features', NO_LINK_OTHER: 'Direct or unknown', NO_LINK_EMBEDDED: 'Embedded players', PLAYLIST: 'Playlists', YT_PLAYLIST_PAGE: 'Playlist pages',
+  YT_OTHER_PAGE: 'Other YouTube features', NOTIFICATION: 'Notifications', END_SCREEN: 'End screens', ANNOTATION: 'Cards', CAMPAIGN_CARD: 'Campaign cards',
+  HASHTAGS: 'Hashtag pages', SOUND_PAGE: 'Sound pages', SHORTS_CONTENT_LINKS: 'Shorts related video', VIDEO_REMIXES: 'Remixes', ADVERTISING: 'YouTube ads',
+  PROMOTED: 'Promotions', LIVE_REDIRECT: 'Live redirects', PRODUCT_PAGE: 'Product pages', IMMERSIVE_LIVE: 'Immersive live',
+};
+const trafficName = (type) => TRAFFIC_SOURCES[str(type)] ?? cap(str(type).toLowerCase().replace(/_/g, ' '));
+
+/** An External detail (a full URL or a bare host, as YouTube reports it) as { site, host, page, href }: every reddit.com host and redd.it is one site, Reddit. */
+function externalSite(detail) {
+  const raw = str(detail).trim();
+  let url = null;
+  try { url = new URL(/^[a-z]+:\/\//i.test(raw) ? raw : `https://${raw}`); } catch { url = null; }
+  const host = url ? url.hostname.replace(/^(www|old|new|m|np)\./, '') : raw;
+  const reddit = host === 'redd.it' || host === 'reddit.com' || host.endsWith('.reddit.com');
+  const page = url && url.pathname !== '/' ? `${url.pathname}${url.search}` : '';
+  return { site: reddit ? 'Reddit' : hostName(host) || raw, host, page, href: url && /^https?:/.test(url.protocol) && /^[a-z]+:\/\//i.test(raw) ? url.href : null };
+}
+
+/** Minutes as the card says them: 940 min, 15.7 h. */
+const watchTime = (min) => (num(min) >= 120 ? `${compact(Math.round(num(min) / 6) / 10)} h` : `${compact(Math.round(num(min)))} min`);
+/** m:ss to seconds; null when the runtime is unknown. */
+const runtimeSecs = (rt) => { const m = /^(\d+):(\d{2})$/.exec(str(rt)); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+
+/** A film's four numbers, each against the range before: views, watch time, average percentage viewed, subscribers gained. */
+function filmTiles(f, days) {
+  const t = f.totals ?? {};
+  const p = f.prev ?? {};
+  const vs = previousText(days);
+  const viewed = num(t.views) > 0;
+  return el('div', { class: 'tiles' },
+    tile('Views', num(t.views), { delta: delta(num(t.views), p.views, { vs }) }),
+    tile('Watch time', watchTime(t.estimatedMinutesWatched), {
+      delta: delta(num(t.estimatedMinutesWatched), p.estimatedMinutesWatched, { vs, format: watchTime }),
+      note: viewed ? `${duration(num(t.averageViewDuration))} a view on average` : 'no views in this range',
+    }),
+    tile('Average viewed', viewed ? `${num(t.averageViewPercentage).toFixed(1)}%` : '–', {
+      delta: viewed ? delta(num(t.averageViewPercentage), num(p.views) > 0 ? p.averageViewPercentage : null, { vs, percent: false, format: (v) => `${v.toFixed(1)}%` }) : undefined,
+      note: viewed ? 'of the runtime, on average' : 'no views in this range',
+    }),
+    tile('Subscribers gained', num(t.subscribersGained), { delta: delta(num(t.subscribersGained), p.subscribersGained, { vs, percent: false }) }));
+}
+
+/** The retention curve: the share of views still watching at each hundredth of the runtime. */
+function retentionChart(f) {
+  const points = Array.isArray(f.retention) ? f.retention : [];
+  if (!points.length) return el('p', { class: 'empty' }, f.errors?.retention ? 'The retention curve was not read.' : 'No retention yet: YouTube draws the curve once a film has enough views.');
+  const secs = runtimeSecs(f.runtime);
+  const at = (ratio) => (secs === null ? `${Math.round(ratio * 100)}%` : clock(ratio * secs));
+  const relative = (r) => (isNum(r) ? (r >= 0.55 ? 'above' : r <= 0.45 ? 'below' : 'about the same as') : null);
+  // A tick at each quarter of the runtime, on the point nearest it (the first point is 1% in).
+  const nearest = (ratio) => points.reduce((best, pt, i) => (Math.abs(num(pt.ratio) - ratio) < Math.abs(num(points[best].ratio) - ratio) ? i : best), 0);
+  const xTicks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => ({ at: nearest(ratio), label: at(ratio) }));
+  const mid = points[Math.round((points.length - 1) / 2)];
+  const end = points[points.length - 1];
+  const chart = curve(points.map((pt) => ({
+    value: num(pt.watch),
+    lines: [{ v: pct(num(pt.watch)), k: `still watching at ${at(pt.ratio)}` }, ...(relative(pt.relative) ? [{ v: relative(pt.relative), k: 'videos of a similar length' }] : [])],
+  })), { height: 170, min: 1, format: (v) => pct(v), xTicks, label: `Retention for ${str(f.title)}: ${pct(num(mid?.watch))} still watching halfway, ${pct(num(end?.watch))} at the end` });
+  const note = el('p', { class: 'note' }, `YouTube reports retention in 100 steps of the runtime${secs === null ? '' : `, ${(secs / 100).toFixed(2).replace(/0$/, '')} s each here`}; past 100% means people watched that moment again, as a Short that loops does. Over the film's life, not the range.`);
+  return [chart, note];
+}
+
+/** Where a film's views came from: the traffic source types, and External's sites and pages, Reddit's posts as one site. */
+function filmSources(f, days) {
+  const sources = Array.isArray(f.sources) ? f.sources : null;
+  const external = Array.isArray(f.external) ? f.external : null;
+  const left = el('div', {}, el('h3', {}, 'Traffic sources'), sources === null
+    ? el('p', { class: 'empty' }, 'Traffic sources were not read.')
+    : sources.length ? bars(sources.map((s) => ({ name: trafficName(s.source), value: num(s.views), detail: `${trafficName(s.source)}, ${watchTime(s.minutes)} watched` })), { label: `Views by traffic source, ${rangeText(days)}` }) : el('p', { class: 'empty' }, 'No views in this range.'));
+  if (external === null) return [el('div', { class: 'pair' }, left, el('div', {}, el('h3', {}, 'External sites'), el('p', { class: 'empty' }, 'External sites were not read.')))];
+  const pages = external.map((e) => ({ ...externalSite(e.url), views: num(e.views), minutes: num(e.minutes) }));
+  const sites = new Map();
+  for (const pg of pages) sites.set(pg.site, (sites.get(pg.site) ?? 0) + pg.views);
+  const right = el('div', {}, el('h3', {}, 'External sites'), sites.size
+    ? bars([...sites].sort((a, b) => b[1] - a[1]).map(([name, value]) => ({ name, value, detail: `${name} sent` })), { label: `Views from outside YouTube by site, ${rangeText(days)}` })
+    : el('p', { class: 'empty' }, 'Nothing from outside YouTube in this range.'));
+  const list = folded(`External pages · ${pages.length}`, table([
+    { key: 'site', label: 'Site' },
+    { key: 'page', label: 'Page', wrap: true, render: (v, row) => { const text = row.page || row.host; return row.href ? el('a', { href: row.href, target: '_blank', rel: 'noopener', class: 'mono' }, text) : mono(text); } },
+    { key: 'views', label: 'Views', num: true },
+    { key: 'minutes', label: 'Watch time', num: true, render: (v) => watchTime(v) },
+  ], [...pages].sort((a, b) => (sites.get(b.site) ?? 0) - (sites.get(a.site) ?? 0) || a.site.localeCompare(b.site) || b.views - a.views), 'Nothing from outside YouTube in this range.'));
+  return [el('div', { class: 'pair' }, left, right), list];
+}
+
+/** One film: its title, its four numbers, and folded under them its days, its retention and where its views came from. */
+function filmBlock(f, days) {
+  const href = f.videoId ? `https://www.youtube.com/watch?v=${encodeURIComponent(str(f.videoId))}` : null;
+  const title = el('h3', { class: 'film-title' }, href ? el('a', { href, target: '_blank', rel: 'noopener' }, str(f.title)) : str(f.title));
+  if (f.published) title.append(el('small', {}, ` released ${shortDay(f.published)}`));
+  const daily = Array.isArray(f.daily) ? f.daily : [];
+  const opened = folded(`${str(f.title)}: by day, retention, traffic sources`, [
+    ...errorLines(f),
+    el('h3', {}, 'Views per day'),
+    daily.length ? columns(dayBars(daily, 'views'), { height: 160, label: `Views per day of ${str(f.title)}, ${rangeText(days)}: ${compact(num(f.totals?.views))} in all` }) : el('p', { class: 'empty' }, 'No days in this range.'),
+    el('h3', {}, 'Retention'),
+    retentionChart(f),
+    ...filmSources(f, days),
+  ].flat());
+  return el('div', { class: 'film' }, title, filmTiles(f, days), opened);
+}
+
+function filmsCard([films], days) {
+  if (!films.films) {
+    const errors = errorLines(films);
+    return errors.length ? errors : [notConfigured(missing(films, 'films'))];
+  }
+  const parts = [...errorLines(films)];
+  if (!films.films.length) parts.push(el('p', { class: 'empty' }, 'No films listed: docs/films has none.'));
+  for (const f of films.films) parts.push(filmBlock(f, films.days ?? days));
+  const others = Array.isArray(films.others) ? films.others : [];
+  parts.push(folded(`Other uploads · ${others.length}`, table([
+    { key: 'title', label: 'Video', wrap: true, render: (v, row) => el('a', { href: `https://www.youtube.com/watch?v=${encodeURIComponent(str(row.videoId))}`, target: '_blank', rel: 'noopener' }, v ? str(v) : str(row.videoId)) },
+    { key: 'totals', label: 'Views', num: true, render: (v) => compact(num(v?.views)) },
+    { key: 'prev', label: 'Before', num: true, render: (v) => compact(num(v?.views)) },
+    { key: 'totals', label: 'Watch time', num: true, render: (v) => watchTime(v?.estimatedMinutesWatched) },
+    { key: 'totals', label: 'Avg viewed', num: true, render: (v) => (num(v?.views) > 0 ? `${num(v.averageViewPercentage).toFixed(1)}%` : '–') },
+    { key: 'totals', label: 'Subscribers', num: true, render: (v) => compact(num(v?.subscribersGained)) },
+  ], others, 'Every upload on the channel is a film.')));
+  const age = films.at ? `${films.errors?.films ? 'Last good numbers' : 'From the daily snapshot'}, ${ago(films.at)} (${new Date(films.at).toLocaleString()})` : 'No snapshot yet';
+  parts.push(el('p', { class: 'card-foot' }, `${str(films.lag) || 'YouTube Analytics runs 1 to 2 days behind'} · ${age}`));
+  return parts;
+}
+
+/** The Films card's sub: the range, through YouTube's last finished day, and what 1 day means here. */
+function filmsSub(d, films) {
+  const shown = films?.days ?? (d === 1 ? 7 : d);
+  const through = films?.to ? ` through ${shortDay(films.to)}` : '';
+  const noDay = d === 1 ? 'YouTube Analytics has no view of a single day, so this is 7 days. ' : '';
+  return `${noDay}Each film on YouTube over the ${shown} days${through}, against the ${shown} days before: views, watch time, how much of it people watched and the subscribers it brought. Open a film for its days, its retention and where its views came from. YouTube Analytics runs 1 to 2 days behind, so the range ends on the last day it has finished; its days are Pacific Time's.`;
+}
+
 function healthCard([health]) {
   const overall = health.overall ?? {};
   const up = health.up === true;
@@ -551,6 +688,7 @@ const CARDS = [
   { id: 'journeys', title: 'Journeys', queries: ['journeys'], sub: () => 'The most recent visits, newest first, each from where it came to how it left: every page with when it was reached, how far it was scrolled, how long it was visible and on screen, its LCP, and the click that ended the visit. From lib-visits, so since the cutover only.', render: journeysCard, skeleton: { chips: 4, items: 8 } },
   { id: 'search', title: 'Search', queries: ['search'], sub: searchSub, render: searchCard, skeleton: { tiles: 5, chart: 185, folds: 3 } },
   { id: 'reach', title: 'Reach', queries: ['reach'], sub: () => 'YouTube, GitHub, Hacker News and Substack: exposure beyond the site. A section reads Not configured until its credential is in Secret Manager.', render: reachCard, skeleton: [{ heading: true, tiles: 3, tile: 118, folds: 1 }, { rows: 2, row: 44, folds: 1 }, { tiles: 3, tile: 118, folds: 1 }, { tiles: 2, tile: 118, lines: 3 }] },
+  { id: 'films', title: 'Films', queries: ['films'], sub: filmsSub, render: filmsCard, skeleton: [{ heading: true, tiles: 4, tile: 145, folds: 1 }, { tiles: 4, tile: 145, folds: 1 }, { heading: false, folds: 1, lines: 1 }] },
   { id: 'health', title: 'Health', queries: ['health'], sub: () => '', render: healthCard, skeleton: { lines: 1, tiles: 5, folds: 1 } },
   { id: 'audience', title: 'Audience', queries: ['audience'], sub: () => '', render: audienceCard, skeleton: { lines: 1, folds: 1 } },
 ];

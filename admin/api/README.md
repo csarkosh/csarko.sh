@@ -1,7 +1,7 @@
 # csarko-admin: the csarko.sh admin API
 
 The Cloud Run service behind `https://admin.csarko.sh/csarko.sh/`. It holds the vendor
-credentials, reads the site's lib-visits rows from BigQuery, Google Search Console, YouTube, GitHub, Hacker News,
+credentials, reads the site's lib-visits rows from BigQuery, Google Search Console, YouTube (the public counts, and the films' own numbers through YouTube Analytics), GitHub, Hacker News,
 PageSpeed Insights and Firebase Hosting for the admin page, the cloud bills (AWS Cost Explorer, the
 GCP billing export, GitHub's usage, Modal's billing report, fal's credit balance, the Claude Code
 subscription with the transcripts' list-price value, the film ledgers, and the donations through Stripe as income) for the finance page, and writes one snapshot a
@@ -20,7 +20,7 @@ bucket), `jose`, and for Cost Explorer `@aws-sdk/client-cost-explorer` and
 |---|---|---|
 | `GET /health` | none | `{ ok: true, at }` (Cloud Run's probe) |
 | `GET /admin/kpis` | admin token | the index card: four KPIs with the previous period and a 12-week trend, plus the health dot |
-| `GET /admin/query/<name>?days=1\|7\|30\|90` | admin token | one of `visits`, `pages`, `referrers`, `events`, `audience`, `search`, `reach`, `health`; `days` defaults to 7, anything else is 400 |
+| `GET /admin/query/<name>?days=1\|7\|30\|90` | admin token | one of `visits`, `pages`, `referrers`, `events`, `journeys`, `audience`, `search`, `reach`, `health`, `films` (YouTube Analytics per film, read from the snapshot; `days=1` answers 7); `days` defaults to 7, anything else is 400 |
 | `POST /admin/manual/<key>` body `{ "value": n }` | admin token | appends `{ at, value }` to `manual/<key>` (key: `substack`) |
 | `POST /admin/snapshot` | admin token, or Cloud Scheduler's OIDC token | runs every collector and merges `snapshots/<YYYY-MM-DD>` (UTC) |
 | `GET /arkos/admin/kpis` | admin token | Arkos IDE's index card: active Macs, new installs, sessions and crash-free sessions over 7 days, each with the 7 days before and a 12-week trend computed from the rows, plus the health dot |
@@ -138,6 +138,66 @@ lib-visits counts a visit as one browser on one day (a stateless daily hash), no
 pageview, so every `pageviews` field is `null`. The pre-cutover history keeps
 the old unit (a browser once per page per session) and is merged by day, path and name.
 
+## Films: YouTube Analytics
+
+*(2026-11-01; plan `docs/superpowers/plans/2026-11-01-youtube-analytics.md`.)* The `films` query is
+the csarko.sh page's Films card: per film the views, watch time, average view duration and
+percentage viewed, subscribers gained, the days, the retention curve, the traffic source types and
+External's sites and pages (a Reddit post by its URL), against the period before; every other
+upload on the channel under "Other uploads" with its totals. Only the channel owner can read these,
+so they come from the **YouTube Analytics API v2** (`youtubeanalytics.googleapis.com`, enabled by
+Terraform) with the owner's consent, not the Data API key (`youtube.mjs`, unchanged, still the
+Reach card's public counts and the uploads' titles).
+
+- **The credential** is the secret `youtube-oauth`, served as `YOUTUBE_OAUTH`: JSON
+  `{ client_id, client_secret, refresh_token }` for the one read-only scope
+  `https://www.googleapis.com/auth/yt-analytics.readonly`. Terraform creates it holding `unset`;
+  `admin/tools/youtube-consent.mjs` writes the real version (below). Anything that is not that JSON
+  is logged by shape and treated as unset. `src/collectors/youtube-analytics.mjs` trades the
+  refresh token for an access token at `https://oauth2.googleapis.com/token` by hand (no auth
+  library, as `gsc.mjs` does), cached 55 minutes, and caches each report an hour.
+- **It loads quick** (Cyrus, 2026-11-01): the numbers move once a day, so the daily snapshot's
+  `films` step (`src/films.mjs`) makes every report (totals for 7, 30 and 90 days and the period
+  before each in six calls covering every upload, then per film 90 days by day, the retention curve
+  and, per period, the traffic sources and External's 25 top URLs: about 22 calls for two films)
+  and stores `films = { at, lag, through, films, others }` in the day's document, a few KB. The
+  query reads the latest snapshot, so a page load is one Firestore read and no YouTube call; before
+  the first snapshot holds the part it makes the reports live, once an hour at most. If the day's
+  step fails, the snapshot keeps the last good part with `error` and its own `at`, and the card
+  shows the error and how old its numbers are; the step's failure never stops the rest of the
+  day's write. A film's retention, sources or External failing is that film's own `errors`.
+- **The lag:** YouTube Analytics is complete about two days back, so every range ends two days
+  before the snapshot's day (`LAG_DAYS`), and its days are Pacific Time's. The card says so.
+- **Which videos are films:** `src/films.json`, written from `docs/films/*.md` by
+  `node admin/tools/films-json.mjs` (the slug, the heading, the id from `watch` in either the
+  `watch?v=` or the `shorts/` form, `released`, `runtime`). The image is built from `admin/api`
+  alone, so the list is committed beside the code and copied in with `src/`; `test/films.test.mjs`
+  fails while it disagrees with `docs/films`. **After adding a film, run that script, then deploy.**
+
+### Re-run the consent
+
+The consent is made once and lasts until it is revoked. Run it again when the card reads
+"YouTube consent expired or was revoked: run admin/tools/youtube-consent.mjs" (Google answers
+`invalid_grant`: the access was removed at myaccount.google.com/permissions, the account's password
+changed with Gmail scopes, or the consent screen went back to Testing, whose tokens last seven
+days), or when the OAuth client is replaced. Cyrus runs it himself; nothing secret passes through a
+terminal or a chat:
+
+```sh
+node admin/tools/youtube-consent.mjs              # reads ~/.config/csarko-sh/youtube-oauth-client.json
+node admin/tools/youtube-consent.mjs --dry-run    # checks the client file, prints the consent URL only
+```
+
+The browser opens Google's consent page; sign in as the channel's account, pick @csarkosh if asked,
+continue past "Google hasn't verified this app" (Advanced), and Allow. The script listens on
+127.0.0.1, checks the answer's `state`, trades the code with its PKCE verifier and pipes the JSON
+to `gcloud secrets versions add youtube-oauth --project=csarko-sh --data-file=-`, printing only
+"saved version N". Cloud Run resolves `latest` when an instance starts, so the next deploy or cold start picks it
+up; then disable the old version (`gcloud secrets versions disable <n> --secret=youtube-oauth
+--project=csarko-sh`) so it stops costing an active version. The OAuth client itself (a **Desktop
+app** client on an **External**, **In production** consent screen) is the one piece made in the
+Cloud console, since Terraform has no resource for it.
+
 ## Redo a period's tip prices
 
 A period is named by the day it was repriced on, its `repricedOn` date (`period.repricedOn` in the
@@ -180,6 +240,7 @@ variables from Secret Manager. A credential whose value is empty or the placehol
 | `VISITS_HISTORY_DATASET`, `VISITS_HISTORY_UNTIL` | | the dataset holding GoatCounter's backfilled history (`csarko_history`) and the cutover instant (RFC 3339) where it hands over to the live rows; an empty instant means no history |
 | `GSC_SA_KEY`, `GSC_PROPERTY` | `sc-domain:csarko.sh` | the service account key's JSON content (not a path) and the Search Console property |
 | `YOUTUBE_KEY`, `YOUTUBE_HANDLE` | `csarkosh` | YouTube Data API key and the channel handle |
+| `YOUTUBE_OAUTH` | | the channel owner's YouTube Analytics consent, JSON `{ client_id, client_secret, refresh_token }` written by `admin/tools/youtube-consent.mjs` (secret `youtube-oauth`); anything else, or none, means the Films card is not configured (`notConfigured.films`) |
 | `GITHUB_TOKEN`, `GITHUB_OWNER` | `csarkosh` | fine-grained token for the traffic endpoints, and the account whose public repositories are reported: every one of them, forks left out, found by listing the account (the public listing can never name a private one) |
 | `PSI_KEY` | | PageSpeed Insights API key (Lighthouse performance, run by the snapshot) |
 | `AWS_COST_ROLE_ARN` | | the IAM role (`csarko-admin-costs`) the service assumes by web identity federation to call Cost Explorer; empty means the AWS part of the finance page is not configured |
@@ -191,7 +252,7 @@ variables from Secret Manager. A credential whose value is empty or the placehol
 | `STRIPE_WRITE_KEY` | | a second **restricted** Stripe key that can write products, prices and payment links (nothing else), for the weekly tip prices; empty means the donate step is not configured (`notConfigured.donate`) and the snapshot skips it |
 | `DONATE_BUCKET` | | the public GCS bucket the donate step writes the prices object into (`csarko-sh-donate-prices`); empty means the donate step is not configured either (it needs both this and the write key) |
 | `DONATE_URL` | `https://donate.csarko.sh` | the donate site's address, read into the config; the step's payment links currently return to the same address from `src/donate/doors.mjs` |
-| `FILM_LEDGERS_BUCKET` | | the private GCS bucket holding `<film>/ledger.json` (`csarko-sh-film-ledgers`); empty means the Films card is not configured |
+| `FILM_LEDGERS_BUCKET` | | the private GCS bucket holding `<film>/ledger.json` (`csarko-sh-film-ledgers`); empty means the Billing page's Films card (the ledgers, not the csarko.sh page's YouTube one) is not configured |
 | `MODAL_CONFIGURED` | | `1` when Terraform has created the Modal job (`csarko-finance-modal`), so a snapshot without its part is an error rather than "Not configured (MODAL_TOKEN_ID)"; the job's own secrets are `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET`, never read here |
 | (none for Claude Code) | | the provider is configured by the manual series `claude-subscription` in Firestore, entered on the page, and its usage part is written by `tools/claude-usage-sync.py` with Cyrus's own `gcloud` token: nothing on the service |
 | ~~`FINANCE_GOAL_USD`~~ | | removed 2026-10-30: there is no spend goal, the idle run-rate is reported as a fact |
@@ -269,7 +330,8 @@ src/http.mjs            JSON answers, CORS, body reader, `days` validation
 src/limiter.mjs         per-address token bucket (60 burst, 1/s)
 src/cache.mjs           TTL cache keyed by URL, shared by every collector
 src/config.mjs          environment with defaults; `unset` means not configured
-src/queries.mjs         the eight queries, kpis, snapshot, manual
+src/queries.mjs         the ten queries, kpis, snapshot (with the films step), manual
+src/films.mjs           the Films card: the film list (films.json, from docs/films), the snapshot's films step, the query's shaping
 src/arkos-queries.mjs   Arkos IDE's kpis and four queries, their ranges and not-configured shapes
 src/arkos.mjs           Arkos rows to answers: journey (paths, milestones, next, features...), installs, crashes, kpis
 src/steps.mjs           the Arkos event-to-step table, restore folding and duplicate collapsing
@@ -282,7 +344,7 @@ src/finance/*.mjs       pure shaping over plain rows: categories (the table), ro
 src/health.mjs          the thresholds behind the health dot
 src/referrers.mjs       host to group classifier (rows are `{ name, count }`)
 src/store.mjs           Firestore and in-memory stores
-src/collectors/*.mjs    visits (and the BigQuery runner), arkos, gsc, youtube, github, hn, psi, uptime, hosting, sitemap,
+src/collectors/*.mjs    visits (and the BigQuery runner), arkos, gsc, youtube, youtube-analytics (the owner's numbers, by OAuth), github, hn, psi, uptime, hosting, sitemap,
                         aws-cost (Cost Explorer by federation), gcp-billing (the export in BigQuery), github-billing (usage),
                         fal (the credit balance), stripe (the donations, paged, a restricted key), ledgers (the film ledgers in their bucket)
 queries/*.sql           the saved BigQuery SQL, one job per query, copied into the image (finance-*.sql read the export)

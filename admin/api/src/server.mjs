@@ -33,6 +33,7 @@ import { createDonateStep } from "./donate/step.mjs";
 import { createLedgers } from "./collectors/ledgers.mjs";
 import { createGsc } from "./collectors/gsc.mjs";
 import { createYouTube } from "./collectors/youtube.mjs";
+import { createYouTubeAnalytics } from "./collectors/youtube-analytics.mjs";
 import { createGitHub } from "./collectors/github.mjs";
 import { createHackerNews } from "./collectors/hn.mjs";
 import { createPsi } from "./collectors/psi.mjs";
@@ -78,6 +79,9 @@ const queries = createQueries({
   visits: createVisits({ bigquery, projectId: config.projectId, dataset: config.visits.dataset, historyDataset: config.visits.historyDataset, historyUntil: config.visits.historyUntil, cache, log }),
   gsc: createGsc({ key: config.gsc.key, property: config.gsc.property, fetch, cache }),
   youtube: createYouTube({ key: config.youtube.key, handle: config.youtube.handle, fetch, cache }),
+  // The Films card: the channel owner's numbers through YouTube Analytics, with the owner's
+  // consent (YOUTUBE_OAUTH); made by the daily snapshot, read from it by the films query.
+  youtubeAnalytics: createYouTubeAnalytics({ oauth: config.youtubeAnalytics, fetch, cache }),
   github: createGitHub({ token: config.github.token, owner: config.github.owner, fetch, cache, log }),
   hn: createHackerNews({ query: new URL(config.siteUrl).hostname, fetch, cache }),
   psi: createPsi({ key: config.psiKey, siteUrl: config.siteUrl, fetch, cache }),
@@ -116,6 +120,7 @@ const unconfigured = [
   !config.visits.dataset && "VISITS_DATASET",
   config.gsc.key === null && "GSC_SA_KEY",
   config.youtube.key === null && "YOUTUBE_KEY",
+  config.youtubeAnalytics === null && "YOUTUBE_OAUTH",
   config.github.token === null && "GITHUB_TOKEN",
   config.psiKey === null && "PSI_KEY",
   !config.finance.awsRoleArn && !config.finance.awsLocal && "AWS_COST_ROLE_ARN",

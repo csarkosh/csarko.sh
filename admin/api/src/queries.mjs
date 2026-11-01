@@ -1,10 +1,11 @@
 /**
- * The eight saved queries, the index's KPIs and the daily snapshot: each
+ * The saved queries, the index's KPIs and the daily snapshot: each
  * one asks the collectors it needs and shapes the answer for the page
  * (`admin/CONTRACT.md`). Nothing here talks to the network directly; the
  * collectors do, through the shared cache, so this file is tested with
  * fakes. The snapshot also runs the finance step when `finance`
- * (finance-queries.mjs) is given, merging its part into the day's document.
+ * (finance-queries.mjs) is given, merging its part into the day's document, and
+ * the films step when `youtubeAnalytics` is (films.mjs, the Films card).
  *
  * Two conventions keep a half-configured service useful. A source whose
  * credential is missing yields `null` for its part of the answer and a
@@ -20,8 +21,11 @@ import { groupReferrers } from "./referrers.mjs";
 import { pathsOf, normalizePath } from "./collectors/sitemap.mjs";
 import { assessHealth } from "./health.mjs";
 import { addDays, isoDate, hourlyRange, dailyRangeThrough } from "./time.mjs";
+import { ANALYTICS_LAG } from "./collectors/youtube-analytics.mjs";
+import { collectFilms, filmsAnswer, filmsDays, isFilmsPart } from "./films.mjs";
+import { HOUR } from "./cache.mjs";
 
-export const QUERY_NAMES = ["visits", "pages", "referrers", "events", "journeys", "audience", "search", "reach", "health"];
+export const QUERY_NAMES = ["visits", "pages", "referrers", "events", "journeys", "audience", "search", "reach", "health", "films"];
 export const MANUAL_KEYS = ["substack"];
 export const APP_NAME = "csarko.sh";
 export const TREND_WEEKS = 12;
@@ -80,7 +84,7 @@ export function snapshotAgo(snapshots, today, daysAgo = 7) {
   return pick;
 }
 
-export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, hosting, sitemap, sitemapFor, store, config, finance = null, now = Date.now, log = console }) {
+export function createQueries({ visits, gsc, youtube, youtubeAnalytics = null, github, hn, psi, uptime, hosting, sitemap, sitemapFor, store, config, finance = null, now = Date.now, log = console }) {
   /** Runs one part of an answer, reporting a missing credential or a failure instead of throwing. */
   async function part(hints, name, envName, configured, fn) {
     if (!configured) {
@@ -106,6 +110,43 @@ export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, h
   /** A Search Console range ending on the last day Google has finished, not today (see time.mjs). */
   async function searchRange(days, nowMs = now()) {
     return dailyRangeThrough(days, await gsc.completeThrough(isoDate(nowMs)));
+  }
+
+  /** Every report the Films card needs (films.mjs), as of `t`. */
+  const films = (t) => collectFilms({ analytics: youtubeAnalytics, youtube, today: isoDate(t), at: new Date(t).toISOString(), log });
+
+  // Before the first snapshot holds a films part, the query makes the reports itself, once an
+  // hour at most (the reports are cached an hour too); a failure is not kept.
+  let liveFilms = null;
+  function filmsLive() {
+    const t = now();
+    if (liveFilms === null || t - liveFilms.t >= HOUR) {
+      const promise = films(t);
+      liveFilms = { t, promise };
+      promise.catch(() => { if (liveFilms?.promise === promise) liveFilms = null; });
+    }
+    return liveFilms.promise;
+  }
+
+  /**
+   * The snapshot's films step: today's reports, or, when they fail, the last good part again
+   * with the error and its own `at`, so the card keeps its numbers and says how old they are
+   * instead of going blank. Null (nothing written) when there is no part to keep.
+   */
+  async function filmsStep(h, t) {
+    if (!youtubeAnalytics.configured) {
+      h.notConfigured.films = "YOUTUBE_OAUTH";
+      return null;
+    }
+    try {
+      return await films(t);
+    } catch (error) {
+      log.error("admin: films failed", error);
+      const message = error instanceof Error ? error.message : String(error);
+      h.errors.films = message;
+      const last = (await store.latestSnapshot())?.films;
+      return isFilmsPart(last) ? { ...last, error: message, failedAt: new Date(t).toISOString() } : null;
+    }
   }
 
   const requireVisits = () => (visits.configured ? null : { notConfigured: { visits: "VISITS_DATASET" } });
@@ -303,6 +344,24 @@ export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, h
       }, h);
     },
 
+    /**
+     * The Films card: per film the range's totals against the range before, the daily rows, the
+     * retention curve, the traffic sources and External's URLs, and every other upload's totals.
+     * Read from the latest snapshot, so a page load makes no YouTube call; live only before the
+     * first snapshot holds a films part. A step that failed since keeps the last good numbers,
+     * with `errors.films` and their `at`.
+     */
+    async films(days) {
+      const h = hints();
+      const empty = { days: filmsDays(days), from: null, to: null, at: null, lag: ANALYTICS_LAG, films: null, others: null };
+      if (youtubeAnalytics === null || !youtubeAnalytics.configured) return { ...empty, notConfigured: { films: "YOUTUBE_OAUTH" } };
+      const latest = await store.latestSnapshot();
+      let stored = isFilmsPart(latest?.films) ? latest.films : null;
+      if (stored !== null && typeof stored.error === "string") h.errors.films = stored.error;
+      if (stored === null) stored = await part(h, "films", "YOUTUBE_OAUTH", true, () => filmsLive());
+      return withHints(stored === null ? empty : filmsAnswer(stored, days), h);
+    },
+
     async kpis() {
       const h = hints();
       const today = isoDate(now());
@@ -348,6 +407,9 @@ export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, h
       const t = now();
       const date = isoDate(t);
       const range = hourlyRange(7, t);
+      // The films step runs beside the rest (about 22 YouTube Analytics calls, in parallel); its
+      // failure is its own (filmsStep) and never stops the day's write.
+      const filmsCall = youtubeAnalytics === null ? Promise.resolve(null) : part(h, "films", "YOUTUBE_OAUTH", true, () => filmsStep(h, t));
       const gscTotals = (days) => searchRange(days, t).then((r) => gsc.query({ startDate: r.startDate, endDate: r.endDate, dimensions: ["date"] }).then((rows) => gscMap.totalsOf(gscMap.perDayOf(rows, r.startDate, r.endDate))));
       const [total, evs, s28, s7, channel, repos, score, live, urls] = await Promise.all([
         part(h, "visits", "VISITS_DATASET", visits.configured, () => visits.visits(range)),
@@ -367,6 +429,7 @@ export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, h
       // GitHub usage, stored under `finance`. Its own sources carry their own hints inside it; a
       // failure of the step as a whole is `errors.finance` and the rest of the day is still written.
       const financePart = finance === null ? null : await part(h, "finance", "AWS_COST_ROLE_ARN", true, () => finance.snapshotPart());
+      const filmsPart = await filmsCall;
       const githubDoc = {};
       for (const r of repos ?? []) {
         githubDoc[r.repo] = { stars: r.stars, views14: r.traffic?.views ?? null, uniques14: r.traffic?.uniques ?? null, clones14: r.traffic?.clones ?? null };
@@ -387,6 +450,7 @@ export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, h
         up: live.up,
         ttfbMs: live.ttfbMs,
         ...(financePart ?? {}),
+        ...(filmsPart ? { films: filmsPart } : {}),
         ...(Object.keys(h.notConfigured).length > 0 ? { notConfigured: h.notConfigured } : {}),
         ...(Object.keys(h.errors).length > 0 ? { errors: h.errors } : {}),
       };
