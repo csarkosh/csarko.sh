@@ -316,7 +316,7 @@ says what is unknown).
 {
   "days": 7, "from": "2026-11-02", "to": "2026-11-08",
   "at": "2026-11-10T06:04:00Z",
-  "lag": "YouTube Analytics runs 1 to 2 days behind",
+  "lag": "YouTube Analytics runs 2 to 3 days behind",
   "films": [ {
     "slug": "the-last-trail", "title": "The Last Trail", "videoId": "C1XsDuJE4MQ", "published": "2026-10-29", "runtime": "0:56",
     "totals": { "views": 1312, "estimatedMinutesWatched": 940, "averageViewDuration": 43, "averageViewPercentage": 76.8, "subscribersGained": 9, "likes": 61, "shares": 7, "comments": 4 },
@@ -337,8 +337,8 @@ hour). `at` is when the numbers were made: the snapshot's time, or now for a liv
 
 - `days` is 7, 30 or 90. There is no day view (the data runs behind), so `days=1` answers 7 and
   says so in `days`. The range is `days` whole YouTube days (Pacific Time's, whatever the page's
-  `tz`) ending on `to`, two days before the snapshot's day (YouTube is complete about two days
-  back; today and yesterday are partial); `prev` is the equal range before `from`.
+  `tz`) ending on `to`, three days before the snapshot's day (YouTube is complete about three days
+  back; the API had not filled a day 38 hours after it ended); `prev` is the equal range before `from`.
 - `films` is the list in `admin/api/src/films.json` (from `docs/films/*.md`, newest first).
   `totals` and `prev` carry the API's metric names: `estimatedMinutesWatched` in minutes,
   `averageViewDuration` in seconds, `averageViewPercentage` a percentage of the runtime (a Short

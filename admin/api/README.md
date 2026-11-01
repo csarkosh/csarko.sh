@@ -166,8 +166,9 @@ Reach card's public counts and the uploads' titles).
   step fails, the snapshot keeps the last good part with `error` and its own `at`, and the card
   shows the error and how old its numbers are; the step's failure never stops the rest of the
   day's write. A film's retention, sources or External failing is that film's own `errors`.
-- **The lag:** YouTube Analytics is complete about two days back, so every range ends two days
-  before the snapshot's day (`LAG_DAYS`), and its days are Pacific Time's. The card says so.
+- **The lag:** YouTube Analytics is complete about three days back, so every range ends three days
+  before the snapshot's day (`LAG_DAYS`; two left the last day at 0, since the API had not filled it
+  38 hours after it ended), and its days are Pacific Time's. The card says so.
 - **Which videos are films:** `src/films.json`, written from `docs/films/*.md` by
   `node admin/tools/films-json.mjs` (the slug, the heading, the id from `watch` in either the
   `watch?v=` or the `shorts/` form, `released`, `runtime`). The image is built from `admin/api`

@@ -29,7 +29,7 @@ import { addDays } from "../time.mjs";
 export const READ_SCOPE = "https://www.googleapis.com/auth/yt-analytics.readonly";
 export const TOKEN_URL = "https://oauth2.googleapis.com/token";
 export const REPORTS_URL = "https://youtubeanalytics.googleapis.com/v2/reports";
-export const ANALYTICS_LAG = "YouTube Analytics runs 1 to 2 days behind";
+export const ANALYTICS_LAG = "YouTube Analytics runs 2 to 3 days behind";
 export const CONSENT_EXPIRED = "YouTube consent expired or was revoked: run admin/tools/youtube-consent.mjs";
 /** The per-video metrics, in the order the totals and daily reports ask for them. */
 export const VIDEO_METRICS = ["views", "estimatedMinutesWatched", "averageViewDuration", "averageViewPercentage", "subscribersGained", "likes", "shares", "comments"];

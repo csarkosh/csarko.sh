@@ -7,8 +7,8 @@ import { FILMS, PERIODS, LAG_DAYS, collectFilms, filmsAnswer, filmsDays, isFilms
 import { emptyMetrics, ANALYTICS_LAG } from "../src/collectors/youtube-analytics.mjs";
 import { filmsFromDocs, filmsJsonText } from "../../tools/films-json.mjs";
 
-const TODAY = "2026-11-01";
-const AT = "2026-11-01T06:00:00.000Z";
+const TODAY = "2026-11-02";
+const AT = "2026-11-02T06:00:00.000Z";
 const LAST = { slug: "the-last-trail", title: "The Last Trail", videoId: "C1XsDuJE4MQ", published: "2026-10-29", runtime: "0:56" };
 const HALL = { slug: "who-is-standing-in-my-hallway", title: "Who is standing in my hallway?", videoId: "jBh7F1knRAA", published: "2026-09-17", runtime: "0:16" };
 const quiet = { error() {}, warn() {}, log() {} };
@@ -72,11 +72,11 @@ test("a film's video id comes from either watch URL form", () => {
   }
 });
 
-test("collectFilms makes every report once, the ranges ending two days back, and keeps every other upload", async () => {
+test("collectFilms makes every report once, the ranges ending three days back, and keeps every other upload", async () => {
   const analytics = fakeAnalytics();
   const youtube = { configured: true, async channel() { return { videosList: [{ id: "C1XsDuJE4MQ", title: "The Last Trail" }, { id: "no-views-yet", title: "A trailer" }, { id: "other-upload1", title: "A vlog" }] }; } };
   const part = await collectFilms({ analytics, youtube, films: [LAST, HALL], today: TODAY, at: AT, log: quiet });
-  assert.equal(LAG_DAYS, 2);
+  assert.equal(LAG_DAYS, 3);
   assert.equal(part.through, "2026-10-30");
   assert.equal(part.at, AT);
   assert.equal(part.lag, ANALYTICS_LAG);

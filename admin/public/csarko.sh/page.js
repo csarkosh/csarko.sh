@@ -606,7 +606,7 @@ function filmsCard([films], days) {
     { key: 'totals', label: 'Subscribers', num: true, render: (v) => compact(num(v?.subscribersGained)) },
   ], others, 'Every upload on the channel is a film.')));
   const age = films.at ? `${films.errors?.films ? 'Last good numbers' : 'From the daily snapshot'}, ${ago(films.at)} (${new Date(films.at).toLocaleString()})` : 'No snapshot yet';
-  parts.push(el('p', { class: 'card-foot' }, `${str(films.lag) || 'YouTube Analytics runs 1 to 2 days behind'} · ${age}`));
+  parts.push(el('p', { class: 'card-foot' }, `${str(films.lag) || 'YouTube Analytics runs 2 to 3 days behind'} · ${age}`));
   return parts;
 }
 
@@ -615,7 +615,7 @@ function filmsSub(d, films) {
   const shown = films?.days ?? (d === 1 ? 7 : d);
   const through = films?.to ? ` through ${shortDay(films.to)}` : '';
   const noDay = d === 1 ? 'YouTube Analytics has no view of a single day, so this is 7 days. ' : '';
-  return `${noDay}Each film on YouTube over the ${shown} days${through}, against the ${shown} days before: views, watch time, how much of it people watched and the subscribers it brought. Open a film for its days, its retention and where its views came from. YouTube Analytics runs 1 to 2 days behind, so the range ends on the last day it has finished; its days are Pacific Time's.`;
+  return `${noDay}Each film on YouTube over the ${shown} days${through}, against the ${shown} days before: views, watch time, how much of it people watched and the subscribers it brought. Open a film for its days, its retention and where its views came from. YouTube Analytics runs 2 to 3 days behind, so the range ends on the last day it has finished; its days are Pacific Time's.`;
 }
 
 function healthCard([health]) {

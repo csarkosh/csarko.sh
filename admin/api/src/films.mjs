@@ -23,13 +23,18 @@ import { ANALYTICS_LAG, emptyMetrics } from "./collectors/youtube-analytics.mjs"
 import { addDays, dailyRangeThrough } from "./time.mjs";
 
 export const PERIODS = [7, 30, 90];
-/** YouTube Analytics is complete about two days back; today and yesterday are partial. */
-export const LAG_DAYS = 2;
+/**
+ * YouTube Analytics is complete about three days back. Two was too few: on 2026-11-01 at 20:40 UTC
+ * the API still had no rows for 30 Oct (Pacific), 38 hours after it ended, while Studio showed 27
+ * views, so the card's last day read 0. Three ends the range on a day over 50 hours old by the
+ * 6 am Eastern snapshot.
+ */
+export const LAG_DAYS = 3;
 
 /** The committed film list, `[{ slug, title, videoId, published, runtime }]`, newest first. */
 export const FILMS = JSON.parse(readFileSync(new URL("./films.json", import.meta.url), "utf8"));
 
-/** A range the card can show: 7, 30 or 90 days. There is no day view (the data is two days behind), so 1 shows 7. */
+/** A range the card can show: 7, 30 or 90 days. There is no day view (the data is three days behind), so 1 shows 7. */
 export const filmsDays = (days) => (PERIODS.includes(days) ? days : 7);
 
 /** Whether a snapshot's `films` part is one this module wrote. */

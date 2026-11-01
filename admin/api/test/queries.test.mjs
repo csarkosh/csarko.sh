@@ -355,11 +355,11 @@ test("films reads the snapshot's part and makes no YouTube call; live once an ho
 
   const live = await q.films(7);
   assert.equal(live.days, 7);
-  assert.equal(live.to, "2026-10-10", "two days back");
+  assert.equal(live.to, "2026-10-09", "three days back");
   assert.equal(live.at, "2026-10-12T15:30:00.000Z");
   assert.equal(live.films[0].slug, "the-last-trail");
   assert.equal(live.films[0].totals.views, 70);
-  assert.equal(live.lag, "YouTube Analytics runs 1 to 2 days behind");
+  assert.equal(live.lag, "YouTube Analytics runs 2 to 3 days behind");
   const liveCalls = yta.state.calls;
   assert.ok(liveCalls > 0);
   t += 30 * 60_000;

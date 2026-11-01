@@ -20,7 +20,7 @@
 - **User type External.** The channel is on a personal Google account, which cannot use Internal.
 - **Client type Desktop app**, so the consent script can use a loopback redirect (`http://127.0.0.1:<port>`) with PKCE.
 - **If the channel is a Brand Account**, the consent screen asks which channel; pick @csarkosh.
-- **Data lags.** Analytics data is usually complete 1 to 2 days behind; today and yesterday are partial. The card says so, like Search Console's lag line.
+- **Data lags.** Analytics data is usually complete 2 to 3 days behind (at first planned as 1 to 2; on 2026-11-01 the API had no rows for 30 Oct 38 hours after it ended, so the range ends three days back). The card says so, like Search Console's lag line.
 - **Report shapes** (all `GET https://youtubeanalytics.googleapis.com/v2/reports`, `ids=channel==MINE`):
   - Per video totals: `dimensions=video`, `metrics=views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,subscribersGained,likes,shares,comments`, `filters=video==<id,id,...>`.
   - By day: `dimensions=day`, same metrics, `filters=video==<id>`.
