@@ -10,9 +10,10 @@ order: 2
 link: Install and docs
 tags: Rust, GPUI, macOS, Claude Code
 alt: Three Arkos IDE windows fanned out like postcards: in front the multi tasker, three Claude Code sessions each running its own subagents on an unrelated project; behind, the web developer with the app's page in a web tab, and the blogger with posts open in the markdown editor
-recording: docs/images/multitasker-themes.mp4
-recording-under: Who it's for
-recording-alt: One Arkos IDE window, three Claude Code sessions side by side, cycling through four of the built-in themes: Navy with its rune rain, Lavender Light and Peach Light with their watercolor washes, and Matrix, black with phosphor green rain, each fading into the next
+hero-video: docs/images/hero.mp4
+hero-video-alt: The camera pulls back from the tab bar of an Arkos IDE window, its sessions working and waiting, to show it in Navy with the web developer's and the blogger's windows fanned behind it
+promo: Sessions that survive updates, restarts and frozen windows. Six built-in themes with animated effects, or your own. A markdown editor you edit in its rendered view, a web pane, a video pane and a file tree with git worktrees.
+promo-link: https://github.com/csarkosh/ide-arkos/blob/main/docs/guide.md
 ---
 # Arkos IDE
 

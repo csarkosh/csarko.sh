@@ -8,22 +8,27 @@
  *
  * For each app in docs/apps/ whose page is on apps.csarko.sh it fetches, from GitHub, the README
  * and its images on the default branch and the latest release, and writes
- * apps/public/<slug>/index.html (apps/product.mjs) with the images beside it, each made a WebP
- * (Pillow, as build_assets.py uses: a README's PNGs run to a megabyte). Around the pages:
- *   assets/*.woff2                the site's hashed font files, copied from public/assets/
+ * apps/public/<slug>/index.html (apps/product.mjs, in the store's look of apps/store.mjs) with the
+ * images beside it, each made a WebP (Pillow, as build_assets.py uses: a README's PNGs run to a
+ * megabyte), and og.jpg, the share card, made from the hero. Around the pages:
+ *   assets/*.woff2                the store's fonts from apps/fonts/, content-hashed, and the
+ *                                 site's own for the 404 page, copied from public/assets/
+ *   licenses/fonts-OFL.txt        the store fonts' licence (apps/fonts/OFL.txt)
  *   favicon.*, apple-touch-icon   the site's icons
  *   robots.txt, sitemap.xml       this host's own, listing the app pages
- * The page's generated:fonts and generated:head blocks are filled the way build_assets.py fills a
- * csarko.sh page's. "/" is not a page: firebase.json redirects it to https://csarko.sh/projects.
+ * The page's generated:fonts and generated:head blocks are filled with the store fonts' faces and
+ * preload. "/" is not a page: firebase.json redirects it to https://csarko.sh/projects.
  * A new release of an app reaches its buttons when this runs again (apps/deploy.sh).
  */
 
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { APPS_DIR, APPS_HOST, loadApp, themeBlocks } from '../.agents/skills/site-quality/scripts/docs_lib.mjs';
+import { APPS_DIR, APPS_HOST, loadApp } from '../.agents/skills/site-quality/scripts/docs_lib.mjs';
 import { imagesOf, prepareReadme, productPage } from './product.mjs';
+import { fontBlocks, motionTokens, STORE_FONTS } from './store.mjs';
 
 const APPS = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(APPS, '..');
@@ -58,17 +63,35 @@ im.save(sys.argv[2], "WEBP", quality=88, method=6)
 print(json.dumps({"width": im.width, "height": im.height}))`;
 const toWebp = (src, dest) => JSON.parse(execFileSync('python3', ['-I', '-c', WEBP, src, dest], { encoding: 'utf8' }));
 
+// The share card: the hero laid on the page's cream, 1200 by 630.
+const OG = `import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGBA")
+im.thumbnail((1104, 534), Image.LANCZOS)
+card = Image.new("RGB", (1200, 630), (0xf5, 0xf2, 0xeb))
+card.paste(im, ((1200 - im.width) // 2, (630 - im.height) // 2), im)
+card.save(sys.argv[2], "JPEG", quality=86, optimize=True, progressive=True)`;
+
 const indexHtml = readFileSync(path.join(SITE_PUBLIC, 'index.html'), 'utf8');
-const theme = themeBlocks(indexHtml);
-const fontsMatch = /\/\* generated:fonts \*\/\n([\s\S]*?)\n\s*\/\* \/generated:fonts \*\//.exec(indexHtml);
-if (!fontsMatch) throw new Error('public/index.html: generated:fonts block not found');
-const fonts = fontsMatch[1].replace(/url\("assets\//g, 'url("/assets/');
-const fontFiles = [...fonts.matchAll(/url\("\/assets\/([^"]+)"\)/g)].map((m) => m[1]);
-const inter = fontFiles.find((f) => f.startsWith('inter-'));
+const motion = motionTokens(indexHtml);
+// The site's own fonts, for the 404 page copied below, which is the site's.
+const siteFonts = /\/\* generated:fonts \*\/\n([\s\S]*?)\n\s*\/\* \/generated:fonts \*\//.exec(readFileSync(path.join(SITE_PUBLIC, '404.html'), 'utf8'));
+const siteFontFiles = siteFonts ? [...siteFonts[1].matchAll(/url\("\/?assets\/([^"]+)"\)/g)].map((m) => m[1]) : [];
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(path.join(OUT, 'assets'), { recursive: true });
-for (const f of fontFiles) copyFileSync(path.join(SITE_PUBLIC, 'assets', f), path.join(OUT, 'assets', f));
+mkdirSync(path.join(OUT, 'licenses'), { recursive: true });
+for (const f of siteFontFiles) copyFileSync(path.join(SITE_PUBLIC, 'assets', f), path.join(OUT, 'assets', f));
+// The store's fonts, content-hashed like the site's (build_assets.py write_hashed), so /assets/
+// can be cached for a year.
+const storeFonts = {};
+for (const stem of Object.keys(STORE_FONTS)) {
+  const data = readFileSync(path.join(APPS, 'fonts', `${stem}.woff2`));
+  storeFonts[stem] = `${stem}.${createHash('sha256').update(data).digest('hex').slice(0, 8)}.woff2`;
+  writeFileSync(path.join(OUT, 'assets', storeFonts[stem]), data);
+}
+copyFileSync(path.join(APPS, 'fonts', 'OFL.txt'), path.join(OUT, 'licenses', 'fonts-OFL.txt'));
+const { faces, preloads } = fontBlocks(storeFonts);
 for (const icon of ['favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'apple-touch-icon.png']) {
   copyFileSync(path.join(SITE_PUBLIC, icon), path.join(OUT, icon));
 }
@@ -105,7 +128,7 @@ for (const name of sources) {
   mkdirSync(dir, { recursive: true });
   // Every README image the page shows, as a WebP beside the page.
   const images = {};
-  for (const src of imagesOf(prepared)) {
+  for (const src of imagesOf(prepared, { withHero: !app.heroVideo })) {
     if (!/^[\w./-]+\.(png|jpe?g)$/.test(src) || src.includes('..')) throw new Error(`${repo} README: an image this page cannot copy: ${src}`);
     const tmp = path.join(dir, `.${path.basename(src)}`);
     writeFileSync(tmp, await fetchFile(src));
@@ -123,12 +146,31 @@ for (const name of sources) {
     const size = JSON.parse(execFileSync('python3', ['-I', '-c', 'import sys, json\nfrom PIL import Image\nim = Image.open(sys.argv[1])\nprint(json.dumps({"width": im.width, "height": im.height}))', path.join(dir, `${stem}.jpg`)], { encoding: 'utf8' }));
     recording = { url: `/${app.slug}/${stem}.mp4`, poster: `/${app.slug}/${stem}.jpg`, ...size, under: app.recording.under, alt: app.recording.alt };
   }
-  let html = productPage({ app, prepared, release, images, theme, recording });
+  // The share card, from the hero (its copy beside the page); with an opening clip, from its
+  // poster below instead.
+  let ogImage = null;
+  if (prepared.hero && !app.heroVideo) {
+    execFileSync('python3', ['-I', '-c', OG, path.join(dir, path.basename(images[prepared.hero.light].url)), path.join(dir, 'og.jpg')]);
+    ogImage = { url: `${APPS_HOST}/${app.slug}/og.jpg`, width: 1200, height: 630, alt: prepared.hero.alt };
+  }
+  // The opening clip (its front matter): the .mp4 and its .jpg poster beside the page; the
+  // poster, the key art, is then the share card.
+  let heroVideo = null;
+  if (app.heroVideo) {
+    const stem = path.basename(app.heroVideo.file, '.mp4');
+    writeFileSync(path.join(dir, `${stem}.mp4`), await fetchFile(app.heroVideo.file));
+    writeFileSync(path.join(dir, `${stem}.jpg`), await fetchFile(app.heroVideo.file.replace(/\.mp4$/, '.jpg')));
+    const size = JSON.parse(execFileSync('python3', ['-I', '-c', 'import sys, json\nfrom PIL import Image\nim = Image.open(sys.argv[1])\nprint(json.dumps({"width": im.width, "height": im.height}))', path.join(dir, `${stem}.jpg`)], { encoding: 'utf8' }));
+    heroVideo = { url: `/${app.slug}/${stem}.mp4`, poster: `/${app.slug}/${stem}.jpg`, ...size, alt: app.heroVideo.alt };
+    execFileSync('python3', ['-I', '-c', OG, path.join(dir, `${stem}.jpg`), path.join(dir, 'og.jpg')]);
+    ogImage = { url: `${APPS_HOST}/${app.slug}/og.jpg`, width: 1200, height: 630, alt: app.heroVideo.alt };
+  }
+  let html = productPage({ app, prepared, release, images, motion, recording, ogImage, heroVideo });
   html = html.replace(/\/\* generated:fonts \*\/\n\s*\/\* \/generated:fonts \*\//,
-    `/* generated:fonts */\n${fonts}\n    /* /generated:fonts */`);
+    `/* generated:fonts */\n${faces}\n    /* /generated:fonts */`);
   html = html.replace(/<!-- generated:head -->\n\s*<!-- \/generated:head -->/,
-    `<!-- generated:head -->\n  <link rel="preload" href="/assets/${inter}" as="font" type="font/woff2" crossorigin />\n  <!-- /generated:head -->`);
-  if (!html.includes(`/assets/${inter}" as="font"`) || !html.includes('@font-face')) throw new Error('the page lacks its generated blocks');
+    `<!-- generated:head -->\n${preloads}\n  <!-- /generated:head -->`);
+  if (!html.includes(preloads) || !html.includes('@font-face')) throw new Error('the page lacks its generated blocks');
   writeFileSync(path.join(dir, 'index.html'), html);
   pages.push(`${APPS_HOST}/${app.slug}`);
   console.log(`apps: ${app.slug} from ${dirOf ?? `${repo}@${branch}`}, release ${release.tag} (${release.assets.length} assets)`);

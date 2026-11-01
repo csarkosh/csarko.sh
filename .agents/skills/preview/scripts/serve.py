@@ -121,12 +121,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
 def main():
     parser = argparse.ArgumentParser(description="Serve public/ with Firebase-style clean URLs.")
     parser.add_argument("--port", type=int, default=4173)
+    parser.add_argument("--host", default="127.0.0.1", help="the address to listen on; 0.0.0.0 lets a phone on the same network open the preview")
     parser.add_argument("--dir", default=str(Path(__file__).resolve().parents[4] / "public"))
     args = parser.parse_args()
     Handler.public = Path(args.dir)
     Handler.redirects = load_redirects()
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
-    print(f"serving {args.dir} on http://localhost:{args.port}", flush=True)
+    server = http.server.ThreadingHTTPServer((args.host, args.port), Handler)
+    print(f"serving {args.dir} on http://{'localhost' if args.host == '127.0.0.1' else args.host}:{args.port}", flush=True)
     server.serve_forever()
 
 

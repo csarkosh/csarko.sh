@@ -661,6 +661,22 @@ test('loadApp builds the kicker from status and license, and checks its fields',
   assert.throws(() => loadApp('2026-10-15-x.md', appSrc('x').text), /carries no date/);
 });
 
+test('an app\'s promo card is a line and a link, an https:// URL or a #heading', () => {
+  assert.deepEqual(app('x', ['promo: Sessions survive restarts.', 'promo-link: #persist']).promo, { text: 'Sessions survive restarts.', link: '#persist' });
+  assert.equal(app('x').promo, undefined);
+  assert.throws(() => app('x', ['promo: Sessions survive restarts.']), /a promo needs its line and promo-link/);
+  assert.throws(() => app('x', ['promo: Sessions survive restarts.', 'promo-link: http://x']), /a promo needs/);
+  assert.throws(() => app('x', ['promo-link: #persist']), /a promo needs/);
+});
+
+test('an app\'s opening clip is an .mp4 in its repository with what it shows', () => {
+  assert.deepEqual(app('x', ['hero-video: docs/images/hero.mp4', 'hero-video-alt: The camera pulls back.']).heroVideo, { file: 'docs/images/hero.mp4', alt: 'The camera pulls back.' });
+  assert.equal(app('x').heroVideo, undefined);
+  assert.throws(() => app('x', ['hero-video: docs/images/hero.mp4']), /a hero-video needs hero-video-alt/);
+  assert.throws(() => app('x', ['hero-video: /etc/x.mp4', 'hero-video-alt: a']), /hero-video must be the .mp4's path inside the repository/);
+  assert.throws(() => app('x', ['hero-video: ../x.mp4', 'hero-video-alt: a']), /inside the repository/);
+});
+
 test('an app card links out to its page, with SoftwareApplication JSON-LD', () => {
   const html = projectsPage([app('lib-visits', ['license: GPL-3.0'])], themeBlocks(INDEX));
   assert.ok(html.includes('<p class="project-kicker">Released · Open source, GPL-3.0</p>'));

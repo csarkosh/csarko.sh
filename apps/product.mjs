@@ -1,12 +1,13 @@
 /**
- * product.mjs: an app's page on apps.csarko.sh, made from its README and its latest release.
- * Pure: README text, release data, image sizes and the site's theme in, page text out
- * (apps/build.mjs does the fetching and the files). Tests: apps/test/product.test.mjs.
+ * product.mjs: an app's page on apps.csarko.sh, made from its README and its latest release, in
+ * the store's look (apps/store.mjs; Cyrus, 2026-10-31). Pure: README text, release data, image
+ * sizes and the motion tokens in, page text out (apps/build.mjs does the fetching and the files).
+ * Tests: apps/test/product.test.mjs.
  *
  * The README is the content, rendered by the site's own Markdown (docs_lib.mjs renderMarkdown),
  * which allows no raw HTML, no images and no client script. So before rendering, the README's
  * HTML is turned into what the page draws itself:
- *   - the title, as `# Title` or `<h1>`;
+ *   - the title, as `# Title` or `<h1>`, and the tagline: a lone paragraph between it and the hero;
  *   - the hero: the first <picture> or image before the first `## ` section, with the <sub>
  *     caption under it if there is one (a README without one has no hero);
  *   - with `sections`, only the named `## ` sections of the README, in its order; a name the
@@ -23,9 +24,23 @@
  *   - relative links, as links to the file on GitHub;
  *   - the README's Buy me tokens line, dropped first: the page's bar carries its own.
  * HTML left over after that fails the build by name, rather than reaching the page as text.
+ *
+ * Then the rendered README is laid out as the store lays out a product (productPage):
+ *   - the title, the tagline (the README's, or the app's description) and the hero, then the
+ *     floating bar, then the front matter's promo card when there is one;
+ *   - the text before the first section, as the opening band: a line of bold names joined by
+ *     middle dots becomes a row of chips, a list whose items lead with bold words a row of cards;
+ *   - each `## ` section with a picture, code, a flowchart, panels, downloads or the recording, as
+ *     a band of its own (the tints take turns) under a centred headline ending in a period, its
+ *     first paragraph lifted under the headline; the paragraphs before a picture become a feature
+ *     row beside it, alternating sides, each row after the first in a tint of its own;
+ *   - every other section (only words and lists), folded into one closing band, the store's
+ *     questions, in the README's order.
+ * The page is light only, like the store, so a README picture's dark variant is not used.
  */
 
-import { APPS_HOST, escapeHtml, renderMarkdown, standaloneShell } from '../.agents/skills/site-quality/scripts/docs_lib.mjs';
+import { APPS_HOST, escapeHtml, renderMarkdown } from '../.agents/skills/site-quality/scripts/docs_lib.mjs';
+import { storeShell, TINTS } from './store.mjs';
 import { doorOf, DONATE_LIVE, DONATE_URL } from '../admin/api/src/donate/doors.mjs';
 import { iconSvg } from '../donate/icon.mjs';
 
@@ -147,17 +162,28 @@ export function prepareReadme(readme, { blob, sections = null, install = null })
   const htmlTitle = /^<h1\b[^>]*>([\s\S]*?)<\/h1>[ \t]*$/m.exec(text);
   if (htmlTitle) text = text.replace(htmlTitle[0], `# ${htmlTitle[1].trim()}`);
 
-  // The hero: the first picture or lone image before the first section, when there is one.
+  // The hero: the first picture or lone image before the first section, when there is one; and
+  // the tagline, a lone paragraph between the title and the hero.
   const firstSection = text.search(/^## /m);
   const head = firstSection < 0 ? text : text.slice(0, firstSection);
   const heroMatch = /<picture>[\s\S]*?<\/picture>|<p\b[^>]*>\s*<img\b[^>]*>\s*<\/p>/.exec(head);
   let hero = null;
   let caption = '';
+  let tagline = '';
   if (heroMatch) {
     hero = pictureOf(heroMatch[0]);
     const after = /^\s*<sub>([\s\S]*?)<\/sub>[ \t]*\n/.exec(text.slice(heroMatch.index + heroMatch[0].length));
     if (after) caption = after[1].replace(/<[^>]+>/g, '').trim();
-    text = text.slice(0, heroMatch.index) + text.slice(heroMatch.index + heroMatch[0].length + (after ? after[0].length : 0));
+    const titleLine = /^# .*$/m.exec(head);
+    let from = heroMatch.index;
+    if (titleLine && titleLine.index < heroMatch.index) {
+      const lone = /^\s*<p\b[^>]*>([\s\S]*?)<\/p>\s*$/.exec(text.slice(titleLine.index + titleLine[0].length, heroMatch.index));
+      if (lone) {
+        tagline = lone[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+        from = titleLine.index + titleLine[0].length;
+      }
+    }
+    text = `${text.slice(0, from)}${from === heroMatch.index ? '' : '\n\n'}${text.slice(heroMatch.index + heroMatch[0].length + (after ? after[0].length : 0))}`;
   }
 
   // Only the named sections, when the page is not the whole README. Fenced code is left alone:
@@ -212,16 +238,15 @@ export function prepareReadme(readme, { blob, sections = null, install = null })
   });
   // Relative links go to the file on GitHub; https, anchors and root-relative paths stay.
   text = text.replace(/\]\((?!https?:|#|\/)([^)\s]+)\)/g, (_, rel) => `](${blob}${rel})`);
-  return { text, hero, caption, panels, figures, downloads: Boolean(download), flows };
+  return { text, hero, caption, tagline, panels, figures, downloads: Boolean(download), flows };
 }
 
-// A <picture> of one of the README's images, as build.mjs copied it: `images` maps a README path
-// to { url, width, height } on this host.
-function pictureHtml({ light, dark, alt }, images, { lazy = true } = {}) {
+// One of the README's images, as build.mjs copied it: `images` maps a README path to { url,
+// width, height } on this host. The page is light only, so a picture's dark variant is not used.
+function pictureHtml({ light, alt }, images, { lazy = true } = {}) {
   const l = images[light];
-  const d = images[dark];
-  if (!l || !d) throw new ProductError(`no copy of the README image ${!l ? light : dark}`);
-  return `<picture>${dark !== light ? `<source media="(prefers-color-scheme: dark)" srcset="${d.url}" />` : ''}<img src="${l.url}" width="${l.width}" height="${l.height}" alt="${escapeHtml(alt)}" decoding="async"${lazy ? ' loading="lazy"' : ' fetchpriority="high"'} /></picture>`;
+  if (!l) throw new ProductError(`no copy of the README image ${light}`);
+  return `<img src="${l.url}" width="${l.width}" height="${l.height}" alt="${escapeHtml(alt)}" decoding="async"${lazy ? ' loading="lazy"' : ' fetchpriority="high"'} />`;
 }
 
 /**
@@ -233,32 +258,102 @@ export function recordingHtml({ url, poster, width, height, alt }) {
   return `<figure class="recording"><video autoplay muted loop playsinline preload="none" poster="${escapeHtml(poster)}" width="${width}" height="${height}" aria-label="${escapeHtml(alt)}"><source src="${escapeHtml(url)}" type="video/mp4" /></video></figure>`;
 }
 
-/** Every README image the page shows, for build.mjs to copy. */
-export const imagesOf = ({ hero, panels, figures = [] }) => [...new Set([hero, ...panels, ...figures].filter(Boolean).flatMap((p) => [p.light, p.dark]))];
+/** Every README image the page shows, for build.mjs to copy: the light one of each picture. The
+ * README's hero is left out when the page opens with a clip instead (`withHero` false). */
+export const imagesOf = ({ hero, panels, figures = [] }, { withHero = true } = {}) => [...new Set([withHero ? hero : null, ...panels, ...figures].filter(Boolean).map((p) => p.light))];
+
+// The rendered README's `## ` sections: the text before the first, and each one's id, heading
+// (inner HTML) and body.
+const SECTION_HEAD = /<div class="section-head"[^>]*>(?:<p class="section-label">[^<]*<\/p>)?<h2 id="([^"]+)"><a class="anchor" href="#[^"]+">([\s\S]*?)<\/a><\/h2><\/div>\n/g;
+export function splitSections(html) {
+  const heads = [...html.matchAll(SECTION_HEAD)];
+  const intro = heads.length ? html.slice(0, heads[0].index) : html;
+  const sections = heads.map((m, i) => ({
+    id: m[1],
+    heading: m[2],
+    title: m[2].replace(/<[^>]+>/g, '').replace(/&#39;/g, "'").replace(/&amp;/g, '&').trim(),
+    body: html.slice(m.index + m[0].length, i + 1 < heads.length ? heads[i + 1].index : html.length),
+  }));
+  return { intro, sections };
+}
+
+// The store's headlines end in a period; one that ends in its own punctuation keeps it.
+const withPeriod = (heading) => (/[.?!:)]\s*$/.test(heading.replace(/<[^>]+>/g, '')) ? heading : `${heading}.`);
+
+// The section's first paragraph, when it is a whole sentence, goes under the headline.
+function liftFirst(body) {
+  const m = /^\s*<p>((?:(?!<\/p>)[\s\S])*)<\/p>\n/.exec(body);
+  if (!m || !/[.!?)]$/.test(m[1].replace(/<[^>]+>/g, '').trim())) return { lifted: '', body };
+  return { lifted: m[1], body: body.slice(m[0].length) };
+}
+
+// A picture after paragraphs: the paragraphs since the last picture become a row beside it.
+const ROW = /((?:<p>(?:(?!<\/p>)[\s\S])*<\/p>\n)+)<figure class="figure">([\s\S]*?)<\/figure>\n?/g;
+const ROW_TINTS = ['sky', 'peach', 'sage', 'sand'];
+function rows(body, bandTint) {
+  const tints = ROW_TINTS.filter((t) => t !== bandTint);
+  let k = 0;
+  return body.replace(ROW, (_, words, media) => {
+    const cls = `row${k % 2 ? ' flip' : ''}${k ? ` t-${tints[(k - 1) % tints.length]}` : ''}`;
+    k += 1;
+    return `<div class="${cls}"><div class="row-media">${media}</div><div class="row-copy">\n${leadHeading(words)}</div></div>\n`;
+  });
+}
+
+// A row's words that open with bold ones ("**The multi tasker** runs several sessions...") open
+// with them as its heading instead, the store's way: "The multi tasker." over "Runs several
+// sessions...". Bold words that end their own sentence keep the rest as it is.
+function leadHeading(words) {
+  const m = /^<p><strong>([^<]+)<\/strong>\s*([\s\S]*)$/.exec(words);
+  if (!m) return words;
+  const [, lead, rest] = m;
+  const ends = /[.?!:]$/.test(lead.trim());
+  const body = ends ? rest : rest.replace(/^([a-z])/, (c) => c.toUpperCase());
+  return `<h3>${lead.trim()}${ends ? '' : '.'}</h3>\n<p>${body}`;
+}
+
+// A list whose every item leads with bold words is a row of cards.
+const cards = (html) => html.replace(/<ul>\n((?:<li>(?:(?!<\/?li>)[\s\S])*<\/li>\n)+)<\/ul>/g, (all, items) => {
+  const lis = items.match(/<li>[\s\S]*?<\/li>\n/g);
+  if (lis.length < 2 || !lis.every((li) => /^<li>(?:<p>)?<strong>/.test(li))) return all;
+  // Bold words that end their own sentence are the card's title; others stay in the sentence.
+  return `<ul class="cards">\n${items.replace(/^(<li>(?:<p>)?)<strong>([^<]*[.?!:])<\/strong>/gm, '$1<strong class="lead">$2</strong>')}</ul>`;
+});
+
+// A paragraph of bold names joined by middle dots (a README's feature line) is a row of chips.
+function chips(html) {
+  let found = '';
+  const rest = html.replace(/<p>((?:(?!<\/p>)[\s\S])*)<\/p>\n?/, (all, inner) => {
+    const parts = inner.split(/\s+·\s+/);
+    if (parts.length < 3 || !parts.every((p) => p.includes('<strong>'))) return all;
+    found = `<ul class="chips">${parts.map((p) => `<li>${p.trim()}</li>`).join('')}</ul>\n`;
+    return '';
+  });
+  return found ? { chips: found, rest } : { chips: '', rest: html };
+}
+
+// A section is a band when it shows something: a picture, code, a flowchart, panels or downloads.
+const SHOWS = /<figure|<div class="row|<div class="panel|<div class="downloads|<pre\b/;
+
 
 /**
- * app: the docs/apps entry (loadApp: title, description, kicker, license, repo, slug); prepared:
- * prepareReadme's result; release: { tag, url, published, assets: [{ name, size, url }] };
- * images: README path → { url, width, height } on this host; theme: themeBlocks() of public/index.html;
- * recording: the app's loop, { url, poster, width, height, under, alt } (the front matter's
- * `recording`, copied beside the page by build.mjs), played under the README's `under` heading;
- * live: whether donate.csarko.sh serves the doors yet (DONATE_LIVE), without which the bar has no Buy me tokens.
+ * app: the docs/apps entry (loadApp: title, description, kicker, license, repo, slug, promo);
+ * prepared: prepareReadme's result; release: { tag, url, published, assets: [{ name, size, url }] };
+ * images: README path → { url, width, height } on this host; motion: the site's motion tokens
+ * (store.mjs motionTokens); recording: the app's loop, { url, poster, width, height, under, alt }
+ * (the front matter's `recording`, copied beside the page by build.mjs), played under the
+ * README's `under` heading; ogImage: { url, width, height, alt }, the share card build.mjs makes
+ * from the hero; live: whether donate.csarko.sh serves the doors yet (DONATE_LIVE), without
+ * which the bar has no Buy me tokens.
  */
-export function productPage({ app, prepared, release, images, theme, recording = null, live = DONATE_LIVE }) {
-  const { text, hero, caption, panels, flows, figures = [] } = prepared;
+export function productPage({ app, prepared, release, images, motion = '', recording = null, ogImage = null, heroVideo = null, live = DONATE_LIVE }) {
+  const { text, hero, caption, tagline = '', panels, flows, figures = [] } = prepared;
   const doc = renderMarkdown(text, `${app.slug} README`);
   let html = doc.html;
   const swap = (from, to) => {
     if (!html.includes(from)) throw new ProductError(`README: the rendered page lost the marker ${from}`);
     html = html.replace(from, to);
   };
-  if (recording) {
-    const section = doc.rail.find((s) => s.text.toLowerCase() === recording.under.toLowerCase());
-    if (!section) throw new ProductError(`README: no "## ${recording.under}" section to play the recording under`);
-    const head = new RegExp(`(<div class="section-head"[^>]*>(?:(?!</div>)[\\s\\S])*?<h2 id="${section.id}">[\\s\\S]*?</h2></div>\\n)`);
-    if (!head.test(html)) throw new ProductError(`README: the "## ${recording.under}" heading was not where the page expected it`);
-    html = html.replace(head, `$1${recordingHtml(recording)}\n`);
-  }
   if (prepared.downloads) swap(DOWNLOADS, downloadsHtml(release));
   else swap(`<p>${RELEASE}</p>`, downloadsHtml(release, { strict: false }));
   flows.forEach((flow, i) => swap(`<p>${FLOW(i)}</p>`, flowHtml(flow)));
@@ -272,6 +367,81 @@ export function productPage({ app, prepared, release, images, theme, recording =
   // HTML the README carried that nothing above handled reaches the page escaped; refuse it.
   const leftover = /&lt;\/?(?:p|div|table|tr|td|img|picture|source|sub|b|i|br|h[1-6]|a|span)\b[^&]*&gt;/.exec(html.replace(/<pre[\s\S]*?<\/pre>|<code>[\s\S]*?<\/code>/g, ''));
   if (leftover) throw new ProductError(`README: HTML this page cannot draw: ${leftover[0].replace(/&lt;/g, '<').replace(/&gt;/g, '>')}`);
+
+  const { intro, sections } = splitSections(html);
+  if (recording && !sections.some((s) => s.title.toLowerCase() === recording.under.toLowerCase())) {
+    throw new ProductError(`README: no "## ${recording.under}" section to play the recording under`);
+  }
+  // The section the bar's pill goes to: the downloads or the install commands.
+  const getIt = sections.find((s) => /^(setup|install|download|get)/i.test(s.title));
+
+  // The bands, the tints taking turns; the sections of plain words wait for the closing fold.
+  const bands = [];
+  const folds = [];
+  let turn = 0;
+  for (const s of sections) {
+    const plays = recording && s.title.toLowerCase() === recording.under.toLowerCase();
+    if (!plays && !SHOWS.test(s.body)) {
+      folds.push(`        <details><summary><h3 id="${s.id}">${s.heading}</h3></summary><div class="fold body">\n${s.body}</div></details>`);
+      continue;
+    }
+    const tint = TINTS[turn % TINTS.length];
+    turn += 1;
+    const { lifted, body } = liftFirst(s.body);
+    const price = s === getIt && app.license ? `<p class="price">Free<span class="badge">Open source</span></p>` : '';
+    bands.push(`    <section class="band t-${tint}" aria-labelledby="${s.id}">
+      <div class="wrap">
+        <div class="headline"><h2 id="${s.id}">${withPeriod(s.heading)}</h2>${price}${lifted ? `<p>${lifted}</p>` : ''}</div>
+${plays ? `        ${recordingHtml(recording)}\n` : ''}        <div class="body">
+${cards(rows(body, tint))}        </div>
+      </div>
+    </section>`);
+  }
+  if (folds.length) {
+    bands.push(`    <section class="band t-${TINTS[turn % TINTS.length]}" aria-labelledby="the-details">
+      <div class="wrap">
+        <div class="headline"><h2 id="the-details">The details.</h2></div>
+        <div class="folds">
+${folds.join('\n')}
+        </div>
+      </div>
+    </section>`);
+  }
+
+  const opening = chips(intro);
+  const introBand = intro.trim() ? `    <section class="band intro t-paper" aria-label="About ${escapeHtml(app.title)}">
+      <div class="wrap">
+        ${opening.chips}<div class="body lede">
+${cards(opening.rest)}        </div>
+      </div>
+    </section>
+` : '';
+
+  const promo = app.promo ? `    <div class="wrap">
+      <div class="strip">
+        <a href="${escapeHtml(app.promo.link)}"${app.promo.link.startsWith('https:') ? ' target="_blank" rel="noopener"' : ''}><span>${escapeHtml(app.promo.text)}</span><span class="go" aria-hidden="true">Learn more ›</span></a>
+      </div>
+    </div>
+` : '';
+
+  // The top: with an opening clip, the store's way (a product page's hero video): full bleed
+  // behind the title, played once and held on its last frame, the key art, which is also its
+  // poster; without one, the title over the README's hero picture.
+  const top = heroVideo ? `  <header class="top top-video">
+    <video autoplay muted playsinline preload="auto" poster="${escapeHtml(heroVideo.poster)}" width="${heroVideo.width}" height="${heroVideo.height}" aria-label="${escapeHtml(heroVideo.alt)}"><source src="${escapeHtml(heroVideo.url)}" type="video/mp4" /></video>
+    <div class="top-copy">
+      <h1>${doc.titleHtml}</h1>
+      <p class="tagline">${escapeHtml(tagline || app.description)}</p>
+    </div>
+  </header>
+` : `  <header class="top">
+    <h1>${doc.titleHtml}</h1>
+    <p class="tagline">${escapeHtml(tagline || app.description)}</p>
+  </header>
+${hero ? `  <figure class="hero">
+    ${pictureHtml(hero, images, { lazy: false })}${caption ? `\n    <figcaption>${escapeHtml(caption)}</figcaption>` : ''}
+  </figure>
+` : ''}`;
 
   const url = `${APPS_HOST}/${app.slug}`;
   const graph = [{
@@ -288,108 +458,26 @@ export function productPage({ app, prepared, release, images, theme, recording =
     ...(app.repo ? { codeRepository: app.repo } : {}),
     author: { '@type': 'Person', '@id': 'https://csarko.sh/#person', name: 'Cyrus Sarkosh', url: 'https://csarko.sh/' },
   }];
-  const rail = doc.rail.map((s) => `        <li><a href="#${s.id}"><span>${escapeHtml(s.text)}</span></a></li>`).join('\n');
-  // The bar's links: the section with the downloads or the install commands, the source, Buy me
-  // tokens once the site is live and the app's door has shipped, and the release, so the page says
-  // what it is before the first scroll.
-  const getIt = doc.rail.find((s) => /^(setup|install|download|get)/i.test(s.text));
+  // The bar: the name and the black pill to the downloads or the install commands, nothing else
+  // (Cyrus, 2026-11-01). Buy me tokens, once the site is live and the app's door has shipped, is
+  // the one quiet line under it, set to the right; the source and the release go to the footer.
   const door = doorOf(app.slug);
-  const links = [
-    ...(getIt ? [[prepared.downloads ? 'Download' : 'Install', `#${getIt.id}`]] : []),
-    ...(app.repo ? [['GitHub', app.repo, true]] : []),
-    ...(live && door?.shipped ? [['Buy me tokens', `${DONATE_URL}${door.path}`, true, iconSvg()]] : []),
-    [release.tag, release.url, true],
-  ];
-  const main = `  <div class="wrap shell">
-    <aside class="rail" aria-label="Contents">
-      <p class="section-label">Contents</p>
-      <ol>
-${rail}
-      </ol>
-    </aside>
-    <main id="top" tabindex="-1">
-      <header class="doc-header">
-        <p class="eyebrow">${escapeHtml(app.kicker)}</p>
-        <h1>${doc.titleHtml}</h1>
-        <p class="lead">${escapeHtml(app.description)}</p>
-        <ul class="tags">
-          <li>${escapeHtml(release.tag)}</li>${app.repo ? `\n          <li><a class="external" href="${escapeHtml(app.repo)}" target="_blank" rel="noopener">Source on GitHub</a></li>` : ''}
-        </ul>
-      </header>
-${hero ? `      <figure class="hero-figure">
-        ${pictureHtml(hero, images, { lazy: false })}${caption ? `\n        <figcaption>${escapeHtml(caption)}</figcaption>` : ''}
-      </figure>
-` : ''}      <div class="prose">
-${html}
-      </div>
-    </main>
-  </div>`;
-  return standaloneShell({
+  const under = live && door?.shipped ? `<a href="${escapeHtml(`${DONATE_URL}${door.path}`)}" target="_blank" rel="noopener">${iconSvg()}Buy me tokens</a>` : '';
+  return storeShell({
     title: `${app.title}: ${app.description.split(/[:.]/)[0].toLowerCase()}`,
     ogTitle: app.title,
     description: app.description,
     canonical: url,
-    ogType: 'website',
-    extraCss: PRODUCT_CSS,
+    ogImage,
     graph,
-    theme,
-    name: app.title,
-    links,
-    licence: app.license ?? '',
-    main,
-    bodyClass: 'doc-page',
+    motion,
+    top,
+    bar: {
+      name: app.title,
+      action: getIt ? [prepared.downloads ? 'Download' : 'Install', `#${getIt.id}`] : ['Release', release.url],
+      under,
+    },
+    main: `${promo}${introBand}${bands.join('\n')}`,
+    footer: [`${app.title}${app.license ? ` · ${app.license}` : ''}`, [[release.tag, release.url], ...(app.repo ? [['GitHub', app.repo]] : [])]],
   });
 }
-
-// On top of the doc page's rules: the app's own bar and footer, the hero, the downloads, the
-// flows and the panels.
-const PRODUCT_CSS = `
-    .app-bar { position: sticky; top: 0; z-index: 10; backdrop-filter: saturate(140%) blur(12px); -webkit-backdrop-filter: saturate(140%) blur(12px); background: var(--nav-bg); border-bottom: 1px solid var(--border); }
-    .app-bar .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 16px; }
-    .app-name { font-family: var(--mono); font-weight: 600; font-size: 15px; letter-spacing: -0.01em; color: var(--text); }
-    .app-bar ul { display: flex; align-items: center; gap: 20px; list-style: none; margin: 0; padding: 0; }
-    .app-bar ul a { color: var(--muted); font-size: 14px; transition: color .15s ease; }
-    .app-bar ul a:hover { color: var(--text); }
-    .app-bar ul li:last-child a { font-family: var(--mono); font-size: 12.5px; padding: 3px 9px; border: 1px solid var(--border-strong); border-radius: 999px; }
-    footer .maker { color: var(--muted); }
-    footer .maker:hover { color: var(--text); }
-    /* On a phone the bar wraps: the links drop to their own row when they do not fit beside the
-       name, and onto a second when they do not fit the width, every one kept, the version
-       included. Only the vertical padding is set, so .wrap keeps its side gutter. Two rows of
-       links make the bar about 113px tall at 320px, so an anchor clears it by 136px, not 84px. */
-    @media (max-width: 640px) { html { scroll-padding-top: 136px; } .app-bar .wrap { flex-wrap: wrap; height: auto; padding-top: 10px; padding-bottom: 10px; row-gap: 6px; } .app-bar ul { flex-wrap: wrap; gap: 6px 14px; } .app-bar ul a { font-size: 13.5px; } }
-    @media (prefers-reduced-motion: reduce) { .app-bar ul a { transition: none; } }
-    .hero-figure { margin: 8px 0 36px; }
-    .hero-figure img { display: block; width: 100%; height: auto; border-radius: 14px; }
-    .hero-figure figcaption { margin-top: 10px; font-size: 13.5px; color: var(--muted); }
-    .prose .muted { font-size: 14px; color: var(--muted); }
-    .downloads { margin: 12px 0 6px; }
-    .downloads .buttons { display: flex; flex-wrap: wrap; gap: 10px; }
-    .btn { display: inline-flex; align-items: baseline; gap: 8px; padding: 10px 16px; border-radius: 10px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; text-decoration: none; transition: background .15s ease; }
-    .btn:hover { background: var(--accent-hover); }
-    .btn small { font-family: var(--mono); font-size: 12px; font-weight: 500; }
-    .prose .downloads .btn, .prose .downloads .btn:hover { color: var(--on-accent); text-decoration: none; }
-    .downloads .release { margin: 10px 0 0; font-size: 13.5px; color: var(--muted); }
-    .flow { margin: 14px 0 26px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
-    .flow p { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 4px; margin: 0; }
-    .flow .flow-branch { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
-    .flow-node { padding: 4px 10px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface-2); font-size: 13.5px; line-height: 1.4; }
-    .flow-edge { display: inline-flex; align-items: center; gap: 4px; padding: 0 4px; font-family: var(--mono); font-size: 11.5px; color: var(--faint); }
-    .flow-edge svg { width: 14px; height: 14px; flex: none; }
-    .flow-edge.side { font-style: italic; }
-    .panel { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; align-items: start; margin: 32px 0; }
-    .panel-image img { display: block; width: 100%; height: auto; border-radius: 12px; }
-    .figure { margin: 24px 0 32px; }
-    .figure img { display: block; width: 100%; height: auto; border-radius: 12px; }
-    .recording { margin: 16px 0 32px; }
-    .recording video { display: block; width: 100%; height: auto; border-radius: 12px; background: var(--surface); }
-    .panel-body > :first-child { margin-top: 0; }
-    /* On a phone the panel's heading leads, then its screenshot, then the rest of its text. */
-    @media (max-width: 640px) {
-      .panel { grid-template-columns: minmax(0, 1fr); gap: 0; }
-      .panel-body { display: contents; }
-      .panel-body > :first-child { order: 1; margin-bottom: 12px; }
-      .panel-image { order: 2; max-width: 280px; margin-bottom: 16px; }
-      .panel-body > :not(:first-child) { order: 3; }
-    }
-    @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }`;

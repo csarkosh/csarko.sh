@@ -74,7 +74,7 @@ const GAME_FIELDS = { description: true, status: true, tags: true, play: false, 
 // `recording` is a loop the app's page plays (an .mp4 in the app's repository, its poster the same
 // name as .jpg), `recording-under` the README's `## ` heading it goes under, `recording-alt` what
 // it shows (Cyrus, 2026-10-31: Arkos IDE's window through its themes, under "Who it's for").
-const APP_FIELDS = { description: true, status: true, page: true, platforms: true, tags: true, license: false, repo: false, released: false, alt: false, link: false, order: false, sections: false, recording: false, 'recording-under': false, 'recording-alt': false };
+const APP_FIELDS = { description: true, status: true, page: true, platforms: true, tags: true, license: false, repo: false, released: false, alt: false, link: false, order: false, sections: false, recording: false, 'recording-under': false, 'recording-alt': false, promo: false, 'promo-link': false, 'hero-video': false, 'hero-video-alt': false };
 // A film is a video hosted on YouTube: the page carries its poster and links out, so every field
 // here but "order" is needed to build the card and its VideoObject. "alt" describes the poster.
 // There is no warning field: every film card carries the same notice (FILM_NOTICE).
@@ -207,7 +207,26 @@ export function parseAppFrontMatter(text, file) {
     if (!meta['recording-under'] || !meta['recording-alt']) throw new DocError(`${file}: a recording needs recording-under (the README heading it goes under) and recording-alt (what it shows)`);
     recording = { file: meta.recording, under: meta['recording-under'], alt: meta['recording-alt'] };
   }
-  return { meta: { ...meta, tags, order, sections, recording }, body };
+  // The store page's promo card (apps/product.mjs): one line and where its link goes, an https://
+  // URL or a #heading on the page.
+  let promo;
+  if (meta.promo !== undefined || meta['promo-link'] !== undefined) {
+    if (!meta.promo || !/^(https:\/\/\S+|#[\w-]+)$/.test(meta['promo-link'] ?? '')) {
+      throw new DocError(`${file}: a promo needs its line and promo-link, an https:// URL or a #heading`);
+    }
+    promo = { text: meta.promo, link: meta['promo-link'] };
+  }
+  // The store page's opening clip (apps/product.mjs): an .mp4 in the app's repository with its
+  // poster beside it as .jpg, played once full-bleed behind the title, and what it shows.
+  let heroVideo;
+  if (meta['hero-video'] !== undefined || meta['hero-video-alt'] !== undefined) {
+    if (!/^[\w./-]+\.mp4$/.test(meta['hero-video'] ?? '') || meta['hero-video'].includes('..') || meta['hero-video'].startsWith('/')) {
+      throw new DocError(`${file}: hero-video must be the .mp4's path inside the repository`);
+    }
+    if (!meta['hero-video-alt']) throw new DocError(`${file}: a hero-video needs hero-video-alt (what it shows)`);
+    heroVideo = { file: meta['hero-video'], alt: meta['hero-video-alt'] };
+  }
+  return { meta: { ...meta, tags, order, sections, recording, promo, heroVideo }, body };
 }
 
 export function parseFilmFrontMatter(text, file) {
@@ -1441,8 +1460,8 @@ ${FOOTER}`;
 }
 
 /**
- * A standalone page on another host (apps.csarko.sh): an app's own page, the way
- * games.csarko.sh/dayhike is the game's. It shares the site's head, tokens, fonts and type, but
+ * A standalone page on another host (donate.csarko.sh's doors; apps.csarko.sh's pages wore it
+ * until 2026-10-31 and now wear apps/store.mjs). It shares the site's head, tokens, fonts and type, but
  * none of its chrome: no nav, no trail, no wordmark. Its bar carries the app's name and a few
  * links of its own; its footer credits the maker once and names the licence. `main` is the
  * page's own markup inside <body>. A link is [label, href, external, icon], the icon's HTML
