@@ -9,6 +9,10 @@ repo: https://github.com/csarkosh/lib-visits
 released: 2026-10-15
 tags: Rust, JavaScript, Analytics, Claude Code
 order: 3
+hero-video: docs/images/hero.mp4
+hero-video-alt: A visit plays out in a lib-visits window: it arrives from a Google search, reads three pages while each one's engaged time counts up and its scroll depth fills, reads the launch post to the end and clicks out to GitHub, then the camera pulls back to show the whole journey
+promo: No cookies and no fingerprinting. A 3 KB script and a 1.1 MB static collector count each visit and the path it took, as JSON lines in the logs you already keep.
+promo-link: https://github.com/csarkosh/lib-visits#readme
 ---
 # lib-visits
 
