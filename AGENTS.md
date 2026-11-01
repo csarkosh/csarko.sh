@@ -446,8 +446,8 @@ anything related to the admin pages in this repo:
 cutover deploy is the step that makes it live. GoatCounter, set up 2026-09-11, was
 dropped because its host went down and took the numbers with it.)*
 
-- **[lib-visits](https://github.com/csarkosh/lib-visits)** (public, GPL-3.0-only, tag
-  `v0.2.0` since 2026-10-15) is Cyrus's own analytics: two small scripts and a collector. No cookies,
+- **[lib-visits](https://github.com/csarkosh/lib-visits)** (public, GPL-3.0-only; the client is
+  tag `v0.5.0` since 2026-11-01, `v0.2.0` from 2026-10-15) is Cyrus's own analytics: two small scripts and a collector. No cookies,
   so no consent banner. The only storage is the visitor's own `#visits-off` opt-out.
 - **Configured in one place:** `.agents/skills/site-quality/site.json`
   (`analytics.provider` is `visits`, `endpoint` is `/v`). `generate-assets.sh` derives the
@@ -456,15 +456,15 @@ dropped because its host went down and took the numbers with it.)*
   Don't edit any of those by hand. Set `provider` to `null` and both scripts and every
   event go away together.
 - **The scripts are vendored unmodified** at
-  `.agents/skills/site-quality/assets/vendor/visits.min.js` (2,997 B) and `vitals.min.js`
+  `.agents/skills/site-quality/assets/vendor/visits.min.js` (3,053 B) and `vitals.min.js`
   (995 B), each with a provenance line (tag, licence, sha256) that `strip_comments` drops
   before hashing, so the served, content-hashed file is byte-identical to the tag's.
   The vendoring command:
 
   ```bash
-  LIB=~/Projects/lib-visits; git -C "$LIB" checkout -q v0.2.0
+  LIB=~/Projects/lib-visits; git -C "$LIB" checkout -q v0.5.0
   for f in visits vitals; do
-    { printf '// lib-visits v0.2.0 (GPL-3.0-only), client/dist/%s.min.js, sha256 %s\n' "$f" "$(shasum -a 256 "$LIB/client/dist/$f.min.js" | cut -c1-64)"; cat "$LIB/client/dist/$f.min.js"; } > .agents/skills/site-quality/assets/vendor/$f.min.js
+    { printf '// lib-visits v0.5.0 (GPL-3.0-only), client/dist/%s.min.js, sha256 %s\n' "$f" "$(shasum -a 256 "$LIB/client/dist/$f.min.js" | cut -c1-64)"; cat "$LIB/client/dist/$f.min.js"; } > .agents/skills/site-quality/assets/vendor/$f.min.js
   done
   git -C "$LIB" checkout -q main
   ```
@@ -490,6 +490,23 @@ dropped because its host went down and took the numbers with it.)*
   the Events card has the new kinds (`get`, `download`, `promo`, `tokens`, `release`, `source`;
   `tier`, `pay`, `tipped`, `back`; `admin/CONTRACT.md`). A referrer from csarko.sh onto a
   subdomain counts as `external` with host `csarko.sh`, which `referrers.mjs` groups as `own`.
+  **The game too** *(Cyrus, 2026-11-01: "Include my game too so I can track what pages they went
+  on")*: games.csarko.sh is in the collector's `--origin` list (`games_domain_name`), and Day
+  Hike's page (its own repo, `client/index.html`, the client vendored by `tools/vendor-visits.mjs`)
+  posts straight to `https://csarko.sh/v` with its origin, since its Firebase site is another
+  project's and can have no rewrite of its own; each screen of the game is a route it reports with
+  lib-visits' `visits.page()` (v0.5.0), so a journey shows `games.csarko.sh/dayhike/`, then
+  `/dayhike/party/<id>`, `/dayhike/game/<token>`, each tagged `in app`. Cyrus's addresses are the
+  collector's ignore list, so his own plays never enter a journey; the game's own telemetry marks
+  them `owner` and its admin card shows the errors they meet.
+  **A journey is a visitor, not a day** *(Cyrus, 2026-11-01: "make sure returning visitors are
+  included in the same journey")*: the collector runs with lib-visits' `--visitor` (`visitor = true`
+  in `_infra/main.tf`), writing `s.vid`, a hash of the address and browser keyed on its secret
+  alone, which holds across days; `journeys.sql` groups by it, orders the journeys by their last
+  activity, and the card marks each step the visitor came back to after 30 minutes or more away
+  (`back`, a "Came back · 2 d 4 h later" node, a "came back N times" chip). The Visitors card's
+  counts stay daily visits. The trade: the collector's log now links one browser's days for as
+  long as its address holds; lib-visits' README and spec say so, and it is off by default there.
 - **Where the rows go:** the collector logs one row an event to the log bucket
   `csarko-visits`, with Log Analytics on, linked as the BigQuery dataset `csarko_visits`
   (query `csarko_visits._AllLogs`). GoatCounter's history was backfilled to

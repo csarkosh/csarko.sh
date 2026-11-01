@@ -66,7 +66,7 @@ resource "google_cloud_run_v2_service" "visits" {
     }
     containers {
       image = var.image
-      args  = concat(["serve", "--trusted-proxies", tostring(var.trusted_proxies)], length(var.ignore_ips) > 0 ? ["--ignore-ips", join(",", var.ignore_ips)] : [], flatten([for a in var.apps : ["--app", a]]))
+      args  = concat(["serve", "--trusted-proxies", tostring(var.trusted_proxies)], length(var.ignore_ips) > 0 ? ["--ignore-ips", join(",", var.ignore_ips)] : [], var.visitor ? ["--visitor"] : [], flatten([for a in var.apps : ["--app", a]]))
       ports {
         container_port = 8080
       }

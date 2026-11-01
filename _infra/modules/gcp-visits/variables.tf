@@ -46,6 +46,12 @@ variable "reader_service_account_email" {
   type        = string
 }
 
+variable "visitor" {
+  description = "Pass --visitor: the collector writes s.vid, a visitor hash keyed on its secret alone, beside the daily visit, so a returning browser is recognised across days. lib-visits v0.5.0 or later."
+  type        = bool
+  default     = false
+}
+
 variable "apps" {
   description = "Installed programs allowed to post reports, as NAME or NAME=REDIRECT (the collector's --app); the report route is mounted only when this is not empty."
   type        = list(string)

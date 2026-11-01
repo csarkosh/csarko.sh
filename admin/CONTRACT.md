@@ -173,9 +173,9 @@ page-load id, whatever visit they name themselves.
 ```
 { started, source: { kind: 'direct'|'external'|'internal', host?, path?, campaign? },
   device: { browser, version, os, viewport: [w, h], tz, theme, touch, lang },
-  steps: [{ path, host?, title, at, left, secs, depth, read, nav, lcp, cls, inp }],
+  steps: [{ path, host?, title, at, left, secs, depth, read, nav, lcp, cls, inp, back }],
   exit: { kind: 'click', event, url, host } | { kind: 'left' },
-  engaged, stitched, suspect, reader }
+  engaged, stitched, returns, suspect, reader }
 ```
 
 - `source` is the first view's referrer: `host` with `external`, `path` (the site's own page it
@@ -190,13 +190,23 @@ page-load id, whatever visit they name themselves.
   time, else `at + secs` when the page sent a leave, else `null`. `secs` and `depth` (0 to
   100) come from the page's leave beacon (`null` when none arrived). `read` is whether the
   reader reached the end, only on `/research/<slug>` pages (the ones with a read-end marker)
-  and `null` elsewhere. `nav` is the navigation type (`navigate`, `reload`, `back_forward`) or
-  `null`. `lcp`, `cls`, `inp` come from the page's vitals beacon, `null` when none or when the
+  and `null` elsewhere. `nav` is the navigation type (`navigate`, `reload`, `back_forward`, or
+  `spa` for a screen a single-page app such as Day Hike reported with lib-visits' `visits.page()`)
+  or `null`. `back` is `true` on a step the visitor reached 30 minutes or more after the page
+  before was last seen (its `at` plus its engaged seconds): they came back, later that day or
+  another day. `lcp`, `cls`, `inp` come from the page's vitals beacon, `null` when none or when the
   metric was not measured (INP needs an interaction). A page loaded again within two seconds,
   or reloaded, is the same step with the larger `secs` and `depth`.
 - `exit` is the last outbound click (`event` the link's event name or `null`, `url`, `host`
   without `www.`) when it came on or after the last view, else `{ "kind": "left" }`.
-- `engaged` sums the steps' known `secs`, `null` with none.
+- `engaged` sums the steps' known `secs`, `null` with none. `returns` counts the steps marked
+  `back`.
+- **A journey is a visitor, not a day** *(since 2026-11-01)*: the collector runs with lib-visits'
+  `--visitor`, so every row carries `s.vid`, a hash of the address and the browser keyed on the
+  collector's secret alone, which holds from one day to the next; the rows are grouped by it (the
+  daily visit hash stands in for it on rows from before, and a page-load id on rows with neither).
+  The 50 journeys are the visitors most recently seen in the range, newest last activity first,
+  each with its latest 40 page views in time order; the cards' Visitors counts stay daily.
 - `stitched` counts the later visits joined onto this one: the daily visit hash rolls at UTC
   midnight, so a visit under way then arrives as two, and the second (from one of our own
   pages, the one the first ended on, on the same device, within 30 minutes of when the first

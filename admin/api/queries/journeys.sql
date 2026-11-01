@@ -1,10 +1,13 @@
--- The 50 most recent visits in [start, end), each as its journey: where it came from (the first
--- view's referrer, internal path and campaign), the first view's device, every page it viewed in
--- order with the engaged seconds, scroll depth and read-to-the-end of that page load's leaves and
--- the LCP, CLS and INP of its vitals row, and its last outbound click. Leaves, vitals and clicks
+-- The 50 visitors most recently seen in [start, end), each as its journey: where it came from (the
+-- first view's referrer, internal path and campaign), the first view's device, its latest 40 page
+-- views (newest first here; the API puts them in order) with the engaged seconds, scroll depth and
+-- read-to-the-end of that page load's leaves and the LCP, CLS and INP of its vitals row, and its
+-- last outbound click. A visitor is the collector's visitor hash (s.vid, lib-visits --visitor, since
+-- 2026-11-01), which holds across days, so a browser that comes back lands in the journey it began;
+-- rows from before it carry only the daily visit hash, which stands in for it. Leaves, vitals and clicks
 -- join their view by the page load's id ONLY: a page load's visit is its view's visit, whatever
--- the later row says (the daily hash can roll between them). A visit is the collector's daily
--- hash; a row without one is its own visit. The check beacons (/deploy-check, /depth-check) are
+-- the later row says (the daily hash can roll between them). A row with neither hash is its own
+-- visit. The check beacons (/deploy-check, /depth-check) are
 -- left out, and so is every page load (id) that any of its rows calls a bot (Lighthouse's view
 -- says bot=false, its leave and vitals true).
 WITH beacons AS (
@@ -24,7 +27,7 @@ views AS (
   SELECT
     ts,
     id,
-    COALESCE(JSON_VALUE(j.s.visit), id) AS visit,
+    COALESCE(JSON_VALUE(j.s.vid), JSON_VALUE(j.s.visit), id) AS visit,
     JSON_VALUE(j.p) AS path,
     -- The step's host when it is another of the site's (apps.csarko.sh, donate.csarko.sh): one
     -- visit runs across them, since the collector keys it on the visitor, not the host.
@@ -81,12 +84,13 @@ visits AS (
   SELECT
     visit,
     MIN(ts) AS started,
+    MAX(ts) AS last_seen,
     ARRAY_AGG(STRUCT(rk, rh, rp, campaign) ORDER BY ts LIMIT 1)[OFFSET(0)] AS source,
     ARRAY_AGG(STRUCT(bn, bv, os, vw, vh, tz, th, tp, lg) ORDER BY ts LIMIT 1)[OFFSET(0)] AS device,
-    ARRAY_AGG(STRUCT(FORMAT_TIMESTAMP('%FT%TZ', ts) AS stamp, path, host, title, nt, secs, depth, reached, lcp, cls, inp) ORDER BY ts LIMIT 40) AS steps
+    ARRAY_AGG(STRUCT(FORMAT_TIMESTAMP('%FT%TZ', ts) AS stamp, path, host, title, nt, secs, depth, reached, lcp, cls, inp) ORDER BY ts DESC LIMIT 40) AS steps
   FROM steps GROUP BY visit
 )
 SELECT FORMAT_TIMESTAMP('%FT%TZ', v.started) AS started, v.source, v.device, v.steps, o.last_click
 FROM visits AS v LEFT JOIN outbound AS o USING (visit)
-ORDER BY v.started DESC
+ORDER BY v.last_seen DESC
 LIMIT 50

@@ -116,7 +116,7 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
       return { rows: rows.filter((r) => !r.name.startsWith("(")), homeVisitors: lifted("(home)"), outboundVisitors };
     },
 
-    // The most recent visits as journeys (journeys.sql), consecutive ones of the same visitor
+    // The visitors most recently seen, as journeys (journeys.sql), consecutive ones of the same visitor
     // stitched back together. lib-visits rows only: GoatCounter's history holds no visit's
     // sequence, so nothing before the cutover can be shown.
     async journeys(range) {
@@ -139,6 +139,8 @@ const maxOf = (a, b) => (a === null ? b : b === null ? a : Math.max(a, b));
 /** The only pages with a `data-read-end` marker, so the only ones whose `read` means anything. */
 const READ_PATH = /^\/research\/[^/]+$/;
 const STITCH_GAP_MS = 30 * 60_000;
+/** Away this long between two pages, the visitor came back rather than went on: the step is marked `back`. */
+const RETURN_GAP_SECS = 30 * 60;
 const secondsFrom = (startedMs, stamp) => Math.max(0, Math.round((Date.parse(stamp) - startedMs) / 1000));
 
 /**
@@ -152,15 +154,19 @@ const secondsFrom = (startedMs, stamp) => Math.max(0, Math.round((Date.parse(sta
  * known `secs` (null with none). `suspect` marks a visit that looks like automation: a UTC clock, no
  * leave and no vitals from any page. `reader` is visits.sql's reader: 5 or more engaged seconds on
  * one page, 2 or more paths, or a click (here the exit click, the only one a journey keeps).
- * `stitched` is 0 here; stitchJourneys() counts the visits it joined onto this one.
+ * `stitched` is 0 here; stitchJourneys() counts the visits it joined onto this one. The steps are
+ * taken in time order whatever order the row holds them (the query keeps the latest 40, newest
+ * first). A step reached 30 minutes or more after the page before was last seen (its `at` plus
+ * its engaged seconds) is marked `back`: the visitor came back, which the visitor hash across days
+ * makes one journey of; `returns` counts those steps.
  */
 export function journeyOf(row) {
   const r = plainRow(row);
   const started = Date.parse(r.started);
   const steps = [];
   let lastStampMs = started;
-  for (const raw of r.steps ?? []) {
-    const s = plainRow(raw);
+  const ordered = [...(r.steps ?? [])].map(plainRow).sort((a, b) => (Date.parse(a.stamp) || 0) - (Date.parse(b.stamp) || 0));
+  for (const s of ordered) {
     lastStampMs = Math.max(lastStampMs, Date.parse(s.stamp) || started);
     const step = {
       path: s.path,
@@ -174,6 +180,7 @@ export function journeyOf(row) {
       lcp: num(s.lcp),
       cls: num(s.cls),
       inp: num(s.inp),
+      back: false,
     };
     const prev = steps[steps.length - 1];
     if (prev && prev.path === step.path && (step.at - prev.at <= 2 || step.nav === "reload")) {
@@ -206,8 +213,9 @@ export function journeyOf(row) {
     if (i + 1 < steps.length) s.left = steps[i + 1].at;
     else if (exit.kind === "click") s.left = Math.max(s.at, secondsFrom(started, click.stamp));
     else if (s.secs !== null) s.left = s.at + s.secs;
+    if (i > 0) s.back = s.at - (steps[i - 1].at + (steps[i - 1].secs ?? 0)) >= RETURN_GAP_SECS;
   });
-  return { started: r.started, source, device, steps, exit, engaged: engagedOf(steps), stitched: 0, suspect: suspectOf(device, steps), reader: readerOf(steps, exit) };
+  return { started: r.started, source, device, steps, exit, engaged: engagedOf(steps), stitched: 0, returns: steps.filter((s) => s.back).length, suspect: suspectOf(device, steps), reader: readerOf(steps, exit) };
 }
 
 /** The reader rule in visits.sql: a page engaged 5 s or more, two or more paths, or a click. */
@@ -266,6 +274,7 @@ export function stitchJourneys(journeys) {
     onto.exit = j.exit;
     onto.engaged = onto.engaged === null && j.engaged === null ? null : (onto.engaged ?? 0) + (j.engaged ?? 0);
     onto.stitched += 1 + j.stitched;
+    onto.returns += j.returns;
     onto.suspect = suspectOf(onto.device, onto.steps);
     onto.reader = readerOf(onto.steps, onto.exit) || onto.reader || j.reader;
   }

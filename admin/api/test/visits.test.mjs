@@ -118,7 +118,7 @@ test("journeys come newest first, stitched across the UTC midnight roll, with th
   assert.deepEqual(suspect.device, { browser: "Chrome", version: "148", os: "Windows", viewport: [1024, 768], tz: "UTC", theme: "light", touch: false, lang: "en-US" });
   assert.equal(suspect.suspect, true);
   assert.equal(suspect.stitched, 0);
-  assert.deepEqual(suspect.steps[0], { path: "/apps", title: "Apps", at: 0, left: null, secs: null, depth: null, read: null, nav: "navigate", lcp: null, cls: null, inp: null });
+  assert.deepEqual(suspect.steps[0], { path: "/apps", title: "Apps", at: 0, left: null, secs: null, depth: null, read: null, nav: "navigate", lcp: null, cls: null, inp: null, back: false });
 
   assert.equal(visit.started, "2026-10-14T23:50:00Z");
   assert.deepEqual(visit.source, { kind: "external", host: "google.com", campaign: "substack" });
@@ -181,13 +181,29 @@ test("journeyOf keeps a page loaded twice within two seconds once, times each st
   assert.deepEqual(j.source, { kind: "external", host: "google.com" });
   assert.deepEqual(j.device, { browser: "Safari", version: "18", os: "iOS", viewport: [390, 844], tz: "America/New_York", theme: "light", touch: true, lang: "en-US" });
   assert.deepEqual(j.steps, [
-    { path: "/", title: "Home", at: 0, left: 41, secs: 41, depth: 70, read: null, nav: "navigate", lcp: 180, cls: 0, inp: null },
-    { path: "/research/x", title: "X", at: 41, left: 234, secs: 185, depth: 100, read: true, nav: "navigate", lcp: 220, cls: 0.02, inp: 30 },
+    { path: "/", title: "Home", at: 0, left: 41, secs: 41, depth: 70, read: null, nav: "navigate", lcp: 180, cls: 0, inp: null, back: false },
+    { path: "/research/x", title: "X", at: 41, left: 234, secs: 185, depth: 100, read: true, nav: "navigate", lcp: 220, cls: 0.02, inp: 30, back: false },
   ]);
   assert.deepEqual(j.exit, { kind: "click", event: "out-github", url: "https://www.github.com/csarkosh", host: "github.com" });
   assert.equal(j.engaged, 226);
   assert.equal(j.stitched, 0);
+  assert.equal(j.returns, 0);
   assert.equal(j.suspect, false);
+});
+
+test("journeyOf puts the steps in time order whatever order the row holds them, and marks the one a visitor came back to", () => {
+  const j = journeyOf(journeyRow({
+    steps: [
+      { stamp: "2026-10-17T09:00:00Z", path: "/dayhike/party/abc", host: "games.csarko.sh", title: "Day Hike", nt: "spa", secs: 600, depth: null, reached: false, lcp: null, cls: null, inp: null },
+      { stamp: "2026-10-17T08:59:40Z", path: "/dayhike/", host: "games.csarko.sh", title: "Day Hike", nt: "navigate", secs: 20, depth: null, reached: false, lcp: null, cls: null, inp: null },
+      { stamp: "2026-10-15T15:32:16Z", path: "/", title: "Home", nt: "navigate", secs: 41, depth: 70, reached: false, lcp: "180.0", cls: "0.0", inp: null },
+    ],
+    last_click: null,
+  }));
+  assert.deepEqual(j.steps.map((s) => [s.path, s.at, s.back, s.nav]), [["/", 0, false, "navigate"], ["/dayhike/", 149244, true, "navigate"], ["/dayhike/party/abc", 149264, false, "spa"]]);
+  assert.equal(j.returns, 1);
+  assert.equal(j.engaged, 661);
+  assert.equal(j.steps[1].host, undefined, "the host rides along only where the API maps it");
 });
 
 test("journeyOf: a reload is the same step with the larger time and depth, a doc not read says so, and the last step leaves at + secs", () => {
@@ -198,7 +214,7 @@ test("journeyOf: a reload is the same step with the larger time and depth, a doc
     ],
     last_click: null,
   }));
-  assert.deepEqual(j.steps, [{ path: "/research/x", title: "X", at: 0, left: 90, secs: 90, depth: 100, read: false, nav: "navigate", lcp: 300, cls: 0.1, inp: null }]);
+  assert.deepEqual(j.steps, [{ path: "/research/x", title: "X", at: 0, left: 90, secs: 90, depth: 100, read: false, nav: "navigate", lcp: 300, cls: 0.1, inp: null, back: false }]);
   assert.deepEqual(j.exit, { kind: "left" });
   assert.equal(j.engaged, 90);
 });

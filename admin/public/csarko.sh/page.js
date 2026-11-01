@@ -212,7 +212,16 @@ function lcpChip(s) {
   return el('span', { class: 'j-vitals' }, chip, el('span', { class: 'j-small' }, extra.join(' · ')));
 }
 
-const NAV_TAGS = { reload: 'reloaded', back_forward: 'back', prerender: 'prerendered' };
+const NAV_TAGS = { reload: 'reloaded', back_forward: 'back', prerender: 'prerendered', spa: 'in app' };
+
+/** A stretch of time at the scale it has: 2 d 4 h, 3 h 12 m, else m:ss. */
+const stretch = (s) => { const n = Math.max(0, Math.round(s)); if (n >= 86400) return `${Math.floor(n / 86400)} d ${Math.round((n % 86400) / 3600)} h`; if (n >= 3600) return `${Math.floor(n / 3600)} h ${Math.round((n % 3600) / 60)} m`; return clock(n); };
+
+/** The visitor came back: the time away before the step that follows, as a node of its own. */
+const backNode = (away) => el('li', { class: 'j-node edge' },
+  el('span', { class: 'j-kicker' }, 'Came back'),
+  el('span', { class: 'j-main' }, `${stretch(away)} later`),
+  el('span', { class: 'j-small' }, 'the same browser, another time'));
 
 /** One page of a journey: when it was reached, its title and path, how far it was scrolled, how long it was visible and on screen, its LCP. */
 function pageNode(s, i) {
@@ -266,7 +275,10 @@ function journey(j, now) {
     el('span', { class: 'j-main' }, sourceName(src)),
     el('span', { class: 'j-small mono', title: str(src.kind === 'internal' ? src.path : src.host) || null }, src.kind === 'external' ? str(src.host) : src.kind === 'internal' ? str(src.path) || 'an earlier page' : 'no referrer'));
   const items = [from];
-  steps.forEach((s, i) => items.push(arrow(), pageNode(s, i)));
+  steps.forEach((s, i) => {
+    if (s.back && i > 0) items.push(arrow(), backNode(num(s.at) - (num(steps[i - 1].at) + (isNum(steps[i - 1].secs) ? steps[i - 1].secs : 0))));
+    items.push(arrow(), pageNode(s, i));
+  });
   items.push(arrow(), exitNode(j.exit, lastSeen));
   // The strip: one segment per page, sized by its wall time (left - at), by its visible time when the leave is unknown.
   const sized = steps.map((s) => ({ path: pathLabel(s), size: isNum(s.left) ? Math.max(0, s.left - num(s.at)) : isNum(s.secs) ? s.secs : 0 })).filter((s) => s.size > 0);
@@ -276,8 +288,9 @@ function journey(j, now) {
     : null;
   const head = el('p', { class: 'j-head' },
     el('span', { class: 'j-when' }, wallClock(j.started, now)),
-    ` · ${ago(j.started, now)} · ${isNum(j.engaged) ? `${duration(j.engaged)} engaged` : 'no engaged time'} · ${n} page${n === 1 ? '' : 's'}${span !== null ? ` over ${clock(span)}` : ''}`);
+    ` · ${ago(j.started, now)} · ${isNum(j.engaged) ? `${duration(j.engaged)} engaged` : 'no engaged time'} · ${n} page${n === 1 ? '' : 's'}${span !== null ? ` over ${stretch(span)}` : ''}`);
   const chips = [];
+  if (num(j.returns) > 0) chips.push(el('span', { class: 'badge' }, `came back ${j.returns === 1 ? 'once' : `${j.returns} times`}`));
   if (num(j.stitched) > 0) chips.push(el('span', { class: 'badge' }, 'stitched across midnight'));
   if (j.suspect) chips.push(el('span', { class: 'badge warn' }, 'suspect: UTC clock, no engaged time'));
   else if (j.reader === false) chips.push(el('span', { class: 'badge warn' }, 'glance: one page, under 5 s, no click'));

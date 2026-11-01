@@ -76,6 +76,12 @@ variable "donate_hosting_site_id" {
   default     = "csarko-sh-donate"
 }
 
+variable "games_domain_name" {
+  description = "Hostname of the games site (Day Hike at games.csarko.sh/dayhike). Its hosting and DNS belong to ~/Projects/game-dayhike/_infra; named here only so the visits collector takes its beacons, which the game posts to https://csarko.sh/v."
+  type        = string
+  default     = "games.csarko.sh"
+}
+
 variable "admin_domain_name" {
   description = "Hostname of the admin dashboard. A subdomain of domain_name, so it CNAMEs to its site's web.app host."
   type        = string

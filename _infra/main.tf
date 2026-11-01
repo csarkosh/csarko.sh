@@ -249,12 +249,16 @@ locals {
 module "gcp_visits" {
   source = "./modules/gcp-visits"
 
-  project_id      = var.gcp_project_id
-  region          = var.gcp_region
+  project_id = var.gcp_project_id
+  region     = var.gcp_region
   # Every host a visitor can be on: a visit is one daily id across them (lib-visits keys it on
   # the address and the browser, not the host), so a journey from the site to an app's page and
-  # on to a tip is one visit in the dashboard (2026-11-01).
-  origins         = ["https://${var.domain_name}", "https://${var.apps_domain_name}", "https://${var.donate_domain_name}"]
+  # on to a tip is one visit in the dashboard (2026-11-01). The game's host has no rewrite of its
+  # own (another project), so its page posts to https://csarko.sh/v with its origin.
+  origins = ["https://${var.domain_name}", "https://${var.apps_domain_name}", "https://${var.donate_domain_name}", "https://${var.games_domain_name}"]
+  # The visitor beside the daily visit (lib-visits v0.5.0 `--visitor`), so a browser that comes
+  # back another day lands in the same journey (Cyrus, 2026-11-01).
+  visitor         = true
   dataset         = local.visits_dataset
   history_dataset = local.visits_history_dataset
   # Hosting's rewrite and Cloud Run's frontend: confirmed 2026-10-15 with --log-ip through
