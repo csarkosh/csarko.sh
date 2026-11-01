@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 540" width="760" height="540" role="img" aria-labelledby="t">
+  <title id="t">How the tip prices are made. Five billing sources, AWS Cost Explorer, the Google Cloud billing export in BigQuery, GitHub's usage API, two GPU and model services, and the Claude subscription, feed one daily snapshot at 06:00 New York time, which Cloud Scheduler starts on the admin API in Cloud Run. The snapshot keeps every cost as daily rows in Firestore. Every 7 days the donate step sums the last 30 days into the pool and prices three tiers at 1, 3 and 10 percent. It makes Stripe prices and 28 payment links, then writes one prices.json to a public Cloud Storage bucket. The donate.csarko.sh pages read that file on every visit and send a visitor to Stripe's hosted checkout.</title>
+  <style>
+    text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 13px; fill: #e8eaf0; }
+    .title { font-size: 16px; font-weight: 600; }
+    .sec { fill: #a0a8b8; font-size: 12px; }
+    .label { font-weight: 600; }
+    .box { fill: #1a1e28; stroke: #3a3f4b; stroke-width: 1.5; }
+    .hub { fill: #1a1e28; stroke: #7dd3c0; stroke-width: 1.5; }
+    .pub { fill: #1a1e28; stroke: #f5c451; stroke-width: 1.5; }
+    .in { stroke: #7dd3c0; stroke-width: 2; fill: none; marker-end: url(#ain); }
+    .out { stroke: #f5c451; stroke-width: 2; fill: none; marker-end: url(#aout); }
+    .inl { fill: #7dd3c0; font-size: 12px; font-weight: 600; }
+    .outl { fill: #f5c451; font-size: 12px; font-weight: 600; }
+    @media (prefers-color-scheme: light) {
+      text { fill: #12151c; }
+      .sec { fill: #4a5263; }
+      .box, .hub, .pub { fill: #ffffff; }
+      .box { stroke: #c9ced6; }
+      .hub { stroke: #0a735f; }
+      .pub { stroke: #8a6100; }
+      .in { stroke: #0a735f; }
+      .inl { fill: #0a735f; }
+      .out { stroke: #8a6100; }
+      .outl { fill: #8a6100; }
+    }
+  </style>
+  <defs>
+    <marker id="ain" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7dd3c0"/></marker>
+    <marker id="aout" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f5c451"/></marker>
+  </defs>
+  <text class="title" x="16" y="28">Bill in, prices out: a daily run and a weekly turn</text>
+
+  <text class="sec" x="16" y="62">Billing sources</text>
+  <rect class="box" x="16" y="74" width="200" height="50" rx="8"/>
+  <text class="label" x="30" y="96">AWS Cost Explorer</text><text class="sec" x="30" y="113">federated role, no stored key</text>
+  <rect class="box" x="16" y="134" width="200" height="50" rx="8"/>
+  <text class="label" x="30" y="156">Google Cloud billing</text><text class="sec" x="30" y="173">export into BigQuery</text>
+  <rect class="box" x="16" y="194" width="200" height="50" rx="8"/>
+  <text class="label" x="30" y="216">GitHub usage API</text><text class="sec" x="30" y="233">Actions and storage</text>
+  <rect class="box" x="16" y="254" width="200" height="50" rx="8"/>
+  <text class="label" x="30" y="276">GPU and model services</text><text class="sec" x="30" y="293">a report job, a credit balance</text>
+  <rect class="box" x="16" y="314" width="200" height="50" rx="8"/>
+  <text class="label" x="30" y="336">Claude subscription</text><text class="sec" x="30" y="353">entered by hand</text>
+
+  <path class="in" d="M216,99 L256,150"/>
+  <path class="in" d="M216,159 L256,166"/>
+  <path class="in" d="M216,219 L256,182"/>
+  <path class="in" d="M216,279 L256,196"/>
+  <path class="in" d="M216,339 L256,206"/>
+
+  <text class="sec" x="270" y="62">Gathered once a day</text>
+  <rect class="hub" x="262" y="74" width="224" height="72" rx="8"/>
+  <text class="label" x="276" y="98">Daily snapshot, 06:00 New York</text>
+  <text class="sec" x="276" y="116">Cloud Scheduler starts the</text>
+  <text class="sec" x="276" y="132">admin API on Cloud Run</text>
+  <rect class="hub" x="262" y="160" width="224" height="62" rx="8"/>
+  <text class="label" x="276" y="184">Daily rows in Firestore</text>
+  <text class="sec" x="276" y="202">day, provider, project, amount</text>
+  <path class="in" d="M374,146 L374,158"/>
+
+  <rect class="pub" x="262" y="262" width="224" height="102" rx="8"/>
+  <text class="label" x="276" y="286">Donate step, every 7 days</text>
+  <text class="sec" x="276" y="306">pool: the 30 days ending yesterday</text>
+  <text class="sec" x="276" y="324">tiers: 1%, 3%, 10%, rounded up</text>
+  <text class="sec" x="276" y="342">holds while a source lags</text>
+  <path class="in" d="M374,222 L374,260"/>
+  <text class="inl" x="384" y="246">read the rows</text>
+
+  <text class="sec" x="532" y="62">Published</text>
+  <rect class="pub" x="528" y="262" width="216" height="58" rx="8"/>
+  <text class="label" x="542" y="286">Stripe prices and links</text>
+  <text class="sec" x="542" y="304">4 a door, 28 a period</text>
+  <rect class="pub" x="528" y="336" width="216" height="58" rx="8"/>
+  <text class="label" x="542" y="360">prices.json</text>
+  <text class="sec" x="542" y="378">public Cloud Storage, GET CORS</text>
+  <path class="out" d="M486,292 L526,291"/>
+  <path class="out" d="M486,340 L526,360"/>
+
+  <rect class="box" x="528" y="430" width="216" height="58" rx="8"/>
+  <text class="label" x="542" y="454">donate.csarko.sh pages</text>
+  <text class="sec" x="542" y="472">7 doors, static on Firebase</text>
+  <path class="out" d="M636,394 L636,428"/>
+  <text class="outl" x="646" y="416">read every visit</text>
+
+  <rect class="box" x="262" y="430" width="224" height="58" rx="8"/>
+  <text class="label" x="276" y="454">Stripe hosted checkout</text>
+  <text class="sec" x="276" y="472">the tier's payment link</text>
+  <path class="out" d="M528,459 L488,459"/>
+  <text class="outl" x="16" y="520">Teal: the costs coming in. Amber: what the weekly turn publishes.</text>
+</svg>
