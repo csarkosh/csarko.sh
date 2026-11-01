@@ -1,0 +1,93 @@
+<style>
+  .bmt { --bg:#0a0b0e; --surface:#111318; --border:rgba(255,255,255,.08); --text:#e8eaf0; --muted:#a0a8b8; --accent:#7dd3c0; --accent-soft:rgba(125,211,192,.12); --accent-border:rgba(125,211,192,.45);
+    background:var(--bg); color:var(--text); font-family:Inter,system-ui,sans-serif; padding:18px; border-radius:8px; text-align:left; font-size:12.5px; line-height:1.45; }
+  .bmt .kick { font-family:"JetBrains Mono",ui-monospace,monospace; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); }
+  .bmt h4 { margin:6px 0 4px; font-size:18px; font-weight:650; letter-spacing:-.01em; color:var(--text); }
+  .bmt p { margin:0 0 10px; color:var(--muted); }
+  .bmt p.bill { color:var(--text); }
+  .bmt p.bill b { color:var(--accent); font-family:"JetBrains Mono",monospace; font-weight:600; }
+  .bmt .shot { width:100%; height:120px; object-fit:cover; object-position:top; border-radius:6px; border:1px solid var(--border); display:block; }
+  .bmt .shot.top { margin:-18px -18px 14px; width:calc(100% + 36px); border-radius:8px 8px 0 0; border:0; height:140px; }
+  .bmt .shot.mid { margin:0 0 12px; }
+  .bmt .tier { display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border); background:var(--surface); border-radius:8px; padding:7px 10px; margin-bottom:6px; }
+  .bmt .tier b { color:var(--text); font-weight:600; }
+  .bmt .tier small { display:block; color:var(--muted); font-size:10.5px; }
+  .bmt .price { font-family:"JetBrains Mono",monospace; color:var(--accent); font-weight:600; text-align:right; }
+  .bmt .price small { display:block; color:var(--muted); font-size:10px; font-weight:400; font-family:Inter,system-ui,sans-serif; }
+  .bmt .tier.pick { border-color:var(--accent-border); background:var(--accent-soft); }
+  .bmt .btn { display:block; text-align:center; background:var(--accent); color:#0a0b0e; font-weight:650; border-radius:8px; padding:8px; margin-top:8px; }
+  .bmt .foot { margin-top:10px; font-size:10.5px; color:var(--muted); text-align:center; }
+  .pair { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+</style>
+<h2>Where does the project's picture go?</h2>
+<p class="subtitle">Each option shows the Arkos IDE door (its landscape hero from the projects page) and The Last Trail door (its portrait poster), with the same pictures the project cards already use, so nothing new has to be made. Click the placement that reads best.</p>
+<div class="cards">
+  <div class="card" data-choice="top" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="pair">
+        <div class="bmt">
+          <img class="shot top" src="/files/arkos.png" alt="Arkos IDE hero">
+          <div class="kick">Buy Me Tokens · Arkos IDE</div>
+          <h4>Fund my next agent run</h4>
+          <p class="bill">Everything I give away here cost <b>$288</b> to run in October. Each tier is a slice of that.</p>
+          <div class="tier"><span><b>A prompt</b><small>a quick fix, a good question</small></span><span class="price">$3<small>about 1%</small></span></div>
+          <div class="tier pick"><span><b>A long context window</b><small>a whole feature</small></span><span class="price">$9<small>about 3%</small></span></div>
+          <div class="tier"><span><b>A whole agent run</b><small>a milestone</small></span><span class="price">$29<small>about 10%</small></span></div>
+          <div class="tier"><span><b>A fine-tune</b><small>you really like it</small></span><span class="price">$87<small>about 30%</small></span></div>
+          <div class="btn">Tip $9</div>
+          <div class="foot">Payments by Stripe · no account needed</div>
+        </div>
+        <div class="bmt">
+          <img class="shot top" src="/files/trail.jpg" alt="The Last Trail poster" style="object-position:center 30%">
+          <div class="kick">Buy Me Tokens · The Last Trail</div>
+          <h4>Fund the next short</h4>
+          <p class="bill">Everything I give away here cost <b>$288</b> to run in October. Each tier is a slice of that.</p>
+          <div class="tier"><span><b>A prompt</b><small>one more take</small></span><span class="price">$3<small>about 1%</small></span></div>
+          <div class="tier pick"><span><b>A long context window</b><small>a scene, start to end</small></span><span class="price">$9<small>about 3%</small></span></div>
+          <div class="tier"><span><b>A whole agent run</b><small>a cut</small></span><span class="price">$29<small>about 10%</small></span></div>
+          <div class="tier"><span><b>A fine-tune</b><small>you really like it</small></span><span class="price">$87<small>about 30%</small></span></div>
+          <div class="btn">Tip $9</div>
+          <div class="foot">Payments by Stripe · no account needed</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Top. A banner across the card</h3>
+      <p>The picture is the first thing seen, edge to edge, cropped to a band. Sets the context before a word is read. A portrait poster has to be cropped to a strip.</p>
+    </div>
+  </div>
+  <div class="card" data-choice="mid" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="pair">
+        <div class="bmt">
+          <div class="kick">Buy Me Tokens · Arkos IDE</div>
+          <h4>Fund my next agent run</h4>
+          <img class="shot mid" src="/files/arkos.png" alt="Arkos IDE hero">
+          <p class="bill">Everything I give away here cost <b>$288</b> to run in October. Each tier is a slice of that.</p>
+          <div class="tier"><span><b>A prompt</b><small>a quick fix, a good question</small></span><span class="price">$3<small>about 1%</small></span></div>
+          <div class="tier pick"><span><b>A long context window</b><small>a whole feature</small></span><span class="price">$9<small>about 3%</small></span></div>
+          <div class="tier"><span><b>A whole agent run</b><small>a milestone</small></span><span class="price">$29<small>about 10%</small></span></div>
+          <div class="tier"><span><b>A fine-tune</b><small>you really like it</small></span><span class="price">$87<small>about 30%</small></span></div>
+          <div class="btn">Tip $9</div>
+          <div class="foot">Payments by Stripe · no account needed</div>
+        </div>
+        <div class="bmt">
+          <div class="kick">Buy Me Tokens · The Last Trail</div>
+          <h4>Fund the next short</h4>
+          <img class="shot mid" src="/files/trail.jpg" alt="The Last Trail poster" style="height:170px;object-position:center 25%">
+          <p class="bill">Everything I give away here cost <b>$288</b> to run in October. Each tier is a slice of that.</p>
+          <div class="tier"><span><b>A prompt</b><small>one more take</small></span><span class="price">$3<small>about 1%</small></span></div>
+          <div class="tier pick"><span><b>A long context window</b><small>a scene, start to end</small></span><span class="price">$9<small>about 3%</small></span></div>
+          <div class="tier"><span><b>A whole agent run</b><small>a cut</small></span><span class="price">$29<small>about 10%</small></span></div>
+          <div class="tier"><span><b>A fine-tune</b><small>you really like it</small></span><span class="price">$87<small>about 30%</small></span></div>
+          <div class="btn">Tip $9</div>
+          <div class="foot">Payments by Stripe · no account needed</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Middle. Under the headline, above the bill</h3>
+      <p>The kicker and headline come first, then the picture, then the bill sentence and tiers. The picture can keep more of its own shape (the poster shows taller). Reads as a story: what, picture, bill, give.</p>
+    </div>
+  </div>
+</div>

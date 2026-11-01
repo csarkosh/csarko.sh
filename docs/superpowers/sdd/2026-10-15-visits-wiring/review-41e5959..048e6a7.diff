@@ -1,0 +1,110 @@
+# Review package: 41e5959..HEAD
+
+## Commits
+048e6a7 docs: the API's three dependencies, and the last two stale comments
+
+## Files changed
+ .agents/skills/site-quality/tests/docs_lib.test.mjs | 2 +-
+ admin/api/README.md                                 | 2 +-
+ admin/api/src/cache.mjs                             | 2 +-
+ admin/vendor/firebase-auth.js                       | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+## Diff
+diff --git a/.agents/skills/site-quality/tests/docs_lib.test.mjs b/.agents/skills/site-quality/tests/docs_lib.test.mjs
+index 888a4ac..8f8649f 100644
+--- a/.agents/skills/site-quality/tests/docs_lib.test.mjs
++++ b/.agents/skills/site-quality/tests/docs_lib.test.mjs
+@@ -275,21 +275,21 @@ test('docPage has the tags, JSON-LD and markers the checks expect', () => {
+   assert.ok(html.includes('<meta property="og:url" content="https://csarko.sh/research/shader-looks" />'));
+   assert.ok(html.includes('<meta property="og:type" content="article" />'));
+   assert.ok(html.includes('<meta property="article:published_time" content="2026-09-14" />'));
+   assert.ok(html.includes('<meta property="article:modified_time" content="2026-09-15" />'));
+   // The trail above the header says Research, so the eyebrow is dates alone.
+   assert.ok(html.includes('<p class="eyebrow">Sep 14, 2026 · Updated Sep 15, 2026</p>'));
+   assert.ok(html.includes(`<a class="external" href="${source}" target="_blank" rel="noopener">Also on GitHub</a>`));
+   assert.ok(html.includes('<body class="doc-page">\n  <a class="skip-link" href="#top">Skip to content</a>'));
+   assert.ok(html.includes('<main id="top" tabindex="-1">'));
+   assert.ok(html.includes('<a href="#one"><span class="num" aria-hidden="true">01</span><span>One</span></a>'));
+-  // No Sources section, so the author box is the end engage.js watches for the read event.
++  // No Sources section, so the author box is the end the visits client's leave beacon reports for the read event.
+   assert.ok(html.includes('<section class="author" aria-label="About the author" data-read-end>'));
+   for (const marker of ['<!-- generated:head -->\n  <!-- /generated:head -->', '/* generated:fonts */\n    /* /generated:fonts */', '<!-- generated:analytics -->\n  <!-- /generated:analytics -->']) {
+     assert.ok(html.includes(marker), marker);
+   }
+   assert.ok(!/<script(?! type="application\/ld\+json")/.test(html), 'no scripts besides JSON-LD');
+   const graph = jsonLd(html);
+   const article = graph.find((n) => n['@type'] === 'TechArticle');
+   const personNode = { '@type': 'Person', '@id': 'https://csarko.sh/#person', name: 'Cyrus Sarkosh', url: 'https://csarko.sh/' };
+   assert.deepEqual(article.author, personNode);
+   assert.deepEqual(article.publisher, personNode);
+diff --git a/admin/api/README.md b/admin/api/README.md
+index a19baf4..c9842e8 100644
+--- a/admin/api/README.md
++++ b/admin/api/README.md
+@@ -1,20 +1,20 @@
+ # csarko-admin: the csarko.sh admin API
+ 
+ The Cloud Run service behind `https://admin.csarko.sh/csarko.sh/`. It holds the vendor
+ credentials, reads the site's lib-visits rows from BigQuery, Google Search Console, YouTube, GitHub, Hacker News,
+ PageSpeed Insights and Firebase Hosting for the admin page, and writes one snapshot a
+ day into Firestore so the trend lines are ours. Design: `docs/superpowers/specs/2026-10-12-admin-dashboard-design.md`
+ (Parts 1, 2.1, 2.3, 2.4). Response shapes: `admin/CONTRACT.md`.
+ 
+ Node 22, ES modules, `node:http`, no framework. Runtime dependencies are
+-`@google-cloud/firestore` and `jose`, nothing else.
++`@google-cloud/firestore`, `@google-cloud/bigquery` and `jose`, nothing else.
+ 
+ ## Routes
+ 
+ | Route | Auth | Answer |
+ |---|---|---|
+ | `GET /health` | none | `{ ok: true, at }` (Cloud Run's probe) |
+ | `GET /admin/kpis` | admin token | the index card: four KPIs with the previous period and a 12-week trend, plus the health dot |
+ | `GET /admin/query/<name>?days=1\|7\|30\|90` | admin token | one of `visits`, `pages`, `referrers`, `events`, `audience`, `search`, `reach`, `health`; `days` defaults to 7, anything else is 400 |
+ | `POST /admin/manual/<key>` body `{ "value": n }` | admin token | appends `{ at, value }` to `manual/<key>` (key: `substack`) |
+ | `POST /admin/snapshot` | admin token, or Cloud Scheduler's OIDC token | runs every collector and merges `snapshots/<YYYY-MM-DD>` (UTC) |
+diff --git a/admin/api/src/cache.mjs b/admin/api/src/cache.mjs
+index d2129d5..d87c360 100644
+--- a/admin/api/src/cache.mjs
++++ b/admin/api/src/cache.mjs
+@@ -1,17 +1,17 @@
+ /**
+  * One in-memory cache for every vendor response, keyed by the caller's
+  * string (a URL, usually) with a time to live per entry.
+  *
+  * The entry holds the promise, not the value, so two cards asking for the
+  * same thing at once share one request instead of two: that is what keeps
+- * BigQuery's per-job overhead (about a second each) paid once and Search
++ * BigQuery's per-job overhead (about a second each) paid once and keeps Search
+  * Console's URL inspection under its daily quota. A failure is evicted at once, so an
+  * outage is retried on the next request rather than remembered for the TTL.
+  */
+ 
+ export function createCache({ now = Date.now, maxEntries = 2000 } = {}) {
+   const entries = new Map();
+ 
+   function sweep() {
+     if (entries.size < maxEntries) return;
+     const t = now();
+diff --git a/admin/vendor/firebase-auth.js b/admin/vendor/firebase-auth.js
+index 300e6c5..cd5cc38 100644
+--- a/admin/vendor/firebase-auth.js
++++ b/admin/vendor/firebase-auth.js
+@@ -1,15 +1,15 @@
+ /**
+  * The entry esbuild bundles into admin/public/vendor/firebase-auth.<hash>.js: the part of
+  * the Firebase SDK that `/auth.js` needs, and nothing else. The admin pages allow no
+  * third-party script (CSP `script-src 'self'`), so the SDK is self-hosted here the way the
+- * site self-hosts count.js, and committed like every other generated asset.
++ * site self-hosts its analytics script (visits.min.js), and committed like every other generated asset.
+  *
+  * `node admin/build.mjs` runs the bundle step when admin/node_modules is present and the
+  * output is missing or older than package-lock.json (`npm install` in admin/ first).
+  *
+  * What is self-hosted is the SDK's code. At runtime the popup flow still goes out: the
+  * popup itself opens `https://<authDomain>/__/auth/handler` (our own host, served by
+  * Firebase Hosting's reserved `/__/` namespace), the SDK loads Google's gapi loader
+  * `https://apis.google.com/js/api.js` to talk to the `/__/auth/iframe` frame it embeds,
+  * and it exchanges tokens with Identity Toolkit (`https://identitytoolkit.googleapis.com`)
+  * and refreshes them against Secure Token (`https://securetoken.googleapis.com`). The CSP

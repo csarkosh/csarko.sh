@@ -1,0 +1,1090 @@
+# Review package: 8edc5c9..HEAD
+
+## Commits
+8317604 admin API: the site's queries read BigQuery, GoatCounter leaves
+
+## Files changed
+ admin/api/.env.local.example                       |   4 +-
+ admin/api/src/collectors/goatcounter.mjs           | 172 ---------------------
+ admin/api/src/config.mjs                           |   2 +-
+ admin/api/src/queries.mjs                          |  93 ++++++-----
+ admin/api/src/server.mjs                           |   7 +-
+ admin/api/test/app.test.mjs                        |   4 +-
+ admin/api/test/fixtures/goatcounter-hits.json      |  17 --
+ admin/api/test/fixtures/goatcounter-locations.json |   8 -
+ admin/api/test/fixtures/goatcounter-total.json     |  14 --
+ admin/api/test/goatcounter.test.mjs                | 111 -------------
+ admin/api/test/http.test.mjs                       |  10 +-
+ admin/api/test/queries.test.mjs                    |  84 +++++++---
+ 12 files changed, 121 insertions(+), 405 deletions(-)
+
+## Diff
+diff --git a/admin/api/.env.local.example b/admin/api/.env.local.example
+index 1c67a50..5d2f7c8 100644
+--- a/admin/api/.env.local.example
++++ b/admin/api/.env.local.example
+@@ -1,11 +1,13 @@
+ # Copy to .env.local (git-ignored) for `npm run dev`. Every value is optional
+ # a missing or `unset` credential makes its section read null.
+ ADMIN_EMAILS=you@example.com
+ FIREBASE_PROJECT=csarko-sh
+ ADMIN_STORE=memory
+-GOATCOUNTER_TOKEN=unset
++VISITS_DATASET=csarko_visits
++VISITS_HISTORY_DATASET=csarko_history
++VISITS_HISTORY_UNTIL=2026-10-16T00:00:00Z
+ # GSC_SA_KEY is the key file's content on one line, for example:
+ # GSC_SA_KEY=$(cat ~/.config/csarko-sh/gsc-sa.json)   (shell only; in this file paste the JSON itself)
+ YOUTUBE_KEY=unset
+ GITHUB_TOKEN=unset
+ PSI_KEY=unset
+diff --git a/admin/api/src/collectors/goatcounter.mjs b/admin/api/src/collectors/goatcounter.mjs
+deleted file mode 100644
+index e7bf56d..0000000
+--- a/admin/api/src/collectors/goatcounter.mjs
++++ /dev/null
+@@ -1,172 +0,0 @@
+-/**
+- * GoatCounter, the visitor counter on the public site (`site.json` there).
+- *
+- * The API is `https://<code>.goatcounter.com/api/v0/`, bearer token, 4
+- * requests a second. Every call here goes through one queue that starts at
+- * most three a second and through the shared cache (five minutes by URL), so
+- * eight cards loading at once cost a handful of requests and never a 429. A
+- * 429 that does arrive is honoured once, for `X-Rate-Limit-Reset` seconds.
+- * Anything else that goes wrong between here and GoatCounter is an
+- * `UpstreamError`, which the route answers as a 502 naming GoatCounter.
+- *
+- * Shapes, from `https://www.goatcounter.com/api.json` (read 2026-10-12):
+- *
+- *   stats/total      { total, total_events, total_utc, stats: [{ day, daily, hourly[] }] }
+- *   stats/hits       { hits: [{ path_id, path, title, event, count, stats: [...] }], more, total }
+- *   stats/<page>     { stats: [{ id, name, count, ref_scheme }], more }
+- *                    page: toprefs, campaigns, locations, sizes, browsers, systems, languages
+- *   paths            { paths: [{ id, path, title, event }], more }   (params Limit, After)
+- *
+- * GoatCounter counts visits, not pageviews (help/sessions: "GoatCounter only
+- * counts visits"), so `count` and `daily` are visitors and no pageview figure
+- * exists in the API. The mapping below reports `pageviews: null` rather than
+- * copying the visit count into a field that would read as something else.
+- */
+-
+-import { UpstreamError } from "../http.mjs";
+-
+-const RATE_PER_SECOND = 3;
+-
+-export function createGoatCounter({ site, token, fetch, cache, now = Date.now, sleep = defaultSleep, ttlMs = 300_000, log = console }) {
+-  const base = `https://${site}.goatcounter.com/api/v0/`;
+-  const starts = [];
+-  let tail = Promise.resolve();
+-
+-  // The queue: a request takes the next slot in which fewer than three
+-  // requests started during the last second. Slot acquisition is serialised
+-  // through `tail`; the requests themselves run concurrently.
+-  function slot() {
+-    const run = tail.then(async () => {
+-      for (;;) {
+-        const t = now();
+-        while (starts.length > 0 && t - starts[0] >= 1000) starts.shift();
+-        if (starts.length < RATE_PER_SECOND) break;
+-        await sleep(starts[0] + 1000 - t);
+-      }
+-      starts.push(now());
+-    });
+-    tail = run.catch(() => undefined);
+-    return run;
+-  }
+-
+-  async function request(url, retried = false) {
+-    await slot();
+-    let res;
+-    try {
+-      res = await fetch(url, { headers: { authorization: `Bearer ${token}`, "content-type": "application/json", accept: "application/json" } });
+-    } catch (error) {
+-      const code = error?.cause?.code ?? error?.code;
+-      throw new UpstreamError(`GoatCounter unreachable${code ? ` (${code})` : ""}`, { cause: error });
+-    }
+-    if (res.status === 429 && !retried) {
+-      const wait = Math.min(30, Math.max(1, Number(res.headers.get("x-rate-limit-reset") ?? "2")));
+-      log.warn(`goatcounter: 429, waiting ${wait}s`);
+-      await sleep(wait * 1000);
+-      return request(url, true);
+-    }
+-    if (!res.ok) {
+-      const body = await res.text().catch(() => "");
+-      throw new UpstreamError(`goatcounter ${res.status} on ${url.replace(base, "")}: ${body.slice(0, 200)}`);
+-    }
+-    return res.json();
+-  }
+-
+-  function get(path, params) {
+-    const url = new URL(path, base);
+-    for (const [k, v] of Object.entries(params)) {
+-      if (v === undefined || v === null) continue;
+-      if (Array.isArray(v)) for (const item of v) url.searchParams.append(k, String(item));
+-      else url.searchParams.set(k, String(v));
+-    }
+-    return cache.get(url.href, ttlMs, () => request(url.href));
+-  }
+-
+-  return {
+-    get configured() {
+-      return typeof token === "string" && token !== "";
+-    },
+-    /** Visits per day for the range. */
+-    total(start, end) {
+-      return get("stats/total", { start, end });
+-    },
+-    /** Every path with its visitors for the range, pages and events alike, paginated to `maxPages`. */
+-    async hits(start, end, maxPages = 5) {
+-      const all = [];
+-      const seen = [];
+-      for (let page = 0; page < maxPages; page += 1) {
+-        const res = await get("stats/hits", { start, end, limit: 100, exclude_paths: seen.length > 0 ? seen : undefined });
+-        const hits = Array.isArray(res.hits) ? res.hits : [];
+-        all.push(...hits);
+-        for (const hit of hits) seen.push(hit.path_id);
+-        if (!res.more || hits.length === 0) break;
+-      }
+-      return all;
+-    },
+-    /** One of the dashboard panels: toprefs, campaigns, locations, sizes, browsers, systems, languages. */
+-    async page(name, start, end, limit = 100) {
+-      const res = await get(`stats/${name}`, { start, end, limit });
+-      return Array.isArray(res.stats) ? res.stats : [];
+-    },
+-  };
+-}
+-
+-function defaultSleep(ms) {
+-  return new Promise((resolve) => setTimeout(resolve, ms));
+-}
+-
+-/* ---- pure mappings, tested against test/fixtures/goatcounter-*.json ---- */
+-
+-/** Site visits for a `stats/total` response: visitors without events. */
+-export function visitsOf(total) {
+-  if (typeof total?.total === "number") return total.total - (typeof total.total_events === "number" ? total.total_events : 0);
+-  return perDayOf(total).reduce((sum, d) => sum + d.visits, 0);
+-}
+-
+-/** `[{ day, visits, pageviews: null }]`, one entry per day in the response, oldest first. */
+-export function perDayOf(total) {
+-  const stats = Array.isArray(total?.stats) ? total.stats : [];
+-  return stats.map((s) => ({ day: String(s.day).slice(0, 10), visits: Number(s.daily ?? 0), pageviews: null }));
+-}
+-
+-/** The pages (not events) of a `stats/hits` list, as rows for the page table, most visited first. */
+-export function pageRowsOf(hits) {
+-  return hits
+-    .filter((h) => h.event !== true)
+-    .map((h) => ({ path: h.path, title: h.title ?? "", visitors: Number(h.count ?? 0), pageviews: null }))
+-    .sort((a, b) => b.visitors - a.visitors);
+-}
+-
+-const EVENT_KINDS = ["out", "play", "watch", "read", "nav"];
+-
+-/** The kind of an event name from its prefix: `out-github` is an outbound click, `read-<slug>` a read to the end. */
+-export function eventKindOf(name) {
+-  const prefix = String(name).replace(/^\//, "").split("-")[0];
+-  return EVENT_KINDS.includes(prefix) ? prefix : "other";
+-}
+-
+-/** The events of a `stats/hits` list. GoatCounter stores an event's name as its path. */
+-export function eventRowsOf(hits) {
+-  return hits
+-    .filter((h) => h.event === true)
+-    .map((h) => ({ name: String(h.path).replace(/^\//, ""), kind: eventKindOf(h.path), visitors: Number(h.count ?? 0) }))
+-    .sort((a, b) => b.visitors - a.visitors);
+-}
+-
+-/** Outbound clicks over home-page visitors, or null when nobody reached the home page in the range. */
+-export function outboundRateOf(hits) {
+-  const home = hits.find((h) => h.event !== true && h.path === "/");
+-  const homeVisitors = Number(home?.count ?? 0);
+-  if (homeVisitors === 0) return null;
+-  const outbound = eventRowsOf(hits).filter((e) => e.kind === "out").reduce((sum, e) => sum + e.visitors, 0);
+-  return outbound / homeVisitors;
+-}
+-
+-/** Sum of the visitors on `out-*` events. */
+-export function outboundOf(hits) {
+-  return eventRowsOf(hits).filter((e) => e.kind === "out").reduce((sum, e) => sum + e.visitors, 0);
+-}
+-
+-/** A dashboard panel's stats as `[{ name, visitors }]`. */
+-export function namedRowsOf(stats) {
+-  return stats.map((s) => ({ name: s.name ?? "", visitors: Number(s.count ?? 0) })).sort((a, b) => b.visitors - a.visitors);
+-}
+diff --git a/admin/api/src/config.mjs b/admin/api/src/config.mjs
+index 20b4c72..b174c13 100644
+--- a/admin/api/src/config.mjs
++++ b/admin/api/src/config.mjs
+@@ -57,21 +57,21 @@ export function parseServiceAccountKey(raw, log = console) {
+     log.error("GSC_SA_KEY is not JSON; it must be the service account key's content, not a path; treating as unset");
+     return null;
+   }
+ }
+ 
+ export function readConfig(env = process.env, log = console) {
+   const siteUrl = text(env.SITE_URL, "https://csarko.sh").replace(/\/+$/, "");
+   return {
+     adminEmails: parseAllowlist(env.ADMIN_EMAILS),
+     firebaseProject: text(env.FIREBASE_PROJECT, text(env.GOOGLE_CLOUD_PROJECT)),
+-    goatcounter: { token: secret(env.GOATCOUNTER_TOKEN), site: text(env.GOATCOUNTER_SITE, "csarko") },
++    visits: { dataset: text(env.VISITS_DATASET, ""), historyDataset: text(env.VISITS_HISTORY_DATASET, ""), historyUntil: text(env.VISITS_HISTORY_UNTIL, "") || null },
+     gsc: { key: parseServiceAccountKey(env.GSC_SA_KEY, log), property: text(env.GSC_PROPERTY, "sc-domain:csarko.sh") },
+     youtube: { key: secret(env.YOUTUBE_KEY), handle: text(env.YOUTUBE_HANDLE, "csarkosh") },
+     github: { token: secret(env.GITHUB_TOKEN), owner: text(env.GITHUB_OWNER, DEFAULT_GITHUB_OWNER) },
+     psiKey: secret(env.PSI_KEY),
+     siteUrl,
+     sitemapUrl: text(env.SITEMAP_URL, `${siteUrl}/sitemap.xml`),
+     hostingSite: text(env.HOSTING_SITE, "csarko-sh"),
+     allowedOrigins: list(env.ALLOWED_ORIGINS, DEFAULT_ALLOWED_ORIGINS),
+     snapshotInvoker: text(env.SNAPSHOT_INVOKER),
+     serviceUrl: text(env.SERVICE_URL),
+diff --git a/admin/api/src/queries.mjs b/admin/api/src/queries.mjs
+index c0c697f..003e323 100644
+--- a/admin/api/src/queries.mjs
++++ b/admin/api/src/queries.mjs
+@@ -7,32 +7,39 @@
+  *
+  * Two conventions keep a half-configured service useful. A source whose
+  * credential is missing yields `null` for its part of the answer and a
+  * `notConfigured: { <part>: "<ENV NAME>" }` hint, never a 500, so the page
+  * can say which secret to add. A source that is configured but fails yields
+  * `null` and an `errors: { <part>: "<message>" }` entry when the answer has
+  * other parts worth showing; a query with one source throws, which the route
+  * turns into a 500.
+  */
+ 
+-import * as gcMap from "./collectors/goatcounter.mjs";
+ import * as gscMap from "./collectors/gsc.mjs";
+ import { groupReferrers } from "./referrers.mjs";
+ import { pathsOf, normalizePath } from "./collectors/sitemap.mjs";
+ import { assessHealth } from "./health.mjs";
+ import { addDays, isoDate, hourlyRange, dailyRange } from "./time.mjs";
+ 
+ export const QUERY_NAMES = ["visits", "pages", "referrers", "events", "audience", "search", "reach", "health"];
+ export const MANUAL_KEYS = ["substack"];
+ export const APP_NAME = "csarko.sh";
+ export const TREND_WEEKS = 12;
+ 
++const EVENT_KINDS = ["out", "play", "watch", "read", "nav"];
++/** The kind of an event name from its prefix: `out-github` is an outbound click, `read-<slug>` a read to the end. */
++export function eventKindOf(name) {
++  const prefix = String(name).split("-")[0];
++  return EVENT_KINDS.includes(prefix) ? prefix : "other";
++}
++const outboundOf = (rows) => rows.filter((r) => eventKindOf(r.name) === "out").reduce((n, r) => n + r.visitors, 0);
++
+ export function isQueryName(name) {
+   return QUERY_NAMES.includes(name);
+ }
+ 
+ export function isManualKey(key) {
+   return MANUAL_KEYS.includes(key);
+ }
+ 
+ /**
+  * Twelve weekly values from daily snapshots: for each of the last twelve
+@@ -57,21 +64,21 @@ export function weeklyTrend(snapshots, field, today, weeks = TREND_WEEKS) {
+ 
+ /** The snapshot of `daysAgo` days back, or the nearest older one within a week, or null. */
+ export function snapshotAgo(snapshots, today, daysAgo = 7) {
+   const target = addDays(today, -daysAgo);
+   const floor = addDays(target, -6);
+   let pick = null;
+   for (const s of snapshots) if (s.date <= target && s.date >= floor && (pick === null || s.date > pick.date)) pick = s;
+   return pick;
+ }
+ 
+-export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosting, sitemap, store, config, now = Date.now, log = console }) {
++export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, hosting, sitemap, store, config, now = Date.now, log = console }) {
+   /** Runs one part of an answer, reporting a missing credential or a failure instead of throwing. */
+   async function part(hints, name, envName, configured, fn) {
+     if (!configured) {
+       hints.notConfigured[name] = envName;
+       return null;
+     }
+     try {
+       return await fn();
+     } catch (error) {
+       log.error(`admin: ${name} failed`, error);
+@@ -80,81 +87,72 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
+     }
+   }
+ 
+   const hints = () => ({ notConfigured: {}, errors: {} });
+   const withHints = (body, h) => ({
+     ...body,
+     ...(Object.keys(h.notConfigured).length > 0 ? { notConfigured: h.notConfigured } : {}),
+     ...(Object.keys(h.errors).length > 0 ? { errors: h.errors } : {}),
+   });
+ 
+-  const requireGc = () => {
+-    if (!gc.configured) return { notConfigured: { goatcounter: "GOATCOUNTER_TOKEN" } };
+-    return null;
+-  };
++  const requireVisits = () => (visits.configured ? null : { notConfigured: { visits: "VISITS_DATASET" } });
+ 
+   async function sitemapPaths(h) {
+     const urls = await part(h, "sitemap", "SITEMAP_URL", true, () => sitemap.urls());
+     return urls === null ? null : pathsOf(urls);
+   }
+ 
+-  async function notFoundOf(hits, h) {
++  async function notFoundOf(rows, h) {
+     const paths = await sitemapPaths(h);
+     if (paths === null) return null;
+-    return gcMap.pageRowsOf(hits)
+-      .filter((r) => r.visitors > 0 && !paths.has(normalizePath(r.path)))
+-      .map((r) => ({ path: r.path, visitors: r.visitors }));
++    return rows.filter((r) => r.visitors > 0 && !paths.has(normalizePath(r.path))).map((r) => ({ path: r.path, visitors: r.visitors }));
+   }
+ 
+   const queries = {
+     async visits(days) {
+       const range = hourlyRange(days, now());
+-      const empty = requireGc();
++      const empty = requireVisits();
+       if (empty) return { days, from: range.start, to: range.end, current: null, previous: null, ...empty };
+-      const [cur, prev] = await Promise.all([gc.total(range.start, range.end), gc.total(range.prevStart, range.prevEnd)]);
+-      const shape = (t) => ({ visits: gcMap.visitsOf(t), pageviews: null, perDay: gcMap.perDayOf(t) });
+-      return { days, from: range.start, to: range.end, current: shape(cur), previous: shape(prev) };
++      const { current, previous } = await visits.visits(range);
++      return { days, from: range.start, to: range.end, current, previous };
+     },
+ 
+     async pages(days) {
+-      const empty = requireGc();
++      const empty = requireVisits();
+       if (empty) return { rows: null, ...empty };
+       const range = hourlyRange(days, now());
+       const h = hints();
+-      const [hits, paths] = await Promise.all([gc.hits(range.start, range.end), sitemapPaths(h)]);
+-      const rows = gcMap.pageRowsOf(hits).map((r) => ({ ...r, inSitemap: paths === null ? null : paths.has(normalizePath(r.path)) }));
+-      return withHints({ rows }, h);
++      const [rows, paths] = await Promise.all([visits.pages(range), sitemapPaths(h)]);
++      return withHints({ rows: rows.map((r) => ({ ...r, inSitemap: paths === null ? null : paths.has(normalizePath(r.path)) })) }, h);
+     },
+ 
+     async referrers(days) {
+-      const empty = requireGc();
+-      if (empty) return { groups: null, rows: null, campaigns: null, ...empty };
++      const empty = requireVisits();
++      if (empty) return { groups: null, rows: null, campaigns: null, paths: null, ...empty };
+       const range = hourlyRange(days, now());
+-      const [refs, campaigns] = await Promise.all([gc.page("toprefs", range.start, range.end), gc.page("campaigns", range.start, range.end)]);
+-      return { ...groupReferrers(refs), campaigns: gcMap.namedRowsOf(campaigns).map((c) => ({ campaign: c.name, visitors: c.visitors })) };
++      const r = await visits.referrers(range);
++      return { ...groupReferrers(r.referrers.map((x) => ({ name: x.name, count: x.visitors }))), campaigns: r.campaigns, paths: r.paths };
+     },
+ 
+     async events(days) {
+-      const empty = requireGc();
++      const empty = requireVisits();
+       if (empty) return { rows: null, outboundRate: null, ...empty };
+       const range = hourlyRange(days, now());
+-      const hits = await gc.hits(range.start, range.end);
+-      return { rows: gcMap.eventRowsOf(hits), outboundRate: gcMap.outboundRateOf(hits) };
++      const e = await visits.events(range);
++      const rows = e.rows.map((r) => ({ name: r.name, kind: eventKindOf(r.name), visitors: r.visitors }));
++      return { rows, outboundRate: e.homeVisitors > 0 ? outboundOf(rows) / e.homeVisitors : null };
+     },
+ 
+     async audience(days) {
+-      const empty = requireGc();
+-      if (empty) return { countries: null, sizes: null, browsers: null, systems: null, languages: null, ...empty };
+-      const range = hourlyRange(days, now());
+-      const panel = (name) => gc.page(name, range.start, range.end, 50).then(gcMap.namedRowsOf);
+-      const [countries, sizes, browsers, systems, languages] = await Promise.all(["locations", "sizes", "browsers", "systems", "languages"].map(panel));
+-      return { countries, sizes, browsers, systems, languages };
++      const empty = requireVisits();
++      if (empty) return { countries: null, sizes: null, browsers: null, systems: null, languages: null, themes: null, viewports: null, touch: null, timezones: null, ...empty };
++      return visits.audience(hourlyRange(days, now()));
+     },
+ 
+     async search(days) {
+       const base = { lag: gscMap.GSC_LAG };
+       if (!gsc.configured) return { ...base, perDay: null, totals: null, previous: null, queries: null, pages: null, indexed: null, sitemap: null, notConfigured: { search: "GSC_SA_KEY" } };
+       const r = dailyRange(days, now());
+       const h = hints();
+       const [dateRows, prevRows, queryRows, pageRows, urls, latest] = await Promise.all([
+         gsc.query({ startDate: r.startDate, endDate: r.endDate, dimensions: ["date"] }),
+         gsc.query({ startDate: r.prevStartDate, endDate: r.prevEndDate, dimensions: ["date"] }),
+@@ -198,37 +196,37 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
+       ]);
+       if (repos !== null && !github.configured) h.notConfigured.githubTraffic = "GITHUB_TOKEN";
+       const ago = snapshotAgo(snapshots, today, 7);
+       const yt = channel === null ? null : { ...channel, prev: ago?.youtube ? { subscribers: ago.youtube.subscribers ?? null, views: ago.youtube.views ?? null } : null };
+       return withHints({ youtube: yt, github: repos, hn: mentions, substack: { series } }, h);
+     },
+ 
+     async health(days = 7) {
+       const h = hints();
+       const range = hourlyRange(days, now());
+-      const [live, latest, lastDeployAt, hits, urls, sitemapState] = await Promise.all([
++      const [live, latest, lastDeployAt, pageRows, urls, sitemapState] = await Promise.all([
+         uptime.check(),
+         store.latestSnapshot(),
+         part(h, "hosting", "HOSTING_SITE", true, () => hosting.lastDeployAt()),
+-        part(h, "goatcounter", "GOATCOUNTER_TOKEN", gc.configured, () => gc.hits(range.start, range.end)),
++        part(h, "visits", "VISITS_DATASET", visits.configured, () => visits.pages(range)),
+         part(h, "sitemap", "SITEMAP_URL", true, () => sitemap.urls()),
+         part(h, "sitemapState", "GSC_SA_KEY", gsc.configured, () => gsc.sitemap(config.sitemapUrl)),
+       ]);
+       let lighthousePerformance = latest?.lighthousePerformance ?? null;
+       let lighthouseAt = typeof latest?.lighthousePerformance === "number" ? latest.at ?? null : null;
+       if (latest === null) {
+         // No snapshot yet: run Lighthouse once (cached an hour) so the card is not empty on day one.
+         const score = await part(h, "lighthouse", "PSI_KEY", psi.configured, () => psi.performance());
+         lighthousePerformance = score?.performance ?? null;
+         lighthouseAt = score?.at ?? null;
+       }
+-      const notFound = hits === null ? null : await notFoundOf(hits, h);
++      const notFound = pageRows === null ? null : await notFoundOf(pageRows, h);
+       // Indexing comes from the snapshot as well: a URL inspection takes 5 to
+       // 7 s, so the sitemap's 33 cost a cold instance a minute when they ran
+       // on the request (seen 2026-10-13: 60 s and a 504). The daily job
+       // inspects them once; a request inspects live only while no snapshot
+       // holds a result, as on day one.
+       const stored = latest?.indexed ?? null;
+       const indexedFull = stored ?? (urls === null ? null : await part(h, "indexed", "GSC_SA_KEY", gsc.configured, () => gsc.indexedOf(urls)));
+       const indexed = indexedFull === null ? null : { indexed: indexedFull.indexed, total: indexedFull.total };
+       const indexedAt = indexedFull === null ? null : stored === null ? new Date(now()).toISOString() : latest.at ?? null;
+       const sitemapFetchedAt = sitemapState?.lastDownloaded ?? null;
+@@ -247,89 +245,90 @@ export function createQueries({ gc, gsc, youtube, github, hn, psi, uptime, hosti
+         indexedAt,
+         overall,
+       }, h);
+     },
+ 
+     async kpis() {
+       const h = hints();
+       const today = isoDate(now());
+       const range = hourlyRange(7, now());
+       const daily = dailyRange(28, now());
+-      const [snapshots, visits, outbound, search, health] = await Promise.all([
++      const [snapshots, visitsKpi, outbound, search, health] = await Promise.all([
+         store.listSnapshots(addDays(today, -7 * TREND_WEEKS + 1), today),
+-        part(h, "visits", "GOATCOUNTER_TOKEN", gc.configured, async () => {
+-          const [cur, prev] = await Promise.all([gc.total(range.start, range.end), gc.total(range.prevStart, range.prevEnd)]);
+-          return { value: gcMap.visitsOf(cur), prev: gcMap.visitsOf(prev) };
++        part(h, "visits", "VISITS_DATASET", visits.configured, async () => {
++          const { current, previous } = await visits.visits(range);
++          return { value: current.visits, prev: previous.visits };
+         }),
+-        part(h, "outbound", "GOATCOUNTER_TOKEN", gc.configured, async () => {
+-          const [cur, prev] = await Promise.all([gc.hits(range.start, range.end), gc.hits(range.prevStart, range.prevEnd)]);
+-          return { value: gcMap.outboundOf(cur), prev: gcMap.outboundOf(prev) };
++        part(h, "outbound", "VISITS_DATASET", visits.configured, async () => {
++          const prevRange = { ...range, start: range.prevStart, end: range.prevEnd, prevStart: range.prevStart, prevEnd: range.prevStart };
++          const [cur, prev] = await Promise.all([visits.events(range), visits.events(prevRange)]);
++          return { value: outboundOf(cur.rows), prev: outboundOf(prev.rows) };
+         }),
+         part(h, "search", "GSC_SA_KEY", gsc.configured, async () => {
+           const [cur, prev] = await Promise.all([
+             gsc.query({ startDate: daily.startDate, endDate: daily.endDate, dimensions: ["date"] }),
+             gsc.query({ startDate: daily.prevStartDate, endDate: daily.prevEndDate, dimensions: ["date"] }),
+           ]);
+           return { cur: gscMap.totalsOf(gscMap.perDayOf(cur, daily.startDate, daily.endDate)), prev: gscMap.totalsOf(gscMap.perDayOf(prev, daily.prevStartDate, daily.prevEndDate)) };
+         }),
+         part(h, "health", "SITE_URL", true, () => queries.health(7)),
+       ]);
+       const kpi = (key, label, value, prev, field) => ({ key, label, value, prev, unit: "", trend: weeklyTrend(snapshots, field, today) });
+       return withHints({
+         app: APP_NAME,
+         at: new Date(now()).toISOString(),
+         kpis: [
+-          kpi("visits", "Visits, 7 days", visits?.value ?? null, visits?.prev ?? null, "visits7"),
++          kpi("visits", "Visits, 7 days", visitsKpi?.value ?? null, visitsKpi?.prev ?? null, "visits7"),
+           kpi("search", "Search clicks, 28 days", search?.cur.clicks ?? null, search?.prev.clicks ?? null, "searchClicks7"),
+           kpi("impressions", "Impressions, 28 days", search?.cur.impressions ?? null, search?.prev.impressions ?? null, "impressions7"),
+           kpi("outbound", "Outbound clicks, 7 days", outbound?.value ?? null, outbound?.prev ?? null, "outbound7"),
+         ],
+         health: health?.overall ?? { status: "warning", note: "health check failed" },
+       }, h);
+     },
+ 
+     /** Today's snapshot, every collector once; merged into `snapshots/<date>` so a rerun on the same day refreshes rather than duplicates. */
+     async snapshot() {
+       const h = hints();
+       const t = now();
+       const date = isoDate(t);
+       const range = hourlyRange(7, t);
+       const d28 = dailyRange(28, t);
+       const d7 = dailyRange(7, t);
+       const gscTotals = (r) => gsc.query({ startDate: r.startDate, endDate: r.endDate, dimensions: ["date"] }).then((rows) => gscMap.totalsOf(gscMap.perDayOf(rows, r.startDate, r.endDate)));
+-      const [total, hits, s28, s7, channel, repos, score, live, urls] = await Promise.all([
+-        part(h, "visits", "GOATCOUNTER_TOKEN", gc.configured, () => gc.total(range.start, range.end)),
+-        part(h, "events", "GOATCOUNTER_TOKEN", gc.configured, () => gc.hits(range.start, range.end)),
++      const [total, evs, s28, s7, channel, repos, score, live, urls] = await Promise.all([
++        part(h, "visits", "VISITS_DATASET", visits.configured, () => visits.visits(range)),
++        part(h, "events", "VISITS_DATASET", visits.configured, () => visits.events(range)),
+         part(h, "search28", "GSC_SA_KEY", gsc.configured, () => gscTotals(d28)),
+         part(h, "search7", "GSC_SA_KEY", gsc.configured, () => gscTotals(d7)),
+         part(h, "youtube", "YOUTUBE_KEY", youtube.configured, () => youtube.channel()),
+         part(h, "github", "GITHUB_OWNER", github.enabled, () => github.all()),
+         part(h, "lighthouse", "PSI_KEY", psi.configured, () => psi.performance()),
+         uptime.check(),
+         part(h, "sitemap", "SITEMAP_URL", true, () => sitemap.urls()),
+       ]);
+       // The one place the sitemap's URLs are inspected (5 to 7 s each, in
+       // parallel): once a day here, read by health() and search() after.
+       const indexed = urls === null ? null : await part(h, "indexed", "GSC_SA_KEY", gsc.configured, () => gsc.indexedOf(urls));
+       const githubDoc = {};
+       for (const r of repos ?? []) {
+         githubDoc[r.repo] = { stars: r.stars, views14: r.traffic?.views ?? null, uniques14: r.traffic?.uniques ?? null, clones14: r.traffic?.clones ?? null };
+       }
+       const doc = {
+         at: new Date(t).toISOString(),
+-        visits7: total === null ? null : gcMap.visitsOf(total),
++        visits7: total === null ? null : total.current.visits,
+         pageviews7: null,
+         searchClicks28: s28?.clicks ?? null,
+         impressions28: s28?.impressions ?? null,
+         searchClicks7: s7?.clicks ?? null,
+         impressions7: s7?.impressions ?? null,
+-        outbound7: hits === null ? null : gcMap.outboundOf(hits),
++        outbound7: evs === null ? null : outboundOf(evs.rows),
+         youtube: channel === null ? null : { subscribers: channel.subscribers, views: channel.views },
+         github: githubDoc,
+         lighthousePerformance: score?.performance ?? null,
+         indexed: indexed === null ? null : { indexed: indexed.indexed, total: indexed.total, missing: indexed.missing },
+         up: live.up,
+         ttfbMs: live.ttfbMs,
+         ...(Object.keys(h.notConfigured).length > 0 ? { notConfigured: h.notConfigured } : {}),
+         ...(Object.keys(h.errors).length > 0 ? { errors: h.errors } : {}),
+       };
+       return store.writeSnapshot(date, doc);
+diff --git a/admin/api/src/server.mjs b/admin/api/src/server.mjs
+index 55c7c65..eaef937 100644
+--- a/admin/api/src/server.mjs
++++ b/admin/api/src/server.mjs
+@@ -10,39 +10,40 @@
+  */
+ 
+ import http from "node:http";
+ import { readConfig } from "./config.mjs";
+ import { createCache } from "./cache.mjs";
+ import { IpLimiter } from "./limiter.mjs";
+ import { createAdminAuth, createOidcVerifier } from "./auth.mjs";
+ import { createApp } from "./app.mjs";
+ import { createQueries } from "./queries.mjs";
+ import { createMemoryStore, createFirestoreStore } from "./store.mjs";
+-import { createGoatCounter } from "./collectors/goatcounter.mjs";
++import { BigQuery } from "@google-cloud/bigquery";
++import { createVisits } from "./collectors/visits.mjs";
+ import { createGsc } from "./collectors/gsc.mjs";
+ import { createYouTube } from "./collectors/youtube.mjs";
+ import { createGitHub } from "./collectors/github.mjs";
+ import { createHackerNews } from "./collectors/hn.mjs";
+ import { createPsi } from "./collectors/psi.mjs";
+ import { createUptime } from "./collectors/uptime.mjs";
+ import { createHosting } from "./collectors/hosting.mjs";
+ import { createSitemap } from "./collectors/sitemap.mjs";
+ 
+ const config = readConfig(process.env);
+ const fetch = globalThis.fetch;
+ const cache = createCache();
+ const log = console;
+ 
+ const store = process.env.ADMIN_STORE === "memory" ? createMemoryStore() : await createFirestoreStore({ projectId: config.projectId, log });
+ 
+ const queries = createQueries({
+-  gc: createGoatCounter({ site: config.goatcounter.site, token: config.goatcounter.token, fetch, cache, log }),
++  visits: createVisits({ bigquery: config.visits.dataset ? new BigQuery({ projectId: config.projectId }) : null, projectId: config.projectId, dataset: config.visits.dataset, historyDataset: config.visits.historyDataset, historyUntil: config.visits.historyUntil, cache, log }),
+   gsc: createGsc({ key: config.gsc.key, property: config.gsc.property, fetch, cache }),
+   youtube: createYouTube({ key: config.youtube.key, handle: config.youtube.handle, fetch, cache }),
+   github: createGitHub({ token: config.github.token, owner: config.github.owner, fetch, cache, log }),
+   hn: createHackerNews({ query: new URL(config.siteUrl).hostname, fetch, cache }),
+   psi: createPsi({ key: config.psiKey, siteUrl: config.siteUrl, fetch, cache }),
+   uptime: createUptime({ siteUrl: config.siteUrl, fetch, cache }),
+   hosting: createHosting({ site: config.hostingSite, fetch, cache }),
+   sitemap: createSitemap({ url: config.sitemapUrl, fetch, cache }),
+   store,
+   config,
+@@ -58,21 +59,21 @@ const app = createApp({
+   queries,
+   limiter,
+   adminAuth: createAdminAuth({ projectId: config.firebaseProject, allowed: config.adminEmails }),
+   oidc: createOidcVerifier({ invoker: config.snapshotInvoker }),
+   log,
+ });
+ 
+ if (config.adminEmails.length === 0) log.error("admin: ADMIN_EMAILS is empty; /admin/* will answer 503 until the allowlist names an account");
+ else log.log(`admin: ${config.adminEmails.length} account(s) may sign in, through Firebase project ${config.firebaseProject}`);
+ const unconfigured = [
+-  config.goatcounter.token === null && "GOATCOUNTER_TOKEN",
++  !config.visits.dataset && "VISITS_DATASET",
+   config.gsc.key === null && "GSC_SA_KEY",
+   config.youtube.key === null && "YOUTUBE_KEY",
+   config.github.token === null && "GITHUB_TOKEN",
+   config.psiKey === null && "PSI_KEY",
+ ].filter(Boolean);
+ if (unconfigured.length > 0) log.warn(`admin: not configured, their sections will read null: ${unconfigured.join(", ")}`);
+ 
+ const server = http.createServer(app);
+ server.listen(config.port, () => log.log(`admin: listening on :${config.port} for ${config.allowedOrigins.join(", ")}`));
+ 
+diff --git a/admin/api/test/app.test.mjs b/admin/api/test/app.test.mjs
+index 9bfc408..ec6fe9c 100644
+--- a/admin/api/test/app.test.mjs
++++ b/admin/api/test/app.test.mjs
+@@ -7,21 +7,21 @@ import { IpLimiter } from "../src/limiter.mjs";
+ 
+ const TOKEN = "a-signed-id-token-for-an-allowed-account";
+ const adminAuth = { enabled: true, async verify(token) { return token === TOKEN ? { email: "cyrus@example.com" } : null; } };
+ const calls = [];
+ const queries = {
+   async kpis() { return { app: "csarko.sh", kpis: [] }; },
+   async visits(days) { calls.push(["visits", days]); return { days }; },
+   async pages(days) { return { days }; },
+   async referrers(days) { return { days }; },
+   async events(days) { return { days }; },
+-  async audience(days) { if (days === 90) throw new UpstreamError("GoatCounter unreachable (ECONNRESET)"); return { days }; },
++  async audience(days) { if (days === 90) throw new UpstreamError("BigQuery audience failed: quota"); return { days }; },
+   async search(days) { return { days }; },
+   async reach(days) { if (days === 90) throw Object.assign(new TypeError("fetch failed"), { cause: { code: "ETIMEDOUT" } }); return { days }; },
+   async health(days) { if (days === 90) throw new Error("boom"); return { days }; },
+   async manual(key, value) { calls.push(["manual", key, value]); return { ok: true, at: "t" }; },
+   async snapshot() { calls.push(["snapshot"]); return { date: "2026-10-12" }; },
+ };
+ const oidc = { async verify(token, audiences) { return token === "oidc-ok" && audiences.length > 0 ? { email: "s@x" } : null; } };
+ const log = { error() {}, warn() {}, log() {} };
+ 
+ function serve(config, capacity = 100) {
+@@ -69,21 +69,21 @@ test("the routes", async () => {
+   assert.equal((await call(server, "GET", "/admin/query/nope", auth())).status, 404);
+   assert.equal((await call(server, "GET", "/admin/query/Visits", auth())).status, 404);
+   assert.equal((await call(server, "POST", "/admin/query/visits", auth())).status, 405);
+ 
+   const failed = await call(server, "GET", "/admin/query/health?days=90", auth("3.3.3.3"));
+   assert.equal(failed.status, 500);
+   assert.deepEqual(failed.body, { error: "boom" });
+ 
+   const upstream = await call(server, "GET", "/admin/query/audience?days=90", auth("3.3.3.3"));
+   assert.equal(upstream.status, 502, "a vendor that failed is a bad gateway, not our 500");
+-  assert.deepEqual(upstream.body, { error: "GoatCounter unreachable (ECONNRESET)" });
++  assert.deepEqual(upstream.body, { error: "BigQuery audience failed: quota" });
+   const unnamed = await call(server, "GET", "/admin/query/reach?days=90", auth("3.3.3.3"));
+   assert.equal(unnamed.status, 502, "any collector's failed fetch is a bad gateway too");
+   assert.deepEqual(unnamed.body, { error: "an upstream service was unreachable (ETIMEDOUT)" });
+ 
+   const manual = await call(server, "POST", "/admin/manual/substack", { ...auth("4.4.4.4"), headers: { ...auth().headers, "content-type": "application/json" }, body: JSON.stringify({ value: 12 }) });
+   assert.equal(manual.status, 200);
+   assert.deepEqual(manual.body, { ok: true, at: "t" });
+   assert.deepEqual(calls.at(-1), ["manual", "substack", 12]);
+   assert.equal((await call(server, "POST", "/admin/manual/substack", { ...auth("4.4.4.4"), body: '{"value":"12"}' })).status, 400);
+   assert.equal((await call(server, "POST", "/admin/manual/other", { ...auth("4.4.4.4"), body: '{"value":1}' })).status, 404);
+diff --git a/admin/api/test/fixtures/goatcounter-hits.json b/admin/api/test/fixtures/goatcounter-hits.json
+deleted file mode 100644
+index fbe1edb..0000000
+--- a/admin/api/test/fixtures/goatcounter-hits.json
++++ /dev/null
+@@ -1,17 +0,0 @@
+-{
+-  "total": 212,
+-  "more": false,
+-  "hits": [
+-    { "path_id": 1, "path": "/", "title": "Cyrus Sarkosh, Senior Software Engineer", "event": false, "count": 120, "max": 9, "stats": [] },
+-    { "path_id": 2, "path": "/research/stylized-shader-looks", "title": "Stylized shader looks", "event": false, "count": 40, "max": 4, "stats": [] },
+-    { "path_id": 3, "path": "/games", "title": "Games", "event": false, "count": 25, "max": 3, "stats": [] },
+-    { "path_id": 4, "path": "/docs/old-slug", "title": "Not found", "event": false, "count": 7, "max": 2, "stats": [] },
+-    { "path_id": 5, "path": "/wp-login.php", "title": "Not found", "event": false, "count": 2, "max": 1, "stats": [] },
+-    { "path_id": 6, "path": "out-github", "title": "", "event": true, "count": 12, "max": 2, "stats": [] },
+-    { "path_id": 7, "path": "out-linkedin", "title": "", "event": true, "count": 18, "max": 2, "stats": [] },
+-    { "path_id": 8, "path": "play-dayhike", "title": "", "event": true, "count": 9, "max": 2, "stats": [] },
+-    { "path_id": 9, "path": "watch-who-is-standing-in-my-hallway", "title": "", "event": true, "count": 4, "max": 1, "stats": [] },
+-    { "path_id": 10, "path": "read-stylized-shader-looks", "title": "", "event": true, "count": 6, "max": 1, "stats": [] },
+-    { "path_id": 11, "path": "signup", "title": "", "event": true, "count": 1, "max": 1, "stats": [] }
+-  ]
+-}
+diff --git a/admin/api/test/fixtures/goatcounter-locations.json b/admin/api/test/fixtures/goatcounter-locations.json
+deleted file mode 100644
+index 54b438c..0000000
+--- a/admin/api/test/fixtures/goatcounter-locations.json
++++ /dev/null
+@@ -1,8 +0,0 @@
+-{
+-  "more": false,
+-  "stats": [
+-    { "id": "US", "name": "United States", "count": 130 },
+-    { "id": "DE", "name": "Germany", "count": 20 },
+-    { "id": "", "name": "(unknown)", "count": 5 }
+-  ]
+-}
+diff --git a/admin/api/test/fixtures/goatcounter-total.json b/admin/api/test/fixtures/goatcounter-total.json
+deleted file mode 100644
+index 9000647..0000000
+--- a/admin/api/test/fixtures/goatcounter-total.json
++++ /dev/null
+@@ -1,14 +0,0 @@
+-{
+-  "total": 212,
+-  "total_events": 31,
+-  "total_utc": 210,
+-  "stats": [
+-    { "day": "2026-10-06", "daily": 20, "hourly": [0,0,0,0,0,0,1,2,3,2,1,0,2,1,2,1,1,1,1,0,1,0,0,1] },
+-    { "day": "2026-10-07", "daily": 25, "hourly": [] },
+-    { "day": "2026-10-08", "daily": 30, "hourly": [] },
+-    { "day": "2026-10-09", "daily": 28, "hourly": [] },
+-    { "day": "2026-10-10", "daily": 22, "hourly": [] },
+-    { "day": "2026-10-11", "daily": 26, "hourly": [] },
+-    { "day": "2026-10-12", "daily": 30, "hourly": [] }
+-  ]
+-}
+diff --git a/admin/api/test/goatcounter.test.mjs b/admin/api/test/goatcounter.test.mjs
+deleted file mode 100644
+index da3a6b7..0000000
+--- a/admin/api/test/goatcounter.test.mjs
++++ /dev/null
+@@ -1,111 +0,0 @@
+-import { test } from "node:test";
+-import assert from "node:assert/strict";
+-import { readFileSync } from "node:fs";
+-import { createCache } from "../src/cache.mjs";
+-import { UpstreamError } from "../src/http.mjs";
+-import { createGoatCounter, visitsOf, perDayOf, pageRowsOf, eventRowsOf, eventKindOf, outboundRateOf, outboundOf, namedRowsOf } from "../src/collectors/goatcounter.mjs";
+-import { hourlyRange } from "../src/time.mjs";
+-
+-const fixture = (name) => JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), "utf8"));
+-const total = fixture("goatcounter-total");
+-const hits = fixture("goatcounter-hits").hits;
+-
+-test("stats/total maps to site visits (events excluded) and per-day rows with no pageview figure", () => {
+-  assert.equal(visitsOf(total), 181);
+-  const perDay = perDayOf(total);
+-  assert.equal(perDay.length, 7);
+-  assert.deepEqual(perDay[0], { day: "2026-10-06", visits: 20, pageviews: null });
+-  assert.equal(visitsOf({ stats: total.stats }), 181, "falls back to the per-day sum without totals");
+-});
+-
+-test("stats/hits splits into pages and events", () => {
+-  const pages = pageRowsOf(hits);
+-  assert.deepEqual(pages.map((p) => p.path), ["/", "/research/stylized-shader-looks", "/games", "/docs/old-slug", "/wp-login.php"]);
+-  assert.deepEqual(pages[0], { path: "/", title: "Cyrus Sarkosh, Senior Software Engineer", visitors: 120, pageviews: null });
+-  const events = eventRowsOf(hits);
+-  assert.deepEqual(events.map((e) => [e.name, e.kind, e.visitors]), [
+-    ["out-linkedin", "out", 18],
+-    ["out-github", "out", 12],
+-    ["play-dayhike", "play", 9],
+-    ["read-stylized-shader-looks", "read", 6],
+-    ["watch-who-is-standing-in-my-hallway", "watch", 4],
+-    ["signup", "other", 1],
+-  ]);
+-  assert.equal(eventKindOf("/nav-research"), "nav");
+-  assert.equal(outboundOf(hits), 30);
+-  assert.equal(outboundRateOf(hits), 30 / 120);
+-  assert.equal(outboundRateOf(hits.filter((h) => h.path !== "/")), null, "no home-page visitors, no rate");
+-});
+-
+-test("a dashboard panel maps to named rows", () => {
+-  assert.deepEqual(namedRowsOf(fixture("goatcounter-locations").stats), [
+-    { name: "United States", visitors: 130 },
+-    { name: "Germany", visitors: 20 },
+-    { name: "(unknown)", visitors: 5 },
+-  ]);
+-});
+-
+-test("hourlyRange is rounded to the hour and the previous range abuts the current one", () => {
+-  const r = hourlyRange(7, Date.parse("2026-10-12T15:42:11Z"));
+-  assert.deepEqual(r, { days: 7, start: "2026-10-05T16:00:00Z", end: "2026-10-12T16:00:00Z", prevStart: "2026-09-28T16:00:00Z", prevEnd: "2026-10-05T16:00:00Z" });
+-});
+-
+-test("the client sends the bearer token, caches by URL, paginates hits and backs off once on a 429", async () => {
+-  let t = 0;
+-  const calls = [];
+-  const slept = [];
+-  const responses = new Map();
+-  const json = (body, status = 200, headers = {}) => ({ ok: status < 400, status, headers: new Map(Object.entries(headers)), json: async () => body, text: async () => JSON.stringify(body) });
+-  const fetch = async (url, init) => {
+-    calls.push({ url, auth: init.headers.authorization });
+-    const queued = responses.get(url);
+-    if (queued && queued.length > 0) return queued.shift();
+-    const u = new URL(url);
+-    if (u.pathname.endsWith("/stats/hits")) {
+-      const excluded = u.searchParams.getAll("exclude_paths");
+-      if (excluded.length === 0) return json({ hits: hits.slice(0, 6), more: true });
+-      return json({ hits: hits.slice(6), more: false });
+-    }
+-    return json(total);
+-  };
+-  const gc = createGoatCounter({ site: "csarko", token: "tok", fetch, cache: createCache({ now: () => t }), now: () => t, sleep: async (ms) => { slept.push(ms); t += ms; } });
+-  assert.equal(gc.configured, true);
+-
+-  const all = await gc.hits("2026-10-05T16:00:00Z", "2026-10-12T16:00:00Z");
+-  assert.equal(all.length, hits.length);
+-  assert.equal(calls.length, 2);
+-  assert.equal(calls[0].auth, "Bearer tok");
+-  assert.ok(calls[1].url.includes("exclude_paths=1"), "the second page excludes the ids already seen");
+-
+-  await gc.total("a", "b");
+-  await gc.total("a", "b");
+-  assert.equal(calls.length, 3, "the second total is served from the cache");
+-
+-  const url = `https://csarko.goatcounter.com/api/v0/stats/toprefs?start=a&end=b&limit=100`;
+-  responses.set(url, [json({ error: "rate" }, 429, { "x-rate-limit-reset": "3" })]);
+-  const refs = await gc.page("toprefs", "a", "b");
+-  assert.equal(refs.length, total.stats.length, "the retry got the default stub's body");
+-  assert.ok(slept.includes(3000), "waited the X-Rate-Limit-Reset seconds");
+-});
+-
+-test("the queue starts at most three requests a second", async () => {
+-  let t = 0;
+-  const starts = [];
+-  const slept = [];
+-  const fetch = async () => {
+-    starts.push(t);
+-    return { ok: true, status: 200, headers: new Map(), json: async () => ({ stats: [] }) };
+-  };
+-  const gc = createGoatCounter({ site: "x", token: "t", fetch, cache: createCache({ now: () => t }), now: () => t, sleep: async (ms) => { slept.push(ms); t += ms; } });
+-  await Promise.all(["a", "b", "c", "d", "e", "f", "g"].map((p) => gc.page(p, "s", "e")));
+-  assert.deepEqual(starts, [0, 0, 0, 1000, 1000, 1000, 2000]);
+-});
+-
+-test("GoatCounter refusing the connection or answering an error is an upstream failure that names it", async () => {
+-  const reset = Object.assign(new TypeError("fetch failed"), { cause: Object.assign(new Error("read ECONNRESET"), { code: "ECONNRESET" }) });
+-  const down = createGoatCounter({ site: "csarko", token: "t", fetch: async () => { throw reset; }, cache: createCache() });
+-  await assert.rejects(down.total("a", "b"), (error) => error instanceof UpstreamError && error.message === "GoatCounter unreachable (ECONNRESET)" && error.cause === reset);
+-
+-  const failing = createGoatCounter({ site: "csarko", token: "t", fetch: async () => ({ ok: false, status: 503, headers: new Map(), text: async () => "maintenance" }), cache: createCache() });
+-  await assert.rejects(failing.total("a", "b"), (error) => error instanceof UpstreamError && /^goatcounter 503 on stats\/total/.test(error.message));
+-});
+diff --git a/admin/api/test/http.test.mjs b/admin/api/test/http.test.mjs
+index 0832cfd..d2dce63 100644
+--- a/admin/api/test/http.test.mjs
++++ b/admin/api/test/http.test.mjs
+@@ -31,37 +31,37 @@ test("a manual value is a finite non-negative number and nothing else", () => {
+   assert.equal(parseManualValue(null), null);
+ });
+ 
+ test("an empty or placeholder credential is not configured; the allowlist is parsed", () => {
+   const quiet = { error() {} };
+   assert.equal(secret("unset"), null);
+   assert.equal(secret("  unset  "), null);
+   assert.equal(secret(""), null);
+   assert.equal(secret(undefined), null);
+   assert.equal(secret("unset-but-real"), "unset-but-real");
+-  const config = readConfig({ ADMIN_EMAILS: "", GOATCOUNTER_TOKEN: "unset", YOUTUBE_KEY: "", GITHUB_TOKEN: " unset ", PSI_KEY: "unset", GSC_SA_KEY: "unset" }, quiet);
++  const config = readConfig({ ADMIN_EMAILS: "", YOUTUBE_KEY: "", GITHUB_TOKEN: " unset ", PSI_KEY: "unset", GSC_SA_KEY: "unset" }, quiet);
+   assert.deepEqual(config.adminEmails, [], "no readers");
+-  assert.equal(config.goatcounter.token, null);
++  assert.equal(config.visits.dataset, "");
++  assert.equal(config.visits.historyUntil, null);
+   assert.equal(config.youtube.key, null);
+   assert.equal(config.github.token, null);
+   assert.equal(config.psiKey, null);
+   assert.equal(config.gsc.key, null);
+-  const real = readConfig({ ADMIN_EMAILS: "A@b.c, d@e.f", FIREBASE_PROJECT: "csarko-sh", GOATCOUNTER_TOKEN: "tok" }, quiet);
++  const real = readConfig({ ADMIN_EMAILS: "A@b.c, d@e.f", FIREBASE_PROJECT: "csarko-sh", VISITS_DATASET: "csarko_visits" }, quiet);
+   assert.deepEqual(real.adminEmails, ["a@b.c", "d@e.f"]);
+   assert.equal(real.firebaseProject, "csarko-sh");
+-  assert.equal(real.goatcounter.token, "tok");
++  assert.equal(real.visits.dataset, "csarko_visits");
+ });
+ 
+ test("defaults and lists", () => {
+   const quiet = { error() {} };
+   const config = readConfig({}, quiet);
+-  assert.equal(config.goatcounter.site, "csarko");
+   assert.equal(config.gsc.property, "sc-domain:csarko.sh");
+   assert.equal(config.sitemapUrl, "https://csarko.sh/sitemap.xml");
+   assert.deepEqual(config.allowedOrigins, ["https://admin.csarko.sh", "http://localhost:8788"]);
+   assert.equal(config.github.owner, "csarkosh", "every public repo of the account, not a fixed list");
+   assert.equal(config.port, 8080);
+   const custom = readConfig({ GITHUB_OWNER: " someone ", ALLOWED_ORIGINS: "http://localhost:5173", SITE_URL: "https://example.test/" }, quiet);
+   assert.equal(custom.github.owner, "someone");
+   assert.deepEqual(custom.allowedOrigins, ["http://localhost:5173"]);
+   assert.equal(custom.sitemapUrl, "https://example.test/sitemap.xml");
+ });
+diff --git a/admin/api/test/queries.test.mjs b/admin/api/test/queries.test.mjs
+index acacdc4..338d34e 100644
+--- a/admin/api/test/queries.test.mjs
++++ b/admin/api/test/queries.test.mjs
+@@ -1,37 +1,63 @@
+ import { test } from "node:test";
+ import assert from "node:assert/strict";
+ import { readFileSync } from "node:fs";
+-import { createQueries, weeklyTrend, snapshotAgo } from "../src/queries.mjs";
++import { createQueries, weeklyTrend, snapshotAgo, eventKindOf } from "../src/queries.mjs";
+ import { createMemoryStore } from "../src/store.mjs";
+ 
+ const fixture = (name) => JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), "utf8"));
+ const NOW = Date.parse("2026-10-12T15:30:00Z");
+ const TODAY = "2026-10-12";
+ 
+ /** Fakes for every collector: configured ones answer from the fixtures, the rest are switched off. */
+-function fakes({ gcOn = true, gscOn = true, youtubeOn = false, githubToken = false, psiOn = false } = {}) {
+-  const total = fixture("goatcounter-total");
+-  const hits = fixture("goatcounter-hits").hits;
+-  const prevTotal = { ...total, total: 160, total_events: 10 };
++function fakes({ visitsOn = true, gscOn = true, youtubeOn = false, githubToken = false, psiOn = false } = {}) {
++  const perDay = [20, 25, 30, 28, 26, 27, 25].map((visits, i) => ({ day: `2026-10-0${6 + i}`, visits }));
++  const eventRows = [
++    { name: "out-linkedin", visitors: 18 },
++    { name: "out-github", visitors: 12 },
++    { name: "play-dayhike", visitors: 9 },
++    { name: "read-stylized-shader-looks", visitors: 6 },
++    { name: "watch-who-is-standing-in-my-hallway", visitors: 4 },
++    { name: "signup", visitors: 1 },
++  ];
+   const log = { error() {}, warn() {}, log() {} };
+   return {
+-    gc: {
+-      configured: gcOn,
+-      async total(start) {
+-        return start < "2026-10-05" ? prevTotal : total;
++    visits: {
++      configured: visitsOn,
++      async visits() {
++        return { current: { visits: 181, pageviews: null, perDay }, previous: { visits: 150, pageviews: null, perDay } };
++      },
++      async pages() {
++        return [
++          { path: "/", visitors: 90, pageviews: null, engagedMedian: 40, reached: null },
++          { path: "/research/stylized-shader-looks", visitors: 40, pageviews: null, engagedMedian: 120, reached: 0.4 },
++          { path: "/games", visitors: 20, pageviews: null, engagedMedian: 30, reached: null },
++          { path: "/docs/old-slug", visitors: 7, pageviews: null, engagedMedian: 2, reached: null },
++          { path: "/wp-login.php", visitors: 2, pageviews: null, engagedMedian: 0, reached: null },
++        ];
++      },
++      async referrers() {
++        return {
++          referrers: fixture("goatcounter-toprefs").stats.map((x) => ({ name: x.name, visitors: x.count })),
++          campaigns: [{ campaign: "substack", visitors: 5 }],
++          paths: [{ from: "/", to: "/games", visitors: 12 }],
++        };
+       },
+-      async hits(start) {
+-        return start < "2026-10-05" ? hits.map((h) => ({ ...h, count: Math.floor(h.count / 2) })) : hits;
++      async events(range) {
++        const prev = range.start < "2026-10-05";
++        return { rows: prev ? eventRows.map((r) => ({ ...r, visitors: Math.floor(r.visitors / 2) })) : eventRows, homeVisitors: 120 };
+       },
+-      async page(name) {
+-        return name === "toprefs" ? fixture("goatcounter-toprefs").stats : fixture("goatcounter-locations").stats;
++      async audience() {
++        return {
++          countries: [{ name: "United States", visitors: 100 }],
++          sizes: [], browsers: [], systems: [], languages: [], themes: [{ name: "dark", visitors: 70 }], viewports: [], touch: [], timezones: [],
++        };
+       },
+     },
+     gsc: {
+       configured: gscOn,
+       async query({ startDate, endDate, dimensions }) {
+         // The previous period, whatever its length, gets one row on its first day.
+         if (dimensions[0] === "date") return endDate < "2026-10-06" ? [{ keys: [startDate], clicks: 4, impressions: 90, ctr: 0.04, position: 20 }] : fixture("gsc-dates").rows;
+         if (dimensions[0] === "query") return [{ keys: ["stylized shader"], clicks: 2, impressions: 30, ctr: 0.066, position: 8 }];
+         return [{ keys: ["https://csarko.sh/research/stylized-shader-looks"], clicks: 2, impressions: 30, ctr: 0.066, position: 8 }];
+       },
+@@ -107,61 +133,71 @@ test("kpis assembles the four cards from the sources and the trend from the snap
+   assert.deepEqual(body.kpis[0].trend.slice(-2), [150, 181]);
+   assert.deepEqual(body.kpis[1].trend.slice(-2), [3, 6]);
+   assert.deepEqual(body.kpis[3].trend.slice(-2), [12, 30]);
+   assert.deepEqual(body.kpis[0].trend.slice(0, 10), new Array(10).fill(0));
+   assert.equal(body.health.status, "warning", "one sitemap URL is not indexed and a 404 path has 7 hits");
+   assert.match(body.health.note, /1 of 3 pages not indexed/);
+   assert.equal(body.notConfigured, undefined);
+ });
+ 
+ test("kpis with no credentials has null values, zero trends and a notConfigured hint, never a throw", async () => {
+-  const deps = fakes({ gcOn: false, gscOn: false });
++  const deps = fakes({ visitsOn: false, gscOn: false });
+   const body = await createQueries(deps).kpis();
+   assert.deepEqual(body.kpis.map((k) => k.value), [null, null, null, null]);
+   assert.deepEqual(body.kpis[0].trend, new Array(12).fill(0));
+-  assert.deepEqual(body.notConfigured, { visits: "GOATCOUNTER_TOKEN", outbound: "GOATCOUNTER_TOKEN", search: "GSC_SA_KEY" });
++  assert.deepEqual(body.notConfigured, { visits: "VISITS_DATASET", outbound: "VISITS_DATASET", search: "GSC_SA_KEY" });
+   assert.equal(body.health.status, "good");
+   assert.match(body.health.note, /unknown: lighthouse, indexing, 404s, sitemap fetch/);
+ });
+ 
+-test("the GoatCounter queries have the contract's shapes", async () => {
++test("the visits queries have the contract's shapes", async () => {
+   const q = createQueries(fakes());
+   const visits = await q.visits(7);
+   assert.equal(visits.days, 7);
+   assert.equal(visits.from, "2026-10-05T16:00:00Z");
+   assert.equal(visits.current.visits, 181);
+   assert.equal(visits.previous.visits, 150);
+   assert.equal(visits.current.pageviews, null);
+   assert.equal(visits.current.perDay.length, 7);
+ 
+   const pages = await q.pages(7);
+   assert.deepEqual(pages.rows.map((r) => [r.path, r.inSitemap]), [["/", true], ["/research/stylized-shader-looks", true], ["/games", true], ["/docs/old-slug", false], ["/wp-login.php", false]]);
+ 
++  assert.deepEqual([pages.rows[1].engagedMedian, pages.rows[1].reached], [120, 0.4], "engaged time and the share read pass through");
++
+   const referrers = await q.referrers(7);
+   assert.equal(referrers.groups.length, 7);
+-  assert.equal(referrers.campaigns[0].campaign, "United States", "the fake answers every panel with the locations fixture");
++  assert.equal(referrers.campaigns[0].campaign, "substack");
++  assert.deepEqual(referrers.paths, [{ from: "/", to: "/games", visitors: 12 }], "the site's own edges pass through");
+ 
+   const events = await q.events(7);
+   assert.equal(events.rows[0].name, "out-linkedin");
++  assert.deepEqual(events.rows.map((r) => r.kind), ["out", "out", "play", "read", "watch", "other"]);
+   assert.equal(events.outboundRate, 0.25);
+ 
+   const audience = await q.audience(7);
+-  assert.deepEqual(Object.keys(audience), ["countries", "sizes", "browsers", "systems", "languages"]);
++  assert.deepEqual(Object.keys(audience), ["countries", "sizes", "browsers", "systems", "languages", "themes", "viewports", "touch", "timezones"]);
+   assert.equal(audience.countries[0].name, "United States");
+ });
+ 
+-test("a GoatCounter query without a token says which secret is missing", async () => {
+-  const q = createQueries(fakes({ gcOn: false }));
++test("a visits query without a dataset says which variable is missing", async () => {
++  const q = createQueries(fakes({ visitsOn: false }));
+   const visits = await q.visits(30);
+   assert.equal(visits.current, null);
+-  assert.deepEqual(visits.notConfigured, { goatcounter: "GOATCOUNTER_TOKEN" });
+-  assert.deepEqual((await q.pages(7)).notConfigured, { goatcounter: "GOATCOUNTER_TOKEN" });
++  assert.deepEqual(visits.notConfigured, { visits: "VISITS_DATASET" });
++  assert.deepEqual((await q.pages(7)).notConfigured, { visits: "VISITS_DATASET" });
++});
++
++test("eventKindOf reads the prefix and calls anything else other", () => {
++  assert.equal(eventKindOf("out-github"), "out");
++  assert.equal(eventKindOf("nav-film"), "nav");
++  assert.equal(eventKindOf("link-example.com"), "other");
+ });
+ 
+ test("search has the lag note, per-day rows for every day, totals, previous, tops, indexed and sitemap", async () => {
+   const search = await createQueries(fakes()).search(7);
+   assert.equal(search.lag, "Search Console runs 2 to 3 days behind");
+   assert.equal(search.perDay.length, 7);
+   assert.equal(search.perDay[0].day, "2026-10-06");
+   assert.deepEqual(search.totals, { clicks: 6, impressions: 300, ctr: 0.02, position: (18.2 * 120 + 22 * 80 + 15 * 100) / 300 });
+   assert.deepEqual(search.previous, { clicks: 4, impressions: 90 });
+   assert.equal(search.queries[0].query, "stylized shader");
+@@ -239,24 +275,24 @@ test("snapshot writes today's document with every counter and is idempotent for
+   assert.deepEqual(doc.github, { "csarkosh/game-dayhike": { stars: 3, views14: 20, uniques14: 9, clones14: 2 } });
+   assert.equal(doc.lighthousePerformance, 97);
+   assert.deepEqual(doc.indexed, { indexed: 2, total: 3, missing: ["https://csarko.sh/research/stylized-shader-looks"] }, "the sitemap is inspected here, once a day");
+   assert.equal(doc.up, true);
+   assert.equal(doc.ttfbMs, 120);
+   assert.equal(doc.notConfigured, undefined);
+   const again = await q.snapshot();
+   assert.equal((await deps.store.listSnapshots("2026-01-01", "2026-12-31")).length, 1);
+   assert.deepEqual(again, doc);
+ 
+-  const partial = await createQueries(fakes({ gcOn: false })).snapshot();
++  const partial = await createQueries(fakes({ visitsOn: false })).snapshot();
+   assert.equal(partial.visits7, null);
+   assert.equal(partial.outbound7, null);
+-  assert.deepEqual(partial.notConfigured, { visits: "GOATCOUNTER_TOKEN", events: "GOATCOUNTER_TOKEN", youtube: "YOUTUBE_KEY", lighthouse: "PSI_KEY" });
++  assert.deepEqual(partial.notConfigured, { visits: "VISITS_DATASET", events: "VISITS_DATASET", youtube: "YOUTUBE_KEY", lighthouse: "PSI_KEY" });
+ });
+ 
+ test("manual appends with the time and the store caps the series", async () => {
+   const deps = fakes();
+   const q = createQueries(deps);
+   const r = await q.manual("substack", 12);
+   assert.deepEqual(r, { ok: true, at: "2026-10-12T15:30:00.000Z" });
+   for (let i = 0; i < 450; i += 1) await deps.store.appendManual("substack", { at: "x", value: i });
+   assert.equal((await deps.store.getManual("substack")).length, 400);
+ });

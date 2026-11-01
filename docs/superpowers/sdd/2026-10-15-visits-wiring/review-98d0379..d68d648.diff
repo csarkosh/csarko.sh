@@ -1,0 +1,82 @@
+# Review package: 98d0379..HEAD
+
+## Commits
+d68d648 infra: the visits module orders after the admin module's APIs
+
+## Files changed
+ _infra/main.tf                    |  3 +++
+ _infra/modules/gcp-visits/main.tf | 14 +++++++++-----
+ 2 files changed, 12 insertions(+), 5 deletions(-)
+
+## Diff
+diff --git a/_infra/main.tf b/_infra/main.tf
+index 790d4e2..b7fed14 100644
+--- a/_infra/main.tf
++++ b/_infra/main.tf
+@@ -161,20 +161,23 @@ module "gcp_visits" {
+ 
+   project_id                   = var.gcp_project_id
+   region                       = var.gcp_region
+   origins                      = ["https://${var.domain_name}"]
+   reader_service_account_email = module.gcp_admin_api.service_account_email
+ 
+   providers = {
+     google      = google
+     google-beta = google-beta
+   }
++
++  # The admin module enables run, secretmanager and iam; this module only adds logging and bigquery.
++  depends_on = [module.gcp_admin_api]
+ }
+ 
+ # Each site's own hostname, e.g. "csarko-sh.web.app". default_url stays populated
+ # for the life of the site, unlike required_dns_updates, which empties once a
+ # domain reconciles (the fps repo learned this the hard way).
+ locals {
+   hosting_cname_target       = trimprefix(module.gcp_hosting.default_url, "https://")
+   admin_hosting_cname_target = trimprefix(module.gcp_hosting_admin.default_url, "https://")
+ }
+ 
+diff --git a/_infra/modules/gcp-visits/main.tf b/_infra/modules/gcp-visits/main.tf
+index 92114e6..ac0818b 100644
+--- a/_infra/modules/gcp-visits/main.tf
++++ b/_infra/modules/gcp-visits/main.tf
+@@ -39,29 +39,33 @@ resource "google_secret_manager_secret" "visits" {
+ }
+ 
+ resource "google_secret_manager_secret_iam_member" "visits_reads" {
+   project   = var.project_id
+   secret_id = google_secret_manager_secret.visits.secret_id
+   role      = "roles/secretmanager.secretAccessor"
+   member    = "serviceAccount:${google_service_account.visits.email}"
+ }
+ 
+ resource "google_cloud_run_v2_service" "visits" {
+-  project             = var.project_id
+-  location            = var.region
+-  name                = "csarko-visits"
++  project  = var.project_id
++  location = var.region
++  name     = "csarko-visits"
++  # Reachable at its run.app URL as well as through the Hosting rewrite (a rewrite needs
++  # "all" ingress). A direct caller can forge X-Forwarded-For at the depth the service
++  # trusts; that shapes only the daily visit hash and the courtesy rate limit, never a
++  # row's content, so it is accepted rather than fronted with a load balancer.
+   ingress             = "INGRESS_TRAFFIC_ALL"
+   deletion_protection = false
+ 
+   template {
+-    service_account = google_service_account.visits.email
+-    timeout         = "10s"
++    service_account                  = google_service_account.visits.email
++    timeout                          = "10s"
+     max_instance_request_concurrency = 200
+     scaling {
+       min_instance_count = 0
+       max_instance_count = 3
+     }
+     containers {
+       image = var.image
+       args  = ["serve", "--trusted-proxies", tostring(var.trusted_proxies)]
+       ports {
+         container_port = 8080

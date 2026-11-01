@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Motion mockups</title>
+<style>
+  :root {
+    --bg: #0a0b0e; --surface: #111318; --surface-2: #161922; --text: #e8eaf0; --muted: #a0a8b8; --faint: #7d8597;
+    --accent: #7dd3c0; --accent-soft: rgba(125,211,192,.12); --accent-border: rgba(125,211,192,.45);
+    --border: rgba(255,255,255,.08); --border-strong: rgba(255,255,255,.16); --warning: #f5c451;
+    /* Material 3 motion tokens */
+    --standard: cubic-bezier(0.2, 0, 0, 1);
+    --decel: cubic-bezier(0.05, 0.7, 0.1, 1);      /* emphasized decelerate: things arriving */
+    --accel: cubic-bezier(0.3, 0, 0.8, 0.15);      /* emphasized accelerate: things leaving */
+    --short: calc(150ms * var(--slow, 1));
+    --short4: calc(200ms * var(--slow, 1));
+    --medium: calc(300ms * var(--slow, 1));
+    --medium4: calc(400ms * var(--slow, 1));
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 Inter, system-ui, sans-serif; padding: 28px 32px 80px; }
+  h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 17px; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 18px; max-width: 80ch; }
+  .note { color: var(--faint); font-size: 13px; margin: 6px 0 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 18px; }
+  section.demo { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+  .tag { font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin: 0 0 6px; }
+  .spec { font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--faint); margin: 10px 0 0; }
+  .toolbar { display: flex; gap: 10px; align-items: center; margin: 0 0 20px; color: var(--muted); font-size: 14px; }
+  button { font: inherit; }
+  .chip { font-family: ui-monospace, monospace; font-size: 12.5px; padding: 5px 12px; border-radius: 999px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); cursor: pointer;
+    transition: background var(--short) var(--standard), color var(--short) var(--standard), border-color var(--short) var(--standard); }
+  .chip:hover { color: var(--text); border-color: var(--border-strong); }
+  .chip[aria-pressed="true"] { color: var(--text); background: var(--accent-soft); border-color: var(--accent-border); }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 14px; }
+
+  /* 1. Accordion */
+  details.fold { border-top: 1px solid var(--border); margin-top: 12px; }
+  details.fold summary { list-style: none; cursor: pointer; padding: 10px 0; font-family: ui-monospace, monospace; font-size: 12.5px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+  details.fold summary::-webkit-details-marker { display: none; }
+  details.fold summary .chev { display: inline-block; transition: transform var(--medium) var(--standard); }
+  details.fold[open] summary .chev { transform: rotate(90deg); }
+  .fold-body { overflow: hidden; }
+  .fold-inner { transition: opacity var(--medium) var(--standard); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  td { padding: 6px 0; border-top: 1px solid var(--border); color: var(--muted); }
+  td:last-child { text-align: right; color: var(--text); font-family: ui-monospace, monospace; }
+
+  /* 2. Filter cards */
+  .list { display: grid; gap: 10px; }
+  .pcard { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; display: flex; gap: 12px; align-items: center; }
+  .pcard .thumb { width: 44px; height: 44px; border-radius: 8px; background: var(--accent-soft); border: 1px solid var(--accent-border); flex: none; }
+  .pcard b { display: block; font-size: 14px; }
+  .pcard span { font-size: 12px; color: var(--faint); font-family: ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; }
+  .choice { border: 2px solid transparent; border-radius: 16px; cursor: pointer; }
+  .choice.selected { border-color: var(--accent); }
+  .pick { margin: 12px 0 0; font-size: 13px; color: var(--accent); }
+
+  /* 3. Menu */
+  .menu-wrap { position: relative; height: 170px; }
+  .avatar { position: absolute; right: 0; top: 0; width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: #06231d; border: 0; font-weight: 700; cursor: pointer; }
+  .menu { position: absolute; right: 0; top: 46px; width: 240px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 14px; padding: 14px; box-shadow: 0 12px 32px rgba(0,0,0,.45);
+    transform-origin: top right; opacity: 0; transform: scale(.92) translateY(-4px); pointer-events: none;
+    transition: opacity var(--short) var(--accel), transform var(--short) var(--accel); }
+  .menu.open { opacity: 1; transform: none; pointer-events: auto; transition: opacity var(--short) var(--standard), transform var(--medium) var(--decel); }
+  .menu p { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+
+  /* 4. Drawer */
+  .stage { position: relative; height: 210px; overflow: hidden; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); }
+  .stage .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.5); opacity: 0; pointer-events: none; transition: opacity var(--short4) var(--accel); }
+  .stage .sheet { position: absolute; top: 0; right: 0; bottom: 0; width: 62%; background: var(--surface); border-left: 1px solid var(--border-strong); padding: 14px; transform: translateX(100%);
+    transition: transform var(--short4) var(--accel); }
+  .stage.open .scrim { opacity: 1; pointer-events: auto; transition: opacity var(--medium) var(--standard); }
+  .stage.open .sheet { transform: none; transition: transform var(--medium4) var(--decel); }
+  .line { height: 10px; border-radius: 4px; background: rgba(232,234,240,.1); margin: 10px 0; }
+
+  /* 5. Tooltip */
+  .bars { display: flex; align-items: flex-end; gap: 10px; height: 120px; position: relative; padding-top: 30px; }
+  .bars i { flex: 1; background: var(--accent); border-radius: 4px 4px 0 0; transition: filter var(--short) var(--standard); }
+  .bars i:hover { filter: brightness(1.15); }
+  .tip { position: absolute; top: 0; padding: 6px 10px; font-size: 12.5px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; pointer-events: none;
+    opacity: 0; transform: translateY(4px); transition: opacity var(--short) var(--standard), transform var(--short) var(--standard), left var(--short) var(--standard); }
+  .tip.show { opacity: 1; transform: none; }
+
+  /* 6. Skeleton to content */
+  .swap { position: relative; min-height: 120px; }
+  .swap > div { position: absolute; inset: 0; transition: opacity var(--medium) var(--standard); }
+  .skel { height: 12px; border-radius: 4px; background: rgba(232,234,240,.11); margin: 9px 0; animation: pulse 2s ease-in-out .5s infinite; }
+  @keyframes pulse { 50% { opacity: .4; } }
+  .tiles { display: flex; gap: 10px; }
+  .tile { flex: 1; border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+  .tile b { font-size: 24px; display: block; }
+  .tile span { font-size: 12px; color: var(--faint); }
+
+  @media (prefers-reduced-motion: reduce) { :root { --slow: 0.001; } }
+</style>
+</head>
+<body>
+  <h1>How things move, Material 3 motion</h1>
+  <p class="lead">Each demo uses Material's curves: things arriving <b>decelerate</b> into place, things leaving <b>accelerate</b> away and take less time, and anything that stays on screen eases on the <b>standard</b> curve. Durations are Material's: 150 to 200 ms for small things, 300 to 400 ms for things that cross a lot of space. Everything is instant for anyone whose system asks for reduced motion.</p>
+  <div class="toolbar">
+    <button class="chip" id="slowmo" aria-pressed="false">Slow motion (4x)</button>
+    <span>to see each curve</span>
+  </div>
+
+  <div class="grid">
+    <section class="demo">
+      <p class="tag">Admin · folded tables</p>
+      <h2>Accordion</h2>
+      <p class="note" style="margin:0">The fold's height opens on the standard curve while its rows fade in; closing is quicker. The arrow turns with it.</p>
+      <details class="fold" id="fold">
+        <summary><span class="chev">›</span> Referrers · 10</summary>
+        <div class="fold-body"><div class="fold-inner">
+          <table>
+            <tr><td>google.com</td><td>61</td></tr><tr><td>linkedin.com</td><td>44</td></tr><tr><td>github.com</td><td>21</td></tr>
+            <tr><td>csarko.substack.com</td><td>14</td></tr><tr><td>youtube.com</td><td>9</td></tr><tr><td>chatgpt.com</td><td>5</td></tr>
+          </table>
+        </div></div>
+      </details>
+      <details class="fold">
+        <summary><span class="chev">›</span> Campaigns · 3</summary>
+        <div class="fold-body"><div class="fold-inner">
+          <table><tr><td>?ref=linkedin</td><td>12</td></tr><tr><td>?ref=substack</td><td>7</td></tr><tr><td>?ref=github</td><td>2</td></tr></table>
+        </div></div>
+      </details>
+      <p class="spec">open 300 ms standard · close 200 ms accelerate · rows fade 150 ms</p>
+    </section>
+
+    <section class="demo">
+      <p class="tag">Admin · menu</p>
+      <h2>Account menu</h2>
+      <p class="note" style="margin:0">Grows out of the button it belongs to, and shrinks back faster.</p>
+      <div class="menu-wrap">
+        <button class="avatar" id="avatar" aria-expanded="false">CS</button>
+        <div class="menu" id="menu"><p>Live</p><p style="color:var(--text);font-family:ui-monospace,monospace">cyrus@…</p><p>Sign out</p></div>
+      </div>
+      <p class="spec">open 300 ms decelerate, from its corner · close 150 ms accelerate</p>
+    </section>
+  </div>
+
+  <h2 style="margin:28px 0 4px">Filter chips: which feels right?</h2>
+  <p class="lead">For /projects and /research, and the admin's own chip rows. Click a chip in each, then click the one you prefer.</p>
+  <div class="grid">
+    <section class="demo choice" data-choice="glide" onclick="pickChoice(this, event)">
+      <p class="tag">A · Glide</p>
+      <h2>Leaving cards fade, the rest glide into place</h2>
+      <div class="row" data-for="glide"></div>
+      <div class="list" id="list-glide"></div>
+      <p class="spec">leave: fade 150 ms accelerate · move: 400 ms standard · arrive: fade and rise 300 ms decelerate</p>
+    </section>
+    <section class="demo choice" data-choice="fade" onclick="pickChoice(this, event)">
+      <p class="tag">B · Fade through</p>
+      <h2>The whole list fades out, then the new one fades in</h2>
+      <div class="row" data-for="fade"></div>
+      <div class="list" id="list-fade"></div>
+      <p class="spec">out 90 ms accelerate · in 210 ms decelerate, with a slight scale (Material's fade through)</p>
+    </section>
+  </div>
+
+  <h2 style="margin:28px 0 4px">The rest</h2>
+  <div class="grid">
+    <section class="demo">
+      <p class="tag">Day Hike · drawers</p>
+      <h2>Side sheet</h2>
+      <p class="note" style="margin:0">Slides in from the edge over a dimming scrim; leaves faster than it came.</p>
+      <div class="stage" id="stage" style="margin-top:12px">
+        <div style="padding:14px"><button class="chip" id="openSheet">Open session</button><div class="line" style="width:70%"></div><div class="line" style="width:50%"></div></div>
+        <div class="scrim" id="scrim"></div>
+        <div class="sheet"><button class="chip" id="closeSheet">Close</button><div class="line"></div><div class="line" style="width:80%"></div><div class="line" style="width:60%"></div></div>
+      </div>
+      <p class="spec">in 400 ms decelerate · out 200 ms accelerate · scrim fades</p>
+    </section>
+
+    <section class="demo">
+      <p class="tag">Admin · charts</p>
+      <h2>Tooltips</h2>
+      <p class="note" style="margin:0">Hover the bars: the tooltip fades and lifts in, and glides between bars.</p>
+      <div class="bars" id="bars"><div class="tip" id="tip"></div></div>
+      <p class="spec">150 ms standard</p>
+    </section>
+
+    <section class="demo">
+      <p class="tag">Admin · loading and range changes</p>
+      <h2>Skeleton to content</h2>
+      <p class="note" style="margin:0">The skeleton cross-fades into the content, in place, at its held height.</p>
+      <div class="row"><button class="chip" id="reload">Change range</button></div>
+      <div class="swap">
+        <div id="sk" style="opacity:0"><div class="tiles"><div class="tile"><div class="skel" style="width:40%"></div><div class="skel" style="width:30%;height:22px"></div></div><div class="tile"><div class="skel" style="width:40%"></div><div class="skel" style="width:30%;height:22px"></div></div></div><div class="skel"></div><div class="skel" style="width:60%"></div></div>
+        <div id="ct"><div class="tiles"><div class="tile"><span>VISITS</span><b>212</b></div><div class="tile"><span>READERS</span><b>87</b></div></div><p class="note">+18% vs 180 the 7 days before</p></div>
+      </div>
+      <p class="spec">300 ms standard cross-fade</p>
+    </section>
+
+    <section class="demo">
+      <p class="tag">Both sites · hovers and chips</p>
+      <h2>Small state changes</h2>
+      <p class="note" style="margin:0">Hover lifts, link underlines and chip highlights move to Material's standard curve at 150 ms, from today's generic ease.</p>
+      <div class="row"><button class="chip">7 days</button><button class="chip" aria-pressed="true">30 days</button><button class="chip">90 days</button></div>
+      <div class="pcard" style="transition: transform var(--short) var(--standard), border-color var(--short) var(--standard)" onmouseenter="this.style.transform='translateY(-2px)';this.style.borderColor='var(--accent-border)'" onmouseleave="this.style.transform='';this.style.borderColor=''"><div class="thumb"></div><div><span>Released</span><b>Hover me</b></div></div>
+      <p class="spec">150 ms standard</p>
+    </section>
+  </div>
+
+<script>
+  const root = document.documentElement;
+  const ms = (name) => parseFloat(getComputedStyle(root).getPropertyValue(name)) ;
+  const slow = () => Number(getComputedStyle(root).getPropertyValue('--slow')) || 1;
+  document.getElementById('slowmo').addEventListener('click', (e) => {
+    const on = e.currentTarget.getAttribute('aria-pressed') !== 'true';
+    e.currentTarget.setAttribute('aria-pressed', String(on));
+    root.style.setProperty('--slow', on ? 4 : 1);
+  });
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const t = (n) => reduce ? 0 : n * slow();
+  const STANDARD = 'cubic-bezier(0.2, 0, 0, 1)', DECEL = 'cubic-bezier(0.05, 0.7, 0.1, 1)', ACCEL = 'cubic-bezier(0.3, 0, 0.8, 0.15)';
+
+  // 1. Accordion: animate the body's height with the Web Animations API.
+  document.querySelectorAll('details.fold').forEach((d) => {
+    const summary = d.querySelector('summary'), body = d.querySelector('.fold-body'), inner = d.querySelector('.fold-inner');
+    summary.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (d.dataset.busy) return;
+      d.dataset.busy = '1';
+      if (!d.open) {
+        d.open = true;
+        const h = body.scrollHeight;
+        body.animate([{ height: '0px' }, { height: h + 'px' }], { duration: t(300), easing: STANDARD });
+        inner.animate([{ opacity: 0 }, { opacity: 1 }], { duration: t(150), delay: t(75), easing: STANDARD, fill: 'backwards' })
+          .finished.then(() => delete d.dataset.busy);
+      } else {
+        const h = body.offsetHeight;
+        inner.animate([{ opacity: 1 }, { opacity: 0 }], { duration: t(100), easing: ACCEL, fill: 'forwards' });
+        body.animate([{ height: h + 'px' }, { height: '0px' }], { duration: t(200), easing: ACCEL })
+          .finished.then(() => { d.open = false; inner.getAnimations().forEach((a) => a.cancel()); delete d.dataset.busy; });
+      }
+    });
+  });
+
+  // 2. Filters.
+  const PROJECTS = [['Day Hike', 'games', 'Playable now'], ['Arkos IDE', 'apps', 'Released'], ['lib-visits', 'apps', 'Released'], ['The Last Trail', 'film', 'Short film · 0:56'], ['Who is standing in my hallway?', 'film', 'Short film · 0:16'], ['MacStats', 'apps', 'Released']];
+  function makeList(kind) {
+    const list = document.getElementById(`list-${kind}`), row = document.querySelector(`.row[data-for="${kind}"]`);
+    const state = new Set();
+    const cards = PROJECTS.map(([name, k, kicker]) => {
+      const c = document.createElement('div'); c.className = 'pcard'; c.dataset.kind = k;
+      c.innerHTML = `<div class="thumb"></div><div><span>${kicker}</span><b>${name}</b></div>`;
+      list.append(c); return c;
+    });
+    const shown = (c) => state.size === 0 || state.has(c.dataset.kind);
+    for (const [k, label] of [['', 'All'], ['apps', 'Apps'], ['film', 'Film'], ['games', 'Games']]) {
+      const b = document.createElement('button'); b.className = 'chip'; b.textContent = label; b.setAttribute('aria-pressed', String(k === ''));
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (k === '') state.clear(); else state.has(k) ? state.delete(k) : state.add(k);
+        row.querySelectorAll('.chip').forEach((x, i) => x.setAttribute('aria-pressed', String(i === 0 ? state.size === 0 : state.has(['', 'apps', 'film', 'games'][i]))));
+        (kind === 'glide' ? glide : fade)(list, cards, shown);
+      });
+      row.append(b);
+    }
+  }
+  function glide(list, cards, shown) {
+    // FLIP: remember where the staying cards were, apply the filter, then animate from there.
+    const before = new Map(cards.filter((c) => !c.hidden).map((c) => [c, c.getBoundingClientRect()]));
+    const listH = list.offsetHeight;
+    const leaving = cards.filter((c) => !c.hidden && !shown(c));
+    const arriving = cards.filter((c) => c.hidden && shown(c));
+    // Leaving cards fade out where they are, out of the flow.
+    const ghosts = leaving.map((c) => {
+      const r = before.get(c), lr = list.getBoundingClientRect();
+      const g = c.cloneNode(true); Object.assign(g.style, { position: 'absolute', left: (r.left - lr.left) + 'px', top: (r.top - lr.top) + 'px', width: r.width + 'px', margin: 0, pointerEvents: 'none' });
+      list.style.position = 'relative'; list.append(g);
+      g.animate([{ opacity: 1 }, { opacity: 0 }], { duration: t(150), easing: ACCEL, fill: 'forwards' }).finished.then(() => g.remove());
+      return g;
+    });
+    for (const c of cards) c.hidden = !shown(c);
+    const after = list.offsetHeight;
+    list.animate([{ height: listH + 'px' }, { height: after + 'px' }], { duration: t(400), easing: STANDARD });
+    for (const [c, r] of before) {
+      if (c.hidden) continue;
+      const n = c.getBoundingClientRect(); const dy = r.top - n.top;
+      if (dy) c.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], { duration: t(400), easing: STANDARD });
+    }
+    for (const c of arriving) c.animate([{ opacity: 0, transform: 'translateY(8px) scale(.98)' }, { opacity: 1, transform: 'none' }], { duration: t(300), delay: t(100), easing: DECEL, fill: 'backwards' });
+  }
+  function fade(list, cards, shown) {
+    const h = list.offsetHeight;
+    list.animate([{ opacity: 1 }, { opacity: 0 }], { duration: t(90), easing: ACCEL, fill: 'forwards' }).finished.then((a) => {
+      for (const c of cards) c.hidden = !shown(c);
+      const n = list.offsetHeight;
+      a.cancel();
+      list.animate([{ height: h + 'px' }, { height: n + 'px' }], { duration: t(300), easing: STANDARD });
+      list.animate([{ opacity: 0, transform: 'scale(.98)' }, { opacity: 1, transform: 'none' }], { duration: t(210), easing: DECEL });
+    });
+  }
+  makeList('glide'); makeList('fade');
+  window.pickChoice = (el, e) => { if (e.target.closest('.chip')) return; document.querySelectorAll('.choice').forEach((c) => c.classList.toggle('selected', c === el)); if (window.toggleSelect) toggleSelect(el); };
+
+  // 3. Menu
+  const avatar = document.getElementById('avatar'), menu = document.getElementById('menu');
+  avatar.addEventListener('click', () => { const open = !menu.classList.contains('open'); menu.classList.toggle('open', open); avatar.setAttribute('aria-expanded', String(open)); });
+
+  // 4. Drawer
+  const stage = document.getElementById('stage');
+  document.getElementById('openSheet').onclick = () => stage.classList.add('open');
+  document.getElementById('closeSheet').onclick = () => stage.classList.remove('open');
+  document.getElementById('scrim').onclick = () => stage.classList.remove('open');
+
+  // 5. Tooltip
+  const bars = document.getElementById('bars'), tip = document.getElementById('tip');
+  [30, 44, 28, 70, 52, 36, 62].forEach((v, i) => {
+    const b = document.createElement('i'); b.style.height = v + '%'; bars.append(b);
+    b.addEventListener('mouseenter', () => { tip.textContent = `${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i]} · ${v} visits`; tip.style.left = Math.max(0, b.offsetLeft + b.offsetWidth / 2 - 50) + 'px'; tip.classList.add('show'); });
+  });
+  bars.addEventListener('mouseleave', () => tip.classList.remove('show'));
+
+  // 6. Skeleton to content
+  document.getElementById('reload').onclick = () => {
+    const sk = document.getElementById('sk'), ct = document.getElementById('ct');
+    sk.style.opacity = 1; ct.style.opacity = 0;
+    setTimeout(() => { sk.style.opacity = 0; ct.style.opacity = 1; }, 1200 * slow());
+  };
+</script>
+</body>
+</html>

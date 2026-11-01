@@ -1,0 +1,249 @@
+# Review package: 32b0017..HEAD
+
+## Commits
+8edc5c9 admin API: history carries the home page, stops at the cutover, names the unknown referrer
+
+## Files changed
+ admin/api/queries/history-events.sql     | 17 ++++++++++++-----
+ admin/api/queries/history-pages.sql      |  2 +-
+ admin/api/queries/history-referrers.sql  |  2 +-
+ admin/api/queries/history-visits.sql     |  2 +-
+ admin/api/queries/referrers.sql          |  2 +-
+ admin/api/src/collectors/visits.mjs      | 13 +++++++------
+ admin/api/test/fixtures/visits-rows.json |  2 +-
+ admin/api/test/visits.test.mjs           | 10 +++++++++-
+ 8 files changed, 33 insertions(+), 17 deletions(-)
+
+## Diff
+diff --git a/admin/api/queries/history-events.sql b/admin/api/queries/history-events.sql
+index fbc1a9f..e23deb7 100644
+--- a/admin/api/queries/history-events.sql
++++ b/admin/api/queries/history-events.sql
+@@ -1,5 +1,12 @@
+--- GoatCounter's events in [start, end), from the backfilled hourly counts.
+-SELECT REGEXP_REPLACE(path, r'^/', '') AS name, SUM(visits) AS visitors
+-FROM `csarko-sh.csarko_history.goatcounter_history`
+-WHERE hour >= TIMESTAMP(@start) AND hour < TIMESTAMP(@end) AND event
+-GROUP BY name ORDER BY visitors DESC
++-- GoatCounter's events in [start, end), from the backfilled hourly counts, and the home page's visitors as "(home)".
++SELECT name, visitors FROM (
++  SELECT REGEXP_REPLACE(path, r'^/', '') AS name, SUM(visits) AS visitors
++  FROM `csarko-sh.csarko_history.goatcounter_history`
++  WHERE hour >= TIMESTAMP(@start) AND hour < LEAST(TIMESTAMP(@end), TIMESTAMP(@until)) AND event
++  GROUP BY name
++  UNION ALL
++  SELECT '(home)' AS name, SUM(visits) AS visitors
++  FROM `csarko-sh.csarko_history.goatcounter_history`
++  WHERE hour >= TIMESTAMP(@start) AND hour < LEAST(TIMESTAMP(@end), TIMESTAMP(@until)) AND NOT event AND path = '/'
++)
++ORDER BY visitors DESC
+diff --git a/admin/api/queries/history-pages.sql b/admin/api/queries/history-pages.sql
+index b0ae5b2..8e310e2 100644
+--- a/admin/api/queries/history-pages.sql
++++ b/admin/api/queries/history-pages.sql
+@@ -1,5 +1,5 @@
+ -- GoatCounter's pages by visitors in [start, end), from the backfilled hourly counts.
+ SELECT path, ANY_VALUE(title) AS title, SUM(visits) AS visitors
+ FROM `csarko-sh.csarko_history.goatcounter_history`
+-WHERE hour >= TIMESTAMP(@start) AND hour < TIMESTAMP(@end) AND NOT event
++WHERE hour >= TIMESTAMP(@start) AND hour < LEAST(TIMESTAMP(@end), TIMESTAMP(@until)) AND NOT event
+ GROUP BY path ORDER BY visitors DESC LIMIT 200
+diff --git a/admin/api/queries/history-referrers.sql b/admin/api/queries/history-referrers.sql
+index 6d7c834..df178b4 100644
+--- a/admin/api/queries/history-referrers.sql
++++ b/admin/api/queries/history-referrers.sql
+@@ -1,5 +1,5 @@
+ -- GoatCounter's referrers in [start, end), from the backfilled hourly counts.
+ SELECT 'referrer' AS kind, IFNULL(ref, '') AS name, '' AS target, SUM(visits) AS visitors
+ FROM `csarko-sh.csarko_history.goatcounter_history`
+-WHERE hour >= TIMESTAMP(@start) AND hour < TIMESTAMP(@end) AND NOT event
++WHERE hour >= TIMESTAMP(@start) AND hour < LEAST(TIMESTAMP(@end), TIMESTAMP(@until)) AND NOT event
+ GROUP BY name ORDER BY visitors DESC
+diff --git a/admin/api/queries/history-visits.sql b/admin/api/queries/history-visits.sql
+index 4a2c78e..4e1ddfe 100644
+--- a/admin/api/queries/history-visits.sql
++++ b/admin/api/queries/history-visits.sql
+@@ -1,6 +1,6 @@
+ -- GoatCounter's visits a day in [start, end), for the window's part before the cutover.
+ SELECT IF(hour >= TIMESTAMP(@start), 'current', 'previous') AS win, DATE(hour) AS day, SUM(visits) AS visits
+ FROM `csarko-sh.csarko_history.goatcounter_history`
+-WHERE hour >= TIMESTAMP(@prev_start) AND hour < TIMESTAMP(@end) AND NOT event
++WHERE hour >= TIMESTAMP(@prev_start) AND hour < LEAST(TIMESTAMP(@end), TIMESTAMP(@until)) AND NOT event
+ GROUP BY win, day
+ ORDER BY day
+diff --git a/admin/api/queries/referrers.sql b/admin/api/queries/referrers.sql
+index 8c80352..4fbdbd7 100644
+--- a/admin/api/queries/referrers.sql
++++ b/admin/api/queries/referrers.sql
+@@ -7,17 +7,17 @@ WITH views AS (
+     JSON_VALUE(json_payload.s.rk) AS rk,
+     JSON_VALUE(json_payload.s.rh) AS rh,
+     JSON_VALUE(json_payload.s.rp) AS rp,
+     COALESCE(JSON_VALUE(json_payload.cr), JSON_VALUE(json_payload.us)) AS campaign
+   FROM `csarko-sh.csarko_visits._AllLogs`
+   WHERE timestamp >= TIMESTAMP(@start) AND timestamp < TIMESTAMP(@end)
+     AND JSON_VALUE(json_payload.n) = 'view'
+     AND IFNULL(JSON_VALUE(json_payload.s.bot), 'false') != 'true'
+     AND JSON_VALUE(json_payload.p) NOT IN ('/deploy-check', '/depth-check')
+ )
+-SELECT 'referrer' AS kind, IF(rk = 'direct', '', IFNULL(rh, '')) AS name, '' AS target, COUNT(DISTINCT visit) AS visitors
++SELECT 'referrer' AS kind, IF(rk = 'direct', '', IFNULL(rh, '(unknown)')) AS name, '' AS target, COUNT(DISTINCT visit) AS visitors
+ FROM views WHERE rk IN ('direct', 'external') GROUP BY name
+ UNION ALL
+ SELECT 'campaign', campaign, '', COUNT(DISTINCT visit) FROM views WHERE campaign IS NOT NULL GROUP BY campaign
+ UNION ALL
+ SELECT 'internal', rp, path, COUNT(DISTINCT visit) FROM views WHERE rk = 'internal' AND rp IS NOT NULL GROUP BY rp, path
+ ORDER BY visitors DESC
+diff --git a/admin/api/src/collectors/visits.mjs b/admin/api/src/collectors/visits.mjs
+index 363920e..66179f5 100644
+--- a/admin/api/src/collectors/visits.mjs
++++ b/admin/api/src/collectors/visits.mjs
+@@ -26,62 +26,63 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
+     return cache.get(key, ttlMs, async () => {
+       try {
+         const [rows] = await bigquery.query({ query: sqlOf(name), params, useLegacySql: false });
+         return rows.map(plainRow);
+       } catch (error) {
+         throw new UpstreamError(`BigQuery ${name} failed: ${error?.message ?? error}`, { cause: error });
+       }
+     });
+   }
+ 
+-  const wantsHistory = (range) => Boolean(historyDataset && historyUntil && range.prevStart < historyUntil);
++  const wantsHistory = (bound) => Boolean(historyDataset && historyUntil && Date.parse(bound) < Date.parse(historyUntil));
++  const hist = (name, params) => run(name, { ...params, until: historyUntil });
+   const win = (range) => ({ start: range.start, end: range.end, prev_start: range.prevStart, prev_end: range.prevEnd });
+ 
+   return {
+     get configured() {
+       return Boolean(bigquery && dataset);
+     },
+ 
+     async visits(range) {
+       const live = await run("visits", win(range));
+-      const rows = wantsHistory(range) ? [...live, ...(await run("history-visits", win(range)))] : live;
++      const rows = wantsHistory(range.prevStart) ? [...live, ...(await hist("history-visits", win(range)))] : live;
+       const shape = (w) => {
+         const byDay = new Map();
+         for (const r of rows) if (r.win === w) byDay.set(r.day, (byDay.get(r.day) ?? 0) + Number(r.visits));
+         const perDay = [...byDay.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([day, visits]) => ({ day, visits, pageviews: null }));
+         return { visits: perDay.reduce((n, d) => n + d.visits, 0), pageviews: null, perDay };
+       };
+       return { current: shape("current"), previous: shape("previous") };
+     },
+ 
+     async pages(range) {
+       const live = await run("pages", { start: range.start, end: range.end });
+       const rows = live.map((r) => ({ path: r.path, title: r.title ?? "", visitors: Number(r.visitors), pageviews: null, engagedMedian: r.engaged_median === null || r.engaged_median === undefined ? null : Number(r.engaged_median), reached: r.reached === null || r.reached === undefined ? null : Number(r.reached) }));
+-      if (!wantsHistory(range)) return rows;
+-      const history = await run("history-pages", { start: range.start, end: range.end });
++      if (!wantsHistory(range.start)) return rows;
++      const history = await hist("history-pages", { start: range.start, end: range.end });
+       return sumBy([...rows, ...history.map((r) => ({ path: r.path, title: r.title ?? "", visitors: Number(r.visitors), pageviews: null, engagedMedian: null, reached: null }))], "path", "visitors");
+     },
+ 
+     async referrers(range) {
+       const live = await run("referrers", { start: range.start, end: range.end });
+-      const all = wantsHistory(range) ? [...live, ...(await run("history-referrers", { start: range.start, end: range.end }))] : live;
++      const all = wantsHistory(range.start) ? [...live, ...(await hist("history-referrers", { start: range.start, end: range.end }))] : live;
+       const of = (kind) => all.filter((r) => r.kind === kind);
+       return {
+         referrers: sumBy(of("referrer").map((r) => ({ name: r.name ?? "", visitors: Number(r.visitors) })), "name", "visitors"),
+         campaigns: of("campaign").map((r) => ({ campaign: r.name, visitors: Number(r.visitors) })),
+         paths: of("internal").map((r) => ({ from: r.name, to: r.target, visitors: Number(r.visitors) })),
+       };
+     },
+ 
+     async events(range) {
+       const live = await run("events", { start: range.start, end: range.end });
+-      const all = wantsHistory(range) ? [...live, ...(await run("history-events", { start: range.start, end: range.end }))] : live;
++      const all = wantsHistory(range.start) ? [...live, ...(await hist("history-events", { start: range.start, end: range.end }))] : live;
+       const rows = sumBy(all.map((r) => ({ name: r.name, visitors: Number(r.visitors) })), "name", "visitors");
+       const home = rows.find((r) => r.name === "(home)");
+       return { rows: rows.filter((r) => r.name !== "(home)"), homeVisitors: home ? home.visitors : 0 };
+     },
+ 
+     async audience(range) {
+       const rows = await run("audience", { start: range.start, end: range.end });
+       const out = { countries: [], sizes: [], browsers: [], systems: [], languages: [], themes: [], viewports: [], touch: [], timezones: [] };
+       for (const r of rows) if (out[r.dim]) out[r.dim].push({ name: String(r.name), visitors: Number(r.visitors) });
+       return out;
+diff --git a/admin/api/test/fixtures/visits-rows.json b/admin/api/test/fixtures/visits-rows.json
+index 0cd6af7..86027af 100644
+--- a/admin/api/test/fixtures/visits-rows.json
++++ b/admin/api/test/fixtures/visits-rows.json
+@@ -18,17 +18,17 @@
+     { "kind": "referrer", "name": "google.com", "target": "", "visitors": 3 },
+     { "kind": "campaign", "name": "substack", "target": "", "visitors": 1 },
+     { "kind": "internal", "name": "/", "target": "/games", "visitors": 2 }
+   ],
+   "history-referrers": [{ "kind": "referrer", "name": "google.com", "target": "", "visitors": 7 }],
+   "events": [
+     { "name": "out-github", "visitors": 2 },
+     { "name": "read-a", "visitors": 1 },
+     { "name": "(home)", "visitors": 6 }
+   ],
+-  "history-events": [{ "name": "out-github", "visitors": 3 }],
++  "history-events": [{ "name": "out-github", "visitors": 3 }, { "name": "(home)", "visitors": 4 }],
+   "audience": [
+     { "dim": "countries", "name": "US", "visitors": 5 },
+     { "dim": "themes", "name": "dark", "visitors": 4 },
+     { "dim": "touch", "name": "pointer", "visitors": 6 }
+   ]
+ }
+diff --git a/admin/api/test/visits.test.mjs b/admin/api/test/visits.test.mjs
+index dc610ad..ce514ef 100644
+--- a/admin/api/test/visits.test.mjs
++++ b/admin/api/test/visits.test.mjs
+@@ -31,20 +31,28 @@ const make = (opts = {}) => {
+ };
+ 
+ test("visits sums live and history rows by day and window, and a row without a visit still counts", async () => {
+   const { v, calls } = make();
+   const r = await v.visits(range);
+   assert.deepEqual(r.current.perDay, [{ day: "2026-10-14", visits: 6, pageviews: null }, { day: "2026-10-15", visits: 2, pageviews: null }]);
+   assert.equal(r.current.visits, 8);
+   assert.deepEqual(r.previous.perDay.map((d) => d.day), ["2026-10-09", "2026-10-10"]);
+   assert.deepEqual(calls.map((c) => c.name), ["visits", "history-visits"]);
+   assert.deepEqual(calls[0].params, { start: range.start, end: range.end, prev_start: range.prevStart, prev_end: range.prevEnd });
++  assert.deepEqual(calls[1].params, { ...calls[0].params, until: "2026-10-14T00:00:00Z" });
++});
++
++test("history is asked for by each query's own lower bound, as instants", async () => {
++  const { v, calls } = make({ historyUntil: "2026-10-11T00:00:00Z" });
++  await v.visits(range);
++  await v.pages(range);
++  assert.deepEqual(calls.map((c) => c.name), ["visits", "history-visits", "pages"]);
+ });
+ 
+ test("history is not queried when the window starts after the cutover", async () => {
+   const { v, calls } = make({ historyUntil: "2026-10-01T00:00:00Z" });
+   await v.visits(range);
+   assert.deepEqual(calls.map((c) => c.name), ["visits"]);
+ });
+ 
+ test("pages merge history by path and keep engaged time and reached share from live rows", async () => {
+   const { v } = make();
+@@ -58,21 +66,21 @@ test("referrers split into referrers (direct as empty name), campaigns and inter
+   const r = await v.referrers(range);
+   assert.deepEqual(r.referrers, [{ name: "google.com", visitors: 10 }, { name: "", visitors: 4 }]);
+   assert.deepEqual(r.campaigns, [{ campaign: "substack", visitors: 1 }]);
+   assert.deepEqual(r.paths, [{ from: "/", to: "/games", visitors: 2 }]);
+ });
+ 
+ test("events fold history and lift the home-page visitors out of the rows", async () => {
+   const { v } = make();
+   const r = await v.events(range);
+   assert.deepEqual(r.rows, [{ name: "out-github", visitors: 5 }, { name: "read-a", visitors: 1 }]);
+-  assert.equal(r.homeVisitors, 6);
++  assert.equal(r.homeVisitors, 10);
+ });
+ 
+ test("audience groups by dimension", async () => {
+   const { v } = make();
+   const r = await v.audience(range);
+   assert.deepEqual(r.themes, [{ name: "dark", visitors: 4 }]);
+   assert.deepEqual(r.sizes, []);
+ });
+ 
+ test("a BigQuery failure is an upstream error, and the same window is cached", async () => {

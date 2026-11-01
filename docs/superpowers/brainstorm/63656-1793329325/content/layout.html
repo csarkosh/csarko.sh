@@ -1,0 +1,103 @@
+<style>
+  .bmt { --bg:#0a0b0e; --surface:#111318; --surface-2:#161922; --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.14); --text:#e8eaf0; --muted:#a0a8b8; --accent:#7dd3c0; --accent-soft:rgba(125,211,192,.12); --accent-border:rgba(125,211,192,.45);
+    background:var(--bg); color:var(--text); font-family:Inter,system-ui,sans-serif; padding:22px 18px; border-radius:8px; text-align:left; font-size:13px; line-height:1.45; min-height:430px; }
+  .bmt .mono { font-family:"JetBrains Mono",ui-monospace,monospace; }
+  .bmt .kick { font-family:"JetBrains Mono",ui-monospace,monospace; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); }
+  .bmt h4 { margin:6px 0 4px; font-size:19px; font-weight:650; letter-spacing:-.01em; color:var(--text); }
+  .bmt p { margin:0 0 12px; color:var(--muted); }
+  .bmt .tier { display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border); background:var(--surface); border-radius:8px; padding:9px 11px; margin-bottom:7px; }
+  .bmt .tier b { color:var(--text); font-weight:600; }
+  .bmt .tier small { display:block; color:var(--muted); font-size:11px; }
+  .bmt .price { font-family:"JetBrains Mono",monospace; color:var(--accent); font-weight:600; }
+  .bmt .tier.pick { border-color:var(--accent-border); background:var(--accent-soft); }
+  .bmt .btn { display:block; text-align:center; background:var(--accent); color:#0a0b0e; font-weight:650; border-radius:8px; padding:9px; margin-top:10px; }
+  .bmt .ghost { display:block; text-align:center; border:1px solid var(--border-strong); color:var(--text); border-radius:8px; padding:8px; margin-top:8px; font-size:12px; }
+  .bmt .foot { margin-top:14px; font-size:11px; color:var(--muted); text-align:center; }
+  .bmt .shot { height:92px; border-radius:6px; border:1px solid var(--border); background:linear-gradient(135deg,#161922,#0e1a18 60%,#13161c); display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:11px; margin-bottom:12px; }
+  .bmt .meter { height:8px; border-radius:4px; background:var(--surface-2); overflow:hidden; margin:6px 0 4px; }
+  .bmt .meter i { display:block; height:100%; width:38%; background:var(--accent); }
+  .bmt .row { display:grid; grid-template-columns:1fr auto auto; gap:6px 14px; font-family:"JetBrains Mono",monospace; font-size:11.5px; border-top:1px solid var(--border); padding-top:8px; }
+  .bmt .row span { color:var(--muted); }
+  .bmt .row .sel { color:var(--accent); }
+  .bmt .chips { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .bmt .chip { font-size:11px; padding:3px 8px; border-radius:999px; border:1px solid var(--border); color:var(--muted); }
+  .bmt .chip.on { border-color:var(--accent-border); color:var(--accent); background:var(--accent-soft); }
+</style>
+
+<h2>Which layout feels right for Buy Me Tokens?</h2>
+<p class="subtitle">All three show the Arkos IDE version (donate.csarko.sh/arkos) in your site's dark theme. The film, Day Hike and MacStats versions would swap the words and picture, not the layout. Click the one you like.</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="bmt">
+        <div class="kick">Buy Me Tokens · Arkos IDE</div>
+        <h4>Fund my next agent run</h4>
+        <p>Arkos is free. If it saved you a few hours, top up the tokens that build it.</p>
+        <div class="tier"><span><b>A prompt</b><small>a quick fix, a good question</small></span><span class="price">$3</span></div>
+        <div class="tier pick"><span><b>A long context window</b><small>a whole feature, read end to end</small></span><span class="price">$10</span></div>
+        <div class="tier"><span><b>A whole agent run</b><small>a milestone, start to merge</small></span><span class="price">$25</span></div>
+        <div class="tier"><span><b>A fine-tune</b><small>you really like it</small></span><span class="price">$100</span></div>
+        <div class="btn">Tip $10</div>
+        <div class="ghost">Sponsor monthly on GitHub</div>
+        <div class="foot">Payments by Stripe · no account needed</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. Tip card</h3>
+      <p>One centered column: headline, four tiers to pick from, one button. Closest to Buy Me a Coffee. Quick on a phone.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="bmt">
+        <div class="kick">donate.csarko.sh/arkos</div>
+        <h4 class="mono" style="font-size:17px">$ buy-me-tokens --for arkos</h4>
+        <p>Usage this month: tokens spent building Arkos, and how much of that tips have covered.</p>
+        <div class="meter"><i></i></div>
+        <div class="mono" style="font-size:11px;color:var(--muted);margin-bottom:14px">38% funded by tips · resets Nov 1</div>
+        <div class="row">
+          <span>TIER</span><span>TOKENS*</span><span>PRICE</span>
+          <b>prompt</b><span>~200K</span><span>$3</span>
+          <b class="sel">long-context</b><span class="sel">~700K</span><span class="sel">$10</span>
+          <b>agent-run</b><span>~1.7M</span><span>$25</span>
+          <b>fine-tune</b><span>~7M</span><span>$100</span>
+        </div>
+        <div class="btn">Tip $10 →</div>
+        <div class="ghost">Sponsor monthly on GitHub</div>
+        <div class="foot mono">* rough, for fun</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. Usage meter</h3>
+      <p>Styled like an AI pricing page or terminal. The joke goes further: a "funded this month" bar and token counts per tier. The bar needs a small live counter on apps.csarko.sh's backend.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="bmt">
+        <div class="chips"><span class="chip on">Arkos IDE</span><span class="chip">The Last Trail</span><span class="chip">Day Hike</span><span class="chip">MacStats</span></div>
+        <div class="shot">Arkos IDE screenshot</div>
+        <div class="kick">Buy Me Tokens</div>
+        <h4>Fund my next agent run</h4>
+        <p>Arkos is free. If it saved you a few hours, top up the tokens that build it.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+          <div class="tier" style="margin:0"><b>Prompt</b><span class="price">$3</span></div>
+          <div class="tier pick" style="margin:0"><b>Context</b><span class="price">$10</span></div>
+          <div class="tier" style="margin:0"><b>Agent run</b><span class="price">$25</span></div>
+          <div class="tier" style="margin:0"><b>Fine-tune</b><span class="price">$100</span></div>
+        </div>
+        <div class="btn">Tip $10</div>
+        <div class="ghost">Sponsor monthly on GitHub</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. Showcase</h3>
+      <p>Leads with the project's picture (a screenshot, or the film's poster), plus chips to switch between all four projects, so a visitor can tip something else too.</p>
+    </div>
+  </div>
+
+</div>

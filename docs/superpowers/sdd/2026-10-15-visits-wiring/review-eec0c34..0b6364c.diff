@@ -1,0 +1,1565 @@
+# Review package: eec0c34..HEAD
+
+## Commits
+0b6364c site: the tracked clicks carry data-visits-event
+
+## Files changed
+ .agents/skills/site-quality/scripts/check.py       | 24 +++++++++++-----------
+ .agents/skills/site-quality/scripts/docs_lib.mjs   | 10 ++++-----
+ .../skills/site-quality/tests/docs_lib.test.mjs    |  8 ++++----
+ public/film/index.html                             |  6 +++---
+ public/games/index.html                            |  6 +++---
+ public/index.html                                  | 24 +++++++++++-----------
+ .../a-full-far-ground-without-drawing-it.html      |  6 +++---
+ ...o-cost-analytics-dashboard-without-cookies.html |  6 +++---
+ public/research/ai-short-film-generation.html      |  6 +++---
+ public/research/atmosphere-and-dread-shaders.html  |  6 +++---
+ public/research/babylon-material-plugin-traps.html |  6 +++---
+ .../bring-the-agents-back-after-a-reboot.html      |  6 +++---
+ public/research/browser-coop-netcode.html          |  6 +++---
+ .../building-dread-toward-a-late-reveal.html       |  6 +++---
+ .../check-your-eyes-before-your-theme.html         |  6 +++---
+ .../floating-props-on-procedural-terrain.html      |  6 +++---
+ public/research/grass-and-trail-realism.html       |  6 +++---
+ .../research/grass-fullness-without-thinning.html  |  6 +++---
+ public/research/ground-fog-without-the-wall.html   |  6 +++---
+ .../how-alan-wake-introduces-its-darkness.html     |  6 +++---
+ public/research/index.html                         |  4 ++--
+ public/research/large-files-out-of-git.html        |  6 +++---
+ public/research/no-visible-pop-in.html             |  6 +++---
+ public/research/olympic-lakes-for-game-worlds.html |  6 +++---
+ public/research/olympic-vegetation-for-games.html  |  6 +++---
+ public/research/opening-a-game-like-a-film.html    |  6 +++---
+ .../photorealistic-rain-for-browser-games.html     |  6 +++---
+ .../research/photorealistic-water-rendering.html   |  6 +++---
+ public/research/pointer-lock-escape-cooldown.html  |  6 +++---
+ .../procedural-world-as-a-pure-function.html       |  6 +++---
+ .../reverse-engineering-an-ai-horror-short.html    |  6 +++---
+ .../rock-formations-of-the-olympic-peninsula.html  |  6 +++---
+ ...steep-terrain-shape-it-cover-it-or-skin-it.html |  6 +++---
+ ...ft-shade-bark-and-moss-for-browser-forests.html |  6 +++---
+ public/research/stylized-shader-looks.html         |  6 +++---
+ .../synthetic-voices-for-a-radio-call.html         |  6 +++---
+ .../research/update-the-ide-keep-the-shells.html   |  6 +++---
+ public/research/visits-without-cookies.html        |  6 +++---
+ public/research/voice-profile-vs-pangram.html      |  6 +++---
+ public/research/webgpu-vs-webgl2.html              |  6 +++---
+ public/research/webrtc-signaling-on-cloud-run.html |  6 +++---
+ 41 files changed, 143 insertions(+), 143 deletions(-)
+
+## Diff
+diff --git a/.agents/skills/site-quality/scripts/check.py b/.agents/skills/site-quality/scripts/check.py
+index 21c8ded..f9b16f1 100755
+--- a/.agents/skills/site-quality/scripts/check.py
++++ b/.agents/skills/site-quality/scripts/check.py
+@@ -945,50 +945,50 @@ def strip_comments(js: bytes) -> bytes:
+     """What build_assets.py ships of our own scripts: the code without its whole-line // comments
+     (the same rule as its strip_comments, so the hash below can be verified; a drift fails loudly)."""
+     return b"".join(line for line in js.splitlines(keepends=True) if not line.lstrip().startswith(b"//"))
+ 
+ 
+ def analytics_checks(pages):
+     """Every page carries the two lib-visits tags, with the vendored files' hashes, and nothing else."""
+     print("analytics")
+     if not ANALYTICS:
+         for name, (page, html) in pages.items():
+-            check("data-visits" not in html, f"{name}: analytics is off but a visits tag is present")
++            check("data-visits" not in html, f"{name}: analytics is off and no visits tag is present")
+         return
+ 
+     def want(stem):
+         data = strip_comments((SKILL / f"assets/vendor/{stem}.min.js").read_bytes())
+         return f"{stem}.{hashlib.sha256(data).hexdigest()[:8]}.js"
+     want_core, want_vitals = want("visits"), want("vitals")
+     for name, (page, html) in pages.items():
+         scripts = [a for a, _ in page.scripts]
+         core = [a for a in scripts if "data-visits" in a]
+-        check(len(core) == 1, f"{name}: one visits tag expected, found {len(core)}; run generate-assets.sh")
++        check(len(core) == 1, f"{name}: one visits tag ({len(core)} found; if not, run generate-assets.sh)")
+         if core:
+             c = core[0]
+-            check(c.get("data-visits") == ANALYTICS["endpoint"], f"{name}: the visits tag's endpoint is {c.get('data-visits')}, not {ANALYTICS['endpoint']}")
++            check(c.get("data-visits") == ANALYTICS["endpoint"], f"{name}: the visits tag's endpoint is {ANALYTICS['endpoint']} (found {c.get('data-visits')})")
+             check(local_path(c.get("src", "")) is not None and c.get("src", "").endswith(f"assets/{want_core}"),
+-                  f"{name}: the visits tag's file is not the vendored one ({want_core}): stale build")
+-            check("defer" in c, f"{name}: the visits tag is not deferred")
++                  f"{name}: the visits tag loads the vendored file ({want_core}); a mismatch is a stale build")
++            check("defer" in c, f"{name}: the visits tag is deferred")
+         vitals = [a for a in scripts if a.get("src", "").endswith(f"assets/{want_vitals}")]
+-        check(len(vitals) == 1, f"{name}: one vitals tag expected ({want_vitals}), found {len(vitals)}; stale build?")
++        check(len(vitals) == 1, f"{name}: one vitals tag ({want_vitals}; {len(vitals)} found, else a stale build)")
+         if vitals:
+-            check("defer" in vitals[0], f"{name}: the vitals tag is not deferred")
++            check("defer" in vitals[0], f"{name}: the vitals tag is deferred")
+         others = [a.get("src") or "(inline)" for a in scripts if a not in core and a not in vitals]
+-        check(not others, f"{name}: scripts besides the two visits tags: {others}")
++        check(not others, f"{name}: no scripts besides the two visits tags {others or ''}")
+         if page_kind(name) == "doc":
+-            check(html.count(" data-read-end") == 1, f"{name}: one data-read-end marker expected")
++            check(html.count(" data-read-end") == 1, f"{name}: one data-read-end marker")
+     _, catch_all = csp_from_config()
+     csp = parse_csp(catch_all.get("Content-Security-Policy"))
+-    check(csp.get("script-src") == ["'self'"], "CSP script-src is not exactly 'self'")
+-    check(csp.get("connect-src") == ["'self'"], "CSP connect-src is not exactly 'self'")
+-    check(csp.get("img-src") == ["'self'"], "CSP img-src is not exactly 'self'")
++    check(csp.get("script-src") == ["'self'"], "CSP script-src is exactly 'self'")
++    check(csp.get("connect-src") == ["'self'"], "CSP connect-src is exactly 'self'")
++    check(csp.get("img-src") == ["'self'"], "CSP img-src is exactly 'self'")
+ 
+ 
+ # ---- admin.csarko.sh: a csarko.sh page in everything but indexing (AGENTS.md "Admin pages")
+ 
+ ADMIN = ROOT / "admin" / "public"
+ 
+ 
+ def admin_checks():
+     """The admin pages inherit the site's look and bar, not its SEO. The tokens
+     must be the home page's own (copied, never retyped), no colour may live
+diff --git a/.agents/skills/site-quality/scripts/docs_lib.mjs b/.agents/skills/site-quality/scripts/docs_lib.mjs
+index 6d05811..f85437e 100644
+--- a/.agents/skills/site-quality/scripts/docs_lib.mjs
++++ b/.agents/skills/site-quality/scripts/docs_lib.mjs
+@@ -746,33 +746,33 @@ ${jsonLd(graph)}
+     /* /generated:fonts */
+ 
+     ${theme}
+ ${DOCS_CSS}${extraCss}
+   </style>
+ </head>`;
+ }
+ 
+ // The page links, in the order the whole site uses them (see public/index.html, which carries the
+ // same three after its heading links). `current` marks the page you are already on. There is no
+-// Home link: the wordmark to their left is it, on every page. The third value is the GoatCounter
+-// click event (count.js binds every data-goatcounter-click), a stable identifier that outlives a
++// Home link: the wordmark to their left is it, on every page. The third value is the visits
++// event (lib-visits' client, visits.min.js, binds every data-visits-event), a stable identifier that outlives a
+ // rename of the label or the URL; the home page's nav carries the same three names.
+ const PAGE_LINKS = [[`/${FILM_DIR}`, FILM_TITLE, 'nav-film'], ['/games', GAMES_TITLE, 'nav-games'], [`/${DOCS_DIR}`, DOCS_NAV, 'nav-research']];
+ 
+ // The link to the page you are on reloads it, which is not a navigation, so it counts nothing.
+ const nav = (current) => `  <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+ ${PAGE_LINKS.map(([href, label, event]) =>
+-    `        <li><a href="${href}"${href === current ? ' aria-current="page"' : ` data-goatcounter-click="${event}"`}>${label}</a></li>`).join('\n')}
++    `        <li><a href="${href}"${href === current ? ' aria-current="page"' : ` data-visits-event="${event}"`}>${label}</a></li>`).join('\n')}
+       </ul>
+     </div>
+   </nav>`;
+ 
+ const FOOTER = `  <footer>
+     <div class="wrap">
+       <span>© 2026 Cyrus Sarkosh</span>
+       <span class="mono">csarko.sh</span>
+     </div>
+   </footer>
+@@ -917,21 +917,21 @@ ${docList(docs, 2, '    ')}
+ 
+ ${FOOTER}`;
+ }
+ 
+ function gameList(games, pad) {
+   const items = games.map((game) => {
+     // The title is not a link: "Play in your browser" says where it goes, which a repeated title
+     // never does, and it is stretched over the card, as on the old home page Projects card. The
+     // click counts as "play-<slug>" in GoatCounter: a visitor who went on to play.
+     const play = game.play
+-      ? `${pad}    <a class="card-link stretch" href="${escapeHtml(game.play)}" target="_blank" rel="noopener" data-goatcounter-click="play-${game.slug}">Play in your browser ${EXTERNAL_ARROW}</a>\n`
++      ? `${pad}    <a class="card-link stretch" href="${escapeHtml(game.play)}" target="_blank" rel="noopener" data-visits-event="play-${game.slug}">Play in your browser ${EXTERNAL_ARROW}</a>\n`
+       : '';
+     return `${pad}  <li class="card">
+ ${pad}    <p class="game-kicker">${escapeHtml(game.kicker)}</p>
+ ${pad}    <h2 class="game-title">${game.titleHtml}</h2>
+ ${pad}    <div class="game-desc prose">
+ ${game.html}${pad}    </div>
+ ${pad}    <ul class="tags" role="list">${game.tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>
+ ${play}${pad}  </li>`;
+   });
+   return `${pad}<ul class="game-list" role="list">\n${items.join('\n')}\n${pad}</ul>`;
+@@ -996,21 +996,21 @@ ${pad}</div>`;
+ 
+ function filmCard(film, pad) {
+   return `${pad}<li class="card film-card">
+ ${filmPoster(film, `${pad}  `)}
+ ${pad}  <div class="film-body">
+ ${pad}    <p class="film-kicker">${escapeHtml(film.kicker)}</p>
+ ${pad}    <h2 class="film-title">${film.titleHtml}</h2>
+ ${pad}    <div class="film-desc prose">
+ ${film.html}${pad}    </div>
+ ${pad}    <ul class="tags" role="list">${film.tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>
+-${pad}    <a class="card-link stretch" href="${escapeHtml(film.watch)}" target="_blank" rel="noopener" data-goatcounter-click="watch-${film.slug}">Watch on YouTube ${EXTERNAL_ARROW}</a>
++${pad}    <a class="card-link stretch" href="${escapeHtml(film.watch)}" target="_blank" rel="noopener" data-visits-event="watch-${film.slug}">Watch on YouTube ${EXTERNAL_ARROW}</a>
+ ${pad}  </div>
+ ${pad}</li>`;
+ }
+ 
+ export function filmsPage(films, theme) {
+   const url = `${SITE}/${FILM_DIR}`;
+   const trail = [HOME_CRUMB, [FILM_TITLE, url]];
+   const graph = [
+     {
+       '@type': 'CollectionPage',
+diff --git a/.agents/skills/site-quality/tests/docs_lib.test.mjs b/.agents/skills/site-quality/tests/docs_lib.test.mjs
+index 3508728..888a4ac 100644
+--- a/.agents/skills/site-quality/tests/docs_lib.test.mjs
++++ b/.agents/skills/site-quality/tests/docs_lib.test.mjs
+@@ -417,28 +417,28 @@ test('sortGames leads with what is still being built, then released newest first
+   ];
+   assert.deepEqual(sortGames(games).map((g) => g.slug), ['also-building', 'building', 'new', 'old']);
+ });
+ 
+ test('gamesPage lists every game with VideoGame JSON-LD and marks itself current', () => {
+   const html = gamesPage(sortGames([game('day-hike', ['play: https://games.csarko.sh/dayhike/', 'repo: https://github.com/csarkosh/game-dayhike'])]), themeBlocks(INDEX));
+   assert.ok(html.includes('<link rel="canonical" href="https://csarko.sh/games" />'));
+   assert.ok(html.includes('<meta property="og:type" content="website" />'));
+   assert.ok(html.includes('<li><a href="/games" aria-current="page">Games</a></li>'));
+   // Every other page link counts a nav-<page> click; the one you are on reloads, so it does not.
+-  assert.ok(html.includes('<li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>'));
+-  assert.ok(html.includes('<li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>'));
++  assert.ok(html.includes('<li><a href="/research" data-visits-event="nav-research">Research</a></li>'));
++  assert.ok(html.includes('<li><a href="/film" data-visits-event="nav-film">Film</a></li>'));
+   assert.ok(html.includes('<p class="game-kicker">Playable now · No install</p>'));
+   assert.ok(html.includes('<ul class="tags" role="list"><li>TypeScript</li><li>Babylon.js</li></ul>'));
+   // The play link is the card's own, stretched over it, styled as the home page's card link; the
+   // repo is not linked from the card.
+   assert.ok(html.includes('<li class="card">'));
+-  assert.ok(html.includes('<a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-goatcounter-click="play-day-hike">Play in your browser <svg'));
++  assert.ok(html.includes('<a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play in your browser <svg'));
+   assert.ok(!html.includes('github.com/csarkosh/game-dayhike'));
+   const page = jsonLd(html).find((n) => n['@type'] === 'CollectionPage');
+   assert.equal(page.url, 'https://csarko.sh/games');
+   const [first] = page.mainEntity.itemListElement;
+   assert.equal(first.item['@type'], 'VideoGame');
+   assert.equal(first.item.url, 'https://games.csarko.sh/dayhike/');
+   assert.equal(first.item.gamePlatform, 'Web browser');
+   const crumbs = jsonLd(html).find((n) => n['@type'] === 'BreadcrumbList');
+   assert.equal(crumbs.itemListElement.at(-1).item, 'https://csarko.sh/games');
+ });
+@@ -581,21 +581,21 @@ test('sortFilms puts the newest release first, ties broken by slug', () => {
+ });
+ 
+ test('filmsPage cards the poster, links out to YouTube and lists VideoObject JSON-LD', () => {
+   const html = filmsPage(sortFilms([film('hallway')]), themeBlocks(INDEX));
+   assert.ok(html.includes('<link rel="canonical" href="https://csarko.sh/film" />'));
+   assert.ok(html.includes('<li><a href="/film" aria-current="page">Film</a></li>'));
+   // Film leads the page links on every page of the site.
+   assert.ok(html.indexOf('href="/film"') < html.indexOf('href="/games"'));
+   assert.ok(html.includes('<p class="film-kicker">Short film · 0:16</p>'));
+   assert.ok(html.includes('<ul class="tags" role="list"><li>Analog horror</li><li>Photo puppetry</li></ul>'));
+-  assert.ok(html.includes('<a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener" data-goatcounter-click="watch-hallway">Watch on YouTube <svg'));
++  assert.ok(html.includes('<a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener" data-visits-event="watch-hallway">Watch on YouTube <svg'));
+   // The poster is a marker build_assets.py fills, carrying a usable img and its alt until it does.
+   assert.ok(html.includes('<!-- generated:film-poster:hallway -->'));
+   assert.ok(html.includes('alt="A woman in a dim hallway."'));
+   assert.ok(html.includes('src="/film/hallway.jpg"'));
+   const page = jsonLd(html).find((n) => n['@type'] === 'CollectionPage');
+   assert.equal(page.url, 'https://csarko.sh/film');
+   const [first] = page.mainEntity.itemListElement;
+   assert.equal(first.item['@type'], 'VideoObject');
+   assert.equal(first.item.url, WATCH);
+   assert.equal(first.item.embedUrl, 'https://www.youtube.com/embed/jBh7F1knRAA');
+diff --git a/public/film/index.html b/public/film/index.html
+index 54094c9..5175437 100644
+--- a/public/film/index.html
++++ b/public/film/index.html
+@@ -348,22 +348,22 @@
+     }
+   </style>
+ </head>
+ <body>
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+         <li><a href="/film" aria-current="page">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><span aria-current="page">Film</span></li>
+       </ol>
+     </div>
+@@ -387,21 +387,21 @@
+           </picture>
+           <!-- /generated:film-poster:who-is-standing-in-my-hallway -->
+         </div>
+         <div class="film-body">
+           <p class="film-kicker">Short film · 0:16</p>
+           <h2 class="film-title">Who is standing in my hallway?</h2>
+           <div class="film-desc prose">
+ <p>AI generated stills cut apart and animated across frames, then finished with a VHS pass.</p>
+           </div>
+           <ul class="tags" role="list"><li>Analog horror</li><li>Found footage</li><li>AI generated</li></ul>
+-          <a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener" data-goatcounter-click="watch-who-is-standing-in-my-hallway">Watch on YouTube <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
++          <a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener" data-visits-event="watch-who-is-standing-in-my-hallway">Watch on YouTube <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+         </div>
+       </li>
+     </ul>
+   </main>
+ 
+   <footer>
+     <div class="wrap">
+       <span>© 2026 Cyrus Sarkosh</span>
+       <span class="mono">csarko.sh</span>
+     </div>
+diff --git a/public/games/index.html b/public/games/index.html
+index 3976ff6..8d86e4b 100644
+--- a/public/games/index.html
++++ b/public/games/index.html
+@@ -344,23 +344,23 @@
+       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
+     }
+   </style>
+ </head>
+ <body>
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
+         <li><a href="/games" aria-current="page">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><span aria-current="page">Games</span></li>
+       </ol>
+     </div>
+@@ -376,21 +376,21 @@
+       <li class="card">
+         <p class="game-kicker">Playable now · No install</p>
+         <h2 class="game-title">Day Hike</h2>
+         <div class="game-desc prose">
+ <p>Four hikers signed the trailhead register and haven&#39;t been seen since. Play as the park ranger
+ sent to find them, lead a search party of up to five into the woods, and survive what walks there.</p>
+ <p>No install and no account: the game runs in a browser, players connect to each other directly over
+ WebRTC, and the forest is generated procedurally, so no two searches cover the same ground.</p>
+         </div>
+         <ul class="tags" role="list"><li>TypeScript</li><li>Babylon.js</li><li>WebRTC</li></ul>
+-        <a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-goatcounter-click="play-day-hike">Play in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
++        <a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+       </li>
+     </ul>
+   </main>
+ 
+   <footer>
+     <div class="wrap">
+       <span>© 2026 Cyrus Sarkosh</span>
+       <span class="mono">csarko.sh</span>
+     </div>
+   </footer>
+diff --git a/public/index.html b/public/index.html
+index 8d9964d..c0169f6 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -332,50 +332,50 @@
+ <body>
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="#top">csarko<span>.sh</span></a>
+       <ul>
+         <li class="heading-link"><a href="#work" data-collapsible="true">Work</a></li>
+         <li class="heading-link"><a href="#education" data-collapsible="true">Education</a></li>
+         <li class="heading-link"><a href="#contact" data-collapsible="true">Contact</a></li>
+         <li class="nav-divider" aria-hidden="true"></li>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+ 
+   <main id="top" class="wrap" tabindex="-1">
+     <header class="hero">
+       <div class="hero-text">
+       <p class="eyebrow">Senior Software Engineer · New York</p>
+       <h1>Cyrus Sarkosh</h1>
+       <p class="lead">
+         Engineering lead with 9+ years across distributed systems, product engineering, and AI products, owning them from design through launch.
+         I've shipped <strong>production LLM pipelines with evals</strong> and AI agents adopted team-wide; on the side, I explore generative AI for film and games.
+       </p>
+       <div class="actions">
+-        <a class="btn primary" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener" data-goatcounter-click="out-linkedin">
++        <a class="btn primary" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener" data-visits-event="out-linkedin">
+           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.36V9h3.41v1.56h.05c.47-.9 1.64-1.85 3.37-1.85 3.6 0 4.26 2.37 4.26 5.46v6.28ZM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12ZM7.12 20.45H3.56V9h3.56v11.45ZM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0Z"/></svg>
+           Connect on LinkedIn
+         </a>
+-        <a class="btn" href="https://github.com/csarkosh" target="_blank" rel="noopener" data-goatcounter-click="out-github">
++        <a class="btn" href="https://github.com/csarkosh" target="_blank" rel="noopener" data-visits-event="out-github">
+           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.82 1.19 3.08 0 4.41-2.69 5.38-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
+           GitHub
+         </a>
+-        <a class="btn" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-goatcounter-click="out-substack">
++        <a class="btn" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">
+           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.54 8.24H1.46V5.41h21.08v2.83ZM1.46 10.81V24L12 18.11 22.54 24V10.81H1.46ZM22.54 0H1.46v2.84h21.08V0Z"/></svg>
+           Substack
+         </a>
+-        <a class="btn" href="https://www.youtube.com/@csarkosh" target="_blank" rel="noopener" data-goatcounter-click="out-youtube">
++        <a class="btn" href="https://www.youtube.com/@csarkosh" target="_blank" rel="noopener" data-visits-event="out-youtube">
+           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.5 6.2a3 3 0 0 0-2.11-2.12C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.39.58A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.51 5.8a3 3 0 0 0 2.1 2.12c1.9.58 9.39.58 9.39.58s7.5 0 9.39-.58a3 3 0 0 0 2.11-2.12C24 15.9 24 12 24 12s0-3.9-.5-5.8ZM9.55 15.57V8.43L15.82 12l-6.27 3.57Z"/></svg>
+           YouTube
+         </a>
+       </div>
+       </div>
+       <figure class="portrait">
+         <!-- generated:portrait -->
+         <picture>
+           <source type="image/avif" srcset="assets/portrait-240.062f7f52.avif 240w, assets/portrait-360.d2e0d4af.avif 360w, assets/portrait-480.62f5881c.avif 480w, assets/portrait-720.46137073.avif 720w" sizes="(max-width: 640px) 120px, 230px" />
+           <source type="image/webp" srcset="assets/portrait-240.9ace0433.webp 240w, assets/portrait-360.b4d9d33a.webp 360w, assets/portrait-480.d9666929.webp 480w, assets/portrait-720.2b1220c9.webp 720w" sizes="(max-width: 640px) 120px, 230px" />
+@@ -397,21 +397,21 @@
+         <p>AI-first. Claude Code is my IDE.</p>
+       </li>
+       <li class="value">
+         <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="10" rx="5"/><path d="M7 10v4M5 12h4"/><circle cx="15.5" cy="11" r=".6"/><circle cx="18" cy="13" r=".6"/></svg></div>
+         <p class="label">Building</p>
+         <p><a class="inline-link" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener">Day Hike</a>, a realtime co-op survival horror game for the browser.</p>
+       </li>
+       <li class="value">
+         <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="m10 9 5 3-5 3Z"/></svg></div>
+         <p class="label">Filming</p>
+-        <p><a class="inline-link" href="https://www.youtube.com/@csarkosh" target="_blank" rel="noopener" data-goatcounter-click="out-youtube">@csarkosh</a>, short horror films made with generative AI.</p>
++        <p><a class="inline-link" href="https://www.youtube.com/@csarkosh" target="_blank" rel="noopener" data-visits-event="out-youtube">@csarkosh</a>, short horror films made with generative AI.</p>
+       </li>
+     </ul>
+ 
+     <section id="work" aria-labelledby="work-title">
+       <p class="section-label">01 / Experience</p>
+       <h2 id="work-title">Where I've worked</h2>
+ 
+       <article class="company">
+         <div class="company-head">
+           <h3>DoorDash <small>New York, NY</small></h3>
+@@ -488,24 +488,24 @@
+         <span>B.S., Computer Science · 2017</span>
+       </div>
+     </section>
+ 
+ 
+     <section id="contact" class="contact" aria-labelledby="contact-title">
+       <p class="section-label">03 / Contact</p>
+       <h2 id="contact-title">Let's talk.</h2>
+       <p>I'm always happy to talk about AI products, LLM pipelines and evals, distributed systems, or engineering leadership.</p>
+       <div class="actions">
+-        <a class="btn primary" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener" data-goatcounter-click="out-linkedin">Message me on LinkedIn</a>
+-        <a class="btn" href="https://github.com/csarkosh" target="_blank" rel="noopener" data-goatcounter-click="out-github">GitHub</a>
+-        <a class="btn" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-goatcounter-click="out-substack">Substack</a>
+-        <a class="btn" href="https://www.youtube.com/@csarkosh" target="_blank" rel="noopener" data-goatcounter-click="out-youtube">YouTube</a>
++        <a class="btn primary" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener" data-visits-event="out-linkedin">Message me on LinkedIn</a>
++        <a class="btn" href="https://github.com/csarkosh" target="_blank" rel="noopener" data-visits-event="out-github">GitHub</a>
++        <a class="btn" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">Substack</a>
++        <a class="btn" href="https://www.youtube.com/@csarkosh" target="_blank" rel="noopener" data-visits-event="out-youtube">YouTube</a>
+       </div>
+     </section>
+   </main>
+ 
+   <footer>
+     <div class="wrap">
+       <span>© 2026 Cyrus Sarkosh</span>
+       <span class="mono">csarko.sh</span>
+     </div>
+   </footer>
+diff --git a/public/research/a-full-far-ground-without-drawing-it.html b/public/research/a-full-far-ground-without-drawing-it.html
+index 2c7ae0c..3895820 100644
+--- a/public/research/a-full-far-ground-without-drawing-it.html
++++ b/public/research/a-full-far-ground-without-drawing-it.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">A full far ground without drawing it</span></li>
+       </ol>
+diff --git a/public/research/a-zero-cost-analytics-dashboard-without-cookies.html b/public/research/a-zero-cost-analytics-dashboard-without-cookies.html
+index 7f12ac6..0ef80a1 100644
+--- a/public/research/a-zero-cost-analytics-dashboard-without-cookies.html
++++ b/public/research/a-zero-cost-analytics-dashboard-without-cookies.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">A zero-cost analytics dashboard without cookies</span></li>
+       </ol>
+diff --git a/public/research/ai-short-film-generation.html b/public/research/ai-short-film-generation.html
+index 8c75ea1..df07a98 100644
+--- a/public/research/ai-short-film-generation.html
++++ b/public/research/ai-short-film-generation.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">AI short films: consistent characters and sets</span></li>
+       </ol>
+diff --git a/public/research/atmosphere-and-dread-shaders.html b/public/research/atmosphere-and-dread-shaders.html
+index 375ac20..58edc8a 100644
+--- a/public/research/atmosphere-and-dread-shaders.html
++++ b/public/research/atmosphere-and-dread-shaders.html
+@@ -355,23 +355,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Atmosphere and dread: a second shader research pass</span></li>
+       </ol>
+diff --git a/public/research/babylon-material-plugin-traps.html b/public/research/babylon-material-plugin-traps.html
+index d570fcb..dfd6cb9 100644
+--- a/public/research/babylon-material-plugin-traps.html
++++ b/public/research/babylon-material-plugin-traps.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Babylon.js material plugins: hooks and traps</span></li>
+       </ol>
+diff --git a/public/research/bring-the-agents-back-after-a-reboot.html b/public/research/bring-the-agents-back-after-a-reboot.html
+index 9c377fd..e0a17ce 100644
+--- a/public/research/bring-the-agents-back-after-a-reboot.html
++++ b/public/research/bring-the-agents-back-after-a-reboot.html
+@@ -355,23 +355,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Bring the agents back after a reboot</span></li>
+       </ol>
+diff --git a/public/research/browser-coop-netcode.html b/public/research/browser-coop-netcode.html
+index c27fc33..cb5aa3f 100644
+--- a/public/research/browser-coop-netcode.html
++++ b/public/research/browser-coop-netcode.html
+@@ -346,23 +346,23 @@
+       .nav ul a, .crumbs a, .rail a, .prose a, .author a, .tags a, .doc-list .doc-title a, .card, .card-link svg { transition: none; }
+     }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Host-authoritative co-op netcode in the browser</span></li>
+       </ol>
+diff --git a/public/research/building-dread-toward-a-late-reveal.html b/public/research/building-dread-toward-a-late-reveal.html
+index 3ee8d49..5b2fdd2 100644
+--- a/public/research/building-dread-toward-a-late-reveal.html
++++ b/public/research/building-dread-toward-a-late-reveal.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Building dread toward a late reveal in horror games</span></li>
+       </ol>
+diff --git a/public/research/check-your-eyes-before-your-theme.html b/public/research/check-your-eyes-before-your-theme.html
+index 52fcfaa..b60b797 100644
+--- a/public/research/check-your-eyes-before-your-theme.html
++++ b/public/research/check-your-eyes-before-your-theme.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Check your eyes before your theme</span></li>
+       </ol>
+diff --git a/public/research/floating-props-on-procedural-terrain.html b/public/research/floating-props-on-procedural-terrain.html
+index 1f3dca7..7429e6d 100644
+--- a/public/research/floating-props-on-procedural-terrain.html
++++ b/public/research/floating-props-on-procedural-terrain.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Why props float on procedural terrain</span></li>
+       </ol>
+diff --git a/public/research/grass-and-trail-realism.html b/public/research/grass-and-trail-realism.html
+index c2fcf4f..bf43b72 100644
+--- a/public/research/grass-and-trail-realism.html
++++ b/public/research/grass-and-trail-realism.html
+@@ -355,23 +355,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Grass, wind and trails in a browser meadow</span></li>
+       </ol>
+diff --git a/public/research/grass-fullness-without-thinning.html b/public/research/grass-fullness-without-thinning.html
+index 8b2f83e..5021126 100644
+--- a/public/research/grass-fullness-without-thinning.html
++++ b/public/research/grass-fullness-without-thinning.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Grass fullness without thinning the field</span></li>
+       </ol>
+diff --git a/public/research/ground-fog-without-the-wall.html b/public/research/ground-fog-without-the-wall.html
+index b29f737..c4303ea 100644
+--- a/public/research/ground-fog-without-the-wall.html
++++ b/public/research/ground-fog-without-the-wall.html
+@@ -355,23 +355,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Ground fog without the wall</span></li>
+       </ol>
+diff --git a/public/research/how-alan-wake-introduces-its-darkness.html b/public/research/how-alan-wake-introduces-its-darkness.html
+index 5039258..c55bfe9 100644
+--- a/public/research/how-alan-wake-introduces-its-darkness.html
++++ b/public/research/how-alan-wake-introduces-its-darkness.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">How Alan Wake introduces its darkness</span></li>
+       </ol>
+diff --git a/public/research/index.html b/public/research/index.html
+index 39cdd25..509d5b3 100644
+--- a/public/research/index.html
++++ b/public/research/index.html
+@@ -547,22 +547,22 @@
+     .docs-index:has(#cat-tooling:checked) .doc-list > li[data-categories~="tooling"] { display: flex; }
+     @media (prefers-reduced-motion: reduce) { .chip { transition: none; } }
+   </style>
+ </head>
+ <body>
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
+         <li><a href="/research" aria-current="page">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><span aria-current="page">Research</span></li>
+       </ol>
+diff --git a/public/research/large-files-out-of-git.html b/public/research/large-files-out-of-git.html
+index 1f9aa65..655d814 100644
+--- a/public/research/large-files-out-of-git.html
++++ b/public/research/large-files-out-of-git.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Keeping large files out of git history</span></li>
+       </ol>
+diff --git a/public/research/no-visible-pop-in.html b/public/research/no-visible-pop-in.html
+index 86ca9b3..36b89ae 100644
+--- a/public/research/no-visible-pop-in.html
++++ b/public/research/no-visible-pop-in.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">No visible pop-in: dissolving a streamed forest</span></li>
+       </ol>
+diff --git a/public/research/olympic-lakes-for-game-worlds.html b/public/research/olympic-lakes-for-game-worlds.html
+index 02cf9c3..46e2c78 100644
+--- a/public/research/olympic-lakes-for-game-worlds.html
++++ b/public/research/olympic-lakes-for-game-worlds.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Olympic Peninsula lakes for game worlds</span></li>
+       </ol>
+diff --git a/public/research/olympic-vegetation-for-games.html b/public/research/olympic-vegetation-for-games.html
+index 2ae7f72..c874b96 100644
+--- a/public/research/olympic-vegetation-for-games.html
++++ b/public/research/olympic-vegetation-for-games.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Olympic Peninsula vegetation for game worlds</span></li>
+       </ol>
+diff --git a/public/research/opening-a-game-like-a-film.html b/public/research/opening-a-game-like-a-film.html
+index d48dfcc..49333e1 100644
+--- a/public/research/opening-a-game-like-a-film.html
++++ b/public/research/opening-a-game-like-a-film.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Opening a game like a film: sixty seconds of drive, radio and dread</span></li>
+       </ol>
+diff --git a/public/research/photorealistic-rain-for-browser-games.html b/public/research/photorealistic-rain-for-browser-games.html
+index 70c1a26..8c7ad83 100644
+--- a/public/research/photorealistic-rain-for-browser-games.html
++++ b/public/research/photorealistic-rain-for-browser-games.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Photorealistic rain for browser games</span></li>
+       </ol>
+diff --git a/public/research/photorealistic-water-rendering.html b/public/research/photorealistic-water-rendering.html
+index a605719..50d5b62 100644
+--- a/public/research/photorealistic-water-rendering.html
++++ b/public/research/photorealistic-water-rendering.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Photorealistic water rendering: lakes and oceans</span></li>
+       </ol>
+diff --git a/public/research/pointer-lock-escape-cooldown.html b/public/research/pointer-lock-escape-cooldown.html
+index 5a5784d..d25c79e 100644
+--- a/public/research/pointer-lock-escape-cooldown.html
++++ b/public/research/pointer-lock-escape-cooldown.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Pointer lock&#39;s Esc cooldown and an 8-byte patch</span></li>
+       </ol>
+diff --git a/public/research/procedural-world-as-a-pure-function.html b/public/research/procedural-world-as-a-pure-function.html
+index e3e83ef..85ce250 100644
+--- a/public/research/procedural-world-as-a-pure-function.html
++++ b/public/research/procedural-world-as-a-pure-function.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">An endless world as a pure function</span></li>
+       </ol>
+diff --git a/public/research/reverse-engineering-an-ai-horror-short.html b/public/research/reverse-engineering-an-ai-horror-short.html
+index 5c8017c..2d42c05 100644
+--- a/public/research/reverse-engineering-an-ai-horror-short.html
++++ b/public/research/reverse-engineering-an-ai-horror-short.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Reverse engineering an AI horror short</span></li>
+       </ol>
+diff --git a/public/research/rock-formations-of-the-olympic-peninsula.html b/public/research/rock-formations-of-the-olympic-peninsula.html
+index c35f2fb..e7128a3 100644
+--- a/public/research/rock-formations-of-the-olympic-peninsula.html
++++ b/public/research/rock-formations-of-the-olympic-peninsula.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Rock formations of the Olympic Peninsula, and how games build them</span></li>
+       </ol>
+diff --git a/public/research/rock-on-steep-terrain-shape-it-cover-it-or-skin-it.html b/public/research/rock-on-steep-terrain-shape-it-cover-it-or-skin-it.html
+index 510b6c9..b1d8415 100644
+--- a/public/research/rock-on-steep-terrain-shape-it-cover-it-or-skin-it.html
++++ b/public/research/rock-on-steep-terrain-shape-it-cover-it-or-skin-it.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Rock on steep terrain: shape it, cover it, or skin it</span></li>
+       </ol>
+diff --git a/public/research/soft-shade-bark-and-moss-for-browser-forests.html b/public/research/soft-shade-bark-and-moss-for-browser-forests.html
+index d4c3d34..348f311 100644
+--- a/public/research/soft-shade-bark-and-moss-for-browser-forests.html
++++ b/public/research/soft-shade-bark-and-moss-for-browser-forests.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Soft shade, bark and moss for browser forests</span></li>
+       </ol>
+diff --git a/public/research/stylized-shader-looks.html b/public/research/stylized-shader-looks.html
+index d6c466d..59e9583 100644
+--- a/public/research/stylized-shader-looks.html
++++ b/public/research/stylized-shader-looks.html
+@@ -355,23 +355,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Stylized shader looks: how games build a visual identity</span></li>
+       </ol>
+diff --git a/public/research/synthetic-voices-for-a-radio-call.html b/public/research/synthetic-voices-for-a-radio-call.html
+index c58b5d8..541c5e6 100644
+--- a/public/research/synthetic-voices-for-a-radio-call.html
++++ b/public/research/synthetic-voices-for-a-radio-call.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Synthetic voices for a radio call</span></li>
+       </ol>
+diff --git a/public/research/update-the-ide-keep-the-shells.html b/public/research/update-the-ide-keep-the-shells.html
+index 35a957f..eea8c73 100644
+--- a/public/research/update-the-ide-keep-the-shells.html
++++ b/public/research/update-the-ide-keep-the-shells.html
+@@ -355,23 +355,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Update the IDE, keep the shells</span></li>
+       </ol>
+diff --git a/public/research/visits-without-cookies.html b/public/research/visits-without-cookies.html
+index b984f47..888d8c6 100644
+--- a/public/research/visits-without-cookies.html
++++ b/public/research/visits-without-cookies.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Visits without cookies, and the path they took</span></li>
+       </ol>
+diff --git a/public/research/voice-profile-vs-pangram.html b/public/research/voice-profile-vs-pangram.html
+index 7c9774b..2ba0eec 100644
+--- a/public/research/voice-profile-vs-pangram.html
++++ b/public/research/voice-profile-vs-pangram.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Why a voice profile didn&#39;t get Claude past Substack&#39;s AI check</span></li>
+       </ol>
+diff --git a/public/research/webgpu-vs-webgl2.html b/public/research/webgpu-vs-webgl2.html
+index ffa88d2..478e0fd 100644
+--- a/public/research/webgpu-vs-webgl2.html
++++ b/public/research/webgpu-vs-webgl2.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">WebGPU and WebGL2: what changes and what does not</span></li>
+       </ol>
+diff --git a/public/research/webrtc-signaling-on-cloud-run.html b/public/research/webrtc-signaling-on-cloud-run.html
+index a9e897e..c7f296f 100644
+--- a/public/research/webrtc-signaling-on-cloud-run.html
++++ b/public/research/webrtc-signaling-on-cloud-run.html
+@@ -352,23 +352,23 @@
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }
+   </style>
+ </head>
+ <body class="doc-page">
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+-        <li><a href="/film" data-goatcounter-click="nav-film">Film</a></li>
+-        <li><a href="/games" data-goatcounter-click="nav-games">Games</a></li>
+-        <li><a href="/research" data-goatcounter-click="nav-research">Research</a></li>
++        <li><a href="/film" data-visits-event="nav-film">Film</a></li>
++        <li><a href="/games" data-visits-event="nav-games">Games</a></li>
++        <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+       </ul>
+     </div>
+   </nav>
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><a href="/research">Research</a></li>
+         <li><span aria-current="page">Hosting WebRTC signaling on Cloud Run</span></li>
+       </ol>

@@ -1,0 +1,810 @@
+# Review package: 4abf892..HEAD
+
+## Commits
+32b0017 admin API: the visits SQL dry-runs against BigQuery
+7c3b77e admin API: a BigQuery collector for the site's visits
+
+## Files changed
+ admin/api/Dockerfile                     |   1 +
+ admin/api/package-lock.json              | 161 +++++++++++++++++++++++++++++++
+ admin/api/package.json                   |   1 +
+ admin/api/queries/audience.sql           |  38 ++++++++
+ admin/api/queries/events.sql             |  24 +++++
+ admin/api/queries/history-events.sql     |   5 +
+ admin/api/queries/history-pages.sql      |   5 +
+ admin/api/queries/history-referrers.sql  |   5 +
+ admin/api/queries/history-visits.sql     |   6 ++
+ admin/api/queries/pages.sql              |  38 ++++++++
+ admin/api/queries/referrers.sql          |  23 +++++
+ admin/api/queries/visits.sql             |  18 ++++
+ admin/api/src/collectors/visits.mjs      | 109 +++++++++++++++++++++
+ admin/api/test/fixtures/visits-rows.json |  34 +++++++
+ admin/api/test/visits.test.mjs           |  90 +++++++++++++++++
+ 15 files changed, 558 insertions(+)
+
+## Diff
+diff --git a/admin/api/Dockerfile b/admin/api/Dockerfile
+index a321256..7ea2307 100644
+--- a/admin/api/Dockerfile
++++ b/admin/api/Dockerfile
+@@ -5,15 +5,16 @@
+ # runs: Node 22 from the official slim image, production dependencies only,
+ # a non-root user, and nothing that a buildpack would have to guess from
+ # `engines`. The image is a few tens of MB and builds in under a minute.
+ 
+ FROM node:22-slim
+ WORKDIR /app
+ ENV NODE_ENV=production
+ COPY package.json package-lock.json ./
+ RUN npm ci --omit=dev --no-audit --no-fund
+ COPY src ./src
++COPY queries ./queries
+ USER node
+ # Cloud Run injects PORT; 8080 is the default `config.mjs` falls back to.
+ ENV PORT=8080
+ EXPOSE 8080
+ CMD ["node", "src/server.mjs"]
+diff --git a/admin/api/package-lock.json b/admin/api/package-lock.json
+index 3a4f687..5386480 100644
+--- a/admin/api/package-lock.json
++++ b/admin/api/package-lock.json
+@@ -1,27 +1,108 @@
+ {
+   "name": "csarko-admin-api",
+   "version": "1.0.0",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "csarko-admin-api",
+       "version": "1.0.0",
+       "dependencies": {
++        "@google-cloud/bigquery": "9.2.0",
+         "@google-cloud/firestore": "9.3.1",
+         "jose": "6.2.12"
+       },
+       "engines": {
+         "node": ">=22.9"
+       }
+     },
++    "node_modules/@google-cloud/bigquery": {
++      "version": "9.2.0",
++      "resolved": "https://registry.npmjs.org/@google-cloud/bigquery/-/bigquery-9.2.0.tgz",
++      "integrity": "sha512-TIsv55XmLsrA9X/iO4hujGomcgS4z19JKijemTpv6URSjPDs0LZDpoRO6JKBU2bsr9PV87TZuMh9eMHK2bJLmg==",
++      "license": "Apache-2.0",
++      "dependencies": {
++        "@google-cloud/common": "^8.0.0",
++        "@google-cloud/paginator": "^7.0.0",
++        "@google-cloud/precise-date": "^6.0.0",
++        "@google-cloud/promisify": "^6.0.0",
++        "arrify": "^3.0.0",
++        "big.js": "^7.0.0",
++        "duplexify": "^4.1.3",
++        "extend": "^3.0.2",
++        "stream-events": "^1.0.5",
++        "teeny-request": "^11.0.0"
++      },
++      "engines": {
++        "node": ">=22"
++      }
++    },
++    "node_modules/@google-cloud/bigquery/node_modules/teeny-request": {
++      "version": "11.1.0",
++      "resolved": "https://registry.npmjs.org/teeny-request/-/teeny-request-11.1.0.tgz",
++      "integrity": "sha512-AXc3Afs3pUWpU7vFqOQ8xSgOr2B26Wjc2APztFYzv9K6GSWYVmNCaps5+dS1fBwNcR2atyc1UwffR1rLnzH0wA==",
++      "license": "Apache-2.0",
++      "dependencies": {
++        "http-proxy-agent": "^7.0.0",
++        "https-proxy-agent": "^7.0.1",
++        "node-fetch": "^3.3.2",
++        "stream-events": "^1.0.5"
++      },
++      "engines": {
++        "node": ">=22"
++      }
++    },
++    "node_modules/@google-cloud/common": {
++      "version": "8.2.0",
++      "resolved": "https://registry.npmjs.org/@google-cloud/common/-/common-8.2.0.tgz",
++      "integrity": "sha512-qhqxToTDkEmahxVkdgJ+ZsBpgSSgUUN0VewP0114GeSiecEmPOKE0dXLRHdDtpVIsrm08JqVrYveyBfI9b92nA==",
++      "license": "Apache-2.0",
++      "dependencies": {
++        "@google-cloud/projectify": "^6.0.0",
++        "@google-cloud/promisify": "^6.0.0",
++        "arrify": "^2.0.0",
++        "duplexify": "^4.1.3",
++        "extend": "^3.0.2",
++        "google-auth-library": "^11.0.0",
++        "html-entities": "^2.5.2",
++        "retry-request": "^9.0.0",
++        "teeny-request": "^11.0.0"
++      },
++      "engines": {
++        "node": ">=22"
++      }
++    },
++    "node_modules/@google-cloud/common/node_modules/arrify": {
++      "version": "2.0.1",
++      "resolved": "https://registry.npmjs.org/arrify/-/arrify-2.0.1.tgz",
++      "integrity": "sha512-3duEwti880xqi4eAMN8AyR4a0ByT90zoYdLlevfrvU43vb0YZwZVfxOgxWrLXXXpyugL0hNZc9G6BiB5B3nUug==",
++      "license": "MIT",
++      "engines": {
++        "node": ">=8"
++      }
++    },
++    "node_modules/@google-cloud/common/node_modules/teeny-request": {
++      "version": "11.1.0",
++      "resolved": "https://registry.npmjs.org/teeny-request/-/teeny-request-11.1.0.tgz",
++      "integrity": "sha512-AXc3Afs3pUWpU7vFqOQ8xSgOr2B26Wjc2APztFYzv9K6GSWYVmNCaps5+dS1fBwNcR2atyc1UwffR1rLnzH0wA==",
++      "license": "Apache-2.0",
++      "dependencies": {
++        "http-proxy-agent": "^7.0.0",
++        "https-proxy-agent": "^7.0.1",
++        "node-fetch": "^3.3.2",
++        "stream-events": "^1.0.5"
++      },
++      "engines": {
++        "node": ">=22"
++      }
++    },
+     "node_modules/@google-cloud/firestore": {
+       "version": "9.3.1",
+       "resolved": "https://registry.npmjs.org/@google-cloud/firestore/-/firestore-9.3.1.tgz",
+       "integrity": "sha512-ofGTiSpfXrHrrS3KaDOmsupSzCHr4WVl1+s6Ke0F8rPBRyb/OuZSC8u1NjCKtt/fO7A1GvqASQGhdAwVsnGpQA==",
+       "license": "Apache-2.0",
+       "dependencies": {
+         "@google-cloud/firestore-api": "^0.2.0",
+         "@opentelemetry/api": "^1.9.0",
+         "fast-deep-equal": "^3.1.3",
+         "functional-red-black-tree": "^1.0.1",
+@@ -140,20 +221,59 @@
+       "integrity": "sha512-pI6/7eabUYkZxamkOq0g0uMxKLLGnjzhefY+vL8bVXag5rto4OU2YBTPytWLuHH7aEKD6fn7kJycQfid0Mwnkw==",
+       "license": "MIT",
+       "dependencies": {
+         "extend": "^3.0.2",
+         "teeny-request": "^10.0.0"
+       },
+       "engines": {
+         "node": ">=18"
+       }
+     },
++    "node_modules/@google-cloud/paginator": {
++      "version": "7.2.0",
++      "resolved": "https://registry.npmjs.org/@google-cloud/paginator/-/paginator-7.2.0.tgz",
++      "integrity": "sha512-l+x6YObHGTuqBCMvC0SXo3Cnyqg4FkWWKYRptf46PACHJ5GAUuhsd2b3wphgGrg1ybs/LAb+q5MnUTuG/3+v7w==",
++      "license": "Apache-2.0",
++      "dependencies": {
++        "extend": "^3.0.2"
++      },
++      "engines": {
++        "node": ">=22"
++      }
++    },
++    "node_modules/@google-cloud/precise-date": {
++      "version": "6.2.0",
++      "resolved": "https://registry.npmjs.org/@google-cloud/precise-date/-/precise-date-6.2.0.tgz",
++      "integrity": "sha512-Pvh11jzEdzCLeqXNv2H40JGUsrUjpzBJQ6Ai4aNxlLlrziyVKzz71RhMmsadAjIrnEBDiPW9Uku4OuR3f6kb2g==",
++      "license": "Apache-2.0",
++      "engines": {
++        "node": ">=22"
++      }
++    },
++    "node_modules/@google-cloud/projectify": {
++      "version": "6.2.0",
++      "resolved": "https://registry.npmjs.org/@google-cloud/projectify/-/projectify-6.2.0.tgz",
++      "integrity": "sha512-QXBPu/D+1zgJ9Ydw+GXYws9OipW62nxfwsGl7x3JUTDim9NCGb7R+h7Sj3HKo1WMYb/StvOYyUBZrqU2pkhuiw==",
++      "license": "Apache-2.0",
++      "engines": {
++        "node": ">=22"
++      }
++    },
++    "node_modules/@google-cloud/promisify": {
++      "version": "6.2.0",
++      "resolved": "https://registry.npmjs.org/@google-cloud/promisify/-/promisify-6.2.0.tgz",
++      "integrity": "sha512-0i3JkkwAdGGk6AlMnFm1Vf+XtpIL73ki/MZWvXDPoN37nABf/9LFHtYeo8tW77vHSQS00ykC2ygHnUL1gkYAXg==",
++      "license": "Apache-2.0",
++      "engines": {
++        "node": ">=22"
++      }
++    },
+     "node_modules/@grpc/grpc-js": {
+       "version": "1.14.6",
+       "resolved": "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.14.6.tgz",
+       "integrity": "sha512-SgC/B3/VZ8lTyOZ4Cwk6f1skWhmkNAaVfiX90qd5u1rRXGKk1//8FTUEN9GvOUq7rfWIqAYkA3CoyumYVpOS6g==",
+       "license": "Apache-2.0",
+       "dependencies": {
+         "@grpc/proto-loader": "^0.8.0",
+         "@js-sdsl/ordered-map": "^4.4.2"
+       },
+       "engines": {
+@@ -395,20 +515,32 @@
+       "dependencies": {
+         "color-convert": "^2.0.1"
+       },
+       "engines": {
+         "node": ">=8"
+       },
+       "funding": {
+         "url": "https://github.com/chalk/ansi-styles?sponsor=1"
+       }
+     },
++    "node_modules/arrify": {
++      "version": "3.0.0",
++      "resolved": "https://registry.npmjs.org/arrify/-/arrify-3.0.0.tgz",
++      "integrity": "sha512-tLkvA81vQG/XqE2mjDkGQHoOINtMHtysSnemrmoGe6PydDPMRbVugqyk4A6V/WDWEfm3l+0d8anA9r8cv/5Jaw==",
++      "license": "MIT",
++      "engines": {
++        "node": ">=12"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/sindresorhus"
++      }
++    },
+     "node_modules/balanced-match": {
+       "version": "1.0.2",
+       "resolved": "https://registry.npmjs.org/balanced-match/-/balanced-match-1.0.2.tgz",
+       "integrity": "sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==",
+       "license": "MIT"
+     },
+     "node_modules/base64-js": {
+       "version": "1.5.1",
+       "resolved": "https://registry.npmjs.org/base64-js/-/base64-js-1.5.1.tgz",
+       "integrity": "sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==",
+@@ -421,20 +553,33 @@
+           "type": "patreon",
+           "url": "https://www.patreon.com/feross"
+         },
+         {
+           "type": "consulting",
+           "url": "https://feross.org/support"
+         }
+       ],
+       "license": "MIT"
+     },
++    "node_modules/big.js": {
++      "version": "7.0.1",
++      "resolved": "https://registry.npmjs.org/big.js/-/big.js-7.0.1.tgz",
++      "integrity": "sha512-iFgV784tD8kq4ccF1xtNMZnXeZzVuXWWM+ERFzKQjv+A5G9HC8CY3DuV45vgzFFcW+u2tIvmF95+AzWgs6BjCg==",
++      "license": "MIT",
++      "engines": {
++        "node": "*"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/bigjs"
++      }
++    },
+     "node_modules/bignumber.js": {
+       "version": "9.3.1",
+       "resolved": "https://registry.npmjs.org/bignumber.js/-/bignumber.js-9.3.1.tgz",
+       "integrity": "sha512-Ko0uX15oIUS7wJ3Rb30Fs6SkVbLmPBAKdlm7q9+ak9bbIeFf0MwuBsQV6z7+X768/cHsfg+WlysDWJcmthjsjQ==",
+       "license": "MIT",
+       "engines": {
+         "node": "*"
+       }
+     },
+     "node_modules/brace-expansion": {
+@@ -756,20 +901,36 @@
+       "integrity": "sha512-+CqsMbHPiSTdtSO14O51eMNlrp9N79gmeqmXeouJOhfucAedHw9noVe/n5uJk3tbKE6a+6ZCQg3RPhVhHByAIw==",
+       "license": "MIT",
+       "dependencies": {
+         "gaxios": "^7.0.0",
+         "jws": "^4.0.0"
+       },
+       "engines": {
+         "node": ">=18"
+       }
+     },
++    "node_modules/html-entities": {
++      "version": "2.6.0",
++      "resolved": "https://registry.npmjs.org/html-entities/-/html-entities-2.6.0.tgz",
++      "integrity": "sha512-kig+rMn/QOVRvr7c86gQ8lWXq+Hkv6CbAH1hLu+RG338StTpE8Z0b44SDVaqVu7HGKf27frdmUYEs9hTUX/cLQ==",
++      "funding": [
++        {
++          "type": "github",
++          "url": "https://github.com/sponsors/mdevils"
++        },
++        {
++          "type": "patreon",
++          "url": "https://patreon.com/mdevils"
++        }
++      ],
++      "license": "MIT"
++    },
+     "node_modules/http-proxy-agent": {
+       "version": "7.0.2",
+       "resolved": "https://registry.npmjs.org/http-proxy-agent/-/http-proxy-agent-7.0.2.tgz",
+       "integrity": "sha512-T1gkAiYYDWYx3V5Bmyu7HcfcvL7mUrTWiM6yOfa3PIphViJ/gFPbvidQ+veqSOHci/PxBcDabeUNCzpOODJZig==",
+       "license": "MIT",
+       "dependencies": {
+         "agent-base": "^7.1.0",
+         "debug": "^4.3.4"
+       },
+       "engines": {
+diff --git a/admin/api/package.json b/admin/api/package.json
+index da538cd..58cbd4a 100644
+--- a/admin/api/package.json
++++ b/admin/api/package.json
+@@ -6,14 +6,15 @@
+   "type": "module",
+   "engines": {
+     "node": ">=22.9"
+   },
+   "scripts": {
+     "start": "node src/server.mjs",
+     "dev": "PORT=8787 node --env-file-if-exists=.env.local --watch src/server.mjs",
+     "test": "node --test \"test/**/*.test.mjs\""
+   },
+   "dependencies": {
++    "@google-cloud/bigquery": "9.2.0",
+     "@google-cloud/firestore": "9.3.1",
+     "jose": "6.2.12"
+   }
+ }
+diff --git a/admin/api/queries/audience.sql b/admin/api/queries/audience.sql
+new file mode 100644
+index 0000000..167b79c
+--- /dev/null
++++ b/admin/api/queries/audience.sql
+@@ -0,0 +1,38 @@
++-- Who the visitors are, by dimension, in [start, end). The check beacons (/deploy-check, /depth-check) are left out.
++WITH views AS (
++  SELECT
++    COALESCE(JSON_VALUE(json_payload.s.visit), JSON_VALUE(json_payload.id)) AS visit,
++    JSON_VALUE(json_payload.s.cc) AS country,
++    JSON_VALUE(json_payload.sw) AS size,
++    JSON_VALUE(json_payload.s.bn) AS browser,
++    JSON_VALUE(json_payload.s.os) AS system,
++    COALESCE(JSON_VALUE(json_payload.lg), JSON_VALUE(json_payload.s.lg)) AS language,
++    JSON_VALUE(json_payload.th) AS theme,
++    CASE
++      WHEN SAFE_CAST(JSON_VALUE(json_payload.vw) AS INT64) < 400 THEN 'under 400'
++      WHEN SAFE_CAST(JSON_VALUE(json_payload.vw) AS INT64) < 800 THEN '400 to 799'
++      WHEN SAFE_CAST(JSON_VALUE(json_payload.vw) AS INT64) < 1200 THEN '800 to 1199'
++      WHEN SAFE_CAST(JSON_VALUE(json_payload.vw) AS INT64) IS NOT NULL THEN '1200 and up'
++    END AS viewport,
++    IF(JSON_VALUE(json_payload.tp) = 'true', 'touch', 'pointer') AS touch,
++    JSON_VALUE(json_payload.tz) AS timezone
++  FROM `csarko-sh.csarko_visits._AllLogs`
++  WHERE timestamp >= TIMESTAMP(@start) AND timestamp < TIMESTAMP(@end)
++    AND JSON_VALUE(json_payload.n) = 'view'
++    AND IFNULL(JSON_VALUE(json_payload.s.bot), 'false') != 'true'
++    AND JSON_VALUE(json_payload.p) NOT IN ('/deploy-check', '/depth-check')
++)
++SELECT dim, name, COUNT(DISTINCT visit) AS visitors FROM (
++  SELECT 'countries' AS dim, country AS name, visit FROM views
++  UNION ALL SELECT 'sizes', size, visit FROM views
++  UNION ALL SELECT 'browsers', browser, visit FROM views
++  UNION ALL SELECT 'systems', system, visit FROM views
++  UNION ALL SELECT 'languages', language, visit FROM views
++  UNION ALL SELECT 'themes', theme, visit FROM views
++  UNION ALL SELECT 'viewports', viewport, visit FROM views
++  UNION ALL SELECT 'touch', touch, visit FROM views
++  UNION ALL SELECT 'timezones', timezone, visit FROM views
++)
++WHERE name IS NOT NULL AND name != ''
++GROUP BY dim, name
++ORDER BY dim, visitors DESC
+diff --git a/admin/api/queries/events.sql b/admin/api/queries/events.sql
+new file mode 100644
+index 0000000..903dc0f
+--- /dev/null
++++ b/admin/api/queries/events.sql
+@@ -0,0 +1,24 @@
++-- Named clicks, outbound links by host, docs read to the end (from the leave beacon), and the
++-- home page's visitors, in [start, end). The check beacons (/deploy-check, /depth-check) are left out.
++WITH base AS (
++  SELECT json_payload AS j, COALESCE(JSON_VALUE(json_payload.s.visit), JSON_VALUE(json_payload.id)) AS visit
++  FROM `csarko-sh.csarko_visits._AllLogs`
++  WHERE timestamp >= TIMESTAMP(@start) AND timestamp < TIMESTAMP(@end)
++    AND IFNULL(JSON_VALUE(json_payload.s.bot), 'false') != 'true'
++    AND JSON_VALUE(json_payload.p) NOT IN ('/deploy-check', '/depth-check')
++)
++SELECT name, COUNT(DISTINCT visit) AS visitors FROM (
++  SELECT JSON_VALUE(j.ev) AS name, visit FROM base
++  WHERE JSON_VALUE(j.n) = 'click' AND JSON_VALUE(j.ev) IS NOT NULL
++  UNION ALL
++  SELECT CONCAT('link-', REGEXP_EXTRACT(JSON_VALUE(j.u), r'^https?://([^/]+)')), visit FROM base
++  WHERE JSON_VALUE(j.n) = 'click' AND JSON_VALUE(j.ev) IS NULL AND JSON_VALUE(j.u) IS NOT NULL
++  UNION ALL
++  SELECT CONCAT('read-', REGEXP_EXTRACT(JSON_VALUE(j.p), r'^/research/([^/]+)$')), visit FROM base
++  WHERE JSON_VALUE(j.n) = 'leave' AND JSON_VALUE(j.re) = 'true' AND REGEXP_CONTAINS(JSON_VALUE(j.p), r'^/research/[^/]+$')
++  UNION ALL
++  SELECT '(home)', visit FROM base WHERE JSON_VALUE(j.n) = 'view' AND JSON_VALUE(j.p) = '/'
++)
++WHERE name IS NOT NULL
++GROUP BY name
++ORDER BY visitors DESC
+diff --git a/admin/api/queries/history-events.sql b/admin/api/queries/history-events.sql
+new file mode 100644
+index 0000000..fbc1a9f
+--- /dev/null
++++ b/admin/api/queries/history-events.sql
+@@ -0,0 +1,5 @@
++-- GoatCounter's events in [start, end), from the backfilled hourly counts.
++SELECT REGEXP_REPLACE(path, r'^/', '') AS name, SUM(visits) AS visitors
++FROM `csarko-sh.csarko_history.goatcounter_history`
++WHERE hour >= TIMESTAMP(@start) AND hour < TIMESTAMP(@end) AND event
++GROUP BY name ORDER BY visitors DESC
+diff --git a/admin/api/queries/history-pages.sql b/admin/api/queries/history-pages.sql
+new file mode 100644
+index 0000000..b0ae5b2
+--- /dev/null
++++ b/admin/api/queries/history-pages.sql
+@@ -0,0 +1,5 @@
++-- GoatCounter's pages by visitors in [start, end), from the backfilled hourly counts.
++SELECT path, ANY_VALUE(title) AS title, SUM(visits) AS visitors
++FROM `csarko-sh.csarko_history.goatcounter_history`
++WHERE hour >= TIMESTAMP(@start) AND hour < TIMESTAMP(@end) AND NOT event
++GROUP BY path ORDER BY visitors DESC LIMIT 200
+diff --git a/admin/api/queries/history-referrers.sql b/admin/api/queries/history-referrers.sql
+new file mode 100644
+index 0000000..6d7c834
+--- /dev/null
++++ b/admin/api/queries/history-referrers.sql
+@@ -0,0 +1,5 @@
++-- GoatCounter's referrers in [start, end), from the backfilled hourly counts.
++SELECT 'referrer' AS kind, IFNULL(ref, '') AS name, '' AS target, SUM(visits) AS visitors
++FROM `csarko-sh.csarko_history.goatcounter_history`
++WHERE hour >= TIMESTAMP(@start) AND hour < TIMESTAMP(@end) AND NOT event
++GROUP BY name ORDER BY visitors DESC
+diff --git a/admin/api/queries/history-visits.sql b/admin/api/queries/history-visits.sql
+new file mode 100644
+index 0000000..4a2c78e
+--- /dev/null
++++ b/admin/api/queries/history-visits.sql
+@@ -0,0 +1,6 @@
++-- GoatCounter's visits a day in [start, end), for the window's part before the cutover.
++SELECT IF(hour >= TIMESTAMP(@start), 'current', 'previous') AS win, DATE(hour) AS day, SUM(visits) AS visits
++FROM `csarko-sh.csarko_history.goatcounter_history`
++WHERE hour >= TIMESTAMP(@prev_start) AND hour < TIMESTAMP(@end) AND NOT event
++GROUP BY win, day
++ORDER BY day
+diff --git a/admin/api/queries/pages.sql b/admin/api/queries/pages.sql
+new file mode 100644
+index 0000000..15610b9
+--- /dev/null
++++ b/admin/api/queries/pages.sql
+@@ -0,0 +1,38 @@
++-- Pages by visitors in [start, end), with the engaged time and the share that reached the end
++-- from each page load's last leave. The check beacons (/deploy-check, /depth-check) are left out.
++WITH views AS (
++  SELECT
++    JSON_VALUE(json_payload.id) AS id,
++    JSON_VALUE(json_payload.p) AS path,
++    JSON_VALUE(json_payload.t) AS title,
++    COALESCE(JSON_VALUE(json_payload.s.visit), JSON_VALUE(json_payload.id)) AS visit
++  FROM `csarko-sh.csarko_visits._AllLogs`
++  WHERE timestamp >= TIMESTAMP(@start) AND timestamp < TIMESTAMP(@end)
++    AND JSON_VALUE(json_payload.n) = 'view'
++    AND IFNULL(JSON_VALUE(json_payload.s.bot), 'false') != 'true'
++    AND JSON_VALUE(json_payload.p) NOT IN ('/deploy-check', '/depth-check')
++),
++leaves AS (
++  SELECT
++    JSON_VALUE(json_payload.id) AS id,
++    ARRAY_AGG(STRUCT(
++      SAFE_CAST(JSON_VALUE(json_payload.e) AS INT64) AS e,
++      JSON_VALUE(json_payload.re) = 'true' AS re
++    ) ORDER BY timestamp DESC LIMIT 1)[OFFSET(0)] AS last
++  FROM `csarko-sh.csarko_visits._AllLogs`
++  WHERE timestamp >= TIMESTAMP(@start) AND timestamp < TIMESTAMP(@end)
++    AND JSON_VALUE(json_payload.n) = 'leave'
++    AND JSON_VALUE(json_payload.p) NOT IN ('/deploy-check', '/depth-check')
++  GROUP BY id
++)
++SELECT
++  v.path,
++  ANY_VALUE(v.title) AS title,
++  COUNT(DISTINCT v.visit) AS visitors,
++  APPROX_QUANTILES(l.last.e, 2)[OFFSET(1)] AS engaged_median,
++  SAFE_DIVIDE(COUNTIF(l.last.re), COUNTIF(l.id IS NOT NULL)) AS reached
++FROM views v
++LEFT JOIN leaves l USING (id)
++GROUP BY v.path
++ORDER BY visitors DESC
++LIMIT 200
+diff --git a/admin/api/queries/referrers.sql b/admin/api/queries/referrers.sql
+new file mode 100644
+index 0000000..8c80352
+--- /dev/null
++++ b/admin/api/queries/referrers.sql
+@@ -0,0 +1,23 @@
++-- Where visits came from in [start, end): external hosts and direct, the campaign tags, and the
++-- site's own edges (the previous page to this one). The check beacons (/deploy-check, /depth-check) are left out.
++WITH views AS (
++  SELECT
++    JSON_VALUE(json_payload.p) AS path,
++    COALESCE(JSON_VALUE(json_payload.s.visit), JSON_VALUE(json_payload.id)) AS visit,
++    JSON_VALUE(json_payload.s.rk) AS rk,
++    JSON_VALUE(json_payload.s.rh) AS rh,
++    JSON_VALUE(json_payload.s.rp) AS rp,
++    COALESCE(JSON_VALUE(json_payload.cr), JSON_VALUE(json_payload.us)) AS campaign
++  FROM `csarko-sh.csarko_visits._AllLogs`
++  WHERE timestamp >= TIMESTAMP(@start) AND timestamp < TIMESTAMP(@end)
++    AND JSON_VALUE(json_payload.n) = 'view'
++    AND IFNULL(JSON_VALUE(json_payload.s.bot), 'false') != 'true'
++    AND JSON_VALUE(json_payload.p) NOT IN ('/deploy-check', '/depth-check')
++)
++SELECT 'referrer' AS kind, IF(rk = 'direct', '', IFNULL(rh, '')) AS name, '' AS target, COUNT(DISTINCT visit) AS visitors
++FROM views WHERE rk IN ('direct', 'external') GROUP BY name
++UNION ALL
++SELECT 'campaign', campaign, '', COUNT(DISTINCT visit) FROM views WHERE campaign IS NOT NULL GROUP BY campaign
++UNION ALL
++SELECT 'internal', rp, path, COUNT(DISTINCT visit) FROM views WHERE rk = 'internal' AND rp IS NOT NULL GROUP BY rp, path
++ORDER BY visitors DESC
+diff --git a/admin/api/queries/visits.sql b/admin/api/queries/visits.sql
+new file mode 100644
+index 0000000..56f3685
+--- /dev/null
++++ b/admin/api/queries/visits.sql
+@@ -0,0 +1,18 @@
++-- Visits a day for the current window [start, end) and the previous one [prev_start, start).
++-- A visit is the collector's daily hash; a row without one (no address resolved) counts by its page id.
++-- The deploy script's and depth check's beacons (/deploy-check, /depth-check) are left out.
++WITH views AS (
++  SELECT
++    DATE(timestamp) AS day,
++    IF(timestamp >= TIMESTAMP(@start), 'current', 'previous') AS win,
++    COALESCE(JSON_VALUE(json_payload.s.visit), JSON_VALUE(json_payload.id)) AS visit
++  FROM `csarko-sh.csarko_visits._AllLogs`
++  WHERE timestamp >= TIMESTAMP(@prev_start) AND timestamp < TIMESTAMP(@end)
++    AND JSON_VALUE(json_payload.n) = 'view'
++    AND IFNULL(JSON_VALUE(json_payload.s.bot), 'false') != 'true'
++    AND JSON_VALUE(json_payload.p) NOT IN ('/deploy-check', '/depth-check')
++)
++SELECT win, day, COUNT(DISTINCT visit) AS visits
++FROM views
++GROUP BY win, day
++ORDER BY day
+diff --git a/admin/api/src/collectors/visits.mjs b/admin/api/src/collectors/visits.mjs
+new file mode 100644
+index 0000000..363920e
+--- /dev/null
++++ b/admin/api/src/collectors/visits.mjs
+@@ -0,0 +1,109 @@
++/**
++ * The site's own analytics: lib-visits rows in BigQuery through Log Analytics
++ * (`csarko_visits._AllLogs`), and GoatCounter's history in `csarko_history`
++ * for windows that reach before the cutover. Each query is a saved SQL file
++ * under `queries/`, with `@start`, `@end`, `@prev_start`, `@prev_end` as
++ * string parameters the SQL casts to TIMESTAMP; one job a query, cached five
++ * minutes by name and window. History rows are merged in code (summed by
++ * day, path or name), since the two datasets are in different locations.
++ */
++
++import { readFileSync } from "node:fs";
++import { join } from "node:path";
++import { UpstreamError } from "../http.mjs";
++
++const LIVE_TABLE = /`csarko-sh\.csarko_visits\._AllLogs`/g;
++const HISTORY_TABLE = /`csarko-sh\.csarko_history\.goatcounter_history`/g;
++
++export function createVisits({ bigquery, projectId, dataset, historyDataset, historyUntil, cache, now = Date.now, log = console, ttlMs = 300_000, queriesDir = join(process.cwd(), "queries") }) {
++  const sqlOf = (name) => {
++    const sql = readFileSync(join(queriesDir, `${name}.sql`), "utf8");
++    return sql.replace(LIVE_TABLE, `\`${projectId}.${dataset}._AllLogs\``).replace(HISTORY_TABLE, `\`${projectId}.${historyDataset}.goatcounter_history\``);
++  };
++
++  async function run(name, params) {
++    const key = `visits:${name}:${JSON.stringify(params)}`;
++    return cache.get(key, ttlMs, async () => {
++      try {
++        const [rows] = await bigquery.query({ query: sqlOf(name), params, useLegacySql: false });
++        return rows.map(plainRow);
++      } catch (error) {
++        throw new UpstreamError(`BigQuery ${name} failed: ${error?.message ?? error}`, { cause: error });
++      }
++    });
++  }
++
++  const wantsHistory = (range) => Boolean(historyDataset && historyUntil && range.prevStart < historyUntil);
++  const win = (range) => ({ start: range.start, end: range.end, prev_start: range.prevStart, prev_end: range.prevEnd });
++
++  return {
++    get configured() {
++      return Boolean(bigquery && dataset);
++    },
++
++    async visits(range) {
++      const live = await run("visits", win(range));
++      const rows = wantsHistory(range) ? [...live, ...(await run("history-visits", win(range)))] : live;
++      const shape = (w) => {
++        const byDay = new Map();
++        for (const r of rows) if (r.win === w) byDay.set(r.day, (byDay.get(r.day) ?? 0) + Number(r.visits));
++        const perDay = [...byDay.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([day, visits]) => ({ day, visits, pageviews: null }));
++        return { visits: perDay.reduce((n, d) => n + d.visits, 0), pageviews: null, perDay };
++      };
++      return { current: shape("current"), previous: shape("previous") };
++    },
++
++    async pages(range) {
++      const live = await run("pages", { start: range.start, end: range.end });
++      const rows = live.map((r) => ({ path: r.path, title: r.title ?? "", visitors: Number(r.visitors), pageviews: null, engagedMedian: r.engaged_median === null || r.engaged_median === undefined ? null : Number(r.engaged_median), reached: r.reached === null || r.reached === undefined ? null : Number(r.reached) }));
++      if (!wantsHistory(range)) return rows;
++      const history = await run("history-pages", { start: range.start, end: range.end });
++      return sumBy([...rows, ...history.map((r) => ({ path: r.path, title: r.title ?? "", visitors: Number(r.visitors), pageviews: null, engagedMedian: null, reached: null }))], "path", "visitors");
++    },
++
++    async referrers(range) {
++      const live = await run("referrers", { start: range.start, end: range.end });
++      const all = wantsHistory(range) ? [...live, ...(await run("history-referrers", { start: range.start, end: range.end }))] : live;
++      const of = (kind) => all.filter((r) => r.kind === kind);
++      return {
++        referrers: sumBy(of("referrer").map((r) => ({ name: r.name ?? "", visitors: Number(r.visitors) })), "name", "visitors"),
++        campaigns: of("campaign").map((r) => ({ campaign: r.name, visitors: Number(r.visitors) })),
++        paths: of("internal").map((r) => ({ from: r.name, to: r.target, visitors: Number(r.visitors) })),
++      };
++    },
++
++    async events(range) {
++      const live = await run("events", { start: range.start, end: range.end });
++      const all = wantsHistory(range) ? [...live, ...(await run("history-events", { start: range.start, end: range.end }))] : live;
++      const rows = sumBy(all.map((r) => ({ name: r.name, visitors: Number(r.visitors) })), "name", "visitors");
++      const home = rows.find((r) => r.name === "(home)");
++      return { rows: rows.filter((r) => r.name !== "(home)"), homeVisitors: home ? home.visitors : 0 };
++    },
++
++    async audience(range) {
++      const rows = await run("audience", { start: range.start, end: range.end });
++      const out = { countries: [], sizes: [], browsers: [], systems: [], languages: [], themes: [], viewports: [], touch: [], timezones: [] };
++      for (const r of rows) if (out[r.dim]) out[r.dim].push({ name: String(r.name), visitors: Number(r.visitors) });
++      return out;
++    },
++  };
++}
++
++/** Rows with the same `key` folded into one, their `field` summed, highest first. */
++export function sumBy(rows, key, field) {
++  const map = new Map();
++  for (const r of rows) {
++    const k = r[key];
++    const seen = map.get(k);
++    if (seen) seen[field] += r[field];
++    else map.set(k, { ...r });
++  }
++  return [...map.values()].sort((a, b) => b[field] - a[field]);
++}
++
++/** BigQuery wraps dates, timestamps and big numbers in objects with `value`; the API wants plain values. */
++export function plainRow(row) {
++  const out = {};
++  for (const [k, v] of Object.entries(row)) out[k] = v !== null && typeof v === "object" && "value" in v ? v.value : v;
++  return out;
++}
+diff --git a/admin/api/test/fixtures/visits-rows.json b/admin/api/test/fixtures/visits-rows.json
+new file mode 100644
+index 0000000..0cd6af7
+--- /dev/null
++++ b/admin/api/test/fixtures/visits-rows.json
+@@ -0,0 +1,34 @@
++{
++  "visits": [
++    { "win": "previous", "day": { "value": "2026-10-10" }, "visits": 3 },
++    { "win": "current", "day": { "value": "2026-10-14" }, "visits": 5 },
++    { "win": "current", "day": { "value": "2026-10-15" }, "visits": 2 }
++  ],
++  "history-visits": [
++    { "win": "previous", "day": { "value": "2026-10-09" }, "visits": 4 },
++    { "win": "current", "day": { "value": "2026-10-14" }, "visits": 1 }
++  ],
++  "pages": [
++    { "path": "/", "title": "Home", "visitors": 6, "engaged_median": 12, "reached": null },
++    { "path": "/research/a", "title": "A", "visitors": 2, "engaged_median": 90, "reached": 0.5 }
++  ],
++  "history-pages": [{ "path": "/", "title": "Home", "visitors": 10 }],
++  "referrers": [
++    { "kind": "referrer", "name": "", "target": "", "visitors": 4 },
++    { "kind": "referrer", "name": "google.com", "target": "", "visitors": 3 },
++    { "kind": "campaign", "name": "substack", "target": "", "visitors": 1 },
++    { "kind": "internal", "name": "/", "target": "/games", "visitors": 2 }
++  ],
++  "history-referrers": [{ "kind": "referrer", "name": "google.com", "target": "", "visitors": 7 }],
++  "events": [
++    { "name": "out-github", "visitors": 2 },
++    { "name": "read-a", "visitors": 1 },
++    { "name": "(home)", "visitors": 6 }
++  ],
++  "history-events": [{ "name": "out-github", "visitors": 3 }],
++  "audience": [
++    { "dim": "countries", "name": "US", "visitors": 5 },
++    { "dim": "themes", "name": "dark", "visitors": 4 },
++    { "dim": "touch", "name": "pointer", "visitors": 6 }
++  ]
++}
+diff --git a/admin/api/test/visits.test.mjs b/admin/api/test/visits.test.mjs
+new file mode 100644
+index 0000000..dc610ad
+--- /dev/null
++++ b/admin/api/test/visits.test.mjs
+@@ -0,0 +1,90 @@
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { readFileSync } from "node:fs";
++import { createCache } from "../src/cache.mjs";
++import { createVisits, sumBy, plainRow } from "../src/collectors/visits.mjs";
++import { UpstreamError } from "../src/http.mjs";
++
++const rows = JSON.parse(readFileSync(new URL("./fixtures/visits-rows.json", import.meta.url), "utf8"));
++const queriesDir = new URL("../queries/", import.meta.url).pathname;
++
++// Each saved SQL file starts with a distinct comment; the fake matches on the file's first line,
++// so a test knows which file ran.
++function fakeBigQuery(calls = []) {
++  const first = (name) => readFileSync(`${queriesDir}${name}.sql`, "utf8").split("\n")[0];
++  return {
++    async query({ query, params }) {
++      const name = Object.keys(rows).find((n) => query.startsWith(first(n)));
++      if (!name) throw new Error(`no fixture for query starting ${query.slice(0, 60)}`);
++      assert.ok(query.includes("`p.d._AllLogs`") || query.includes("`p.h.goatcounter_history`"), "tables rewritten");
++      calls.push({ name, params });
++      return [rows[name]];
++    },
++  };
++}
++
++const range = { start: "2026-10-13T00:00:00Z", end: "2026-10-16T00:00:00Z", prevStart: "2026-10-10T00:00:00Z", prevEnd: "2026-10-13T00:00:00Z" };
++const make = (opts = {}) => {
++  const calls = [];
++  const v = createVisits({ bigquery: fakeBigQuery(calls), projectId: "p", dataset: "d", historyDataset: "h", historyUntil: "2026-10-14T00:00:00Z", cache: createCache(), queriesDir, ...opts });
++  return { v, calls };
++};
++
++test("visits sums live and history rows by day and window, and a row without a visit still counts", async () => {
++  const { v, calls } = make();
++  const r = await v.visits(range);
++  assert.deepEqual(r.current.perDay, [{ day: "2026-10-14", visits: 6, pageviews: null }, { day: "2026-10-15", visits: 2, pageviews: null }]);
++  assert.equal(r.current.visits, 8);
++  assert.deepEqual(r.previous.perDay.map((d) => d.day), ["2026-10-09", "2026-10-10"]);
++  assert.deepEqual(calls.map((c) => c.name), ["visits", "history-visits"]);
++  assert.deepEqual(calls[0].params, { start: range.start, end: range.end, prev_start: range.prevStart, prev_end: range.prevEnd });
++});
++
++test("history is not queried when the window starts after the cutover", async () => {
++  const { v, calls } = make({ historyUntil: "2026-10-01T00:00:00Z" });
++  await v.visits(range);
++  assert.deepEqual(calls.map((c) => c.name), ["visits"]);
++});
++
++test("pages merge history by path and keep engaged time and reached share from live rows", async () => {
++  const { v } = make();
++  const r = await v.pages(range);
++  assert.deepEqual(r[0], { path: "/", title: "Home", visitors: 16, pageviews: null, engagedMedian: 12, reached: null });
++  assert.equal(r[1].reached, 0.5);
++});
++
++test("referrers split into referrers (direct as empty name), campaigns and internal paths", async () => {
++  const { v } = make();
++  const r = await v.referrers(range);
++  assert.deepEqual(r.referrers, [{ name: "google.com", visitors: 10 }, { name: "", visitors: 4 }]);
++  assert.deepEqual(r.campaigns, [{ campaign: "substack", visitors: 1 }]);
++  assert.deepEqual(r.paths, [{ from: "/", to: "/games", visitors: 2 }]);
++});
++
++test("events fold history and lift the home-page visitors out of the rows", async () => {
++  const { v } = make();
++  const r = await v.events(range);
++  assert.deepEqual(r.rows, [{ name: "out-github", visitors: 5 }, { name: "read-a", visitors: 1 }]);
++  assert.equal(r.homeVisitors, 6);
++});
++
++test("audience groups by dimension", async () => {
++  const { v } = make();
++  const r = await v.audience(range);
++  assert.deepEqual(r.themes, [{ name: "dark", visitors: 4 }]);
++  assert.deepEqual(r.sizes, []);
++});
++
++test("a BigQuery failure is an upstream error, and the same window is cached", async () => {
++  const { v, calls } = make();
++  await v.audience(range);
++  await v.audience(range);
++  assert.equal(calls.filter((c) => c.name === "audience").length, 1);
++  const broken = createVisits({ bigquery: { async query() { throw new Error("quota"); } }, projectId: "p", dataset: "d", historyDataset: "h", historyUntil: null, cache: createCache(), queriesDir });
++  await assert.rejects(broken.audience(range), (e) => e instanceof UpstreamError && /BigQuery audience failed: quota/.test(e.message));
++});
++
++test("sumBy and plainRow", () => {
++  assert.deepEqual(sumBy([{ k: "a", n: 1 }, { k: "b", n: 5 }, { k: "a", n: 2 }], "k", "n"), [{ k: "b", n: 5 }, { k: "a", n: 3 }]);
++  assert.deepEqual(plainRow({ day: { value: "2026-10-14" }, n: 2, s: null }), { day: "2026-10-14", n: 2, s: null });
++});

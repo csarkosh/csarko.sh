@@ -1,0 +1,892 @@
+# Review package: 7c5a094..HEAD
+
+## Commits
+41e5959 docs: analytics is lib-visits now, everywhere the docs said GoatCounter
+
+## Files changed
+ .agents/skills/site-quality/SKILL.md             | 69 ++++++++++--------------
+ .agents/skills/site-quality/scripts/docs_lib.mjs |  4 +-
+ .agents/skills/substack-post/SKILL.md            |  6 +--
+ README.md                                        |  4 +-
+ admin/CONTRACT.md                                | 33 +++++++-----
+ admin/README.md                                  |  2 +-
+ admin/api/README.md                              | 28 +++++++---
+ admin/api/package.json                           |  2 +-
+ admin/api/src/cache.mjs                          |  4 +-
+ admin/api/src/collectors/sitemap.mjs             |  8 +--
+ admin/api/src/http.mjs                           |  2 +-
+ admin/api/src/referrers.mjs                      | 18 ++++---
+ admin/api/src/time.mjs                           |  8 +--
+ 13 files changed, 98 insertions(+), 90 deletions(-)
+
+## Diff
+diff --git a/.agents/skills/site-quality/SKILL.md b/.agents/skills/site-quality/SKILL.md
+index bc315f4..04bd3f9 100644
+--- a/.agents/skills/site-quality/SKILL.md
++++ b/.agents/skills/site-quality/SKILL.md
+@@ -3,22 +3,22 @@ name: site-quality
+ description: >-
+   Keep csarko.sh fast, findable, accessible, and locked down — and rebuild its
+   generated assets deterministically. Covers SEO (tags, JSON-LD, preview card,
+   favicons, robots/sitemap, Search Console), performance (responsive AVIF/WebP
+   portrait, self-hosted hashed fonts, byte budgets, no third-party requests),
+   accessibility (skip link, contrast, alt text), security headers (CSP and
+   friends, Mozilla Observatory A+), the custom 404 page, and phone layout. Use
+   whenever the user asks about SEO, Google, speed, Lighthouse, Core Web Vitals,
+   security headers, accessibility, link previews, favicons, the 404 page, the
+   mobile menu, analytics, or adding any script or third-party service; and when
+-  they ask how the site is doing, route visitor/traffic questions to GoatCounter
+-  (csarko.goatcounter.com) and Google search/indexing questions to Search
++  they ask how the site is doing, route visitor/traffic questions to the admin dashboard
++  (admin.csarko.sh, lib-visits) and Google search/indexing questions to Search
+   Console (see AGENTS.md "Where to look") — and
+   apply its checklist on EVERY change to public/, even when the user didn't
+   mention quality. The preview and deploy skills run its checks automatically.
+ ---
+ 
+ # Site quality for csarko.sh
+ 
+ Targets: **Lighthouse SEO / Accessibility / Best Practices 100 and Performance
+ ≥ 95, Mozilla Observatory A+, no layout breakage from 320px to 1440px.** They
+ apply to the home page and to every generated page: `/film`, `/games`, `/research` and each doc.
+@@ -51,21 +51,21 @@ Same inputs, same outputs (two builds produce identical hashes).
+ | Output | Source | Notes |
+ |---|---|---|
+ | `public/research/<slug>.html`, `public/research/index.html` | `docs/published/<YYYY-MM-DD>-<slug>.md` via `build_docs.mjs` (logic in `docs_lib.mjs`, `marked` vendored in `scripts/vendor/`) | Doc pages copy `index.html`'s theme token blocks and get fonts and analytics from `build_assets.py`, with root-relative paths. `check.py` rebuilds into a temp dir and fails if `public/` is stale. |
+ | `public/games/index.html` | `docs/games/<slug>.md` via the same `build_docs.mjs` run | The `/games` list, one entry per file: kicker from `status`, the H1 as the name, the body as the copy, `tags` as pills, and `play` as the card's "Play in your browser" link, styled like the old home page Projects card (`repo` is not linked from the card; it only feeds the JSON-LD `url` when there is no `play`). No per-game pages yet. Same theme, fonts, analytics and staleness rules as a doc page. |
+ | `public/film/index.html` | `docs/films/<slug>.md` via the same `build_docs.mjs` run | The `/film` list, one card per file: the poster, a kicker of `Short film · <runtime>`, the H1 as the title, the body as the copy, `tags` as pills, an optional `warning` line, and `watch` as the card's "Watch on YouTube" link. Each film is a `VideoObject` in the page's `CollectionPage`. The home page carries no film of its own: the nav's `Film` link is how you get here. |
+ | `public/assets/film-<slug>-{200,240,400,480}.<hash>.{avif,webp,jpg}`, `public/film/<slug>.jpg` | `assets/films/<slug>.jpg`, one poster per film, portrait (3:4) | `build_docs.mjs` writes a `<!-- generated:film-poster:<slug> -->` marker holding a plain `<img>` with the `alt` from the front matter; `build_assets.py` swaps in the hashed `<picture>` and reads that `alt` back out, so the Markdown stays the one source of truth. The stable `film/<slug>.jpg` is what the `VideoObject` cites. A film with no source image keeps the plain `<img>`. |
+ | `public/sitemap.xml` | `docs/published/`, `docs/games/` and `docs/films/` via `build_docs.mjs` | `/`, `/film`, `/games`, `/research` (no `lastmod` on any of the four), then each doc with its own. Each section's URL appears only while it has content. |
+ | `public/assets/portrait-{240,360,480,720}.<hash>.{avif,webp,jpg}` | `assets/portrait-source.jpg` | Responsive LCP image. Desktop 2x loads a ~15 KB AVIF instead of a 100 KB JPEG. |
+ | `public/assets/<font>.<hash>.woff2` | `assets/fonts/*.woff2` | Inter + JetBrains Mono variable, latin subset. License: `public/licenses/fonts-OFL.txt`. |
+ | `public/portrait.jpg` | same | Stable URL for JSON-LD `Person.image`. |
+-| `public/assets/goatcounter-count.<hash>.js`, `public/assets/engage.<hash>.js` | `assets/vendor/goatcounter-count.js` (unmodified), `assets/engage.js` (comment lines stripped) | The analytics scripts, only while `site.json` has a `code`. count.js goes on every page, engage.js on doc pages only; see "Analytics (in place)". |
++| `public/assets/visits.<hash>.js`, `public/assets/vitals.<hash>.js` | `assets/vendor/visits.min.js`, `assets/vendor/vitals.min.js` (unmodified, provenance line stripped before hashing) | The lib-visits client, only while `site.json` has a `provider`. Both go on every page; see "Analytics (in place)". |
+ | `<!-- generated:head -->`, `/* generated:fonts */`, `<!-- generated:portrait -->` blocks in `public/*.html` | the above | `index.html` gets relative paths (the file:// preview works); `404.html` gets root-relative paths (it's served at any depth). |
+ | `favicon.{ico,svg}`, `favicon-96x96.png`, `apple-touch-icon.png` | `assets/favicon.svg` | Real files, so Google Search shows them. |
+ | `og-image.jpg` (1200×630) | `assets/og-image.html` | Link-preview card. |
+ 
+ **Everything in `public/assets/` is named by its content hash** and cached for a
+ year (`immutable`). That's only safe because names change when bytes change —
+ `check.py` verifies every name against its content. To change the photo, replace
+ `assets/portrait-source.jpg` and re-run the generator; never overwrite a hashed
+ file in place.
+ 
+@@ -151,83 +151,72 @@ shell: `78ch` on role and doc-list copy, `72ch` on a doc's `main`.
+ breadcrumb under the nav: `Home › Research › <title>` on a doc, `Home › Research`
+ on `/research`, `Home › Games` on `/games`, `Home › Film` on `/film`. The visible trail and the page's
+ `BreadcrumbList` JSON-LD come from one array per page in `docs_lib.mjs`, since
+ Google may render the trail under a search result; `check.py` fails the build if
+ the two disagree, if a crumb link doesn't resolve in `public/`, if the last crumb
+ links back to the page you're on, or if the home page grows a trail. Renaming a
+ section means renaming it in `PAGE_LINKS`/`DOCS_NAV` and nowhere else.
+ 
+ ## Analytics (in place)
+ 
+-GoatCounter, configured only in `site.json` (`analytics.code`). The generator
+-writes the async `<script data-goatcounter>` tag into every page, the hashed
+-self-hosted `count.js`, and the CSP; `check.py` derives its allowlist from the
+-same file and verifies all three agree. Source script:
+-`assets/vendor/goatcounter-count.js` (unmodified, ISC; 9.4 KB raw, 3 KB
+-transferred).
++[lib-visits](https://github.com/csarkosh/lib-visits) (tag `v0.1.0`), configured only
++in `site.json` (`analytics.provider` is `visits`, `endpoint` is `/v`). The generator
++writes the two `<script>` tags into every page, the hashed self-hosted
++`visits.min.js` and `vitals.min.js`, and the CSP (`script-src 'self'`,
++`connect-src 'self'`: no third-party origin); `check.py` derives its allowlist from
++the same file and verifies all three agree. The scripts are vendored unmodified under
++`assets/vendor/`, each with a provenance line (tag, licence, sha256) that
++`strip_comments` drops before hashing. `AGENTS.md` -> "Analytics: how lib-visits is
++wired in" has the vendoring command, the same-origin `/v` rewrite and where the rows
++go (BigQuery `csarko_visits`, plus `csarko_history` for the GoatCounter years).
+ 
+ **Events** *(added 2026-10-12 for the admin dashboard; spec
+ `docs/superpowers/specs/2026-10-12-admin-dashboard-design.md`, Part 1.2)*.
+-GoatCounter stores an event as a path flagged `event`, so the same
+-`stats/hits` call returns them. Every name is a stable identifier that
+-outlives a change of label or URL; never rename one without a reason the
+-dashboard can absorb. Click events are `data-goatcounter-click` attributes,
+-which `count.js` binds on load:
++Every name is a stable identifier that outlives a change of label or URL; never
++rename one without a reason the dashboard can absorb. Click events are
++`data-visits-event` attributes, which `visits.min.js` binds on load:
+ 
+ | Event | On |
+ |---|---|
+ | `out-linkedin`, `out-github`, `out-substack`, `out-youtube` | the home page's hero chips, its Contact buttons, and the Filming tile's `@csarkosh` link (`public/index.html`) |
+ | `nav-film`, `nav-games`, `nav-research` | the page links of every nav: the home page's by hand, the generated pages' from `PAGE_LINKS` in `docs_lib.mjs`; the link to the page you are on carries none, since a reload is not a navigation |
+ | `play-<slug>` | a game card's "Play in your browser" (`gameList`) |
+ | `watch-<slug>` | a film card's "Watch on YouTube" (`filmCard`) |
+-| `read-<slug>` | a doc page, once, when its end scrolls into view (below) |
+-
+-`read-<slug>` is the one event with a script: `assets/engage.js` (ours, not
+-vendored). `docs_lib.mjs` marks one element per doc `data-read-end`, the
+-Sources heading when the doc has one (a reader who finished the prose has read
+-the doc, and a long reference list would otherwise hide them) and otherwise
+-the "Written by" box; the script watches it with an IntersectionObserver and
+-calls `goatcounter.count({ path: 'read-<slug>', event: true })` once, waiting
+-for `load` if `count.js` (async) has not run yet. It is a no-op without
+-`window.goatcounter` (blocked), without IntersectionObserver, and on localhost
+-and `file://`, where `count.js` drops the beacon. `build_assets.py` writes it
+-to `public/assets/engage.<hash>.js` with its whole-line `//` comments stripped
+-(`strip_comments`; 549 B), and emits
+-`<script defer src="/assets/engage.<hash>.js" data-slug="<slug>">` after
+-`count.js` inside the `generated:analytics` block of doc pages only. The
+-budget is now 9,922 B of 10,000 on a doc page, 9,373 B elsewhere. `check.py`
+-(`analytics_checks`) fails a doc page without the tag, any other page with
+-it, a tag that is not `defer`, a hash that is not the stripped source, a
+-`data-slug` that is not the page's, a page with no or more than one
+-`data-read-end`, and any `<script src>` that is not `count.js` or
+-`engage.js`.
++| `read-<slug>` | derived, not sent: a doc page whose reader's last leave reached the end (`leave.re`) |
++
++`read-<slug>` needs no script of ours any more (`engage.js` is gone):
++`docs_lib.mjs` still marks one element per doc `data-read-end`, the Sources
++heading when the doc has one and otherwise the "Written by" box, and lib-visits
++reports whether a leave reached it. `check.py` (`analytics_checks`) fails a page
++without both tags, a tag that is not `defer`, a hash that is not the vendored
++file's, and any `<script src>` that is not one of the two.
+ 
+ ## Adding a script or third-party service
+ 
+ This is the change most likely to regress everything above. In order:
+ 
+ 1. Prefer a first-party script file, loaded with `defer`: ours under
+    `assets/` (whole-line `//` comments are stripped at build, so write them
+    freely), a vendor's under `assets/vendor/` unmodified with a provenance
+    comment. `build_assets.py` hashes it into `public/assets/` with
+    `write_hashed` and writes the tag into the `generated:analytics` block
+-   (`engage.js` is the pattern, including how a tag reaches only some pages).
++   (the vendored `visits.min.js` is the pattern).
+    Never a hand-written tag in `public/`. If the vendor's host is required,
+    load it `async`/`defer`, never render-blocking.
+ 2. Add the vendor's origins to `THIRD_PARTY` in `check.py` (`script-src`, plus
+    `connect-src` for where it sends beacons) **and** to the same CSP directives
+    in `firebase.json`. No inline `<script>` unless its hash is in `script-src`.
+ 3. Teach `check.py` about it: `analytics_checks` fails any `<script src>` it
+    does not know, so a new script needs its own hash check and page rule
+-   there, next to `engage.js`'s.
+-4. Stay within `BUDGET_SCRIPTS` (10,000 B). `count.js` and `engage.js` already
+-   take 9,922 B of it on a doc page, so anything new displaces something or
++   there, next to the lib-visits scripts'.
++4. Stay within `BUDGET_SCRIPTS` (10,000 B). The lib-visits scripts already
++   take about 4,063 B of it on a doc page, so anything new displaces something or
+    comes with a deliberate budget change, agreed with Cyrus.
+ 5. Run `check.py`, deploy, then `check.py --live --lighthouse --observatory`.
+    Performance must stay ≥ 95 and Observatory A+.
+ 6. Update README.md and AGENTS.md wherever they say the page has no JavaScript.
+ 
+ ## Checklist for any change to public/
+ 
+ 1. Name, headline, title or tagline changed? Update `<title>`, description,
+    `og:*`, `twitter:*`, JSON-LD `jobTitle`/`description`, and
+    `assets/og-image.html`; run `generate-assets.sh`.
+@@ -247,21 +236,21 @@ This is the change most likely to regress everything above. In order:
+    `docs/games/`; a film is a file in `docs/films/` plus its poster at
+    `assets/films/<slug>.jpg`. Either way, edit the Markdown and re-run the
+    generator; never edit `public/research/`, `public/games/` or `public/film/` by hand.
+ 
+ Content rules in `AGENTS.md` still win (no email/phone, no metrics in Experience).
+ 
+ ## Google Search Console
+ 
+ **Use it for:** search queries, impressions, clicks, average position, indexing
+ and coverage, sitemap status, removals, and structured-data reports. For visitor
+-counts and referrers use GoatCounter instead. `AGENTS.md` → "Where to look" has
++counts and referrers use the admin dashboard (lib-visits) instead. `AGENTS.md` → "Where to look" has
+ the URLs, the routing table, and the property's current state (pending items
+ with dates).
+ 
+ Domain property `csarko.sh`, verified 2026-09-11 by a `google-site-verification`
+ TXT value in `txt_records` in `_infra/main.tf` — **never remove it**. The sitemap
+ `https://csarko.sh/sitemap.xml` is submitted. After meaningful content changes,
+ use URL Inspection → Request indexing.
+ 
+ ## Outside this repo
+ 
+diff --git a/.agents/skills/site-quality/scripts/docs_lib.mjs b/.agents/skills/site-quality/scripts/docs_lib.mjs
+index f85437e..d4b2c48 100644
+--- a/.agents/skills/site-quality/scripts/docs_lib.mjs
++++ b/.agents/skills/site-quality/scripts/docs_lib.mjs
+@@ -223,21 +223,21 @@ export function renderMarkdown(body, file, { ieee = false } = {}) {
+   const marked = new Marked({ gfm: true });
+   const tokens = marked.lexer(body);
+   const h1s = tokens.filter((t) => t.type === 'heading' && t.depth === 1);
+   if (h1s.length !== 1) throw new DocError(`${file}: needs exactly one "# " title (found ${h1s.length})`);
+   tokens.splice(tokens.indexOf(h1s[0]), 1);
+ 
+   const problems = [];
+   const references = findReferences(tokens, file, ieee, problems);
+   const rail = [];
+   const usedIds = new Set(['top']); // "top" is the skip link's target; never reused
+-  // engage.js counts a "read-<slug>" event when the element marked data-read-end scrolls into view.
++  // lib-visits derives a "read-<slug>" event when a leave reached the element marked data-read-end.
+   // With a Sources section that is its heading: a reader who finished the prose has read the doc,
+   // and a long reference list would otherwise hide them. Without one, docPage marks its author box.
+   let hasSources = false;
+   let lastDepth = 1;
+   let insideHeading = false; // set while rendering a heading's inline content, so the link
+   // renderer below can reject a link nested in any heading (H1 through H6) instead of letting
+   // it through and producing a nested <a> on the doc page or in a title link elsewhere.
+   const parseHeadingInline = (fn) => {
+     insideHeading = true;
+     try {
+@@ -915,21 +915,21 @@ ${filters(docs, '    ')}
+ ${docList(docs, 2, '    ')}
+   </main>
+ 
+ ${FOOTER}`;
+ }
+ 
+ function gameList(games, pad) {
+   const items = games.map((game) => {
+     // The title is not a link: "Play in your browser" says where it goes, which a repeated title
+     // never does, and it is stretched over the card, as on the old home page Projects card. The
+-    // click counts as "play-<slug>" in GoatCounter: a visitor who went on to play.
++    // click counts as "play-<slug>" in the visits log: a visitor who went on to play.
+     const play = game.play
+       ? `${pad}    <a class="card-link stretch" href="${escapeHtml(game.play)}" target="_blank" rel="noopener" data-visits-event="play-${game.slug}">Play in your browser ${EXTERNAL_ARROW}</a>\n`
+       : '';
+     return `${pad}  <li class="card">
+ ${pad}    <p class="game-kicker">${escapeHtml(game.kicker)}</p>
+ ${pad}    <h2 class="game-title">${game.titleHtml}</h2>
+ ${pad}    <div class="game-desc prose">
+ ${game.html}${pad}    </div>
+ ${pad}    <ul class="tags" role="list">${game.tags.map((tag) => `<li>${escapeHtml(tag)}</li>`).join('')}</ul>
+ ${play}${pad}  </li>`;
+diff --git a/.agents/skills/substack-post/SKILL.md b/.agents/skills/substack-post/SKILL.md
+index 5564732..a0f384c 100644
+--- a/.agents/skills/substack-post/SKILL.md
++++ b/.agents/skills/substack-post/SKILL.md
+@@ -163,22 +163,22 @@ him, in this order:
+   publish day, one is a teaser the next day that names the post. Pangram scans Notes
+   too, so he writes them.
+ - **The button:** a Substack "Custom" button at the end, linking the single doc or
+   `https://csarko.sh/research` when the post covers several. Its short label is his to
+   write.
+ 
+ **Links:** every csarko.sh link ends
+ `?utm_source=substack&utm_medium=email&utm_campaign=<post-slug>`, where `<post-slug>` is
+ the title lowercased with each run of non-letters turned into one hyphen. The title
+ isn't written yet at this point, so tag the outline's links with a working slug and retag
+-them once his title is final. GoatCounter shows these visits under the referrer
+-`substack`.
++them once his title is final. The visits log records the tag with the page's query,
++so the campaign can be told apart there.
+ 
+ **Site rules** to tell him about, from `AGENTS.md`'s Content rules: no em-dashes, no email
+ address or phone number, no metrics or customer names from his DoorDash work, nothing
+ about the commercial asset pipeline.
+ 
+ ### 5. He writes
+ 
+ He writes the post and the Notes, in the scratchpad folder or pasted into the chat.
+ Put his text into `post.md` in this exact shape, because the lint and `copy_body.py`
+ parse it:
+@@ -240,21 +240,21 @@ he keeps on purpose stays a miss on the card, marked as his call.
+ | Title first-person or number-led | about 30% and 47% more reactions | lint |
+ | No question mark in the title | question titles did slightly worse | lint |
+ | Subtitle 6 to 10 words, saying something new | it's the email's preview line; 6 to 10 words did best | lint (length, overlap with the title), review (is it new) |
+ | The first two sentences hook | the preview and the opening decide whether a reader stays | review |
+ | A doc link in paragraph 1 or 2 | many readers never reach the bottom | lint |
+ | One real image, after paragraph 1 | 22.9 reactions with a cover against 12.7 without; it's the social preview | lint (present), review (placement, caption) |
+ | Body 300 to 600 words | short posts win on reactions per word | lint |
+ | Plain prose: no headers, at most two bold phrases | reads on a phone | lint |
+ | One closing question, one a reader can answer | comments are what the feed rewards | lint (present), review (answerable, not rhetorical) |
+ | One button at the end | one call to action | lint |
+-| Every csarko.sh link tagged | GoatCounter can only count what's tagged | lint |
++| Every csarko.sh link tagged | the visits log can only tell apart what's tagged | lint |
+ | Two Notes, 120 to 300 characters, no URL or domain | a link in a Note halves its reach | lint (length, links), review (two, one naming the post) |
+ 
+ Publishing as email and web, restacking and the next day's Note are timing, so they stay
+ in the handover checklist.
+ 
+ ### 7. Humour suggestions
+ 
+ Suggest 2 to 4 places for dry humour, from `voice.md`'s "Tone" and "Emoji" rules. For each:
+ 
+ - **Where:** the paragraph, and the moment in it.
+diff --git a/README.md b/README.md
+index fb3b82a..c9b21c4 100644
+--- a/README.md
++++ b/README.md
+@@ -17,21 +17,21 @@ admin/             the private dashboard: admin/public is the site admin.csarko.
+ _infra/            Terraform for hosting (Firebase, GCP), the admin site and API, and DNS (Route53, AWS)
+ .agents/skills/    preview, deploy, site-quality, publish-doc and substack-post skills for AI agents (and humans)
+ firebase.json      what gets published (two Hosting sites), and how it's cached
+ AGENTS.md          working context and rules for agents; CLAUDE.md points to it
+ ```
+ 
+ ## The admin dashboard
+ 
+ [admin.csarko.sh](https://admin.csarko.sh) is one private page per app, behind a Google sign-in with an allowlist, with the look and the quality bar of the site itself. An index card per app shows its KPIs against the period before, twelve weeks of trend and a health reading; each app's own page goes deeper. For the site that is visits, referrers, pages, outbound clicks, search queries and impressions, reach (YouTube, every public GitHub repo, Hacker News, Substack), health (uptime, certificate, Lighthouse, pages indexed, 404s) and audience; for [Day Hike](https://games.csarko.sh/dayhike) it is the game's own telemetry.
+ 
+-- **No cookies, no vendor on the page:** GoatCounter (self-hosted script) counts visits; Search Console, YouTube, GitHub and PageSpeed Insights are read server-side by a Cloud Run service that scales to zero.
++- **No cookies, no vendor on the page:** lib-visits (two self-hosted scripts and a same-origin collector) counts visits; Search Console, YouTube, GitHub and PageSpeed Insights are read server-side by a Cloud Run service that scales to zero.
+ - **$0 a month:** every source is a free API, the daily snapshot of every KPI is a few KB a day in Firestore, and Cloud Scheduler writes it.
+ - **Scales by contract:** an app is one entry in `admin/public/apps.json` and two routes on its API (`admin/CONTRACT.md`); the Day Hike page is built in its own repo and pulled in at deploy.
+ - **Fast to read:** every card is a skeleton the moment the page opens and fills on its own; the slow sources (URL inspection, Lighthouse) run once a day in the snapshot, never on a page load.
+ 
+ ```bash
+ admin/preview.sh            # the pages with sample data, on http://localhost:8788
+ admin/deploy.sh             # publish the admin site (the API deploys with gcloud run deploy, see admin/api/README.md)
+ ```
+ 
+ ## Preview locally
+@@ -54,21 +54,21 @@ Or just open `public/index.html` in a browser (its /games and /research links ne
+ The script publishes `public/` to Firebase Hosting, then fetches the live page and checks that it matches the file you deployed. It needs Node 20+, Terraform, and Google application-default credentials (`gcloud auth application-default login`).
+ 
+ ## Quality
+ 
+ Lighthouse 100 across SEO, accessibility and best practices, performance ≥ 95, and an A+ on Mozilla Observatory — enforced, not aspirational:
+ 
+ - **Fast:** a responsive AVIF/WebP portrait, self-hosted fonts, content-hashed assets cached for a year, and byte budgets for HTML, fonts, images and JavaScript.
+ - **Findable:** canonical URLs, schema.org `Person` data on the home page and `TechArticle` + breadcrumbs on every doc, a 1200×630 link-preview card, real favicons, `robots.txt` and a generated sitemap.
+ - **Locked down:** a strict Content-Security-Policy and the full set of security headers.
+ - **Accessible:** skip link, WCAG AA contrast in both the dark and light themes (the page follows your system setting), and a layout checked from 320px to 1440px.
+-- **Private analytics:** [GoatCounter](https://www.goatcounter.com), with its script self-hosted and no cookies, so no consent banner and no third-party code on the page.
++- **Private analytics:** lib-visits (my own, private), with its scripts self-hosted, a same-origin collector and no cookies, so no consent banner and no third-party code on the page.
+ 
+ `.agents/skills/site-quality/scripts/check.py` verifies all of it. Preview runs it, deploy won't publish without it, and `generate-assets.sh` rebuilds every generated asset deterministically.
+ 
+ ## Infrastructure
+ 
+ ```
+ csarko.sh ─────(Route53 A + TXT)───▶ Firebase Hosting (GCP project csarko-sh) ──▶ public/
+ www.csarko.sh ──(Route53 CNAME)────▶ Firebase Hosting ──301──▶ https://csarko.sh
+ ```
+ 
+diff --git a/admin/CONTRACT.md b/admin/CONTRACT.md
+index 9382008..3f727e1 100644
+--- a/admin/CONTRACT.md
++++ b/admin/CONTRACT.md
+@@ -8,35 +8,37 @@ sample under `admin/public/sample/` mirrors the examples here one for one, so
+ 
+ Conventions, for every route:
+ 
+ - **Auth.** Google sign-in through Firebase Auth on project `csarko-sh`. Every request
+   carries `Authorization: Bearer <Firebase ID token>` (`/auth.js` adds a fresh one); the
+   API verifies the token's issuer `https://securetoken.google.com/csarko-sh`, audience
+   `csarko-sh` and `email_verified`, then the email against its `ADMIN_EMAILS` allowlist,
+   and answers 401 otherwise. The shell then shows its gate again with
+   "<email> is not on the list." See "Auth: what `/auth.js` exports" below.
+ - **Times** are ISO 8601 UTC strings (`2026-10-12T13:05:00Z`). A `day` is `YYYY-MM-DD`.
+-  `visits.from`/`to` are UTC hour stamps because GoatCounter ranges are hourly.
++  `visits.from`/`to` are UTC hour stamps because the ranges are hourly.
+ - **Numbers are numbers**, never strings. A value the source does not have is `null`,
+   never 0 (0 is a measurement).
+ - **Not configured.** A part whose credential is missing is `null`, and the answer carries
+   `notConfigured: { "<part>": "<ENV NAME>" }` naming the secret to add. The page renders
+   "Not configured (ENV NAME)" in `--faint` for that part and nothing else changes. Which
+   parts can be null is listed per query below.
+ - **Errors.** A part that is configured but failed is `null` with
+   `errors: { "<part>": "<message>" }` when the rest of the answer is worth showing; the
+   page shows each as the card's error line. A single-source query that fails answers a
+   500 `{ "error": "..." }`, which the page shows as the card's error line too.
+-- **Pageviews are not available.** GoatCounter counts visits only, so every `pageviews`
++- **Pageviews are not available.** lib-visits counts a visit as one browser on one day (a stateless daily hash), so every `pageviews`
+   field (`visits.current.pageviews`, `visits.previous.pageviews`, `perDay[].pageviews`,
+   `pages.rows[].pageviews`) is always `null` and the page never shows one. The fields stay
+-  in the shape so a future collector that has them does not change it.
++  in the shape so a future collector that has them does not change it. The pre-cutover
++  history (GoatCounter's unit: a browser once per page per session) is merged in by day,
++  path and name for ranges that reach back before `VISITS_HISTORY_UNTIL`.
+ - `cache-control: no-store` on every answer; the API caches upstream calls for five
+   minutes itself.
+ - CORS allows `https://admin.csarko.sh` and `http://localhost:8788` (the preview) with
+   the `authorization` header.
+ 
+ ## `GET <api>/admin/kpis` (every app)
+ 
+ The index card. Three or four KPIs, each against the previous period with a 12-week
+ trend, and the health dot.
+ 
+@@ -73,63 +75,66 @@ The sample files are `admin/public/sample/csarko.sh/<name>.json`, each for `days
+ 
+ ```json
+ {
+   "days": 7, "from": "2026-10-05T01:00:00Z", "to": "2026-10-12T01:00:00Z",
+   "current": { "visits": 212, "pageviews": null, "perDay": [ { "day": "2026-10-05", "visits": 24, "pageviews": null } ] },
+   "previous": { "visits": 180, "pageviews": null, "perDay": [ { "day": "2026-09-28", "visits": 20, "pageviews": null } ] }
+ }
+ ```
+ 
+ `perDay` has one entry per day, oldest first, the same length in both ranges. `current`
+-and `previous` are `null` with `notConfigured.goatcounter = "GOATCOUNTER_TOKEN"`.
++and `previous` are `null` with `notConfigured.visits = "VISITS_DATASET"`.
+ 
+ ### `pages`
+ 
+ ```json
+-{ "rows": [ { "path": "/research/stylized-shader-looks", "title": "Stylized shader looks", "visitors": 31, "pageviews": null, "inSitemap": true } ] }
++{ "rows": [ { "path": "/research/stylized-shader-looks", "title": "Stylized shader looks", "visitors": 31, "pageviews": null, "inSitemap": true, "engagedMedian": 48, "reached": 0.62 } ] }
+ ```
+ 
+ Events are excluded. `inSitemap: false` marks a path that is not in `sitemap.xml`
+-(a 404 candidate); `inSitemap: null` on every row means the sitemap could not be read
+-(`notConfigured.sitemap`). `rows` is `null` with `notConfigured.goatcounter`.
++(a 404 candidate); `engagedMedian` is the median, in seconds, of each page load's last
++leave and `reached` (0 to 1) the share of loads whose leave reached the end of the page,
++both `null` when no load has a leave; `inSitemap: null` on every row means the sitemap could not be read
++(`notConfigured.sitemap`). `rows` is `null` with `notConfigured.visits`.
+ 
+ ### `referrers`
+ 
+ ```json
+ {
+   "groups": [ { "group": "search", "visitors": 61 }, { "group": "social", "visitors": 44 }, { "group": "newsletter", "visitors": 21 }, { "group": "code", "visitors": 14 }, { "group": "video", "visitors": 9 }, { "group": "direct", "visitors": 58 }, { "group": "other", "visitors": 5 } ],
+   "rows": [ { "referrer": "google.com", "group": "search", "visitors": 54 } ],
+-  "campaigns": [ { "campaign": "substack-rock-on-steep-terrain", "visitors": 12 } ]
++  "campaigns": [ { "campaign": "substack-rock-on-steep-terrain", "visitors": 12 } ],
++  "paths": [ { "from": "/", "to": "/research", "visitors": 18 } ]
+ }
+ ```
+ 
+ `groups` always lists all seven (search, social, newsletter, code, video, direct,
+-other), zero included. All three are `null` with `notConfigured.goatcounter`.
++other), zero included. `paths` are the site's own edges, the previous page to this one. All four are `null` with `notConfigured.visits`.
+ 
+ ### `events`
+ 
+ ```json
+ { "rows": [ { "name": "out-linkedin", "kind": "out", "visitors": 14 } ], "outboundRate": 0.16 }
+ ```
+ 
+ `kind` is the name's prefix: `out`, `play`, `watch`, `read`, `nav`, else `other`.
+ `outboundRate` is outbound clicks over home-page visitors, `null` when nobody reached
+-the home page in the range. `rows` is `null` with `notConfigured.goatcounter`.
++the home page in the range. `rows` is `null` with `notConfigured.visits`.
+ 
+ ### `audience`
+ 
+ ```json
+-{ "countries": [ { "name": "United States", "visitors": 121 } ], "sizes": [], "browsers": [], "systems": [], "languages": [] }
++{ "countries": [ { "name": "United States", "visitors": 121 } ], "sizes": [], "browsers": [], "systems": [], "languages": [], "themes": [], "viewports": [], "touch": [], "timezones": [] }
+ ```
+ 
+-Five lists of `{ name, visitors }`, most visited first. Each is `null` with
+-`notConfigured.goatcounter`.
++Nine lists of `{ name, visitors }`, most visited first. `themes` is the visitor's colour scheme, `viewports` is bucketed as `under 400`, `400 to 799`, `800 to 1199` and `1200 and up`, `touch` is `touch` or `pointer`, and `timezones` are IANA names. Each is `null` with
++`notConfigured.visits`.
+ 
+ ### `search`
+ 
+ ```json
+ {
+   "lag": "Search Console runs 2 to 3 days behind",
+   "perDay": [ { "day": "2026-10-03", "clicks": 3, "impressions": 112, "ctr": 0.027, "position": 19.2 } ],
+   "totals": { "clicks": 31, "impressions": 949, "ctr": 0.033, "position": 18.4 },
+   "previous": { "clicks": 24, "impressions": 812 },
+   "queries": [ { "query": "babylon material plugin", "clicks": 6, "impressions": 41, "ctr": 0.146, "position": 4.2 } ],
+@@ -178,21 +183,21 @@ fetched the feed.
+   "sitemapFetchedAt": "2026-10-10T07:12:00Z",
+   "indexed": { "indexed": 6, "total": 16 },
+   "overall": { "status": "warning", "note": "10 of 16 pages not yet indexed" }
+ }
+ ```
+ 
+ `days` is ignored: 404s are the last 7 days. `status`, `ttfbMs` and `certDaysLeft` are
+ `null` when the check could not run (`up` is then `false` or `null`).
+ `lighthousePerformance`/`lighthouseAt` are `null` with `notConfigured.lighthouse =
+ "PSI_KEY"` or before the first snapshot; `lastDeployAt` with `notConfigured.hosting`;
+-`notFound` with `notConfigured.goatcounter` or `.sitemap`; `indexed` with
++`notFound` with `notConfigured.visits` or `.sitemap`; `indexed` with
+ `notConfigured.indexed`; `sitemapFetchedAt` with `notConfigured.sitemapState`.
+ `overall` is always present (an unknown check does not degrade the status; the note
+ says what is unknown).
+ 
+ ## `POST <api>/admin/manual/substack` (csarko.sh)
+ 
+ Body `{ "value": 47 }` (a non-negative integer). Answer `{ "ok": true, "at": "2026-10-12T13:05:00Z" }`.
+ Appends `{ at, value }` to the `substack` series that `reach` returns; the page then
+ reloads the Reach card. `substack` is the only key.
+ 
+diff --git a/admin/README.md b/admin/README.md
+index acc34ca..5b79df7 100644
+--- a/admin/README.md
++++ b/admin/README.md
+@@ -94,21 +94,21 @@ before calling a visual change done.
+   head shows the signed-in email and a Sign out. A build whose `auth-config.json` has no
+   key says "This build has no sign-in" and points at `?preview`.
+ - **The SDK is self-hosted, the flow is not.** The bundle is served from our host, but the
+   popup flow still loads Google's gapi loader (`https://apis.google.com/js/api.js`), embeds
+   `/__/auth/iframe` from our host, and talks to `https://identitytoolkit.googleapis.com` and
+   `https://securetoken.googleapis.com`. The CSP in `firebase.json` allows exactly that and
+   nothing more.
+ - **Not configured.** A part the API answers `null` for, with a `notConfigured` hint,
+   reads "Not configured (ENV NAME)" in `--faint`; a KPI tile shows a dash. An `errors`
+   entry becomes the card's error line. See `CONTRACT.md`.
+-- **No pageviews.** GoatCounter counts visits only; nothing on the page shows a
++- **No pageviews.** lib-visits counts visits (one browser on one day), not pageviews; nothing on the page shows a
+   pageview or a pages-per-visit figure.
+ - **Charts.** Columns per day with the previous range ghosted behind, horizontal bars for
+   groups and events (the funnel on an ordinal ramp mixed from the accent, validated with
+   the dataviz skill in both themes), sparklines on the KPI tiles, and a folded table under
+   every chart so no value is reachable only by hover. Each column is keyboard-focusable
+   with a title. The series colour is `--accent`, the ghost and chrome `--faint` and the
+   border tokens, warnings `--warning`; no new colour values.
+ - **Loading.** The first render waits for every card so the page does not shift as cards
+   fill (CLS 0); a range change updates each card in place with the old render held at
+   half opacity.
+diff --git a/admin/api/README.md b/admin/api/README.md
+index 3637424..a19baf4 100644
+--- a/admin/api/README.md
++++ b/admin/api/README.md
+@@ -1,14 +1,14 @@
+ # csarko-admin: the csarko.sh admin API
+ 
+ The Cloud Run service behind `https://admin.csarko.sh/csarko.sh/`. It holds the vendor
+-credentials, proxies GoatCounter, Google Search Console, YouTube, GitHub, Hacker News,
++credentials, reads the site's lib-visits rows from BigQuery, Google Search Console, YouTube, GitHub, Hacker News,
+ PageSpeed Insights and Firebase Hosting for the admin page, and writes one snapshot a
+ day into Firestore so the trend lines are ours. Design: `docs/superpowers/specs/2026-10-12-admin-dashboard-design.md`
+ (Parts 1, 2.1, 2.3, 2.4). Response shapes: `admin/CONTRACT.md`.
+ 
+ Node 22, ES modules, `node:http`, no framework. Runtime dependencies are
+ `@google-cloud/firestore` and `jose`, nothing else.
+ 
+ ## Routes
+ 
+ | Route | Auth | Answer |
+@@ -20,49 +20,60 @@ Node 22, ES modules, `node:http`, no framework. Runtime dependencies are
+ | `POST /admin/snapshot` | admin token, or Cloud Scheduler's OIDC token | runs every collector and merges `snapshots/<YYYY-MM-DD>` (UTC) |
+ 
+ Every answer is JSON with `cache-control: no-store`. Errors are `{ "error": "..." }`:
+ 401 without the token, 403 for an origin that is not allowed, 404 for an unknown route
+ or query, 405 for the wrong method, 429 past 60 requests in a burst and one a second
+ per address, 503 on every `/admin/*` route while `ADMIN_EMAILS` is empty.
+ 
+ A source whose credential is missing answers `null` for its part and a
+ `notConfigured: { <part>: "<ENV NAME>" }` hint, never a 500. A source that is configured
+ but fails answers `null` and `errors: { <part>: "<message>" }` when the rest of the
+-answer is still worth showing; a single-source query (the GoatCounter ones) answers 500.
++answer is still worth showing; a single-source query (the visits ones) answers 500.
+ 
+-GoatCounter counts visits only (its help page: "GoatCounter only counts visits rather
+-than pageviews"), so every `pageviews` field is `null`.
++lib-visits counts a visit as one browser on one day (a stateless daily hash), not a
++pageview, so every `pageviews` field is `null`. The pre-cutover history keeps
++the old unit (a browser once per page per session) and is merged by day, path and name.
+ 
+ ## Environment
+ 
+ All of it is set by Terraform on the Cloud Run service; the secrets arrive as environment
+ variables from Secret Manager. A credential whose value is empty or the placeholder
+ `unset` (what a secret holds before Cyrus has created it) is "not configured".
+ 
+ | Variable | Default | What |
+ |---|---|---|
+ | `ADMIN_EMAILS` | required | comma-separated Google accounts that may read the admin routes; empty means 503 on `/admin/*`, logged at startup |
+ | `FIREBASE_PROJECT` | `GOOGLE_CLOUD_PROJECT` | the Firebase project whose Auth issues the shell's ID tokens (issuer `https://securetoken.google.com/<project>`, audience `<project>`) |
+-| `GOATCOUNTER_TOKEN`, `GOATCOUNTER_SITE` | `csarko` | GoatCounter API token (read permission) and site code |
++| `VISITS_DATASET` | | the BigQuery dataset linked to the lib-visits log bucket (`csarko_visits`, table `_AllLogs`); empty means the visits parts are not configured |
++| `VISITS_HISTORY_DATASET`, `VISITS_HISTORY_UNTIL` | | the dataset holding GoatCounter's backfilled history (`csarko_history`) and the cutover instant (RFC 3339) where it hands over to the live rows; an empty instant means no history |
+ | `GSC_SA_KEY`, `GSC_PROPERTY` | `sc-domain:csarko.sh` | the service account key's JSON content (not a path) and the Search Console property |
+ | `YOUTUBE_KEY`, `YOUTUBE_HANDLE` | `csarkosh` | YouTube Data API key and the channel handle |
+ | `GITHUB_TOKEN`, `GITHUB_OWNER` | `csarkosh` | fine-grained token for the traffic endpoints, and the account whose public repositories are reported: every one of them, forks left out, found by listing the account (the public listing can never name a private one) |
+ | `PSI_KEY` | | PageSpeed Insights API key (Lighthouse performance, run by the snapshot) |
+ | `SITE_URL`, `SITEMAP_URL` | `https://csarko.sh`, `<SITE_URL>/sitemap.xml` | the public site and its sitemap |
+ | `HOSTING_SITE` | `csarko-sh` | Firebase Hosting site for the last-deploy time (read with the metadata server's token; null off Cloud Run) |
+ | `ALLOWED_ORIGINS` | `https://admin.csarko.sh,http://localhost:8788` | CORS allowlist |
+ | `SNAPSHOT_INVOKER` | | the Cloud Scheduler service account's email, the only OIDC identity `/admin/snapshot` accepts |
+ | `SERVICE_URL` | derived from the request's host | the OIDC audience; the route's full URL is accepted too |
+ | `GOOGLE_CLOUD_PROJECT` | ADC's | Firestore project |
+ | `PORT` | `8080` | |
+ | `ADMIN_STORE` | | `memory` swaps Firestore for an in-memory store, for a local run without Google credentials |
+ 
++## BigQuery access
++
++The service account reads with `roles/bigquery.jobUser` and `roles/logging.viewAccessor`
++on the project and `roles/bigquery.dataViewer` on the two datasets, `csarko_visits` (the
++Log Analytics linked dataset) and `csarko_history` (`_infra/modules/gcp-visits`). Each
++query in `queries/*.sql` is one BigQuery job (about a second of fixed overhead), run in
++parallel and cached five minutes by window. Dependencies: `@google-cloud/firestore`,
++`jose` and `@google-cloud/bigquery`.
++
+ ## Local run
+ 
+ ```sh
+ cd admin/api
+ npm install
+ npm test                      # node:test, no network
+ cp .env.local.example .env.local   # or write one by hand: ADMIN_EMAILS=you@example.com ADMIN_STORE=memory
+ npm run dev                   # http://localhost:8787, reads .env.local if present, restarts on change
+ # A request needs a Firebase ID token for an allowed account: sign in on the shell's
+ # preview (admin/preview.sh) and copy it from the Authorization header it sends.
+@@ -71,21 +82,21 @@ curl -H "authorization: Bearer $ID_TOKEN" 'http://localhost:8787/admin/query/hea
+ 
+ `.env.local` is git-ignored. Without any vendor credential the service still starts:
+ the uptime, sitemap, Hacker News and GitHub-stars parts work unauthenticated and the
+ rest reads `null` with its `notConfigured` hint, which is the state the page must handle.
+ 
+ ## Deploy
+ 
+ Terraform (`_infra/`) owns everything about the service except the image: the Cloud Run
+ service, its service account, the Secret Manager secrets and their mounting, the
+ Scheduler job, Firestore and the budget. The image is built from this directory's
+-`Dockerfile` (`node:22-slim`, production dependencies, non-root) and pushed by:
++`Dockerfile` (`node:22-slim`, production dependencies, `COPY queries ./queries`, non-root) and pushed by:
+ 
+ ```sh
+ gcloud run deploy csarko-admin --source admin/api --region us-west1 --project csarko-sh
+ ```
+ 
+ `admin/deploy.sh` runs that when `admin/api/` changed. Do not pass `--set-env-vars` or
+ `--update-secrets` on that command: the environment is Terraform's, and a value set by
+ hand would be a diff on the next plan. A Dockerfile rather than buildpacks so the Node
+ version, the dependency set and the user are pinned in the repo instead of inferred.
+ 
+@@ -94,15 +105,16 @@ version, the dependency set and the user are pinned in the repo instead of infer
+ ```
+ src/server.mjs          entry: environment, real collectors, Firestore, listen
+ src/app.mjs             the routes over injected dependencies
+ src/auth.mjs            bearer compare (timingSafeEqual), Google OIDC for the scheduler
+ src/http.mjs            JSON answers, CORS, body reader, `days` validation
+ src/limiter.mjs         per-address token bucket (60 burst, 1/s)
+ src/cache.mjs           TTL cache keyed by URL, shared by every collector
+ src/config.mjs          environment with defaults; `unset` means not configured
+ src/queries.mjs         the eight queries, kpis, snapshot, manual
+ src/health.mjs          the thresholds behind the health dot
+-src/referrers.mjs       host to group classifier
++src/referrers.mjs       host to group classifier (rows are `{ name, count }`)
+ src/store.mjs           Firestore and in-memory stores
+-src/collectors/*.mjs    goatcounter, gsc, youtube, github, hn, psi, uptime, hosting, sitemap
++src/collectors/*.mjs    visits, gsc, youtube, github, hn, psi, uptime, hosting, sitemap
++queries/*.sql           the saved BigQuery SQL, one job per query, copied into the image
+ test/                   node:test suites and JSON fixtures
+ ```
+diff --git a/admin/api/package.json b/admin/api/package.json
+index 58cbd4a..584e052 100644
+--- a/admin/api/package.json
++++ b/admin/api/package.json
+@@ -1,15 +1,15 @@
+ {
+   "name": "csarko-admin-api",
+   "version": "1.0.0",
+   "private": true,
+-  "description": "The csarko.sh admin API: proxies GoatCounter, Search Console, YouTube, GitHub and a few public endpoints for admin.csarko.sh, and keeps a daily snapshot in Firestore.",
++  "description": "The csarko.sh admin API: proxies the lib-visits data in BigQuery, Search Console, YouTube, GitHub and a few public endpoints for admin.csarko.sh, and keeps a daily snapshot in Firestore.",
+   "type": "module",
+   "engines": {
+     "node": ">=22.9"
+   },
+   "scripts": {
+     "start": "node src/server.mjs",
+     "dev": "PORT=8787 node --env-file-if-exists=.env.local --watch src/server.mjs",
+     "test": "node --test \"test/**/*.test.mjs\""
+   },
+   "dependencies": {
+diff --git a/admin/api/src/cache.mjs b/admin/api/src/cache.mjs
+index 12b5895..d2129d5 100644
+--- a/admin/api/src/cache.mjs
++++ b/admin/api/src/cache.mjs
+@@ -1,18 +1,18 @@
+ /**
+  * One in-memory cache for every vendor response, keyed by the caller's
+  * string (a URL, usually) with a time to live per entry.
+  *
+  * The entry holds the promise, not the value, so two cards asking for the
+  * same thing at once share one request instead of two: that is what keeps
+- * GoatCounter under its 4 requests a second and Search Console's URL
+- * inspection under its daily quota. A failure is evicted at once, so an
++ * BigQuery's per-job overhead (about a second each) paid once and Search
++ * Console's URL inspection under its daily quota. A failure is evicted at once, so an
+  * outage is retried on the next request rather than remembered for the TTL.
+  */
+ 
+ export function createCache({ now = Date.now, maxEntries = 2000 } = {}) {
+   const entries = new Map();
+ 
+   function sweep() {
+     if (entries.size < maxEntries) return;
+     const t = now();
+     for (const [key, entry] of entries) if (entry.expires <= t) entries.delete(key);
+diff --git a/admin/api/src/collectors/sitemap.mjs b/admin/api/src/collectors/sitemap.mjs
+index 19435ed..dfe9934 100644
+--- a/admin/api/src/collectors/sitemap.mjs
++++ b/admin/api/src/collectors/sitemap.mjs
+@@ -1,14 +1,14 @@
+ /**
+  * The public site's sitemap, which is the list of pages that exist: a path
+- * GoatCounter saw that is not in it is a 404 somebody actually hit (the 404
+- * page has no canonical, so GoatCounter records the path asked for), and the
++ * the visits log has that is not in it is a 404 somebody actually hit (the 404
++ * page has no canonical, so the log records the path asked for), and the
+  * `indexed n of m` card counts against it. Fetched once an hour.
+  */
+ 
+ import { HOUR } from "../cache.mjs";
+ 
+ export function createSitemap({ url, fetch, cache, ttlMs = HOUR }) {
+   return {
+     url,
+     /** Every `<loc>` in document order. */
+     urls() {
+@@ -25,29 +25,29 @@ export function createSitemap({ url, fetch, cache, ttlMs = HOUR }) {
+ export function locsOf(xml) {
+   const out = [];
+   for (const match of String(xml).matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)) out.push(decodeEntities(match[1]));
+   return out;
+ }
+ 
+ function decodeEntities(text) {
+   return text.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+ }
+ 
+-/** The paths of the sitemap's URLs, so GoatCounter's paths can be checked against them: `/`, `/research/<slug>`. */
++/** The paths of the sitemap's URLs, so the visits log's paths can be checked against them: `/`, `/research/<slug>`. */
+ export function pathsOf(urls) {
+   const paths = new Set();
+   for (const u of urls) {
+     try {
+       const path = new URL(u).pathname.replace(/\/+$/, "") || "/";
+       paths.add(path);
+     } catch {
+       // Not a URL: skip it rather than fail the page over one bad line.
+     }
+   }
+   return paths;
+ }
+ 
+-/** A GoatCounter path with its query string and trailing slash dropped, the way the sitemap spells it. */
++/** A visits-log path with its query string and trailing slash dropped, the way the sitemap spells it. */
+ export function normalizePath(path) {
+   const bare = String(path).split(/[?#]/)[0].replace(/\/+$/, "");
+   return bare === "" ? "/" : bare;
+ }
+diff --git a/admin/api/src/http.mjs b/admin/api/src/http.mjs
+index 0d241c9..9e6f705 100644
+--- a/admin/api/src/http.mjs
++++ b/admin/api/src/http.mjs
+@@ -84,18 +84,18 @@ export function readBody(req, maxBytes) {
+     req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+     req.on("error", () => resolve(null));
+   });
+ }
+ 
+ export const DAYS = new Set([1, 7, 30, 90]);
+ 
+ /**
+  * The `days` query parameter: absent means 7, anything but the four ranges
+  * the page offers is a 400 (null here), since a free-form range would let
+- * one URL make GoatCounter and Search Console do arbitrary work.
++ * one URL make BigQuery and Search Console do arbitrary work.
+  */
+ export function parseDays(raw) {
+   if (raw === null || raw === undefined || raw === "") return 7;
+   if (!/^\d{1,2}$/.test(raw)) return null;
+   const days = Number(raw);
+   return DAYS.has(days) ? days : null;
+ }
+diff --git a/admin/api/src/referrers.mjs b/admin/api/src/referrers.mjs
+index 52814b0..2b4fe86 100644
+--- a/admin/api/src/referrers.mjs
++++ b/admin/api/src/referrers.mjs
+@@ -1,52 +1,54 @@
+ /**
+  * Which group a referrer belongs to: search, social, newsletter, code,
+- * video, direct or other. GoatCounter already folds the Google country
+- * domains into one "Google" row (`ref_scheme: "g"`), and reports a visit
+- * with no referrer as an empty name; everything else is a host, sometimes
+- * with a path, which is classified by its host alone.
++ * video, direct or other. Rows come from the visits SQL as `{ name, count }`:
++ * a visit with no referrer has an empty name, and everything else is a host,
++ * sometimes with a path, which is classified by its host alone. The history
++ * rows (the years before the cutover) fold the Google country domains into one
++ * "Google" row, which is why the `ref_scheme` parameter stays; the live SQL
++ * never sends it.
+  */
+ 
+ const GROUPS = [
+   ["search", [/^(www\.)?google\./, /^(www\.)?bing\./, /^(www\.)?duckduckgo\./, /(^|\.)yahoo\./, /^(www\.)?ecosia\./, /^search\.brave\.com$/, /^(www\.)?brave\.com$/, /^(www\.)?startpage\.com$/, /^(www\.)?qwant\.com$/, /^yandex\./, /^(www\.)?baidu\.com$/]],
+   ["social", [/(^|\.)linkedin\.com$/, /^lnkd\.in$/, /^t\.co$/, /(^|\.)twitter\.com$/, /^(www\.)?x\.com$/, /(^|\.)facebook\.com$/, /^(l\.|m\.)?facebook\.com$/, /^fb\.me$/, /(^|\.)instagram\.com$/, /^l\.instagram\.com$/, /(^|\.)bsky\.app$/, /(^|\.)threads\.net$/, /^(www\.|old\.|out\.)?reddit\.com$/, /^news\.ycombinator\.com$/, /(^|\.)mastodon\.(social|online|world)$/, /^(www\.)?(hachyderm\.io|fosstodon\.org|mstdn\.social|techhub\.social|infosec\.exchange)$/, /^(www\.)?lobste\.rs$/]],
+   ["newsletter", [/(^|\.)substack\.com$/, /^substack\.com$/, /^mail\./, /(^|\.)outlook\.(com|live\.com|office\.com)$/, /^outlook\./, /(^|\.)gmail\.com$/, /^(www\.)?getpocket\.com$/, /^email\./]],
+   ["code", [/(^|\.)github\.com$/, /^github\.io$/, /(^|\.)gitlab\.com$/, /(^|\.)npmjs\.com$/, /(^|\.)codeberg\.org$/, /(^|\.)sourcehut\.org$/]],
+   ["video", [/(^|\.)youtube\.com$/, /^youtu\.be$/, /(^|\.)vimeo\.com$/]],
+ ];
+ 
+-/** The host of a referrer as GoatCounter shows it: `https://www.a.com/x` and `www.a.com/x` both give `www.a.com`. */
++/** The host of a referrer as the visits SQL names it: `https://www.a.com/x` and `www.a.com/x` both give `www.a.com`. */
+ export function hostOf(referrer) {
+   const text = String(referrer ?? "").trim().toLowerCase();
+   if (text === "") return "";
+   const withoutScheme = text.replace(/^[a-z][a-z0-9+.-]*:\/\//, "");
+   return withoutScheme.split(/[/?#]/)[0].replace(/:\d+$/, "");
+ }
+ 
+ /**
+- * @param referrer the GoatCounter row's `name`
+- * @param scheme the row's `ref_scheme`: `g` is a generated group such as "Google", `c` a campaign
++ * @param referrer the row's `name`
++ * @param scheme the row's `ref_scheme`, kept for compatibility: `g` is a generated group such as "Google", `c` a campaign; the visits SQL never sends it
+  */
+ export function classifyReferrer(referrer, scheme = undefined) {
+   const text = String(referrer ?? "").trim();
+   if (text === "" || text === "(no data)" || text === "(direct)") return "direct";
+   if (scheme === "g") {
+     const lower = text.toLowerCase();
+     if (/google|bing|duckduckgo|yahoo|ecosia|brave|startpage|qwant|yandex|baidu/.test(lower)) return "search";
+     if (/hacker news|reddit|twitter|linkedin|facebook|mastodon|bluesky/.test(lower)) return "social";
+   }
+   const host = hostOf(text);
+   if (host === "") return "direct";
+   for (const [group, patterns] of GROUPS) {
+     if (patterns.some((p) => p.test(host))) return group;
+   }
+-  // GoatCounter's generated names are words, not hosts ("Hacker News", "Google").
++  // The history's generated names are words, not hosts ("Hacker News", "Google").
+   const lower = text.toLowerCase();
+   if (/^google$|^bing$|^duckduckgo$|^yahoo/.test(lower)) return "search";
+   if (/^hacker news$|^reddit$|^twitter$|^linkedin$|^facebook$/.test(lower)) return "social";
+   return "other";
+ }
+ 
+ export const REFERRER_GROUPS = ["search", "social", "newsletter", "code", "video", "direct", "other"];
+ 
+ /** Referrer rows grouped and summed, every group present even at zero so the bars keep their order. */
+ export function groupReferrers(rows) {
+diff --git a/admin/api/src/time.mjs b/admin/api/src/time.mjs
+index 9e3048a..d54aa55 100644
+--- a/admin/api/src/time.mjs
++++ b/admin/api/src/time.mjs
+@@ -1,36 +1,36 @@
+ /**
+- * Dates, all in UTC: the snapshot's document id is a UTC date, GoatCounter
+- * and Search Console both report in UTC, and a dashboard that mixed zones
++ * Dates, all in UTC: the snapshot's document id is a UTC date, the visits
++ * SQL and Search Console both work in UTC, and a dashboard that mixed zones
+  * would show a day's numbers under two different labels.
+  */
+ 
+ export const DAY_MS = 86_400_000;
+ 
+ /** 2026-10-12 for any instant on that UTC day. */
+ export function isoDate(ms) {
+   return new Date(ms).toISOString().slice(0, 10);
+ }
+ 
+ export function addDays(date, days) {
+   return isoDate(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS);
+ }
+ 
+-/** The instant rounded down to the hour, as GoatCounter wants its bounds: 2026-10-12T15:00:00Z. */
++/** The instant rounded down to the hour, as the visits SQL takes its bounds: 2026-10-12T15:00:00Z. */
+ export function hourStamp(ms) {
+   const d = new Date(ms);
+   d.setUTCMinutes(0, 0, 0);
+   return d.toISOString().replace(".000Z", "Z");
+ }
+ 
+ /**
+- * A GoatCounter range of `days` ending at the current hour (the hour under
++ * An hourly range of `days` ending at the current hour (the hour under
+  * way is included: `end` is the next boundary), and the equal range before
+  * it, so every card can show "versus the previous period".
+  */
+ export function hourlyRange(days, nowMs) {
+   const end = new Date(nowMs);
+   end.setUTCMinutes(0, 0, 0);
+   const endMs = end.getTime() + 3_600_000;
+   const startMs = endMs - days * DAY_MS;
+   return {
+     days,

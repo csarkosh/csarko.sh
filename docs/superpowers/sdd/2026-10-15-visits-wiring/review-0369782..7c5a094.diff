@@ -1,0 +1,52 @@
+# Review package: 0369782..HEAD
+
+## Commits
+7c5a094 admin: the sample viewport buckets are the API's
+
+## Files changed
+ admin/public/sample/csarko.sh/audience.json | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+## Diff
+diff --git a/admin/public/sample/csarko.sh/audience.json b/admin/public/sample/csarko.sh/audience.json
+index 72c4966..524f120 100644
+--- a/admin/public/sample/csarko.sh/audience.json
++++ b/admin/public/sample/csarko.sh/audience.json
+@@ -114,33 +114,33 @@
+       "name": "Dark",
+       "visitors": 142
+     },
+     {
+       "name": "Light",
+       "visitors": 65
+     }
+   ],
+   "viewports": [
+     {
+-      "name": "Under 480",
++      "name": "under 400",
+       "visitors": 97
+     },
+     {
+-      "name": "480 to 767",
++      "name": "400 to 799",
+       "visitors": 17
+     },
+     {
+-      "name": "768 to 1279",
++      "name": "800 to 1199",
+       "visitors": 44
+     },
+     {
+-      "name": "1280 and up",
++      "name": "1200 and up",
+       "visitors": 49
+     }
+   ],
+   "touch": [
+     {
+       "name": "Pointer",
+       "visitors": 118
+     },
+     {
+       "name": "Touch",
