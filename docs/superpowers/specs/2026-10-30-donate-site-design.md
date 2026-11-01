@@ -87,10 +87,10 @@ your own number, one button), in the site's dark theme with its light theme by
    the cropped frame is what is checked; a door with no picture does not build, and a door
    that does not build gets no Stripe links and no entry in the prices JSON that month.
 4. **The bill sentence**, the one line that makes the prices mean something: "Over the last 30
-   days the cloud behind all this cost **$288**. Each tier is a slice of that bill." (Cyrus, Oct
-   30: the first wording felt too demanding.) The figure is the pool (section 3), rounded to the
-   dollar. *(Amended Oct 31: the window in place of the month; it read "In October the cloud
-   behind all this cost $288.")*
+   days the cloud behind all my projects cost **$288**. Each tier is a slice of that bill." (Cyrus,
+   Oct 30: the first wording felt too demanding.) The figure is the pool (section 3), rounded to
+   the dollar. *(Amended Oct 31: the window in place of the month; it read "In October the cloud
+   behind all this cost $288." Amended Nov 1, Cyrus: "all my projects" in place of "all this".)*
 5. **Three tiers** (Cyrus, Oct 31: the 30% tier was dropped; three tiers and the custom row),
    each a row: the name in bold, a one-line caption under it in the door's words, the price on
    the right in monospace accent, and under the price its share: "about 1%", "about 3%", "about

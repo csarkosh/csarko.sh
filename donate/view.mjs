@@ -64,12 +64,13 @@ export function pickPrices(baked, fetched, door) {
 /**
  * The bill sentence in three parts, the figure being the part in <b>: page.mjs bakes it and
  * app.js rewrites the same three parts when the live prices win, so the two never drift.
- * Cyrus's shape (Oct 30), the window in place of the month (Oct 31): "Over the last 30 days the
- * cloud behind all this cost $288. Each tier is a slice of that bill."
+ * Cyrus's shape (Oct 30), the window in place of the month (Oct 31), "all my projects" in place
+ * of "all this" (Nov 1): "Over the last 30 days the cloud behind all my projects cost $288. Each
+ * tier is a slice of that bill."
  */
 export function billParts(prices) {
   return {
-    before: 'Over the last 30 days the cloud behind all this cost ',
+    before: 'Over the last 30 days the cloud behind all my projects cost ',
     figure: `$${Math.round(prices.pool)}`,
     after: '. Each tier is a slice of that bill.',
   };

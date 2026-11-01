@@ -45,9 +45,9 @@ test('the thanks link: the door’s own, else the projects page; junk never pass
 
 test('the bill sentence is one template: the page bakes it and the script rewrites it from the same parts', () => {
   const { before, figure, after } = billParts({ period: PERIOD, pool: 287.6 });
-  assert.equal(`${before}${figure}${after}`, 'Over the last 30 days the cloud behind all this cost $288. Each tier is a slice of that bill.');
+  assert.equal(`${before}${figure}${after}`, 'Over the last 30 days the cloud behind all my projects cost $288. Each tier is a slice of that bill.');
   assert.equal(figure, '$288');
-  assert.deepEqual(billParts({ period: PERIOD, pool: 300.2 }), { before: 'Over the last 30 days the cloud behind all this cost ', figure: '$300', after: '. Each tier is a slice of that bill.' });
+  assert.deepEqual(billParts({ period: PERIOD, pool: 300.2 }), { before: 'Over the last 30 days the cloud behind all my projects cost ', figure: '$300', after: '. Each tier is a slice of that bill.' });
 });
 
 test('the stale note names the day the prices were set', () => {
