@@ -52,7 +52,7 @@
       "dateModified": "2026-11-01",
       "url": "https://csarko.sh/research/buy-me-tokens-tips-priced-from-the-cloud-bill",
       "mainEntityOfPage": "https://csarko.sh/research/buy-me-tokens-tips-priced-from-the-cloud-bill",
-      "wordCount": 2930,
+      "wordCount": 2939,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -553,7 +553,7 @@
 <p>Taking money from strangers has a privacy cost that the rest of this pipeline does not. Stripe shows the account&#39;s public business details on the receipts it emails and on card statements, and for compliance every receipt carries a legal business name, a customer support address, a customer support email and a privacy policy link <a class="cite" href="#ref-9">[9]</a>. This tip page is run by one person, not a company with an office and a help desk, so the obvious values would be his own: his personal inbox as the support email and his home address as the support address, sent to everyone who tips and to wherever those receipts are forwarded afterwards. The site already refuses to show an email address or a phone number on any page, for the same reason: spam, and worse.</p>
 <p>Two pieces of infrastructure stand in for those details.</p>
 <ul>
-<li><strong>The support email is an alias.</strong> As of Nov 1, 2026, the Stripe account&#39;s support email is <code>support@csarko.sh</code>, one of the domain&#39;s <a href="/research/unlimited-email-aliases-that-scale-to-zero" data-visits-event="doc-unlimited-email-aliases-that-scale-to-zero">unlimited email aliases</a>. Amazon SES receives the mail and one Lambda forwards it to the owner&#39;s inbox, and a reply leaves through a reverse alias, so a tipper who writes in and gets an answer only ever sees csarko.sh. An alias that starts drawing spam can be blocked without touching any other address.</li>
+<li><strong>The support email is an alias.</strong> As of Nov 1, 2026, the Stripe account&#39;s support email is a support alias at csarko.sh, one of the domain&#39;s <a href="/research/unlimited-email-aliases-that-scale-to-zero" data-visits-event="doc-unlimited-email-aliases-that-scale-to-zero">unlimited email aliases</a>, and not the owner&#39;s own inbox. Amazon SES receives the mail and one Lambda forwards it to the owner&#39;s inbox, and a reply leaves through a reverse alias, so a tipper who writes in and gets an answer only ever sees csarko.sh. An alias that starts drawing spam can be blocked without touching any other address.</li>
 <li><strong>The support address is a virtual mailbox.</strong> A commercial mail receiving agency, a business that accepts mail on someone else&#39;s behalf, gives the account a street address with a private mailbox number. USPS lets it receive a person&#39;s mail only after that person completes PS Form 1583 with a primary and a secondary ID and signs it in front of the agency&#39;s staff or a notary, and the address must carry &quot;PMB&quot; or &quot;#&quot; <a class="cite" href="#ref-10">[10]</a>. For this account the form was notarized online on Nov 1, 2026, with a passport as the photo ID and a driver&#39;s license as the proof of the home address it keeps private. The agency reviews the form before the mailbox opens, and the Stripe support address moves to the mailbox once it does.</li>
 </ul>
 <p>The aliases cost a fraction of a cent a message and nothing while idle. What the pair buys is that a tip, the most personal transaction the site has, sends nothing personal back to the person who pays.</p>
