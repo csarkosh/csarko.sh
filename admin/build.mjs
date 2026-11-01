@@ -136,7 +136,9 @@ if (apiUrl) {
   if (arkos) arkos.api = `${me.api}/arkos`;
   const finance = apps.find((a) => a.slug === 'finance');
   if (finance) finance.api = `${me.api}/finance`;
-  write(appsFile, `[\n${apps.map((a) => `  ${JSON.stringify(a).replace(/","/g, '", "').replace(/":"/g, '": "').replace(/\{"/, '{ "').replace(/"\}/, '" }')}`).join(',\n')}\n]\n`);
+  // One app a line, spaced as the committed file is, so a build with the same URLs leaves it unchanged.
+  const line = (a) => `  { ${Object.entries(a).map(([k, v]) => `${JSON.stringify(k)}: ${JSON.stringify(v)}`).join(', ')} }`;
+  write(appsFile, `[\n${apps.map(line).join(',\n')}\n]\n`);
 }
 
 // 5. The pages: the Inter preload. (The nav carried one link per app until 2026-10-13;

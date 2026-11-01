@@ -80,7 +80,7 @@ export function ago(when, now = Date.now()) {
  * warning, unless `good` is "down" (position, errors). Arrow plus text plus aria-label,
  * so the direction is never colour alone.
  */
-export function delta(value, prev, { good = 'up', unit = '', vs = 'previous period', percent, format = null } = {}) {
+export function delta(value, prev, { good = 'up', unit = '', vs = 'the previous period', percent, format = null } = {}) {
   if (typeof value !== 'number' || typeof prev !== 'number' || !Number.isFinite(value) || !Number.isFinite(prev)) {
     return el('span', { class: 'delta', 'aria-label': 'no previous value' }, icon(ARROW_FLAT), 'no previous');
   }
@@ -93,7 +93,7 @@ export function delta(value, prev, { good = 'up', unit = '', vs = 'previous peri
   const tone = direction === 'flat' ? 'flat' : (direction === 'up') === (good === 'up') ? 'up' : 'down';
   const sign = direction === 'flat' ? '' : direction === 'up' ? '+' : '−';
   const text = direction === 'flat' ? 'no change' : `${sign}${magnitude}`;
-  const node = el('span', { class: `delta ${tone}`, 'aria-label': direction === 'flat' ? `no change from ${vs}` : `${direction} ${magnitude} from ${show(prev)} the ${vs}` },
+  const node = el('span', { class: `delta ${tone}`, 'aria-label': direction === 'flat' ? `no change from ${vs}` : `${direction} ${magnitude} from ${show(prev)} in ${vs}` },
     icon(direction === 'flat' ? ARROW_FLAT : direction === 'up' ? ARROW_UP : ARROW_DOWN),
     text,
     el('span', { class: 'vs', 'aria-hidden': 'true' }, ` vs ${show(prev)}`));

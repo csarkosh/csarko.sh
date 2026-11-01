@@ -395,8 +395,8 @@ function reachCard([reach], days, reload) {
   if (!yt) parts.push(notConfigured(missing(reach, 'youtube')));
   else {
     parts.push(el('div', { class: 'tiles' },
-      tile('Subscribers', yt.subscribers, { delta: yt.prev ? delta(yt.subscribers, yt.prev.subscribers, { vs: 'last snapshot', percent: false }) : undefined, note: yt.prev ? undefined : 'no snapshot a week back yet' }),
-      tile('Views', yt.views, { delta: yt.prev ? delta(yt.views, yt.prev.views, { vs: 'last snapshot' }) : undefined }),
+      tile('Subscribers', yt.subscribers, { delta: yt.prev ? delta(yt.subscribers, yt.prev.subscribers, { vs: 'the last snapshot', percent: false }) : undefined, note: yt.prev ? undefined : 'no snapshot a week back yet' }),
+      tile('Views', yt.views, { delta: yt.prev ? delta(yt.views, yt.prev.views, { vs: 'the last snapshot' }) : undefined }),
       tile('Videos', yt.videos)));
     parts.push(folded(`Videos · ${yt.videosList?.length ?? 0}`, table([
       { key: 'title', label: 'Title', wrap: true, render: (v, row) => (row.id ? el('a', { href: `https://www.youtube.com/watch?v=${encodeURIComponent(str(row.id))}`, target: '_blank', rel: 'noopener' }, str(v)) : str(v)) },
@@ -453,7 +453,7 @@ function reachCard([reach], days, reload) {
   const latest = series[series.length - 1];
   const before = series[series.length - 2];
   const substackTile = tile('Subscribers', latest ? num(latest.value) : '–', {
-    delta: latest && before ? delta(num(latest.value), num(before.value), { vs: 'previous entry', percent: false }) : undefined,
+    delta: latest && before ? delta(num(latest.value), num(before.value), { vs: 'the previous entry', percent: false }) : undefined,
     note: latest ? `entered ${ago(latest.at)}` : 'No entry yet: csarko.log has no API, so the count is typed in here.',
     trend: series.map((s) => num(s.value)),
     trendLabel: `Substack subscribers over ${series.length} entries`,
