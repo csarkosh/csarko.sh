@@ -13,6 +13,9 @@
  * megabyte), and og.jpg, the share card, made from the hero. Around the pages:
  *   assets/*.woff2                the store's fonts from apps/fonts/, content-hashed, and the
  *                                 site's own for the 404 page, copied from public/assets/
+ *   assets/visits.*.js, vitals.*.js  the site's hashed lib-visits scripts (public/assets/), so a
+ *                                 visit here joins the one on csarko.sh (same daily visit id);
+ *                                 the beacon goes to this host's /v, a Hosting rewrite
  *   licenses/fonts-OFL.txt        the store fonts' licence (apps/fonts/OFL.txt)
  *   favicon.*, apple-touch-icon   the site's icons
  *   robots.txt, sitemap.xml       this host's own, listing the app pages
@@ -92,6 +95,14 @@ for (const stem of Object.keys(STORE_FONTS)) {
 }
 copyFileSync(path.join(APPS, 'fonts', 'OFL.txt'), path.join(OUT, 'licenses', 'fonts-OFL.txt'));
 const { faces, preloads } = fontBlocks(storeFonts);
+// lib-visits, the same hashed files csarko.sh serves (check.py has held them to the vendored
+// bytes): the page counts here as it does there, and a visit spans the two hosts.
+const siteAssets = readdirSync(path.join(SITE_PUBLIC, 'assets'));
+const visitsJs = siteAssets.find((f) => /^visits\.[0-9a-f]{8}\.js$/.test(f));
+const vitalsJs = siteAssets.find((f) => /^vitals\.[0-9a-f]{8}\.js$/.test(f));
+if (!visitsJs || !vitalsJs) throw new Error('public/assets has no hashed visits.js and vitals.js (run generate-assets.sh)');
+for (const f of [visitsJs, vitalsJs]) copyFileSync(path.join(SITE_PUBLIC, 'assets', f), path.join(OUT, 'assets', f));
+const analytics = `  <script defer src="/assets/${visitsJs}" data-visits="/v"></script>\n  <script defer src="/assets/${vitalsJs}"></script>\n`;
 for (const icon of ['favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'apple-touch-icon.png']) {
   copyFileSync(path.join(SITE_PUBLIC, icon), path.join(OUT, icon));
 }
@@ -165,7 +176,7 @@ for (const name of sources) {
     execFileSync('python3', ['-I', '-c', OG, path.join(dir, `${stem}.jpg`), path.join(dir, 'og.jpg')]);
     ogImage = { url: `${APPS_HOST}/${app.slug}/og.jpg`, width: 1200, height: 630, alt: app.heroVideo.alt };
   }
-  let html = productPage({ app, prepared, release, images, motion, recording, ogImage, heroVideo });
+  let html = productPage({ app, prepared, release, images, motion, recording, ogImage, heroVideo, analytics });
   html = html.replace(/\/\* generated:fonts \*\/\n\s*\/\* \/generated:fonts \*\//,
     `/* generated:fonts */\n${faces}\n    /* /generated:fonts */`);
   html = html.replace(/<!-- generated:head -->\n\s*<!-- \/generated:head -->/,

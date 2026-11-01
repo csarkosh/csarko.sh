@@ -49,7 +49,7 @@ if grep -nE '\+?1?[ .-]?\(?[0-9]{3}\)?[ .-][0-9]{3}[ .-][0-9]{4}' "${PAGES[@]}";
   die "a donate page contains a phone number; refusing to deploy"
 fi
 if grep -n $'\xe2\x80\x94' "${PAGES[@]}"; then die "a donate page contains an em-dash; refusing to deploy"; fi
-if grep -noE '<script\b[^>]*>?' "${PAGES[@]}" | grep -vE '<script type="application/(ld\+)?json"[^>]*>$|<script type="module" src="/app\.js">$'; then
+if grep -noE '<script\b[^>]*>?' "${PAGES[@]}" | grep -vE '<script type="application/(ld\+)?json"[^>]*>$|<script type="module" src="/app\.js">$|<script defer src="/assets/(visits|vitals)\.[0-9a-f]{8}\.js"( data-visits="/v")?>$'; then
   die "a donate page carries a script other than a JSON type (application/json, application/ld+json) or src=\"/app.js\"; refusing to deploy"
 fi
 echo

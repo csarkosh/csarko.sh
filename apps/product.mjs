@@ -110,16 +110,18 @@ const releaseLine = (release, extra = '') => `<p class="release">${escapeHtml(re
 /**
  * The release's download buttons, one a platform. A README that promises downloads (the Setup
  * step) gets every platform or the build fails (`strict`); an install block takes whatever the
- * release has, the button row left out when it has none.
+ * release has, the button row left out when it has none. `event` names a button's click in the
+ * visits log (`download-<slug>`; the asset's URL goes with it, so the platform is known).
  */
-export function downloadsHtml(release, { strict = true } = {}) {
+export function downloadsHtml(release, { strict = true, event = null } = {}) {
+  const named = event ? ` data-visits-event="${escapeHtml(event)}"` : '';
   const buttons = PLATFORMS.map((p) => {
     const asset = release.assets.find((a) => p.match.test(a.name));
     if (!asset) {
       if (strict) throw new ProductError(`release ${release.tag} has no asset for ${p.label}`);
       return '';
     }
-    return `<a class="btn" href="${escapeHtml(asset.url)}" download>${escapeHtml(p.label)}<small>${formatSize(asset.size)}</small></a>`;
+    return `<a class="btn" href="${escapeHtml(asset.url)}" download${named}>${escapeHtml(p.label)}<small>${formatSize(asset.size)}</small></a>`;
   }).join('');
   const scripts = release.assets.filter((a) => a.name.endsWith('.js'))
     .map((a) => `<a href="${escapeHtml(a.url)}" download>${escapeHtml(a.name)}</a> (${a.size.toLocaleString('en-US')} B)`).join(' · ');
@@ -346,7 +348,7 @@ const SHOWS = /<figure|<div class="row|<div class="panel|<div class="downloads|<
  * from the hero; live: whether donate.csarko.sh serves the doors yet (DONATE_LIVE), without
  * which the bar has no Buy me tokens.
  */
-export function productPage({ app, prepared, release, images, motion = '', recording = null, ogImage = null, heroVideo = null, live = DONATE_LIVE }) {
+export function productPage({ app, prepared, release, images, motion = '', recording = null, ogImage = null, heroVideo = null, analytics = '', live = DONATE_LIVE }) {
   const { text, hero, caption, tagline = '', panels, flows, figures = [] } = prepared;
   const doc = renderMarkdown(text, `${app.slug} README`);
   let html = doc.html;
@@ -354,8 +356,8 @@ export function productPage({ app, prepared, release, images, motion = '', recor
     if (!html.includes(from)) throw new ProductError(`README: the rendered page lost the marker ${from}`);
     html = html.replace(from, to);
   };
-  if (prepared.downloads) swap(DOWNLOADS, downloadsHtml(release));
-  else swap(`<p>${RELEASE}</p>`, downloadsHtml(release, { strict: false }));
+  if (prepared.downloads) swap(DOWNLOADS, downloadsHtml(release, { event: `download-${app.slug}` }));
+  else swap(`<p>${RELEASE}</p>`, downloadsHtml(release, { strict: false, event: `download-${app.slug}` }));
   flows.forEach((flow, i) => swap(`<p>${FLOW(i)}</p>`, flowHtml(flow)));
   panels.forEach((panel, i) => {
     swap(`<p>${PANEL(i)}</p>`, `<div class="panel"><div class="panel-image">${pictureHtml(panel, images)}</div><div class="panel-body">`);
@@ -419,7 +421,7 @@ ${cards(opening.rest)}        </div>
 
   const promo = app.promo ? `    <div class="wrap">
       <div class="strip">
-        <a href="${escapeHtml(app.promo.link)}"${app.promo.link.startsWith('https:') ? ' target="_blank" rel="noopener"' : ''}><span>${escapeHtml(app.promo.text)}</span><span class="go" aria-hidden="true">Learn more ›</span></a>
+        <a href="${escapeHtml(app.promo.link)}"${app.promo.link.startsWith('https:') ? ' target="_blank" rel="noopener"' : ''} data-visits-event="promo-${escapeHtml(app.slug)}"><span>${escapeHtml(app.promo.text)}</span><span class="go" aria-hidden="true">Learn more ›</span></a>
       </div>
     </div>
 ` : '';
@@ -461,8 +463,10 @@ ${hero ? `  <figure class="hero">
   // The bar: the name and the black pill to the downloads or the install commands, nothing else
   // (Cyrus, 2026-11-01). Buy me tokens, once the site is live and the app's door has shipped, is
   // the one quiet line under it, set to the right; the source and the release go to the footer.
+  // Every one of them is named in the visits log (get, download, tokens, promo, release, source,
+  // each -<slug>), so a journey from csarko.sh's card through this page reads as its clicks.
   const door = doorOf(app.slug);
-  const under = live && door?.shipped ? `<a href="${escapeHtml(`${DONATE_URL}${door.path}`)}" target="_blank" rel="noopener">${iconSvg()}Buy me tokens</a>` : '';
+  const under = live && door?.shipped ? `<a href="${escapeHtml(`${DONATE_URL}${door.path}`)}" target="_blank" rel="noopener" data-visits-event="tokens-${escapeHtml(app.slug)}">${iconSvg()}Buy me tokens</a>` : '';
   return storeShell({
     title: `${app.title}: ${app.description.split(/[:.]/)[0].toLowerCase()}`,
     ogTitle: app.title,
@@ -474,10 +478,12 @@ ${hero ? `  <figure class="hero">
     top,
     bar: {
       name: app.title,
-      action: getIt ? [prepared.downloads ? 'Download' : 'Install', `#${getIt.id}`] : ['Release', release.url],
+      // The pill counts get-<slug>; the download buttons it leads to count download-<slug>.
+      action: getIt ? [prepared.downloads ? 'Download' : 'Install', `#${getIt.id}`, `get-${app.slug}`] : ['Release', release.url, `release-${app.slug}`],
       under,
     },
     main: `${promo}${introBand}${bands.join('\n')}`,
-    footer: [`${app.title}${app.license ? ` · ${app.license}` : ''}`, [[release.tag, release.url], ...(app.repo ? [['GitHub', app.repo]] : [])]],
+    footer: [`${app.title}${app.license ? ` · ${app.license}` : ''}`, [[release.tag, release.url, `release-${app.slug}`], ...(app.repo ? [['GitHub', app.repo, `source-${app.slug}`]] : [])]],
+    analytics,
   });
 }

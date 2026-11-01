@@ -8,6 +8,9 @@
 --                   with a data-read-end marker; NULL for every other path.
 -- The check beacons (/deploy-check, /depth-check) are left out, and so is every page load (id)
 -- that any of its rows calls a bot (Lighthouse's view says bot=false, its leave and vitals true).
+-- A page on another of the site's hosts (apps.csarko.sh, donate.csarko.sh, whose beacons the
+-- collector takes since 2026-11-01) is named with its host, `apps.csarko.sh/ide-arkos`, so it
+-- never folds into csarko.sh's path of the same name (both have a /).
 WITH beacons AS (
   SELECT
     JSON_VALUE(json_payload.n) AS n,
@@ -21,7 +24,7 @@ WITH beacons AS (
     AND JSON_VALUE(json_payload.p) NOT IN ('/deploy-check', '/depth-check')
 ),
 views AS (
-  SELECT id, JSON_VALUE(j.p) AS path, JSON_VALUE(j.t) AS title, COALESCE(JSON_VALUE(j.s.visit), id) AS visit
+  SELECT id, IF(IFNULL(JSON_VALUE(j.s.host), 'csarko.sh') IN ('csarko.sh', 'www.csarko.sh'), JSON_VALUE(j.p), CONCAT(JSON_VALUE(j.s.host), JSON_VALUE(j.p))) AS path, JSON_VALUE(j.t) AS title, COALESCE(JSON_VALUE(j.s.visit), id) AS visit
   FROM beacons WHERE n = 'view' AND NOT bot
 ),
 leaves AS (

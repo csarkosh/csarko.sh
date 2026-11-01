@@ -80,6 +80,9 @@ function thanksPage(doors) {
     link.setAttribute('href', back.href);
   }
   if (line) line.textContent = thanksLine(door, doors);
+  // The tip, as an event of the visit that made it: `tipped` with the door, sent once the
+  // visits script (last in the body) is in; without it, nothing happens.
+  if (door) addEventListener('load', () => { window.visits?.send?.('tipped', { door }); }, { once: true });
 }
 
 const pay = document.getElementById('pay');

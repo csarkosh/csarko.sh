@@ -230,9 +230,12 @@ function pageNode(s, i) {
   const wall = onPage !== null && (secs === null || Math.round(onPage) !== Math.round(secs)) ? el('span', { class: 'j-small' }, `on page ${clock(onPage)}`) : null;
   return el('li', { class: 'j-node' }, kicker,
     el('span', { class: 'j-title', title: str(s.title || s.path) }, str(s.title || s.path)),
-    el('span', { class: 'j-path mono', title: str(s.path) }, str(s.path)),
+    el('span', { class: 'j-path mono', title: pathLabel(s) }, pathLabel(s)),
     depth, scrolled, read, lcpChip(s), time, wall);
 }
+
+/** A step's page as the card names it: its path, with its host first when the step was on another of the site's hosts (apps.csarko.sh, donate.csarko.sh). */
+const pathLabel = (s) => (s.host ? `${str(s.host)}${str(s.path)}` : str(s.path));
 
 /** How the visit ended: the click out, or the last time the visitor was seen. */
 function exitNode(exit, lastSeen) {
@@ -266,7 +269,7 @@ function journey(j, now) {
   steps.forEach((s, i) => items.push(arrow(), pageNode(s, i)));
   items.push(arrow(), exitNode(j.exit, lastSeen));
   // The strip: one segment per page, sized by its wall time (left - at), by its visible time when the leave is unknown.
-  const sized = steps.map((s) => ({ path: str(s.path), size: isNum(s.left) ? Math.max(0, s.left - num(s.at)) : isNum(s.secs) ? s.secs : 0 })).filter((s) => s.size > 0);
+  const sized = steps.map((s) => ({ path: pathLabel(s), size: isNum(s.left) ? Math.max(0, s.left - num(s.at)) : isNum(s.secs) ? s.secs : 0 })).filter((s) => s.size > 0);
   const strip = sized.length
     ? el('div', { class: 'j-strip', role: 'img', 'aria-label': `Time on each page: ${sized.map((s) => `${s.path} ${clock(s.size)}`).join(', ')}` },
       ...sized.map((s, i) => el('span', { style: `flex:${s.size} 1 0`, class: `ord-${Math.min(4, sized.length - i)}`, title: `${s.path}: ${clock(s.size)}` })))

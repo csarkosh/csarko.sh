@@ -198,6 +198,13 @@
       "trailingSlash": false,
       "rewrites": [
         {
+          "source": "/v",
+          "run": {
+            "serviceId": "csarko-visits",
+            "region": "us-west1"
+          }
+        },
+        {
           "source": "/a",
           "run": {
             "serviceId": "csarko-visits",
@@ -359,6 +366,15 @@
               "value": "public, max-age=3600"
             }
           ]
+        }
+      ],
+      "rewrites": [
+        {
+          "source": "/v",
+          "run": {
+            "serviceId": "csarko-visits",
+            "region": "us-west1"
+          }
         }
       ]
     }

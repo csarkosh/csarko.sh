@@ -70,6 +70,7 @@ test('flowHtml draws the steps in order and says them in its label', () => {
 test('downloadsHtml gives a button per platform with its size, and refuses a release missing one', () => {
   const html = downloadsHtml(RELEASE);
   assert.ok(html.includes('<a class="btn" href="https://github.com/o/r/releases/download/v0.1.1/visits-0.1.1-linux-amd64.tar.gz" download>Linux x86-64<small>600 KB</small></a>'));
+  assert.ok(downloadsHtml(RELEASE, { event: 'download-lib-visits' }).includes('download data-visits-event="download-lib-visits">Linux x86-64'), 'a named button');
   assert.ok(html.includes('macOS, Apple silicon<small>500 KB</small>'));
   assert.ok(html.includes('v0.1.1, released Oct 15, 2026'));
   assert.ok(html.includes('visits.min.js</a> (3,068 B)'));
@@ -154,10 +155,10 @@ test('productPage wears the store, not the portfolio: its fonts, the floating ba
   assert.ok(html.includes('<figcaption>One visit as lib-visits sees it (sample data).</figcaption>'));
   assert.ok(html.indexOf('<figure class="hero">') < html.indexOf('<div class="bar">'), 'the bar comes after the hero');
   assert.ok(html.includes('<a class="bar-name" href="#top">lib-visits</a>'));
-  assert.ok(html.includes('<a class="pill" href="#setup">Download</a>'), 'the bar\'s pill goes to the downloads');
-  assert.ok(/<div class="bar-inner">\s*<a class="bar-name" href="#top">lib-visits<\/a>\s*<a class="pill" href="#setup">Download<\/a>\s*<\/div>/.test(html), 'the bar is the name and the pill, nothing else');
+  assert.ok(html.includes('<a class="pill" href="#setup" data-visits-event="get-lib-visits">Download</a>'), 'the bar\'s pill goes to the downloads and counts get-<slug>');
+  assert.ok(/<div class="bar-inner">\s*<a class="bar-name" href="#top">lib-visits<\/a>\s*<a class="pill" href="#setup"[^>]*>Download<\/a>\s*<\/div>/.test(html), 'the bar is the name and the pill, nothing else');
   assert.ok(!html.includes('Free and open source') && !html.includes('bar-meta') && !html.includes('bar-link'), 'no licence line, version or GitHub in the bar');
-  assert.ok(html.includes('<span>lib-visits · GPL-3.0 · <a href="https://github.com/o/r/releases/tag/v0.1.1" target="_blank" rel="noopener">v0.1.1</a> · <a href="https://github.com/o/r" target="_blank" rel="noopener">GitHub</a></span>') && html.includes('Made by <a href="https://csarko.sh/">Cyrus Sarkosh</a>'), 'the release and the source in the footer');
+  assert.ok(html.includes('<span>lib-visits · GPL-3.0 · <a href="https://github.com/o/r/releases/tag/v0.1.1" target="_blank" rel="noopener" data-visits-event="release-lib-visits">v0.1.1</a> · <a href="https://github.com/o/r" target="_blank" rel="noopener" data-visits-event="source-lib-visits">GitHub</a></span>') && html.includes('Made by <a href="https://csarko.sh/">Cyrus Sarkosh</a>'), 'the release and the source in the footer, each named');
   assert.ok(!/<script\b(?![^>]*application\/ld\+json)/.test(html), 'no script');
   assert.ok(!html.includes('@@') && !html.includes('—'));
 });
@@ -179,7 +180,7 @@ test('the bar carries Buy me tokens with the icon, and the README snippet is dro
   assert.ok(!prepared.text.includes('donate.csarko.sh'));
   const html = productPage({ app: APP, prepared, release: RELEASE, images: imagesFor(prepared), motion: MOTION, live: true });
   assert.equal((html.match(/Buy me tokens/g) || []).length, 1);
-  assert.ok(/<\/div>\n  <div class="wrap bar-under"><a href="https:\/\/donate\.csarko\.sh\/visits" target="_blank" rel="noopener"><svg viewBox="0 0 32 22" shape-rendering="crispEdges"[^>]*><path [\s\S]*?<\/svg>Buy me tokens<\/a><\/div>/.test(html), 'one quiet line right under the bar, outside it');
+  assert.ok(/<\/div>\n  <div class="wrap bar-under"><a href="https:\/\/donate\.csarko\.sh\/visits" target="_blank" rel="noopener" data-visits-event="tokens-lib-visits"><svg viewBox="0 0 32 22" shape-rendering="crispEdges"[^>]*><path [\s\S]*?<\/svg>Buy me tokens<\/a><\/div>/.test(html), 'one quiet line right under the bar, outside it, named tokens-<slug>');
   assert.ok(!/<div class="bar-inner">[\s\S]*?Buy me tokens[\s\S]*?<\/div>\n  <\/div>/.test(html.slice(0, html.indexOf('bar-under'))), 'not inside the sticky bar');
   assert.ok(html.includes('.bar-under { display: flex; justify-content: flex-end;'));
   // With the flag off (as before launch) the page carries no Buy me tokens at all, and no line.
@@ -200,7 +201,7 @@ test('a README made of HTML (title, tagline, hero, a feature line, a panel table
   assert.ok(html.includes('<h1>MacStats</h1>') && html.includes('<p class="tagline">Five menu bar items for a Mac.</p>'));
   assert.ok(html.includes('<ul class="chips"><li><strong>CPU</strong> usage</li><li><strong>GPU</strong> utilization</li></ul>') === false, 'two names are not a chip row');
   assert.ok(/<div class="downloads"><p class="release">v1\.0\.0, released Oct 15, 2026 · <a class="external" href="[^"]+" target="_blank" rel="noopener">release notes<\/a><\/p><\/div>/.test(html));
-  assert.ok(html.includes('<a class="pill" href="#install">Install</a>'));
+  assert.ok(html.includes('<a class="pill" href="#install" data-visits-event="get-app-macstats">Install</a>'));
   assert.ok(html.includes('<div class="panel"><div class="panel-image"><img src="/app-macstats/cpu-light.webp"'));
   assert.ok(/<div class="panel-body">\s*<h3 id="cpu">[\s\S]*?Two gauges[\s\S]*?<\/div><\/div>/.test(html));
   assert.ok(html.includes('href="https://github.com/o/r/blob/main/LICENSE"'), 'a relative link goes to GitHub');
@@ -249,9 +250,9 @@ GPL-3.0.
   const html = productPage({ app, prepared, release, images: {}, motion: MOTION });
   assert.ok(!html.includes('<figure class="hero">'), 'no hero without a picture');
   assert.ok(html.includes('<p class="tagline">A terminal layout manager: panes with tabs'), 'the description is the tagline');
-  assert.ok(html.includes('<div class="downloads"><div class="buttons"><a class="btn" href="https://github.com/o/r/releases/download/v0.2.18/Arkos-IDE-0.2.18-arm64.zip" download>macOS, Apple silicon<small>6.3 MB</small></a></div>'), 'the one asset the release has, as a button');
+  assert.ok(html.includes('<div class="downloads"><div class="buttons"><a class="btn" href="https://github.com/o/r/releases/download/v0.2.18/Arkos-IDE-0.2.18-arm64.zip" download data-visits-event="download-ide-arkos">macOS, Apple silicon<small>6.3 MB</small></a></div>'), 'the one asset the release has, as a button');
   assert.ok(html.includes('brew install --cask csarkosh/tap/arkos-ide'));
-  assert.ok(html.includes('<a class="pill" href="#install">Install</a>'), 'the bar links to Install');
+  assert.ok(html.includes('<a class="pill" href="#install" data-visits-event="get-ide-arkos">Install</a>'), 'the bar links to Install, counting get-<slug>');
   assert.ok(!html.includes('## Status') && !html.includes('How a release is made'));
 });
 
@@ -293,7 +294,7 @@ test('a promo card leads the page under the bar, and the share card is the hero'
   const app = { ...APP, promo: { text: 'Sessions survive IDE updates and restarts.', link: 'https://github.com/o/r/blob/main/docs/guide.md#after-a-restart' } };
   const ogImage = { url: 'https://apps.csarko.sh/lib-visits/og.jpg', width: 1200, height: 630, alt: 'One visit' };
   const html = productPage({ app, prepared, release: RELEASE, images: imagesFor(prepared), motion: MOTION, ogImage });
-  assert.ok(/<div class="strip">\s*<a href="https:\/\/github\.com\/o\/r\/blob\/main\/docs\/guide\.md#after-a-restart" target="_blank" rel="noopener"><span>Sessions survive IDE updates and restarts\.<\/span><span class="go" aria-hidden="true">Learn more ›<\/span><\/a>/.test(html), 'the line and its link, no icon');
+  assert.ok(/<div class="strip">\s*<a href="https:\/\/github\.com\/o\/r\/blob\/main\/docs\/guide\.md#after-a-restart" target="_blank" rel="noopener" data-visits-event="promo-lib-visits"><span>Sessions survive IDE updates and restarts\.<\/span><span class="go" aria-hidden="true">Learn more ›<\/span><\/a>/.test(html), 'the line and its link, no icon');
   assert.ok(html.indexOf('<div class="bar">') < html.indexOf('<div class="strip">'));
   assert.ok(html.includes('<meta property="og:image" content="https://apps.csarko.sh/lib-visits/og.jpg" />') && html.includes('<meta name="twitter:card" content="summary_large_image" />'));
   assert.ok(!productPage({ app: APP, prepared, release: RELEASE, images: imagesFor(prepared), motion: MOTION }).includes('og:image'), 'no hero card, no image');
@@ -327,6 +328,15 @@ test('a picture on its own inside a section is a figure, and the page draws it',
   const html = productPage({ app: { ...APP, slug: 'app', title: 'App' }, prepared, release: RELEASE, images: imagesFor(prepared, 'app', { width: 1800, height: 610 }), motion: MOTION });
   assert.match(html, /<figure class="figure"><img src="\/app\/a-light.webp"/);
   assert.doesNotMatch(html, /@@/);
+});
+
+test('the visits scripts go last in the body, and the page ends with them; without them, no script at all', () => {
+  const prepared = prepareReadme(README, { blob: BLOB });
+  const analytics = '  <script defer src="/assets/visits.0123abcd.js" data-visits="/v"></script>\n  <script defer src="/assets/vitals.4567ef01.js"></script>\n';
+  const html = productPage({ app: APP, prepared, release: RELEASE, images: imagesFor(prepared), motion: MOTION, analytics });
+  assert.ok(html.endsWith(`  </footer>\n${analytics}</body>\n</html>\n`), 'after the footer, before </body>');
+  assert.equal((html.match(/<script\b/g) || []).length, 3, 'the JSON-LD and the two');
+  assert.ok(!/<script\b(?![^>]*application\/ld\+json)/.test(productPage({ app: APP, prepared, release: RELEASE, images: imagesFor(prepared), motion: MOTION })));
 });
 
 test('splitSections cuts the rendered README at its ## headings', () => {

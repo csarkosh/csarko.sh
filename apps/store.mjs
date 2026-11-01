@@ -61,9 +61,11 @@ const jsonLd = (graph) => JSON.stringify({ '@context': 'https://schema.org', '@g
  * 2026-11-01: no licence line, no version, no GitHub there); `under` is the HTML of one quiet
  * line set right-aligned beneath the bar, outside it, the page's Buy me tokens. `top` is the
  * title, tagline and hero, drawn above the bar, which floats up over the hero's foot and then
- * sticks. `footer` is [text, links]: the credit line and [label, href] pairs after it.
+ * sticks. `footer` is [text, links]: the credit line and [label, href, event] after it, the event
+ * the click's name in the visits log. `bar.action` is [label, href, event] too. `analytics` is
+ * the HTML of the visits scripts, placed last in the body (apps/build.mjs makes it).
  */
-export function storeShell({ title, ogTitle, description, canonical, ogImage = null, graph, motion = '', top, bar, main, footer, extraCss = '' }) {
+export function storeShell({ title, ogTitle, description, canonical, ogImage = null, graph, motion = '', top, bar, main, footer, extraCss = '', analytics = '' }) {
   const card = ogImage ? `  <meta property="og:image" content="${ogImage.url}" />
   <meta property="og:image:width" content="${ogImage.width}" />
   <meta property="og:image:height" content="${ogImage.height}" />
@@ -72,7 +74,7 @@ export function storeShell({ title, ogTitle, description, canonical, ogImage = n
   <meta name="twitter:image:alt" content="${escapeHtml(ogImage.alt)}" />
 ` : '';
   const [credit, footLinks = []] = Array.isArray(footer) ? footer : [footer];
-  const foot = footLinks.map(([label, href]) => ` · <a href="${escapeHtml(href)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>`).join('');
+  const foot = footLinks.map(([label, href, event]) => ` · <a href="${escapeHtml(href)}" target="_blank" rel="noopener"${event ? ` data-visits-event="${escapeHtml(event)}"` : ''}>${escapeHtml(label)}</a>`).join('');
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -121,7 +123,7 @@ ${top}
   <div class="bar">
     <div class="bar-inner">
       <a class="bar-name" href="#top">${escapeHtml(bar.name)}</a>
-      <a class="pill" href="${escapeHtml(bar.action[1])}">${escapeHtml(bar.action[0])}</a>
+      <a class="pill" href="${escapeHtml(bar.action[1])}"${bar.action[2] ? ` data-visits-event="${escapeHtml(bar.action[2])}"` : ''}>${escapeHtml(bar.action[0])}</a>
     </div>
   </div>
 ${bar.under ? `  <div class="wrap bar-under">${bar.under}</div>\n` : ''}
@@ -135,7 +137,7 @@ ${main}
       <span>Made by <a href="https://csarko.sh/">Cyrus Sarkosh</a></span>
     </div>
   </footer>
-</body>
+${analytics}</body>
 </html>
 `;
 }

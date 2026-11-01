@@ -16,6 +16,9 @@
  * cropped to 16:9, AVIF, WebP and JPEG at 640 and 1280 wide, hashed). Around the pages:
  *   thanks/index.html             where Stripe sends a payer back, every door's line and link
  *   app.js, view.js               the pages' one script and the logic it shares with this build
+ *   assets/visits.*.js, vitals.*.js  the site's hashed lib-visits scripts (public/assets/), so a
+ *                                 visit here joins the one on csarko.sh; the beacon goes to this
+ *                                 host's /v, a Hosting rewrite (2026-11-01)
  *   icon.svg                      the Buy Me Tokens icon, for READMEs to embed as an <img>
  *   assets/*.woff2                the site's hashed font files, copied from public/assets/
  *   favicon.*, apple-touch-icon   the site's icons
@@ -27,7 +30,7 @@
  */
 
 import { execFile } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -188,6 +191,13 @@ async function main() {
   rmSync(OUT, { recursive: true, force: true });
   mkdirSync(path.join(OUT, 'assets'), { recursive: true });
   for (const f of fontFiles) copyFileSync(path.join(SITE_PUBLIC, 'assets', f), path.join(OUT, 'assets', f));
+  // lib-visits, the same hashed files csarko.sh serves (check.py holds them to the vendored bytes).
+  const siteAssets = readdirSync(path.join(SITE_PUBLIC, 'assets'));
+  const visitsJs = siteAssets.find((f) => /^visits\.[0-9a-f]{8}\.js$/.test(f));
+  const vitalsJs = siteAssets.find((f) => /^vitals\.[0-9a-f]{8}\.js$/.test(f));
+  if (!visitsJs || !vitalsJs) fail('public/assets has no hashed visits.js and vitals.js (run generate-assets.sh)');
+  for (const f of [visitsJs, vitalsJs]) copyFileSync(path.join(SITE_PUBLIC, 'assets', f), path.join(OUT, 'assets', f));
+  const analytics = `  <script defer src="/assets/${visitsJs}" data-visits="/v"></script>\n  <script defer src="/assets/${vitalsJs}"></script>\n`;
   for (const icon of ['favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'apple-touch-icon.png']) {
     copyFileSync(path.join(SITE_PUBLIC, icon), path.join(OUT, icon));
   }
@@ -198,7 +208,7 @@ async function main() {
   if (failed) throw failed.reason;
   const pictures = made.map((r) => r.value);
   doors.forEach((door, i) => {
-    const html = fill(doorPage({ door, prices: prices.get(door.door), picture: pictures[i], theme }));
+    const html = fill(doorPage({ door, prices: prices.get(door.door), picture: pictures[i], theme, analytics }));
     const dir = door.door === 'all' ? OUT : path.join(OUT, door.door);
     mkdirSync(dir, { recursive: true });
     writeFileSync(path.join(dir, 'index.html'), html);
@@ -207,7 +217,7 @@ async function main() {
 
   const thanks = Object.fromEntries(doors.map((d) => [d.door, { back: d.back, thanks: d.thanks }]));
   mkdirSync(path.join(OUT, 'thanks'), { recursive: true });
-  writeFileSync(path.join(OUT, 'thanks', 'index.html'), fill(thanksPage({ theme, doors: thanks })));
+  writeFileSync(path.join(OUT, 'thanks', 'index.html'), fill(thanksPage({ theme, doors: thanks, analytics })));
 
   writeFileSync(path.join(OUT, 'app.js'), app);
   copyFileSync(path.join(DONATE, 'view.mjs'), path.join(OUT, 'view.js'));

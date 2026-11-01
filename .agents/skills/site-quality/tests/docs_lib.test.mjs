@@ -704,6 +704,9 @@ test('standaloneShell wears none of the site\'s chrome: its own bar, its own foo
   assert.ok(!html.includes('<nav class="nav"') && !html.includes('<a class="wordmark"') && !html.includes('<nav class="crumbs"'), 'no site nav, wordmark or trail in the markup');
   assert.ok(!html.includes('BreadcrumbList'));
   assert.ok(!html.includes('<title>x: a thing · Cyrus Sarkosh</title>'), 'the title is the app\'s alone');
+  const tagged = standaloneShell({ title: 'x', ogTitle: 'x', description: 'd', canonical: 'https://donate.csarko.sh/x', graph: [], theme: themeBlocks(INDEX), name: 'x', main: '<main id="top"></main>', analytics: '  <script defer src="/assets/visits.0123abcd.js" data-visits="/v"></script>\n' });
+  assert.ok(tagged.endsWith('  </footer>\n  <script defer src="/assets/visits.0123abcd.js" data-visits="/v"></script>\n</body>\n</html>\n'), 'the visits scripts, when given, go last in the body');
+  assert.ok(!html.includes('<script defer'), 'and not otherwise');
 });
 
 test('an app with an alt gets a preview the asset build fills; one without gets a plain card', () => {

@@ -26,6 +26,9 @@ views AS (
     id,
     COALESCE(JSON_VALUE(j.s.visit), id) AS visit,
     JSON_VALUE(j.p) AS path,
+    -- The step's host when it is another of the site's (apps.csarko.sh, donate.csarko.sh): one
+    -- visit runs across them, since the collector keys it on the visitor, not the host.
+    IF(IFNULL(JSON_VALUE(j.s.host), 'csarko.sh') IN ('csarko.sh', 'www.csarko.sh'), NULL, JSON_VALUE(j.s.host)) AS host,
     JSON_VALUE(j.t) AS title,
     JSON_VALUE(j.nt) AS nt,
     JSON_VALUE(j.s.rk) AS rk,
@@ -80,7 +83,7 @@ visits AS (
     MIN(ts) AS started,
     ARRAY_AGG(STRUCT(rk, rh, rp, campaign) ORDER BY ts LIMIT 1)[OFFSET(0)] AS source,
     ARRAY_AGG(STRUCT(bn, bv, os, vw, vh, tz, th, tp, lg) ORDER BY ts LIMIT 1)[OFFSET(0)] AS device,
-    ARRAY_AGG(STRUCT(FORMAT_TIMESTAMP('%FT%TZ', ts) AS stamp, path, title, nt, secs, depth, reached, lcp, cls, inp) ORDER BY ts LIMIT 40) AS steps
+    ARRAY_AGG(STRUCT(FORMAT_TIMESTAMP('%FT%TZ', ts) AS stamp, path, host, title, nt, secs, depth, reached, lcp, cls, inp) ORDER BY ts LIMIT 40) AS steps
   FROM steps GROUP BY visit
 )
 SELECT FORMAT_TIMESTAMP('%FT%TZ', v.started) AS started, v.source, v.device, v.steps, o.last_click

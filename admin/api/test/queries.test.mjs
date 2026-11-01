@@ -35,6 +35,9 @@ function fakes({ visitsOn = true, gscOn = true, youtubeOn = false, githubToken =
           { path: "/games", visitors: 20, pageviews: null, engagedMedian: 30, reached: null },
           { path: "/docs/old-slug", visitors: 7, pageviews: null, engagedMedian: 2, reached: null },
           { path: "/wp-login.php", visitors: 2, pageviews: null, engagedMedian: 0, reached: null },
+          { path: "apps.csarko.sh/ide-arkos", visitors: 6, pageviews: null, engagedMedian: 25, reached: null },
+          { path: "apps.csarko.sh/nope", visitors: 1, pageviews: null, engagedMedian: 0, reached: null },
+          { path: "donate.csarko.sh/arkos", visitors: 1, pageviews: null, engagedMedian: 9, reached: null },
         ];
       },
       async referrers() {
@@ -91,6 +94,8 @@ function fakes({ visitsOn = true, gscOn = true, youtubeOn = false, githubToken =
     uptime: { async check() { return { up: true, status: 200, ttfbMs: 120, certDaysLeft: 70 }; } },
     hosting: { async lastDeployAt() { return "2026-10-11T20:00:00Z"; } },
     sitemap: { async urls() { return ["https://csarko.sh/", "https://csarko.sh/games", "https://csarko.sh/research/stylized-shader-looks"]; } },
+    // The other hosts' sitemaps: the apps site has one, the donate site's fails to load here.
+    sitemapFor: (host) => ({ async urls() { if (host === "apps.csarko.sh") return ["https://apps.csarko.sh/ide-arkos", "https://apps.csarko.sh/lib-visits"]; throw new Error(`no sitemap for ${host}`); } }),
     store: createMemoryStore(),
     config: { sitemapUrl: "https://csarko.sh/sitemap.xml" },
     now: () => NOW,
@@ -174,7 +179,7 @@ test("the visits queries have the contract's shapes", async () => {
   assert.equal((await q.visits(7, "America/Los_Angeles")).dayLabel, "America/Los_Angeles", "the zone the days were cut in");
 
   const pages = await q.pages(7);
-  assert.deepEqual(pages.rows.map((r) => [r.path, r.inSitemap]), [["/", true], ["/research/stylized-shader-looks", true], ["/games", true], ["/docs/old-slug", false], ["/wp-login.php", false]]);
+  assert.deepEqual(pages.rows.map((r) => [r.path, r.inSitemap]), [["/", true], ["/research/stylized-shader-looks", true], ["/games", true], ["/docs/old-slug", false], ["/wp-login.php", false], ["apps.csarko.sh/ide-arkos", true], ["apps.csarko.sh/nope", false], ["donate.csarko.sh/arkos", null]], "a page on another of our hosts is checked against that host's sitemap, null when it cannot be read");
 
   assert.deepEqual([pages.rows[1].engagedMedian, pages.rows[1].reached], [120, 0.4], "engaged time and the share read pass through");
 
@@ -214,7 +219,10 @@ test("eventKindOf reads the prefix, counts an unnamed link out as out, and calls
   assert.equal(eventKindOf("section-0"), "section");
   assert.equal(eventKindOf("start-webgpu-vs-webgl2"), "start");
   assert.equal(eventKindOf("filter-rendering"), "filter");
-  assert.equal(eventKindOf("app-lib-visits"), "other");
+  for (const [name, kind] of [["get-ide-arkos", "get"], ["download-lib-visits", "download"], ["promo-ide-arkos", "promo"], ["tokens-app-macstats", "tokens"], ["release-ide-arkos", "release"], ["source-ide-arkos", "source"], ["app-ide-arkos", "app"], ["tier-context", "tier"], ["pay-arkos", "pay"], ["tipped", "tipped"], ["back", "back"]]) {
+    assert.equal(eventKindOf(name), kind, `${name} on the apps and donate pages`);
+  }
+  assert.equal(eventKindOf("app-lib-visits"), "app", "an app card's link to its page is its own kind since 2026-11-01");
 });
 
 test("search ends on Google's last finished day, with the lag note, per-day rows for every day, totals, previous, tops, indexed and sitemap", async () => {
@@ -259,7 +267,7 @@ test("health reads Lighthouse from the latest snapshot, or runs it once when the
   assert.equal(first.ttfbMs, 120);
   assert.equal(first.certDaysLeft, 70);
   assert.equal(first.lastDeployAt, "2026-10-11T20:00:00Z");
-  assert.deepEqual(first.notFound, [{ path: "/docs/old-slug", visitors: 7 }, { path: "/wp-login.php", visitors: 2 }]);
+  assert.deepEqual(first.notFound, [{ path: "/docs/old-slug", visitors: 7 }, { path: "/wp-login.php", visitors: 2 }, { path: "apps.csarko.sh/nope", visitors: 1 }]);
   assert.equal(first.sitemapFetchedAt, "2026-10-11T03:00:00Z");
   assert.deepEqual(first.indexed, { indexed: 2, total: 3 });
   assert.equal(first.indexedAt, "2026-10-12T15:30:00.000Z", "no snapshot yet: inspected live, now");

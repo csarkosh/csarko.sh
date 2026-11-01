@@ -20,6 +20,14 @@ test("no public file would shadow the beacon path", () => {
   }
 });
 
+test("the apps site rewrites /v to the visits collector beside Arkos's report routes, so a visit there joins the site's", () => {
+  const apps = fb.hosting.find((h) => h.site === "csarko-sh-apps");
+  assert.deepEqual(apps.rewrites.find((r) => r.source === "/v"), { source: "/v", run: { serviceId: "csarko-visits", region: "us-west1" } });
+  assert.ok(apps.rewrites.some((r) => r.source === "/a") && apps.rewrites.some((r) => r.source === "/a/check"), "the report routes stay");
+  const csp = apps.headers.find((h) => h.source === "**").headers.find((h) => h.key === "Content-Security-Policy").value;
+  assert.ok(csp.includes("script-src 'self';") && csp.includes("connect-src 'self';"), "the beacon is same-origin: nothing new in the CSP");
+});
+
 test("the old project pages land on /projects with their own kind's chip checked", () => {
   for (const kind of ["apps", "film", "games"]) {
     assert.ok(site.redirects.some((r) => r.source === `/${kind}` && r.destination === `/projects?filter=${kind}` && r.type === 301), kind);
@@ -35,12 +43,12 @@ test("every other /apps address lands on the Apps filter; only the old pictures 
   assert.ok(!site.redirects.some((r) => r.source === "/apps/:file*"), "no /apps page lands on a /projects/<name> that does not exist");
 });
 
-test("the donate site: its own entry, a CSP that reaches only the prices bucket, no rewrite and no redirect", () => {
+test("the donate site: its own entry, a CSP that reaches only the prices bucket, the beacon rewrite and no redirect", () => {
   const donate = fb.hosting.find((h) => h.site === "csarko-sh-donate");
   assert.equal(donate.public, "donate/public");
   assert.equal(donate.cleanUrls, true);
   assert.equal(donate.trailingSlash, false);
-  assert.equal(donate.rewrites, undefined);
+  assert.deepEqual(donate.rewrites, [{ source: "/v", run: { serviceId: "csarko-visits", region: "us-west1" } }]);
   assert.equal(donate.redirects, undefined);
   const csp = donate.headers.find((h) => h.source === "**").headers.find((h) => h.key === "Content-Security-Policy").value;
   assert.ok(csp.includes("connect-src 'self' https://storage.googleapis.com;"));

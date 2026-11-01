@@ -25,8 +25,9 @@ const jsonBlock = (id, data) => `<script type="application/json" id="${id}">${JS
 const author = { '@type': 'Person', '@id': 'https://csarko.sh/#person', name: 'Cyrus Sarkosh', url: 'https://csarko.sh/' };
 
 /** The shell around a donate page, with the icon beside the bar's name. */
-function shell({ title, description, canonical, main, noindex = false }) {
+function shell({ title, description, canonical, main, noindex = false, analytics = '' }) {
   const html = standaloneShell({
+    analytics,
     title,
     ogTitle: title,
     description,
@@ -75,7 +76,7 @@ function pictureHtml(picture, alt) {
  * [{ tier, usd, label, ... }], links: { <tier>: url } }), `picture` pictures.py's output (srcset
  * entries as the page should request them, plus an optional `alt`), `theme` themeBlocks().
  */
-export function doorPage({ door, prices, picture, theme }) {
+export function doorPage({ door, prices, picture, theme, analytics = '' }) {
   const title = door.door === 'all' ? BRAND : `${BRAND} · ${door.name}`;
   const canonical = `${DONATE_URL}${door.path}`;
   const tierOf = (key) => {
@@ -90,9 +91,9 @@ export function doorPage({ door, prices, picture, theme }) {
   };
   const rows = TIERS.map((t, i) => {
     const p = tierOf(t.key);
-    return `        <label class="tier"><input type="radio" name="tier" value="${t.key}"${t.key === DEFAULT_TIER ? ' checked' : ''} /><span class="what"><b>${escapeHtml(t.name)}</b><small>${escapeHtml(door.captions[i])}</small></span><span class="price">$${escapeHtml(p.usd)}<small>${escapeHtml(p.label)}</small></span></label>`;
+    return `        <label class="tier" data-visits-event="tier-${t.key}"><input type="radio" name="tier" value="${t.key}"${t.key === DEFAULT_TIER ? ' checked' : ''} /><span class="what"><b>${escapeHtml(t.name)}</b><small>${escapeHtml(door.captions[i])}</small></span><span class="price">$${escapeHtml(p.usd)}<small>${escapeHtml(p.label)}</small></span></label>`;
   });
-  rows.push(`        <label class="tier own"><input type="radio" name="tier" value="${CUSTOM.key}" /><span class="what"><b>${escapeHtml(CUSTOM.name)}</b><small>${OWN_CAPTION}</small></span><span class="price">any<small>$${CUSTOM.minimumUsd} or more</small></span></label>`);
+  rows.push(`        <label class="tier own" data-visits-event="tier-${CUSTOM.key}"><input type="radio" name="tier" value="${CUSTOM.key}" /><span class="what"><b>${escapeHtml(CUSTOM.name)}</b><small>${OWN_CAPTION}</small></span><span class="price">any<small>$${CUSTOM.minimumUsd} or more</small></span></label>`);
   const baked = {
     door: door.door,
     period: prices.period,
@@ -112,13 +113,13 @@ export function doorPage({ door, prices, picture, theme }) {
         <legend class="sr-only">Pick a tier</legend>
 ${rows.join('\n')}
       </fieldset>
-      <a id="pay" class="btn" href="${escapeHtml(linkOf(DEFAULT_TIER))}">${escapeHtml(buttonLabel(DEFAULT_TIER, prices))}</a>
+      <a id="pay" class="btn" href="${escapeHtml(linkOf(DEFAULT_TIER))}" data-visits-event="pay-${escapeHtml(door.door)}">${escapeHtml(buttonLabel(DEFAULT_TIER, prices))}</a>
       <p class="foot">Payments by Stripe · no account needed</p>
     </article>
     ${jsonBlock('prices', baked)}
     <script type="module" src="/app.js"></script>
   </main>`;
-  return withTheme(shell({ title, description: door.lead, canonical, main }), theme);
+  return withTheme(shell({ title, description: door.lead, canonical, main, analytics }), theme);
 }
 
 /**
@@ -126,19 +127,19 @@ ${rows.join('\n')}
  * { back, thanks }; without a script (or for a door it does not know) the page thanks plainly and
  * links to the projects page, and /app.js puts in the door's own line and link.
  */
-export function thanksPage({ theme, doors }) {
+export function thanksPage({ theme, doors, analytics = '' }) {
   const canonical = `${DONATE_URL}/thanks`;
   const main = `  <main id="top" class="wrap" tabindex="-1">
     <article class="tip thanks">
       <p class="kicker">${BRAND}</p>
       <h1>Thank you</h1>
       <p class="lead" id="line">Tokens received.</p>
-      <p class="back"><a id="back" href="${escapeHtml(PROJECTS_BACK.href)}">${escapeHtml(PROJECTS_BACK.label)}</a></p>
+      <p class="back"><a id="back" href="${escapeHtml(PROJECTS_BACK.href)}" data-visits-event="back">${escapeHtml(PROJECTS_BACK.label)}</a></p>
     </article>
     ${jsonBlock('doors', doors)}
     <script type="module" src="/app.js"></script>
   </main>`;
-  return withTheme(shell({ title: `${BRAND} · Thank you`, description: 'Tokens received.', canonical, main, noindex: true }), theme);
+  return withTheme(shell({ title: `${BRAND} · Thank you`, description: 'Tokens received.', canonical, main, noindex: true, analytics }), theme);
 }
 
 // The tip card, from the Oct 30 mockup's "Middle" layout, on the site's tokens and type. One

@@ -19,7 +19,9 @@ test('the Arkos door, top to bottom', () => {
   assert.ok(html.includes('value="context" checked'));
   assert.ok(html.includes('<b>A long context window</b><small>a whole feature, read end to end</small>'));
   assert.ok(html.includes('<span class="price">$9<small>about 3%</small></span>'));
-  assert.ok(html.includes('<a id="pay" class="btn" href="https://buy.stripe.com/c">Tip $9</a>'));
+  assert.ok(html.includes('<a id="pay" class="btn" href="https://buy.stripe.com/c" data-visits-event="pay-arkos">Tip $9</a>'), 'the button, named by its door');
+  assert.ok(html.includes('<label class="tier" data-visits-event="tier-context"><input type="radio" name="tier" value="context" checked />') && html.includes('<label class="tier own" data-visits-event="tier-own">'), 'each tier row named by its key');
+  assert.ok(!/<script\b(?![^>]*application\/(ld\+)?json)(?![^>]*\/app\.js)/.test(html), 'no visits scripts unless the build gives them');
   assert.ok(html.includes('Payments by Stripe · no account needed'));
   assert.ok(at('<script type="application/json" id="prices">') < at('<script type="module" src="/app.js">'));
   assert.ok(!html.includes('plink_') && !html.includes('price_'), 'no Stripe ids on the page');
@@ -38,7 +40,7 @@ test('the thanks page bakes every shipped door’s line and link, escaped', () =
   const html = thanksPage({ theme: THEME, doors: { arkos: { back: doorByKey('arkos').back, thanks: doorByKey('arkos').thanks }, all: { back: { label: 'Back to the projects', href: 'https://csarko.sh/projects' }, thanks: 'Tokens received.' } } });
   assert.ok(html.includes('<script type="application/json" id="doors">'));
   assert.ok(html.includes('Tokens received. The next agent run is on you.'));
-  assert.ok(html.includes('<a id="back" href="https://csarko.sh/projects">Back to the projects</a>'));
+  assert.ok(html.includes('<a id="back" href="https://csarko.sh/projects" data-visits-event="back">Back to the projects</a>'));
 });
 
 test('the CSS is tokens only and sizes the picture by its own shape', () => {
@@ -61,3 +63,14 @@ test('the baked prices name their door, and the bar links to the site', () => {
   assert.equal(baked.door, 'arkos');
   assert.ok(html.includes('<a class="app-name" href="https://donate.csarko.sh">'));
 });
+
+test('the visits scripts the build gives go last in the body of a door and of the thanks page', () => {
+  const analytics = '  <script defer src="/assets/visits.0123abcd.js" data-visits="/v"></script>\n  <script defer src="/assets/vitals.4567ef01.js"></script>\n';
+  const door = doorByKey('arkos');
+  const page = doorPage({ door, prices: PRICES, picture: PICTURE, theme: THEME, analytics });
+  assert.ok(page.endsWith(`  </footer>\n${analytics}</body>\n</html>\n`), 'after the footer, before </body>');
+  const thanks = thanksPage({ theme: THEME, doors: { arkos: { back: door.back, thanks: door.thanks } }, analytics });
+  assert.ok(thanks.endsWith(`  </footer>\n${analytics}</body>\n</html>\n`));
+  assert.ok(thanks.indexOf('src="/app.js"') < thanks.indexOf('visits.0123abcd.js'), 'app.js first, so it sends the tip on load, once the visits script is in');
+});
+

@@ -28,8 +28,11 @@ export const TREND_WEEKS = 12;
 
 // toc, doc, next, series and end are a doc page's own links (its contents, a link in its text to
 // another doc, Keep reading, the series line and the link after the author box); section is a
-// section read for 5 s (2026-10-23).
-const EVENT_KINDS = ["out", "play", "watch", "read", "nav", "start", "filter", "toc", "doc", "next", "series", "end", "section"];
+// section read for 5 s (2026-10-23). On an app's page (apps.csarko.sh, 2026-11-01): get (the bar's
+// Install or Download pill), download (a release button), promo (the promo card), tokens (Buy me
+// tokens), release and source (the footer's version and GitHub), each -<slug>; on donate.csarko.sh:
+// tier (a tier picked), pay (the Stripe button), tipped (the thanks page, the tip made) and back.
+const EVENT_KINDS = ["out", "play", "watch", "read", "nav", "start", "filter", "toc", "doc", "next", "series", "end", "section", "get", "download", "promo", "tokens", "release", "source", "app", "tier", "pay", "tipped", "back"];
 /** The kind of an event name from its prefix: `out-github` is an outbound click, `read-<slug>` a read to the end; `link-<host>` (an unnamed link out) is `out` too. */
 export function eventKindOf(name) {
   const prefix = String(name).split("-")[0];
@@ -77,7 +80,7 @@ export function snapshotAgo(snapshots, today, daysAgo = 7) {
   return pick;
 }
 
-export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, hosting, sitemap, store, config, finance = null, now = Date.now, log = console }) {
+export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, hosting, sitemap, sitemapFor, store, config, finance = null, now = Date.now, log = console }) {
   /** Runs one part of an answer, reporting a missing credential or a failure instead of throwing. */
   async function part(hints, name, envName, configured, fn) {
     if (!configured) {
@@ -112,10 +115,41 @@ export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, h
     return urls === null ? null : pathsOf(urls);
   }
 
+  /**
+   * Whether a pages row's path is in its host's sitemap: csarko.sh's for a plain path, and for
+   * a path named with another of our hosts (`apps.csarko.sh/ide-arkos`) that host's own
+   * sitemap, fetched through `sitemapFor(host)` when the server gives one; null when it cannot
+   * be read, as the contract says.
+   */
+  async function inSitemapOf(rows, h) {
+    const paths = await sitemapPaths(h);
+    const hosts = new Map();
+    const hostPaths = async (host) => {
+      if (!hosts.has(host)) {
+        hosts.set(host, (async () => {
+          if (typeof sitemapFor !== "function") return null;
+          try { return pathsOf(await sitemapFor(host).urls()); } catch (error) { log.error(`admin: sitemap of ${host} failed`, error); return null; }
+        })());
+      }
+      return hosts.get(host);
+    };
+    return Promise.all(rows.map(async (r) => {
+      const path = String(r.path);
+      if (path.startsWith("/")) return paths === null ? null : paths.has(normalizePath(path));
+      const slash = path.indexOf("/");
+      const host = slash < 0 ? path : path.slice(0, slash);
+      const own = await hostPaths(host);
+      return own === null ? null : own.has(normalizePath(slash < 0 ? "/" : path.slice(slash)));
+    }));
+  }
+
   async function notFoundOf(rows, h) {
     const paths = await sitemapPaths(h);
     if (paths === null) return null;
-    return rows.filter((r) => r.visitors > 0 && !paths.has(normalizePath(r.path))).map((r) => ({ path: r.path, visitors: r.visitors }));
+    // Each row against its own host's sitemap; a row whose host's sitemap could not be read is
+    // not called a 404.
+    const inSitemap = await inSitemapOf(rows, h);
+    return rows.filter((r, i) => r.visitors > 0 && inSitemap[i] === false).map((r) => ({ path: r.path, visitors: r.visitors }));
   }
 
   const queries = {
@@ -135,8 +169,9 @@ export function createQueries({ visits, gsc, youtube, github, hn, psi, uptime, h
       if (empty) return { rows: null, ...empty };
       const range = hourlyRange(days, now());
       const h = hints();
-      const [rows, paths] = await Promise.all([visits.pages(range), sitemapPaths(h)]);
-      return withHints({ rows: rows.map((r) => ({ ...r, inSitemap: paths === null ? null : paths.has(normalizePath(r.path)) })) }, h);
+      const rows = await visits.pages(range);
+      const inSitemap = await inSitemapOf(rows, h);
+      return withHints({ rows: rows.map((r, i) => ({ ...r, inSitemap: inSitemap[i] })) }, h);
     },
 
     async referrers(days) {

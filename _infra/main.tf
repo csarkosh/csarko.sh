@@ -251,7 +251,10 @@ module "gcp_visits" {
 
   project_id      = var.gcp_project_id
   region          = var.gcp_region
-  origins         = ["https://${var.domain_name}"]
+  # Every host a visitor can be on: a visit is one daily id across them (lib-visits keys it on
+  # the address and the browser, not the host), so a journey from the site to an app's page and
+  # on to a tip is one visit in the dashboard (2026-11-01).
+  origins         = ["https://${var.domain_name}", "https://${var.apps_domain_name}", "https://${var.donate_domain_name}"]
   dataset         = local.visits_dataset
   history_dataset = local.visits_history_dataset
   # Hosting's rewrite and Cloud Run's frontend: confirmed 2026-10-15 with --log-ip through

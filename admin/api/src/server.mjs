@@ -84,6 +84,9 @@ const queries = createQueries({
   uptime: createUptime({ siteUrl: config.siteUrl, fetch, cache }),
   hosting: createHosting({ site: config.hostingSite, fetch, cache }),
   sitemap: createSitemap({ url: config.sitemapUrl, fetch, cache }),
+  // The sitemaps of the site's other hosts (apps.csarko.sh, donate.csarko.sh), for the pages card's
+  // rows from them; each is fetched once an hour like the site's own.
+  sitemapFor: (host) => createSitemap({ url: `https://${host}/sitemap.xml`, fetch, cache }),
   store,
   config,
   finance,

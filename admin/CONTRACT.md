@@ -120,7 +120,7 @@ calendar day; the other ranges carry no `label`. `current` and `previous` are `n
 ```
 
 Events are excluded. `visitors` is the distinct visits with a view of the path.
-`inSitemap: false` marks a path that is not in `sitemap.xml` (a 404 candidate).
+`inSitemap: false` marks a path that is not in `sitemap.xml` (a 404 candidate). A page on another of the site's hosts is named with it, `apps.csarko.sh/ide-arkos` (since 2026-11-01), and checked against that host's own sitemap.
 `engagedMedian` is the median, in seconds, over visits of each visit's longest engaged time
 on the path, among page loads that sent a leave (a load's time is the most its leaves
 reported, capped at 1800 s), `null` when no load did. `reached` (0 to 1) is the share of all
@@ -157,7 +157,7 @@ view counted. All four are `null` with `notConfigured.visits`.
 
 `visitors` is the distinct visits that fired the event, `clicks` how many times it fired
 (for `read-<slug>`, the page loads that reached the end; the history's one count stands for
-both). `kind` is the name's prefix: `out`, `play`, `watch`, `read`, `nav`, `start` (a card in /research's Start here row), `filter` (a category chip there), and on a doc page *(2026-10-23)* `toc` (its contents, `toc` inline and `toc-rail` in the rail), `doc` (a link in its text to another doc, `doc-<slug>`), `next` (Keep reading, `next-<slug>`), `series` (the series line under the title), `end` (the Read next link after the author box) and `section` (`section-<n>`, a section that sat across the middle of a visible screen for 5 s, n 0 for the opening; from the site's `reading.js`, so `clicks` counts page loads), else `other`;
+both). `kind` is the name's prefix: `out`, `play`, `watch`, `read`, `nav`, `start` (a card in /research's Start here row), `filter` (a category chip there), `app` (an app card's link to its page), and since 2026-11-01, when apps.csarko.sh and donate.csarko.sh began sending beacons too, on an app's page `get` (the bar's Install or Download pill), `download` (a release button), `promo`, `tokens`, `release` and `source` (each `-<slug>`), and on the donate pages `tier` (a tier picked, `tier-<key>`), `pay` (the Stripe button, `pay-<door>`), `tipped` (the thanks page after Stripe, with `door` in its data: the tip made) and `back`; and on a doc page *(2026-10-23)* `toc` (its contents, `toc` inline and `toc-rail` in the rail), `doc` (a link in its text to another doc, `doc-<slug>`), `next` (Keep reading, `next-<slug>`), `series` (the series line under the title), `end` (the Read next link after the author box) and `section` (`section-<n>`, a section that sat across the middle of a visible screen for 5 s, n 0 for the opening; from the site's `reading.js`, so `clicks` counts page loads), else `other`;
 `link-<host>` (a click on a link to another host that the page did not name, the host
 without `www.`) is kind `out`. `outboundVisitors` is the distinct visitors who clicked any `out-*` or `link-*` event; `outboundRate` is the distinct visitors who clicked any
 `out-*` or `link-*` over the home page's visitors, so it never passes 1; `null` when nobody
@@ -173,7 +173,7 @@ page-load id, whatever visit they name themselves.
 ```
 { started, source: { kind: 'direct'|'external'|'internal', host?, path?, campaign? },
   device: { browser, version, os, viewport: [w, h], tz, theme, touch, lang },
-  steps: [{ path, title, at, left, secs, depth, read, nav, lcp, cls, inp }],
+  steps: [{ path, host?, title, at, left, secs, depth, read, nav, lcp, cls, inp }],
   exit: { kind: 'click', event, url, host } | { kind: 'left' },
   engaged, stitched, suspect, reader }
 ```
@@ -183,7 +183,9 @@ page-load id, whatever visit they name themselves.
 - `device` is the first view's: `browser` and `version` (a string) and `os` as the collector
   names them, `viewport` as `[width, height]` in CSS pixels (each `null` when unknown), `tz`
   the IANA zone, `theme` `dark` or `light`, `touch` a boolean, `lang` the browser's language.
-- `steps` are the views in order. `at` is seconds from the first view; `left` is when the
+- `steps` are the views in order; one visit runs across csarko.sh, apps.csarko.sh and
+  donate.csarko.sh (the collector keys it on the visitor, not the host, since 2026-11-01), and a
+  step on one of the other two carries its `host` (absent on csarko.sh's own pages). `at` is seconds from the first view; `left` is when the
   visitor left that page, in the same seconds: the next step's `at`, else the exit click's
   time, else `at + secs` when the page sent a leave, else `null`. `secs` and `depth` (0 to
   100) come from the page's leave beacon (`null` when none arrived). `read` is whether the

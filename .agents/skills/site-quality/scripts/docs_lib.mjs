@@ -1465,9 +1465,10 @@ ${FOOTER}`;
  * none of its chrome: no nav, no trail, no wordmark. Its bar carries the app's name and a few
  * links of its own; its footer credits the maker once and names the licence. `main` is the
  * page's own markup inside <body>. A link is [label, href, external, icon], the icon's HTML
- * drawn inside the anchor before the label.
+ * drawn inside the anchor before the label. `analytics` is the HTML of the visits scripts,
+ * placed last in the body (the host's build makes it from the site's hashed files).
  */
-export function standaloneShell({ title, ogTitle, description, canonical, ogType = 'website', extraCss = '', graph, theme, name, links = [], licence = '', main, bodyClass = '' }) {
+export function standaloneShell({ title, ogTitle, description, canonical, ogType = 'website', extraCss = '', graph, theme, name, links = [], licence = '', main, bodyClass = '', analytics = '' }) {
   const bar = links.map(([label, href, external, icon = '']) =>
     `        <li><a href="${escapeHtml(href)}"${external ? ' class="external" target="_blank" rel="noopener"' : ''}>${icon}${escapeHtml(label)}</a></li>`).join('\n');
   return `${head({ title, ogTitle, description, canonical, ogType, extraCss: `${extraCss}\n    ${ICON_CSS}`, graph, theme })}
@@ -1490,7 +1491,7 @@ ${main}
       <span>Made by <a class="maker" href="${SITE}/">Cyrus Sarkosh</a></span>
     </div>
   </footer>
-</body>
+${analytics}</body>
 </html>
 `;
 }
