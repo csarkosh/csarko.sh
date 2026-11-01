@@ -1,0 +1,935 @@
+# Review package: 34898f4..b688557
+
+## Commits
+b688557 donate: the step runs in the daily snapshot; tips split by door
+
+## Files changed
+ admin/CONTRACT.md                           | 24 ++++++++++++--
+ admin/api/README.md                         | 10 ++++++
+ admin/api/src/collectors/stripe.mjs         |  9 ++++--
+ admin/api/src/config.mjs                    |  2 ++
+ admin/api/src/finance-queries.mjs           | 26 +++++++++++----
+ admin/api/src/finance/income.mjs            | 25 +++++++++++++--
+ admin/api/src/server.mjs                    | 11 +++++++
+ admin/api/test/finance-queries.test.mjs     | 50 ++++++++++++++++++++++++++---
+ admin/api/test/finance.test.mjs             | 21 +++++++++---
+ admin/api/test/fixtures/finance-stripe.json | 14 ++++----
+ admin/api/test/stripe.test.mjs              |  6 ++--
+ 11 files changed, 166 insertions(+), 32 deletions(-)
+
+## Diff
+diff --git a/admin/CONTRACT.md b/admin/CONTRACT.md
+index dd80e5b..43ad042 100644
+--- a/admin/CONTRACT.md
++++ b/admin/CONTRACT.md
+@@ -783,43 +783,63 @@ The index card's four KPIs become `monthToDate`, `idleRunRate` (`good: "down"`),
+ 
+ ### `income`
+ 
+ ```json
+ {
+   "month": "2026-10", "gross": 85, "fees": 2.77, "net": 82.23, "count": 4, "average": 21.25,
+   "lastDay": "2026-10-30",
+   "days": [ { "day": "2026-10-30", "gross": 25, "fees": 1.03, "net": 23.97, "count": 1 } ],
+   "months": [ { "month": "2026-10", "gross": 85, "fees": 2.77, "net": 82.23, "count": 4 } ],
+   "recent": [ { "day": "2026-10-30", "gross": 25, "net": 23.97, "currency": "usd" } ],
++  "byDoor": [ { "door": "arkos", "label": "Arkos IDE", "gross": 60, "fees": 2.04, "net": 57.96, "count": 3 } ],
++  "prices": { "month": "2026-09", "pool": 150, "at": "2026-10-03T10:00:00Z" },
+   "payouts": [ { "day": "2026-11-02", "amount": 82.23, "status": "pending" } ],
+   "balance": { "available": 0, "pending": 82.23, "currency": "usd" }
+ }
+ ```
+ 
+ `days` the last 60 days ending today (the donations are live), every day present (0s where
+ none, a refund's day negative); `months` thirteen ending this month; `recent` the newest 20
+ donations (a refund is not one); `payouts` the last 60 days' (`day` the arrival date, `status`
+ Stripe's); `range` picks `month`/`gross`/`fees`/`net`/`count`/`average` as the other queries do,
+ and `days`, `months`, `recent`, `payouts`, `lastDay` and `balance` ignore it. `count` counts
+ donations: a refund moves `gross`, `fees` and `net`, never the count, and `average` is `gross /
+ count` (null at 0). In `summary`, `income.mtd` is the range's month and `income.lastMonth` the one
+ before it, so `range=last` reads the previous month's donations; `total.net` is `0` less the net
+-when no spend source is configured. A Stripe read that fails is `errors.stripe` with `income`,
+-`total.net` and every `income` part `null`, a health `warning` like any source's; not configured,
++when no spend source is configured. `byDoor` splits the range's donations by the door a tip came in by, `door` the
++charge's `metadata.door` (`"unknown"` for a charge without one, labelled "Unknown"; `"all"` is "The
++whole body of work"; the others take the door's name), biggest `net` first, then by `door`; its
++`gross`, `fees`, `net` and `count` sum to the range's totals. The door is the one field the API
++takes from the charge (the balance transactions are listed with `expand[]=data.source`; the rest
++of the charge, its billing details included, is dropped in memory). `prices` is the donate step's
++last record from the latest snapshot (`finance.donate`, below): `month` the month the prices were
++made for, `pool` the dollars split among the doors and `at` when; `null` before the first run.
++A Stripe read that fails is `errors.stripe` with `income`,
++`total.net` and every `income` part (`byDoor` and `prices` too) `null`, a health `warning` like any source's; not configured,
+ the `donations` KPI is `null` with `notConfigured.donations = "STRIPE_KEY"` (so the tile shows it),
+ beside `notConfigured.stripe`. `sources` gains an eighth row, last, `stripe` ("Stripe donations",
+ `configured`, `lastDay` the newest donation's day, `snapshotAt` null since it is read live, note
+ "Read live from Stripe with a restricted key; amounts only, never who gave."). The daily snapshot
+ stores the day's net as `finance.kpi.donations` (the trend; `last30` stays in `finance.kpi` so its
+ history is unbroken) and a summary `finance.stripe = { at, mtdNet, count, lastDay }`, read live by
+ the job.
+ 
++Tips by door (Cyrus, 2026-10-30): the same job then runs the donate step, which once a month makes
++the next month's Stripe prices and payment links from the month's spend and publishes the donate
++site's prices object. It runs with the month's rows and the providers whose read failed that day
++(a partial month waits for a complete one), and stores what it did as `finance.donate = { month,
++pool, at, doors }` (`doors` the door keys it made prices for). A run that does nothing (done
++already, or held off) keeps the previous record, as `finance.claude` is kept. It needs
++`STRIPE_WRITE_KEY` (a second, restricted key that can write products, prices and payment links)
++and `DONATE_BUCKET`; without the key `notConfigured.donate = "STRIPE_WRITE_KEY"`, and a step that
++throws is `errors.donate`, neither failing the snapshot.
++
+ ## Auth: what `/auth.js` exports
+ 
+ The shell's `public/auth.js` is the one auth surface on the admin host; every app page
+ imports it as `/auth.js` (the Day Hike bundle included), so these names are a contract.
+ 
+ ```js
+ export function requireSession(root, onReady)
+ // Renders the gate into `root` while nobody is signed in: the page's own children (its
+ // h1 included) are hidden behind it, as before; the gate is a heading, one sentence, a
+ // "Sign in with Google" button and a note line for errors such as "<email> is not on the
+diff --git a/admin/api/README.md b/admin/api/README.md
+index 16be15b..d91ebb6 100644
+--- a/admin/api/README.md
++++ b/admin/api/README.md
+@@ -86,20 +86,27 @@ twelve months back, every page, `GET /v1/payouts` for the last 60 days and `GET
+ the account's default API version (no `Stripe-Version` header). A transaction of type `charge` or
+ `payment` is a donation (`amount` gross, `fee`, `net`, in cents), a `refund` or `payment_refund`
+ subtracts, nothing else counts (`src/finance/income.mjs`). `summary` gains `income` and `total.net`
+ (the spend less the month's net donations), `income` is the page's card, `donations` is the third
+ KPI (the month's net, `good: "up"`), and `sources` gains a `stripe` row read live (`snapshotAt`
+ null). **The privacy rule: no donor identity ever reaches the page.** The API keeps amounts, a
+ currency and a day of each transaction and nothing else: no name, email, card, receipt,
+ description, customer or Stripe id; `recent` is `day, gross, net, currency` and the tests fail on
+ any other field. A Stripe read that fails is `errors.stripe`, a health warning like any source's;
+ without the key every income part is null with `notConfigured.stripe = "STRIPE_KEY"`.
++The balance transactions are listed with `expand[]=data.source` so each carries its charge, and the
++only field kept from it is the **door** (`metadata.door`): the `income` query's `byDoor` splits the
++range by door, `unknown` for a charge without one.
++The daily snapshot also runs the **donate step** (`src/donate/step.mjs`, `STRIPE_WRITE_KEY`): once a
++month it makes the next month's prices and payment links and publishes the prices object, and stores
++`finance.donate = { month, pool, at, doors }` (the `income` query's `prices`), carried forward on the
++days it does nothing; without the key it is `notConfigured.donate`, and a failure is `errors.donate`.
+ The job also stores the day's KPI values as `finance.kpi` (`monthToDate`, `idleRunRate`, `last30`,
+ `forecast`, `donations`; `last30` left the card on 2026-10-30 but keeps its history), which the index
+ card's trends read, a small `finance.stripe = { at, mtdNet, count, lastDay }` read live, and
+ `finance.awsCalls`, which the Sources card sums over the month. A failing finance step is
+ `errors.finance` on the snapshot and never fails the rest of the day's write.
+ 
+ AWS credentials come by **web identity federation**, so no key is stored: the service asks the
+ metadata server for a Google ID token for its own service account (audience `AWS_COST_AUDIENCE`,
+ the role's trust condition; the role ARN when none is set) and exchanges it with
+ `AssumeRoleWithWebIdentity` on `AWS_COST_ROLE_ARN` (`_infra/modules/aws-costs`). Off Cloud Run there
+@@ -139,20 +146,23 @@ variables from Secret Manager. A credential whose value is empty or the placehol
+ | `GSC_SA_KEY`, `GSC_PROPERTY` | `sc-domain:csarko.sh` | the service account key's JSON content (not a path) and the Search Console property |
+ | `YOUTUBE_KEY`, `YOUTUBE_HANDLE` | `csarkosh` | YouTube Data API key and the channel handle |
+ | `GITHUB_TOKEN`, `GITHUB_OWNER` | `csarkosh` | fine-grained token for the traffic endpoints, and the account whose public repositories are reported: every one of them, forks left out, found by listing the account (the public listing can never name a private one) |
+ | `PSI_KEY` | | PageSpeed Insights API key (Lighthouse performance, run by the snapshot) |
+ | `AWS_COST_ROLE_ARN` | | the IAM role (`csarko-admin-costs`) the service assumes by web identity federation to call Cost Explorer; empty means the AWS part of the finance page is not configured |
+ | `AWS_COST_AUDIENCE` | the role ARN | the audience of the Google ID token the role trusts (`accounts.google.com:oaud`) |
+ | `AWS_COST_LOCAL` | | `1` uses the SDK's default credential chain (`AWS_PROFILE`) instead of federation, for a local run; never set on Cloud Run |
+ | `BILLING_DATASET`, `BILLING_TABLE` | | the GCP billing export's dataset (`billing`) and table (`gcp_billing_export_v1_013AA0_554DB9_BBF90D`); either empty means the GCP part is not configured |
+ | `FAL_ADMIN_KEY` | | a fal API key with the Admin scope, for the credit balance; empty means the fal part is not configured |
+ | `STRIPE_KEY` | | a **restricted** Stripe key (read on balance transactions, charges and payouts, nothing else; never the secret key), for the donations; empty means the income parts (`summary.income`, `total.net`, the `income` query, the `donations` KPI) are not configured |
++| `STRIPE_WRITE_KEY` | | a second **restricted** Stripe key that can write products, prices and payment links (nothing else), for the monthly tip prices; empty means the donate step is not configured (`notConfigured.donate`) and the snapshot skips it |
++| `DONATE_BUCKET` | | the public GCS bucket the donate step writes the prices object into (`csarko-sh-donate-prices`); empty means the donate step is not configured either (it needs both this and the write key) |
++| `DONATE_URL` | `https://donate.csarko.sh` | the donate site's address, read into the config; the step's payment links currently return to the same address from `src/donate/doors.mjs` |
+ | `FILM_LEDGERS_BUCKET` | | the private GCS bucket holding `<film>/ledger.json` (`csarko-sh-film-ledgers`); empty means the Films card is not configured |
+ | `MODAL_CONFIGURED` | | `1` when Terraform has created the Modal job (`csarko-finance-modal`), so a snapshot without its part is an error rather than "Not configured (MODAL_TOKEN_ID)"; the job's own secrets are `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET`, never read here |
+ | (none for Claude Code) | | the provider is configured by the manual series `claude-subscription` in Firestore, entered on the page, and its usage part is written by `tools/claude-usage-sync.py` with Cyrus's own `gcloud` token: nothing on the service |
+ | ~~`FINANCE_GOAL_USD`~~ | | removed 2026-10-30: there is no spend goal, the idle run-rate is reported as a fact |
+ | `SITE_URL`, `SITEMAP_URL` | `https://csarko.sh`, `<SITE_URL>/sitemap.xml` | the public site and its sitemap |
+ | `HOSTING_SITE` | `csarko-sh` | Firebase Hosting site for the last-deploy time (read with the metadata server's token; null off Cloud Run) |
+ | `ALLOWED_ORIGINS` | `https://admin.csarko.sh,http://localhost:8788` | CORS allowlist |
+ | `SNAPSHOT_INVOKER` | | the Cloud Scheduler service account's email, the only OIDC identity `/admin/snapshot` accepts |
+ | `SERVICE_URL` | derived from the request's host | the OIDC audience; the route's full URL is accepted too |
+ | `GOOGLE_CLOUD_PROJECT` | ADC's | Firestore project |
+diff --git a/admin/api/src/collectors/stripe.mjs b/admin/api/src/collectors/stripe.mjs
+index f31e4a1..3b8799e 100644
+--- a/admin/api/src/collectors/stripe.mjs
++++ b/admin/api/src/collectors/stripe.mjs
+@@ -2,20 +2,24 @@
+  * Stripe, the donations: `GET https://api.stripe.com/v1/balance_transactions` (every page, with
+  * `created[gte]`), `GET /v1/payouts` and `GET /v1/balance`, each with `Authorization: Bearer
+  * <STRIPE_KEY>`. The key is a restricted one, read-only on balance transactions, charges and
+  * payouts; the account's default API version applies (no `Stripe-Version` header). Read live on
+  * a request and cached five minutes, like the other live collectors; the shaping into income is
+  * `finance/income.mjs`, which keeps amounts and days only: nothing here is ever passed to the
+  * page as is, so no donor's name, email or description leaves the API.
+  *
+  * A refused or failed call is an `UpstreamError` with the status and the first 200 characters of
+  * Stripe's body, with the key itself blanked should Stripe ever echo it.
++ *
++ * The balance transactions are listed with `expand[]=data.source`, so each carries its charge
++ * (the door a tip came in by is in the charge's metadata). The expansion brings the charge's
++ * billing details into memory; `finance/income.mjs` keeps only `door` and drops the rest.
+  */
+ 
+ import { UpstreamError } from "../http.mjs";
+ 
+ export const STRIPE_API = "https://api.stripe.com/v1";
+ export const PAGE_LIMIT = 100;
+ /** How far back a list reaches when the caller names no `sinceUnix`: 400 days, past the 13-month range. */
+ export const DEFAULT_SINCE_DAYS = 400;
+ 
+ export function createStripe({ key, fetch, cache, now = Date.now, ttlMs = 300_000 }) {
+@@ -29,42 +33,43 @@ export function createStripe({ key, fetch, cache, now = Date.now, ttlMs = 300_00
+     const url = `${STRIPE_API}${path}${params ? `?${params}` : ""}`;
+     const res = await fetch(url, { headers });
+     if (!res.ok) {
+       const body = await res.text().catch(() => "");
+       throw new UpstreamError(`Stripe ${res.status} on ${path}: ${blank(body).slice(0, 200)}`);
+     }
+     return res.json();
+   }
+ 
+   /** Every page of a list endpoint created at or after `sinceUnix`, newest first. */
+-  async function listAll(path, sinceUnix) {
++  async function listAll(path, sinceUnix, expand = null) {
+     const out = [];
+     let after = null;
+     for (;;) {
+       const params = new URLSearchParams({ limit: String(PAGE_LIMIT), "created[gte]": String(sinceUnix) });
++      if (expand) params.set("expand[]", expand);
+       if (after !== null) params.set("starting_after", after);
+       const page = await get(path, params.toString());
+       const data = Array.isArray(page?.data) ? page.data : [];
+       out.push(...data);
+       if (!page?.has_more || data.length === 0) break;
+       after = data.at(-1).id;
+     }
+     return out.sort((a, b) => (b.created ?? 0) - (a.created ?? 0));
+   }
+ 
+   return {
+     get configured() {
+       return configured;
+     },
+     /** The balance transactions created at or after `sinceUnix` (seconds), every page, newest first. */
+     transactions(sinceUnix = defaultSince()) {
+-      return cache.get(`stripe:balance_transactions:${sinceUnix}`, ttlMs, () => listAll("/balance_transactions", sinceUnix));
++      return cache.get(`stripe:balance_transactions:${sinceUnix}`, ttlMs, () => listAll("/balance_transactions", sinceUnix, "data.source"));
+     },
+     /** The payouts created at or after `sinceUnix` (seconds), every page, newest first. */
+     payouts(sinceUnix = defaultSince()) {
+       return cache.get(`stripe:payouts:${sinceUnix}`, ttlMs, () => listAll("/payouts", sinceUnix));
+     },
+     /** `{ available: [{ amount, currency }], pending: [...] }`, the smallest unit. */
+     balance() {
+       return cache.get("stripe:balance", ttlMs, () => get("/balance"));
+     },
+   };
+diff --git a/admin/api/src/config.mjs b/admin/api/src/config.mjs
+index 469a763..406189f 100644
+--- a/admin/api/src/config.mjs
++++ b/admin/api/src/config.mjs
+@@ -79,20 +79,22 @@ export function readConfig(env = process.env, log = console) {
+       awsAudience: text(env.AWS_COST_AUDIENCE),
+       awsLocal: env.AWS_COST_LOCAL === "1",
+       billingDataset: text(env.BILLING_DATASET, ""),
+       billingTable: text(env.BILLING_TABLE, ""),
+       ledgersBucket: text(env.FILM_LEDGERS_BUCKET),
+       modalConfigured: env.MODAL_CONFIGURED === "1",
+     },
+     fal: { adminKey: secret(env.FAL_ADMIN_KEY) },
+     // Donations (Cyrus, 2026-10-30): a restricted Stripe key, read-only on balance transactions, charges and payouts.
+     stripe: { key: secret(env.STRIPE_KEY) },
++    // Tips by door (Cyrus, 2026-10-30): the write key that makes the month's prices, the bucket the public prices object goes in and the donate site's address.
++    donate: { bucket: text(env.DONATE_BUCKET), url: text(env.DONATE_URL, "https://donate.csarko.sh"), stripeWriteKey: secret(env.STRIPE_WRITE_KEY) },
+     siteUrl,
+     sitemapUrl: text(env.SITEMAP_URL, `${siteUrl}/sitemap.xml`),
+     hostingSite: text(env.HOSTING_SITE, "csarko-sh"),
+     allowedOrigins: list(env.ALLOWED_ORIGINS, DEFAULT_ALLOWED_ORIGINS),
+     snapshotInvoker: text(env.SNAPSHOT_INVOKER),
+     serviceUrl: text(env.SERVICE_URL),
+     projectId: text(env.GOOGLE_CLOUD_PROJECT),
+     port: Number(text(env.PORT, "8080")),
+   };
+ }
+diff --git a/admin/api/src/finance-queries.mjs b/admin/api/src/finance-queries.mjs
+index b45e3a9..404c36d 100644
+--- a/admin/api/src/finance-queries.mjs
++++ b/admin/api/src/finance-queries.mjs
+@@ -13,68 +13,71 @@
+  * Every query reads those from the latest snapshot, fal's spend from the run of snapshots (a
+  * day's spend is the balance's fall, `finance/fal.mjs`), GCP live from BigQuery (free at this
+  * size) and the film ledgers live from their bucket (cached five minutes). The snapshot also
+  * stores the KPI values of the day (`finance.kpi`), which the index card's twelve-week
+  * trends read, as the csarko.sh card's do.
+  *
+  * Income (Cyrus, 2026-10-30): donations arrive through Stripe and are read live with a restricted
+  * key (`collectors/stripe.mjs`, cached five minutes), shaped by `finance/income.mjs` into amounts
+  * and days only. `summary` carries them as `income` and `total.net`, the `income` query is the
+  * page's card, `donations` is the third KPI, and the snapshot stores the day's net
+- * (`finance.kpi.donations`) and a small `finance.stripe` summary for the trend.
++ * (`finance.kpi.donations`) and a small `finance.stripe` summary for the trend. Tips by door
++ * (2026-10-30): the snapshot also runs the donate step (`donate/step.mjs`), once a month makes the
++ * next month's Stripe prices from the month's spend and stores its record as `finance.donate`
++ * (carried forward on the days it does nothing); the `income` query splits the range by door.
+  *
+  * The shaping is pure, in `src/finance/`: categories, rows, months (the range and the
+  * categories table), idle, daily, activity, projects, films, fal (the series), claude (the fee's
+  * rows and the usage), income (the donations), kpis (health). This file only fetches and assembles.
+  */
+ 
+ import { parseRange, monthsOf, categoriesTable, monthTotals, monthGross, runRateForecast, GCP_EXPORT_FROM } from "./finance/months.mjs";
+ import { PROVIDERS, PROVIDER_LABELS, awsRows, gcpRows, githubRows, modalRows, falRows, cents, monthOf, addMonths, lastBilledDay } from "./finance/rows.mjs";
+ import { idleLines } from "./finance/idle.mjs";
+ import { dailySeries, trailingTotals, SERIES_DAYS } from "./finance/daily.mjs";
+ import { activityItems } from "./finance/activity.mjs";
+ import { projectsTable } from "./finance/projects.mjs";
+ import { filmsOf } from "./finance/films.mjs";
+ import { falSeries } from "./finance/fal.mjs";
+ import { CLAUDE_SUBSCRIPTION_KEY, subscriptionSeries, subscriptionFor, claudeRows, claudeUsage, usageForMonths, usageDays } from "./finance/claude.mjs";
+ import { financeHealth } from "./finance/kpis.mjs";
+-import { donationsOf, incomeDays, incomeMonths, incomeFor, recentOf, payoutsOf, balanceOf, lastDonationDay, INCOME_DAYS, RECENT_COUNT } from "./finance/income.mjs";
++import { donationsOf, incomeDays, incomeMonths, incomeFor, incomeByDoor, recentOf, payoutsOf, balanceOf, lastDonationDay, INCOME_DAYS, RECENT_COUNT } from "./finance/income.mjs";
+ import { CALL_COST_USD } from "./collectors/aws-cost.mjs";
+ import { weeklyTrend, TREND_WEEKS } from "./queries.mjs";
+ import { addDays, isoDate } from "./time.mjs";
+ 
+ export { parseRange };
+ export const FINANCE_QUERY_NAMES = ["summary", "categories", "idle", "daily", "activity", "sources", "projects", "films", "claude", "income"];
+ /** The hand-entered series the finance page writes (`POST /finance/admin/manual/<key>`): the claude.ai subscription's monthly fee. */
+ export const FINANCE_MANUAL_KEYS = [CLAUDE_SUBSCRIPTION_KEY];
+ export const FINANCE_APP = "finance";
+ /** What configures each source, for `notConfigured`: an environment variable, except Modal's (the job's secret: the API reports it from the snapshot) and Claude Code's (the manual series the fee is entered in). */
+-export const SOURCE_ENV = { aws: "AWS_COST_ROLE_ARN", gcp: "BILLING_DATASET", github: "GITHUB_TOKEN", modal: "MODAL_TOKEN_ID", fal: "FAL_ADMIN_KEY", claude: CLAUDE_SUBSCRIPTION_KEY, ledgers: "FILM_LEDGERS_BUCKET", stripe: "STRIPE_KEY" };
+-export const SOURCE_LABELS = { aws: "AWS Cost Explorer", gcp: "Google Cloud billing export", github: "GitHub usage", modal: "Modal billing report", fal: "fal credit balance", claude: "Claude Code transcripts", ledgers: "Film ledgers", stripe: "Stripe donations" };
++export const SOURCE_ENV = { aws: "AWS_COST_ROLE_ARN", gcp: "BILLING_DATASET", github: "GITHUB_TOKEN", modal: "MODAL_TOKEN_ID", fal: "FAL_ADMIN_KEY", claude: CLAUDE_SUBSCRIPTION_KEY, ledgers: "FILM_LEDGERS_BUCKET", stripe: "STRIPE_KEY", donate: "STRIPE_WRITE_KEY" };
++export const SOURCE_LABELS = { aws: "AWS Cost Explorer", gcp: "Google Cloud billing export", github: "GitHub usage", modal: "Modal billing report", fal: "fal credit balance", claude: "Claude Code transcripts", ledgers: "Film ledgers", stripe: "Stripe donations", donate: "Tip prices" };
+ /** The Sources card's note for Stripe: the privacy rule, in one line. */
+ export const STRIPE_NOTE = "Read live from Stripe with a restricted key; amounts only, never who gave.";
+ /** The error when the subscription is entered but no snapshot carries the transcripts' usage. */
+ export const CLAUDE_NO_SYNC = "No usage sync yet: run tools/claude-usage-sync.py";
+ /** The providers whose forecast is a real one (Cost Explorer's, GCP's run-rate); GitHub's net to date, Modal's net to date, fal's run-rate and Claude Code's fee count only beside one of these. */
+ const REAL_FORECASTS = ["aws", "gcp"];
+ 
+ export function isFinanceQueryName(name) {
+   return FINANCE_QUERY_NAMES.includes(name);
+ }
+ 
+ export function isFinanceManualKey(key) {
+   return FINANCE_MANUAL_KEYS.includes(key);
+ }
+ 
+ const quiet = { configured: false };
+ 
+-export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal = quiet, ledgers = quiet, stripe = quiet, modalConfigured = false, store, now = Date.now, log = console }) {
++export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal = quiet, ledgers = quiet, stripe = quiet, donate = null, modalConfigured = false, store, now = Date.now, log = console }) {
+   const hints = () => ({ notConfigured: {}, errors: {} });
+   const withHints = (body, h) => ({
+     ...body,
+     ...(Object.keys(h.notConfigured).length > 0 ? { notConfigured: h.notConfigured } : {}),
+     ...(Object.keys(h.errors).length > 0 ? { errors: h.errors } : {}),
+   });
+ 
+   /** Runs one part, reporting a missing credential or a failure instead of throwing. */
+   async function part(h, name, configured, fn) {
+     if (!configured) {
+@@ -380,29 +383,33 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
+      * newest 20 donations (amounts and days, nothing else), the last 60 days' payouts and the
+      * balance. Null throughout with the hint when Stripe is not configured or refused.
+      */
+     async income(range = "month") {
+       const h = hints();
+       const today = isoDate(now());
+       const months = monthsOf(range, today);
+       const month = months.at(-1);
+       const income = await loadIncome(h, today, { payouts: true });
+       if (income === null) {
+-        return withHints({ month, gross: null, fees: null, net: null, count: null, average: null, lastDay: null, days: null, months: null, recent: null, payouts: null, balance: null }, h);
++        return withHints({ month, gross: null, fees: null, net: null, count: null, average: null, lastDay: null, days: null, months: null, recent: null, byDoor: null, prices: null, payouts: null, balance: null }, h);
+       }
++      const snapshot = await store.latestSnapshot();
++      const record = snapshot?.finance?.donate ?? null;
+       return withHints({
+         month,
+         ...incomeFor(income.rows, months),
+         lastDay: income.lastDay,
+         days: incomeDays(income.rows, { today }),
+         months: incomeMonths(income.rows, { today }),
+         recent: recentOf(income.rows, RECENT_COUNT),
++        byDoor: incomeByDoor(income.rows, months),
++        prices: record === null ? null : { month: record.month, pool: record.pool, at: record.at },
+         payouts: income.payouts,
+         balance: income.balance,
+       }, h);
+     },
+ 
+     async categories(range = "month") {
+       const h = hints();
+       const today = isoDate(now());
+       const [{ monthlyRows }, firstDay] = await Promise.all([load(h), exportFirstDay()]);
+       return withHints(categoriesTable(monthlyRows, monthsOf(range, today), { exportFrom: firstDay }), h);
+@@ -647,36 +654,41 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
+       const modalPart = todays?.finance?.modal ?? null;
+       // The usage sync runs on the Mac when Cyrus runs it, not daily, so a new day's document
+       // carries the newest part forward until the next sync (its `at` says how old it is).
+       const claudePart = todays?.finance?.claude ?? latest?.finance?.claude ?? null;
+       const modalHints = hints();
+       const modal = modalFromSnapshot(modalHints, todays);
+       const falHints = hints();
+       const falData = falPart === null ? null : falFromSnapshots(falHints, snapshots, { date: today, finance: { fal: falPart } });
+       // The fee counts in the day's KPIs; a missing sync is not the job's failure, so its hints stay out of the snapshot.
+       const claude = claudeFrom(hints(), claudePart === null ? todays : { ...todays, finance: { ...(todays?.finance ?? {}), claude: claudePart } }, claudeSeries);
+-      const values = kpiValues(assemble({ snapshot: null, aws, gcp, github, modal, fal: falData, claude, today }), today);
++      const loaded = assemble({ snapshot: null, aws, gcp, github, modal, fal: falData, claude, today });
++      const values = kpiValues(loaded, today);
++      // A provider whose read failed has a partial month; the step holds off on it (`donate/step.mjs`).
++      const failed = PROVIDERS.filter((p) => h.errors[p] !== undefined || modalHints.errors[p] !== undefined);
++      const donateOut = donate === null ? null : await part(h, "donate", donate.configured, () => donate.run({ monthlyRows: loaded.monthlyRows, failed, today }));
+       // last30 left the card (2026-10-30) but stays in the day's values, so its history is unbroken should it return.
+       const kpi = {
+         ...(values === null
+           ? { monthToDate: null, idleRunRate: null, last30: null, forecast: null }
+           : { monthToDate: values.monthToDate.value, idleRunRate: values.idleRunRate.value, last30: values.last30.value, forecast: values.forecast.value }),
+         donations: donations === null ? null : donations.value,
+       };
+       return {
+         finance: withHints({
+           at: new Date(t).toISOString(),
+           aws,
+           github: github === null ? null : { months: github.months, days: github.days, lastDay: github.lastDay },
+           fal: falPart,
+           stripe: stripePart,
+           ...(modalPart !== null ? { modal: modalPart } : {}),
+           ...(claudePart !== null ? { claude: claudePart } : {}),
++          donate: donateOut?.record ?? latest?.finance?.donate ?? null,
+           awsCalls,
+           kpi,
+         }, h),
+       };
+     },
+   };
+ 
+   return queries;
+ }
+diff --git a/admin/api/src/finance/income.mjs b/admin/api/src/finance/income.mjs
+index e0c87d4..a1e4e58 100644
+--- a/admin/api/src/finance/income.mjs
++++ b/admin/api/src/finance/income.mjs
+@@ -1,52 +1,55 @@
+ /**
+  * Donations as income, pure over Stripe's objects (`collectors/stripe.mjs`). A balance transaction
+  * of type `charge` or `payment` is a donation: `amount` the gross, `fee` Stripe's cut and `net`
+  * what lands in the balance, all in the smallest unit (cents for usd); a `refund` or
+  * `payment_refund` subtracts (gross and net negative, the fee as Stripe gives it); nothing else
+  * (payouts, adjustments, Stripe's own fees) counts as income. Everything is turned into dollars
+  * rounded to cents, and a `day` is the transaction's UTC date.
+  *
+  * Privacy (the contract: "No donor identity ever reaches the page"): a row here is amounts, a
+- * currency and a day. No description, no source or charge id, no customer, no receipt. `recentOf`
++ * currency, a day and the door a tip came in by (the one field read from the expanded charge, its
++ * `metadata.door`). No description, no source or charge id, no customer, no receipt. `recentOf`
+  * is the only list the page sees one donation at a time, and it carries `day`, `gross`, `net`
+  * and `currency` and nothing else, ever.
+  */
+ 
+ import { cents, monthOf, addMonths, monthsBetween } from "./rows.mjs";
+ import { addDays, isoDate } from "../time.mjs";
++import { doorByKey } from "../donate/doors.mjs";
+ 
+ export const DONATION_TYPES = ["charge", "payment"];
+ export const REFUND_TYPES = ["refund", "payment_refund"];
+ export const INCOME_DAYS = 60;
+ export const INCOME_MONTHS = 13;
+ export const RECENT_COUNT = 20;
+ 
+ const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : Number(v) || 0);
+ const dollars = (smallest) => cents(num(smallest) / 100);
+ const dayOf = (unix) => isoDate(num(unix) * 1000);
+ 
+ /**
+  * The income rows out of balance transactions, newest first: `{ day, created, gross, fees, net,
+- * currency, refund }`, a donation with positive gross and net, a refund with both negative. Counts
++ * currency, refund, door }`, a donation with positive gross and net, a refund with both negative. Counts
+  * count donations only: a refund changes the amounts, not how many gave.
+  */
+ export function donationsOf(transactions) {
+   const rows = [];
+   for (const t of Array.isArray(transactions) ? transactions : []) {
+     if (!t || typeof t !== "object" || typeof t.created !== "number") continue;
+     const donation = DONATION_TYPES.includes(t.type);
+     const refund = REFUND_TYPES.includes(t.type);
+     if (!donation && !refund) continue;
+     const gross = refund ? -Math.abs(dollars(t.amount)) : dollars(t.amount);
+     const net = refund ? -Math.abs(dollars(t.net)) : dollars(t.net);
+-    rows.push({ day: dayOf(t.created), created: t.created, gross, fees: dollars(t.fee), net, currency: String(t.currency ?? "usd").toLowerCase(), refund });
++    const door = typeof t.source?.metadata?.door === "string" && t.source.metadata.door !== "" ? t.source.metadata.door : null;
++    rows.push({ day: dayOf(t.created), created: t.created, gross, fees: dollars(t.fee), net, currency: String(t.currency ?? "usd").toLowerCase(), refund, door });
+   }
+   return rows.sort((a, b) => b.created - a.created);
+ }
+ 
+ const sumOf = (rows) => {
+   let gross = 0;
+   let fees = 0;
+   let net = 0;
+   let count = 0;
+   for (const r of rows) {
+@@ -77,20 +80,36 @@ export function incomeMonths(rows, { today, count = INCOME_MONTHS } = {}) {
+   return monthsBetween(addMonths(cur, -(count - 1)), cur).map((month) => ({ month, ...sumOf(rows.filter((r) => monthOf(r.day) === month)) }));
+ }
+ 
+ /** `{ gross, fees, net, count, average }` over `months`; `average` is gross over the donations, null when none. */
+ export function incomeFor(rows, months) {
+   const set = new Set(months);
+   const s = sumOf(rows.filter((r) => set.has(monthOf(r.day))));
+   return { ...s, average: s.count > 0 ? cents(s.gross / s.count) : null };
+ }
+ 
++/**
++ * The months' income split by door, `[{ door, label, gross, fees, net, count }]`, `door` "unknown"
++ * for a charge without one, biggest net first (ties by door). The labels are the doors' names.
++ */
++export function incomeByDoor(rows, months) {
++  const set = new Set(months);
++  const groups = new Map();
++  for (const r of rows) {
++    if (!set.has(monthOf(r.day))) continue;
++    const door = r.door ?? "unknown";
++    (groups.get(door) ?? groups.set(door, []).get(door)).push(r);
++  }
++  return [...groups].map(([door, list]) => ({ door, label: doorByKey(door)?.name ?? (door === "all" ? "The whole body of work" : "Unknown"), ...sumOf(list) }))
++    .sort((a, b) => b.net - a.net || (a.door < b.door ? -1 : a.door > b.door ? 1 : 0));
++}
++
+ /** The newest `n` donations (refunds left out), `{ day, gross, net, currency }` and no other field. */
+ export function recentOf(rows, n = RECENT_COUNT) {
+   return rows.filter((r) => !r.refund).slice(0, n).map((r) => ({ day: r.day, gross: r.gross, net: r.net, currency: r.currency }));
+ }
+ 
+ /** Stripe's payouts as `{ day, amount, status }`, `day` the arrival date, newest first. */
+ export function payoutsOf(payouts) {
+   return (Array.isArray(payouts) ? payouts : [])
+     .filter((p) => p && typeof p === "object" && typeof p.arrival_date === "number")
+     .sort((a, b) => b.arrival_date - a.arrival_date)
+diff --git a/admin/api/src/server.mjs b/admin/api/src/server.mjs
+index c7b0a71..6c6c8f2 100644
+--- a/admin/api/src/server.mjs
++++ b/admin/api/src/server.mjs
+@@ -20,20 +20,23 @@ import { createArkosQueries } from "./arkos-queries.mjs";
+ import { createFinanceQueries } from "./finance-queries.mjs";
+ import { createMemoryStore, createFirestoreStore } from "./store.mjs";
+ import { BigQuery } from "@google-cloud/bigquery";
+ import { createVisits } from "./collectors/visits.mjs";
+ import { createArkos } from "./collectors/arkos.mjs";
+ import { createAwsCost } from "./collectors/aws-cost.mjs";
+ import { createGcpBilling } from "./collectors/gcp-billing.mjs";
+ import { createGitHubBilling } from "./collectors/github-billing.mjs";
+ import { createFal } from "./collectors/fal.mjs";
+ import { createStripe } from "./collectors/stripe.mjs";
++import { createStripeWriter } from "./collectors/stripe-write.mjs";
++import { createPricesBucket } from "./donate/bucket.mjs";
++import { createDonateStep } from "./donate/step.mjs";
+ import { createLedgers } from "./collectors/ledgers.mjs";
+ import { createGsc } from "./collectors/gsc.mjs";
+ import { createYouTube } from "./collectors/youtube.mjs";
+ import { createGitHub } from "./collectors/github.mjs";
+ import { createHackerNews } from "./collectors/hn.mjs";
+ import { createPsi } from "./collectors/psi.mjs";
+ import { createUptime } from "./collectors/uptime.mjs";
+ import { createHosting } from "./collectors/hosting.mjs";
+ import { createSitemap } from "./collectors/sitemap.mjs";
+ 
+@@ -46,26 +49,32 @@ const store = process.env.ADMIN_STORE === "memory" ? createMemoryStore() : await
+ 
+ // One client for the site's visits and Arkos's rows (both in the lib-visits log bucket's dataset)
+ // and for the GCP billing export (its own dataset, the finance page).
+ const bigquery = config.visits.dataset || config.finance.billingDataset ? new BigQuery({ projectId: config.projectId }) : null;
+ 
+ // The finance page's sources: Cost Explorer (called by the snapshot job only; $0.01 a call), the
+ // billing export in BigQuery (live), GitHub's usage endpoint and fal's credit balance (the
+ // snapshot job again), Modal's report (written into the snapshot by its own job), the film
+ // ledgers in their bucket (live, cached) and the donations through Stripe (live, cached, a
+ // restricted key).
++const donate = createDonateStep({
++  writer: createStripeWriter({ key: config.donate.stripeWriteKey, fetch, log }),
++  bucket: createPricesBucket({ bucket: config.donate.bucket, projectId: config.projectId, log }),
++  log,
++});
+ const finance = createFinanceQueries({
+   awsCost: createAwsCost({ roleArn: config.finance.awsRoleArn, audience: config.finance.awsAudience, local: config.finance.awsLocal, fetch, log }),
+   gcpBilling: createGcpBilling({ bigquery, projectId: config.projectId, dataset: config.finance.billingDataset, table: config.finance.billingTable, cache }),
+   githubBilling: createGitHubBilling({ token: config.github.token, owner: config.github.owner, fetch, cache }),
+   fal: createFal({ adminKey: config.fal.adminKey, fetch, cache }),
+   stripe: createStripe({ key: config.stripe.key, fetch, cache }),
++  donate,
+   ledgers: createLedgers({ bucket: config.finance.ledgersBucket, projectId: config.projectId, cache, log }),
+   modalConfigured: config.finance.modalConfigured,
+   store,
+   log,
+ });
+ 
+ const queries = createQueries({
+   visits: createVisits({ bigquery, projectId: config.projectId, dataset: config.visits.dataset, historyDataset: config.visits.historyDataset, historyUntil: config.visits.historyUntil, cache, log }),
+   gsc: createGsc({ key: config.gsc.key, property: config.gsc.property, fetch, cache }),
+   youtube: createYouTube({ key: config.youtube.key, handle: config.youtube.handle, fetch, cache }),
+@@ -105,20 +114,22 @@ const unconfigured = [
+   config.gsc.key === null && "GSC_SA_KEY",
+   config.youtube.key === null && "YOUTUBE_KEY",
+   config.github.token === null && "GITHUB_TOKEN",
+   config.psiKey === null && "PSI_KEY",
+   !config.finance.awsRoleArn && !config.finance.awsLocal && "AWS_COST_ROLE_ARN",
+   !(config.finance.billingDataset && config.finance.billingTable) && "BILLING_DATASET",
+   !config.finance.modalConfigured && "MODAL_TOKEN_ID",
+   config.fal.adminKey === null && "FAL_ADMIN_KEY",
+   !config.finance.ledgersBucket && "FILM_LEDGERS_BUCKET",
+   config.stripe.key === null && "STRIPE_KEY",
++  config.donate.stripeWriteKey === null && "STRIPE_WRITE_KEY",
++  !config.donate.bucket && "DONATE_BUCKET",
+ ].filter(Boolean);
+ if (unconfigured.length > 0) log.warn(`admin: not configured, their sections will read null: ${unconfigured.join(", ")}`);
+ 
+ const server = http.createServer(app);
+ server.listen(config.port, () => log.log(`admin: listening on :${config.port} for ${config.allowedOrigins.join(", ")}`));
+ 
+ // Cloud Run sends SIGTERM before it stops an instance; finish what is in flight.
+ process.on("SIGTERM", () => {
+   server.close(() => process.exit(0));
+   setTimeout(() => process.exit(0), 5000).unref();
+diff --git a/admin/api/test/finance-queries.test.mjs b/admin/api/test/finance-queries.test.mjs
+index 6c97d07..6bd8130 100644
+--- a/admin/api/test/finance-queries.test.mjs
++++ b/admin/api/test/finance-queries.test.mjs
+@@ -62,20 +62,21 @@ function fakes({ awsOn = true, gcpOn = true, githubOn = true, falOn = true, ledg
+     fal: { configured: falOn, async balance() { calls.push("fal:balance"); if (falFail) throw new Error("fal 403 on /v1/account/billing: scope"); return { balance: falBalance, currency: "USD" }; } },
+     stripe: {
+       configured: stripeOn,
+       async transactions(since) { calls.push(`stripe:transactions:${since}`); if (stripeFail) throw new UpstreamError("Stripe 401 on /balance_transactions: Invalid API Key provided: [key]"); return STRIPE.transactions.filter((t) => t.created >= since); },
+       async payouts(since) { calls.push(`stripe:payouts:${since}`); return STRIPE.payouts.filter((p) => p.created >= since); },
+       async balance() { calls.push("stripe:balance"); return STRIPE.balance; },
+     },
+     ledgers: ledgersOn
+       ? createLedgers({ bucket: "csarko-sh-film-ledgers", cache: createCache(), storage: ledgersFail ? { bucket() { return { async getFiles() { throw new Error("permission denied"); } }; } } : fakeStorage(calls), log })
+       : { configured: false },
++    donate: { configured: true, async run(a) { calls.push(`donate:run:${a.today}:${a.failed.join("|")}`); return { ran: true, reason: "new month", record: { month: "2026-09", pool: 150, at: "2026-10-28T10:00:00Z", doors: ["arkos"] } }; } },
+     modalConfigured: modalOn,
+     store: createMemoryStore(),
+   };
+ }
+ 
+ /**
+  * A store holding the fal balance the job read each day since Sep 30 and, on the 28th, the
+  * fixtures as the finance part, as the two jobs would have written it (Modal's part first).
+  * `claude` seeds the subscription series and, unless `sync` is false, the Mac's usage part too;
+  * the default has neither, so Claude Code is not configured and the other five add up as before.
+@@ -95,21 +96,21 @@ async function seeded(deps, { date = "2026-10-28", kpi = { monthToDate: 238.71,
+ 
+ const make = (deps) => createFinanceQueries({ ...deps, now: () => NOW, log });
+ 
+ test("the ten query names, the one manual key, what configures each source, and the range parser the routes use", () => {
+   assert.deepEqual(FINANCE_QUERY_NAMES, ["summary", "categories", "idle", "daily", "activity", "sources", "projects", "films", "claude", "income"]);
+   assert.ok(isFinanceQueryName("income"));
+   assert.ok(isFinanceQueryName("projects") && isFinanceQueryName("films") && isFinanceQueryName("claude"));
+   assert.ok(!isFinanceQueryName("visits"));
+   assert.deepEqual(FINANCE_MANUAL_KEYS, ["claude-subscription"]);
+   assert.ok(isFinanceManualKey("claude-subscription") && !isFinanceManualKey("substack") && !isFinanceManualKey("claude"));
+-  assert.deepEqual(SOURCE_ENV, { ...HINTS, ledgers: "FILM_LEDGERS_BUCKET", stripe: "STRIPE_KEY" });
++  assert.deepEqual(SOURCE_ENV, { ...HINTS, ledgers: "FILM_LEDGERS_BUCKET", stripe: "STRIPE_KEY", donate: "STRIPE_WRITE_KEY" });
+   assert.equal(parseRange("13m"), "13m");
+ });
+ 
+ test("summary: the six providers, the totals, Modal net of its credits, fal from the balance's fall, the forecast as AWS's plus GCP's run-rate plus the nets to date and fal's run-rate; Claude Code not configured without a fee", async () => {
+   const deps = await seeded(fakes());
+   const s = await make(deps).summary("month");
+   assert.equal(s.at, "2026-10-28T23:10:00.000Z");
+   assert.equal(s.month, "2026-10");
+   assert.equal(s.goalUsd, undefined, "no goal");
+   assert.deepEqual(s.providers.map((p) => [p.provider, p.label]), [["aws", "AWS"], ["gcp", "Google Cloud"], ["github", "GitHub"], ["modal", "Modal"], ["fal", "fal"], ["claude", "Claude Code"]]);
+@@ -354,21 +355,21 @@ test("kpis: four KPIs in dollars with no goal in the label, donations third, pre
+ test("snapshotPart: the Cost Explorer calls and the forecast, GitHub's usage, fal's balance, Modal's part carried over from the day's document, the day's KPI values", async () => {
+   const deps = fakes();
+   // Modal's job ran ten minutes earlier and wrote its part into today's document; the earlier days hold fal's readings.
+   await seeded(deps, { date: "2026-10-27", modal: null });
+   await deps.store.writeSnapshot("2026-10-28", { finance: { modal: MODAL } });
+   const finance = make(deps);
+   const part = await finance.snapshotPart();
+   assert.deepEqual(Object.keys(part), ["finance"]);
+   const f = part.finance;
+   assert.equal(f.at, "2026-10-28T23:10:00.000Z");
+-  assert.deepEqual(deps.calls.sort(), ["aws:daily", "aws:forecast", "aws:monthly", "fal:balance", "gcp:daily", "gcp:lastDay", "gcp:monthly", "github:usage", "stripe:balance", "stripe:transactions:1759276800"], "Stripe read live by the job too, for the day's net");
++  assert.deepEqual(deps.calls.sort(), ["aws:daily", "aws:forecast", "aws:monthly", "donate:run:2026-10-28:", "fal:balance", "gcp:daily", "gcp:lastDay", "gcp:monthly", "github:usage", "stripe:balance", "stripe:transactions:1759276800"], "Stripe read live by the job too, for the day's net");
+   assert.deepEqual([f.aws.monthly.length, f.aws.daily.length, f.aws.forecast, f.aws.calls, f.aws.lastDay, f.awsCalls], [AWS.monthly.length, AWS.daily.length, AWS.forecast, 4, "2026-10-27", 4]);
+   assert.deepEqual([f.github.months.length, f.github.days.length, f.github.lastDay], [GITHUB.months.length, GITHUB.days.length, "2026-10-27"]);
+   assert.deepEqual(f.fal, { at: "2026-10-28T23:10:00.000Z", balance: 46.37, currency: "USD", lastDay: "2026-10-28" });
+   assert.deepEqual(f.modal, MODAL, "the store replaces `finance` whole, so the Modal part is carried into it");
+   assert.deepEqual(f.kpi, { monthToDate: 238.71, idleRunRate: 10.62, last30: 250.65, forecast: 263.49, donations: 56.31 }, "every provider counted, fal's series with today's reading, the month's net donations");
+   assert.deepEqual(f.stripe, { at: "2026-10-28T23:10:00.000Z", mtdNet: 56.31, count: 5, lastDay: "2026-10-28" }, "the small Stripe summary, read live by the job");
+   assert.equal(f.notConfigured, undefined);
+   assert.equal(f.errors, undefined);
+ 
+   // Through the csarko.sh snapshot: the part lands in the day's document beside the rest, and a failing step is errors.finance.
+@@ -399,21 +400,21 @@ test("snapshotPart: a failed forecast keeps the rows and says so; a failed usage
+   const hard = await make(fakes({ awsFail: true })).snapshotPart();
+   assert.equal(hard.finance.aws, null);
+   assert.match(hard.finance.errors.aws, /throttled/);
+   assert.equal(hard.finance.awsCalls, 4);
+   assert.equal(hard.finance.kpi.monthToDate, 104.05, "GCP and GitHub still give a value");
+   const noFal = await make(fakes({ falFail: true })).snapshotPart();
+   assert.equal(noFal.finance.fal, null);
+   assert.match(noFal.finance.errors.fal, /fal 403/);
+   assert.equal(noFal.finance.aws.calls, 4);
+   const off = await make(fakes({ awsOn: false, githubOn: false, gcpOn: false, falOn: false, modalOn: false, stripeOn: false })).snapshotPart();
+-  assert.deepEqual(off.finance, { at: "2026-10-28T23:10:00.000Z", aws: null, github: null, fal: null, stripe: null, awsCalls: 0, kpi: { monthToDate: null, idleRunRate: null, last30: null, forecast: null, donations: null }, notConfigured: { aws: "AWS_COST_ROLE_ARN", github: "GITHUB_TOKEN", gcp: "BILLING_DATASET", fal: "FAL_ADMIN_KEY", stripe: "STRIPE_KEY" } });
++  assert.deepEqual(off.finance, { at: "2026-10-28T23:10:00.000Z", aws: null, github: null, fal: null, stripe: null, donate: { month: "2026-09", pool: 150, at: "2026-10-28T10:00:00Z", doors: ["arkos"] }, awsCalls: 0, kpi: { monthToDate: null, idleRunRate: null, last30: null, forecast: null, donations: null }, notConfigured: { aws: "AWS_COST_ROLE_ARN", github: "GITHUB_TOKEN", gcp: "BILLING_DATASET", fal: "FAL_ADMIN_KEY", stripe: "STRIPE_KEY" } });
+ });
+ 
+ test("not configured: every part null with its hint, the shapes kept, nothing fetched", async () => {
+   const deps = fakes({ awsOn: false, gcpOn: false, githubOn: false, modalOn: false, falOn: false, ledgersOn: false, stripeOn: false });
+   const q = make(deps);
+   const s = await q.summary("month");
+   assert.deepEqual(s.total, { mtd: null, forecast: null, lastMonth: null, idleRunRate: null, net: null });
+   assert.equal(s.income, null);
+   assert.deepEqual(s.providers[0], { provider: "aws", label: "AWS", mtd: null, forecast: null, lastMonth: null, lastDay: null });
+   assert.deepEqual(s.providers[2].gross, null);
+@@ -426,21 +427,21 @@ test("not configured: every part null with its hint, the shapes kept, nothing fe
+   assert.deepEqual(c.notConfigured, HINTS);
+   assert.deepEqual(await q.idle(), { runRate: null, asOf: "2026-10-28", lines: null, notConfigured: HINTS });
+   assert.deepEqual(await q.daily(), { days: null, notConfigured: HINTS });
+   const a = await q.activity("month");
+   assert.ok(a.items.every((i) => i.quantity === null && i.cost === null && i.unitPrice === null));
+   assert.equal(a.items.length, 8);
+   assert.deepEqual(a.notConfigured, HINTS);
+   const src = await q.sources();
+   assert.deepEqual(src.sources.map((x) => [x.configured, x.lastDay, x.callsThisMonth]), Array.from({ length: 8 }, () => [false, null, null]));
+   const inc = await q.income("month");
+-  assert.deepEqual(inc, { month: "2026-10", gross: null, fees: null, net: null, count: null, average: null, lastDay: null, days: null, months: null, recent: null, payouts: null, balance: null, notConfigured: NO_STRIPE });
++  assert.deepEqual(inc, { month: "2026-10", gross: null, fees: null, net: null, count: null, average: null, lastDay: null, days: null, months: null, recent: null, byDoor: null, prices: null, payouts: null, balance: null, notConfigured: NO_STRIPE });
+   const k = await q.kpis();
+   assert.ok(k.kpis.every((x) => x.value === null && x.prev === null && x.trend.length === 12 && x.trend.every((v) => v === 0)));
+   assert.deepEqual(k.health, { status: "warning", note: "Not configured (AWS_COST_ROLE_ARN)" });
+   assert.deepEqual(k.notConfigured, { ...HINTS, ...NO_STRIPE, monthToDate: "AWS_COST_ROLE_ARN", idleRunRate: "AWS_COST_ROLE_ARN", donations: "STRIPE_KEY", forecast: "AWS_COST_ROLE_ARN" }, "each tile names what would fill it");
+   assert.deepEqual(deps.calls, []);
+ });
+ 
+ test("half configured: GCP alone answers, the rest null with hints, totals sum what is there", async () => {
+   const q = make(fakes({ awsOn: false, githubOn: false, modalOn: false, falOn: false }));
+   const s = await q.summary("month");
+@@ -665,29 +666,68 @@ test("income: the donations card for each range, 60 days and 13 months, the newe
+ 
+   const last = await q.income("last");
+   assert.deepEqual([last.month, last.gross, last.fees, last.net, last.count, last.average], ["2026-09", 10, 0.59, 9.41, 1, 10]);
+   assert.deepEqual([last.days.length, last.months.length, last.recent.length, last.lastDay], [60, 13, 6, "2026-10-28"], "the days, months, recent and last day ignore the range");
+   const ninety = await q.income("90");
+   assert.deepEqual([ninety.month, ninety.gross, ninety.fees, ninety.net, ninety.count, ninety.average], ["2026-10", 70, 4.28, 65.72, 6, 11.67]);
+   const thirteen = await q.income("13m");
+   assert.deepEqual([thirteen.month, thirteen.gross, thirteen.count], ["2026-10", 70, 6]);
+ 
+   const refused = await make(await seeded(fakes({ stripeFail: true }))).income("month");
+-  assert.deepEqual(refused, { month: "2026-10", gross: null, fees: null, net: null, count: null, average: null, lastDay: null, days: null, months: null, recent: null, payouts: null, balance: null, errors: { stripe: "Stripe 401 on /balance_transactions: Invalid API Key provided: [key]" } });
++  assert.deepEqual(refused, { month: "2026-10", gross: null, fees: null, net: null, count: null, average: null, lastDay: null, days: null, months: null, recent: null, byDoor: null, prices: null, payouts: null, balance: null, errors: { stripe: "Stripe 401 on /balance_transactions: Invalid API Key provided: [key]" } });
+   const s = await make(await seeded(fakes({ stripeFail: true }))).summary("month");
+   assert.deepEqual([s.income, s.total.net, s.errors], [null, null, { stripe: "Stripe 401 on /balance_transactions: Invalid API Key provided: [key]" }], "summary: null with the error, the spend still answered");
+   assert.equal(s.total.mtd, 238.71);
+ });
+ 
+ test("summary.income and total.net: range=last takes the previous month's donations, income alone with no spend source, and not configured is null with the hint", async () => {
+   const q = make(await seeded(fakes()));
+   const last = await q.summary("last");
+   assert.deepEqual(last.income.mtd, SEP_INCOME, "the range's month");
+   assert.deepEqual(last.income.lastMonth, { gross: 0, fees: 0, net: 0, count: 0 }, "August: nothing");
+   assert.equal(last.total.net, 152.18, "161.59 less 9.41");
+   const alone = await make(fakes({ awsOn: false, gcpOn: false, githubOn: false, modalOn: false, falOn: false, ledgersOn: false })).summary("month");
+   assert.deepEqual([alone.total.mtd, alone.total.net], [null, -56.31], "no spend source: the month cost less than nothing");
+   assert.deepEqual(alone.income.mtd, OCT_INCOME);
+   const off = await make(await seeded(fakes({ stripeOn: false }))).summary("month");
+   assert.deepEqual([off.income, off.total.net, off.total.mtd], [null, null, 238.71]);
+   assert.deepEqual(off.notConfigured, { ...NO_CLAUDE, ...NO_STRIPE });
+ });
++
++test("the snapshot runs the donate step with the month's rows and the failed providers, stores its record and carries it forward", async () => {
++  const f = fakes({ gcpFail: true });
++  const store = createMemoryStore();
++  const q = createFinanceQueries({ ...f, store, now: () => NOW, log });
++  const part = await q.snapshotPart();
++  assert.ok(f.calls.includes("donate:run:2026-10-28:gcp|modal"), "gcp failed, and Modal has no report in an empty store");
++  assert.deepEqual(part.finance.donate, { month: "2026-09", pool: 150, at: "2026-10-28T10:00:00Z", doors: ["arkos"] });
++  await store.writeSnapshot("2026-10-28", part);
++  const f2 = fakes();
++  f2.donate.run = async () => ({ ran: false, reason: "done", record: null });
++  const next = await createFinanceQueries({ ...f2, store, now: () => NOW + 86_400_000, log }).snapshotPart();
++  assert.deepEqual(next.finance.donate, part.finance.donate, "a run that did nothing keeps yesterday's record");
++});
++test("a donate step that throws is errors.donate and the snapshot still has its finance part", async () => {
++  const f = fakes();
++  f.donate.run = async () => { throw new Error("Stripe 500 on /payment_links"); };
++  const part = await createFinanceQueries({ ...f, store: createMemoryStore(), now: () => NOW, log }).snapshotPart();
++  assert.equal(part.finance.errors.donate, "Stripe 500 on /payment_links");
++  assert.ok(part.finance.aws !== null);
++});
++test("not configured, the donate step is a hint, not a call", async () => {
++  const f = fakes();
++  f.donate.configured = false;
++  const part = await createFinanceQueries({ ...f, store: createMemoryStore(), now: () => NOW, log }).snapshotPart();
++  assert.equal(part.finance.notConfigured.donate, "STRIPE_WRITE_KEY");
++  assert.ok(!f.calls.some((c) => c.startsWith("donate:run")));
++});
++test("income carries the by-door split and the prices record from the snapshot", async () => {
++  const f = fakes();
++  const store = createMemoryStore();
++  await store.writeSnapshot("2026-10-27", { finance: { donate: { month: "2026-09", pool: 150, at: "2026-10-03T10:00:00Z", doors: ["arkos"] } } });
++  const out = await createFinanceQueries({ ...f, store, now: () => NOW, log }).income("month");
++  assert.ok(Array.isArray(out.byDoor) && out.byDoor.length > 0);
++  assert.deepEqual(out.prices, { month: "2026-09", pool: 150, at: "2026-10-03T10:00:00Z" });
++  const off = await createFinanceQueries({ ...fakes({ stripeOn: false }), store, now: () => NOW, log }).income("month");
++  assert.equal(off.byDoor, null);
++  assert.equal(off.prices, null);
++});
+diff --git a/admin/api/test/finance.test.mjs b/admin/api/test/finance.test.mjs
+index 3b37204..4dfbf1d 100644
+--- a/admin/api/test/finance.test.mjs
++++ b/admin/api/test/finance.test.mjs
+@@ -5,21 +5,21 @@ import { CATEGORIES, CATEGORY_KEYS, categorize, kindOf } from "../src/finance/ca
+ import { PROVIDERS, PROVIDER_LABELS, awsRegionOf, awsRows, gcpRows, githubRows, modalRows, falRows, cents, fine, addMonths, daysInMonth, monthsBetween, lastBilledDay, FAL_LINE } from "../src/finance/rows.mjs";
+ import { parseRange, monthsOf, partialMonths, categoriesTable, monthTotals, runRateForecast, RANGES } from "../src/finance/months.mjs";
+ import { idleLines } from "../src/finance/idle.mjs";
+ import { dailySeries, median, trailingTotals } from "../src/finance/daily.mjs";
+ import { activityItems, toGiB, toHours } from "../src/finance/activity.mjs";
+ import { financeHealth, CRITICAL_DAY_USD } from "../src/finance/kpis.mjs";
+ import { falSeries } from "../src/finance/fal.mjs";
+ import { PROJECTS, PROJECT_KEYS, projectOf, projectsTable } from "../src/finance/projects.mjs";
+ import { filmLabel, providerOf, filmOf, filmsOf, DEFAULT_CAP_USD } from "../src/finance/films.mjs";
+ import { CLAUDE_SUBSCRIPTION_KEY, CLAUDE_LINE, subscriptionSeries, subscriptionFor, claudeRows, claudeUsage, usageForMonths, usageDays } from "../src/finance/claude.mjs";
+-import { donationsOf, incomeFor, incomeDays, incomeMonths, recentOf, payoutsOf, balanceOf, lastDonationDay } from "../src/finance/income.mjs";
++import { donationsOf, incomeFor, incomeDays, incomeMonths, recentOf, payoutsOf, balanceOf, lastDonationDay, incomeByDoor } from "../src/finance/income.mjs";
+ 
+ /* ---- categories ---- */
+ 
+ test("the twelve categories, in the contract's order, each idle, activity or fixed; Claude Code fixed, after the domains", () => {
+   assert.deepEqual(CATEGORY_KEYS, ["compute", "serverless", "hosting", "loadBalancing", "storage", "ai", "dns", "domains", "claudeCode", "ci", "tax", "other"]);
+   assert.deepEqual(CATEGORIES.map((c) => c.kind), ["activity", "activity", "activity", "idle", "idle", "activity", "idle", "fixed", "fixed", "activity", "activity", "activity"]);
+   assert.equal(CATEGORIES.find((c) => c.key === "claudeCode").label, "Claude Code");
+   assert.equal(categorize({ provider: "claude", service: "Claude Code", line: CLAUDE_LINE }), "other", "no rule: claude.mjs writes the category itself");
+   assert.ok(CATEGORIES.every((c) => typeof c.label === "string" && c.label.length > 0));
+   assert.equal(kindOf("storage"), "idle");
+@@ -544,25 +544,25 @@ test("the usage part: checked, summed by model over months (largest first) and l
+   assert.equal(usageDays({ ...usage, lastDay: null }, { today: "2026-10-30" }).at(-1).day, "2026-10-30", "no last day: today");
+ });
+ 
+ /* ---- income (the donations through Stripe) ---- */
+ 
+ const STRIPE = JSON.parse(readFileSync(new URL("./fixtures/finance-stripe.json", import.meta.url), "utf8"));
+ 
+ test("donationsOf: charges and payments are donations in dollars on their UTC day, a refund subtracts (gross and net negative, fee as given), a payout is not income, newest first, no identity", () => {
+   const rows = donationsOf(STRIPE.transactions);
+   assert.equal(rows.length, 7, "eight transactions less the payout");
+-  assert.deepEqual(rows[0], { day: "2026-10-28", created: 1793212930, gross: 25, fees: 1.03, net: 23.97, currency: "usd", refund: false });
++  assert.deepEqual(rows[0], { day: "2026-10-28", created: 1793212930, gross: 25, fees: 1.03, net: 23.97, currency: "usd", refund: false, door: "arkos" });
+   assert.deepEqual(rows.map((r) => r.day), ["2026-10-28", "2026-10-25", "2026-10-20", "2026-10-13", "2026-10-07", "2026-10-06", "2026-09-29"]);
+   const refund = rows.find((r) => r.refund);
+-  assert.deepEqual(refund, { day: "2026-10-07", created: 1791370800, gross: -15, fees: 0, net: -15, currency: "usd", refund: true });
+-  assert.deepEqual(Object.keys(rows[0]).sort(), ["created", "currency", "day", "fees", "gross", "net", "refund"], "no description, source or customer");
++  assert.deepEqual(refund, { day: "2026-10-07", created: 1791370800, gross: -15, fees: 0, net: -15, currency: "usd", refund: true, door: null });
++  assert.deepEqual(Object.keys(rows[0]).sort(), ["created", "currency", "day", "door", "fees", "gross", "net", "refund"], "no description, source or customer: the door is the one thing taken from the charge");
+   assert.deepEqual(donationsOf([{ type: "payment_refund", amount: 500, fee: 0, net: 500, created: 1791370800, currency: "usd" }])[0].gross, -5, "a refund is negative whichever sign Stripe gives it");
+   assert.deepEqual(donationsOf([{ type: "stripe_fee", amount: -200, fee: 0, net: -200, created: 1791370800 }, { type: "adjustment", amount: 100, created: 1791370800 }, null, { type: "charge" }]), [], "nothing else counts, and a transaction without a time is skipped");
+   assert.deepEqual(donationsOf([]), []);
+   assert.deepEqual(donationsOf(undefined), []);
+   assert.equal(donationsOf([{ type: "charge", amount: 333, fee: 40, net: 293, created: 1791370800 }])[0].fees, 0.4, "cents, not floating noise");
+   assert.equal(donationsOf([{ type: "charge", amount: 1, fee: 1, net: 0, created: 1791370800 }])[0].net, 0);
+ });
+ 
+ test("incomeFor: the month's totals and average; a refund moves the amounts and not the count; empty is zeros with a null average", () => {
+   const rows = donationsOf(STRIPE.transactions);
+@@ -609,10 +609,23 @@ test("payoutsOf and balanceOf: arrival days in dollars with Stripe's status, new
+   assert.deepEqual(payoutsOf([]), []);
+   assert.deepEqual(payoutsOf([{ amount: 1 }, null]), [], "no arrival date, no payout");
+   assert.deepEqual(balanceOf(STRIPE.balance), { available: 0, pending: 37.93, currency: "usd" });
+   assert.deepEqual(balanceOf({ available: [{ amount: 1050, currency: "usd" }, { amount: 900, currency: "eur" }], pending: [] }), { available: 10.5, pending: 0, currency: "usd" });
+   assert.deepEqual(balanceOf({ available: [{ amount: 900, currency: "eur" }], pending: [] }, "eur"), { available: 9, pending: 0, currency: "eur" });
+   assert.deepEqual(balanceOf(null), { available: 0, pending: 0, currency: "usd" });
+   assert.equal(lastDonationDay(donationsOf(STRIPE.transactions)), "2026-10-28");
+   assert.equal(lastDonationDay(donationsOf([STRIPE.transactions[5]])), null, "a refund alone names no donation day");
+   assert.equal(lastDonationDay([]), null);
+ });
++
++test("income rows carry the charge's door and nothing else from the charge; the by-door split sums to the totals, unknown for a charge without one", () => {
++  const rows = donationsOf(STRIPE.transactions);
++  assert.ok(rows.some((r) => r.door === "arkos"));
++  assert.ok(rows.every((r) => !("source" in r) && !("email" in r) && !("name" in r)));
++  const by = incomeByDoor(rows, ["2026-10"]);
++  const all = incomeFor(rows, ["2026-10"]);
++  assert.equal(by.reduce((n, d) => n + d.net, 0).toFixed(2), all.net.toFixed(2));
++  assert.equal(by.reduce((n, d) => n + d.count, 0), all.count);
++  assert.deepEqual(by.find((d) => d.door === "unknown").label, "Unknown");
++  assert.equal(by.find((d) => d.door === "arkos").label, "Arkos IDE");
++  assert.ok(by.every((d, i) => i === 0 || by[i - 1].net >= d.net));
++});
+diff --git a/admin/api/test/fixtures/finance-stripe.json b/admin/api/test/fixtures/finance-stripe.json
+index a787015..4a4b925 100644
+--- a/admin/api/test/fixtures/finance-stripe.json
++++ b/admin/api/test/fixtures/finance-stripe.json
+@@ -1,21 +1,21 @@
+ {
+-  "_note": "Stripe objects as GET /v1/balance_transactions, /v1/payouts and /v1/balance answer them (the lists' data arrays), for a test account in October 2026: donations of $5 to $25 at 2.9 % + 30 cents, one refunded in full, one payout-type transaction that is not income, one paid and one pending payout. The descriptions and source ids are here so the tests can prove they never reach the page.",
++  "_note": "Stripe objects as GET /v1/balance_transactions, /v1/payouts and /v1/balance answer them (the lists' data arrays), for a test account in October 2026: donations of $5 to $25 at 2.9 % + 30 cents, one refunded in full, one payout-type transaction that is not income, one paid and one pending payout. The descriptions are here so the tests can prove they never reach the page; the charge transactions carry the expanded source as Stripe sends it with expand[]=data.source, trimmed to its object and metadata (the door a tip came in by), and a refund or payout keeps its plain source id.",
+   "transactions": [
+-    { "id": "txn_1QaA1", "object": "balance_transaction", "amount": 2500, "fee": 103, "net": 2397, "currency": "usd", "created": 1793212930, "available_on": 1793404800, "type": "charge", "reporting_category": "charge", "status": "pending", "description": "Donation from a reader", "source": "ch_3Qa1" },
+-    { "id": "txn_1QaA2", "object": "balance_transaction", "amount": 1000, "fee": 59, "net": 941, "currency": "usd", "created": 1792919700, "available_on": 1793059200, "type": "payment", "reporting_category": "charge", "status": "available", "description": "Payment Link donation", "source": "py_3Qa2" },
+-    { "id": "txn_1QaA3", "object": "balance_transaction", "amount": 500, "fee": 45, "net": 455, "currency": "usd", "created": 1792533933, "available_on": 1792713600, "type": "charge", "reporting_category": "charge", "status": "available", "description": "Donation", "source": "ch_3Qa3" },
++    { "id": "txn_1QaA1", "object": "balance_transaction", "amount": 2500, "fee": 103, "net": 2397, "currency": "usd", "created": 1793212930, "available_on": 1793404800, "type": "charge", "reporting_category": "charge", "status": "pending", "description": "Donation from a reader", "source": { "object": "charge", "metadata": { "door": "arkos" } } },
++    { "id": "txn_1QaA2", "object": "balance_transaction", "amount": 1000, "fee": 59, "net": 941, "currency": "usd", "created": 1792919700, "available_on": 1793059200, "type": "payment", "reporting_category": "charge", "status": "available", "description": "Payment Link donation", "source": { "object": "charge", "metadata": { "door": "all" } } },
++    { "id": "txn_1QaA3", "object": "balance_transaction", "amount": 500, "fee": 45, "net": 455, "currency": "usd", "created": 1792533933, "available_on": 1792713600, "type": "charge", "reporting_category": "charge", "status": "available", "description": "Donation", "source": { "object": "charge", "metadata": { "door": "arkos" } } },
+     { "id": "txn_1QaA9", "object": "balance_transaction", "amount": -1838, "fee": 0, "net": -1838, "currency": "usd", "created": 1792281600, "available_on": 1792281600, "type": "payout", "reporting_category": "payout", "status": "available", "description": "STRIPE PAYOUT", "source": "po_1Qp1" },
+-    { "id": "txn_1QaA4", "object": "balance_transaction", "amount": 2000, "fee": 88, "net": 1912, "currency": "usd", "created": 1791900600, "available_on": 1792108800, "type": "charge", "reporting_category": "charge", "status": "available", "description": "Donation", "source": "ch_3Qa4" },
++    { "id": "txn_1QaA4", "object": "balance_transaction", "amount": 2000, "fee": 88, "net": 1912, "currency": "usd", "created": 1791900600, "available_on": 1792108800, "type": "charge", "reporting_category": "charge", "status": "available", "description": "Donation", "source": { "object": "charge", "metadata": {} } },
+     { "id": "txn_1QaA6", "object": "balance_transaction", "amount": -1500, "fee": 0, "net": -1500, "currency": "usd", "created": 1791370800, "available_on": 1791370800, "type": "refund", "reporting_category": "refund", "status": "available", "description": "REFUND FOR CHARGE (Donation)", "source": "re_3Qa5" },
+-    { "id": "txn_1QaA5", "object": "balance_transaction", "amount": 1500, "fee": 74, "net": 1426, "currency": "usd", "created": 1791256320, "available_on": 1791417600, "type": "charge", "reporting_category": "charge", "status": "available", "description": "Donation", "source": "ch_3Qa5" },
+-    { "id": "txn_1QaA0", "object": "balance_transaction", "amount": 1000, "fee": 59, "net": 941, "currency": "usd", "created": 1790697600, "available_on": 1790812800, "type": "charge", "reporting_category": "charge", "status": "available", "description": "Donation", "source": "ch_3Qa0" }
++    { "id": "txn_1QaA5", "object": "balance_transaction", "amount": 1500, "fee": 74, "net": 1426, "currency": "usd", "created": 1791256320, "available_on": 1791417600, "type": "charge", "reporting_category": "charge", "status": "available", "description": "Donation", "source": { "object": "charge", "metadata": { "door": "arkos" } } },
++    { "id": "txn_1QaA0", "object": "balance_transaction", "amount": 1000, "fee": 59, "net": 941, "currency": "usd", "created": 1790697600, "available_on": 1790812800, "type": "charge", "reporting_category": "charge", "status": "available", "description": "Donation", "source": { "object": "charge", "metadata": { "door": "all" } } }
+   ],
+   "payouts": [
+     { "id": "po_1Qp2", "object": "payout", "amount": 3793, "arrival_date": 1793404800, "created": 1793232000, "status": "pending", "currency": "usd", "description": "STRIPE PAYOUT" },
+     { "id": "po_1Qp1", "object": "payout", "amount": 1838, "arrival_date": 1792281600, "created": 1792195200, "status": "paid", "currency": "usd", "description": "STRIPE PAYOUT" }
+   ],
+   "balance": {
+     "object": "balance",
+     "available": [{ "amount": 0, "currency": "usd", "source_types": { "card": 0 } }],
+     "pending": [{ "amount": 3793, "currency": "usd", "source_types": { "card": 3793 } }],
+     "livemode": true
+diff --git a/admin/api/test/stripe.test.mjs b/admin/api/test/stripe.test.mjs
+index 09a3443..d028134 100644
+--- a/admin/api/test/stripe.test.mjs
++++ b/admin/api/test/stripe.test.mjs
+@@ -39,34 +39,36 @@ test("transactions: every page with created[gte] and limit 100, paged by startin
+     { object: "list", data: [d, ...rest], has_more: false },
+   ] };
+   const stripe = make(calls, { pages });
+   const since = 1759276800;
+   const out = await stripe.transactions(since);
+   assert.equal(out.length, STRIPE.transactions.length, "both pages");
+   assert.deepEqual(out.map((t) => t.id), STRIPE.transactions.map((t) => t.id), "newest first");
+   assert.equal(calls.length, 2);
+   assert.equal(calls[0].path, "/v1/balance_transactions");
+   assert.ok(calls[0].url.startsWith(`${STRIPE_API}/balance_transactions?`));
+-  assert.deepEqual(calls[0].params, { limit: "100", "created[gte]": String(since) });
+-  assert.deepEqual(calls[1].params, { limit: "100", "created[gte]": String(since), starting_after: c.id }, "the second page starts after the first's last id");
++  assert.deepEqual(calls[0].params, { limit: "100", "created[gte]": String(since), "expand[]": "data.source" });
++  assert.equal(calls[0].params["expand[]"], "data.source");
++  assert.deepEqual(calls[1].params, { limit: "100", "created[gte]": String(since), "expand[]": "data.source", starting_after: c.id }, "the second page starts after the first's last id");
+   assert.deepEqual(calls[0].headers, { accept: "application/json", authorization: `Bearer ${KEY}`, "user-agent": "csarko-admin" }, "no Stripe-Version: the account's default applies");
+   await stripe.transactions(since);
+   assert.equal(calls.length, 2, "cached");
+   await stripe.transactions(since - 1);
+   assert.equal(calls.length, 4, "another window is another read, both pages again");
+ });
+ 
+ test("transactions with no since reaches 400 days back; payouts page the same way; balance is one call", async () => {
+   const calls = [];
+   const stripe = make(calls, { pages: { "/v1/payouts": [{ object: "list", data: STRIPE.payouts, has_more: false }] } });
+   await stripe.transactions();
+   assert.equal(calls[0].params["created[gte]"], String(Math.floor(NOW / 1000) - DEFAULT_SINCE_DAYS * 86_400));
++  assert.equal(calls[0].params["expand[]"], "data.source");
+   const payouts = await stripe.payouts(1788000000);
+   assert.deepEqual(payouts.map((p) => p.id), ["po_1Qp2", "po_1Qp1"]);
+   assert.equal(calls[1].path, "/v1/payouts");
+   assert.deepEqual(calls[1].params, { limit: "100", "created[gte]": "1788000000" });
+   assert.deepEqual(await stripe.balance(), STRIPE.balance);
+   assert.equal(calls[2].url, `${STRIPE_API}/balance`);
+   assert.deepEqual(calls[2].params, {});
+ });
+ 
+ test("a 401 is an UpstreamError with the status and the body's first 200 characters, the key blanked, and is not cached", async () => {

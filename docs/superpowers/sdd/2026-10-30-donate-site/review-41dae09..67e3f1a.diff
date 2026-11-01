@@ -1,0 +1,217 @@
+# Review package: 41dae09..67e3f1a
+
+## Commits
+67e3f1a donate: never price a month before the launch month
+
+## Files changed
+ admin/api/README.md                                     |  2 +-
+ admin/api/src/donate/doors.mjs                          |  6 ++++++
+ admin/api/src/donate/prices.mjs                         |  5 +++--
+ admin/api/test/donate-prices.test.mjs                   | 11 ++++++++++-
+ admin/api/test/donate-step.test.mjs                     | 10 ++++++++++
+ docs/superpowers/specs/2026-10-30-donate-site-design.md |  2 +-
+ 6 files changed, 31 insertions(+), 5 deletions(-)
+
+## Diff
+diff --git a/admin/api/README.md b/admin/api/README.md
+index 7d86594..c310783 100644
+--- a/admin/api/README.md
++++ b/admin/api/README.md
+@@ -92,21 +92,21 @@ null). **The privacy rule: no donor identity ever reaches the page.** The API ke
+ currency and a day of each transaction and nothing else: no name, email, card, receipt,
+ description, customer or Stripe id; `recent` is `day, gross, net, currency` and the tests fail on
+ any other field. A Stripe read that fails is `errors.stripe`, a health warning like any source's;
+ without the key every income part is null with `notConfigured.stripe = "STRIPE_KEY"`.
+ The balance transactions are listed with `expand[]=data.source` so each carries its charge, and the
+ only field kept from it is the **door** (`metadata.door`): the `income` query's `byDoor` splits the
+ range by door, `unknown` for a charge without one.
+ The daily snapshot also runs the **donate step** (`src/donate/step.mjs`, `STRIPE_WRITE_KEY`): once a
+ month it makes the next month's prices and payment links and publishes the prices object, and stores
+ `finance.donate = { month, pool, at, doors }` (the `income` query's `prices`), carried forward on the
+-days it does nothing; without the key it is `notConfigured.donate`, and a failure is `errors.donate`.
++days it does nothing; without the key it is `notConfigured.donate`, and a failure is `errors.donate`. The first month it ever prices is the `DONATE_FROM_MONTH` constant in `src/donate/doors.mjs` (2026-10), so an earlier closed month is never priced.
+ While the GCP export's first usage day is after the first of the month being priced, the step holds
+ with the reason `waiting on GCP history for <month>`, whatever the day of the month.
+ The job also stores the day's KPI values as `finance.kpi` (`monthToDate`, `idleRunRate`, `last30`,
+ `forecast`, `donations`; `last30` left the card on 2026-10-30 but keeps its history), which the index
+ card's trends read, a small `finance.stripe = { at, mtdNet, count, lastDay }` read live, and
+ `finance.awsCalls`, which the Sources card sums over the month. A failing finance step is
+ `errors.finance` on the snapshot and never fails the rest of the day's write.
+ 
+ AWS credentials come by **web identity federation**, so no key is stored: the service asks the
+ metadata server for a Google ID token for its own service account (audience `AWS_COST_AUDIENCE`,
+diff --git a/admin/api/src/donate/doors.mjs b/admin/api/src/donate/doors.mjs
+index 1186b28..0597a43 100644
+--- a/admin/api/src/donate/doors.mjs
++++ b/admin/api/src/donate/doors.mjs
+@@ -3,20 +3,26 @@
+  * seven doors (one per project, plus the bare door for the whole body of work). A door is a page
+  * on donate.csarko.sh that shows the project's own picture and words over the same bill, so only
+  * the copy here differs from door to door; the prices come from prices.mjs and the month's pool.
+  * The repository is public, so everything written here is public copy: Cyrus's register (first
+  * person, dry, short), no em-dash, no address.
+  *
+  * `picture.source` is relative to `.agents/skills/site-quality/assets/`; `focusY` is the fraction
+  * of the source's height at which a landscape crop is centred, for a source taller than wide.
+  */
+ 
++/**
++ * The first month the step prices (the spec's section 3, "The first pool and the launch"). An earlier
++ * closed month is never priced, so a run before Nov 3 does nothing.
++ */
++export const DONATE_FROM_MONTH = "2026-10";
++
+ /**
+  * The launch flag. Flipped to `true` by the launch commit (plan Task 9 Step 3) once donate.csarko.sh
+  * serves the doors; until then the entrances on csarko.sh and apps.csarko.sh render nothing.
+  */
+ export const DONATE_LIVE = false;
+ 
+ export const DONATE_URL = "https://donate.csarko.sh";
+ export const PRICES_BUCKET = "csarko-sh-donate-prices";
+ export const PRICES_OBJECT = "prices.json";
+ export const PRICES_URL = `https://storage.googleapis.com/${PRICES_BUCKET}/${PRICES_OBJECT}`;
+diff --git a/admin/api/src/donate/prices.mjs b/admin/api/src/donate/prices.mjs
+index 62ac801..cb3ca49 100644
+--- a/admin/api/src/donate/prices.mjs
++++ b/admin/api/src/donate/prices.mjs
+@@ -3,21 +3,21 @@
+  * is not free public work) is the pool, each tier is a share of it rounded up to the dollar, and
+  * `decide` says whether today's snapshot run should publish new prices. Prices are made once a
+  * month, on the 3rd (after the billing sources have settled), later if a collector failed and not
+  * past the 7th; a door added mid-month gets that month's prices at the next run. While GCP's billing
+  * export starts after the first day of the month being priced, the month waits, with no
+  * day-of-month override: a pool without GCP's whole month would undercount it for a month.
+  */
+ 
+ import { addMonths, monthOf } from "../finance/rows.mjs";
+ import { projectOf } from "../finance/projects.mjs";
+-import { TIERS } from "./doors.mjs";
++import { TIERS, DONATE_FROM_MONTH } from "./doors.mjs";
+ 
+ export const PRICE_DAY = 3;
+ export const LATE_DAY = 7;
+ export const FLOOR_USD = 1;
+ 
+ /** The unrounded sum of `month`'s rows outside the commercial project, never below 0. */
+ export function poolOf(monthlyRows, month) {
+   let sum = 0;
+   for (const r of monthlyRows) {
+     if (r.month !== month || r.project === "commercial" || projectOf(r) === "commercial") continue;
+@@ -32,22 +32,23 @@ export const priceOf = (pool, share) => Math.max(FLOOR_USD, Math.ceil(pool * sha
+ /** The four tiers priced from the pool. */
+ export function pricesOf(pool) {
+   return TIERS.map((t) => ({ tier: t.key, name: t.name, share: t.share, label: `about ${Math.round(t.share * 100)}%`, usd: priceOf(pool, t.share) }));
+ }
+ 
+ /**
+  * Whether to publish prices today. `current` is the published JSON or null, `failed` the providers
+  * whose collector failed today, `doors` the shipped door keys, `gcpFirstDay` the GCP export's first
+  * usage day (null when GCP is not configured).
+  */
+-export function decide({ today, current, failed, doors, gcpFirstDay = null }) {
++export function decide({ today, current, failed, doors, gcpFirstDay = null, fromMonth = DONATE_FROM_MONTH }) {
+   const month = addMonths(monthOf(today), -1);
+   const published = current?.month === month ? current.doors ?? [] : [];
+   const missing = doors.filter((d) => !published.includes(d));
+   if (current?.month === month && missing.length === 0) return { run: false, reason: "done", month, newMonth: false, pending: [] };
++  if (month < fromMonth) return { run: false, reason: "before the first priced month", month, newMonth: false, pending: [] };
+   if (gcpFirstDay !== null && gcpFirstDay > `${month}-01`) return { run: false, reason: `waiting on GCP history for ${month}`, month, newMonth: false, pending: [] };
+   const day = Number(today.slice(8, 10));
+   if (day < PRICE_DAY) return { run: false, reason: "before the 3rd", month, newMonth: false, pending: [] };
+   if (failed.length > 0 && day < LATE_DAY) return { run: false, reason: `waiting on ${failed.join(", ")}`, month, newMonth: false, pending: [] };
+   const newMonth = current?.month !== month;
+   return { run: true, reason: newMonth ? "new month" : "doors added", month, newMonth, pending: newMonth ? [...doors] : missing };
+ }
+diff --git a/admin/api/test/donate-prices.test.mjs b/admin/api/test/donate-prices.test.mjs
+index fb18a3b..11659f8 100644
+--- a/admin/api/test/donate-prices.test.mjs
++++ b/admin/api/test/donate-prices.test.mjs
+@@ -1,14 +1,14 @@
+ // admin/api/test/donate-prices.test.mjs
+ import { test } from "node:test";
+ import assert from "node:assert/strict";
+-import { TIERS, CUSTOM, TIER_KEYS, DOORS, doorOf, doorByKey, shippedDoors, DONATE_URL, PRICES_URL } from "../src/donate/doors.mjs";
++import { TIERS, CUSTOM, TIER_KEYS, DOORS, doorOf, doorByKey, shippedDoors, DONATE_URL, PRICES_URL, DONATE_FROM_MONTH } from "../src/donate/doors.mjs";
+ import { poolOf, priceOf, pricesOf, decide, PRICE_DAY, LATE_DAY } from "../src/donate/prices.mjs";
+ 
+ test("four tiers at 1, 3, 10 and 30 percent, then the custom row", () => {
+   assert.deepEqual(TIERS.map((t) => [t.key, t.name, t.share]), [["prompt", "A prompt", 0.01], ["context", "A long context window", 0.03], ["run", "A whole agent run", 0.1], ["finetune", "A fine-tune", 0.3]]);
+   assert.deepEqual(CUSTOM, { key: "own", name: "Your own number", minimumUsd: 1 });
+   assert.deepEqual(TIER_KEYS, ["prompt", "context", "run", "finetune", "own"]);
+ });
+ 
+ test("a $287.40 month gives $3, $9, $29 and $87, labelled about n%", () => {
+   assert.deepEqual(pricesOf(287.4).map((p) => [p.tier, p.usd, p.label]), [["prompt", 3, "about 1%"], ["context", 9, "about 3%"], ["run", 29, "about 10%"], ["finetune", 87, "about 30%"]]);
+@@ -65,10 +65,19 @@ test("decide: holds while GCP's export starts after the first day of the month b
+   assert.deepEqual(decide({ today: "2026-11-03", current: null, failed: [], doors, gcpFirstDay: "2026-10-02" }), { run: false, reason: "waiting on GCP history for 2026-10", month: "2026-10", newMonth: false, pending: [] });
+   assert.equal(decide({ today: "2026-11-28", current: null, failed: [], doors, gcpFirstDay: "2026-10-29" }).reason, "waiting on GCP history for 2026-10", "no day-of-month override");
+   assert.equal(decide({ today: "2026-11-03", current: null, failed: [], doors, gcpFirstDay: "2026-10-01" }).run, true, "an export from the 1st covers the month");
+   assert.equal(decide({ today: "2026-12-03", current: null, failed: [], doors, gcpFirstDay: "2026-10-02" }).run, true, "November is covered");
+   assert.equal(decide({ today: "2026-11-03", current: null, failed: [], doors, gcpFirstDay: null }).run, true, "GCP not configured: nothing to wait on");
+   assert.equal(decide({ today: "2026-11-05", current: { month: "2026-10", doors }, failed: [], doors, gcpFirstDay: "2026-10-29" }).reason, "done", "a done month still sweeps");
+   assert.equal(decide({ today: "2026-11-02", current: null, failed: [], doors, gcpFirstDay: "2026-10-01" }).reason, "before the 3rd");
+   assert.equal(PRICE_DAY, 3);
+   assert.equal(LATE_DAY, 7);
+ });
++
++test("decide never prices a month before the launch month", () => {
++  assert.equal(DONATE_FROM_MONTH, "2026-10");
++  const doors = ["arkos", "all"];
++  const sep = decide({ today: "2026-10-30", current: null, failed: [], doors });
++  assert.deepEqual(sep, { run: false, reason: "before the first priced month", month: "2026-09", newMonth: false, pending: [] });
++  assert.equal(decide({ today: "2026-11-03", current: null, failed: [], doors }).run, true);
++  assert.equal(decide({ today: "2026-10-30", current: null, failed: [], doors, fromMonth: "2026-09" }).run, true, "the default guards, not the date");
++});
+diff --git a/admin/api/test/donate-step.test.mjs b/admin/api/test/donate-step.test.mjs
+index 9f63640..8991360 100644
+--- a/admin/api/test/donate-step.test.mjs
++++ b/admin/api/test/donate-step.test.mjs
+@@ -208,10 +208,20 @@ test("the bucket: a missing object reads as null, a write carries the content ty
+   assert.equal(saved[0].opts.contentType, "application/json");
+   assert.equal(saved[0].opts.metadata.cacheControl, "public, max-age=300");
+   assert.equal(createPricesBucket({ bucket: null, projectId: "csarko-sh" }).configured, false);
+ });
+ 
+ test("the bucket rethrows a read that fails with anything but a 404", async () => {
+   const storage = { bucket: () => ({ file: () => ({ async download() { const e = new Error("denied"); e.code = 403; throw e; } }) }) };
+   const b = createPricesBucket({ bucket: "csarko-sh-donate-prices", storage, log: { error() {} } });
+   await assert.rejects(b.read(), /denied/);
+ });
++
++test("a run before the launch month touches neither Stripe nor the bucket", async () => {
++  const calls = [];
++  const bucket = fakeBucket();
++  const step = createDonateStep({ writer: fakeWriter(calls), bucket, now: () => Date.parse("2026-10-30T20:00:00Z"), log: { error() {}, warn() {} } });
++  const out = await step.run({ monthlyRows: [], failed: [], today: "2026-10-30", gcpFirstDay: "2026-10-01" });
++  assert.deepEqual(out, { ran: false, reason: "before the first priced month", record: null });
++  assert.deepEqual(calls, []);
++  assert.equal(bucket.writes, 0);
++});
+diff --git a/docs/superpowers/specs/2026-10-30-donate-site-design.md b/docs/superpowers/specs/2026-10-30-donate-site-design.md
+index 7df2caf..f951034 100644
+--- a/docs/superpowers/specs/2026-10-30-donate-site-design.md
++++ b/docs/superpowers/specs/2026-10-30-donate-site-design.md
+@@ -162,21 +162,21 @@ one constant). Until then the page shows the month before. The bill sentence alw
+ month the figure is for. (The Finance data's "partial" mark means something else: months before
+ the GCP export began on 2026-10-29.)
+ 
+ **The first pool and the launch** (Cyrus, Oct 30: "Go with option 2"). The first month the pool
+ can be computed from is October 2026, available around Nov 3. The GCP billing export began on
+ 2026-10-29, so on its own the export holds three days of October; before the site launches,
+ October's GCP spend for Oct 1 to 28 is loaded once from the console's cost table as the CSV the
+ Finance spec already allows for history, so the first bill sentence names an honest October.
+ The site launches when the step's first run has written October's JSON, around Nov 3; it does
+ not ship with a hand-typed or seeded pool, and the hand load happens once, for that one month,
+-never again.
++never again (the step's `DONATE_FROM_MONTH` constant, 2026-10, enforces it; a run before then prices nothing).
+ 
+ ## 4. The monthly step and the money
+ 
+ Nothing new runs on a schedule. The admin snapshot (Cloud Scheduler `csarko-admin-snapshot`
+ calling the admin API's snapshot route once a day) gains one idempotent step, **donate**:
+ 
+ 1. If this month's prices already exist for every door that builds, stop (the record is per
+    door per month, so a door added mid-month gets that month's links at the next snapshot).
+ 2. If today is before the 3rd, stop. If any configured provider's collector failed today, stop
+    and try tomorrow, up to the 7th; from the 7th run with what is there (my call: a late

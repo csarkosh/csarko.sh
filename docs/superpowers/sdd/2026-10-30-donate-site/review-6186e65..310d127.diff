@@ -1,0 +1,385 @@
+# Review package: 6186e65..310d127
+
+## Commits
+310d127 donate: doors, tiers and the price rule, pure
+
+## Files changed
+ admin/api/src/donate/doors.mjs        | 101 ++++++++++++++++++++++++++++++++++
+ admin/api/src/donate/prices.mjs       |  49 +++++++++++++++++
+ admin/api/src/finance/projects.mjs    |   4 +-
+ admin/api/test/donate-prices.test.mjs |  63 +++++++++++++++++++++
+ admin/api/test/finance.test.mjs       |   6 +-
+ admin/public/theme.css                |   2 +
+ 6 files changed, 222 insertions(+), 3 deletions(-)
+
+## Diff
+diff --git a/admin/api/src/donate/doors.mjs b/admin/api/src/donate/doors.mjs
+new file mode 100644
+index 0000000..a40bc4f
+--- /dev/null
++++ b/admin/api/src/donate/doors.mjs
+@@ -0,0 +1,101 @@
++/**
++ * The donate site's fixed vocabulary: where it lives, the four tiers every door shares, and the
++ * seven doors (one per project, plus the bare door for the whole body of work). A door is a page
++ * on donate.csarko.sh that shows the project's own picture and words over the same bill, so only
++ * the copy here differs from door to door; the prices come from prices.mjs and the month's pool.
++ * The repository is public, so everything written here is public copy: Cyrus's register (first
++ * person, dry, short), no em-dash, no address.
++ *
++ * `picture.source` is relative to `.agents/skills/site-quality/assets/`; `focusY` is the fraction
++ * of the source's height at which a landscape crop is centred, for a source taller than wide.
++ */
++
++export const DONATE_URL = "https://donate.csarko.sh";
++export const PRICES_BUCKET = "csarko-sh-donate-prices";
++export const PRICES_OBJECT = "prices.json";
++export const PRICES_URL = `https://storage.googleapis.com/${PRICES_BUCKET}/${PRICES_OBJECT}`;
++
++/** The four tiers, each a share of last month's pool. */
++export const TIERS = [
++  { key: "prompt", name: "A prompt", share: 0.01 },
++  { key: "context", name: "A long context window", share: 0.03 },
++  { key: "run", name: "A whole agent run", share: 0.1 },
++  { key: "finetune", name: "A fine-tune", share: 0.3 },
++];
++/** The fifth, dashed row: any amount from the minimum up. */
++export const CUSTOM = { key: "own", name: "Your own number", minimumUsd: 1 };
++export const TIER_KEYS = [...TIERS.map((t) => t.key), CUSTOM.key];
++
++const APP_THANKS = "Tokens received. The next agent run is on you.";
++const APP_CAPTIONS = ["a quick fix, a good question", "a whole feature, read end to end", "a milestone, start to merge", "you really like it"];
++const FILM_CAPTIONS = ["one more take", "a scene, start to end", "a cut", "you really like it"];
++
++export const DOORS = [
++  {
++    door: "arkos", slug: "ide-arkos", name: "Arkos IDE", kind: "app", shipped: true, path: "/arkos",
++    headline: "Fund my next agent run",
++    lead: "Arkos is free. If it saved you a few hours, cover a slice of the cloud bill that builds it and everything else here.",
++    captions: APP_CAPTIONS, thanks: APP_THANKS,
++    back: { label: "Back to Arkos IDE", href: "https://apps.csarko.sh/ide-arkos" },
++    picture: { source: "apps/ide-arkos.png" },
++  },
++  {
++    door: "macstats", slug: "app-macstats", name: "MacStats", kind: "app", shipped: true, path: "/macstats",
++    headline: "Fund my next agent run",
++    lead: "MacStats is free and runs on your Mac. If it told you something useful, cover a slice of the agent time that builds it.",
++    captions: ["a quick fix, a good question", "a new panel, read end to end", "a release, start to merge", "you really like it"],
++    thanks: APP_THANKS,
++    back: { label: "Back to MacStats", href: "https://apps.csarko.sh/app-macstats" },
++    picture: { source: "apps/app-macstats.png" },
++  },
++  {
++    door: "visits", slug: "lib-visits", name: "lib-visits", kind: "app", shipped: true, path: "/visits",
++    headline: "Fund my next agent run",
++    lead: "lib-visits is free and counts without cookies. If you use it, cover a slice of the cloud bill it runs on.",
++    captions: APP_CAPTIONS, thanks: APP_THANKS,
++    back: { label: "Back to lib-visits", href: "https://apps.csarko.sh/lib-visits" },
++    picture: { source: "apps/lib-visits.png", dark: "apps/lib-visits-dark.png" },
++  },
++  {
++    door: "last-trail", slug: "the-last-trail", name: "The Last Trail", kind: "film", shipped: true, path: "/last-trail",
++    headline: "Fund the next short",
++    lead: "The Last Trail is free to watch. If it got under your skin, cover a slice of the compute that makes the next one.",
++    captions: FILM_CAPTIONS, thanks: "Tokens received. The next take is on you.",
++    back: { label: "Back to the film", href: "https://www.youtube.com/shorts/C1XsDuJE4MQ" },
++    picture: { source: "films/the-last-trail.jpg", focusY: 0.3 },
++  },
++  {
++    door: "hallway", slug: "who-is-standing-in-my-hallway", name: "Who is standing in my hallway?", kind: "film", shipped: true, path: "/hallway",
++    headline: "Fund the next short",
++    lead: "It is free to watch, all 16 seconds. If it kept you up, cover a slice of the compute behind the next one.",
++    captions: FILM_CAPTIONS, thanks: "Tokens received. The next take is on you.",
++    back: { label: "Back to the film", href: "https://www.youtube.com/shorts/jBh7F1knRAA" },
++    // The poster is a portrait, 1080 by 1440: a 16:9 crop is 42% of its height, and at 0.25 it
++    // runs from the hair to below the mouth, face and eyes in frame.
++    picture: { source: "films/who-is-standing-in-my-hallway.jpg", focusY: 0.25 },
++  },
++  {
++    door: "all", slug: null, name: "The whole body of work", kind: "all", shipped: true, path: "/",
++    headline: "Fund the next agent run",
++    lead: "Everything here is free: the apps, the game, the films. If any of it was worth your time, cover a slice of the bill that builds it.",
++    captions: APP_CAPTIONS, thanks: APP_THANKS,
++    back: { label: "Back to the projects", href: "https://csarko.sh/projects" },
++    picture: { source: "donate/body-of-work.png" },
++  },
++  {
++    door: "dayhike", slug: "day-hike", name: "Day Hike", kind: "game", shipped: false, path: "/dayhike",
++    headline: "Fund the next build",
++    lead: "Day Hike is free and plays in your browser. If you made it back from the woods, cover a slice of the cloud bill that runs it.",
++    captions: ["a bug fix, a good question", "a whole system, read end to end", "a build, start to merge", "you really like it"],
++    thanks: "Tokens received. The next build is on you.",
++    back: { label: "Back to Day Hike", href: "https://games.csarko.sh/dayhike/" },
++    picture: null,
++  },
++];
++
++/** The door for a project card's slug, else null. */
++export const doorOf = (slug) => DOORS.find((d) => d.slug === slug) ?? null;
++/** The door by its key (`arkos`, `all`...), else null. */
++export const doorByKey = (door) => DOORS.find((d) => d.door === door) ?? null;
++/** The doors that build today. */
++export const shippedDoors = () => DOORS.filter((d) => d.shipped);
+diff --git a/admin/api/src/donate/prices.mjs b/admin/api/src/donate/prices.mjs
+new file mode 100644
+index 0000000..659e4a3
+--- /dev/null
++++ b/admin/api/src/donate/prices.mjs
+@@ -0,0 +1,49 @@
++/**
++ * The price rule of the donate site, pure: last month's spend (less the commercial project, which
++ * is not free public work) is the pool, each tier is a share of it rounded up to the dollar, and
++ * `decide` says whether today's snapshot run should publish new prices. Prices are made once a
++ * month, on the 3rd (after the billing sources have settled), later if a collector failed and not
++ * past the 7th; a door added mid-month gets that month's prices at the next run.
++ */
++
++import { addMonths, monthOf } from "../finance/rows.mjs";
++import { projectOf } from "../finance/projects.mjs";
++import { TIERS } from "./doors.mjs";
++
++export const PRICE_DAY = 3;
++export const LATE_DAY = 7;
++export const FLOOR_USD = 1;
++
++/** The unrounded sum of `month`'s rows outside the commercial project, never below 0. */
++export function poolOf(monthlyRows, month) {
++  let sum = 0;
++  for (const r of monthlyRows) {
++    if (r.month !== month || r.project === "commercial" || projectOf(r) === "commercial") continue;
++    sum += r.amount;
++  }
++  return Math.max(0, sum);
++}
++
++/** One tier's price in whole dollars: a share of the pool rounded up, never under the floor. */
++export const priceOf = (pool, share) => Math.max(FLOOR_USD, Math.ceil(pool * share - 1e-9));
++
++/** The four tiers priced from the pool. */
++export function pricesOf(pool) {
++  return TIERS.map((t) => ({ tier: t.key, name: t.name, share: t.share, label: `about ${Math.round(t.share * 100)}%`, usd: priceOf(pool, t.share) }));
++}
++
++/**
++ * Whether to publish prices today. `current` is the published JSON or null, `failed` the providers
++ * whose collector failed today, `doors` the shipped door keys.
++ */
++export function decide({ today, current, failed, doors }) {
++  const month = addMonths(monthOf(today), -1);
++  const published = current?.month === month ? current.doors ?? [] : [];
++  const missing = doors.filter((d) => !published.includes(d));
++  if (current?.month === month && missing.length === 0) return { run: false, reason: "done", month, newMonth: false, pending: [] };
++  const day = Number(today.slice(8, 10));
++  if (day < PRICE_DAY) return { run: false, reason: "before the 3rd", month, newMonth: false, pending: [] };
++  if (failed.length > 0 && day < LATE_DAY) return { run: false, reason: `waiting on ${failed.join(", ")}`, month, newMonth: false, pending: [] };
++  const newMonth = current?.month !== month;
++  return { run: true, reason: newMonth ? "new month" : "doors added", month, newMonth, pending: newMonth ? [...doors] : missing };
++}
+diff --git a/admin/api/src/finance/projects.mjs b/admin/api/src/finance/projects.mjs
+index a8f1bcb..2db7125 100644
+--- a/admin/api/src/finance/projects.mjs
++++ b/admin/api/src/finance/projects.mjs
+@@ -1,32 +1,34 @@
+ /**
+  * The second axis of the finance page: which project a line paid for (the contract's `projects`
+- * query). Four fixed projects in the page's order and one rule table over the line rows
++ * query). Five fixed projects in the page's order and one rule table over the line rows
+  * (rows.mjs), by provider:
+  *
+  *   aws     the domains, the `csarko.sh` zone and its queries are the site; everything else is
+  *           Day Hike's (the rigs, their volumes and images, the keys and secrets, tax)
+  *   gcp     by project id: `fps-csarko` is Day Hike except Vertex AI (the films' Veo clips),
+  *           `csarko-sh` the site and its admin, any other project is other
+  *   github  by repository: `game-dayhike` is Day Hike, `csarko.sh` the site, the rest other
+  *   modal   by app name: `cinema-*` the films, `dayhike-*` Day Hike, the rest other
+  *   fal     every line is the films
+  *   claude  the subscription is other (Claude Code serves every project)
+  */
+ 
+ import { cents, monthOf } from "./rows.mjs";
+ import { partialMonths, GCP_EXPORT_FROM } from "./months.mjs";
+ 
+ export const PROJECTS = [
+   { key: "films", label: "Films" },
+   { key: "dayhike", label: "Day Hike" },
+   { key: "site", label: "csarko.sh and admin" },
++  // The commercial work, kept out of the donate site's pool. No rule below routes to it yet.
++  { key: "commercial", label: "Commercial" },
+   { key: "other", label: "Other" },
+ ];
+ export const PROJECT_KEYS = PROJECTS.map((p) => p.key);
+ 
+ const AWS_SITE = /^(Route53-Domains|HostedZone|DNS-Queries)$/;
+ const GITHUB_REPOS = { "game-dayhike": "dayhike", "csarko.sh": "site" };
+ 
+ /** The project key of one line row. */
+ export function projectOf(row) {
+   const line = String(row?.line ?? "");
+diff --git a/admin/api/test/donate-prices.test.mjs b/admin/api/test/donate-prices.test.mjs
+new file mode 100644
+index 0000000..a29f708
+--- /dev/null
++++ b/admin/api/test/donate-prices.test.mjs
+@@ -0,0 +1,63 @@
++// admin/api/test/donate-prices.test.mjs
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { TIERS, CUSTOM, TIER_KEYS, DOORS, doorOf, doorByKey, shippedDoors, DONATE_URL, PRICES_URL } from "../src/donate/doors.mjs";
++import { poolOf, priceOf, pricesOf, decide, PRICE_DAY, LATE_DAY } from "../src/donate/prices.mjs";
++
++test("four tiers at 1, 3, 10 and 30 percent, then the custom row", () => {
++  assert.deepEqual(TIERS.map((t) => [t.key, t.name, t.share]), [["prompt", "A prompt", 0.01], ["context", "A long context window", 0.03], ["run", "A whole agent run", 0.1], ["finetune", "A fine-tune", 0.3]]);
++  assert.deepEqual(CUSTOM, { key: "own", name: "Your own number", minimumUsd: 1 });
++  assert.deepEqual(TIER_KEYS, ["prompt", "context", "run", "finetune", "own"]);
++});
++
++test("a $287.40 month gives $3, $9, $29 and $87, labelled about n%", () => {
++  assert.deepEqual(pricesOf(287.4).map((p) => [p.tier, p.usd, p.label]), [["prompt", 3, "about 1%"], ["context", 9, "about 3%"], ["run", 29, "about 10%"], ["finetune", 87, "about 30%"]]);
++  assert.equal(priceOf(300, 0.01), 3, "an exact dollar is not rounded up to the next");
++  assert.equal(priceOf(0, 0.3), 1, "the floor");
++});
++
++test("the pool is last month's rows less the commercial project, never negative", () => {
++  const rows = [
++    { month: "2026-10", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 200 },
++    { month: "2026-10", provider: "gcp", where: "csarko-sh", service: "Cloud Run", amount: 87.4 },
++    { month: "2026-09", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 999 },
++    { month: "2026-10", provider: "gcp", where: "magicpixel-487014", service: "Compute Engine", amount: 50, project: "commercial" },
++  ];
++  assert.equal(poolOf(rows, "2026-10"), 287.4);
++  assert.equal(poolOf([{ month: "2026-10", provider: "gcp", where: "csarko-sh", amount: -12 }], "2026-10"), 0);
++  assert.deepEqual(pricesOf(0).map((p) => p.usd), [1, 1, 1, 1]);
++});
++
++test("the doors: seven, their URLs and sources, Day Hike not shipped", () => {
++  assert.deepEqual(DOORS.map((d) => [d.door, d.slug, d.path]), [
++    ["arkos", "ide-arkos", "/arkos"], ["macstats", "app-macstats", "/macstats"], ["visits", "lib-visits", "/visits"],
++    ["last-trail", "the-last-trail", "/last-trail"], ["hallway", "who-is-standing-in-my-hallway", "/hallway"], ["all", null, "/"], ["dayhike", "day-hike", "/dayhike"],
++  ]);
++  assert.deepEqual(shippedDoors().map((d) => d.door), ["arkos", "macstats", "visits", "last-trail", "hallway", "all"]);
++  assert.equal(doorOf("ide-arkos").door, "arkos");
++  assert.equal(doorOf("nope"), null);
++  assert.equal(doorByKey("all").picture.source, "donate/body-of-work.png");
++  assert.equal(doorByKey("last-trail").picture.focusY, 0.3);
++  assert.equal(doorByKey("dayhike").picture, null);
++  for (const d of DOORS) {
++    assert.equal(d.captions.length, 4, d.door);
++    assert.ok(d.headline && d.lead && d.thanks && d.back.label && d.back.href.startsWith("https://"), d.door);
++    assert.ok(!/—|@/.test(JSON.stringify(d)), `${d.door}: no em-dash, no address`);
++  }
++  assert.equal(doorByKey("arkos").lead, "Arkos is free. If it saved you a few hours, cover a slice of the cloud bill that builds it and everything else here.");
++  assert.equal(DONATE_URL, "https://donate.csarko.sh");
++  assert.equal(PRICES_URL, "https://storage.googleapis.com/csarko-sh-donate-prices/prices.json");
++});
++
++test("decide: done, before the 3rd, waiting on a provider until the 7th, a new month, a door added mid-month", () => {
++  const doors = ["arkos", "all"];
++  const oct = { month: "2026-10", doors: ["arkos", "all"] };
++  assert.deepEqual(decide({ today: "2026-11-05", current: oct, failed: [], doors }), { run: false, reason: "done", month: "2026-10", newMonth: false, pending: [] });
++  assert.equal(decide({ today: "2026-11-02", current: null, failed: [], doors }).reason, "before the 3rd");
++  assert.equal(decide({ today: "2026-11-03", current: null, failed: ["aws"], doors }).reason, "waiting on aws");
++  assert.equal(decide({ today: "2026-11-07", current: null, failed: ["aws"], doors }).run, true, "from the 7th it runs with what is there");
++  assert.deepEqual(decide({ today: "2026-11-03", current: { month: "2026-09", doors }, failed: [], doors }), { run: true, reason: "new month", month: "2026-10", newMonth: true, pending: doors });
++  assert.deepEqual(decide({ today: "2026-11-12", current: { month: "2026-10", doors: ["arkos"] }, failed: [], doors: ["arkos", "all", "dayhike"] }), { run: true, reason: "doors added", month: "2026-10", newMonth: false, pending: ["all", "dayhike"] });
++  assert.equal(PRICE_DAY, 3);
++  assert.equal(LATE_DAY, 7);
++});
+diff --git a/admin/api/test/finance.test.mjs b/admin/api/test/finance.test.mjs
+index cad76fb..3b37204 100644
+--- a/admin/api/test/finance.test.mjs
++++ b/admin/api/test/finance.test.mjs
+@@ -360,22 +360,23 @@ test("fal series: a fall is the earlier day's spend, a rise a purchase, a skippe
+   const rows = falRows(s.days, "daily");
+   assert.deepEqual(rows.map((r) => [r.day, r.amount]), [["2026-10-10", 4.2], ["2026-10-12", 9.8], ["2026-10-13", 2], ["2026-10-14", 2], ["2026-10-15", 2], ["2026-10-17", 9.5]], "days with spend only");
+   assert.deepEqual(rows[0], { provider: "fal", day: "2026-10-10", service: "fal", line: FAL_LINE, where: null, category: "ai", amount: 4.2, quantity: 0, unit: null, gross: null, repo: null });
+   assert.deepEqual(falRows(s.days, "monthly").map((r) => [r.month, Math.round(r.amount * 100) / 100]), [["2026-10", 29.5]]);
+   assert.deepEqual(falRows(null), []);
+ });
+ 
+ /* ---- projects ---- */
+ 
+ test("projects: the four in order, and the rule table over every provider", () => {
+-  assert.deepEqual(PROJECT_KEYS, ["films", "dayhike", "site", "other"]);
+-  assert.deepEqual(PROJECTS.map((p) => p.label), ["Films", "Day Hike", "csarko.sh and admin", "Other"]);
++  assert.deepEqual(PROJECT_KEYS, ["films", "dayhike", "site", "commercial", "other"]);
++  assert.deepEqual(PROJECTS.map((p) => p.label), ["Films", "Day Hike", "csarko.sh and admin", "Commercial", "Other"]);
++  assert.equal(projectOf({ provider: "gcp", where: "magicpixel-487014" }), "other", "nothing is routed to commercial yet");
+   const aws = (line, service = "EC2 - Other") => awsRows([{ month: "2026-10", service, line, amount: 1 }])[0];
+   assert.equal(projectOf(aws("Route53-Domains", "Amazon Registrar")), "site");
+   assert.equal(projectOf(aws("HostedZone", "Amazon Route 53")), "site");
+   assert.equal(projectOf(aws("DNS-Queries", "Amazon Route 53")), "site");
+   for (const line of ["BoxUsage:g4dn.xlarge", "EBS:VolumeUsage.gp3", "USW2-EBS:SnapshotUsage", "us-west-2-KMS-Keys", "USE1-AWSSecretsManager-Secrets", "USW2-TimedStorage-ByteHrs", "USE1-PublicIPv4:InUseAddress", "Tax"]) assert.equal(projectOf(aws(line)), "dayhike", line);
+   const gcp = (project, service, sku) => gcpRows([{ month: "2026-10", project, service, sku, net: 1 }])[0];
+   assert.equal(projectOf(gcp("fps-csarko", "Vertex AI", "Veo 3 Fast 720p Audio Video Generation")), "films");
+   assert.equal(projectOf(gcp("fps-csarko", "Compute Engine", "Nvidia L4 GPU running in Americas")), "dayhike");
+   assert.equal(projectOf(gcp("fps-csarko", "Cloud Run", "Services CPU (Request-based billing)")), "dayhike");
+   assert.equal(projectOf(gcp("csarko-sh", "Firebase Hosting", "Outgoing Bandwidth")), "site");
+@@ -395,20 +396,21 @@ test("projects: the four in order, and the rule table over every provider", () =
+     ...falRows([{ day: "2026-10-12", spend: 53.63 }], "monthly"),
+     { ...aws("BoxUsage:g4dn.xlarge"), month: "2026-07", amount: 99 },
+   ];
+   const t = projectsTable(rows, ["2026-08", "2026-09", "2026-10"]);
+   assert.deepEqual(t, {
+     months: ["2026-08", "2026-09", "2026-10"],
+     projects: [
+       { key: "films", label: "Films", byMonth: [0, 0, 155.93] },
+       { key: "dayhike", label: "Day Hike", byMonth: [0, 0, 33.74] },
+       { key: "site", label: "csarko.sh and admin", byMonth: [0, 1, 19.76] },
++      { key: "commercial", label: "Commercial", byMonth: [0, 0, 0] },
+       { key: "other", label: "Other", byMonth: [0, 0, 10.96] },
+     ],
+     partial: ["2026-08", "2026-09"],
+   });
+ });
+ 
+ /* ---- films ---- */
+ 
+ test("films: the labels, the provider rule, a film's shape and the list largest first", () => {
+   assert.equal(filmLabel("last-trail"), "The Last Trail");
+diff --git a/admin/public/theme.css b/admin/public/theme.css
+index 97ac21d..fb6b6b3 100644
+--- a/admin/public/theme.css
++++ b/admin/public/theme.css
+@@ -137,40 +137,42 @@
+   --cat-7: #9085e9;
+   --cat-8: #e66767;
+   --cat-9: var(--faint);
+   --cat-10: #a571b1;
+   --prov-1: var(--cat-2);
+   --prov-2: var(--cat-1);
+   --prov-3: var(--cat-3);
+   --prov-4: #7e3ccd;
+   --prov-5: #bb167c;
+   --prov-6: var(--cat-10);
++  --proj-5: #1ca7c9;
+ }
+ @media (prefers-color-scheme: light) {
+   :root {
+     --income: var(--accent);
+     --cat-1: #2a78d6;
+     --cat-2: #eb6834;
+     --cat-3: #1aa674;
+     --cat-4: #c58600;
+     --cat-5: #d87299;
+     --cat-6: #008300;
+     --cat-7: #6250d6;
+     --cat-8: #e34948;
+     --cat-9: var(--faint);
+     --cat-10: #b282bd;
+     --prov-1: var(--cat-2);
+     --prov-2: var(--cat-1);
+     --prov-3: var(--cat-3);
+     --prov-4: #622aa1;
+     --prov-5: #bc3181;
+     --prov-6: var(--cat-10);
++    --proj-5: #0a8fa8;
+   }
+ }
+ /* /admin:palette */
+ 
+ /* Derived tokens: no new values, only the site's, mixed. */
+ :root {
+   /* The four projects of the By project chart, in its stack order: Films, Day Hike, csarko.sh
+      and admin, Other. The palette's yellow, magenta and violet, the triple that stays furthest
+      apart in every pairing (validated --pairs all in both themes on 2026-10-30: dark CVD 13.2,
+      normal 19.3; light CVD 13.5, normal 17.4), and the neutral for Other, as the categories' is. */

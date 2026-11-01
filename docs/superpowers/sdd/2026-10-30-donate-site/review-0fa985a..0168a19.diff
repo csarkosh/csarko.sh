@@ -1,0 +1,617 @@
+# Review package: 0fa985a..0168a19
+
+## Commits
+0168a19 donate: the pay button pays the tier it names; pictures keep their shape
+
+## Files changed
+ donate/build.mjs          | 36 ++++++++++++++++++----------
+ donate/page.mjs           | 10 ++++----
+ donate/pictures.py        | 60 ++++++++++++++++++++++++++---------------------
+ donate/public-src/app.js  | 22 +++++++----------
+ donate/test/page.test.mjs | 19 +++++++++++++--
+ donate/test/view.test.mjs | 15 ++++++++++--
+ donate/view.mjs           | 39 +++++++++++++++++++++---------
+ 7 files changed, 129 insertions(+), 72 deletions(-)
+
+## Diff
+diff --git a/donate/build.mjs b/donate/build.mjs
+index 682955a..577d0ce 100644
+--- a/donate/build.mjs
++++ b/donate/build.mjs
+@@ -5,22 +5,22 @@
+  *
+  *   node donate/build.mjs                        the prices from the bucket (PRICES_URL); fails
+  *                                                until the monthly step has written them
+  *   node donate/build.mjs --prices <file>        the prices from a file, to look before they exist:
+  *                                                --prices donate/test/fixtures/prices.json
+  *
+  * Tests: node --test donate/test/*.test.mjs
+  *
+  * One page per shipped door (DOORS in admin/api/src/donate/doors.mjs): index.html for the bare
+  * door and <door>/index.html for the others (donate/page.mjs), each with this month's prices baked
+- * in as its fallback and its picture beside it in assets/ (pictures.py: 16:9, AVIF, WebP and JPEG
+- * at 640 and 1280 wide, hashed). Around the pages:
++ * in as its fallback and its picture beside it in assets/ (pictures.py: landscape, a poster
++ * cropped to 16:9, AVIF, WebP and JPEG at 640 and 1280 wide, hashed). Around the pages:
+  *   thanks/index.html             where Stripe sends a payer back, every door's line and link
+  *   app.js, view.js               the pages' one script and the logic it shares with this build
+  *   icon.svg                      the Buy Me Tokens icon, for READMEs to embed as an <img>
+  *   assets/*.woff2                the site's hashed font files, copied from public/assets/
+  *   favicon.*, apple-touch-icon   the site's icons
+  *   404.html                      the site's not-found page, its links made absolute
+  *   robots.txt, sitemap.xml       this host's own, listing the door pages
+  * A shipped door fails the build, by name, when the prices carry no links for it, when its
+  * picture is missing, or when its picture is a portrait without a focus; a door the prices carry
+  * that is not shipped is skipped.
+@@ -48,21 +48,33 @@ const fail = (message) => { throw new BuildError(`donate: ${message}`); };
+ function args(argv) {
+   const out = { prices: null };
+   for (let i = 0; i < argv.length; i++) {
+     if (argv[i] === '--prices' && argv[i + 1]) out.prices = path.resolve(argv[++i]);
+     else fail('usage: node donate/build.mjs [--prices <file>]');
+   }
+   return out;
+ }
+ 
+ async function loadPrices(file) {
+-  if (file) return JSON.parse(readFileSync(file, 'utf8'));
++  if (file) {
++    let text;
++    try {
++      text = readFileSync(file, 'utf8');
++    } catch {
++      fail(`no prices file at ${file}`);
++    }
++    try {
++      return JSON.parse(text);
++    } catch (e) {
++      fail(`${file} is not JSON: ${e.message}`);
++    }
++  }
+   const res = await fetch(PRICES_URL, { cache: 'no-cache' });
+   if (res.status === 404) fail('no prices.json yet; the step has not run. Preview with --prices donate/test/fixtures/prices.json');
+   if (!res.ok) fail(`${PRICES_URL}: ${res.status}`);
+   return res.json();
+ }
+ 
+ function checkPrices(json) {
+   if (typeof json?.month !== 'string' || !/^\d{4}-\d{2}$/.test(json.month)) fail('prices.json: no month');
+   if (!Number.isFinite(json.pool)) fail('prices.json: no pool');
+   for (const t of TIERS) {
+@@ -155,20 +167,28 @@ async function main() {
+   for (const door of doors) {
+     if (!json.doors[door.door]) fail(`no links for ${door.door} yet; the next snapshot adds them`);
+   }
+   const prices = new Map(doors.map((d) => [d.door, doorPrices(json, d.door)]));
+   const sources = doors.map(sourcesOf);
+ 
+   // The app's script must fetch the same object the build read.
+   const app = readFileSync(path.join(DONATE, 'public-src', 'app.js'), 'utf8');
+   if (!app.includes(`'${PRICES_URL}'`)) fail(`public-src/app.js does not fetch ${PRICES_URL}`);
+ 
++  // The site's 404 page, so a wrong path here looks like one on csarko.sh; its links are made absolute.
++  if (!existsSync(path.join(SITE_PUBLIC, '404.html'))) fail('public/404.html not found; this host serves the site\'s not-found page');
++  // Its analytics tags go: this host serves neither the scripts nor the /v beacon route.
++  const notFound = readFileSync(path.join(SITE_PUBLIC, '404.html'), 'utf8')
++    .replace(/(<!-- generated:analytics -->)[\s\S]*?(\s*<!-- \/generated:analytics -->)/, '$1$2')
++    .replace(/href="\/(?!assets\/|favicon|apple-touch)/g, 'href="https://csarko.sh/');
++  if (/<script\b(?![^>]*application\/ld\+json)/.test(notFound)) fail('404.html: a script survived the copy');
++
+   rmSync(OUT, { recursive: true, force: true });
+   mkdirSync(path.join(OUT, 'assets'), { recursive: true });
+   for (const f of fontFiles) copyFileSync(path.join(SITE_PUBLIC, 'assets', f), path.join(OUT, 'assets', f));
+   for (const icon of ['favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'apple-touch-icon.png']) {
+     copyFileSync(path.join(SITE_PUBLIC, icon), path.join(OUT, icon));
+   }
+ 
+   // A portrait without a focus fails here, by door, once every picture has finished.
+   const made = await Promise.allSettled(doors.map((door, i) => pictureOf(door, sources[i])));
+   const failed = made.find((r) => r.status === 'rejected');
+@@ -188,26 +208,18 @@ async function main() {
+ 
+   writeFileSync(path.join(OUT, 'app.js'), app);
+   copyFileSync(path.join(DONATE, 'view.mjs'), path.join(OUT, 'view.js'));
+   // A standalone SVG renders as an image only with its namespace.
+   const svg = iconSvg().replace(/ class="[^"]*"/, '').replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
+   writeFileSync(path.join(OUT, 'icon.svg'), `<?xml version="1.0" encoding="UTF-8"?>\n${svg}\n`);
+ 
+   const urls = doors.map((d) => `${DONATE_URL}${d.path}`);
+   writeFileSync(path.join(OUT, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${DONATE_URL}/sitemap.xml\n`);
+   writeFileSync(path.join(OUT, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url>\n    <loc>${u}</loc>\n  </url>`).join('\n')}\n</urlset>\n`);
+-  // The site's 404 page, so a wrong path here looks like one on csarko.sh; its links are made absolute.
+-  if (existsSync(path.join(SITE_PUBLIC, '404.html'))) {
+-    // Its analytics tags go: this host serves neither the scripts nor the /v beacon route.
+-    const notFound = readFileSync(path.join(SITE_PUBLIC, '404.html'), 'utf8')
+-      .replace(/(<!-- generated:analytics -->)[\s\S]*?(\s*<!-- \/generated:analytics -->)/, '$1$2')
+-      .replace(/href="\/(?!assets\/|favicon|apple-touch)/g, 'href="https://csarko.sh/');
+-    if (/<script\b(?![^>]*application\/ld\+json)/.test(notFound)) fail('404.html: a script survived the copy');
+-    writeFileSync(path.join(OUT, '404.html'), notFound);
+-  }
++  writeFileSync(path.join(OUT, '404.html'), notFound);
+   console.log(`donate: ${doors.length} door(s), ${json.month} prices → donate/public/`);
+ }
+ 
+ main().catch((e) => {
+   console.error(e instanceof BuildError ? e.message : e);
+   process.exit(1);
+ });
+diff --git a/donate/page.mjs b/donate/page.mjs
+index 27e6941..bee01b4 100644
+--- a/donate/page.mjs
++++ b/donate/page.mjs
+@@ -32,23 +32,24 @@ function shell({ title, description, canonical, main, noindex = false }) {
+     description,
+     canonical,
+     ogType: 'website',
+     extraCss: DONATE_CSS,
+     graph: [{ '@type': 'WebPage', '@id': canonical, url: canonical, name: title, description, author }],
+     theme: THEME_SLOT,
+     name: BRAND,
+     links: [],
+     main,
+   });
++  // The bar's name is the site's: it links to the bare door, not to the page it is on.
+   const name = `<a class="app-name" href="${escapeHtml(canonical)}">${BRAND}</a>`;
+   if (!html.includes(name)) throw new Error('page.mjs: the shell lost its bar name');
+-  let out = html.replace(name, `<a class="app-name" href="${escapeHtml(canonical)}">${iconSvg()}${BRAND}</a>`);
++  let out = html.replace(name, `<a class="app-name" href="${DONATE_URL}">${iconSvg()}${BRAND}</a>`);
+   if (noindex) out = out.replace('<meta name="viewport" content="width=device-width, initial-scale=1" />', '$&\n  <meta name="robots" content="noindex" />');
+   return out;
+ }
+ 
+ // standaloneShell takes the theme as text and pastes it in; the slot keeps the theme out of the
+ // replace() calls above, so a `$` in it can never be read as a replacement pattern.
+ const THEME_SLOT = '/* theme */';
+ const withTheme = (html, theme) => html.split(THEME_SLOT).join(theme);
+ 
+ /** A <picture> from pictures.py's sets, the dark theme's sources first when there are any. */
+@@ -86,20 +87,21 @@ export function doorPage({ door, prices, picture, theme }) {
+     const url = prices.links?.[key];
+     if (typeof url !== 'string' || !url) throw new Error(`${door.door}: no link for the ${key} tier`);
+     return url;
+   };
+   const rows = TIERS.map((t, i) => {
+     const p = tierOf(t.key);
+     return `        <label class="tier"><input type="radio" name="tier" value="${t.key}"${t.key === DEFAULT_TIER ? ' checked' : ''} /><span class="what"><b>${escapeHtml(t.name)}</b><small>${escapeHtml(door.captions[i])}</small></span><span class="price">$${escapeHtml(p.usd)}<small>${escapeHtml(p.label)}</small></span></label>`;
+   });
+   rows.push(`        <label class="tier own"><input type="radio" name="tier" value="${CUSTOM.key}" /><span class="what"><b>${escapeHtml(CUSTOM.name)}</b><small>${OWN_CAPTION}</small></span><span class="price">any<small>$${CUSTOM.minimumUsd} or more</small></span></label>`);
+   const baked = {
++    door: door.door,
+     month: prices.month,
+     pool: prices.pool,
+     tiers: TIERS.map((t) => { const p = tierOf(t.key); return { tier: p.tier, usd: p.usd, label: p.label }; }),
+     links: Object.fromEntries([...TIERS, CUSTOM].map((t) => [t.key, linkOf(t.key)])),
+   };
+   const main = `  <main id="top" class="wrap" tabindex="-1">
+     <article class="tip">
+       <p class="kicker">${escapeHtml(title)}</p>
+       <h1>${escapeHtml(door.headline)}</h1>
+       <p class="lead">${escapeHtml(door.lead)}</p>
+@@ -149,21 +151,22 @@ export const DONATE_CSS = `
+     .app-name .tokens-icon { vertical-align: 0; }
+     footer .maker { color: var(--muted); transition: color var(--md-duration-short3) var(--md-easing-standard); }
+     footer .maker:hover { color: var(--text); }
+     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+ 
+     .tip { max-width: 560px; margin: 0 auto; padding-block: 56px 72px; }
+     .tip .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin: 0 0 12px; }
+     .tip h1 { font-size: clamp(1.9rem, 6vw, 2.4rem); line-height: 1.1; letter-spacing: -0.03em; margin: 0 0 14px; }
+     .tip .lead { font-size: 1.05rem; color: var(--prose); margin: 0 0 24px; }
+     .shot { display: block; margin: 0 0 22px; }
+-    .shot img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
++    /* The picture keeps its own shape: a hero is as wide as it was made, a poster arrives cropped to 16:9. */
++    .shot img { display: block; width: 100%; height: auto; object-fit: cover; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+     .bill { margin: 0 0 18px; color: var(--text); }
+     .bill b { font-family: var(--mono); font-weight: 600; color: var(--accent); }
+     .note { margin: -10px 0 18px; font-size: 13.5px; color: var(--muted); }
+ 
+     .tiers { display: grid; gap: 8px; margin: 0 0 16px; padding: 0; border: 0; min-width: 0; }
+     .tier { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); cursor: pointer; line-height: 1.4;
+       transition: border-color var(--md-duration-short3) var(--md-easing-standard), background-color var(--md-duration-short3) var(--md-easing-standard); }
+     .tier:hover { border-color: var(--border-strong); }
+     .tier input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+     .tier:has(:checked) { border-color: var(--accent-border); background: var(--accent-soft); }
+@@ -171,27 +174,24 @@ export const DONATE_CSS = `
+     .tier.own { border-style: dashed; }
+     .tier .what { min-width: 0; }
+     .tier b { display: block; font-weight: 600; color: var(--text); }
+     .tier .what small { display: block; font-size: 13.5px; color: var(--muted); }
+     .price { flex: none; text-align: right; font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--accent); }
+     .price small { display: block; font-family: var(--sans); font-size: 12.5px; font-weight: 400; color: var(--muted); }
+ 
+     .btn { display: block; padding: 13px 16px; border-radius: 10px; background: var(--accent); color: var(--on-accent); font-size: 16px; font-weight: 600; text-align: center;
+       transition: background-color var(--md-duration-short3) var(--md-easing-standard); }
+     .btn:hover { background: var(--accent-hover); }
+-    .btn.swap { animation: swap var(--md-duration-short4) var(--md-easing-standard); }
+-    @keyframes swap { from { color: transparent; } }
+     .foot { margin: 12px 0 0; font-size: 13px; color: var(--muted); text-align: center; }
+ 
+     .thanks .back { margin: 28px 0 0; }
+     .thanks .back a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; transition: text-decoration-color var(--md-duration-short3) var(--md-easing-standard); }
+     .thanks .back a:hover { text-decoration-color: var(--accent); }
+ 
+     @media (max-width: 640px) {
+       .wrap { padding-inline: 16px; }
+       .tip { padding-block: 32px 56px; }
+       .tier { padding: 11px 14px; }
+     }
+     @media (prefers-reduced-motion: reduce) {
+       .tier, .btn, footer .maker, .thanks .back a { transition: none; }
+-      .btn.swap { animation: none; }
+     }`;
+diff --git a/donate/pictures.py b/donate/pictures.py
+index 10c3ee9..cf7317c 100644
+--- a/donate/pictures.py
++++ b/donate/pictures.py
+@@ -1,74 +1,76 @@
+ #!/usr/bin/env python3
+ """pictures.py: a donate door's picture, landscape, as hashed AVIF, WebP and JPEG.
+ 
+     python3 -I donate/pictures.py --source <png|jpg> [--dark <png>] [--focus-y 0.3] --out <dir> --stem <door>
+ 
+-Every picture comes out 16:9, at 640 and 1280 pixels wide, as <stem>-<w>.<hash8>.<ext> (and
+-<stem>-dark-<w>.<hash8>.<ext> for --dark). A source taller than wide (a film's poster) is cropped
+-to 16:9 with the crop's centre at --focus-y of its height, clamped to the picture, and is refused
+-without one. A landscape source of another shape (an app's hero, often wider than 16:9) is fitted
+-whole inside the 16:9 frame and the rest left transparent, so the page's frame colour shows
+-around it in either theme; the JPEG, which has no transparency, is laid on that colour instead
+-(--surface-2 of the variant's theme, as build_assets.py lays an app preview). Encoding is
+-build_assets.py's. Prints, as JSON, the srcset entries the page uses:
++Every picture comes out landscape, at 640 and 1280 pixels wide, as <stem>-<w>.<hash8>.<ext> (and
++<stem>-dark-<w>.<hash8>.<ext> for --dark). A source wider than tall (an app's hero, often near
++3:1) keeps its own shape, the height following the width. A source taller than wide (a film's
++poster) is cropped to 16:9 with the crop's centre at --focus-y of its height, clamped to the
++picture, and is refused without one. A transparent source stays transparent in the AVIF and WebP,
++so the page's frame colour shows through in either theme; the JPEG, which has no transparency, is
++laid on that colour instead (--surface-2 of the variant's theme, as build_assets.py lays an app
++preview). A --dark source must be the same shape as the light one. Sources are turned upright by
++their EXIF orientation first. Encoding is build_assets.py's. Prints, as JSON, the srcset entries the
++page uses and the 1280-wide picture's size:
+ 
+     {"sets": {"light": {"avif": ["<file> 640w", ...], "webp": [...], "jpg": [...]}, "dark": {...}},
+      "width": 1280, "height": 720}
+ """
+ 
+ import argparse
+ import json
+ import sys
+ from pathlib import Path
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ sys.path.insert(0, str(ROOT / ".agents/skills/site-quality/scripts"))
+ 
+-from PIL import Image  # noqa: E402
++from PIL import Image, ImageOps  # noqa: E402
+ 
+ from build_assets import encode, short_hash  # noqa: E402
+ 
+ WIDTHS = (640, 1280)
++# The crop a portrait gets.
+ FRAME = (16, 9)
+ FORMATS = ("avif", "webp", "jpg")
+ # The JPEG's ground: --surface-2 in the dark and the light theme (public/index.html).
+ GROUND = {"dark": "#161922", "light": "#eef0f4"}
+ 
+ 
+ class PictureError(Exception):
+     pass
+ 
+ 
+ def landscape(image: Image.Image, focus_y) -> Image.Image:
+-    """The source as a 16:9 RGBA picture: a portrait cropped around focus_y, anything else fitted."""
+-    image = image.convert("RGBA")
++    """The source as a landscape RGBA picture: a portrait cropped to 16:9 around focus_y, a
++    landscape source as it is."""
++    image = ImageOps.exif_transpose(image).convert("RGBA")
+     w, h = image.size
+-    if h > w:
+-        if focus_y is None:
+-            raise PictureError(f"the source is {w}x{h}, taller than wide: give --focus-y for its 16:9 crop")
+-        ch = round(w * FRAME[1] / FRAME[0])
+-        top = min(max(round(focus_y * h - ch / 2), 0), h - ch)
+-        return image.crop((0, top, w, top + ch))
+-    if w * FRAME[1] == h * FRAME[0]:
++    if h <= w:
+         return image
+-    # Fit the whole source in the frame, centred, at the source's own scale.
+-    fw, fh = (w, round(w * FRAME[1] / FRAME[0])) if w * FRAME[1] > h * FRAME[0] else (round(h * FRAME[0] / FRAME[1]), h)
+-    frame = Image.new("RGBA", (fw, fh), (0, 0, 0, 0))
+-    frame.paste(image, ((fw - w) // 2, (fh - h) // 2))
+-    return frame
++    if focus_y is None:
++        raise PictureError(f"the source is {w}x{h}, taller than wide: give --focus-y for its 16:9 crop")
++    ch = round(w * FRAME[1] / FRAME[0])
++    top = min(max(round(focus_y * h - ch / 2), 0), h - ch)
++    return image.crop((0, top, w, top + ch))
++
++
++def height_at(image: Image.Image, w: int) -> int:
++    return round(w * image.height / image.width)
+ 
+ 
+ def write_set(image: Image.Image, stem: str, out: Path, ground: str) -> dict:
+     sets = {fmt: [] for fmt in FORMATS}
+     for w in WIDTHS:
+-        resized = image.resize((w, round(w * FRAME[1] / FRAME[0])), Image.Resampling.LANCZOS)
++        resized = image.resize((w, height_at(image, w)), Image.Resampling.LANCZOS)
+         flat = Image.alpha_composite(Image.new("RGBA", resized.size, ground), resized).convert("RGB")
+         opaque = resized.getchannel("A").getextrema()[0] == 255
+         for fmt in FORMATS:
+             data = encode(flat if fmt == "jpg" or opaque else resized, fmt)
+             name = f"{stem}-{w}.{short_hash(data)}.{fmt}"
+             (out / name).write_bytes(data)
+             sets[fmt].append(f"{name} {w}w")
+     return sets
+ 
+ 
+@@ -78,25 +80,29 @@ def main(argv=None) -> int:
+     parser.add_argument("--dark", type=Path)
+     parser.add_argument("--focus-y", type=float)
+     parser.add_argument("--out", required=True, type=Path)
+     parser.add_argument("--stem", required=True)
+     args = parser.parse_args(argv)
+     try:
+         if args.focus_y is not None and not 0 <= args.focus_y <= 1:
+             raise PictureError(f"--focus-y is a fraction of the height, 0 to 1, not {args.focus_y}")
+         args.out.mkdir(parents=True, exist_ok=True)
+         variants = [("light", args.source, args.stem)] + ([("dark", args.dark, f"{args.stem}-dark")] if args.dark else [])
+-        sets = {}
++        sets, heights = {}, set()
+         for variant, path, stem in variants:
+             if not path.is_file():
+                 raise PictureError(f"no picture at {path}")
+             with Image.open(path) as source:
+-                sets[variant] = write_set(landscape(source, args.focus_y), stem, args.out, GROUND[variant])
++                picture = landscape(source, args.focus_y)
++            heights.add(height_at(picture, WIDTHS[-1]))
++            sets[variant] = write_set(picture, stem, args.out, GROUND[variant])
++        if len(heights) > 1:
++            raise PictureError(f"--dark is not the shape of --source ({sorted(heights)} high at {WIDTHS[-1]} wide)")
+     except PictureError as e:
+         print(f"pictures.py: {e}", file=sys.stderr)
+         return 1
+-    print(json.dumps({"sets": sets, "width": WIDTHS[-1], "height": WIDTHS[-1] * FRAME[1] // FRAME[0]}))
++    print(json.dumps({"sets": sets, "width": WIDTHS[-1], "height": heights.pop()}))
+     return 0
+ 
+ 
+ if __name__ == "__main__":
+     sys.exit(main())
+diff --git a/donate/public-src/app.js b/donate/public-src/app.js
+index b1602ab..ccaabb9 100644
+--- a/donate/public-src/app.js
++++ b/donate/public-src/app.js
+@@ -10,73 +10,69 @@ const PRICES_URL = 'https://storage.googleapis.com/csarko-sh-donate-prices/price
+ 
+ const readJson = (id) => {
+   try {
+     return JSON.parse(document.getElementById(id)?.textContent ?? 'null');
+   } catch {
+     return null;
+   }
+ };
+ 
+ function doorPage(pay, baked) {
+-  // The door is the page's path: /arkos is arkos, / is the bare door.
+-  const door = location.pathname.replace(/^\/+|\/+$/g, '') || 'all';
+   let prices = baked;
+   const selected = () => document.querySelector('input[name="tier"]:checked')?.value ?? DEFAULT_TIER;
+ 
+-  // The button follows the selected tier; its words fade back in rather than jump.
++  // The button follows the selected tier: its words change only with its link, so it never says
++  // one tier's price and pays another's.
+   function setButton() {
+     const tier = selected();
+     const href = prices.links[tier];
+-    if (href) pay.setAttribute('href', href);
+-    const label = buttonLabel(tier, prices);
+-    if (pay.textContent !== label) {
+-      pay.textContent = label;
+-      pay.classList.remove('swap');
+-      void pay.offsetWidth;
+-      pay.classList.add('swap');
+-    }
++    if (!href) return;
++    pay.setAttribute('href', href);
++    pay.textContent = buttonLabel(tier, prices);
+   }
+   for (const radio of document.querySelectorAll('input[name="tier"]')) radio.addEventListener('change', setButton);
+   // A page restored from history may come back with another tier checked.
+   addEventListener('pageshow', setButton);
+ 
+   function apply({ prices: next, stale }) {
+-    prices = next;
+     const bill = document.querySelector('.bill');
+     const figure = bill?.querySelector('b');
+     if (figure) {
+       figure.textContent = `$${Math.round(next.pool)}`;
+       const rest = figure.nextSibling;
+       if (rest) rest.textContent = ` to run in ${monthName(next.month)}. Each tier is a slice of that.`;
+     }
+     for (const row of document.querySelectorAll('.tier')) {
+       const key = row.querySelector('input')?.value;
+       const tier = next.tiers.find((t) => t.tier === key);
+       const price = row.querySelector('.price');
+       if (!tier || !price) continue;
+       const share = price.querySelector('small');
+       price.firstChild.textContent = `$${tier.usd}`;
+       if (share) share.textContent = tier.label;
+     }
++    prices = next;
+     if (stale && bill && !document.querySelector('.note')) {
+       const note = document.createElement('p');
+       note.className = 'note';
+       note.textContent = `Prices are from ${monthName(next.month)}.`;
+       bill.after(note);
+     }
+     setButton();
+   }
+ 
+   fetch(PRICES_URL, { cache: 'no-cache' })
+     .then((res) => (res.ok ? res.json() : null))
+     .catch(() => null)
+-    .then((fetched) => apply(pickPrices(baked, fetched, door)));
++    .then((fetched) => apply(pickPrices(baked, fetched, baked.door)))
++    // Anything the live prices break leaves the baked ones, said to be from their month.
++    .catch(() => apply({ prices: baked, stale: true }));
+   setButton();
+ }
+ 
+ function thanksPage(doors) {
+   const door = new URL(location.href).searchParams.get('door');
+   const back = backLink(door, doors);
+   const link = document.getElementById('back');
+   const line = document.getElementById('line');
+   if (link) {
+     link.textContent = back.label;
+diff --git a/donate/test/page.test.mjs b/donate/test/page.test.mjs
+index a284ba3..d5bb206 100644
+--- a/donate/test/page.test.mjs
++++ b/donate/test/page.test.mjs
+@@ -34,15 +34,30 @@ test('the bare door says Buy Me Tokens alone and is canonical at the root', () =
+   assert.ok(html.includes('<link rel="canonical" href="https://donate.csarko.sh/" />'));
+ });
+ 
+ test('the thanks page bakes every shipped door’s line and link, escaped', () => {
+   const html = thanksPage({ theme: THEME, doors: { arkos: { back: doorByKey('arkos').back, thanks: doorByKey('arkos').thanks }, all: { back: { label: 'Back to the projects', href: 'https://csarko.sh/projects' }, thanks: 'Tokens received.' } } });
+   assert.ok(html.includes('<script type="application/json" id="doors">'));
+   assert.ok(html.includes('Tokens received. The next agent run is on you.'));
+   assert.ok(html.includes('<a id="back" href="https://csarko.sh/projects">Back to the projects</a>'));
+ });
+ 
+-test('the CSS is tokens only and sizes the picture 16:9', () => {
++test('the CSS is tokens only and sizes the picture by its own shape', () => {
+   assert.ok(!/#[0-9a-f]{3,8}\b/i.test(DONATE_CSS.replace(/#(top|pay|back|prices|doors)\b/g, '')));
+-  assert.ok(DONATE_CSS.includes('aspect-ratio: 16 / 9'));
++  assert.ok(!DONATE_CSS.includes('aspect-ratio: 16 / 9'), 'no fixed frame: a wide hero keeps its own shape');
++  assert.ok(/\.shot img \{[^}]*height: auto;[^}]*object-fit: cover;/.test(DONATE_CSS));
+   assert.ok(DONATE_CSS.includes('.tier:has(:checked)'));
++  assert.ok(!/@keyframes|animation:/.test(DONATE_CSS), 'nothing animated');
++});
++
++test('a wide picture keeps its own width and height on the page', () => {
++  const wide = { ...PICTURE, width: 1280, height: 432 };
++  const html = doorPage({ door: doorByKey('arkos'), prices: PRICES, picture: wide, theme: THEME });
++  assert.ok(html.includes('width="1280" height="432"'));
++});
++
++test('the baked prices name their door, and the bar links to the site', () => {
++  const html = doorPage({ door: doorByKey('arkos'), prices: PRICES, picture: PICTURE, theme: THEME });
++  const baked = JSON.parse(/<script type="application\/json" id="prices">(.*?)<\/script>/.exec(html)[1]);
++  assert.equal(baked.door, 'arkos');
++  assert.ok(html.includes('<a class="app-name" href="https://donate.csarko.sh">'));
+ });
+diff --git a/donate/test/view.test.mjs b/donate/test/view.test.mjs
+index 6be1bd7..bcedec0 100644
+--- a/donate/test/view.test.mjs
++++ b/donate/test/view.test.mjs
+@@ -1,23 +1,34 @@
+ import { test } from 'node:test';
+ import assert from 'node:assert/strict';
+ import { pickPrices, buttonLabel, backLink, monthName } from '../view.mjs';
+ 
+ const BAKED = { month: '2026-10', pool: 288, tiers: [{ tier: 'prompt', usd: 3, label: 'about 1%' }, { tier: 'context', usd: 9, label: 'about 3%' }, { tier: 'run', usd: 29, label: 'about 10%' }, { tier: 'finetune', usd: 87, label: 'about 30%' }], links: { prompt: 'a', context: 'b', run: 'c', finetune: 'd', own: 'e' } };
+ 
+ test('the live JSON wins when it is this month or newer, the baked one otherwise, marked stale', () => {
+   assert.deepEqual(pickPrices(BAKED, null), { prices: BAKED, stale: true });
+   assert.deepEqual(pickPrices(BAKED, { month: '2026-09', doors: {} }), { prices: BAKED, stale: true });
+   assert.deepEqual(pickPrices(BAKED, 'garbage'), { prices: BAKED, stale: true });
+-  const live = { month: '2026-11', pool: 300, tiers: BAKED.tiers, doors: { arkos: { links: { prompt: { url: 'x' } } } } };
++  const links = (over = {}) => Object.fromEntries(['prompt', 'context', 'run', 'finetune', 'own'].map((t) => [t, { url: `https://buy.stripe.com/${t}` }]).concat(Object.entries(over)));
++  const live = { month: '2026-11', pool: 300, tiers: BAKED.tiers, doors: { arkos: { links: links() } } };
+   assert.equal(pickPrices(BAKED, live, 'arkos').stale, false);
+-  assert.equal(pickPrices(BAKED, live, 'arkos').prices.links.prompt, 'x');
++  assert.equal(pickPrices(BAKED, live, 'arkos').prices.links.prompt, 'https://buy.stripe.com/prompt');
++  assert.equal(pickPrices(BAKED, live, 'arkos').prices.door, 'arkos');
++  // A live door missing a link, or carrying one that is not https, never wins: the button could
++  // otherwise say one tier's price and pay another's.
++  const without = links(); delete without.run;
++  for (const doorLinks of [without, links({ run: { url: 'javascript:alert(1)' } }), links({ own: { url: 'http://buy.stripe.com/own' } }), links({ own: null })]) {
++    assert.deepEqual(pickPrices(BAKED, { ...live, doors: { arkos: { links: doorLinks } } }, 'arkos'), { prices: BAKED, stale: true });
++  }
++  assert.deepEqual(pickPrices(BAKED, { ...live, doors: { arkos: null } }, 'arkos'), { prices: BAKED, stale: true });
++  assert.deepEqual(pickPrices(BAKED, live, 'macstats'), { prices: BAKED, stale: true });
++  assert.deepEqual(pickPrices(BAKED, { ...live, tiers: BAKED.tiers.slice(1) }, 'arkos'), { prices: BAKED, stale: true }, 'a tier without a live price');
+ });
+ 
+ test('the button says the price, or what you like', () => {
+   assert.equal(buttonLabel('context', BAKED), 'Tip $9');
+   assert.equal(buttonLabel('own', BAKED), 'Tip what you like');
+   assert.equal(buttonLabel('nope', BAKED), 'Tip $9', 'an unknown tier falls back to the default one');
+ });
+ 
+ test('the thanks link: the door’s own, else the projects page; junk never passes through', () => {
+   const doors = { arkos: { back: { label: 'Back to Arkos IDE', href: 'https://apps.csarko.sh/ide-arkos' }, thanks: 'Tokens received. The next agent run is on you.' } };
+diff --git a/donate/view.mjs b/donate/view.mjs
+index cb84497..4ded574 100644
+--- a/donate/view.mjs
++++ b/donate/view.mjs
+@@ -12,40 +12,57 @@ const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+ 
+ const isObject = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
+ const own = (obj, key) => isObject(obj) && typeof key === 'string' && Object.hasOwn(obj, key);
+ 
+ /** "2026-10" → "October"; anything else → "". */
+ export function monthName(month) {
+   const m = MONTH.exec(String(month ?? ''));
+   return m ? MONTHS[Number(m[1]) - 1] : '';
+ }
+ 
++const httpsUrl = (u) => {
++  try {
++    return typeof u === 'string' && new URL(u).protocol === 'https:';
++  } catch {
++    return false;
++  }
++};
++
+ /**
+- * The prices a door shows. `baked` is the build's copy for this door ({ month, pool, tiers:
++ * The prices a door shows. `baked` is the build's copy for this door ({ door, month, pool, tiers:
+  * [{ tier, usd, label }], links: { <tier>: url } }); `fetched` is the bucket's whole prices.json,
+  * or whatever the fetch produced. The live one wins when it is a month at least as new as the baked
+- * one and carries this door; it is reshaped to the baked shape. Otherwise the baked prices stand,
+- * marked stale, so the page says which month they are from.
++ * one and carries this door with an https link for every tier the baked one has (so the button can
++ * never say one tier's price and pay another's); it is reshaped to the baked shape. Otherwise the
++ * baked prices stand, marked stale, so the page says which month they are from.
+  */
+ export function pickPrices(baked, fetched, door) {
+   const fallback = { prices: baked, stale: true };
+   if (!isObject(fetched) || typeof fetched.month !== 'string' || !MONTH.test(fetched.month)) return fallback;
+-  if (fetched.month < baked.month || !own(fetched.doors, door) || !isObject(fetched.doors[door].links)) return fallback;
++  if (fetched.month < baked.month || !own(fetched.doors, door) || !isObject(fetched.doors[door])) return fallback;
++  const live = fetched.doors[door].links;
++  if (!isObject(live)) return fallback;
+   const links = {};
+-  for (const [tier, link] of Object.entries(fetched.doors[door].links)) {
+-    if (own(link, 'url') && typeof link.url === 'string' && !/^\s*javascript:/i.test(link.url)) links[tier] = link.url;
++  for (const tier of Object.keys(baked.links)) {
++    const url = own(live, tier) && isObject(live[tier]) ? live[tier].url : null;
++    if (!httpsUrl(url)) return fallback;
++    links[tier] = url;
++  }
++  // Every tier the baked prices show needs a live price too, or its row and button would go stale.
++  const tiers = [];
++  for (const { tier } of baked.tiers) {
++    const t = Array.isArray(fetched.tiers) ? fetched.tiers.find((x) => isObject(x) && x.tier === tier) : null;
++    if (!t || !Number.isFinite(t.usd)) return fallback;
++    tiers.push({ tier, usd: t.usd, label: String(t.label ?? '') });
+   }
+-  const tiers = Array.isArray(fetched.tiers)
+-    ? fetched.tiers.filter((t) => isObject(t) && typeof t.tier === 'string' && Number.isFinite(t.usd)).map(({ tier, usd, label }) => ({ tier, usd, label: String(label ?? '') }))
+-    : [];
+-  const pool = Number.isFinite(fetched.pool) ? fetched.pool : baked.pool;
+-  return { prices: { month: fetched.month, pool, tiers: tiers.length ? tiers : baked.tiers, links }, stale: false };
++  if (!Number.isFinite(fetched.pool)) return fallback;
++  return { prices: { door, month: fetched.month, pool: fetched.pool, tiers, links }, stale: false };
+ }
+ 
+ /** The button's words for a tier: its price, or "what you like" for the free row. */
+ export function buttonLabel(tierKey, prices) {
+   if (tierKey === OWN_TIER) return 'Tip what you like';
+   const tiers = prices?.tiers ?? [];
+   const tier = tiers.find((t) => t.tier === tierKey) ?? tiers.find((t) => t.tier === DEFAULT_TIER);
+   return tier ? `Tip $${tier.usd}` : 'Tip what you like';
+ }
+ 

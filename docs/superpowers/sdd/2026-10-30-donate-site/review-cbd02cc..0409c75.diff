@@ -1,0 +1,323 @@
+# Review package: cbd02cc..0409c75
+
+## Commits
+0409c75 donate: the monthly step, idempotent, and the public prices object
+
+## Files changed
+ admin/api/src/donate/bucket.mjs     |  51 ++++++++++++++
+ admin/api/src/donate/step.mjs       | 114 ++++++++++++++++++++++++++++++++
+ admin/api/test/donate-step.test.mjs | 128 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 293 insertions(+)
+
+## Diff
+diff --git a/admin/api/src/donate/bucket.mjs b/admin/api/src/donate/bucket.mjs
+new file mode 100644
+index 0000000..c9ba2a3
+--- /dev/null
++++ b/admin/api/src/donate/bucket.mjs
+@@ -0,0 +1,51 @@
++/**
++ * The public prices object, `prices.json` in the bucket `PRICES_BUCKET`: the one file the donate
++ * site's pages read to show this month's four prices and to find each door's payment links, so the
++ * site never talks to Stripe itself. The monthly step reads it to know what is already published
++ * and writes the next one; it is cached five minutes, which is how long a new month's prices can
++ * take to show. The Storage SDK is imported when first needed, so the tests, which inject a fake
++ * `storage`, never load it. A missing object reads as null (nothing published yet); any other
++ * failure throws. Not configured without a bucket name.
++ */
++
++import { PRICES_OBJECT } from "./doors.mjs";
++
++export function createPricesBucket({ bucket, projectId = null, storage = null, log = console }) {
++  const name = typeof bucket === "string" ? bucket.replace(/^gs:\/\//, "").replace(/\/+$/, "") : "";
++  const configured = name !== "";
++  let storagePromise = null;
++
++  const getStorage = () => {
++    if (storage !== null) return Promise.resolve(storage);
++    storagePromise ??= import("@google-cloud/storage").then(({ Storage }) => new Storage(projectId ? { projectId } : {})).catch((error) => {
++      storagePromise = null;
++      throw error;
++    });
++    return storagePromise;
++  };
++  const file = async () => (await getStorage()).bucket(name).file(PRICES_OBJECT);
++
++  return {
++    get configured() {
++      return configured;
++    },
++    /** The published JSON, or null when the object does not exist. */
++    async read() {
++      try {
++        const [buffer] = await (await file()).download();
++        return JSON.parse(buffer.toString("utf8"));
++      } catch (error) {
++        if (error?.code === 404) return null;
++        log.error?.(`donate: reading gs://${name}/${PRICES_OBJECT} failed`, error);
++        throw error;
++      }
++    },
++    /** Replaces the object with `json`, public-readable by the bucket's own policy, cached five minutes. */
++    async write(json) {
++      await (await file()).save(JSON.stringify(json, null, 1), {
++        contentType: "application/json",
++        metadata: { cacheControl: "public, max-age=300" },
++      });
++    },
++  };
++}
+diff --git a/admin/api/src/donate/step.mjs b/admin/api/src/donate/step.mjs
+new file mode 100644
+index 0000000..77ae74f
+--- /dev/null
++++ b/admin/api/src/donate/step.mjs
+@@ -0,0 +1,114 @@
++/**
++ * The monthly step of the donate site: once last month's bill is in, turn its pool into four prices
++ * (a share each) and a custom one, make a Stripe payment link for every door and tier, and publish
++ * the result as the one JSON object the pages read. It is idempotent: every Stripe create carries
++ * a key named for the month, door and tier, so a rerun after a failure gets back what the first
++ * run made, and nothing is written to the bucket until every create has succeeded. Last month's
++ * links and prices are retired only after the new ones exist, so a visitor never meets a dead link;
++ * a retirement that fails is logged and left for a person, because the new prices are already live.
++ * A door shipped mid-month gets its links at the month's current prices and touches nothing else.
++ */
++
++import { cents } from "../finance/rows.mjs";
++import { CUSTOM, DONATE_URL, TIERS, TIER_KEYS, shippedDoors } from "./doors.mjs";
++import { decide, poolOf, pricesOf } from "./prices.mjs";
++
++const SHARES = Object.fromEntries(TIERS.map((t) => [t.key, t.share]));
++
++/** The writer returns what Stripe gave; an id that is not a non-empty string is a failed create. */
++function need(value, what) {
++  if (typeof value !== "string" || value === "") throw new Error(`donate: Stripe returned no ${what}`);
++  return value;
++}
++
++export function createDonateStep({ writer, bucket, now = Date.now, log = console }) {
++  const recordOf = (json) =>
++    json ? { month: json.month, pool: json.pool, at: json.at, doors: Object.keys(json.doors ?? {}) } : null;
++
++  async function productsOf() {
++    const existing = await writer.listProducts();
++    const products = {};
++    for (const t of [...TIERS, CUSTOM]) {
++      const found = existing.find((p) => p.active !== false && p.metadata?.tier === t.key);
++      products[t.key] = found
++        ? need(found.id, `product id for ${t.key}`)
++        : need((await writer.createProduct({ name: t.name, tier: t.key, key: `donate:product:${t.key}` })).id, `product id for ${t.key}`);
++    }
++    return products;
++  }
++
++  async function pricesFor(month, pool) {
++    const products = await productsOf();
++    const tiers = [];
++    for (const p of pricesOf(pool)) {
++      const priceId = need((await writer.createPrice({ product: products[p.tier], usd: p.usd, key: `donate:price:${month}:${p.tier}` })).id, `price id for ${p.tier}`);
++      tiers.push({ ...p, priceId });
++    }
++    const customId = need((await writer.createCustomPrice({ product: products[CUSTOM.key], minimumUsd: CUSTOM.minimumUsd, key: `donate:price:${month}:${CUSTOM.key}` })).id, "custom price id");
++    return { tiers, custom: { priceId: customId, minimumUsd: CUSTOM.minimumUsd }, products };
++  }
++
++  async function linksFor(door, month, tiers, custom) {
++    const priceIds = { ...Object.fromEntries(tiers.map((t) => [t.tier, t.priceId])), [CUSTOM.key]: custom.priceId };
++    const links = {};
++    for (const tier of TIER_KEYS) {
++      const link = await writer.createLink({
++        priceId: priceIds[tier], door, tier, month, share: SHARES[tier] ?? 0,
++        redirectUrl: `${DONATE_URL}/thanks?door=${door}`,
++        key: `donate:link:${month}:${door}:${tier}`,
++      });
++      links[tier] = { id: need(link?.id, `link id for ${door}/${tier}`), url: need(link?.url, `link url for ${door}/${tier}`) };
++    }
++    return { links };
++  }
++
++  /** Last month's links deactivated and prices archived; each failure logged, none fatal. */
++  async function retire(old) {
++    const attempt = async (what, fn) => {
++      try {
++        await fn();
++      } catch (error) {
++        log.error(`donate: retiring ${what} failed`, error);
++      }
++    };
++    for (const door of Object.values(old.doors ?? {})) {
++      for (const link of Object.values(door.links ?? {})) if (link?.id) await attempt(`link ${link.id}`, () => writer.deactivateLink(link.id));
++    }
++    for (const t of old.tiers ?? []) if (t?.priceId) await attempt(`price ${t.priceId}`, () => writer.archivePrice(t.priceId));
++    if (old.custom?.priceId) await attempt(`price ${old.custom.priceId}`, () => writer.archivePrice(old.custom.priceId));
++  }
++
++  return {
++    get configured() {
++      return Boolean(writer?.configured && bucket?.configured);
++    },
++    async run({ monthlyRows, failed, today }) {
++      const current = await bucket.read();
++      const d = decide({
++        today, failed,
++        current: current ? { month: current.month, doors: Object.keys(current.doors ?? {}) } : null,
++        doors: shippedDoors().map((x) => x.door),
++      });
++      if (!d.run) return { ran: false, reason: d.reason, record: recordOf(current) };
++
++      let base;
++      if (d.newMonth) {
++        const pool = cents(poolOf(monthlyRows, d.month));
++        base = { pool, ...(await pricesFor(d.month, pool)) };
++      } else {
++        base = { pool: current.pool, tiers: current.tiers, custom: current.custom, products: current.products };
++      }
++      const doors = d.newMonth ? {} : { ...current.doors };
++      for (const door of d.pending) doors[door] = await linksFor(door, d.month, base.tiers, base.custom);
++
++      const next = {
++        month: d.month, pool: base.pool, at: new Date(now()).toISOString(),
++        tiers: base.tiers, custom: base.custom, products: base.products, doors,
++      };
++      if (!d.newMonth) { next.month = current.month; next.at = current.at; }
++      if (d.newMonth && current !== null) await retire(current);
++      await bucket.write(next);
++      return { ran: true, reason: d.reason, record: recordOf(next) };
++    },
++  };
++}
+diff --git a/admin/api/test/donate-step.test.mjs b/admin/api/test/donate-step.test.mjs
+new file mode 100644
+index 0000000..697ef59
+--- /dev/null
++++ b/admin/api/test/donate-step.test.mjs
+@@ -0,0 +1,128 @@
++// admin/api/test/donate-step.test.mjs
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { createDonateStep } from "../src/donate/step.mjs";
++import { createPricesBucket } from "../src/donate/bucket.mjs";
++import { TIER_KEYS } from "../src/donate/doors.mjs";
++
++const NOW = Date.parse("2026-11-03T10:00:12Z");
++const ROWS = [{ month: "2026-10", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 200 }, { month: "2026-10", provider: "gcp", where: "csarko-sh", service: "Cloud Run", amount: 87.4 }];
++
++/** A fake writer that records calls and fails on the nth create when told to. */
++function fakeWriter(calls, { products = [], failAt = null } = {}) {
++  let n = 0;
++  const next = (prefix) => { n += 1; if (failAt !== null && n === failAt) throw new Error(`Stripe 500 on ${prefix}`); return `${prefix}_${n}`; };
++  return {
++    configured: true,
++    async listProducts() { calls.push(["listProducts"]); return products; },
++    async createProduct(a) { calls.push(["createProduct", a]); return { id: next("prod") }; },
++    async createPrice(a) { calls.push(["createPrice", a]); return { id: next("price") }; },
++    async createCustomPrice(a) { calls.push(["createCustomPrice", a]); return { id: next("price") }; },
++    async createLink(a) { calls.push(["createLink", a]); const id = next("plink"); return { id, url: `https://buy.stripe.com/${id}` }; },
++    async deactivateLink(id) { calls.push(["deactivateLink", id]); },
++    async archivePrice(id) { calls.push(["archivePrice", id]); },
++  };
++}
++/** A fake bucket over one object. */
++function fakeBucket(initial = null) {
++  let json = initial;
++  return { configured: true, writes: 0, async read() { return json; }, async write(j) { json = j; this.writes += 1; }, get json() { return json; } };
++}
++
++test("a new month: five products, five prices, five links a door, one JSON, the record", async () => {
++  const calls = [];
++  const bucket = fakeBucket();
++  const step = createDonateStep({ writer: fakeWriter(calls), bucket, now: () => NOW, log: { error() {}, warn() {} } });
++  const out = await step.run({ monthlyRows: ROWS, failed: [], today: "2026-11-03" });
++  assert.equal(out.ran, true);
++  assert.deepEqual(out.record, { month: "2026-10", pool: 287.4, at: "2026-11-03T10:00:12.000Z", doors: ["arkos", "macstats", "visits", "last-trail", "hallway", "all"] });
++  const j = bucket.json;
++  assert.deepEqual(j.tiers.map((t) => [t.tier, t.usd, t.label]), [["prompt", 3, "about 1%"], ["context", 9, "about 3%"], ["run", 29, "about 10%"], ["finetune", 87, "about 30%"]]);
++  assert.ok(j.tiers.every((t) => t.priceId.startsWith("price_")));
++  assert.deepEqual(Object.keys(j.products), TIER_KEYS);
++  assert.equal(j.custom.minimumUsd, 1);
++  assert.deepEqual(Object.keys(j.doors["arkos"].links), TIER_KEYS);
++  assert.equal(calls.filter((c) => c[0] === "createLink").length, 30);
++  const own = calls.find((c) => c[0] === "createLink" && c[1].tier === "own" && c[1].door === "all")[1];
++  assert.equal(own.redirectUrl, "https://donate.csarko.sh/thanks?door=all");
++  assert.equal(own.key, "donate:link:2026-10:all:own");
++  assert.equal(calls.find((c) => c[0] === "createPrice")[1].key, "donate:price:2026-10:prompt");
++  assert.equal(calls.filter((c) => c[0] === "deactivateLink").length, 0, "nothing to deactivate the first time");
++  assert.ok(!JSON.stringify(j).includes("@"));
++});
++
++test("existing products are reused by their tier metadata", async () => {
++  const calls = [];
++  const products = TIER_KEYS.map((t, i) => ({ id: `prod_old${i}`, name: t, metadata: { tier: t } }));
++  await createDonateStep({ writer: fakeWriter(calls, { products }), bucket: fakeBucket(), now: () => NOW, log: { error() {}, warn() {} } }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-03" });
++  assert.equal(calls.filter((c) => c[0] === "createProduct").length, 0);
++  assert.equal(calls.find((c) => c[0] === "createPrice")[1].product, "prod_old0");
++});
++
++test("done, before the 3rd and a failed provider leave Stripe and the bucket alone and carry the record", async () => {
++  const calls = [];
++  const current = { month: "2026-10", pool: 288, at: "2026-11-03T10:00:12.000Z", tiers: [], custom: {}, products: {}, doors: Object.fromEntries(["arkos", "macstats", "visits", "last-trail", "hallway", "all"].map((d) => [d, { links: {} }])) };
++  const bucket = fakeBucket(current);
++  const step = createDonateStep({ writer: fakeWriter(calls), bucket, now: () => NOW, log: { error() {}, warn() {} } });
++  assert.deepEqual(await step.run({ monthlyRows: ROWS, failed: [], today: "2026-11-05" }), { ran: false, reason: "done", record: { month: "2026-10", pool: 288, at: "2026-11-03T10:00:12.000Z", doors: Object.keys(current.doors) } });
++  assert.equal((await createDonateStep({ writer: fakeWriter(calls), bucket: fakeBucket(), now: () => NOW, log: { error() {}, warn() {} } }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-02" })).reason, "before the 3rd");
++  assert.equal((await createDonateStep({ writer: fakeWriter(calls), bucket: fakeBucket(), now: () => NOW, log: { error() {}, warn() {} } }).run({ monthlyRows: ROWS, failed: ["gcp"], today: "2026-11-04" })).reason, "waiting on gcp");
++  assert.equal(calls.length, 0);
++  assert.equal(bucket.writes, 0);
++});
++
++test("the next month: new prices and links first, then last month's links deactivated and prices archived", async () => {
++  const calls = [];
++  const oct = { month: "2026-10", pool: 288, at: "x", tiers: [{ tier: "prompt", priceId: "price_o1" }, { tier: "context", priceId: "price_o2" }, { tier: "run", priceId: "price_o3" }, { tier: "finetune", priceId: "price_o4" }], custom: { priceId: "price_o5", minimumUsd: 1 }, products: {}, doors: { arkos: { links: { prompt: { id: "plink_o1", url: "u" } } }, all: { links: { own: { id: "plink_o2", url: "u" } } } } };
++  const bucket = fakeBucket(oct);
++  const nov = [{ month: "2026-11", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 100 }];
++  await createDonateStep({ writer: fakeWriter(calls), bucket, now: () => Date.parse("2026-12-03T10:00:00Z"), log: { error() {}, warn() {} } }).run({ monthlyRows: nov, failed: [], today: "2026-12-03" });
++  assert.equal(bucket.json.month, "2026-11");
++  assert.equal(bucket.json.pool, 100);
++  const names = calls.map((c) => c[0]);
++  assert.ok(names.lastIndexOf("createLink") < names.indexOf("deactivateLink"), "the new links exist before the old go");
++  assert.deepEqual(calls.filter((c) => c[0] === "deactivateLink").map((c) => c[1]), ["plink_o1", "plink_o2"]);
++  assert.deepEqual(calls.filter((c) => c[0] === "archivePrice").map((c) => c[1]), ["price_o1", "price_o2", "price_o3", "price_o4", "price_o5"]);
++});
++
++test("a door added mid-month gets its links at the current prices; nothing else is touched", async () => {
++  const calls = [];
++  const oct = { month: "2026-10", pool: 288, at: "x", tiers: [{ tier: "prompt", share: 0.01, priceId: "price_1" }, { tier: "context", share: 0.03, priceId: "price_2" }, { tier: "run", share: 0.1, priceId: "price_3" }, { tier: "finetune", share: 0.3, priceId: "price_4" }], custom: { priceId: "price_5", minimumUsd: 1 }, products: {}, doors: Object.fromEntries(["arkos", "macstats", "visits", "last-trail", "hallway"].map((d) => [d, { links: {} }])) };
++  const bucket = fakeBucket(oct);
++  await createDonateStep({ writer: fakeWriter(calls), bucket, now: () => NOW, log: { error() {}, warn() {} } }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-12" });
++  assert.deepEqual(calls.map((c) => c[0]).filter((n) => n !== "createLink"), []);
++  assert.equal(calls.length, 5);
++  assert.ok(calls.every((c) => c[1].door === "all"));
++  assert.equal(calls.find((c) => c[1].tier === "context")[1].priceId, "price_2");
++  assert.deepEqual(Object.keys(bucket.json.doors), ["arkos", "macstats", "visits", "last-trail", "hallway", "all"]);
++});
++
++test("a Stripe failure midway writes nothing and rethrows; the rerun uses the same idempotency keys", async () => {
++  const calls = [];
++  const bucket = fakeBucket();
++  const log = { error() {}, warn() {} };
++  await assert.rejects(createDonateStep({ writer: fakeWriter(calls, { failAt: 12 }), bucket, now: () => NOW, log }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-03" }), /Stripe 500/);
++  assert.equal(bucket.writes, 0);
++  const again = [];
++  await createDonateStep({ writer: fakeWriter(again), bucket, now: () => NOW, log }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-04" });
++  const keys = (list) => list.filter((c) => c[1]?.key).map((c) => c[1].key);
++  assert.deepEqual(keys(again).slice(0, keys(calls).length), keys(calls));
++});
++
++test("the bucket: a missing object reads as null, a write carries the content type and a five-minute cache", async () => {
++  const saved = [];
++  const storage = { bucket: (name) => ({ file: (obj) => ({
++    async download() { const e = new Error("No such object"); e.code = 404; throw e; },
++    async save(body, opts) { saved.push({ name, obj, body: JSON.parse(body), opts }); },
++  }) }) };
++  const b = createPricesBucket({ bucket: "csarko-sh-donate-prices", projectId: "csarko-sh", storage, log: { error() {} } });
++  assert.equal(b.configured, true);
++  assert.equal(await b.read(), null);
++  await b.write({ month: "2026-10" });
++  assert.equal(saved[0].name, "csarko-sh-donate-prices");
++  assert.equal(saved[0].obj, "prices.json");
++  assert.deepEqual(saved[0].body, { month: "2026-10" });
++  assert.equal(saved[0].opts.contentType, "application/json");
++  assert.equal(saved[0].opts.metadata.cacheControl, "public, max-age=300");
++  assert.equal(createPricesBucket({ bucket: null, projectId: "csarko-sh" }).configured, false);
++});

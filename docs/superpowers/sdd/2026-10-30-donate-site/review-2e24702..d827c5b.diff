@@ -1,0 +1,202 @@
+# Review package: 2e24702..d827c5b
+
+## Commits
+d827c5b finance: tips by door and the month's tip prices on the Donations card
+
+## Files changed
+ admin/public/finance/page.js            | 17 +++++++++++++++--
+ admin/public/sample/finance/income.json |  8 +++++++-
+ admin/public/theme.css                  |  5 +++--
+ 3 files changed, 25 insertions(+), 5 deletions(-)
+
+## Diff
+diff --git a/admin/public/finance/page.js b/admin/public/finance/page.js
+index d2fa1ad..6ea21c7 100644
+--- a/admin/public/finance/page.js
++++ b/admin/public/finance/page.js
+@@ -145,20 +145,21 @@ const CATEGORIES = [
+ ];
+ const FOLDED = ['ci', 'tax', 'other'];
+ const OTHER = { key: 'other', label: 'Other (CI, tax, unmapped)', tone: 'c9' };
+ const categoryName = (key, answer) => answer?.categories?.find((c) => c.key === key)?.label ?? CATEGORIES.find((c) => c.key === key)?.label ?? { ci: 'CI', tax: 'Tax', other: 'Other' }[key] ?? str(key);
+ 
+ /** The projects in their fixed order (spec section 11) with their slots: the second axis over the same lines. */
+ const PROJECTS = [
+   { key: 'films', label: 'Films', tone: 'j1' },
+   { key: 'dayhike', label: 'Day Hike', tone: 'j2' },
+   { key: 'site', label: 'csarko.sh and admin', tone: 'j3' },
++  { key: 'commercial', label: 'Commercial', tone: 'j5' },
+   { key: 'other', label: 'Other', tone: 'j4' },
+ ];
+ const projectName = (key, answer) => answer?.projects?.find((p) => p.key === key)?.label ?? PROJECTS.find((p) => p.key === key)?.label ?? str(key);
+ 
+ // ---------------------------------------------------------------- 1. this month
+ 
+ /**
+  * The provider's name with the figure its row carries beside the net: GitHub's gross, Modal's gross
+  * before the credits, fal's balance, Claude Code's value at API list price (the plan's value, not a bill).
+  */
+@@ -228,52 +229,64 @@ function donationsCard([income], r) {
+   const tiles = el('div', { class: 'tiles' },
+     tile('Gross', money(income.gross), { note: `Given in ${period}, before fees` }),
+     tile('Fees', money(income.fees), { note: feeShare }),
+     tile('Net', money(income.net), { note: 'Gross less fees, after refunds: the income' }),
+     tile('Donations', count(income.count), { note: `In ${period}` }),
+     tile('Average', money(income.average), { note: 'Gross a donation' }));
+   const b = income.balance && typeof income.balance === 'object' ? income.balance : null;
+   const balance = b
+     ? el('p', { class: 'note' }, `Balance at Stripe: ${money(b.available)} available, ${money(b.pending)} pending${b.currency ? ` (${str(b.currency).toUpperCase()})` : ''}; a payout moves the available balance to the bank.`)
+     : null;
++  const pr = income.prices && typeof income.prices === 'object' ? income.prices : null;
++  const prices = el('p', { class: 'note' }, pr
++    ? `Tip prices follow ${monthName(pr.month)}'s bill, ${money(pr.pool)}, set ${ago(pr.at)}.`
++    : 'Tip prices: not set yet; the donate step runs on the first snapshot on or after the 3rd.');
+   const days = income.days;
+   const given = days.reduce((n, d) => n + num(d.count), 0);
+   const total = days.reduce((n, d) => n + num(d.net), 0);
+   const marks = days.map((d) => ({ label: shortDay(d.day), detail: d.day, lines: num(d.count) > 0 ? [{ v: count(d.count), k: num(d.count) === 1 ? 'donation' : 'donations' }] : [] }));
+   const chart = columns(marks, {
+     height: 220,
+     series: [{ key: 'net', label: 'Net a day', tone: 'inc', values: days.map((d) => num(d.net)) }],
+     format: moneyShort,
+     tip: money,
+     label: `Donations net per day for the last ${days.length} days: ${money(total)} in all from ${donations(given)}; the folds below list the newest, the payouts and the months.`,
+   });
+   const recent = Array.isArray(income.recent) ? income.recent : [];
+   const payouts = Array.isArray(income.payouts) ? income.payouts : [];
+   const months = Array.isArray(income.months) ? income.months : [];
+   const recentFold = folded(`Recent donations · ${recent.length}`, table([
+     { key: 'day', label: 'Day', render: (v) => shortDay(v) },
+     { key: 'gross', label: 'Gross', num: true, render: (v) => money(v) },
+     { key: 'net', label: 'Net', num: true, render: (v) => money(v) },
+   ], recent, 'No donations yet.'));
++  const byDoor = Array.isArray(income.byDoor) ? income.byDoor : [];
++  const doorFold = folded(`By door · ${byDoor.length}`, table([
++    { key: 'label', label: 'Door', wrap: true, render: (v) => str(v) },
++    { key: 'gross', label: 'Gross', num: true, render: (v) => money(v) },
++    { key: 'fees', label: 'Fees', num: true, render: (v) => money(v) },
++    { key: 'net', label: 'Net', num: true, render: (v) => money(v) },
++    { key: 'count', label: 'Donations', num: true, render: (v) => count(v) },
++  ], byDoor, 'No tips through a door yet.'));
+   const payoutsFold = folded(`Payouts · ${payouts.length}`, table([
+     { key: 'day', label: 'Day', render: (v) => shortDay(v) },
+     { key: 'amount', label: 'Amount', num: true, render: (v) => money(v) },
+     { key: 'status', label: 'Status', render: (v) => str(v) },
+   ], payouts, 'No payouts in the last 60 days.'));
+   const monthsFold = folded('By month as a table', table([
+     { key: 'month', label: 'Month', wrap: true, render: (v) => monthName(v) },
+     { key: 'gross', label: 'Gross', num: true, render: (v) => money(v) },
+     { key: 'fees', label: 'Fees', num: true, render: (v) => money(v) },
+     { key: 'net', label: 'Net', num: true, render: (v) => money(v) },
+     { key: 'count', label: 'Donations', num: true, render: (v) => count(v) },
+   ], [...months].reverse(), 'No months yet.'));
+-  return [...errorLines(income), tiles, balance, chart, recentFold, payoutsFold, monthsFold].filter(Boolean);
++  return [...errorLines(income), tiles, balance, prices, chart, doorFold, recentFold, payoutsFold, monthsFold].filter(Boolean);
+ }
+ 
+ // ---------------------------------------------------------------- 3. by category, 4. by project
+ 
+ /** The months' column labels, a star on a month that has AWS and GitHub only. */
+ function monthColumns(months, partial) {
+   return months.map((m, i) => ({
+     label: `${monthTick(m, i === 0)}${partial.has(m) ? '*' : ''}`,
+     detail: `${monthName(m)}${partial.has(m) ? ' (AWS and GitHub only)' : ''}`,
+   }));
+@@ -653,21 +666,21 @@ function sourcesCard([sources]) {
+     { key: 'snapshotAt', label: 'Snapshot', render: (v, s) => (v ? ago(v, now) : el('span', { class: 'empty' }, s.configured ? 'read live' : '–')) },
+     { key: 'callsThisMonth', label: 'Calls this month', num: true, render: (v, s) => (isNum(v) ? `${v.toLocaleString('en-US')}${isNum(s.callCostUsd) ? `, ${money(s.callCostUsd)}` : ''}` : '') },
+     { key: 'note', label: 'Note', wrap: true },
+   ], sources.sources, 'No sources answered.')];
+ }
+ 
+ // ---------------------------------------------------------------- the cards
+ 
+ const CARDS = [
+   { id: 'summary', title: (r) => (r === 'last' ? 'Last month' : 'This month'), queries: ['summary'], sub: (r, a) => `${a?.month ? `${monthName(a.month)}${r === 'last' ? '' : ' so far'}` : r === 'last' ? 'The previous calendar month' : 'The current calendar month'}, every provider, net of credits${a?.at ? `, as of ${ago(a.at)}` : ''}. Donations through Stripe count as income against the spend: Net is what the month cost after them. The AI short films drive the activity spend on purpose, so the page keeps it apart from the idle spend: the idle run-rate is what bills while nothing runs, the rest is what the films, Day Hike and the site bought. The forecast is AWS's own plus Google Cloud's run-rate plus the other providers' month to date. Claude Code's row is the claude.ai fee, with what the month's tokens would cost at API list price under it.`, render: summaryCard, skeleton: { tiles: 6, across: 3, rows: 6, row: 56 } },
+-  { id: 'donations', title: () => 'Donations', queries: ['income'], sub: (r, a) => `Donations arrive through Stripe and are read live with a restricted key that can only read the balance, its transactions and the payouts. The tiles are ${incomePeriod(r, a)}, the chart the last 60 days, the folds the newest donations, the payouts and the months; amounts are dollars after refunds, on Stripe's UTC days. Nothing about who gave is shown: no name, email, card or message, only amounts and days.`, render: donationsCard, skeleton: { tiles: 5, lines: 1, chart: 220, folds: 3 } },
++  { id: 'donations', title: () => 'Donations', queries: ['income'], sub: (r, a) => `Donations arrive through Stripe and are read live with a restricted key that can only read the balance, its transactions and the payouts. The tiles are ${incomePeriod(r, a)}, the chart the last 60 days, the folds the newest donations, the payouts and the months; amounts are dollars after refunds, on Stripe's UTC days. Nothing about who gave is shown: no name, email, card or message, only amounts and days. By door says which project's page the tip came through; nothing more about the giver.`, render: donationsCard, skeleton: { tiles: 5, lines: 2, chart: 220, folds: 4 } },
+   { id: 'categories', title: () => 'By category', queries: ['categories'], sub: (r, a) => `One column a month for ${rangeText(r, a?.months)}, split by category in a fixed order; CI, tax and unmapped lines fold into Other, listed below. Compute, serverless, hosting and AI generation bill because something ran (a Modal app is Compute, named by its app; fal is AI generation); load balancing, storage, DNS and keys bill while nothing does; domains are a yearly fee shown a twelfth a month, and Claude Code is the subscription, a fixed fee a month.`, render: categoriesCard, skeleton: { chart: 240, lines: 2, folds: 2 } },
+   { id: 'projects', title: () => 'By project', queries: ['projects'], sub: (r, a) => `The same months as By category for ${rangeText(r, a?.months)}, every line sorted by what it was for. A line is a film cost when it is Vertex AI, a cinema-* Modal app or fal; Day Hike is the rest of fps-csarko, the rigs and the dayhike-* Modal apps; csarko.sh and admin is the csarko-sh project with the domain and its zone; everything else is Other.`, render: projectsCard, skeleton: { chart: 240, lines: 1, folds: 1 } },
+   { id: 'films', title: () => 'Films', queries: ['films'], sub: (r, a) => `Each film's cost from the pipeline's own ledgers: every paid call is priced before it is made and written to the film's ledger on the SSD, synced to the bucket${a?.asOf ? ` (newest ${ago(a.asOf)})` : ''}. The rows carry no dates, so they attribute cost by film and by model and never feed the Daily chart; the Veo rows are at list rate, so a film's Google Cloud figure can read higher than Google's bill. The pipeline's cap is ${moneyShort(DEFAULT_CAP)} a film. The same for every range.`, render: filmsCard, skeleton: { tiles: 3, bars: 4, folds: 4 } },
+   { id: 'claude', title: () => 'Claude Code', queries: ['claude'], sub: (r, a) => `Claude Code runs on a claude.ai subscription, so its spend is the month's fee, typed in here once and spread evenly over the month's days; the tokens in the local transcripts, priced at the API's list rates, are what the same work would have cost as API calls, the plan's value and not a bill. ${monthName(a?.month ?? thisMonth())}${a?.month && a.month !== thisMonth() ? '' : ' so far'} in the tiles and the fold, the last 60 days in the chart, whatever the range.`, render: claudeCard, skeleton: { tiles: 4, lines: 1, chart: 220, folds: 1 } },
+   { id: 'idle', title: () => 'Idle run-rate', queries: ['idle'], sub: () => 'Every line that bills while nothing runs, as its last seven days’ average times 30, most expensive first, with the provider and the region or project. A line gone since a week ago stays struck through for seven days with the day it stopped, so a cleanup is seen to have worked. The same for every range.', render: idleCard, skeleton: { tiles: 3, bars: 6, folds: 1 } },
+   { id: 'daily', title: () => 'Daily', queries: ['daily'], sub: () => `The last 60 days, one column a day, stacked by provider in a fixed order, with the trailing 14-day median as a dashed line. A day over ${SPIKE} times its median (and over $1) is marked, and its largest line named: a rig round, a Veo batch, a Modal render or a forgotten machine shows up here the day after. The same for every range.`, render: dailyCard, skeleton: { chart: 220, lines: 2, folds: 1 } },
+   { id: 'activity', title: () => 'What activity bought', queries: ['activity'], sub: (r) => `What ran in ${rangeText(r)}, how much of it, what it cost, and the unit price to budget the next session with. CI minutes cost nothing on public repositories; the gross is what they would on private ones. Modal's report and fal's balance carry no quantities, so those tiles show a dash and what they do know. Claude Code's tile counts the messages, costs the subscription, and notes what the tokens would have cost at API list price.`, render: activityCard, skeleton: { tiles: 8, tile: 150 } },
+   { id: 'sources', title: () => 'Sources', queries: ['sources'], sub: () => 'Where the numbers come from, the last day each has data, when the snapshot last read it, and what reading costs: Cost Explorer bills a cent a call, two a day, the one line this page adds to the bill. Modal is read by its own daily job, fal as a balance once a day, the film ledgers from their bucket, Claude Code from the transcripts tools/claude-usage-sync.py sums on the Mac, and the Stripe donations live with a restricted key.', render: sourcesCard, skeleton: { rows: 8, row: 64 } },
+ ];
+ 
+diff --git a/admin/public/sample/finance/income.json b/admin/public/sample/finance/income.json
+index 39bfa01..d60d5ea 100644
+--- a/admin/public/sample/finance/income.json
++++ b/admin/public/sample/finance/income.json
+@@ -88,12 +88,18 @@
+     { "day": "2026-10-25", "gross": 10, "net": 9.41, "currency": "usd" },
+     { "day": "2026-10-20", "gross": 5, "net": 4.55, "currency": "usd" },
+     { "day": "2026-10-13", "gross": 20, "net": 19.12, "currency": "usd" },
+     { "day": "2026-10-06", "gross": 15, "net": 14.26, "currency": "usd" },
+     { "day": "2026-09-29", "gross": 10, "net": 9.41, "currency": "usd" }
+   ],
+   "payouts": [
+     { "day": "2026-10-31", "amount": 37.93, "status": "pending" },
+     { "day": "2026-10-18", "amount": 18.38, "status": "paid" }
+   ],
+-  "balance": { "available": 0, "pending": 37.93, "currency": "usd" }
++  "balance": { "available": 0, "pending": 37.93, "currency": "usd" },
++  "byDoor": [
++    { "door": "films", "label": "Films", "gross": 30, "fees": 1.77, "net": 28.23, "count": 2 },
++    { "door": "dayhike", "label": "Day Hike", "gross": 20, "fees": 1.17, "net": 18.83, "count": 2 },
++    { "door": "unknown", "label": "Unknown", "gross": 10, "fees": 0.75, "net": 9.25, "count": 1 }
++  ],
++  "prices": { "month": "2026-09", "pool": 412.5, "at": "2026-10-03T06:10:00.000Z" }
+ }
+diff --git a/admin/public/theme.css b/admin/public/theme.css
+index fb6b6b3..796f4f7 100644
+--- a/admin/public/theme.css
++++ b/admin/public/theme.css
+@@ -165,22 +165,22 @@
+     --prov-4: #622aa1;
+     --prov-5: #bc3181;
+     --prov-6: var(--cat-10);
+     --proj-5: #0a8fa8;
+   }
+ }
+ /* /admin:palette */
+ 
+ /* Derived tokens: no new values, only the site's, mixed. */
+ :root {
+-  /* The four projects of the By project chart, in its stack order: Films, Day Hike, csarko.sh
+-     and admin, Other. The palette's yellow, magenta and violet, the triple that stays furthest
++  /* The five projects of the By project chart, in its stack order: Films, Day Hike, csarko.sh
++     and admin, Commercial, Other. The palette's yellow, magenta and violet, the triple that stays furthest
+      apart in every pairing (validated --pairs all in both themes on 2026-10-30: dark CVD 13.2,
+      normal 19.3; light CVD 13.5, normal 17.4), and the neutral for Other, as the categories' is. */
+   --proj-1: var(--cat-5);
+   --proj-2: var(--cat-4);
+   --proj-3: var(--cat-7);
+   --proj-4: var(--cat-9);
+   --ghost: color-mix(in srgb, var(--faint) 32%, transparent);
+   --grid-line: var(--border);
+   --axis-line: var(--border-strong);
+   --ord-1: var(--accent);
+@@ -449,20 +449,21 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.05; letter-spacing:
+ .chart .seg.p1, .legend .swatch.p1, .tooltip .key.p1 { fill: var(--prov-1); background: var(--prov-1); }
+ .chart .seg.p2, .legend .swatch.p2, .tooltip .key.p2 { fill: var(--prov-2); background: var(--prov-2); }
+ .chart .seg.p3, .legend .swatch.p3, .tooltip .key.p3 { fill: var(--prov-3); background: var(--prov-3); }
+ .chart .seg.p4, .legend .swatch.p4, .tooltip .key.p4 { fill: var(--prov-4); background: var(--prov-4); }
+ .chart .seg.p5, .legend .swatch.p5, .tooltip .key.p5 { fill: var(--prov-5); background: var(--prov-5); }
+ .chart .seg.p6, .legend .swatch.p6, .tooltip .key.p6 { fill: var(--prov-6); background: var(--prov-6); }
+ .chart .seg.j1, .legend .swatch.j1, .tooltip .key.j1 { fill: var(--proj-1); background: var(--proj-1); }
+ .chart .seg.j2, .legend .swatch.j2, .tooltip .key.j2 { fill: var(--proj-2); background: var(--proj-2); }
+ .chart .seg.j3, .legend .swatch.j3, .tooltip .key.j3 { fill: var(--proj-3); background: var(--proj-3); }
+ .chart .seg.j4, .legend .swatch.j4, .tooltip .key.j4 { fill: var(--proj-4); background: var(--proj-4); }
++.chart .seg.j5, .legend .swatch.j5, .tooltip .key.j5 { fill: var(--proj-5); background: var(--proj-5); }
+ .chart .seg.inc, .legend .swatch.inc, .tooltip .key.inc { fill: var(--income); background: var(--income); }
+ 
+ /* Sparkline: 1px, the trend in faint, the latest step in the accent. */
+ .spark { display: block; width: 120px; max-width: 100%; height: 28px; overflow: visible; }
+ .spark .line { fill: none; stroke: var(--faint); stroke-width: 1; stroke-linejoin: round; stroke-linecap: round; }
+ .spark .line.now { stroke: var(--accent); }
+ .spark .dot { fill: var(--accent); stroke: var(--surface-2); stroke-width: 2; }
+ 
+ /* Horizontal bars: a name, a track, the value at the tip. */
+ .bars { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }

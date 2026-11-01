@@ -1,0 +1,68 @@
+# Review package: 741d232..1b4aeb6
+
+## Commits
+1b4aeb6 donate: the redo keeps checkouts alive
+2d249a9 donate: a redo recomputes on a later day
+
+## Files changed
+ admin/api/README.md | 30 ++++++++++++++++++++----------
+ 1 file changed, 20 insertions(+), 10 deletions(-)
+
+## Diff
+diff --git a/admin/api/README.md b/admin/api/README.md
+index 65fa83c..e3f9753 100644
+--- a/admin/api/README.md
++++ b/admin/api/README.md
+@@ -136,32 +136,42 @@ answer is still worth showing; a single-source query (the visits ones) answers 5
+ 
+ lib-visits counts a visit as one browser on one day (a stateless daily hash), not a
+ pageview, so every `pageviews` field is `null`. The pre-cutover history keeps
+ the old unit (a browser once per page per session) and is merged by day, path and name.
+ 
+ ## Redo a period's tip prices
+ 
+ A period is named by the day it was repriced on, its `repricedOn` date (`period.repricedOn` in the
+ prices object). The step reuses whatever Stripe holds for that day: its lookups find the active
+ prices by `lookup_key` and the active links by `metadata.period`, so a rerun alone changes nothing.
+-To make the period's prices again (a wrong pool, a fixed bill):
++To make the prices again (a wrong pool, a fixed bill):
+ 
+-1. Archive the period's prices: every active price whose `lookup_key` starts with
+-   `donate:<repricedOn>:` (`active=false`; a new price takes the key over).
+-2. Deactivate the period's payment links: every active link whose `metadata.period` is that date.
+-3. Delete the prices object: `gcloud storage rm gs://csarko-sh-donate-prices/prices.json`.
+-4. Let the next snapshot recompute it (or call `POST /admin/snapshot`), then run `donate/deploy.sh` so
+-   the pages' baked fallback points at the new links.
++1. Delete the prices object: `gcloud storage rm gs://csarko-sh-donate-prices/prices.json`. The
++   pages' live fetch then fails and they fall back to their baked links, the wrong period's, which
++   still pay.
++2. Let the next daily snapshot price a new period, on the following UTC day at the earliest. It is
++   repriced on the day it runs, so its lookup keys and idempotency keys are new.
++3. Run `donate/deploy.sh`, so the pages' baked fallback points at the new links.
++4. Then retire the wrong period: archive every active price whose `lookup_key` starts with
++   `donate:<repricedOn>:` (`active=false`) and deactivate every active link whose `metadata.period`
++   is that date. The 35-day sweep would otherwise do it on its own.
+ 
+-Until step 4 the pages' fallback points at the retired links, so do it in one sitting.
+-The new period is repriced on the day the step runs, so its window is the 30 days before that day
+-and its next turn seven days on.
++**Never trigger the snapshot by hand (`POST /admin/snapshot`) on the same UTC day** as step 1.
++Every price's and link's idempotency key carries the day (`donate:price:<repricedOn>:<tier>:<today>`,
++`donate:link:<repricedOn>:<door>:<tier>:<today>`), and a same-day recompute of a period repriced
++that day sends the same keys again: Stripe replays its first answer for 24 hours, so with the same
++pool the step gets back the period it already made, and with a changed pool Stripe refuses the
++reused key, after `prices.json` is already gone. On a later day the keys and the lookup keys are new.
++
++The trade-off: tips keep working at the old prices for a day, instead of a day with no working
++checkout. The new period's window is that day's 30 days (the 30 days before it), not the original
++period's, and its next turn is seven days on.
+ 
+ ## Environment
+ 
+ All of it is set by Terraform on the Cloud Run service; the secrets arrive as environment
+ variables from Secret Manager. A credential whose value is empty or the placeholder
+ `unset` (what a secret holds before Cyrus has created it) is "not configured".
+ 
+ | Variable | Default | What |
+ |---|---|---|
+ | `ADMIN_EMAILS` | required | comma-separated Google accounts that may read the admin routes; empty means 503 on `/admin/*`, logged at startup |

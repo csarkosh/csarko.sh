@@ -1,0 +1,339 @@
+# Review package: bf576ac..d90aa86
+
+## Commits
+d90aa86 donate: the Day Hike door ships with the game's cover
+
+## Files changed
+ .../skills/site-quality/assets/donate/day-hike.png  | Bin 0 -> 1264106 bytes
+ .agents/skills/site-quality/tests/docs_lib.test.mjs |   2 +-
+ AGENTS.md                                           |   2 +-
+ admin/api/src/donate/doors.mjs                      |   5 +++--
+ admin/api/test/donate-prices.test.mjs               |   6 +++---
+ admin/api/test/donate-step.test.mjs                 |   6 +++---
+ docs/superpowers/plans/2026-10-30-donate-site.md    |   2 +-
+ .../specs/2026-10-30-donate-site-design.md          |   2 +-
+ donate/test/fixtures/prices.json                    |  20 ++++++++++++++++++++
+ public/projects/index.html                          |   2 +-
+ 10 files changed, 34 insertions(+), 13 deletions(-)
+
+## Diff
+diff --git a/.agents/skills/site-quality/assets/donate/day-hike.png b/.agents/skills/site-quality/assets/donate/day-hike.png
+new file mode 100644
+index 0000000..149a0a2
+Binary files /dev/null and b/.agents/skills/site-quality/assets/donate/day-hike.png differ
+diff --git a/.agents/skills/site-quality/tests/docs_lib.test.mjs b/.agents/skills/site-quality/tests/docs_lib.test.mjs
+index 0e62e4c..2911be1 100644
+--- a/.agents/skills/site-quality/tests/docs_lib.test.mjs
++++ b/.agents/skills/site-quality/tests/docs_lib.test.mjs
+@@ -666,21 +666,21 @@ test('an app card links out to its page, with SoftwareApplication JSON-LD', () =
+   assert.equal(first.item.license, 'GPL-3.0');
+   assert.equal(first.item.operatingSystem, 'Linux, macOS');
+ });
+ 
+ test('every shipped project card carries one quiet Buy me tokens link to its door; Day Hike none yet; the symbol once', () => {
+   const projects = [game('day-hike'), app('ide-arkos', ['repo: https://github.com/csarkosh/ide-arkos']), film('the-last-trail')];
+   const html = projectsPage(projects, themeBlocks(INDEX), { live: true });
+   assert.equal((html.match(/<symbol id="tokens-icon"/g) || []).length, 1);
+   assert.ok(html.includes('<a class="card-tokens" href="https://donate.csarko.sh/arkos" data-visits-event="tokens-ide-arkos"><svg class="tokens-icon" aria-hidden="true"><use href="#tokens-icon"/></svg>Buy me tokens</a>'));
+   assert.ok(html.includes('href="https://donate.csarko.sh/last-trail" data-visits-event="tokens-the-last-trail"'));
+-  assert.ok(!html.includes('tokens-day-hike'));
++  assert.ok(html.includes('href="https://donate.csarko.sh/dayhike" data-visits-event="tokens-day-hike"'));
+   const card = html.slice(html.indexOf('id="ide-arkos"'), html.indexOf('</li>\n', html.indexOf('id="ide-arkos"')));
+   assert.equal((card.match(/Buy me tokens/g) || []).length, 1);
+   assert.ok(html.indexOf('card-source') < html.indexOf('card-tokens'), 'after Source on GitHub');
+   // With the flag off (as before launch) no card carries the line and the page no symbol.
+   const before = projectsPage(projects, themeBlocks(INDEX), { live: false });
+   assert.ok(!before.includes('card-tokens') && !before.includes('<symbol id="tokens-icon"'));
+ });
+ 
+ test('standaloneShell wears none of the site\'s chrome: its own bar, its own footer, one credit', () => {
+   const html = standaloneShell({ title: 'x: a thing', ogTitle: 'x', description: 'd', canonical: 'https://apps.csarko.sh/x', graph: [], theme: themeBlocks(INDEX),
+diff --git a/AGENTS.md b/AGENTS.md
+index 42753f6..98e4bcc 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -18,21 +18,21 @@ now 301 there). No framework and no CI; the one build step,
+ | `public/me.jpg` | Portrait (640px wide JPEG, from `~/Pictures/Cyrus/me_1.png`). |
+ | `public/assets/` | **Generated, content-hashed, cached for a year:** responsive portraits (AVIF/WebP/JPEG) and self-hosted fonts. |
+ | `public/og-image.jpg`, `portrait.jpg`, `favicon.*`, `apple-touch-icon.png` | **Generated** too. Everything generated comes from `.agents/skills/site-quality/assets/` via `generate-assets.sh` — never hand-edit, including the `generated:` blocks inside the HTML. |
+ | `public/404.html` | Custom not-found page (noindex, root-relative paths). |
+ | `public/licenses/fonts-OFL.txt` | Font licenses. |
+ | `public/robots.txt` | Crawl rules. |
+ | `docs/published/<YYYY-MM-DD>-<slug>.md` | **Published docs, source of truth.** Markdown with front matter, one file per doc, named for its `published:` date (the build fails if the two disagree). The URL is the slug alone: `/research/<slug>`, no date. The repo is public, so committing a file here publishes it; use the `publish-doc` skill. |
+ | `docs/films/<slug>.md` | **The films, source of truth.** One file per short film, named for the slug alone (a date prefix is refused; `released:` in the front matter is the date). Front matter also carries `watch` (the YouTube URL), `runtime`, `alt` (the poster's alt text), `tags`, `focus`, the fraction of the poster's height the phone crop centres on, 0 to 1, 0.5 when absent, `model` (the film's main AI model, written as its tag reads, `Video model: Veo 3.1` or `Image model: <name>` for a film animated from stills; the card shows it as its first, lit tag; *Cyrus, 2026-10-29*; only the one model may be named, per film-generation's AGENTS.md, "What the public may know") and an optional `order` (its place on `/projects`; there is no `warning` field, every film card carries the same notice). Its poster is committed at `.agents/skills/site-quality/assets/films/<slug>.jpg`. The repo is public, so committing a file here publishes it. **How a film was made stays private** (Cyrus, 2026-10-29): a film page, its tags and anything else public may say the film is AI-generated and name the one video model that made most of its shots (Veo 3.1 for The Last Trail), or, for a film animated from stills with no video model, its one main image model (Qwen-Image-Edit for "Who is standing in my hallway?", Cyrus 2026-10-29), and nothing more: no other model or tool, no prompts, pipeline, scripts, costs, takes or behind-the-scenes frames. The film-generation repo's AGENTS.md ("What the public may know") has the full rule; when unsure, leave it out and ask. |
+ | `docs/apps/<slug>.md` | **The apps, source of truth** *(added 2026-10-15)*. One file per app, named for the slug alone. Front matter: `description`, `status` (`released` or `in-development`), `page` (the app's page, `https://apps.csarko.sh/<slug>` for one hosted there), `platforms` (what it runs on, for the JSON-LD), `tags`, and optional `license` (joins the status in the card's kicker), `repo`, `released`, `link` (the card link's words, "Download and docs" by default; MacStats says "Install and docs"), `order` (a whole number from 1: its place on `/projects`, shared with the games and films; see "Projects" below), `sections` (the README's `## ` headings the app's page keeps, comma-separated in the README's words, when the whole README is not the page; none of the apps sets it now, since Arkos IDE's README moved its guide and contributor sections into `docs/`, Cyrus 2026-10-16) and `alt`. A sibling `docs/apps/<slug>.install.md` is the page's own `## Install` section for a README that has none (Arkos IDE's Homebrew cask), placed ahead of the first kept section with the release's download buttons under it. **With `alt`, the card carries a preview** *(Cyrus, 2026-10-15, like `/film`'s posters)*: the source is `.agents/skills/site-quality/assets/apps/<slug>.png`, plus `<slug>-dark.png` for the dark theme if there is one, and `build_assets.py` emits the hashed AVIF/WebP/JPEG (a transparent source is laid on the card's background). With a `<slug>-portrait.png` (and `-portrait-dark.png`) beside them, the card shows that tall version beside its text on a desktop, in a 240px frame, and the landscape one under the title on a phone *(Cyrus, 2026-10-15: a wide picture is hard to read beside the text, a tall one wastes a phone's width)*. lib-visits' four are its README hero and the vertical version (`journey-{light,dark}.png`, `journey-vertical-{light,dark}.png`, from lib-visits' `scripts/readme-image.sh`); Arkos IDE's are its composed dark hero and `hero-portrait-dark.png` alone, as `ide-arkos.png` and `ide-arkos-portrait.png` (ide-arkos' `scripts/shoot.sh`, which takes only dark stills, Cyrus 2026-10-17); MacStats' is its `docs/previews/menubar.png`. The body is the card's copy. The repo is public, so committing a file here publishes it. |
+ | `apps/` | **`https://apps.csarko.sh`** *(added 2026-10-15)*: each app's own page, `apps.csarko.sh/<slug>`, a third Firebase Hosting site `csarko-sh-apps`; its `/` 301s to `https://csarko.sh/projects` (`games.csarko.sh` goes to `/games`, set in the game's own repo, which then 301s to `/projects?filter=games`). `apps/build.mjs` makes each page from the app's README on GitHub (default branch) and its **latest release**, whose assets become the download buttons. **An app's page is standalone** *(Cyrus, 2026-10-15)*: the site's head, tokens and fonts, but none of its chrome (no nav, trail or wordmark), the way `games.csarko.sh/dayhike` is the game's own page; its bar carries the app's name, a Download or Install link, GitHub, Buy me tokens (after GitHub, before the version, only once `DONATE_LIVE`) and the version, and its footer credits Cyrus once (`standaloneShell` in `docs_lib.mjs`, `apps/product.mjs`); `apps/public/` is its git-ignored output. The README's HTML (a `<h1>` title, `<p align>` paragraphs, a `<picture>` hero, a `<picture>` on its own inside a section as a figure, a table of picture-and-text panels) is drawn by the page itself; HTML it does not know fails the build. An app without download assets (MacStats builds on your Mac) gets its release named under its `## Install` section instead of buttons. `node apps/build.mjs --local <slug>=<checkout>` builds from a local README, to look before pushing. **Run `apps/deploy.sh` after an app's README changes or it releases**: the buttons name the release that was latest at build time. No script on this host (no analytics: the collector takes `https://csarko.sh` only). Tests: `node --test apps/test/*.test.mjs`. |
+-| `donate/` | **`https://donate.csarko.sh`, Buy Me Tokens** *(designed and approved 2026-10-30; spec: `docs/superpowers/specs/2026-10-30-donate-site-design.md`)*: the tip page, a fourth Firebase Hosting site `csarko-sh-donate` with no server of its own. One door per shipped project (`/arkos`, `/macstats`, `/visits`, `/last-trail`, `/hallway`, and `/` for the whole body of work; Day Hike's `/dayhike` once it ships), each the project's own picture and words over the same bill: three tiers, each a share of the last 30 days' cloud spend, repriced weekly, plus your own number, paid through a hosted Stripe checkout. The doors' copy is `admin/api/src/donate/doors.mjs` and the icon `donate/icon.mjs` (also served as `donate.csarko.sh/icon.svg` for READMEs); the prices come from the admin API's weekly `donate` step, which publishes them to the public bucket `csarko-sh-donate-prices`. `node donate/build.mjs` builds `donate/public/` (git-ignored) from those prices (`--prices donate/test/fixtures/prices.json` to look before they exist); `donate/deploy.sh` builds and publishes it, and refuses to ship without the prices; **re-run it after the Finance page's prices line says they turned**, since the pages bake those links in as their fallback (the sweep keeps a period's links live for 35 days, so once within a month of a turn is enough). The entrances on csarko.sh and apps.csarko.sh render because `DONATE_LIVE` in `doors.mjs` has been `true` since the launch on 2026-10-31; setting it `false` hides every entrance again. Tests: `node --test donate/test/*.test.mjs`. The repo is public, so the door copy is public. |
++| `donate/` | **`https://donate.csarko.sh`, Buy Me Tokens** *(designed and approved 2026-10-30; spec: `docs/superpowers/specs/2026-10-30-donate-site-design.md`)*: the tip page, a fourth Firebase Hosting site `csarko-sh-donate` with no server of its own. One door per shipped project (`/arkos`, `/macstats`, `/visits`, `/last-trail`, `/hallway`, `/dayhike`, and `/` for the whole body of work: seven doors), each the project's own picture and words over the same bill: three tiers, each a share of the last 30 days' cloud spend, repriced weekly, plus your own number, paid through a hosted Stripe checkout. The doors' copy is `admin/api/src/donate/doors.mjs` and the icon `donate/icon.mjs` (also served as `donate.csarko.sh/icon.svg` for READMEs); the prices come from the admin API's weekly `donate` step, which publishes them to the public bucket `csarko-sh-donate-prices`. `node donate/build.mjs` builds `donate/public/` (git-ignored) from those prices (`--prices donate/test/fixtures/prices.json` to look before they exist); `donate/deploy.sh` builds and publishes it, and refuses to ship without the prices; **re-run it after the Finance page's prices line says they turned**, since the pages bake those links in as their fallback (the sweep keeps a period's links live for 35 days, so once within a month of a turn is enough). The entrances on csarko.sh and apps.csarko.sh render because `DONATE_LIVE` in `doors.mjs` has been `true` since the launch on 2026-10-31; setting it `false` hides every entrance again. Tests: `node --test donate/test/*.test.mjs`. The repo is public, so the door copy is public. |
+ | `docs/games/<slug>.md` | **The games, source of truth.** Markdown with front matter, one file per game, named for the slug alone: a game is not a dated log entry, so a date prefix is refused (`released:` in the front matter is the date). Optional `order` (its place on `/projects`) and `alt` (its card's preview, from `.agents/skills/site-quality/assets/apps/<slug>.png` like an app's; Day Hike has none, Cyrus 2026-10-26: its card will carry a trailer once he makes one). The repo is public, so committing a file here publishes it. |
+ | `public/research/`, `public/projects/`, `public/sitemap.xml` | **Generated** from `docs/published/`, `docs/games/`, `docs/films/` and `docs/apps/` by `build_docs.mjs` (run by `generate-assets.sh`). `public/projects/<slug>.jpg` is each film's stable poster and each preview's stable copy, written by `build_assets.py`. |
+ | `docs/superpowers/` | Internal design specs and implementation plans. **Never published** (unlike its siblings `docs/published/`, `docs/games/`, `docs/films/` and `docs/apps/`, which are). |
+ | `docs/substack/posts.json` | The log of csarko.log posts made with the `substack-post` skill: date, Substack URL, title and the doc slugs each covered. Not a page: the build reads only the three content folders. |
+ | `firebase.json`, `.firebaserc` | Firebase Hosting config: publish `public/`, cache headers, and the 301 redirects from the old `/docs` URLs to `/research` and from `/games`, `/apps` and `/film` to `/projects?filter=games` (`apps`, `film`: each lands with its own chip checked, *Cyrus 2026-10-29*), and the pictures under `/apps/` and `/film/` to `/projects/` (keep them: old links and search results still use them); every other address under `/apps/` goes to `/projects?filter=apps` too (*Cyrus 2026-10-29*; it went to a `/projects/<name>` that does not exist), the pictures matched first by a `regex` rule. |
+ | `admin/` | **The private dashboard, `https://admin.csarko.sh`** *(designed and approved 2026-10-12; spec: `docs/superpowers/specs/2026-10-12-admin-dashboard-design.md`)*. `admin/public/` is the shell (the index of tracked apps, `/csarko.sh/` the site's own dashboard, `/ide-arkos/` Arkos IDE's *(added 2026-10-17, spec `docs/superpowers/specs/2026-10-17-arkos-admin-dashboard-design.md`: the Macs from its daily update check, and the user journey from its opt-in usage reports, which is the point of the page, Cyrus: "so we can see how it's being used and optimize it"; served by `csarko-admin` under `/arkos`; Cyrus dogfoods Arkos, so his own Macs (`ch = dogfood` from `~/.config/arkos/dogfood`, or rows the collector marks `s.own` from his addresses) are counted apart, and the page's Whose row shows Users, You or Both (the default since 2026-10-19))*, `theme.css`, `auth.js`, `charts.js`), a second Firebase Hosting site `csarko-sh-admin`; `admin/api/` is the Cloud Run service `csarko-admin` that reads the visits data in BigQuery, Search Console, YouTube, GitHub and the daily Firestore snapshots, and serves the Billing page (`/finance/`, reached from the account menu, spec `docs/superpowers/specs/2026-10-29-finance-admin-page-design.md`: AWS Cost Explorer through a federated role, the GCP billing export in BigQuery, GitHub's usage, Modal through `admin/finance-modal/` (a Python Cloud Run job, `csarko-finance-modal`, since Modal has no REST billing endpoint) and fal's credit balance, plus the film ledgers that `film-generation`'s `tools/cinema/ledger-sync.sh` copies to the private bucket `csarko-sh-film-ledgers`, and Claude Code as its own category: the claude.ai subscription entered on the page as the spend, and the local transcripts' tokens priced at API list rates as the plan's value, written into the day's snapshot by `tools/claude-usage-sync.py`, run on the Mac after a day's sessions (no transcript text leaves it); there is no spend goal, Cyrus 2026-10-30), and runs the `donate` step that sets the weekly tip prices (spec `docs/superpowers/specs/2026-10-30-donate-site-design.md`; see `donate/` below); `admin/public/game-dayhike/` is **pulled at deploy** from the game's repo (git-ignored). See "Admin pages" below for the standing rule. |
+ | `_infra/` | Terraform for the hosting, DNS, the apps site, the admin site and API, the donate site and its public prices bucket `csarko-sh-donate-prices`, and mail. Same shape as `~/Projects/game-dayhike/_infra` (project `fps-csarko`). |
+ | `mail/` | **Every address at csarko.sh** *(designed and approved 2026-10-30; spec: `docs/superpowers/specs/2026-10-30-email-aliases-design.md`)*: SES receives in us-east-2, `mail/lambda/` (Python, the handler `inbound.handler`) forwards each message to Cyrus with the alias in `From:` and a reverse alias in `Reply-To:`, or sends his reply out as the alias; aliases are created by their first message and can be blocked. Infrastructure: `_infra/modules/aws-mail`. Reading and sending from the command line is the `mail` skill in `csarkosh/skills-general`. Tests: `python3 -m unittest discover -s mail/test -v`. The owner's address is only in the git-ignored `_infra/terraform.tfvars` (`mail_owner_address`). |
+ | `.agents/skills/` | Agent skills: `preview`, `deploy`, `site-quality`, `publish-doc` and `substack-post`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
+ | `.claude/settings.json` | Imports the shared skill plugins from [`csarkosh/skills-general`](https://github.com/csarkosh/skills-general): `general:doc-preview` (open a markdown doc as a styled page in Chrome; not this repo's `preview`, which previews the site) and `general:search-console` (Google Search Console reports: indexing, sitemap, search performance) and `general-claude:doc-artifact` (publish a doc as a claude.ai Artifact). Change those skills in `skills-general`, not here. On a machine that has never installed them, run `claude plugin install general@csarkosh` and `claude plugin install general-claude@csarkosh`. Codex has no per-repository import: run `codex plugin marketplace add csarkosh/skills-general` and `codex plugin add general@csarkosh` once per machine. |
+diff --git a/admin/api/src/donate/doors.mjs b/admin/api/src/donate/doors.mjs
+index eb569b6..8442b8a 100644
+--- a/admin/api/src/donate/doors.mjs
++++ b/admin/api/src/donate/doors.mjs
+@@ -104,26 +104,27 @@ export const DOORS = [
+   },
+   {
+     door: "all", slug: null, name: "The whole body of work", kind: "all", shipped: true, path: "/",
+     headline: "Fund the next agent run",
+     lead: "Everything here is free: the apps, the game, the films. If any of it was worth your time, cover a slice of the bill that builds it.",
+     captions: APP_CAPTIONS, thanks: APP_THANKS,
+     back: { label: "Back to the projects", href: "https://csarko.sh/projects" },
+     picture: { source: "donate/body-of-work.png" },
+   },
+   {
+-    door: "dayhike", slug: "day-hike", name: "Day Hike", kind: "game", shipped: false, path: "/dayhike",
++    door: "dayhike", slug: "day-hike", name: "Day Hike", kind: "game", shipped: true, path: "/dayhike",
+     headline: "Fund the next build",
+     lead: "Day Hike is free and plays in your browser. If you made it back from the woods, cover a slice of the cloud bill that runs it.",
+     captions: ["a bug fix, a good question", "a whole system, read end to end", "a build, start to merge"],
+     thanks: "Tokens received. The next build is on you.",
+     back: { label: "Back to Day Hike", href: "https://games.csarko.sh/dayhike/" },
+-    picture: null,
++    // Shipped 2026-10-31 with the game's cover still: a landscape 1920 by 1080, so no focusY.
++    picture: { source: "donate/day-hike.png" },
+   },
+ ];
+ 
+ /** The door for a project card's slug, else null. */
+ export const doorOf = (slug) => DOORS.find((d) => d.slug === slug) ?? null;
+ /** The door by its key (`arkos`, `all`...), else null. */
+ export const doorByKey = (door) => DOORS.find((d) => d.door === door) ?? null;
+ /** The doors that build today. */
+ export const shippedDoors = () => DOORS.filter((d) => d.shipped);
+diff --git a/admin/api/test/donate-prices.test.mjs b/admin/api/test/donate-prices.test.mjs
+index 19a8735..4a6dfc9 100644
+--- a/admin/api/test/donate-prices.test.mjs
++++ b/admin/api/test/donate-prices.test.mjs
+@@ -30,31 +30,31 @@ test("the pool is the window's daily rows less the commercial project, never neg
+     { day: "2026-09-30", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 999 },
+     { day: "2026-10-31", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 999 },
+     { month: "2026-10", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 999 },
+     { day: "2026-10-15", provider: "gcp", where: "magicpixel-487014", service: "Compute Engine", amount: 50, project: "commercial" },
+   ];
+   assert.equal(poolOf(rows, w), 287.4);
+   assert.equal(poolOf([{ day: "2026-10-12", provider: "gcp", where: "csarko-sh", amount: -12 }], w), 0);
+   assert.deepEqual(pricesOf(0).map((p) => p.usd), [1, 1, 1]);
+ });
+ 
+-test("the doors: seven, their URLs and sources, Day Hike not shipped", () => {
++test("the doors: seven, their URLs and sources, all shipped", () => {
+   assert.deepEqual(DOORS.map((d) => [d.door, d.slug, d.path]), [
+     ["arkos", "ide-arkos", "/arkos"], ["macstats", "app-macstats", "/macstats"], ["visits", "lib-visits", "/visits"],
+     ["last-trail", "the-last-trail", "/last-trail"], ["hallway", "who-is-standing-in-my-hallway", "/hallway"], ["all", null, "/"], ["dayhike", "day-hike", "/dayhike"],
+   ]);
+-  assert.deepEqual(shippedDoors().map((d) => d.door), ["arkos", "macstats", "visits", "last-trail", "hallway", "all"]);
++  assert.deepEqual(shippedDoors().map((d) => d.door), ["arkos", "macstats", "visits", "last-trail", "hallway", "all", "dayhike"]);
+   assert.equal(doorOf("ide-arkos").door, "arkos");
+   assert.equal(doorOf("nope"), null);
+   assert.equal(doorByKey("all").picture.source, "donate/body-of-work.png");
+   assert.equal(doorByKey("last-trail").picture.focusY, 0.42);
+-  assert.equal(doorByKey("dayhike").picture, null);
++  assert.deepEqual(doorByKey("dayhike").picture, { source: "donate/day-hike.png" });
+   for (const d of DOORS) {
+     assert.equal(d.captions.length, 3, d.door);
+     assert.ok(d.headline && d.lead && d.thanks && d.back.label && d.back.href.startsWith("https://"), d.door);
+     assert.ok(!/—|@/.test(JSON.stringify(d)), `${d.door}: no em-dash, no address`);
+   }
+   assert.equal(doorByKey("arkos").lead, "Arkos is free. If it saved you a few hours, cover a slice of the cloud bill that builds it and everything else here.");
+   assert.equal(DONATE_URL, "https://donate.csarko.sh");
+   assert.equal(PRICES_URL, "https://storage.googleapis.com/csarko-sh-donate-prices/prices.json");
+ });
+ 
+diff --git a/admin/api/test/donate-step.test.mjs b/admin/api/test/donate-step.test.mjs
+index 1e97b4d..ba8d6a3 100644
+--- a/admin/api/test/donate-step.test.mjs
++++ b/admin/api/test/donate-step.test.mjs
+@@ -1,21 +1,21 @@
+ // admin/api/test/donate-step.test.mjs
+ import { test } from "node:test";
+ import assert from "node:assert/strict";
+ import { createDonateStep } from "../src/donate/step.mjs";
+ import { createPricesBucket } from "../src/donate/bucket.mjs";
+ import { TIER_KEYS } from "../src/donate/doors.mjs";
+ 
+ const NOW = Date.parse("2026-10-31T10:00:12Z");
+ const TODAY = "2026-10-31";
+ const PERIOD = { from: "2026-10-01", to: "2026-10-30", repricedOn: "2026-10-31" };
+-const SHIPPED = ["arkos", "macstats", "visits", "last-trail", "hallway", "all"];
++const SHIPPED = ["arkos", "macstats", "visits", "last-trail", "hallway", "all", "dayhike"];
+ // The window on Oct 31 is Oct 1 to Oct 30: the row of Sep 30 and the row of Oct 31 fall outside it.
+ const ROWS = [
+   { day: "2026-10-05", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 200 },
+   { day: "2026-10-20", provider: "gcp", where: "csarko-sh", service: "Cloud Run", amount: 87.4 },
+   { day: "2026-09-30", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 500 },
+   { day: "2026-10-31", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 500 },
+ ];
+ const quiet = { error() {}, warn() {} };
+ /** A published object for `period`, with every shipped door (or `doors`). */
+ const published = (period, doors = SHIPPED, extra = {}) => ({ period, pool: 288, at: `${period.repricedOn}T10:00:12.000Z`, tiers: [], custom: {}, products: {}, doors: Object.fromEntries(doors.map((d) => [d, { links: {} }])), ...extra });
+@@ -51,21 +51,21 @@ test("a new period: four products, four prices, four links a door, one JSON, the
+   assert.equal(out.ran, true);
+   assert.deepEqual(out.record, { period: PERIOD, pool: 287.4, at: "2026-10-31T10:00:12.000Z", doors: SHIPPED });
+   const j = bucket.json;
+   assert.deepEqual(Object.keys(j), ["period", "pool", "at", "tiers", "custom", "products", "doors"]);
+   assert.deepEqual(j.period, PERIOD);
+   assert.deepEqual(j.tiers.map((t) => [t.tier, t.usd, t.label]), [["prompt", 3, "about 1%"], ["context", 9, "about 3%"], ["run", 29, "about 10%"]]);
+   assert.ok(j.tiers.every((t) => t.priceId.startsWith("price_")));
+   assert.deepEqual(Object.keys(j.products), TIER_KEYS);
+   assert.equal(j.custom.minimumUsd, 1);
+   assert.deepEqual(Object.keys(j.doors["arkos"].links), TIER_KEYS);
+-  assert.equal(calls.filter((c) => c[0] === "createLink").length, 24);
++  assert.equal(calls.filter((c) => c[0] === "createLink").length, 28);
+   const own = calls.find((c) => c[0] === "createLink" && c[1].tier === "own" && c[1].door === "all")[1];
+   assert.equal(own.redirectUrl, "https://donate.csarko.sh/thanks?door=all");
+   assert.equal(own.key, "donate:link:2026-10-31:all:own:2026-10-31");
+   assert.equal(own.period, "2026-10-31");
+   assert.ok(!("month" in own));
+   const price = calls.find((c) => c[0] === "createPrice")[1];
+   assert.equal(price.key, "donate:price:2026-10-31:prompt:2026-10-31");
+   assert.equal(price.lookupKey, "donate:2026-10-31:prompt");
+   assert.deepEqual(price.metadata, { donate: "1", period: "2026-10-31", tier: "prompt", pool: "287.4" });
+   assert.equal(calls.find((c) => c[0] === "createCustomPrice")[1].key, "donate:price:2026-10-31:own:2026-10-31");
+@@ -194,21 +194,21 @@ test("a door added between turns gets its links at the current period's prices;
+   const tiers = [{ tier: "prompt", share: 0.01, priceId: "price_1" }, { tier: "context", share: 0.03, priceId: "price_2" }, { tier: "run", share: 0.1, priceId: "price_3" }];
+   const current = published(PERIOD, SHIPPED.filter((d) => d !== "all"), { tiers, custom: { priceId: "price_4", minimumUsd: 1 } });
+   const bucket = fakeBucket(current);
+   const out = await createDonateStep({ writer: fakeWriter(calls), bucket, now: () => Date.parse("2026-11-03T10:00:00Z"), log: quiet }).run({ dailyRows: ROWS, failed: [], today: "2026-11-03", gcpConfigured: true, gcpLastDay: null });
+   assert.equal(out.reason, "doors added", "a door added waits on nothing");
+   assert.deepEqual(calls.map((c) => c[0]).filter((n) => n !== "createLink"), []);
+   assert.equal(calls.length, 4);
+   assert.ok(calls.every((c) => c[1].door === "all" && c[1].period === "2026-10-31"));
+   assert.equal(calls.find((c) => c[1].tier === "context")[1].priceId, "price_2");
+   assert.equal(calls.find((c) => c[1].tier === "context")[1].key, "donate:link:2026-10-31:all:context:2026-11-03");
+-  assert.deepEqual(Object.keys(bucket.json.doors), SHIPPED);
++  assert.deepEqual(Object.keys(bucket.json.doors), [...SHIPPED.filter((d) => d !== "all"), "all"], "the new door is appended");
+   assert.deepEqual([bucket.json.period, bucket.json.pool, bucket.json.at], [PERIOD, 288, "2026-10-31T10:00:12.000Z"]);
+ });
+ 
+ test("a Stripe failure midway writes nothing and rethrows; a same-day rerun uses the same idempotency keys, the next day's its own", async () => {
+   const calls = [];
+   const bucket = fakeBucket();
+   await assert.rejects(createDonateStep({ writer: fakeWriter(calls, { failAt: 12 }), bucket, now: () => NOW, log: quiet }).run({ dailyRows: ROWS, failed: [], today: TODAY }), /Stripe 500/);
+   assert.equal(bucket.writes, 0);
+   const keys = (list) => list.filter((c) => c[1]?.key).map((c) => c[1].key);
+   assert.ok(keys(calls).filter((k) => !k.startsWith("donate:product:")).every((k) => k.startsWith("donate:price:2026-10-31:") || k.startsWith("donate:link:2026-10-31:")));
+diff --git a/docs/superpowers/plans/2026-10-30-donate-site.md b/docs/superpowers/plans/2026-10-30-donate-site.md
+index 10a3de5..8dbc6eb 100644
+--- a/docs/superpowers/plans/2026-10-30-donate-site.md
++++ b/docs/superpowers/plans/2026-10-30-donate-site.md
+@@ -1056,18 +1056,18 @@ If `first_day` is `2026-10-01`, **skip the rest of this task** and note it in th
+ git add _infra admin/api tools/gcp-history-load.py
+ git commit -m "finance: a history table for the months the GCP export does not hold"
+ ```
+ 
+ ---
+ 
+ ### Task 13: Close out
+ 
+ **Files:**
+ - Modify: `~/.claude3/projects/-Users-csarko-Projects/memory/donate-site.md` (the state: live date, what is left)
+-- Cyrus's clicks, asked for in one message when the site is live: Stripe, Settings, Business details, Website → `https://donate.csarko.sh`; Stripe, Settings, Customer emails, "Successful payments" on; YouTube Studio, Customization, Basic info, Links → `Buy me tokens` → `https://donate.csarko.sh/last-trail` (or the bare door); each Short's description gains the plain URL as its last line; the Day Hike screenshot, after which `dayhike.shipped = true` and `picture.source = "apps/day-hike.png"` (a 16:9 PNG under `assets/apps/`), one commit, `donate/deploy.sh`, `deploy.sh`.
++- Cyrus's clicks, asked for in one message when the site is live: Stripe, Settings, Business details, Website → `https://donate.csarko.sh`; Stripe, Settings, Customer emails, "Successful payments" on; YouTube Studio, Customization, Basic info, Links → `Buy me tokens` → `https://donate.csarko.sh/last-trail` (or the bare door); each Short's description gains the plain URL as its last line; the Day Hike screenshot, after which `dayhike.shipped = true` and `picture.source = "apps/day-hike.png"` (a 16:9 PNG under `assets/apps/`), one commit, `donate/deploy.sh`, `deploy.sh`. **Day Hike's part done 2026-10-31**: `shipped: true` with the game's cover still, `picture.source = "donate/day-hike.png"`; the deploys wait.
+ - The monthly redeploy, a line in Cyrus's monthly routine and in the message: once the Finance page's prices line says the month's prices have turned (on or after the 3rd), run `donate/deploy.sh`, so the pages' baked fallback points at the new month's links; the sweep keeps last month's live for one more month, so the fallback pays in between (spec section 4, amended Oct 30).
+ - The four other repositories' entrances (ide-arkos About menu and README, app-macstats README and install caveat, lib-visits README, game-dayhike title screen and README) are follow-ups in their own repositories with the snippet from Task 10.
+ 
+ - [ ] **Step 1: Walk the spec's section 2 list against the live pages**: every shipped door opens, shows its picture landscape, the October bill, three prices and the custom row, and its button opens Stripe with the right amount; `/thanks?door=arkos` links back to Arkos; `/icon.svg` serves; `/projects` cards and the three apps pages carry the line once.
+ 
+ - [ ] **Step 2: Write the memory file and the message to Cyrus with his clicks**
+ 
+diff --git a/docs/superpowers/specs/2026-10-30-donate-site-design.md b/docs/superpowers/specs/2026-10-30-donate-site-design.md
+index 649e86e..f18419a 100644
+--- a/docs/superpowers/specs/2026-10-30-donate-site-design.md
++++ b/docs/superpowers/specs/2026-10-30-donate-site-design.md
+@@ -119,21 +119,21 @@ on is Cyrus's click, section 8.)
+ **Doors**, by URL, in the order they ship:
+ 
+ | Door | URL | Picture | Ships |
+ |---|---|---|---|
+ | Arkos IDE | `/arkos` | its landscape hero | first |
+ | MacStats | `/macstats` | its menu-bar hero | first |
+ | lib-visits | `/visits` | its journey hero | first |
+ | The Last Trail | `/last-trail` | poster, cropped landscape on the page | with the apps |
+ | Who is standing in my hallway? | `/hallway` | poster, cropped landscape on the page | with the apps |
+ | The whole body of work | `/` | the generated graphic (section 6) | with the apps |
+-| Day Hike | `/dayhike` | a screenshot Cyrus is yet to make | last (Cyrus: "hold off on that one and do it last") |
++| Day Hike | `/dayhike` | a screenshot Cyrus is yet to make | shipped Oct 31 with the game's cover still |
+ 
+ The door slugs are mine (short, human, no prefixes); every project card's slug maps to one.
+ `/film` is not a door: it was the Oct 29 name for The Last Trail when there was one film.
+ 
+ ## 3. The bill: one pool, exponential shares
+ 
+ **The pool** is the total spend on everything Cyrus gives away, as the Finance page counts it:
+ every provider (AWS, GCP, GitHub, Modal, fal, Claude Code), every category including the fixed
+ ones (domains, the Claude Code subscription), net of credits, in USD, over the 30 days ending
+ yesterday (UTC), summed from the Finance page's daily rows *(amended Oct 31: Cyrus chose a
+diff --git a/donate/test/fixtures/prices.json b/donate/test/fixtures/prices.json
+index be318a3..74be45d 100644
+--- a/donate/test/fixtures/prices.json
++++ b/donate/test/fixtures/prices.json
+@@ -155,13 +155,33 @@
+     },
+     "run": {
+      "id": "plink_test_all_run",
+      "url": "https://buy.stripe.com/test_all_run"
+     },
+     "own": {
+      "id": "plink_test_all_own",
+      "url": "https://buy.stripe.com/test_all_own"
+     }
+    }
++  },
++  "dayhike": {
++   "links": {
++    "prompt": {
++     "id": "plink_test_dayhike_prompt",
++     "url": "https://buy.stripe.com/test_dayhike_prompt"
++    },
++    "context": {
++     "id": "plink_test_dayhike_context",
++     "url": "https://buy.stripe.com/test_dayhike_context"
++    },
++    "run": {
++     "id": "plink_test_dayhike_run",
++     "url": "https://buy.stripe.com/test_dayhike_run"
++    },
++    "own": {
++     "id": "plink_test_dayhike_own",
++     "url": "https://buy.stripe.com/test_dayhike_own"
++    }
++   }
+   }
+  }
+ }
+diff --git a/public/projects/index.html b/public/projects/index.html
+index 72d1016..56b964b 100644
+--- a/public/projects/index.html
++++ b/public/projects/index.html
+@@ -519,21 +519,21 @@
+           <div class="project-desc prose">
+ <p>A first-person co-op horror game for up to five players, in the browser with no install, and the
+ project I have pushed AI-assisted development furthest on: nearly every one of its 1,800+ commits
+ was written with Claude Code, from the deterministic simulation and the WebRTC netcode to the
+ procedural world and the shaders.</p>
+ <p>Before building a system I research it with Claude, from how AAA games render ground fog and rain
+ to how horror directors build dread, and <a href="/research">publish what I find</a>. More than twenty of
+ those docs shaped what you see on the trail.</p>
+           </div>
+           <ul class="tags" role="list"><li>TypeScript</li><li>Babylon.js</li><li>WebRTC</li><li>Claude Code</li></ul>
+-          <div class="card-links"><a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-source" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener" data-visits-event="source-day-hike">Source on GitHub <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
++          <div class="card-links"><a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-source" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener" data-visits-event="source-day-hike">Source on GitHub <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-tokens" href="https://donate.csarko.sh/dayhike" data-visits-event="tokens-day-hike"><svg class="tokens-icon" aria-hidden="true"><use href="#tokens-icon"/></svg>Buy me tokens</a></div>
+         </div>
+       </li>
+       <li class="card project-card" id="ide-arkos" data-kind="apps">
+         <div class="project-media">
+           <!-- generated:app-preview:ide-arkos -->
+           <picture class="portrait">
+             <source media="(max-width: 640px)" type="image/avif" srcset="/assets/app-ide-arkos-360.b397567f.avif 360w, /assets/app-ide-arkos-540.8188e6c8.avif 540w, /assets/app-ide-arkos-720.5e321e4f.avif 720w, /assets/app-ide-arkos-1080.caa06530.avif 1080w" sizes="calc(100vw - 94px)" />
+             <source media="(max-width: 640px)" type="image/webp" srcset="/assets/app-ide-arkos-360.69210456.webp 360w, /assets/app-ide-arkos-540.12430dab.webp 540w, /assets/app-ide-arkos-720.e97251c9.webp 720w, /assets/app-ide-arkos-1080.d00ebba7.webp 1080w" sizes="calc(100vw - 94px)" />
+             <source media="(max-width: 640px)" type="image/jpeg" srcset="/assets/app-ide-arkos-360.7433157d.jpg 360w, /assets/app-ide-arkos-540.bd751e7f.jpg 540w, /assets/app-ide-arkos-720.c9683678.jpg 720w, /assets/app-ide-arkos-1080.584ac5ef.jpg 1080w" sizes="calc(100vw - 94px)" />
+             <source type="image/avif" srcset="/assets/app-ide-arkos-portrait-light-240.35f18e1c.avif 240w, /assets/app-ide-arkos-portrait-light-480.632fc885.avif 480w, /assets/app-ide-arkos-portrait-light-720.78a51177.avif 720w" sizes="240px" />

@@ -1,0 +1,564 @@
+# Review package: b688557..442b42d
+
+## Commits
+442b42d infra: the donate site, its prices bucket and the Stripe write key
+
+## Files changed
+ .../skills/site-quality/tests/firebase.test.mjs    | 14 ++++
+ _infra/main.tf                                     | 36 ++++++++--
+ _infra/modules/gcp-admin-api/main.tf               | 51 ++++++++++++++
+ _infra/modules/gcp-admin-api/outputs.tf            |  5 ++
+ _infra/modules/gcp-admin-api/variables.tf          | 17 ++++-
+ _infra/outputs.tf                                  | 25 +++++++
+ _infra/variables.tf                                | 12 ++++
+ firebase.json                                      | 80 ++++++++++++++++++++++
+ 8 files changed, 235 insertions(+), 5 deletions(-)
+
+## Diff
+diff --git a/.agents/skills/site-quality/tests/firebase.test.mjs b/.agents/skills/site-quality/tests/firebase.test.mjs
+index 67f167b..ec0d081 100644
+--- a/.agents/skills/site-quality/tests/firebase.test.mjs
++++ b/.agents/skills/site-quality/tests/firebase.test.mjs
+@@ -27,10 +27,24 @@ test("the old project pages land on /projects with their own kind's chip checked
+ });
+ 
+ test("every other /apps address lands on the Apps filter; only the old pictures keep their files", () => {
+   const i = (pred) => site.redirects.findIndex(pred);
+   const pictures = i((r) => r.regex === "^/apps/(?P<file>[^/]+\\.(?:jpg|jpeg|png|webp|avif))$" && r.destination === "/projects/:file");
+   const rest = i((r) => r.source === "/apps/**" && r.destination === "/projects?filter=apps" && r.type === 301);
+   assert.ok(pictures >= 0, "the old pictures still redirect to their files");
+   assert.ok(rest > pictures, "the catch-all comes after the pictures (the first match wins)");
+   assert.ok(!site.redirects.some((r) => r.source === "/apps/:file*"), "no /apps page lands on a /projects/<name> that does not exist");
+ });
++
++test("the donate site: its own entry, a CSP that reaches only the prices bucket, no rewrite and no redirect", () => {
++  const donate = fb.hosting.find((h) => h.site === "csarko-sh-donate");
++  assert.equal(donate.public, "donate/public");
++  assert.equal(donate.cleanUrls, true);
++  assert.equal(donate.trailingSlash, false);
++  assert.equal(donate.rewrites, undefined);
++  assert.equal(donate.redirects, undefined);
++  const csp = donate.headers.find((h) => h.source === "**").headers.find((h) => h.key === "Content-Security-Policy").value;
++  assert.ok(csp.includes("connect-src 'self' https://storage.googleapis.com;"));
++  assert.ok(csp.includes("script-src 'self';"));
++  assert.ok(csp.includes("form-action 'none'"));
++  assert.ok(!csp.includes("stripe"), "Stripe is a navigation, not a request from the page");
++});
+diff --git a/_infra/main.tf b/_infra/main.tf
+index 1139431..a362b28 100644
+--- a/_infra/main.tf
++++ b/_infra/main.tf
+@@ -175,20 +175,24 @@ module "gcp_admin_api" {
+   github_owner           = var.github_owner
+   admin_emails           = var.admin_emails
+   allowed_origins = [
+     "https://${var.admin_domain_name}",
+     # The local preview of admin/public, served by its preview script.
+     "http://localhost:8788",
+   ]
+   billing_account_id = var.billing_account_id
+   monthly_budget_usd = var.monthly_budget_usd
+ 
++  # The donate site's origin: the prices bucket's CORS names it, and DONATE_URL is where the
++  # admin API sends a reader to look at what it published.
++  donate_origin = "https://${var.donate_domain_name}"
++
+   # The Finance page's AWS side (module aws_costs below). The two modules refer
+   # to each other, which is fine: Terraform's graph is per resource, and the
+   # service account the role trusts does not depend on the service that reads
+   # the role's ARN, so there is no cycle.
+   aws_cost_role_arn = module.aws_costs.role_arn
+   aws_cost_audience = module.aws_costs.audience
+ 
+   providers = {
+     google         = google
+     google.billing = google.billing
+@@ -205,20 +209,42 @@ module "aws_costs" {
+   source = "./modules/aws-costs"
+ 
+   audience                  = "https://${var.admin_domain_name}/aws-costs"
+   service_account_unique_id = module.gcp_admin_api.service_account_unique_id
+ 
+   providers = {
+     aws = aws
+   }
+ }
+ 
++# The donate site, https://donate.csarko.sh (Buy Me Tokens; design:
++# docs/superpowers/specs/2026-10-30-donate-site-design.md): a fourth Hosting site in the
++# project. It is static, with no rewrite and no redirect, and reads its prices from the
++# public bucket in module gcp_admin_api (donate_prices_bucket) with a request the CSP allows
++# for that one origin. It deploys on its own, apart from the other sites.
++module "gcp_hosting_donate" {
++  source = "./modules/gcp-hosting"
++
++  project_id            = var.gcp_project_id
++  site_id               = var.donate_hosting_site_id
++  domain_name           = var.donate_domain_name
++  redirect_domain_names = []
++  manage_project        = false
++
++  providers = {
++    google      = google
++    google-beta = google-beta
++  }
++
++  depends_on = [module.gcp_hosting]
++}
++
+ # The two datasets' names are set here and passed to both modules: the admin API
+ # reads them, and gcp_visits waits on the whole admin module (its APIs), so the
+ # admin module cannot take them from gcp_visits' outputs without a cycle.
+ locals {
+   visits_dataset         = "csarko_visits"
+   visits_history_dataset = "csarko_history"
+ }
+ 
+ module "gcp_visits" {
+   source = "./modules/gcp-visits"
+@@ -242,23 +268,24 @@ module "gcp_visits" {
+   # The admin module enables run, secretmanager and iam; this module only adds logging and bigquery.
+   depends_on = [module.gcp_admin_api]
+   # Arkos IDE's reports and its daily update check, which is redirected to the manifest on GitHub.
+   apps = ["arkos=https://github.com/csarkosh/ide-arkos/releases/latest/download/manifest.json"]
+ }
+ 
+ # Each site's own hostname, e.g. "csarko-sh.web.app". default_url stays populated
+ # for the life of the site, unlike required_dns_updates, which empties once a
+ # domain reconciles (the fps repo learned this the hard way).
+ locals {
+-  hosting_cname_target       = trimprefix(module.gcp_hosting.default_url, "https://")
+-  admin_hosting_cname_target = trimprefix(module.gcp_hosting_admin.default_url, "https://")
+-  apps_hosting_cname_target  = trimprefix(module.gcp_hosting_apps.default_url, "https://")
++  hosting_cname_target        = trimprefix(module.gcp_hosting.default_url, "https://")
++  admin_hosting_cname_target  = trimprefix(module.gcp_hosting_admin.default_url, "https://")
++  apps_hosting_cname_target   = trimprefix(module.gcp_hosting_apps.default_url, "https://")
++  donate_hosting_cname_target = trimprefix(module.gcp_hosting_donate.default_url, "https://")
+ }
+ 
+ # csarko.sh is a zone apex, so it cannot be a CNAME the way games.csarko.sh is
+ # in the fps repo. Firebase Hosting serves an apex from a fixed A record plus a
+ # TXT record that proves which site owns the domain.
+ module "aws_dns" {
+   source = "./modules/aws-dns"
+ 
+   zone_name   = var.dns_zone_name
+   domain_name = var.domain_name
+@@ -270,25 +297,26 @@ module "aws_dns" {
+     "hosting-site=${module.gcp_hosting.site_id}",
+     # Google Search Console, Domain property csarko.sh (verified 2026-09-11).
+     # Google re-checks it periodically; removing it un-verifies the property.
+     "google-site-verification=r8DHgyFqGEsfamOeyKlLZecMwnv54ysXg91ZFGylr_4",
+     # SPF for mail from the domain (module aws_mail): SES, plus Google until the Workspace
+     # subscription is gone (mail_cutover_complete).
+     module.aws_mail.apex_spf_value,
+   ]
+ 
+   # Non-apex hostnames CNAME straight to their site's own web.app host: the
+-  # redirect domains (www) to the public site, admin to the admin site, apps to the apps site.
++  # redirect domains (www) to the public site, admin to the admin site, apps to the apps site, donate to the donate site.
+   cname_records = merge(
+     { for d in var.redirect_domain_names : d => local.hosting_cname_target },
+     { (var.admin_domain_name) = local.admin_hosting_cname_target },
+     { (var.apps_domain_name) = local.apps_hosting_cname_target },
++    { (var.donate_domain_name) = local.donate_hosting_cname_target },
+   )
+ 
+   providers = {
+     aws = aws
+   }
+ }
+ 
+ # Every address at the domain: SES receives, a Lambda forwards to the owner or sends the owner's
+ # reply as the alias. Design: docs/superpowers/specs/2026-10-30-email-aliases-design.md. The
+ # cutover is three variables, in order: the trial subdomain first, then mail_manage_apex_mx, and
+diff --git a/_infra/modules/gcp-admin-api/main.tf b/_infra/modules/gcp-admin-api/main.tf
+index af6466e..0ec92b2 100644
+--- a/_infra/modules/gcp-admin-api/main.tf
++++ b/_infra/modules/gcp-admin-api/main.tf
+@@ -438,20 +438,31 @@ resource "google_cloud_run_v2_service" "admin" {
+         value = var.aws_cost_audience
+       }
+ 
+       # The film ledgers (spec section 11): the private bucket the pipeline syncs
+       # <film>/ledger.json into, read here with objectViewer (below).
+       env {
+         name  = "FILM_LEDGERS_BUCKET"
+         value = google_storage_bucket.film_ledgers.name
+       }
+ 
++      # The donate site (2026-10-30): where the service publishes prices, and the site's
++      # address. STRIPE_WRITE_KEY arrives with the other secrets, from secret_ids.
++      env {
++        name  = "DONATE_BUCKET"
++        value = google_storage_bucket.donate_prices.name
++      }
++      env {
++        name  = "DONATE_URL"
++        value = var.donate_origin
++      }
++
+       # The Modal part is the job's, not the service's: this says the job exists,
+       # so the API reports Modal from the snapshot instead of "not configured"
+       # (whether the token itself is set, the job says in the snapshot).
+       env {
+         name  = "MODAL_CONFIGURED"
+         value = "1"
+       }
+     }
+   }
+ 
+@@ -720,20 +731,60 @@ resource "google_storage_bucket" "film_ledgers" {
+     }
+   }
+ }
+ 
+ resource "google_storage_bucket_iam_member" "admin_reads_ledgers" {
+   bucket = google_storage_bucket.film_ledgers.name
+   role   = "roles/storage.objectViewer"
+   member = "serviceAccount:${google_service_account.admin.email}"
+ }
+ 
++# ---- the donate prices ------------------------------------------------------------
++
++# The donate site's prices (2026-10-30): objects the admin API writes and the page reads
++# from the browser.
++#
++# Public on purpose, unlike the ledgers above: allUsers reads it, so public access
++# prevention is inherited (off) rather than enforced, which would refuse that grant. Uniform
++# bucket-level access still holds, no object ACLs. The page fetches it across origins, so
++# CORS allows GET from the donate site and from the local preview port, and nothing else.
++# Only the admin service account writes (objectUser: create, overwrite and delete objects,
++# no bucket settings). force_destroy stays off so a stray destroy cannot take the prices.
++resource "google_storage_bucket" "donate_prices" {
++  project  = var.project_id
++  name     = var.donate_prices_bucket
++  location = var.region
++
++  uniform_bucket_level_access = true
++  public_access_prevention    = "inherited"
++  force_destroy               = false
++
++  cors {
++    origin          = [var.donate_origin, "http://localhost:8789"]
++    method          = ["GET"]
++    response_header = ["Content-Type"]
++    max_age_seconds = 3600
++  }
++}
++
++resource "google_storage_bucket_iam_member" "donate_public" {
++  bucket = google_storage_bucket.donate_prices.name
++  role   = "roles/storage.objectViewer"
++  member = "allUsers"
++}
++
++resource "google_storage_bucket_iam_member" "admin_writes_donate" {
++  bucket = google_storage_bucket.donate_prices.name
++  role   = "roles/storage.objectUser"
++  member = "serviceAccount:${google_service_account.admin.email}"
++}
++
+ # ---- the budget ------------------------------------------------------------------
+ 
+ # An alert, not a limit, as the sibling repo's: a budget emails the billing
+ # account's administrators as spending crosses each threshold and stops
+ # nothing. The stops are the instance ceiling and the handler's rate limit.
+ #
+ # Off unless billing_account_id is set. Unfiltered, so it covers the whole
+ # project: Hosting for both sites, Cloud Run, Firestore, Secret Manager and
+ # Scheduler all have free tiers an ordinary month never leaves, so a $5 alert
+ # means a spike or a leak worth looking at, whichever service it came from.
+diff --git a/_infra/modules/gcp-admin-api/outputs.tf b/_infra/modules/gcp-admin-api/outputs.tf
+index 9c545a5..6af2cc8 100644
+--- a/_infra/modules/gcp-admin-api/outputs.tf
++++ b/_infra/modules/gcp-admin-api/outputs.tf
+@@ -31,14 +31,19 @@ output "image_repository" {
+ output "finance_modal_job_name" {
+   description = "Cloud Run job name of the Modal billing job, for `gcloud run jobs deploy --source admin/finance-modal`"
+   value       = google_cloud_run_v2_job.finance_modal.name
+ }
+ 
+ output "film_ledgers_bucket" {
+   description = "The private bucket the film pipeline syncs <film>/ledger.json into; the service's FILM_LEDGERS_BUCKET"
+   value       = google_storage_bucket.film_ledgers.name
+ }
+ 
++output "donate_prices_bucket" {
++  description = "The public bucket the admin API publishes the donate site's prices to; the service's DONATE_BUCKET"
++  value       = google_storage_bucket.donate_prices.name
++}
++
+ output "service_account_unique_id" {
+   description = "The service's identity as its numeric unique id: the `sub` claim of the ID tokens it mints, which the AWS costs role's trust policy names"
+   value       = google_service_account.admin.unique_id
+ }
+diff --git a/_infra/modules/gcp-admin-api/variables.tf b/_infra/modules/gcp-admin-api/variables.tf
+index 91933c7..a9edc41 100644
+--- a/_infra/modules/gcp-admin-api/variables.tf
++++ b/_infra/modules/gcp-admin-api/variables.tf
+@@ -71,20 +71,24 @@ variable "secret_ids" {
+     `gcloud secrets versions add`, so no value ever passes through Terraform.
+   EOT
+   type        = map(string)
+   default = {
+     gsc-sa-key    = "GSC_SA_KEY"
+     youtube-key   = "YOUTUBE_KEY"
+     github-token  = "GITHUB_TOKEN"
+     psi-key       = "PSI_KEY"
+     fal-admin-key = "FAL_ADMIN_KEY"
+     stripe-key    = "STRIPE_KEY"
++    # The donate site's write key (2026-10-30): a restricted Stripe key with Products and
++    # Payment Links write, apart from the read key above so the Finance page's key never
++    # gains a write permission.
++    stripe-write-key = "STRIPE_WRITE_KEY"
+   }
+ }
+ 
+ variable "job_secret_ids" {
+   description = <<-EOT
+     The Modal job's secrets, secret id to environment variable, created and
+     granted like secret_ids but mounted on the job alone. The names are the
+     Modal client's own: it reads MODAL_TOKEN_ID and MODAL_TOKEN_SECRET itself.
+   EOT
+   type        = map(string)
+@@ -96,21 +100,21 @@ variable "job_secret_ids" {
+ 
+ variable "seeded_secret_ids" {
+   description = <<-EOT
+     The secrets (from secret_ids and job_secret_ids) created with a first version
+     holding the literal `unset`, so Cloud Run accepts the service and the job in
+     the same apply; the real value is added by hand as a new version. The four
+     original secrets are not here: their versions were added by hand before
+     the service existed.
+   EOT
+   type        = set(string)
+-  default     = ["fal-admin-key", "modal-token-id", "modal-token-secret", "stripe-key"]
++  default     = ["fal-admin-key", "modal-token-id", "modal-token-secret", "stripe-key", "stripe-write-key"]
+ }
+ 
+ variable "job_image" {
+   description = "Container image to create the Modal job with. `gcloud run jobs deploy --source` owns it afterwards."
+   type        = string
+   default     = "us-docker.pkg.dev/cloudrun/container/job:latest"
+ }
+ 
+ variable "modal_credits_usd" {
+   description = "The Modal plan's included monthly credits, whole US dollars (MODAL_CREDITS_USD on the job; $30 on Starter)."
+@@ -123,20 +127,31 @@ variable "finance_modal_schedule" {
+   type        = string
+   default     = "50 5 * * *"
+ }
+ 
+ variable "film_ledgers_bucket" {
+   description = "Name of the private GCS bucket the film pipeline syncs <film>/ledger.json into (FILM_LEDGERS_BUCKET on the service). Bucket names are global."
+   type        = string
+   default     = "csarko-sh-film-ledgers"
+ }
+ 
++variable "donate_prices_bucket" {
++  description = "Name of the public GCS bucket the admin API publishes the donate site's prices to (DONATE_BUCKET on the service; admin/api/src/donate/doors.mjs names the same constant). Bucket names are global."
++  type        = string
++  default     = "csarko-sh-donate-prices"
++}
++
++variable "donate_origin" {
++  description = "Origin of the donate site, https://donate.csarko.sh: the prices bucket's CORS allows it, and it is DONATE_URL on the service."
++  type        = string
++}
++
+ variable "snapshot_schedule" {
+   description = "Cron schedule for the daily snapshot."
+   type        = string
+   default     = "0 6 * * *"
+ }
+ 
+ variable "snapshot_time_zone" {
+   description = "Time zone the schedule is read in."
+   type        = string
+   default     = "America/New_York"
+diff --git a/_infra/outputs.tf b/_infra/outputs.tf
+index 0c1be3b..969c726 100644
+--- a/_infra/outputs.tf
++++ b/_infra/outputs.tf
+@@ -56,20 +56,45 @@ output "apps_hosting_default_url" {
+ output "apps_custom_domain_state" {
+   description = "Host, ownership and certificate state of the apps domain. All ACTIVE means done."
+   value       = module.gcp_hosting_apps.custom_domain_state
+ }
+ 
+ output "apps_site_url" {
+   description = "URL of the apps site"
+   value       = "https://${var.apps_domain_name}"
+ }
+ 
++output "donate_hosting_site_id" {
++  description = "Firebase Hosting site id of the donate site"
++  value       = module.gcp_hosting_donate.site_id
++}
++
++output "donate_hosting_default_url" {
++  description = "The donate site's own web.app URL, usable before DNS is live"
++  value       = module.gcp_hosting_donate.default_url
++}
++
++output "donate_custom_domain_state" {
++  description = "Host, ownership and certificate state of the donate domain. All ACTIVE means done."
++  value       = module.gcp_hosting_donate.custom_domain_state
++}
++
++output "donate_site_url" {
++  description = "URL of the donate site"
++  value       = "https://${var.donate_domain_name}"
++}
++
++output "donate_prices_bucket" {
++  description = "The public bucket the admin API publishes the donate site's prices to"
++  value       = module.gcp_admin_api.donate_prices_bucket
++}
++
+ output "admin_hosting_site_id" {
+   description = "Firebase Hosting site id of the admin dashboard"
+   value       = module.gcp_hosting_admin.site_id
+ }
+ 
+ output "admin_hosting_default_url" {
+   description = "The admin site's own web.app URL, usable before DNS is live"
+   value       = module.gcp_hosting_admin.default_url
+ }
+ 
+diff --git a/_infra/variables.tf b/_infra/variables.tf
+index b9885b6..98d5224 100644
+--- a/_infra/variables.tf
++++ b/_infra/variables.tf
+@@ -57,20 +57,32 @@ variable "apps_domain_name" {
+   type        = string
+   default     = "apps.csarko.sh"
+ }
+ 
+ variable "apps_hosting_site_id" {
+   description = "Firebase Hosting site id of the apps site. Globally unique across all of Firebase."
+   type        = string
+   default     = "csarko-sh-apps"
+ }
+ 
++variable "donate_domain_name" {
++  description = "Hostname of the donate site (Buy Me Tokens), a static page whose prices the admin API publishes to a public bucket."
++  type        = string
++  default     = "donate.csarko.sh"
++}
++
++variable "donate_hosting_site_id" {
++  description = "Firebase Hosting site id of the donate site. Globally unique across all of Firebase."
++  type        = string
++  default     = "csarko-sh-donate"
++}
++
+ variable "admin_domain_name" {
+   description = "Hostname of the admin dashboard. A subdomain of domain_name, so it CNAMEs to its site's web.app host."
+   type        = string
+   default     = "admin.csarko.sh"
+ }
+ 
+ variable "admin_hosting_site_id" {
+   description = "Firebase Hosting site id of the admin dashboard. Globally unique across all of Firebase."
+   type        = string
+   default     = "csarko-sh-admin"
+diff --git a/firebase.json b/firebase.json
+index 8c5eb8e..ee226e3 100644
+--- a/firebase.json
++++ b/firebase.json
+@@ -274,13 +274,93 @@
+         {
+           "source": "/@(robots.txt|sitemap.xml)",
+           "headers": [
+             {
+               "key": "Cache-Control",
+               "value": "public, max-age=3600"
+             }
+           ]
+         }
+       ]
++    },
++    {
++      "site": "csarko-sh-donate",
++      "public": "donate/public",
++      "ignore": [
++        "**/.*"
++      ],
++      "cleanUrls": true,
++      "trailingSlash": false,
++      "headers": [
++        {
++          "source": "**",
++          "headers": [
++            {
++              "key": "Cache-Control",
++              "value": "no-cache"
++            },
++            {
++              "key": "Content-Security-Policy",
++              "value": "default-src 'none'; script-src 'self'; connect-src 'self' https://storage.googleapis.com; img-src 'self'; font-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests"
++            },
++            {
++              "key": "X-Content-Type-Options",
++              "value": "nosniff"
++            },
++            {
++              "key": "X-Frame-Options",
++              "value": "DENY"
++            },
++            {
++              "key": "Referrer-Policy",
++              "value": "strict-origin-when-cross-origin"
++            },
++            {
++              "key": "Permissions-Policy",
++              "value": "accelerometer=(), browsing-topics=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
++            },
++            {
++              "key": "Cross-Origin-Opener-Policy",
++              "value": "same-origin"
++            }
++          ]
++        },
++        {
++          "source": "**/*.@(jpg|jpeg|png|webp|avif|svg|ico)",
++          "headers": [
++            {
++              "key": "Cache-Control",
++              "value": "public, max-age=86400"
++            }
++          ]
++        },
++        {
++          "source": "/icon.svg",
++          "headers": [
++            {
++              "key": "Cache-Control",
++              "value": "public, max-age=86400"
++            }
++          ]
++        },
++        {
++          "source": "/assets/**",
++          "headers": [
++            {
++              "key": "Cache-Control",
++              "value": "public, max-age=31536000, immutable"
++            }
++          ]
++        },
++        {
++          "source": "/@(robots.txt|sitemap.xml)",
++          "headers": [
++            {
++              "key": "Cache-Control",
++              "value": "public, max-age=3600"
++            }
++          ]
++        }
++      ]
+     }
+   ]
+ }

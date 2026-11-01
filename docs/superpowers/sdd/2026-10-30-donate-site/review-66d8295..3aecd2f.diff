@@ -1,0 +1,42 @@
+# Review package: 66d8295..3aecd2f
+
+## Commits
+3aecd2f donate: the deploy script checks CORS the way a browser does
+
+## Files changed
+ donate/deploy.sh | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+## Diff
+diff --git a/donate/deploy.sh b/donate/deploy.sh
+index c73e43e..088bd93 100755
+--- a/donate/deploy.sh
++++ b/donate/deploy.sh
+@@ -72,22 +72,25 @@ verify() {
+       *) path="/$rel" ;;
+     esac
+     for i in 1 2 3 4 5 6; do
+       if serves_local "$url" "$path" "$file"; then echo "✓ $url$path serves $file"; continue 2; fi
+       sleep 5
+     done
+     echo "✗ $url$path does not serve $file (yet)"
+     return 1
+   done
+ }
++# Browsers GET the prices object, and the bucket's CORS allows GET only, so a HEAD
++# never carries access-control-allow-origin. Check the way a browser does: GET with
++# the Origin header, headers dumped, body discarded.
+ prices_cors() {
+   local head
+-  head="$(curl -sI -m 20 -H "Origin: $SITE_URL" "https://storage.googleapis.com/$BUCKET/prices.json?check=$(date +%s)")" || return 1
++  head="$(curl -s -o /dev/null -D - -m 20 -H "Origin: $SITE_URL" "https://storage.googleapis.com/$BUCKET/prices.json?check=$(date +%s)")" || return 1
+   grep -qE '^HTTP/[0-9.]+ 200' <<<"$head" || { echo "✗ prices.json did not answer 200"; return 1; }
+-  grep -qi '^access-control-allow-origin:' <<<"$head" || { echo "✗ prices.json sent no access-control-allow-origin for $SITE_URL (a false negative looks like this when a plain fetch primed the cache; the remedy is gcloud storage objects update gs://$BUCKET/prices.json --cache-control=no-cache)"; return 1; }
++  grep -qi '^access-control-allow-origin:' <<<"$head" || { echo "✗ prices.json answered without access-control-allow-origin for $SITE_URL; the bucket's CORS (Terraform, _infra/modules/gcp-admin-api/main.tf, the donate_prices bucket) must allow GET from $SITE_URL (a HEAD never carries the header, since the CORS allows GET only)"; return 1; }
+   echo "✓ prices.json answers 200 with access-control-allow-origin for $SITE_URL"
+ }
+ 
+ echo
+ verify "$DEFAULT_URL" || die "the deploy did not land on $DEFAULT_URL"
+ prices_cors || die "the prices object is not readable from $SITE_URL"
+ verify "$SITE_URL" || echo "  (the custom domain may still be propagating or its certificate may still be issuing; check \`terraform -chdir=_infra output donate_custom_domain_state\`)"

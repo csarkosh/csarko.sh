@@ -1,0 +1,79 @@
+# Review package: 5b17bed..d33f1a5
+
+## Commits
+d33f1a5 projects: the GitHub mark sits on the kicker's line
+
+## Files changed
+ .agents/skills/site-quality/scripts/docs_lib.mjs | 8 ++++----
+ public/projects/index.html                       | 8 ++++----
+ 2 files changed, 8 insertions(+), 8 deletions(-)
+
+## Diff
+diff --git a/.agents/skills/site-quality/scripts/docs_lib.mjs b/.agents/skills/site-quality/scripts/docs_lib.mjs
+index c183740..35d16e6 100644
+--- a/.agents/skills/site-quality/scripts/docs_lib.mjs
++++ b/.agents/skills/site-quality/scripts/docs_lib.mjs
+@@ -868,25 +868,25 @@ const PROJECTS_CSS = `
+     /* A film's content warning, under its title: bold, in the --warning yellow, with an icon that
+        inherits the color and a rule down the side so it reads as a notice. */
+     .film-notice { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 14px; padding-left: 14px; border-left: 2px solid var(--warning); color: var(--warning); font-size: 14px; font-weight: 600; line-height: 1.5; }
+     .film-notice svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
+     /* The home page's .card-link ("Play in your browser"), here as the card's own link. */
+     .card-links { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; margin-top: 18px; }
+     .card-link { font-size: 14px; font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
+     .card-link svg { width: 14px; height: 14px; transition: transform var(--md-duration-short3) var(--md-easing-standard); }
+     .card:hover .card-link svg { transform: translate(2px, -2px); }
+     /* The repo link: a faint GitHub mark in the card's top right, lifted above the card's overlay;
+-       a 32px target round an 18px mark. The kicker and title keep clear of it. */
+-    .card-source { position: absolute; top: 12px; right: 12px; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; color: var(--faint); transition: color var(--md-duration-short3) var(--md-easing-standard); }
++       a 28px target round a 15px mark, centred on the kicker's line with the mark's edge on the content edge. The kicker and title keep clear of it. */
++    .card-source { position: absolute; top: 18px; right: 15.5px; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; color: var(--faint); transition: color var(--md-duration-short3) var(--md-easing-standard); }
+     .card-source:hover, .card-source:focus-visible { color: var(--accent); }
+-    .card-source svg { width: 18px; height: 18px; }
+-    .card-source ~ .project-body .project-kicker, .card-source ~ .project-body .project-title { padding-right: 28px; }
++    .card-source svg { width: 15px; height: 15px; }
++    .card-source ~ .project-body .project-kicker, .card-source ~ .project-body .project-title { padding-right: 32px; }
+     @media (max-width: 640px) {
+       .project-card { flex-direction: column; gap: 0; }
+       .project-card .project-body { display: contents; }
+       .project-card .project-kicker { order: 1; }
+       .project-card .project-title { order: 2; margin-bottom: 14px; }
+       .project-card .film-notice { order: 3; }
+       .project-card .project-media { order: 4; width: 100%; margin-bottom: 18px; }
+       .project-card .project-media.film-poster { aspect-ratio: 16 / 9; }
+       .project-card .project-media.film-poster img { height: 100%; object-fit: cover; object-position: center var(--focus, 50%); }
+       .project-card .project-desc { order: 5; }
+diff --git a/public/projects/index.html b/public/projects/index.html
+index 0675c20..46cb051 100644
+--- a/public/projects/index.html
++++ b/public/projects/index.html
+@@ -450,25 +450,25 @@
+     /* A film's content warning, under its title: bold, in the --warning yellow, with an icon that
+        inherits the color and a rule down the side so it reads as a notice. */
+     .film-notice { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 14px; padding-left: 14px; border-left: 2px solid var(--warning); color: var(--warning); font-size: 14px; font-weight: 600; line-height: 1.5; }
+     .film-notice svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
+     /* The home page's .card-link ("Play in your browser"), here as the card's own link. */
+     .card-links { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; margin-top: 18px; }
+     .card-link { font-size: 14px; font-weight: 500; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
+     .card-link svg { width: 14px; height: 14px; transition: transform var(--md-duration-short3) var(--md-easing-standard); }
+     .card:hover .card-link svg { transform: translate(2px, -2px); }
+     /* The repo link: a faint GitHub mark in the card's top right, lifted above the card's overlay;
+-       a 32px target round an 18px mark. The kicker and title keep clear of it. */
+-    .card-source { position: absolute; top: 12px; right: 12px; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; color: var(--faint); transition: color var(--md-duration-short3) var(--md-easing-standard); }
++       a 28px target round a 15px mark, centred on the kicker's line with the mark's edge on the content edge. The kicker and title keep clear of it. */
++    .card-source { position: absolute; top: 18px; right: 15.5px; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; color: var(--faint); transition: color var(--md-duration-short3) var(--md-easing-standard); }
+     .card-source:hover, .card-source:focus-visible { color: var(--accent); }
+-    .card-source svg { width: 18px; height: 18px; }
+-    .card-source ~ .project-body .project-kicker, .card-source ~ .project-body .project-title { padding-right: 28px; }
++    .card-source svg { width: 15px; height: 15px; }
++    .card-source ~ .project-body .project-kicker, .card-source ~ .project-body .project-title { padding-right: 32px; }
+     @media (max-width: 640px) {
+       .project-card { flex-direction: column; gap: 0; }
+       .project-card .project-body { display: contents; }
+       .project-card .project-kicker { order: 1; }
+       .project-card .project-title { order: 2; margin-bottom: 14px; }
+       .project-card .film-notice { order: 3; }
+       .project-card .project-media { order: 4; width: 100%; margin-bottom: 18px; }
+       .project-card .project-media.film-poster { aspect-ratio: 16 / 9; }
+       .project-card .project-media.film-poster img { height: 100%; object-fit: cover; object-position: center var(--focus, 50%); }
+       .project-card .project-desc { order: 5; }

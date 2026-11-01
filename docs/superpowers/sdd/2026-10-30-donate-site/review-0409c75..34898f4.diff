@@ -1,0 +1,621 @@
+# Review package: 0409c75..34898f4
+
+## Commits
+34898f4 donate: look before creating, sweep last month a day later
+
+## Files changed
+ admin/api/src/collectors/stripe-write.mjs |  54 ++++++++++++---
+ admin/api/src/donate/bucket.mjs           |  13 ++--
+ admin/api/src/donate/step.mjs             | 106 ++++++++++++++++++------------
+ admin/api/test/donate-step.test.mjs       |  95 +++++++++++++++++++++++---
+ admin/api/test/stripe-write.test.mjs      |  31 ++++++++-
+ 5 files changed, 233 insertions(+), 66 deletions(-)
+
+## Diff
+diff --git a/admin/api/src/collectors/stripe-write.mjs b/admin/api/src/collectors/stripe-write.mjs
+index 42bc39b..e532e9f 100644
+--- a/admin/api/src/collectors/stripe-write.mjs
++++ b/admin/api/src/collectors/stripe-write.mjs
+@@ -1,28 +1,41 @@
+ /**
+  * Stripe, the donate site's writer: the write-side sibling of `stripe.mjs`. It makes the products,
+  * prices and payment links the donate pages send people to: `POST https://api.stripe.com/v1/products`,
+  * `/prices`, `/payment_links` and the `active=false` updates that retire a link or a price, each with
+  * `Authorization: Bearer <STRIPE_WRITE_KEY>` and, on a create, an `Idempotency-Key` so a retry never
+  * makes a second object. The key is a restricted one, Products write and Payment Links write and
+  * nothing else (Prices are written under Products), so it cannot read a charge, a customer or a balance;
+- * `listProducts` is the one read, and it names only the account's own catalogue. Nothing read here is
+- * ever passed to a page as is.
++ * the reads (`listProducts`, `listPrices`, `listLinks`) name only the account's own catalogue and the
++ * step uses them to find what an earlier run already made, since an idempotency key lives only 24
++ * hours and a price's `lookup_key` and every object's `metadata[donate]=1` outlive it. Nothing read
++ * here is ever passed to a page as is.
+  *
+  * A refused or failed call is an `UpstreamError` with the status and the first 200 characters of
+  * Stripe's body, with the key itself blanked should Stripe ever echo it.
+  */
+ 
+ import { UpstreamError } from "../http.mjs";
+ 
+ export const STRIPE_API = "https://api.stripe.com/v1";
+ 
++/** The form fields of a price's lookup key and metadata. */
++function tagging(lookupKey, metadata) {
++  const fields = {};
++  if (typeof lookupKey === "string") {
++    fields.lookup_key = lookupKey;
++    fields.transfer_lookup_key = "true";
++  }
++  for (const [k, v] of Object.entries(metadata ?? {})) fields[`metadata[${k}]`] = v;
++  return fields;
++}
++
+ export function createStripeWriter({ key: apiKey, fetch, log = console }) {
+   const configured = typeof apiKey === "string" && apiKey !== "";
+   const headers = { accept: "application/json", authorization: `Bearer ${apiKey}`, "user-agent": "csarko-admin" };
+   const blank = (s) => (configured ? String(s).split(apiKey).join("[key]") : String(s));
+ 
+   async function send(path, init) {
+     const res = await fetch(`${STRIPE_API}${path}`, init);
+     if (!res.ok) {
+       const body = await res.text().catch(() => "");
+       const message = `Stripe ${res.status} on ${path.split("?")[0]}: ${blank(body).slice(0, 200)}`;
+@@ -30,54 +43,79 @@ export function createStripeWriter({ key: apiKey, fetch, log = console }) {
+       throw new UpstreamError(message);
+     }
+     return res.json();
+   }
+ 
+   /** One GET, the JSON body. */
+   function get(path, params) {
+     return send(`${path}${params ? `?${params}` : ""}`, { headers });
+   }
+ 
++  /** Every item of a list endpoint, newest first, following `starting_after` while `has_more`. */
++  async function listAll(path, extra = {}) {
++    const out = [];
++    let after = null;
++    for (let page = 0; page < 50; page += 1) {
++      const params = new URLSearchParams({ ...extra, limit: "100" });
++      if (after !== null) params.set("starting_after", after);
++      const body = await get(path, params.toString());
++      const data = Array.isArray(body?.data) ? body.data : [];
++      out.push(...data);
++      if (!body?.has_more || data.length === 0) break;
++      after = data[data.length - 1].id;
++    }
++    return out;
++  }
++
+   /** One form-encoded POST, the JSON body; `idempotencyKey` is sent when it is a string. */
+   function post(path, fields, idempotencyKey) {
+     const body = new URLSearchParams();
+     for (const [name, value] of Object.entries(fields)) body.set(name, String(value));
+     const h = { ...headers, "content-type": "application/x-www-form-urlencoded" };
+     if (typeof idempotencyKey === "string") h["Idempotency-Key"] = idempotencyKey;
+     return send(path, { method: "POST", headers: h, body: body.toString() });
+   }
+ 
+   return {
+     get configured() {
+       return configured;
+     },
+     /** The active products, `[{ id, name, metadata }]`; one page of 100 is plenty for five. */
+     async listProducts() {
+       const page = await get("/products", new URLSearchParams({ active: "true", limit: "100" }).toString());
+       return Array.isArray(page?.data) ? page.data : [];
+     },
+     async createProduct({ name, tier, key }) {
+-      const p = await post("/products", { name, "metadata[tier]": tier }, key);
++      const p = await post("/products", { name, "metadata[tier]": tier, "metadata[donate]": "1" }, key);
+       return { id: p.id };
+     },
+-    async createPrice({ product, usd, key }) {
+-      const p = await post("/prices", { product, currency: "usd", unit_amount: usd * 100 }, key);
++    /** The active prices, every page, newest first. */
++    listPrices() {
++      return listAll("/prices", { active: "true" });
++    },
++    /** The active payment links, every page, newest first. */
++    listLinks() {
++      return listAll("/payment_links", { active: "true" });
++    },
++    /** A fixed price; `lookupKey` (taken over from an inactive holder) and `metadata` are optional. */
++    async createPrice({ product, usd, key, lookupKey, metadata }) {
++      const p = await post("/prices", { product, currency: "usd", unit_amount: usd * 100, ...tagging(lookupKey, metadata) }, key);
+       return { id: p.id };
+     },
+     /** A pay-what-you-want price with a floor of `minimumUsd`. */
+-    async createCustomPrice({ product, minimumUsd, key }) {
+-      const p = await post("/prices", { product, currency: "usd", "custom_unit_amount[enabled]": "true", "custom_unit_amount[minimum]": minimumUsd * 100 }, key);
++    async createCustomPrice({ product, minimumUsd, key, lookupKey, metadata }) {
++      const p = await post("/prices", { product, currency: "usd", "custom_unit_amount[enabled]": "true", "custom_unit_amount[minimum]": minimumUsd * 100, ...tagging(lookupKey, metadata) }, key);
+       return { id: p.id };
+     },
+     async createLink({ priceId, door, tier, month, share, redirectUrl, key }) {
+       const meta = { door, tier, month, share: String(share) };
+-      const fields = { "line_items[0][price]": priceId, "line_items[0][quantity]": 1, submit_type: "donate" };
++      const fields = { "line_items[0][price]": priceId, "line_items[0][quantity]": 1, submit_type: "donate", "metadata[donate]": "1" };
+       for (const [k, v] of Object.entries(meta)) fields[`metadata[${k}]`] = v;
+       for (const [k, v] of Object.entries(meta)) fields[`payment_intent_data[metadata][${k}]`] = v;
+       fields["payment_intent_data[statement_descriptor_suffix]"] = "DONATION";
+       fields["after_completion[type]"] = "redirect";
+       fields["after_completion[redirect][url]"] = redirectUrl;
+       const l = await post("/payment_links", fields, key);
+       return { id: l.id, url: l.url };
+     },
+     async deactivateLink(id) {
+       await post(`/payment_links/${id}`, { active: "false" });
+diff --git a/admin/api/src/donate/bucket.mjs b/admin/api/src/donate/bucket.mjs
+index c9ba2a3..7dc7653 100644
+--- a/admin/api/src/donate/bucket.mjs
++++ b/admin/api/src/donate/bucket.mjs
+@@ -35,17 +35,22 @@ export function createPricesBucket({ bucket, projectId = null, storage = null, l
+         const [buffer] = await (await file()).download();
+         return JSON.parse(buffer.toString("utf8"));
+       } catch (error) {
+         if (error?.code === 404) return null;
+         log.error?.(`donate: reading gs://${name}/${PRICES_OBJECT} failed`, error);
+         throw error;
+       }
+     },
+     /** Replaces the object with `json`, public-readable by the bucket's own policy, cached five minutes. */
+     async write(json) {
+-      await (await file()).save(JSON.stringify(json, null, 1), {
+-        contentType: "application/json",
+-        metadata: { cacheControl: "public, max-age=300" },
+-      });
++      try {
++        await (await file()).save(JSON.stringify(json, null, 1), {
++          contentType: "application/json",
++          metadata: { cacheControl: "public, max-age=300" },
++        });
++      } catch (error) {
++        log.error?.(`donate: writing gs://${name}/${PRICES_OBJECT} failed`, error);
++        throw error;
++      }
+     },
+   };
+ }
+diff --git a/admin/api/src/donate/step.mjs b/admin/api/src/donate/step.mjs
+index 77ae74f..047ac41 100644
+--- a/admin/api/src/donate/step.mjs
++++ b/admin/api/src/donate/step.mjs
+@@ -1,19 +1,24 @@
+ /**
+  * The monthly step of the donate site: once last month's bill is in, turn its pool into four prices
+  * (a share each) and a custom one, make a Stripe payment link for every door and tier, and publish
+- * the result as the one JSON object the pages read. It is idempotent: every Stripe create carries
+- * a key named for the month, door and tier, so a rerun after a failure gets back what the first
+- * run made, and nothing is written to the bucket until every create has succeeded. Last month's
+- * links and prices are retired only after the new ones exist, so a visitor never meets a dead link;
+- * a retirement that fails is logged and left for a person, because the new prices are already live.
+- * A door shipped mid-month gets its links at the month's current prices and touches nothing else.
++ * the result as the one JSON object the pages read. It is safe to rerun at any hour. A Stripe
++ * idempotency key lives only 24 hours and the snapshot runs about 24 hours apart, so the keys are
++ * only the second guard: before creating anything the step looks for what an earlier run made, a
++ * product by its `metadata[donate]` and tier, a price by its `lookup_key` (`donate:<month>:<tier>`,
++ * which also carries the pool the price was cut from, so a rerun after the data moved publishes the
++ * pool Stripe holds), a link by its month, door and tier. Nothing is written to the bucket until
++ * every create has succeeded. A run that writes a month retires nothing: the bucket's object is
++ * cached five minutes, so the previous month's links must outlive that. The first later run that
++ * finds the month done sweeps instead, deactivating the links and archiving the prices of any
++ * other month, each failure logged and left for the next day. A door shipped mid-month gets its
++ * links at the month's current prices and touches nothing else.
+  */
+ 
+ import { cents } from "../finance/rows.mjs";
+ import { CUSTOM, DONATE_URL, TIERS, TIER_KEYS, shippedDoors } from "./doors.mjs";
+ import { decide, poolOf, pricesOf } from "./prices.mjs";
+ 
+ const SHARES = Object.fromEntries(TIERS.map((t) => [t.key, t.share]));
+ 
+ /** The writer returns what Stripe gave; an id that is not a non-empty string is a failed create. */
+ function need(value, what) {
+@@ -22,93 +27,110 @@ function need(value, what) {
+ }
+ 
+ export function createDonateStep({ writer, bucket, now = Date.now, log = console }) {
+   const recordOf = (json) =>
+     json ? { month: json.month, pool: json.pool, at: json.at, doors: Object.keys(json.doors ?? {}) } : null;
+ 
+   async function productsOf() {
+     const existing = await writer.listProducts();
+     const products = {};
+     for (const t of [...TIERS, CUSTOM]) {
+-      const found = existing.find((p) => p.active !== false && p.metadata?.tier === t.key);
+-      products[t.key] = found
+-        ? need(found.id, `product id for ${t.key}`)
+-        : need((await writer.createProduct({ name: t.name, tier: t.key, key: `donate:product:${t.key}` })).id, `product id for ${t.key}`);
++      const found = existing.find((p) => p.active !== false && p.metadata?.donate === "1" && p.metadata?.tier === t.key);
++      const id = found ? found.id : (await writer.createProduct({ name: t.name, tier: t.key, key: `donate:product:${t.key}` }))?.id;
++      products[t.key] = need(id, `product id for ${t.key}`);
+     }
+     return products;
+   }
+ 
+-  async function pricesFor(month, pool) {
++  /** The month's prices: those already in Stripe reused, the rest created at the pool they were cut from. */
++  async function pricesFor(month, monthlyRows) {
++    const existing = new Map((await writer.listPrices()).filter((p) => typeof p.lookup_key === "string").map((p) => [p.lookup_key, p]));
++    const lookupOf = (tier) => `donate:${month}:${tier}`;
++    const foundPools = TIER_KEYS.map((t) => Number(existing.get(lookupOf(t))?.metadata?.pool)).filter((n) => Number.isFinite(n));
++    const pool = foundPools.length > 0 ? foundPools[0] : cents(poolOf(monthlyRows, month));
+     const products = await productsOf();
++    const metadataOf = (tier) => ({ donate: "1", month, tier, pool: String(pool) });
++
+     const tiers = [];
+     for (const p of pricesOf(pool)) {
+-      const priceId = need((await writer.createPrice({ product: products[p.tier], usd: p.usd, key: `donate:price:${month}:${p.tier}` })).id, `price id for ${p.tier}`);
+-      tiers.push({ ...p, priceId });
++      const found = existing.get(lookupOf(p.tier));
++      const id = found ? found.id : (await writer.createPrice({ product: products[p.tier], usd: p.usd, key: `donate:price:${month}:${p.tier}`, lookupKey: lookupOf(p.tier), metadata: metadataOf(p.tier) }))?.id;
++      tiers.push({ ...p, priceId: need(id, `price id for ${p.tier}`) });
+     }
+-    const customId = need((await writer.createCustomPrice({ product: products[CUSTOM.key], minimumUsd: CUSTOM.minimumUsd, key: `donate:price:${month}:${CUSTOM.key}` })).id, "custom price id");
+-    return { tiers, custom: { priceId: customId, minimumUsd: CUSTOM.minimumUsd }, products };
++    const foundOwn = existing.get(lookupOf(CUSTOM.key));
++    const ownId = foundOwn ? foundOwn.id : (await writer.createCustomPrice({ product: products[CUSTOM.key], minimumUsd: CUSTOM.minimumUsd, key: `donate:price:${month}:${CUSTOM.key}`, lookupKey: lookupOf(CUSTOM.key), metadata: metadataOf(CUSTOM.key) }))?.id;
++    return { pool, tiers, custom: { priceId: need(ownId, "custom price id"), minimumUsd: CUSTOM.minimumUsd }, products };
+   }
+ 
+-  async function linksFor(door, month, tiers, custom) {
++  /** A door's five links: the active ones already made for this month reused, the rest created. */
++  async function linksFor(door, month, tiers, custom, existing) {
+     const priceIds = { ...Object.fromEntries(tiers.map((t) => [t.tier, t.priceId])), [CUSTOM.key]: custom.priceId };
+     const links = {};
+     for (const tier of TIER_KEYS) {
+-      const link = await writer.createLink({
++      const found = existing.find((l) => l.metadata?.month === month && l.metadata?.door === door && l.metadata?.tier === tier);
++      const link = found ?? await writer.createLink({
+         priceId: priceIds[tier], door, tier, month, share: SHARES[tier] ?? 0,
+         redirectUrl: `${DONATE_URL}/thanks?door=${door}`,
+         key: `donate:link:${month}:${door}:${tier}`,
+       });
+       links[tier] = { id: need(link?.id, `link id for ${door}/${tier}`), url: need(link?.url, `link url for ${door}/${tier}`) };
+     }
+     return { links };
+   }
+ 
+-  /** Last month's links deactivated and prices archived; each failure logged, none fatal. */
+-  async function retire(old) {
+-    const attempt = async (what, fn) => {
+-      try {
+-        await fn();
+-      } catch (error) {
+-        log.error(`donate: retiring ${what} failed`, error);
++  /** Other months' links deactivated and prices archived; each failure logged, none fatal. */
++  async function sweep(month) {
++    const swept = { links: 0, prices: 0 };
++    try {
++      const attempt = async (what, fn, counter) => {
++        try {
++          await fn();
++          swept[counter] += 1;
++        } catch (error) {
++          log.error(`donate: retiring ${what} failed`, error);
++        }
++      };
++      for (const l of await writer.listLinks()) {
++        if (l.metadata?.donate === "1" && l.metadata?.month !== month) await attempt(`link ${l.id}`, () => writer.deactivateLink(l.id), "links");
++      }
++      for (const p of await writer.listPrices()) {
++        if (typeof p.lookup_key === "string" && p.lookup_key.startsWith("donate:") && !p.lookup_key.startsWith(`donate:${month}:`)) await attempt(`price ${p.id}`, () => writer.archivePrice(p.id), "prices");
+       }
+-    };
+-    for (const door of Object.values(old.doors ?? {})) {
+-      for (const link of Object.values(door.links ?? {})) if (link?.id) await attempt(`link ${link.id}`, () => writer.deactivateLink(link.id));
++    } catch (error) {
++      log.error("donate: listing last month's objects to retire failed", error);
+     }
+-    for (const t of old.tiers ?? []) if (t?.priceId) await attempt(`price ${t.priceId}`, () => writer.archivePrice(t.priceId));
+-    if (old.custom?.priceId) await attempt(`price ${old.custom.priceId}`, () => writer.archivePrice(old.custom.priceId));
++    return swept;
+   }
+ 
+   return {
+     get configured() {
+       return Boolean(writer?.configured && bucket?.configured);
+     },
+-    async run({ monthlyRows, failed, today }) {
++    async run({ monthlyRows, failed = [], today }) {
+       const current = await bucket.read();
+       const d = decide({
+         today, failed,
+         current: current ? { month: current.month, doors: Object.keys(current.doors ?? {}) } : null,
+         doors: shippedDoors().map((x) => x.door),
+       });
+-      if (!d.run) return { ran: false, reason: d.reason, record: recordOf(current) };
+-
+-      let base;
+-      if (d.newMonth) {
+-        const pool = cents(poolOf(monthlyRows, d.month));
+-        base = { pool, ...(await pricesFor(d.month, pool)) };
+-      } else {
+-        base = { pool: current.pool, tiers: current.tiers, custom: current.custom, products: current.products };
++      if (!d.run) {
++        const out = { ran: false, reason: d.reason, record: recordOf(current) };
++        if (d.reason === "done" && current) out.swept = await sweep(current.month);
++        return out;
+       }
++
++      const base = d.newMonth
++        ? await pricesFor(d.month, monthlyRows)
++        : { pool: current.pool, tiers: current.tiers, custom: current.custom, products: current.products };
++      const existingLinks = d.pending.length > 0 ? await writer.listLinks() : [];
+       const doors = d.newMonth ? {} : { ...current.doors };
+-      for (const door of d.pending) doors[door] = await linksFor(door, d.month, base.tiers, base.custom);
++      for (const door of d.pending) doors[door] = await linksFor(door, d.month, base.tiers, base.custom, existingLinks);
+ 
+       const next = {
+-        month: d.month, pool: base.pool, at: new Date(now()).toISOString(),
++        month: d.month, pool: base.pool, at: d.newMonth ? new Date(now()).toISOString() : current.at,
+         tiers: base.tiers, custom: base.custom, products: base.products, doors,
+       };
+-      if (!d.newMonth) { next.month = current.month; next.at = current.at; }
+-      if (d.newMonth && current !== null) await retire(current);
+       await bucket.write(next);
+       return { ran: true, reason: d.reason, record: recordOf(next) };
+     },
+   };
+ }
+diff --git a/admin/api/test/donate-step.test.mjs b/admin/api/test/donate-step.test.mjs
+index 697ef59..0d961ba 100644
+--- a/admin/api/test/donate-step.test.mjs
++++ b/admin/api/test/donate-step.test.mjs
+@@ -2,32 +2,34 @@
+ import { test } from "node:test";
+ import assert from "node:assert/strict";
+ import { createDonateStep } from "../src/donate/step.mjs";
+ import { createPricesBucket } from "../src/donate/bucket.mjs";
+ import { TIER_KEYS } from "../src/donate/doors.mjs";
+ 
+ const NOW = Date.parse("2026-11-03T10:00:12Z");
+ const ROWS = [{ month: "2026-10", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 200 }, { month: "2026-10", provider: "gcp", where: "csarko-sh", service: "Cloud Run", amount: 87.4 }];
+ 
+ /** A fake writer that records calls and fails on the nth create when told to. */
+-function fakeWriter(calls, { products = [], failAt = null } = {}) {
++function fakeWriter(calls, { products = [], failAt = null, prices = [], links = [], failOn = [] } = {}) {
+   let n = 0;
+   const next = (prefix) => { n += 1; if (failAt !== null && n === failAt) throw new Error(`Stripe 500 on ${prefix}`); return `${prefix}_${n}`; };
+   return {
+     configured: true,
+     async listProducts() { calls.push(["listProducts"]); return products; },
+     async createProduct(a) { calls.push(["createProduct", a]); return { id: next("prod") }; },
+     async createPrice(a) { calls.push(["createPrice", a]); return { id: next("price") }; },
+     async createCustomPrice(a) { calls.push(["createCustomPrice", a]); return { id: next("price") }; },
+     async createLink(a) { calls.push(["createLink", a]); const id = next("plink"); return { id, url: `https://buy.stripe.com/${id}` }; },
+-    async deactivateLink(id) { calls.push(["deactivateLink", id]); },
+-    async archivePrice(id) { calls.push(["archivePrice", id]); },
++    async listPrices() { return prices; },
++    async listLinks() { return links; },
++    async deactivateLink(id) { calls.push(["deactivateLink", id]); if (failOn.includes(id)) throw new Error(`Stripe 500 on ${id}`); },
++    async archivePrice(id) { calls.push(["archivePrice", id]); if (failOn.includes(id)) throw new Error(`Stripe 500 on ${id}`); },
+   };
+ }
+ /** A fake bucket over one object. */
+ function fakeBucket(initial = null) {
+   let json = initial;
+   return { configured: true, writes: 0, async read() { return json; }, async write(j) { json = j; this.writes += 1; }, get json() { return json; } };
+ }
+ 
+ test("a new month: five products, five prices, five links a door, one JSON, the record", async () => {
+   const calls = [];
+@@ -46,52 +48,119 @@ test("a new month: five products, five prices, five links a door, one JSON, the
+   const own = calls.find((c) => c[0] === "createLink" && c[1].tier === "own" && c[1].door === "all")[1];
+   assert.equal(own.redirectUrl, "https://donate.csarko.sh/thanks?door=all");
+   assert.equal(own.key, "donate:link:2026-10:all:own");
+   assert.equal(calls.find((c) => c[0] === "createPrice")[1].key, "donate:price:2026-10:prompt");
+   assert.equal(calls.filter((c) => c[0] === "deactivateLink").length, 0, "nothing to deactivate the first time");
+   assert.ok(!JSON.stringify(j).includes("@"));
+ });
+ 
+ test("existing products are reused by their tier metadata", async () => {
+   const calls = [];
+-  const products = TIER_KEYS.map((t, i) => ({ id: `prod_old${i}`, name: t, metadata: { tier: t } }));
++  const products = TIER_KEYS.map((t, i) => ({ id: `prod_old${i}`, name: t, metadata: { tier: t, donate: "1" } }));
+   await createDonateStep({ writer: fakeWriter(calls, { products }), bucket: fakeBucket(), now: () => NOW, log: { error() {}, warn() {} } }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-03" });
+   assert.equal(calls.filter((c) => c[0] === "createProduct").length, 0);
+   assert.equal(calls.find((c) => c[0] === "createPrice")[1].product, "prod_old0");
+ });
+ 
+ test("done, before the 3rd and a failed provider leave Stripe and the bucket alone and carry the record", async () => {
+   const calls = [];
+   const current = { month: "2026-10", pool: 288, at: "2026-11-03T10:00:12.000Z", tiers: [], custom: {}, products: {}, doors: Object.fromEntries(["arkos", "macstats", "visits", "last-trail", "hallway", "all"].map((d) => [d, { links: {} }])) };
+   const bucket = fakeBucket(current);
+   const step = createDonateStep({ writer: fakeWriter(calls), bucket, now: () => NOW, log: { error() {}, warn() {} } });
+-  assert.deepEqual(await step.run({ monthlyRows: ROWS, failed: [], today: "2026-11-05" }), { ran: false, reason: "done", record: { month: "2026-10", pool: 288, at: "2026-11-03T10:00:12.000Z", doors: Object.keys(current.doors) } });
++  assert.deepEqual(await step.run({ monthlyRows: ROWS, failed: [], today: "2026-11-05" }), { ran: false, reason: "done", record: { month: "2026-10", pool: 288, at: "2026-11-03T10:00:12.000Z", doors: Object.keys(current.doors) }, swept: { links: 0, prices: 0 } });
+   assert.equal((await createDonateStep({ writer: fakeWriter(calls), bucket: fakeBucket(), now: () => NOW, log: { error() {}, warn() {} } }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-02" })).reason, "before the 3rd");
+   assert.equal((await createDonateStep({ writer: fakeWriter(calls), bucket: fakeBucket(), now: () => NOW, log: { error() {}, warn() {} } }).run({ monthlyRows: ROWS, failed: ["gcp"], today: "2026-11-04" })).reason, "waiting on gcp");
+   assert.equal(calls.length, 0);
+   assert.equal(bucket.writes, 0);
+ });
+ 
+-test("the next month: new prices and links first, then last month's links deactivated and prices archived", async () => {
++test("the next month: new prices and links, nothing retired; the next done run sweeps last month's links and prices", async () => {
+   const calls = [];
+-  const oct = { month: "2026-10", pool: 288, at: "x", tiers: [{ tier: "prompt", priceId: "price_o1" }, { tier: "context", priceId: "price_o2" }, { tier: "run", priceId: "price_o3" }, { tier: "finetune", priceId: "price_o4" }], custom: { priceId: "price_o5", minimumUsd: 1 }, products: {}, doors: { arkos: { links: { prompt: { id: "plink_o1", url: "u" } } }, all: { links: { own: { id: "plink_o2", url: "u" } } } } };
++  const tag = (month, door, tier, id) => ({ id, url: "u", metadata: { donate: "1", month, door, tier } });
++  const links = [tag("2026-10", "arkos", "prompt", "plink_o1"), tag("2026-10", "all", "own", "plink_o2"), tag("2026-11", "arkos", "prompt", "plink_n1")];
++  const prices = [...["prompt", "context", "run", "finetune", "own"].map((t, i) => ({ id: `price_o${i + 1}`, lookup_key: `donate:2026-10:${t}` })), { id: "price_n1", lookup_key: "donate:2026-11:prompt" }, { id: "price_x", lookup_key: null }];
++  const oct = { month: "2026-10", pool: 288, at: "x", tiers: [], custom: { priceId: "price_o5", minimumUsd: 1 }, products: {}, doors: { arkos: { links: {} }, all: { links: {} } } };
+   const bucket = fakeBucket(oct);
++  const log = { error() {}, warn() {} };
+   const nov = [{ month: "2026-11", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 100 }];
+-  await createDonateStep({ writer: fakeWriter(calls), bucket, now: () => Date.parse("2026-12-03T10:00:00Z"), log: { error() {}, warn() {} } }).run({ monthlyRows: nov, failed: [], today: "2026-12-03" });
++  await createDonateStep({ writer: fakeWriter(calls), bucket, now: () => Date.parse("2026-12-03T10:00:00Z"), log }).run({ monthlyRows: nov, failed: [], today: "2026-12-03" });
+   assert.equal(bucket.json.month, "2026-11");
+   assert.equal(bucket.json.pool, 100);
+-  const names = calls.map((c) => c[0]);
+-  assert.ok(names.lastIndexOf("createLink") < names.indexOf("deactivateLink"), "the new links exist before the old go");
++  assert.equal(calls.filter((c) => c[0] === "deactivateLink" || c[0] === "archivePrice").length, 0, "the run that writes the month retires nothing");
++  const out = await createDonateStep({ writer: fakeWriter(calls, { links, prices }), bucket, now: () => Date.parse("2026-12-04T10:00:00Z"), log }).run({ monthlyRows: nov, failed: [], today: "2026-12-04" });
++  assert.deepEqual([out.ran, out.reason, out.swept], [false, "done", { links: 2, prices: 5 }]);
+   assert.deepEqual(calls.filter((c) => c[0] === "deactivateLink").map((c) => c[1]), ["plink_o1", "plink_o2"]);
+   assert.deepEqual(calls.filter((c) => c[0] === "archivePrice").map((c) => c[1]), ["price_o1", "price_o2", "price_o3", "price_o4", "price_o5"]);
+ });
+ 
++test("a sweep that fails on one link and one price logs it, goes on and counts only what it retired", async () => {
++  const calls = [];
++  const errors = [];
++  const tag = (id) => ({ id, url: "u", metadata: { donate: "1", month: "2026-09", door: "arkos", tier: "prompt" } });
++  const links = [tag("plink_a"), tag("plink_b")];
++  const prices = [{ id: "price_a", lookup_key: "donate:2026-09:prompt" }, { id: "price_b", lookup_key: "donate:2026-09:run" }];
++  const cur = { month: "2026-10", pool: 288, at: "x", tiers: [], custom: {}, products: {}, doors: Object.fromEntries(["arkos", "macstats", "visits", "last-trail", "hallway", "all"].map((d) => [d, { links: {} }])) };
++  const out = await createDonateStep({ writer: fakeWriter(calls, { links, prices, failOn: ["plink_a", "price_b"] }), bucket: fakeBucket(cur), now: () => NOW, log: { error: (...a) => errors.push(a), warn() {} } }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-05" });
++  assert.deepEqual(out.swept, { links: 1, prices: 1 });
++  assert.equal(calls.length, 4);
++  assert.equal(errors.length, 2);
++});
++
++test("a bucket write that throws retires nothing and propagates", async () => {
++  const calls = [];
++  const bucket = fakeBucket();
++  bucket.write = async () => { throw new Error("GCS 503"); };
++  await assert.rejects(createDonateStep({ writer: fakeWriter(calls), bucket, now: () => NOW, log: { error() {}, warn() {} } }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-03" }), /GCS 503/);
++  assert.equal(calls.filter((c) => c[0] === "deactivateLink" || c[0] === "archivePrice").length, 0);
++});
++
++test("an empty id or an empty url from the writer is a failure and nothing is written", async () => {
++  const log = { error() {}, warn() {} };
++  for (const bad of [{ createPrice: async () => ({ id: "" }) }, { createProduct: async () => ({ id: null }) }, { createLink: async () => ({ id: "plink_1", url: "" }) }, { createLink: async () => ({ id: "", url: "u" }) }, { createLink: async () => null }]) {
++    const bucket = fakeBucket();
++    await assert.rejects(createDonateStep({ writer: { ...fakeWriter([]), ...bad }, bucket, now: () => NOW, log }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-03" }), /Stripe returned no/);
++    assert.equal(bucket.writes, 0);
++  }
++});
++
++test("a rerun finds the month's prices by lookup key: no price is created and the pool is the one they were cut from", async () => {
++  const calls = [];
++  const prices = TIER_KEYS.map((t, i) => ({ id: `price_f${i}`, lookup_key: `donate:2026-10:${t}`, metadata: { donate: "1", month: "2026-10", tier: t, pool: "300" } }));
++  const bucket = fakeBucket();
++  await createDonateStep({ writer: fakeWriter(calls, { prices }), bucket, now: () => NOW, log: { error() {}, warn() {} } }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-04" });
++  assert.equal(calls.filter((c) => c[0] === "createPrice" || c[0] === "createCustomPrice").length, 0);
++  assert.equal(bucket.json.pool, 300);
++  assert.deepEqual(bucket.json.tiers.map((t) => [t.usd, t.priceId]), [[3, "price_f0"], [9, "price_f1"], [30, "price_f2"], [90, "price_f3"]]);
++  assert.equal(bucket.json.custom.priceId, "price_f4");
++});
++
++test("some of the month's prices found: those reused, the rest created at the found pool, with lookup keys and metadata", async () => {
++  const calls = [];
++  const prices = [{ id: "price_f0", lookup_key: "donate:2026-10:prompt", metadata: { pool: "300" } }];
++  await createDonateStep({ writer: fakeWriter(calls, { prices }), bucket: fakeBucket(), now: () => NOW, log: { error() {}, warn() {} } }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-04" });
++  const made = calls.filter((c) => c[0] === "createPrice");
++  assert.deepEqual(made.map((c) => c[1].usd), [9, 30, 90]);
++  assert.equal(made[0][1].lookupKey, "donate:2026-10:context");
++  assert.deepEqual(made[0][1].metadata, { donate: "1", month: "2026-10", tier: "context", pool: "300" });
++  assert.equal(calls.find((c) => c[0] === "createCustomPrice")[1].lookupKey, "donate:2026-10:own");
++});
++
++test("a door with two of its five links already in Stripe gets three new ones", async () => {
++  const calls = [];
++  const links = ["prompt", "own"].map((tier) => ({ id: `plink_f_${tier}`, url: `https://buy.stripe.com/f_${tier}`, metadata: { donate: "1", month: "2026-10", door: "arkos", tier } }));
++  const bucket = fakeBucket();
++  await createDonateStep({ writer: fakeWriter(calls, { links }), bucket, now: () => NOW, log: { error() {}, warn() {} } }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-04" });
++  assert.deepEqual(calls.filter((c) => c[0] === "createLink" && c[1].door === "arkos").map((c) => c[1].tier), ["context", "run", "finetune"]);
++  assert.equal(bucket.json.doors.arkos.links.prompt.id, "plink_f_prompt");
++  assert.equal(bucket.json.doors.arkos.links.own.url, "https://buy.stripe.com/f_own");
++});
++
+ test("a door added mid-month gets its links at the current prices; nothing else is touched", async () => {
+   const calls = [];
+   const oct = { month: "2026-10", pool: 288, at: "x", tiers: [{ tier: "prompt", share: 0.01, priceId: "price_1" }, { tier: "context", share: 0.03, priceId: "price_2" }, { tier: "run", share: 0.1, priceId: "price_3" }, { tier: "finetune", share: 0.3, priceId: "price_4" }], custom: { priceId: "price_5", minimumUsd: 1 }, products: {}, doors: Object.fromEntries(["arkos", "macstats", "visits", "last-trail", "hallway"].map((d) => [d, { links: {} }])) };
+   const bucket = fakeBucket(oct);
+   await createDonateStep({ writer: fakeWriter(calls), bucket, now: () => NOW, log: { error() {}, warn() {} } }).run({ monthlyRows: ROWS, failed: [], today: "2026-11-12" });
+   assert.deepEqual(calls.map((c) => c[0]).filter((n) => n !== "createLink"), []);
+   assert.equal(calls.length, 5);
+   assert.ok(calls.every((c) => c[1].door === "all"));
+   assert.equal(calls.find((c) => c[1].tier === "context")[1].priceId, "price_2");
+   assert.deepEqual(Object.keys(bucket.json.doors), ["arkos", "macstats", "visits", "last-trail", "hallway", "all"]);
+@@ -119,10 +188,16 @@ test("the bucket: a missing object reads as null, a write carries the content ty
+   assert.equal(b.configured, true);
+   assert.equal(await b.read(), null);
+   await b.write({ month: "2026-10" });
+   assert.equal(saved[0].name, "csarko-sh-donate-prices");
+   assert.equal(saved[0].obj, "prices.json");
+   assert.deepEqual(saved[0].body, { month: "2026-10" });
+   assert.equal(saved[0].opts.contentType, "application/json");
+   assert.equal(saved[0].opts.metadata.cacheControl, "public, max-age=300");
+   assert.equal(createPricesBucket({ bucket: null, projectId: "csarko-sh" }).configured, false);
+ });
++
++test("the bucket rethrows a read that fails with anything but a 404", async () => {
++  const storage = { bucket: () => ({ file: () => ({ async download() { const e = new Error("denied"); e.code = 403; throw e; } }) }) };
++  const b = createPricesBucket({ bucket: "csarko-sh-donate-prices", storage, log: { error() {} } });
++  await assert.rejects(b.read(), /denied/);
++});
+diff --git a/admin/api/test/stripe-write.test.mjs b/admin/api/test/stripe-write.test.mjs
+index a0ffeab..9263ce3 100644
+--- a/admin/api/test/stripe-write.test.mjs
++++ b/admin/api/test/stripe-write.test.mjs
+@@ -28,40 +28,67 @@ test("a payment link carries the price, the metadata twice, the DONATION suffix,
+   assert.equal(link.url, "https://buy.stripe.com/test");
+   assert.ok(typeof link.id === "string" && link.id.length > 0);
+   const c = calls[0];
+   assert.equal(c.path, "/v1/payment_links");
+   assert.equal(c.method, "POST");
+   assert.equal(c.headers["Idempotency-Key"], "donate:link:2026-10:arkos:context");
+   assert.equal(c.headers["content-type"], "application/x-www-form-urlencoded");
+   assert.equal(c.headers.authorization, `Bearer ${KEY}`);
+   assert.deepEqual(c.body, {
+     "line_items[0][price]": "price_1", "line_items[0][quantity]": "1", submit_type: "donate",
+-    "metadata[door]": "arkos", "metadata[tier]": "context", "metadata[month]": "2026-10", "metadata[share]": "0.03",
++    "metadata[donate]": "1", "metadata[door]": "arkos", "metadata[tier]": "context", "metadata[month]": "2026-10", "metadata[share]": "0.03",
+     "payment_intent_data[metadata][door]": "arkos", "payment_intent_data[metadata][tier]": "context", "payment_intent_data[metadata][month]": "2026-10", "payment_intent_data[metadata][share]": "0.03",
+     "payment_intent_data[statement_descriptor_suffix]": "DONATION",
+     "after_completion[type]": "redirect", "after_completion[redirect][url]": "https://donate.csarko.sh/thanks?door=arkos",
+   });
+ });
+ 
+ test("products, prices, the custom price, deactivation and archiving hit the right paths with the right fields", async () => {
+   const calls = [];
+   const w = make(calls);
+   assert.deepEqual(await w.listProducts(), [{ id: "prod_x", name: "A prompt", metadata: { tier: "prompt" } }], "the list's data, not the envelope");
+   await w.createProduct({ name: "A prompt", tier: "prompt", key: "donate:product:prompt" });
+   await w.createPrice({ product: "prod_1", usd: 9, key: "donate:price:2026-10:context" });
+   await w.createCustomPrice({ product: "prod_5", minimumUsd: 1, key: "donate:price:2026-10:own" });
+   await w.deactivateLink("plink_1");
+   await w.archivePrice("price_1");
+   assert.deepEqual(calls.map((c) => [c.method, c.path]), [["GET", "/v1/products"], ["POST", "/v1/products"], ["POST", "/v1/prices"], ["POST", "/v1/prices"], ["POST", "/v1/payment_links/plink_1"], ["POST", "/v1/prices/price_1"]]);
+   assert.deepEqual(calls[0].query, { active: "true", limit: "100" });
+-  assert.deepEqual(calls[1].body, { name: "A prompt", "metadata[tier]": "prompt" });
++  assert.deepEqual(calls[1].body, { name: "A prompt", "metadata[tier]": "prompt", "metadata[donate]": "1" });
+   assert.deepEqual(calls[2].body, { product: "prod_1", currency: "usd", unit_amount: "900" });
+   assert.deepEqual(calls[3].body, { product: "prod_5", currency: "usd", "custom_unit_amount[enabled]": "true", "custom_unit_amount[minimum]": "100" });
+   assert.deepEqual(calls[4].body, { active: "false" });
+   assert.deepEqual(calls[5].body, { active: "false" });
+   assert.equal(calls[4].headers["Idempotency-Key"], undefined, "a deactivation needs no key");
+ });
+ 
+ test("a refusal is an UpstreamError with the status and the body, the key blanked", async () => {
+   const calls = [];
+   await assert.rejects(make(calls, { status: 400 }).archivePrice("price_x"), (e) => e instanceof UpstreamError && /^Stripe 400 on \/prices\/price_x: / .test(e.message) && !e.message.includes(KEY) && e.message.includes("[key]"));
+ });
++
++test("prices carry a lookup key (taken over from an inactive holder) and metadata when given", async () => {
++  const calls = [];
++  const w = make(calls);
++  await w.createPrice({ product: "prod_1", usd: 9, key: "k1", lookupKey: "donate:2026-10:context", metadata: { donate: "1", month: "2026-10", tier: "context", pool: "300" } });
++  await w.createCustomPrice({ product: "prod_5", minimumUsd: 1, key: "k2", lookupKey: "donate:2026-10:own", metadata: { donate: "1" } });
++  assert.deepEqual(calls[0].body, { product: "prod_1", currency: "usd", unit_amount: "900", lookup_key: "donate:2026-10:context", transfer_lookup_key: "true", "metadata[donate]": "1", "metadata[month]": "2026-10", "metadata[tier]": "context", "metadata[pool]": "300" });
++  assert.deepEqual(calls[1].body, { product: "prod_5", currency: "usd", "custom_unit_amount[enabled]": "true", "custom_unit_amount[minimum]": "100", lookup_key: "donate:2026-10:own", transfer_lookup_key: "true", "metadata[donate]": "1" });
++});
++
++test("listPrices and listLinks read every active page, following starting_after while has_more", async () => {
++  const calls = [];
++  const pages = { "/v1/prices": [[{ id: "price_1" }, { id: "price_2" }], [{ id: "price_3" }]], "/v1/payment_links": [[{ id: "plink_1", url: "u" }]] };
++  const fetch = async (url) => {
++    const u = new URL(url);
++    calls.push({ path: u.pathname, query: Object.fromEntries(u.searchParams) });
++    const list = pages[u.pathname];
++    const i = u.searchParams.has("starting_after") ? 1 : 0;
++    return { ok: true, status: 200, json: async () => ({ data: list[i], has_more: i + 1 < list.length }) };
++  };
++  const w = createStripeWriter({ key: KEY, fetch, log: { error() {} } });
++  assert.deepEqual((await w.listPrices()).map((p) => p.id), ["price_1", "price_2", "price_3"]);
++  assert.deepEqual(calls.map((c) => c.query), [{ active: "true", limit: "100" }, { active: "true", limit: "100", starting_after: "price_2" }]);
++  assert.deepEqual((await w.listLinks()).map((p) => p.id), ["plink_1"]);
++  assert.equal(calls[2].path, "/v1/payment_links");
++  assert.deepEqual(calls[2].query, { active: "true", limit: "100" });
++});

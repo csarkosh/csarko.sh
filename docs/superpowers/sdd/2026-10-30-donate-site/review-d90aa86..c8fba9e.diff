@@ -1,0 +1,625 @@
+# Review package: d90aa86..c8fba9e
+
+## Commits
+c8fba9e projects: the cards carry no Buy me tokens line
+
+## Files changed
+ .agents/skills/site-quality/scripts/check.py       |  2 +-
+ .agents/skills/site-quality/scripts/docs_lib.mjs   | 38 +++++-----------------
+ .../skills/site-quality/tests/docs_lib.test.mjs    | 15 ++-------
+ AGENTS.md                                          | 14 +++-----
+ docs/superpowers/plans/2026-10-30-donate-site.md   |  2 ++
+ .../specs/2026-10-30-donate-site-design.md         |  4 +--
+ public/projects/index.html                         | 16 ++++-----
+ 7 files changed, 27 insertions(+), 64 deletions(-)
+
+## Diff
+diff --git a/.agents/skills/site-quality/scripts/check.py b/.agents/skills/site-quality/scripts/check.py
+index 5e395ba..80921d7 100755
+--- a/.agents/skills/site-quality/scripts/check.py
++++ b/.agents/skills/site-quality/scripts/check.py
+@@ -49,21 +49,21 @@ ANALYTICS = {"endpoint": _analytics.get("endpoint", "/v")} if _analytics.get("pr
+ THIRD_PARTY = {"script-src": [], "connect-src": [], "img-src": []}
+ 
+ # Performance budgets (bytes).
+ BUDGET_HTML = 50_000
+ BUDGET_FONTS = 100_000
+ BUDGET_PORTRAIT_AVIF_480 = 25_000
+ BUDGET_ANY_PORTRAIT = 90_000
+ BUDGET_SCRIPTS = 10_000  # all JavaScript the page loads, first- and third-party (third-party measured live)
+ 
+ BUDGET_HTML_DOCS_INDEX = 80_000  # the research index lists every doc with its card, about 1.7 KB each; 29 docs crossed BUDGET_HTML on 2026-10-14
+-BUDGET_HTML_PROJECTS = 60_000  # /projects carries the shared theme blocks, now with the Material 3 motion tokens (+1.2 KB took it from 49.2 KB past BUDGET_HTML) (2026-10-29); the Buy me tokens link and its one symbol: 54,538 B with the five Buy me tokens lines, about 50.6 KB without (they render only once DONATE_LIVE), the icon drawn as one path per colour (2026-10-30)
++BUDGET_HTML_PROJECTS = 60_000  # /projects carries the shared theme blocks, now with the Material 3 motion tokens (+1.2 KB took it from 49.2 KB past BUDGET_HTML) (2026-10-29); raised 2026-10-30 for the Buy me tokens lines, which were removed 2026-10-31 (size about 50.6 KB)
+ BUDGET_HTML_DOC = 260_000  # a doc page is mostly prose, so long research docs get more room than BUDGET_HTML; the longest, with 146 sources, was 197 KB (55 KB gzipped) and is 210 KB since every doc page carries its contents list, Keep reading block and their rules (2026-10-23); the horror sound doc, 21,000 words and 191 sources, is 251 KB (70 KB gzipped) (2026-10-24)
+ 
+ BUILD_DOCS = SKILL / "scripts/build_docs.mjs"
+ # Where docs are built and served (DOCS_DIR in docs_lib.mjs), and where they used to be: firebase.json
+ # 301s /docs and /docs/<slug> to their /research URLs, and --live checks that it still does.
+ DOCS_DIR = "research"
+ # /projects, built from docs/games/, docs/apps/ and docs/films/ with each card's stable picture in
+ # public/projects/ (docs_lib.mjs, build_assets.py). It replaced /games, /apps and /film on
+ # 2026-10-26, and firebase.json 301s those here; --live checks that it still does.
+ PROJECTS_DIR = "projects"
+diff --git a/.agents/skills/site-quality/scripts/docs_lib.mjs b/.agents/skills/site-quality/scripts/docs_lib.mjs
+index 7e5eccc..a4a2d63 100644
+--- a/.agents/skills/site-quality/scripts/docs_lib.mjs
++++ b/.agents/skills/site-quality/scripts/docs_lib.mjs
+@@ -1,16 +1,15 @@
+ // docs_lib.mjs — the pure half of the docs build: docs/published/*.md in, page text out.
+ // build_docs.mjs does the file I/O. Nothing here reads the clock or the disk, so the same
+ // sources always produce the same bytes. Tests: ../tests/docs_lib.test.mjs (node --test).
+ import { Marked } from './vendor/marked.esm.mjs';
+-import { doorOf, DONATE_LIVE, DONATE_URL } from '../../../../admin/api/src/donate/doors.mjs';
+-import { ICON_CSS, iconSymbol, iconUse } from '../../../../donate/icon.mjs';
++import { ICON_CSS } from '../../../../donate/icon.mjs';
+ 
+ export const SITE = 'https://csarko.sh';
+ // Where the docs are served: /research/<slug> and the /research index, built into public/research/.
+ // Their sources stay in docs/published/. They were served at /docs until 2026-09-17, and
+ // firebase.json's redirects 301 those old URLs here.
+ export const DOCS_DIR = 'research';
+ 
+ export class DocError extends Error {
+   constructor(message) {
+     super(message);
+@@ -885,27 +884,20 @@ const PROJECTS_CSS = `
+       .project-card .project-title { order: 2; margin-bottom: 14px; }
+       .project-card .film-notice { order: 3; }
+       .project-card .project-media { order: 4; width: 100%; margin-bottom: 18px; }
+       .project-card .project-media.film-poster { aspect-ratio: 16 / 9; }
+       .project-card .project-media.film-poster img { height: 100%; object-fit: cover; object-position: center var(--focus, 50%); }
+       .project-card .project-desc { order: 5; }
+       .project-card .tags { order: 6; }
+       .project-card .card-links { order: 7; }
+     }`;
+ 
+-// Buy me tokens: last in the row, body-text weight, grey until hovered; never the accent. Only on
+-// a page that carries the line (DONATE_LIVE), so until launch the page has none of it.
+-const TOKENS_CSS = `
+-    .card-tokens { position: relative; z-index: 1; display: inline-flex; align-items: center; font-size: 14px; font-weight: 400; color: var(--muted); text-decoration: none; }
+-    .card-tokens:hover, .card-tokens:focus-visible { color: var(--text); }
+-    ${ICON_CSS}`;
+-
+ // Only pages with IEEE references carry these rules, so adding them changed no other page.
+ const REFERENCES_CSS = `
+     .prose .references { list-style: none; padding-left: 0; }
+     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
+     .prose .references li:target { background: var(--surface-2); }
+     .prose .references .ref-num { font-family: var(--mono); font-size: 13px; line-height: 1.9; color: var(--faint); }
+     .prose .references li > div > p { margin: 0; }
+     .prose a.cite { white-space: nowrap; }`;
+ 
+ // `ogImage` is a page's own share card ({ url, width, height, alt }); without one, the site's.
+@@ -1339,38 +1331,27 @@ function cardLink(project) {
+ 
+ // A second, smaller link beside it to the code, for a project with a public repo (Cyrus, 2026-10-26:
+ // the cards should show the work to engineers reading them). It sits above the stretched link's
+ // overlay, so it stays its own click target, and counts as source-<slug>.
+ function sourceLink(project) {
+   return project.repo
+     ? `<a class="card-source" href="${escapeHtml(project.repo)}" target="_blank" rel="noopener" data-visits-event="source-${project.slug}">Source on GitHub ${EXTERNAL_ARROW}</a>`
+     : '';
+ }
+ 
+-// Last in the row, one quiet line to the project's door on donate.csarko.sh, once the door has
+-// shipped (Day Hike's has not) and the site is live (DONATE_LIVE). Lifted above the overlay like
+-// the source link; counts tokens-<slug>.
+-function tokensLink(project, live = DONATE_LIVE) {
+-  if (!live) return '';
+-  const door = doorOf(project.slug);
+-  return door?.shipped
+-    ? `<a class="card-tokens" href="${DONATE_URL}${door.path}" data-visits-event="tokens-${project.slug}">${iconUse()}Buy me tokens</a>`
+-    : '';
+-}
+-
+ // One card, whatever the kind: its picture (a film's poster, or a game's or an app's preview when
+ // it has an alt), the kicker (a game's status, an app's status and licence, a film's runtime), the
+ // title, a film's content warning, the copy, the tags and the link. Its id is the slug, so
+ // /projects#<slug> lands on it.
+-function projectCard(project, pad, { live = DONATE_LIVE } = {}) {
++function projectCard(project, pad) {
+   const media = project.kind === 'film' ? filmPoster(project, `${pad}  `) : project.alt ? preview(project, `${pad}  `) : '';
+-  const links = [cardLink(project), sourceLink(project), tokensLink(project, live)].filter(Boolean);
++  const links = [cardLink(project), sourceLink(project)].filter(Boolean);
+   const link = links.length ? `<div class="card-links">${links.join(' ')}</div>` : '';
+   const notice = project.kind === 'film' ? `${pad}    <p class="film-notice">${WARNING_ICON}${escapeHtml(FILM_NOTICE)}</p>\n` : '';
+   return `${pad}<li class="card${media ? ' project-card' : ''}" id="${project.slug}" data-kind="${kindValue(project.kind)}">
+ ${media ? `${media}\n` : ''}${pad}  <div class="project-body">
+ ${pad}    <p class="project-kicker">${escapeHtml(project.kicker)}</p>
+ ${pad}    <h2 class="project-title">${project.titleHtml}</h2>
+ ${notice}${pad}    <div class="project-desc prose">
+ ${project.html}${pad}    </div>
+ ${pad}    ${tagList(project.tags, project.model)}
+ ${link ? `${pad}    ${link}\n` : ''}${pad}  </div>
+@@ -1397,54 +1378,53 @@ function projectItem(project) {
+     '@type': 'VideoObject',
+     ...common,
+     thumbnailUrl: `${SITE}${project.poster}`,
+     uploadDate: project.released,
+     duration: project.duration,
+     url: project.watch,
+     embedUrl: `https://www.youtube.com/embed/${project.videoId}`,
+   };
+ }
+ 
+-export function projectsPage(projects, theme, { live = DONATE_LIVE } = {}) {
++export function projectsPage(projects, theme) {
+   const url = `${SITE}/${PROJECTS_DIR}`;
+   const trail = [HOME_CRUMB, [PROJECTS_TITLE, url]];
+   const graph = [
+     {
+       '@type': 'CollectionPage',
+       '@id': `${url}#page`,
+       url,
+       name: PROJECTS_TITLE,
+       description: PROJECTS_DESCRIPTION,
+       isPartOf: { '@id': WEBSITE },
+       about: { '@id': PERSON },
+       mainEntity: {
+         '@type': 'ItemList',
+         itemListElement: projects.map((project, i) => ({ '@type': 'ListItem', position: i + 1, item: projectItem(project) })),
+       },
+     },
+     breadcrumbs(trail),
+   ];
+-  const tokens = projects.some((p) => tokensLink(p, live));
+-  return `${head({ title: `${PROJECTS_HEADING} · Cyrus Sarkosh`, ogTitle: PROJECTS_TITLE, description: PROJECTS_DESCRIPTION, canonical: url, ogType: 'website', extraCss: filterCss('.project-list', 'kind', 'kind', PROJECT_KINDS.map(([v]) => v)) + PROJECTS_CSS + (tokens ? TOKENS_CSS : ''), graph, theme })}
++  return `${head({ title: `${PROJECTS_HEADING} · Cyrus Sarkosh`, ogTitle: PROJECTS_TITLE, description: PROJECTS_DESCRIPTION, canonical: url, ogType: 'website', extraCss: filterCss('.project-list', 'kind', 'kind', PROJECT_KINDS.map(([v]) => v)) + PROJECTS_CSS, graph, theme })}
+ <body>
+ ${nav(`/${PROJECTS_DIR}`)}
+ ${crumbs(trail)}
+ 
+   <main id="top" class="wrap docs-index" tabindex="-1">
+-${tokens ? `    ${iconSymbol()}\n` : ''}    <header class="doc-header">
++    <header class="doc-header">
+       <p class="eyebrow">${PROJECTS_TITLE}</p>
+       <h1>${escapeHtml(PROJECTS_HEADING)}</h1>
+       <p class="lead">${escapeHtml(PROJECTS_LEAD)}</p>
+     </header>
+ ${projectFilters(projects, '    ')}
+     <ul class="project-list" role="list">
+-${projects.map((project) => projectCard(project, '      ', { live })).join('\n')}
++${projects.map((project) => projectCard(project, '      ')).join('\n')}
+     </ul>
+   </main>
+ 
+ ${FOOTER}`;
+ }
+ 
+ /**
+  * A standalone page on another host (apps.csarko.sh): an app's own page, the way
+  * games.csarko.sh/dayhike is the game's. It shares the site's head, tokens, fonts and type, but
+  * none of its chrome: no nav, no trail, no wordmark. Its bar carries the app's name and a few
+@@ -1563,21 +1543,21 @@ export function docLinks(docs, games = []) {
+       series: doc.series ? { name: doc.series, parts: series.get(doc.series) } : null,
+       related,
+       games: playable.filter((g) => new RegExp(`\\b${g.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(text)),
+     });
+   }
+   return links;
+ }
+ 
+ // `figures` maps a doc's slug to its figure files (name -> { width, height }); build_docs.mjs
+ // reads them from the site-quality skill's assets/research/<slug>/.
+-export function buildSite({ sources, gameSources = [], filmSources = [], appSources = [], indexHtml, figures = new Map(), live = DONATE_LIVE }) {
++export function buildSite({ sources, gameSources = [], filmSources = [], appSources = [], indexHtml, figures = new Map() }) {
+   const docs = sortDocs(sources.map(({ name, text }) => loadDoc(name, text, figures.get(parseDocFileName(name).slug))));
+   const projects = sortProjects([
+     ...gameSources.map(({ name, text }) => loadGame(name, text)),
+     ...appSources.map(({ name, text }) => loadApp(name, text)),
+     ...filmSources.map(({ name, text }) => loadFilm(name, text)),
+   ]);
+   const games = projects.filter((p) => p.kind === 'game');
+   // The date lives in the file name, so the directory no longer keeps slugs unique: two dates can
+   // claim one URL, and the second page would silently overwrite the first.
+   const bySlug = new Map();
+@@ -1601,14 +1581,14 @@ export function buildSite({ sources, gameSources = [], filmSources = [], appSour
+     projectOrders.set(p.order, source(p));
+   }
+   const theme = themeBlocks(indexHtml);
+   const files = new Map();
+   const links = docLinks(docs, games);
+   for (const doc of docs) files.set(`${DOCS_DIR}/${doc.slug}.html`, docPage(doc, theme, links.get(doc.slug)));
+   if (docs.length) {
+     files.set(`${DOCS_DIR}/index.html`, indexPage(docs, theme));
+     files.set(`${DOCS_DIR}/feed.xml`, feed(docs));
+   }
+-  if (projects.length) files.set(`${PROJECTS_DIR}/index.html`, projectsPage(projects, theme, { live }));
++  if (projects.length) files.set(`${PROJECTS_DIR}/index.html`, projectsPage(projects, theme));
+   files.set('sitemap.xml', sitemap(docs, projects));
+   return files;
+ }
+diff --git a/.agents/skills/site-quality/tests/docs_lib.test.mjs b/.agents/skills/site-quality/tests/docs_lib.test.mjs
+index 2911be1..73872c8 100644
+--- a/.agents/skills/site-quality/tests/docs_lib.test.mjs
++++ b/.agents/skills/site-quality/tests/docs_lib.test.mjs
+@@ -660,33 +660,24 @@ test('loadApp builds the kicker from status and license, and checks its fields',
+ test('an app card links out to its page, with SoftwareApplication JSON-LD', () => {
+   const html = projectsPage([app('lib-visits', ['license: GPL-3.0'])], themeBlocks(INDEX));
+   assert.ok(html.includes('<p class="project-kicker">Released · Open source, GPL-3.0</p>'));
+   assert.ok(html.includes('<a class="card-link stretch" href="https://apps.csarko.sh/lib-visits" data-visits-event="app-lib-visits">Download and docs <svg'));
+   const [first] = jsonLd(html).find((n) => n['@type'] === 'CollectionPage').mainEntity.itemListElement;
+   assert.equal(first.item['@type'], 'SoftwareApplication');
+   assert.equal(first.item.license, 'GPL-3.0');
+   assert.equal(first.item.operatingSystem, 'Linux, macOS');
+ });
+ 
+-test('every shipped project card carries one quiet Buy me tokens link to its door; Day Hike none yet; the symbol once', () => {
++test('the projects page carries no Buy me tokens line, even with every door shipped', () => {
+   const projects = [game('day-hike'), app('ide-arkos', ['repo: https://github.com/csarkosh/ide-arkos']), film('the-last-trail')];
+-  const html = projectsPage(projects, themeBlocks(INDEX), { live: true });
+-  assert.equal((html.match(/<symbol id="tokens-icon"/g) || []).length, 1);
+-  assert.ok(html.includes('<a class="card-tokens" href="https://donate.csarko.sh/arkos" data-visits-event="tokens-ide-arkos"><svg class="tokens-icon" aria-hidden="true"><use href="#tokens-icon"/></svg>Buy me tokens</a>'));
+-  assert.ok(html.includes('href="https://donate.csarko.sh/last-trail" data-visits-event="tokens-the-last-trail"'));
+-  assert.ok(html.includes('href="https://donate.csarko.sh/dayhike" data-visits-event="tokens-day-hike"'));
+-  const card = html.slice(html.indexOf('id="ide-arkos"'), html.indexOf('</li>\n', html.indexOf('id="ide-arkos"')));
+-  assert.equal((card.match(/Buy me tokens/g) || []).length, 1);
+-  assert.ok(html.indexOf('card-source') < html.indexOf('card-tokens'), 'after Source on GitHub');
+-  // With the flag off (as before launch) no card carries the line and the page no symbol.
+-  const before = projectsPage(projects, themeBlocks(INDEX), { live: false });
+-  assert.ok(!before.includes('card-tokens') && !before.includes('<symbol id="tokens-icon"'));
++  const html = projectsPage(projects, themeBlocks(INDEX));
++  assert.ok(!html.includes('card-tokens') && !html.includes('tokens-icon') && !html.includes('Buy me tokens'));
+ });
+ 
+ test('standaloneShell wears none of the site\'s chrome: its own bar, its own footer, one credit', () => {
+   const html = standaloneShell({ title: 'x: a thing', ogTitle: 'x', description: 'd', canonical: 'https://apps.csarko.sh/x', graph: [], theme: themeBlocks(INDEX),
+     name: 'x', links: [['Download', '#setup'], ['GitHub', 'https://github.com/o/r', true]], licence: 'MIT', main: '<main id="top"></main>' });
+   assert.ok(html.includes('<a class="app-name" href="https://apps.csarko.sh/x">x</a>'));
+   assert.ok(html.includes('<li><a href="#setup">Download</a></li>'));
+   assert.ok(html.includes('<li><a href="https://github.com/o/r" class="external" target="_blank" rel="noopener">GitHub</a></li>'));
+   assert.ok(html.includes('<span>x · MIT</span>'));
+   assert.ok(html.includes('Made by <a class="maker" href="https://csarko.sh/">Cyrus Sarkosh</a>'));
+diff --git a/AGENTS.md b/AGENTS.md
+index 98e4bcc..61a33e2 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -18,21 +18,21 @@ now 301 there). No framework and no CI; the one build step,
+ | `public/me.jpg` | Portrait (640px wide JPEG, from `~/Pictures/Cyrus/me_1.png`). |
+ | `public/assets/` | **Generated, content-hashed, cached for a year:** responsive portraits (AVIF/WebP/JPEG) and self-hosted fonts. |
+ | `public/og-image.jpg`, `portrait.jpg`, `favicon.*`, `apple-touch-icon.png` | **Generated** too. Everything generated comes from `.agents/skills/site-quality/assets/` via `generate-assets.sh` — never hand-edit, including the `generated:` blocks inside the HTML. |
+ | `public/404.html` | Custom not-found page (noindex, root-relative paths). |
+ | `public/licenses/fonts-OFL.txt` | Font licenses. |
+ | `public/robots.txt` | Crawl rules. |
+ | `docs/published/<YYYY-MM-DD>-<slug>.md` | **Published docs, source of truth.** Markdown with front matter, one file per doc, named for its `published:` date (the build fails if the two disagree). The URL is the slug alone: `/research/<slug>`, no date. The repo is public, so committing a file here publishes it; use the `publish-doc` skill. |
+ | `docs/films/<slug>.md` | **The films, source of truth.** One file per short film, named for the slug alone (a date prefix is refused; `released:` in the front matter is the date). Front matter also carries `watch` (the YouTube URL), `runtime`, `alt` (the poster's alt text), `tags`, `focus`, the fraction of the poster's height the phone crop centres on, 0 to 1, 0.5 when absent, `model` (the film's main AI model, written as its tag reads, `Video model: Veo 3.1` or `Image model: <name>` for a film animated from stills; the card shows it as its first, lit tag; *Cyrus, 2026-10-29*; only the one model may be named, per film-generation's AGENTS.md, "What the public may know") and an optional `order` (its place on `/projects`; there is no `warning` field, every film card carries the same notice). Its poster is committed at `.agents/skills/site-quality/assets/films/<slug>.jpg`. The repo is public, so committing a file here publishes it. **How a film was made stays private** (Cyrus, 2026-10-29): a film page, its tags and anything else public may say the film is AI-generated and name the one video model that made most of its shots (Veo 3.1 for The Last Trail), or, for a film animated from stills with no video model, its one main image model (Qwen-Image-Edit for "Who is standing in my hallway?", Cyrus 2026-10-29), and nothing more: no other model or tool, no prompts, pipeline, scripts, costs, takes or behind-the-scenes frames. The film-generation repo's AGENTS.md ("What the public may know") has the full rule; when unsure, leave it out and ask. |
+ | `docs/apps/<slug>.md` | **The apps, source of truth** *(added 2026-10-15)*. One file per app, named for the slug alone. Front matter: `description`, `status` (`released` or `in-development`), `page` (the app's page, `https://apps.csarko.sh/<slug>` for one hosted there), `platforms` (what it runs on, for the JSON-LD), `tags`, and optional `license` (joins the status in the card's kicker), `repo`, `released`, `link` (the card link's words, "Download and docs" by default; MacStats says "Install and docs"), `order` (a whole number from 1: its place on `/projects`, shared with the games and films; see "Projects" below), `sections` (the README's `## ` headings the app's page keeps, comma-separated in the README's words, when the whole README is not the page; none of the apps sets it now, since Arkos IDE's README moved its guide and contributor sections into `docs/`, Cyrus 2026-10-16) and `alt`. A sibling `docs/apps/<slug>.install.md` is the page's own `## Install` section for a README that has none (Arkos IDE's Homebrew cask), placed ahead of the first kept section with the release's download buttons under it. **With `alt`, the card carries a preview** *(Cyrus, 2026-10-15, like `/film`'s posters)*: the source is `.agents/skills/site-quality/assets/apps/<slug>.png`, plus `<slug>-dark.png` for the dark theme if there is one, and `build_assets.py` emits the hashed AVIF/WebP/JPEG (a transparent source is laid on the card's background). With a `<slug>-portrait.png` (and `-portrait-dark.png`) beside them, the card shows that tall version beside its text on a desktop, in a 240px frame, and the landscape one under the title on a phone *(Cyrus, 2026-10-15: a wide picture is hard to read beside the text, a tall one wastes a phone's width)*. lib-visits' four are its README hero and the vertical version (`journey-{light,dark}.png`, `journey-vertical-{light,dark}.png`, from lib-visits' `scripts/readme-image.sh`); Arkos IDE's are its composed dark hero and `hero-portrait-dark.png` alone, as `ide-arkos.png` and `ide-arkos-portrait.png` (ide-arkos' `scripts/shoot.sh`, which takes only dark stills, Cyrus 2026-10-17); MacStats' is its `docs/previews/menubar.png`. The body is the card's copy. The repo is public, so committing a file here publishes it. |
+ | `apps/` | **`https://apps.csarko.sh`** *(added 2026-10-15)*: each app's own page, `apps.csarko.sh/<slug>`, a third Firebase Hosting site `csarko-sh-apps`; its `/` 301s to `https://csarko.sh/projects` (`games.csarko.sh` goes to `/games`, set in the game's own repo, which then 301s to `/projects?filter=games`). `apps/build.mjs` makes each page from the app's README on GitHub (default branch) and its **latest release**, whose assets become the download buttons. **An app's page is standalone** *(Cyrus, 2026-10-15)*: the site's head, tokens and fonts, but none of its chrome (no nav, trail or wordmark), the way `games.csarko.sh/dayhike` is the game's own page; its bar carries the app's name, a Download or Install link, GitHub, Buy me tokens (after GitHub, before the version, only once `DONATE_LIVE`) and the version, and its footer credits Cyrus once (`standaloneShell` in `docs_lib.mjs`, `apps/product.mjs`); `apps/public/` is its git-ignored output. The README's HTML (a `<h1>` title, `<p align>` paragraphs, a `<picture>` hero, a `<picture>` on its own inside a section as a figure, a table of picture-and-text panels) is drawn by the page itself; HTML it does not know fails the build. An app without download assets (MacStats builds on your Mac) gets its release named under its `## Install` section instead of buttons. `node apps/build.mjs --local <slug>=<checkout>` builds from a local README, to look before pushing. **Run `apps/deploy.sh` after an app's README changes or it releases**: the buttons name the release that was latest at build time. No script on this host (no analytics: the collector takes `https://csarko.sh` only). Tests: `node --test apps/test/*.test.mjs`. |
+-| `donate/` | **`https://donate.csarko.sh`, Buy Me Tokens** *(designed and approved 2026-10-30; spec: `docs/superpowers/specs/2026-10-30-donate-site-design.md`)*: the tip page, a fourth Firebase Hosting site `csarko-sh-donate` with no server of its own. One door per shipped project (`/arkos`, `/macstats`, `/visits`, `/last-trail`, `/hallway`, `/dayhike`, and `/` for the whole body of work: seven doors), each the project's own picture and words over the same bill: three tiers, each a share of the last 30 days' cloud spend, repriced weekly, plus your own number, paid through a hosted Stripe checkout. The doors' copy is `admin/api/src/donate/doors.mjs` and the icon `donate/icon.mjs` (also served as `donate.csarko.sh/icon.svg` for READMEs); the prices come from the admin API's weekly `donate` step, which publishes them to the public bucket `csarko-sh-donate-prices`. `node donate/build.mjs` builds `donate/public/` (git-ignored) from those prices (`--prices donate/test/fixtures/prices.json` to look before they exist); `donate/deploy.sh` builds and publishes it, and refuses to ship without the prices; **re-run it after the Finance page's prices line says they turned**, since the pages bake those links in as their fallback (the sweep keeps a period's links live for 35 days, so once within a month of a turn is enough). The entrances on csarko.sh and apps.csarko.sh render because `DONATE_LIVE` in `doors.mjs` has been `true` since the launch on 2026-10-31; setting it `false` hides every entrance again. Tests: `node --test donate/test/*.test.mjs`. The repo is public, so the door copy is public. |
++| `donate/` | **`https://donate.csarko.sh`, Buy Me Tokens** *(designed and approved 2026-10-30; spec: `docs/superpowers/specs/2026-10-30-donate-site-design.md`)*: the tip page, a fourth Firebase Hosting site `csarko-sh-donate` with no server of its own. One door per shipped project (`/arkos`, `/macstats`, `/visits`, `/last-trail`, `/hallway`, `/dayhike`, and `/` for the whole body of work: seven doors), each the project's own picture and words over the same bill: three tiers, each a share of the last 30 days' cloud spend, repriced weekly, plus your own number, paid through a hosted Stripe checkout. The doors' copy is `admin/api/src/donate/doors.mjs` and the icon `donate/icon.mjs` (also served as `donate.csarko.sh/icon.svg` for READMEs); the prices come from the admin API's weekly `donate` step, which publishes them to the public bucket `csarko-sh-donate-prices`. `node donate/build.mjs` builds `donate/public/` (git-ignored) from those prices (`--prices donate/test/fixtures/prices.json` to look before they exist); `donate/deploy.sh` builds and publishes it, and refuses to ship without the prices; **re-run it after the Finance page's prices line says they turned**, since the pages bake those links in as their fallback (the sweep keeps a period's links live for 35 days, so once within a month of a turn is enough). The apps.csarko.sh bar line renders because `DONATE_LIVE` in `doors.mjs` has been `true` since the launch on 2026-10-31; setting it `false` hides it again. Tests: `node --test donate/test/*.test.mjs`. The repo is public, so the door copy is public. |
+ | `docs/games/<slug>.md` | **The games, source of truth.** Markdown with front matter, one file per game, named for the slug alone: a game is not a dated log entry, so a date prefix is refused (`released:` in the front matter is the date). Optional `order` (its place on `/projects`) and `alt` (its card's preview, from `.agents/skills/site-quality/assets/apps/<slug>.png` like an app's; Day Hike has none, Cyrus 2026-10-26: its card will carry a trailer once he makes one). The repo is public, so committing a file here publishes it. |
+ | `public/research/`, `public/projects/`, `public/sitemap.xml` | **Generated** from `docs/published/`, `docs/games/`, `docs/films/` and `docs/apps/` by `build_docs.mjs` (run by `generate-assets.sh`). `public/projects/<slug>.jpg` is each film's stable poster and each preview's stable copy, written by `build_assets.py`. |
+ | `docs/superpowers/` | Internal design specs and implementation plans. **Never published** (unlike its siblings `docs/published/`, `docs/games/`, `docs/films/` and `docs/apps/`, which are). |
+ | `docs/substack/posts.json` | The log of csarko.log posts made with the `substack-post` skill: date, Substack URL, title and the doc slugs each covered. Not a page: the build reads only the three content folders. |
+ | `firebase.json`, `.firebaserc` | Firebase Hosting config: publish `public/`, cache headers, and the 301 redirects from the old `/docs` URLs to `/research` and from `/games`, `/apps` and `/film` to `/projects?filter=games` (`apps`, `film`: each lands with its own chip checked, *Cyrus 2026-10-29*), and the pictures under `/apps/` and `/film/` to `/projects/` (keep them: old links and search results still use them); every other address under `/apps/` goes to `/projects?filter=apps` too (*Cyrus 2026-10-29*; it went to a `/projects/<name>` that does not exist), the pictures matched first by a `regex` rule. |
+ | `admin/` | **The private dashboard, `https://admin.csarko.sh`** *(designed and approved 2026-10-12; spec: `docs/superpowers/specs/2026-10-12-admin-dashboard-design.md`)*. `admin/public/` is the shell (the index of tracked apps, `/csarko.sh/` the site's own dashboard, `/ide-arkos/` Arkos IDE's *(added 2026-10-17, spec `docs/superpowers/specs/2026-10-17-arkos-admin-dashboard-design.md`: the Macs from its daily update check, and the user journey from its opt-in usage reports, which is the point of the page, Cyrus: "so we can see how it's being used and optimize it"; served by `csarko-admin` under `/arkos`; Cyrus dogfoods Arkos, so his own Macs (`ch = dogfood` from `~/.config/arkos/dogfood`, or rows the collector marks `s.own` from his addresses) are counted apart, and the page's Whose row shows Users, You or Both (the default since 2026-10-19))*, `theme.css`, `auth.js`, `charts.js`), a second Firebase Hosting site `csarko-sh-admin`; `admin/api/` is the Cloud Run service `csarko-admin` that reads the visits data in BigQuery, Search Console, YouTube, GitHub and the daily Firestore snapshots, and serves the Billing page (`/finance/`, reached from the account menu, spec `docs/superpowers/specs/2026-10-29-finance-admin-page-design.md`: AWS Cost Explorer through a federated role, the GCP billing export in BigQuery, GitHub's usage, Modal through `admin/finance-modal/` (a Python Cloud Run job, `csarko-finance-modal`, since Modal has no REST billing endpoint) and fal's credit balance, plus the film ledgers that `film-generation`'s `tools/cinema/ledger-sync.sh` copies to the private bucket `csarko-sh-film-ledgers`, and Claude Code as its own category: the claude.ai subscription entered on the page as the spend, and the local transcripts' tokens priced at API list rates as the plan's value, written into the day's snapshot by `tools/claude-usage-sync.py`, run on the Mac after a day's sessions (no transcript text leaves it); there is no spend goal, Cyrus 2026-10-30), and runs the `donate` step that sets the weekly tip prices (spec `docs/superpowers/specs/2026-10-30-donate-site-design.md`; see `donate/` below); `admin/public/game-dayhike/` is **pulled at deploy** from the game's repo (git-ignored). See "Admin pages" below for the standing rule. |
+ | `_infra/` | Terraform for the hosting, DNS, the apps site, the admin site and API, the donate site and its public prices bucket `csarko-sh-donate-prices`, and mail. Same shape as `~/Projects/game-dayhike/_infra` (project `fps-csarko`). |
+ | `mail/` | **Every address at csarko.sh** *(designed and approved 2026-10-30; spec: `docs/superpowers/specs/2026-10-30-email-aliases-design.md`)*: SES receives in us-east-2, `mail/lambda/` (Python, the handler `inbound.handler`) forwards each message to Cyrus with the alias in `From:` and a reverse alias in `Reply-To:`, or sends his reply out as the alias; aliases are created by their first message and can be blocked. Infrastructure: `_infra/modules/aws-mail`. Reading and sending from the command line is the `mail` skill in `csarkosh/skills-general`. Tests: `python3 -m unittest discover -s mail/test -v`. The owner's address is only in the git-ignored `_infra/terraform.tfvars` (`mail_owner_address`). |
+ | `.agents/skills/` | Agent skills: `preview`, `deploy`, `site-quality`, `publish-doc` and `substack-post`. `.claude/skills` is a symlink to it so Claude Code discovers them. |
+ | `.claude/settings.json` | Imports the shared skill plugins from [`csarkosh/skills-general`](https://github.com/csarkosh/skills-general): `general:doc-preview` (open a markdown doc as a styled page in Chrome; not this repo's `preview`, which previews the site) and `general:search-console` (Google Search Console reports: indexing, sitemap, search performance) and `general-claude:doc-artifact` (publish a doc as a claude.ai Artifact). Change those skills in `skills-general`, not here. On a machine that has never installed them, run `claude plugin install general@csarkosh` and `claude plugin install general-claude@csarkosh`. Codex has no per-repository import: run `codex plugin marketplace add csarkosh/skills-general` and `codex plugin add general@csarkosh` once per machine. |
+@@ -271,23 +271,21 @@ three from the command line):
+   apps and films, built with AI"). Until that day they were three pages, `/apps`, `/film` and
+   `/games`, each in the nav; those URLs, and the stable pictures under `/apps/` and `/film/`, now
+   301 to `/projects` (`firebase.json`; `check.py --live` checks it). **Chips above the cards**
+   *(Cyrus, 2026-10-29)*: All, Apps, Film, Games (`PROJECT_KINDS` in `docs_lib.mjs`), **single
+   select** (radios: a kind replaces the last, All clears it; `/research`'s are the same), each
+   card carrying `data-kind`; a link pre-applies one, `/projects?filter=film` (a link naming several
+   opens on the first), through the same `filters.js`, and `/film`, `/games` and `/apps`
+   301 to their own filter (so `games.csarko.sh`, via `/games`, lands on Games). A chip counts
+   `filter-<kind>` (`filter-all` for All). The page has its own HTML budget, 60,000 B
+   (`BUDGET_HTML_PROJECTS` in `check.py`, 2026-10-29 at 55,000 B, as `/research` has one; raised
+-  2026-10-30): with six projects and the motion tokens it is 54,538 B with the five Buy me tokens
+-  lines, about 50.6 KB without (`DONATE_LIVE`, true since the launch on 2026-10-31), its icon one hidden sprite
+-  of one path per colour. The sources stay in their own
++  2026-10-30): with six projects and the motion tokens it is about 50.6 KB. The sources stay in their own
+   folders (`docs/games/`, `docs/apps/`, `docs/films/`), since each kind has its own fields; a slug
+   is unique across all three (it is the card's `#anchor` and its picture's
+   `/projects/<slug>.jpg`). **The order is Cyrus's, most proud first**: each source's `order:`
+   (1 first, unique across the three folders, the build refuses a repeat), as of 2026-10-29 Day
+   Hike 1, Arkos IDE 2, lib-visits 3, The Last Trail 4, Who is standing in my hallway? 5, MacStats 6; a project without one follows,
+   released newest first. **Each card's copy says how AI built it or is part of it** *(Cyrus,
+   2026-10-26)*: claims come from the project's own repo (its commits are co-authored by Claude, its
+   README), and a card may link the research doc behind it. The front matter `description` stays a
+   plain statement of what the project is: an app's is its apps.csarko.sh page's lead and title too.
+   Each card carries its kind's kicker (a game's status, an app's status and licence, `Short film ·
+@@ -308,23 +306,21 @@ three from the command line):
+   the film's own card. **A film has no `warning:` field**; the key is rejected outright. The page's
+   JSON-LD lists each project as a `VideoGame`, `SoftwareApplication` or `VideoObject`. **The home
+   page carries no projects section** (the old one was dropped 2026-10-08; don't bring it back
+   unasked): the nav's `Projects` link is the way in. The films live on his YouTube channel
+   **https://www.youtube.com/@csarkosh**, which the home page links from the hero chips, the Contact
+   chips and the JSON-LD `sameAs`. **Pictures are self-hosted**: a poster's source frame is under
+   the site-quality skill's `assets/films/`, a preview's under `assets/apps/`, and
+   `build_assets.py` emits the hashed AVIF/WebP/JPEG set, so the page makes no third-party request.
+ - **Buy me tokens** *(Cyrus, 2026-10-30; spec `docs/superpowers/specs/2026-10-30-donate-site-design.md`)*:
+   each project with a shipped door on donate.csarko.sh carries one quiet line to it, the icon and
+-  the words "Buy me tokens", once per page: on its `/projects` card after "Source on GitHub"
+-  (`tokensLink` in `docs_lib.mjs`: body-text size and weight, `--muted`, `--text` on hover, never
+-  the accent), in its apps.csarko.sh page's bar between GitHub and the version, and in its
++  the words "Buy me tokens", once per page: (not on the `/projects` cards, Cyrus 2026-10-31: the line reads as asking there), in its apps.csarko.sh page's bar between GitHub and the version, and in its
+   repository's README as exactly this line, the last before the licence section, with the
+   project's own door in place of `/arkos`:
+ 
+   ```markdown
+   [<img src="https://donate.csarko.sh/icon.svg" alt="" height="16"> Buy me tokens](https://donate.csarko.sh/arkos)
+   ```
+ 
+   An apps page drops that line from the README it renders (`prepareReadme` in `apps/product.mjs`),
+   so the bar's is the page's one. Nothing that reads as asking: no banner, modal, toast, nag,
+   animation, counter or second mention, and a placement that would convert better by being louder
+@@ -505,23 +501,21 @@ dropped because its host went down and took the numbers with it.)*
+   beacons arriving together after a cold start keep their order. Rows before 2026-10-15
+   evening carry their arrival time instead. A named outbound link sends both its event name
+   and its url, so a journey can end on the click.
+ - **Events** *(unchanged from 2026-10-12, when they were added for the admin dashboard)*:
+   clicks out to LinkedIn, GitHub, Substack and YouTube count as `out-linkedin`,
+   `out-github`, `out-substack`, `out-youtube` (hero chips, Contact buttons and the Filming
+   tile's link in `index.html`); the nav's page links count `nav-projects` and
+   `nav-research` in both navs (never on the page you are on; `nav-apps`, `nav-film` and
+   `nav-games` until 2026-10-26, when those pages became `/projects`); a game card's "Play in your
+   browser" counts `play-<slug>`, an app card's link `app-<slug>`, a film card's "Watch on YouTube" `watch-<slug>`,
+-  a card's "Source on GitHub" `source-<slug>` *(2026-10-26)* and a click on a card's Buy me
+-  tokens line `tokens-<slug>` *(2026-10-30; the same line in an apps.csarko.sh page's bar counts
+-  nothing, since that host has no script)* (`docs_lib.mjs`); on `/research`, a category chip
++  and a card's "Source on GitHub" `source-<slug>` *(2026-10-26)* (`docs_lib.mjs`; a `tokens-<slug>` event for the card line existed 2026-10-30 to 31 and was removed with it); on `/research`, a category chip
+   `filter-<category>` (`filter-all` for All; a click that clears a chip counts too) *(2026-10-18,
+   to see what the index's visitors do before they leave)*, and on `/projects` a kind chip
+   `filter-apps`, `filter-film` or `filter-games` *(2026-10-29)*. All are `data-visits-event` attributes. `read-<slug>` needs no script of
+   ours any more: it is derived from lib-visits' `leave.re` (the reader reached the end of a
+   doc). **Event names are stable identifiers, not copy:** renaming a button or a URL must
+   not rename its series. **On a doc page** *(2026-10-23, after the reading research: real visitors
+   spent a median of 16 s on a doc and most flicked to the end)*: the contents count `toc` and
+   `toc-rail`, a link in the text to another doc `doc-<slug>`, the series line `series-<slug>`, Keep
+   reading `next-<slug>`, the Read next link after the author box `end-<slug>`, the Play button
+   `play-<game>`, and the site's own `reading.js` (the one script of ours, doc pages only) sends
+diff --git a/docs/superpowers/plans/2026-10-30-donate-site.md b/docs/superpowers/plans/2026-10-30-donate-site.md
+index 8dbc6eb..03bc625 100644
+--- a/docs/superpowers/plans/2026-10-30-donate-site.md
++++ b/docs/superpowers/plans/2026-10-30-donate-site.md
+@@ -5,20 +5,22 @@
+ **Goal:** A static tip page at donate.csarko.sh whose three prices are shares of last month's real cloud bill, set once a month by the admin snapshot through Stripe Payment Links, with one quiet "Buy me tokens" entrance on every csarko.sh project card and apps page.
+ 
+ **Architecture:** Three pieces. (1) The admin API (`admin/api`, Node 22, Cloud Run) gains a `donate` step inside the Finance snapshot: it reads the pool from the Finance rows, writes Products, Prices and Payment Links through a restricted Stripe key, and publishes one `prices.json` to a public GCS bucket. (2) A fourth Firebase Hosting site, built by `donate/build.mjs` from the shared `standaloneShell`, with the pictures the projects page already uses, the baked prices as fallback and a fetch of the live JSON. (3) Entrances: a `tokensLink` on each `/projects` card, a bar link on each apps page, and a README snippet format that the apps build drops. Everything in Terraform.
+ 
+ **Tech Stack:** Node 22 (`node --test`), Python 3 with Pillow for pictures, Terraform (google, google-beta, aws providers), Firebase Hosting, Stripe REST API (`/v1/products`, `/v1/prices`, `/v1/payment_links`), Google Cloud Storage, Firestore (the existing snapshot store).
+ 
+ **Spec:** `docs/superpowers/specs/2026-10-30-donate-site-design.md`
+ 
+ **Amended Oct 31:** Cyrus chose a rolling 30-day bill repriced weekly ("Let's go with the rolling last 30 days figure, repriced weekly"), so the site can launch on Oct 31 without waiting for a closed month. Where this plan says last month's bill, the 3rd, the 7th, `DONATE_FROM_MONTH` or `month`, the spec's amended sections 3 and 4 rule instead: the pool is the 30 days ending yesterday, prices turn every seven days from `DONATE_FROM` (2026-10-31), a due turn waits on GCP's export and on failed collectors, and the JSON and the snapshot record carry a `period` (`{ from, to, repricedOn }`).
+ 
++**Amended Oct 31 (later):** Cyrus had the Buy me tokens line removed from the `/projects` cards (it reads as asking there); Task 10's text below stays as history. The apps bar line, the README snippet and the donate site are unchanged.
++
+ ## Global Constraints
+ 
+ - No em-dash anywhere in page copy, docs or code comments that reach a page; `deploy.sh` and `apps/deploy.sh` already refuse one, `donate/deploy.sh` does too.
+ - No email address or phone number on any page, in any JSON the page reads, or in any test fixture committed to the repo. Both repos are public.
+ - Every colour on a page is a theme token in both blocks, except the icon's ten fixed fills, which live in SVG attributes, not CSS (`check.py` scans CSS only).
+ - The tiers are exactly: `A prompt` 1%, `A long context window` 3%, `A whole agent run` 10% (Cyrus, Oct 31: the 30% tier was dropped; three tiers and the custom row); each price is the pool times its share **rounded up** to the next whole dollar, floored at $1; the fourth row is "Your own number" with a $1 minimum.
+ - Prices are computed from the month that most recently closed, by the first daily snapshot on or after the 3rd; a failed configured provider delays a day, up to the 7th.
+ - The pool excludes rows whose project is `commercial`; nothing is routed there yet.
+ - The charge statement is `CSARKO* DONATION`: the account's shortened descriptor is already `CSARKO`, so every link sets `payment_intent_data[statement_descriptor_suffix]=DONATION`.
+ - Doors and their URLs: `/arkos` (ide-arkos), `/macstats` (app-macstats), `/visits` (lib-visits), `/last-trail` (the-last-trail), `/hallway` (who-is-standing-in-my-hallway), `/` (the whole body of work, door key `all`), `/dayhike` (day-hike, not shipped until Cyrus's screenshot exists).
+diff --git a/docs/superpowers/specs/2026-10-30-donate-site-design.md b/docs/superpowers/specs/2026-10-30-donate-site-design.md
+index f18419a..26ff006 100644
+--- a/docs/superpowers/specs/2026-10-30-donate-site-design.md
++++ b/docs/superpowers/specs/2026-10-30-donate-site-design.md
+@@ -240,28 +240,28 @@ size and weight, with no colour on the words, nothing animated, nothing that int
+ that repeats. It sits where a person who wants it would look and nowhere else. Cyrus set each
+ placement (Oct 30):
+ 
+ | Project | Where | Door |
+ |---|---|---|
+ | Arkos IDE | the About menu, the line under "Made by Cyrus Sarkosh"; the GitHub README; its apps.csarko.sh page | `/arkos` |
+ | MacStats | the GitHub README; its apps.csarko.sh page; one closing line after a successful install, in the Homebrew caveat and in the agent-driven install's final output (a line, never a question that waits) | `/macstats` |
+ | lib-visits | the GitHub README; its apps.csarko.sh page | `/visits` |
+ | Day Hike | bottom left of the title screen, moving under the PARTY widget when the layout collapses; the GitHub README | `/dayhike` |
+ | The films | one "Buy me tokens" link among the channel's profile links on YouTube; the plain URL as the last line of each Short's description, since YouTube makes URLs in Shorts descriptions non-clickable; the film cards on csarko.sh/projects | `/last-trail`, `/hallway` |
+-| Every project | its card on `csarko.sh/projects` | its door |
++| Every project | its card on `csarko.sh/projects` (removed Oct 31, Cyrus: it reads as asking on the cards) | its door |
+ 
+ Checked Oct 30: YouTube's External links policy bans links to content that breaks its
+ Community Guidelines and says nothing against tipping or donation sites; its help page says
+ URLs in Shorts descriptions and comments are non-clickable, channel pages show up to 14 links,
+ and long-form descriptions are clickable once a channel has advanced features.
+ 
+-**Scope.** This plan builds csarko.sh's entrances: the line on every project card, the line in
++**Scope.** This plan builds csarko.sh's entrances: the line on every project card (removed Oct 31, Cyrus: it reads as asking on the cards), the line in
+ each apps.csarko.sh page's bar (the standalone shell's own element, beside GitHub and the
+ version), the README snippet's format, and the icon served at `donate.csarko.sh/icon.svg` for
+ READMEs to embed as an `<img>` (a README cannot inline an SVG). An apps page renders its app's
+ README in full, so `apps/build.mjs` recognises the snippet by its donate.csarko.sh link and
+ drops it from the rendered README, leaving the bar's one line (my call: "once" means once on
+ the page). The entrances in the other four repositories (ide-arkos, app-macstats, lib-visits,
+ game-dayhike) are built after the site is live, one small change each in its own repository,
+ following that repository's rules and copying the one snippet.
+ 
+ ## 6. The icon and the graphic
+diff --git a/public/projects/index.html b/public/projects/index.html
+index 56b964b..c44ee51 100644
+--- a/public/projects/index.html
++++ b/public/projects/index.html
+@@ -466,23 +466,20 @@
+       .project-card .project-kicker { order: 1; }
+       .project-card .project-title { order: 2; margin-bottom: 14px; }
+       .project-card .film-notice { order: 3; }
+       .project-card .project-media { order: 4; width: 100%; margin-bottom: 18px; }
+       .project-card .project-media.film-poster { aspect-ratio: 16 / 9; }
+       .project-card .project-media.film-poster img { height: 100%; object-fit: cover; object-position: center var(--focus, 50%); }
+       .project-card .project-desc { order: 5; }
+       .project-card .tags { order: 6; }
+       .project-card .card-links { order: 7; }
+     }
+-    .card-tokens { position: relative; z-index: 1; display: inline-flex; align-items: center; font-size: 14px; font-weight: 400; color: var(--muted); text-decoration: none; }
+-    .card-tokens:hover, .card-tokens:focus-visible { color: var(--text); }
+-    .tokens-icon { width: calc(1em * 32 / 22); height: 1em; vertical-align: -0.12em; margin-right: 0.35em; flex: none; }
+   </style>
+ </head>
+ <body>
+   <a class="skip-link" href="#top">Skip to content</a>
+   <nav class="nav" aria-label="Primary">
+     <div class="wrap">
+       <a class="wordmark" href="/">csarko<span>.sh</span></a>
+       <ul>
+         <li><a href="/projects" aria-current="page">Projects</a></li>
+         <li><a href="/research" data-visits-event="nav-research">Research</a></li>
+@@ -492,21 +489,20 @@
+   <nav class="crumbs" aria-label="Breadcrumb">
+     <div class="wrap">
+       <ol>
+         <li><a href="/">Home</a></li>
+         <li><span aria-current="page">Projects</span></li>
+       </ol>
+     </div>
+   </nav>
+ 
+   <main id="top" class="wrap docs-index" tabindex="-1">
+-    <svg hidden aria-hidden="true" width="0" height="0" style="position: absolute"><symbol id="tokens-icon" viewBox="0 0 32 22" shape-rendering="crispEdges"><path fill="#6b1113" d="M8 1h4v1h-4zM20 1h4v1h-4zM7 2h1v1h-1zM12 2h1v1h-1zM19 2h1v1h-1zM24 2h1v1h-1zM6 3h1v1h-1zM13 3h1v1h-1zM18 3h1v1h-1zM25 3h1v1h-1zM5 4h1v1h-1zM14 4h1v1h-1zM17 4h1v1h-1zM26 4h1v1h-1zM5 5h1v1h-1zM15 5h2v1h-2zM26 5h1v1h-1zM4 6h1v1h-1zM27 6h1v1h-1zM4 7h1v1h-1zM27 7h1v1h-1zM5 8h1v1h-1zM26 8h1v1h-1zM5 9h1v1h-1zM26 9h1v1h-1zM5 10h1v1h-1zM6 11h1v1h-1zM7 12h1v1h-1zM8 13h1v1h-1zM9 14h1v1h-1zM10 15h1v1h-1zM11 16h1v1h-1zM12 17h1v1h-1zM13 18h1v1h-1zM18 18h1v1h-1zM14 19h1v1h-1zM17 19h1v1h-1zM15 20h2v1h-2z"/><path fill="#e5484d" d="M8 2h3v1h-3zM20 2h3v1h-3zM9 3h3v1h-3zM21 3h3v1h-3zM10 4h3v1h-3zM22 4h3v1h-3zM6 5h1v1h-1zM9 5h5v1h-5zM17 5h1v1h-1zM20 5h5v1h-5zM5 6h20v1h-20zM5 7h20v1h-20zM6 8h18v1h-18zM6 9h18v1h-18zM6 10h16v1h-16zM7 11h14v1h-14zM8 12h12v1h-12zM9 13h10v1h-10zM10 14h8v1h-8zM11 15h6v1h-6zM12 16h4v1h-4zM13 17h2v1h-2zM14 18h1v1h-1z"/><path fill="#b32d33" d="M11 2h1v1h-1zM23 2h1v1h-1zM12 3h1v1h-1zM24 3h1v1h-1zM13 4h1v1h-1zM25 4h1v1h-1zM14 5h1v1h-1zM25 5h1v1h-1zM25 6h2v1h-2zM25 7h2v1h-2zM24 8h2v1h-2zM24 9h2v1h-2zM18 14h1v1h-1zM17 15h2v1h-2zM16 16h3v1h-3zM15 17h4v1h-4zM15 18h3v1h-3zM15 19h2v1h-2z"/><path fill="#ff7a80" d="M7 3h2v1h-2zM19 3h2v1h-2zM6 4h1v1h-1zM9 4h1v1h-1zM18 4h1v1h-1zM21 4h1v1h-1zM7 5h2v1h-2zM18 5h2v1h-2z"/><path fill="#ffd6d8" d="M7 4h2v1h-2zM19 4h2v1h-2z"/><path fill="#7a5600" d="M22 10h6v1h-6zM21 11h1v1h-1zM28 11h1v1h-1zM20 12h1v1h-1zM29 12h1v1h-1zM19 13h1v1h-1zM30 13h1v1h-1zM19 14h1v1h-1zM30 14h1v1h-1zM19 15h1v1h-1zM30 15h1v1h-1zM19 16h1v1h-1zM30 16h1v1h-1zM19 17h1v1h-1zM30 17h1v1h-1zM20 18h1v1h-1zM29 18h1v1h-1zM21 19h1v1h-1zM28 19h1v1h-1zM22 20h6v1h-6z"/><path fill="#f0c040" d="M22 12h1v1h-1zM27 12h2v1h-2zM21 13h1v1h-1zM23 13h4v1h-4zM28 13h1v1h-1zM22 14h6v1h-6zM22 15h6v1h-6zM22 16h6v1h-6zM21 17h1v1h-1zM23 17h4v1h-4zM28 17h1v1h-1zM21 18h2v1h-2zM27 18h1v1h-1z"/><path fill="#c8962a" d="M23 12h4v1h-4zM22 13h1v1h-1zM29 13h1v1h-1zM21 14h1v1h-1zM29 14h1v1h-1zM21 15h1v1h-1zM29 15h1v1h-1zM21 16h1v1h-1zM29 16h1v1h-1zM22 17h1v1h-1zM29 17h1v1h-1zM28 18h1v1h-1zM22 19h6v1h-6z"/><path fill="#ffe08a" d="M23 11h5v1h-5zM20 13h1v1h-1zM27 13h1v1h-1zM20 14h1v1h-1zM28 14h1v1h-1zM20 15h1v1h-1zM28 15h1v1h-1zM20 16h1v1h-1zM28 16h1v1h-1zM20 17h1v1h-1zM27 17h1v1h-1zM23 18h4v1h-4z"/><path fill="#fff7d6" d="M22 11h1v1h-1zM21 12h1v1h-1z"/></symbol></svg>
+     <header class="doc-header">
+       <p class="eyebrow">Projects</p>
+       <h1>Games, apps and films, built with AI</h1>
+       <p class="lead">What I have built with AI, the work I am proudest of first. Nearly all of it was written with Claude Code, and each card says how AI shaped it.</p>
+     </header>
+     <form class="filters" aria-label="Filter by kind">
+       <button type="reset" class="chip all" data-visits-event="filter-all">All <small>6</small></button>
+       <label class="chip"><input type="radio" name="kind" value="apps" id="kind-apps" data-visits-event="filter-apps" />Apps <small>3</small></label>
+       <label class="chip"><input type="radio" name="kind" value="film" id="kind-film" data-visits-event="filter-film" />Film <small>2</small></label>
+       <label class="chip"><input type="radio" name="kind" value="games" id="kind-games" data-visits-event="filter-games" />Games <small>1</small></label>
+@@ -519,21 +515,21 @@
+           <div class="project-desc prose">
+ <p>A first-person co-op horror game for up to five players, in the browser with no install, and the
+ project I have pushed AI-assisted development furthest on: nearly every one of its 1,800+ commits
+ was written with Claude Code, from the deterministic simulation and the WebRTC netcode to the
+ procedural world and the shaders.</p>
+ <p>Before building a system I research it with Claude, from how AAA games render ground fog and rain
+ to how horror directors build dread, and <a href="/research">publish what I find</a>. More than twenty of
+ those docs shaped what you see on the trail.</p>
+           </div>
+           <ul class="tags" role="list"><li>TypeScript</li><li>Babylon.js</li><li>WebRTC</li><li>Claude Code</li></ul>
+-          <div class="card-links"><a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-source" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener" data-visits-event="source-day-hike">Source on GitHub <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-tokens" href="https://donate.csarko.sh/dayhike" data-visits-event="tokens-day-hike"><svg class="tokens-icon" aria-hidden="true"><use href="#tokens-icon"/></svg>Buy me tokens</a></div>
++          <div class="card-links"><a class="card-link stretch" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-source" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener" data-visits-event="source-day-hike">Source on GitHub <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
+         </div>
+       </li>
+       <li class="card project-card" id="ide-arkos" data-kind="apps">
+         <div class="project-media">
+           <!-- generated:app-preview:ide-arkos -->
+           <picture class="portrait">
+             <source media="(max-width: 640px)" type="image/avif" srcset="/assets/app-ide-arkos-360.b397567f.avif 360w, /assets/app-ide-arkos-540.8188e6c8.avif 540w, /assets/app-ide-arkos-720.5e321e4f.avif 720w, /assets/app-ide-arkos-1080.caa06530.avif 1080w" sizes="calc(100vw - 94px)" />
+             <source media="(max-width: 640px)" type="image/webp" srcset="/assets/app-ide-arkos-360.69210456.webp 360w, /assets/app-ide-arkos-540.12430dab.webp 540w, /assets/app-ide-arkos-720.e97251c9.webp 720w, /assets/app-ide-arkos-1080.d00ebba7.webp 1080w" sizes="calc(100vw - 94px)" />
+             <source media="(max-width: 640px)" type="image/jpeg" srcset="/assets/app-ide-arkos-360.7433157d.jpg 360w, /assets/app-ide-arkos-540.bd751e7f.jpg 540w, /assets/app-ide-arkos-720.c9683678.jpg 720w, /assets/app-ide-arkos-1080.584ac5ef.jpg 1080w" sizes="calc(100vw - 94px)" />
+             <source type="image/avif" srcset="/assets/app-ide-arkos-portrait-light-240.35f18e1c.avif 240w, /assets/app-ide-arkos-portrait-light-480.632fc885.avif 480w, /assets/app-ide-arkos-portrait-light-720.78a51177.avif 720w" sizes="240px" />
+@@ -548,21 +544,21 @@ those docs shaped what you see on the trail.</p>
+           <div class="project-desc prose">
+ <p>I run several Claude Code sessions at once, so I built an IDE for it. Through Claude Code&#39;s hooks,
+ every tab shows whether its session is working or waiting on you, and a daemon brings each session
+ back, resumed, after a frozen window, an update or a restart. Agents inside it can open a video, a
+ document or a web page in a pane beside you with one command.</p>
+ <p>Written in Rust with Claude Code, nearly every one of its 600+ commits, and I now build it inside
+ Arkos itself. The hardest parts started as research with Claude, such as
+ <a href="/research/update-the-ide-keep-the-shells" data-visits-event="doc-update-the-ide-keep-the-shells">keeping the shells alive through an update</a>.</p>
+           </div>
+           <ul class="tags" role="list"><li>Rust</li><li>GPUI</li><li>macOS</li><li>Claude Code</li></ul>
+-          <div class="card-links"><a class="card-link stretch" href="https://apps.csarko.sh/ide-arkos" data-visits-event="app-ide-arkos">Install and docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-source" href="https://github.com/csarkosh/ide-arkos" target="_blank" rel="noopener" data-visits-event="source-ide-arkos">Source on GitHub <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-tokens" href="https://donate.csarko.sh/arkos" data-visits-event="tokens-ide-arkos"><svg class="tokens-icon" aria-hidden="true"><use href="#tokens-icon"/></svg>Buy me tokens</a></div>
++          <div class="card-links"><a class="card-link stretch" href="https://apps.csarko.sh/ide-arkos" data-visits-event="app-ide-arkos">Install and docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-source" href="https://github.com/csarkosh/ide-arkos" target="_blank" rel="noopener" data-visits-event="source-ide-arkos">Source on GitHub <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
+         </div>
+       </li>
+       <li class="card project-card" id="lib-visits" data-kind="apps">
+         <div class="project-media">
+           <!-- generated:app-preview:lib-visits -->
+           <picture class="portrait">
+             <source media="(prefers-color-scheme: dark) and (max-width: 640px)" type="image/avif" srcset="/assets/app-lib-visits-dark-360.f4e86468.avif 360w, /assets/app-lib-visits-dark-540.10692deb.avif 540w, /assets/app-lib-visits-dark-720.332a57ae.avif 720w, /assets/app-lib-visits-dark-1080.3a740a08.avif 1080w" sizes="calc(100vw - 94px)" />
+             <source media="(prefers-color-scheme: dark) and (max-width: 640px)" type="image/webp" srcset="/assets/app-lib-visits-dark-360.bbe0b635.webp 360w, /assets/app-lib-visits-dark-540.69f9659c.webp 540w, /assets/app-lib-visits-dark-720.a6a66dbd.webp 720w, /assets/app-lib-visits-dark-1080.142a5c9b.webp 1080w" sizes="calc(100vw - 94px)" />
+             <source media="(max-width: 640px)" type="image/avif" srcset="/assets/app-lib-visits-360.b8e1293d.avif 360w, /assets/app-lib-visits-540.d666ffab.avif 540w, /assets/app-lib-visits-720.4f605168.avif 720w, /assets/app-lib-visits-1080.16ec5632.avif 1080w" sizes="calc(100vw - 94px)" />
+             <source media="(max-width: 640px)" type="image/webp" srcset="/assets/app-lib-visits-360.4bbc524c.webp 360w, /assets/app-lib-visits-540.63f39061.webp 540w, /assets/app-lib-visits-720.913b1206.webp 720w, /assets/app-lib-visits-1080.ee54a085.webp 1080w" sizes="calc(100vw - 94px)" />
+@@ -580,21 +576,21 @@ Arkos itself. The hardest parts started as research with Claude, such as
+           <h2 class="project-title">lib-visits</h2>
+           <div class="project-desc prose">
+ <p>When my analytics host went down, I researched with Claude <a href="/research/visits-without-cookies" data-visits-event="doc-visits-without-cookies">what a cookieless counter can
+ know</a>, then built lib-visits with Claude Code, from design doc to
+ first release in one day. A 3 KB script and a small Rust collector count visits and the path each
+ one took, with no cookies, no stored ID and no fingerprinting.</p>
+ <p>It counts csarko.sh. Its events land in BigQuery as JSON lines, so Claude can answer which pages
+ people read and where they came from, straight from the command line.</p>
+           </div>
+           <ul class="tags" role="list"><li>Rust</li><li>JavaScript</li><li>Analytics</li><li>Claude Code</li></ul>
+-          <div class="card-links"><a class="card-link stretch" href="https://apps.csarko.sh/lib-visits" data-visits-event="app-lib-visits">Download and docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-source" href="https://github.com/csarkosh/lib-visits" target="_blank" rel="noopener" data-visits-event="source-lib-visits">Source on GitHub <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-tokens" href="https://donate.csarko.sh/visits" data-visits-event="tokens-lib-visits"><svg class="tokens-icon" aria-hidden="true"><use href="#tokens-icon"/></svg>Buy me tokens</a></div>
++          <div class="card-links"><a class="card-link stretch" href="https://apps.csarko.sh/lib-visits" data-visits-event="app-lib-visits">Download and docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-source" href="https://github.com/csarkosh/lib-visits" target="_blank" rel="noopener" data-visits-event="source-lib-visits">Source on GitHub <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
+         </div>
+       </li>
+       <li class="card project-card" id="the-last-trail" data-kind="film">
+         <div class="project-media film-poster" style="--focus: 42%">
+           <!-- generated:film-poster:the-last-trail -->
+           <picture>
+             <source type="image/avif" srcset="/assets/film-the-last-trail-240.fb76a9d8.avif 240w, /assets/film-the-last-trail-480.03b38421.avif 480w, /assets/film-the-last-trail-720.46aaa288.avif 720w" sizes="(max-width: 640px) calc(100vw - 94px), 240px" />
+             <source type="image/webp" srcset="/assets/film-the-last-trail-240.23ae271f.webp 240w, /assets/film-the-last-trail-480.9b2b1241.webp 480w, /assets/film-the-last-trail-720.f74b87ac.webp 720w" sizes="(max-width: 640px) calc(100vw - 94px), 240px" />
+             <img src="/assets/film-the-last-trail-240.bc390bfd.jpg" srcset="/assets/film-the-last-trail-240.bc390bfd.jpg 240w, /assets/film-the-last-trail-480.17b0d9bc.jpg 480w, /assets/film-the-last-trail-720.c6a88589.jpg 720w" sizes="(max-width: 640px) calc(100vw - 94px), 240px" width="240" height="320" alt="A woman in a red jacket in dark woods at dusk, holding a ranger radio with a green light, looking down at it." loading="lazy" decoding="async" />
+           </picture>
+@@ -604,21 +600,21 @@ people read and where they came from, straight from the command line.</p>
+           <p class="project-kicker">Short film · 0:56</p>
+           <h2 class="project-title">The Last Trail</h2>
+           <p class="film-notice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>Contains horror imagery that some viewers may find disturbing.</p>
+           <div class="project-desc prose">
+ <p>A 56 second horror short about grief. A woman carries her late father&#39;s ashes up his old trail,
+ and on his ranger radio a voice that sounds like him starts giving her directions.</p>
+ <p>Made with AI, most of its shots with Veo 3.1. The story and the camera follow research I did into
+ <a href="/research/horror-cinematography-shot-by-shot" data-visits-event="doc-horror-cinematography-shot-by-shot">how horror directors build dread shot by shot</a>.</p>
+           </div>
+           <ul class="tags" role="list"><li class="tag-model">Video model: Veo 3.1</li><li>Horror</li><li>Short film</li><li>AI generated</li></ul>
+-          <div class="card-links"><a class="card-link stretch" href="https://www.youtube.com/shorts/C1XsDuJE4MQ" target="_blank" rel="noopener" data-visits-event="watch-the-last-trail">Watch on YouTube <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-tokens" href="https://donate.csarko.sh/last-trail" data-visits-event="tokens-the-last-trail"><svg class="tokens-icon" aria-hidden="true"><use href="#tokens-icon"/></svg>Buy me tokens</a></div>
++          <div class="card-links"><a class="card-link stretch" href="https://www.youtube.com/shorts/C1XsDuJE4MQ" target="_blank" rel="noopener" data-visits-event="watch-the-last-trail">Watch on YouTube <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
+         </div>
+       </li>
+       <li class="card project-card" id="who-is-standing-in-my-hallway" data-kind="film">
+         <div class="project-media film-poster" style="--focus: 25%">
+           <!-- generated:film-poster:who-is-standing-in-my-hallway -->
+           <picture>
+             <source type="image/avif" srcset="/assets/film-who-is-standing-in-my-hallway-240.a25dd71f.avif 240w, /assets/film-who-is-standing-in-my-hallway-480.79c4229f.avif 480w, /assets/film-who-is-standing-in-my-hallway-720.e27f76d0.avif 720w" sizes="(max-width: 640px) calc(100vw - 94px), 240px" />
+             <source type="image/webp" srcset="/assets/film-who-is-standing-in-my-hallway-240.06bed0a3.webp 240w, /assets/film-who-is-standing-in-my-hallway-480.59d8199d.webp 480w, /assets/film-who-is-standing-in-my-hallway-720.93e5b525.webp 720w" sizes="(max-width: 640px) calc(100vw - 94px), 240px" />
+             <img src="/assets/film-who-is-standing-in-my-hallway-240.b0a536b6.jpg" srcset="/assets/film-who-is-standing-in-my-hallway-240.b0a536b6.jpg 240w, /assets/film-who-is-standing-in-my-hallway-480.ed57257f.jpg 480w, /assets/film-who-is-standing-in-my-hallway-720.88d9f458.jpg 720w" sizes="(max-width: 640px) calc(100vw - 94px), 240px" width="240" height="320" alt="A woman in dark pyjamas, lit from below by her phone, staring past the camera in a dim hallway." loading="lazy" decoding="async" />
+           </picture>
+@@ -628,21 +624,21 @@ and on his ranger radio a voice that sounds like him starts giving her direction
+           <p class="project-kicker">Short film · 0:16</p>
+           <h2 class="project-title">Who is standing in my hallway?</h2>
+           <p class="film-notice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>Contains horror imagery that some viewers may find disturbing.</p>
+           <div class="project-desc prose">
+ <p>A 16 second analog horror short made from AI generated stills of one woman and one hallway, cut
+ apart and animated across frames, then finished with a VHS pass.</p>
+ <p>It tests a question I first <a href="/research/ai-short-film-generation" data-visits-event="doc-ai-short-film-generation">researched with Claude</a>: how far AI
+ generation can go toward a film that keeps the same actor and the same room from shot to shot.</p>
+           </div>
+           <ul class="tags" role="list"><li class="tag-model">Image model: Qwen-Image-Edit</li><li>Analog horror</li><li>Found footage</li><li>AI generated</li></ul>
+-          <div class="card-links"><a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener" data-visits-event="watch-who-is-standing-in-my-hallway">Watch on YouTube <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-tokens" href="https://donate.csarko.sh/hallway" data-visits-event="tokens-who-is-standing-in-my-hallway"><svg class="tokens-icon" aria-hidden="true"><use href="#tokens-icon"/></svg>Buy me tokens</a></div>
++          <div class="card-links"><a class="card-link stretch" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener" data-visits-event="watch-who-is-standing-in-my-hallway">Watch on YouTube <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
+         </div>
+       </li>
+       <li class="card project-card" id="app-macstats" data-kind="apps">
+         <div class="project-media">
+           <!-- generated:app-preview:app-macstats -->
+           <picture>
+             <source type="image/avif" srcset="/assets/app-app-macstats-360.7ca59d7a.avif 360w, /assets/app-app-macstats-540.28ec1170.avif 540w, /assets/app-app-macstats-720.1a68a3e3.avif 720w, /assets/app-app-macstats-1080.d2b1feec.avif 1080w" sizes="(max-width: 640px) calc(100vw - 94px), 360px" />
+             <source type="image/webp" srcset="/assets/app-app-macstats-360.58cfee6a.webp 360w, /assets/app-app-macstats-540.11391b7c.webp 540w, /assets/app-app-macstats-720.b4e04a26.webp 720w, /assets/app-app-macstats-1080.336e0f01.webp 1080w" sizes="(max-width: 640px) calc(100vw - 94px), 360px" />
+             <img src="/assets/app-app-macstats-360.276dd806.jpg" srcset="/assets/app-app-macstats-360.276dd806.jpg 360w, /assets/app-app-macstats-540.53a693cd.jpg 540w, /assets/app-app-macstats-720.0a3733c7.jpg 720w, /assets/app-app-macstats-1080.734bbd49.jpg 1080w" sizes="(max-width: 640px) calc(100vw - 94px), 360px" width="360" height="164" alt="The top of a Mac&#39;s screen: the menu bar with CPU, GPU, RAM, Temp and Disk free beside the clock, and the CPU panel open under its item" loading="lazy" decoding="async" />
+           </picture>
+@@ -652,21 +648,21 @@ generation can go toward a film that keeps the same actor and the same room from
+           <p class="project-kicker">Released · Open source, MIT</p>
+           <h2 class="project-title">MacStats</h2>
+           <div class="project-desc prose">
+ <p>Five menu bar items for a Mac, CPU, GPU, RAM, temperature and free disk space, each dropping down a
+ panel that says what its number means. Every commit was written with Claude Code.</p>
+ <p>It answers agents as well as people: from the command line it prints every panel&#39;s figures and
+ draws any menu bar item to an image, so an agent can read and see what it changed. The same flags
+ took the panel screenshots in its README.</p>
+           </div>
+           <ul class="tags" role="list"><li>Swift</li><li>AppKit</li><li>macOS</li><li>Claude Code</li></ul>
+-          <div class="card-links"><a class="card-link stretch" href="https://apps.csarko.sh/app-macstats" data-visits-event="app-app-macstats">Install and docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-source" href="https://github.com/csarkosh/app-macstats" target="_blank" rel="noopener" data-visits-event="source-app-macstats">Source on GitHub <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-tokens" href="https://donate.csarko.sh/macstats" data-visits-event="tokens-app-macstats"><svg class="tokens-icon" aria-hidden="true"><use href="#tokens-icon"/></svg>Buy me tokens</a></div>
++          <div class="card-links"><a class="card-link stretch" href="https://apps.csarko.sh/app-macstats" data-visits-event="app-app-macstats">Install and docs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a> <a class="card-source" href="https://github.com/csarkosh/app-macstats" target="_blank" rel="noopener" data-visits-event="source-app-macstats">Source on GitHub <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></div>
+         </div>
+       </li>
+     </ul>
+   </main>
+ 
+   <footer>
+     <div class="wrap">
+       <span>© 2026 Cyrus Sarkosh</span>
+       <span class="mono">csarko.sh</span>
+     </div>

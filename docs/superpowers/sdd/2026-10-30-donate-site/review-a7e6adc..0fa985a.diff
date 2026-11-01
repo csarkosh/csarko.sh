@@ -1,0 +1,1081 @@
+# Review package: a7e6adc..0fa985a
+
+## Commits
+0fa985a donate: the tip page, its build and the thanks page
+
+## Files changed
+ .gitignore                            |   3 +
+ admin/api/src/donate/doors.mjs        |   4 +-
+ admin/api/test/donate-prices.test.mjs |   2 +-
+ donate/build.mjs                      | 213 ++++++++++++++++++++++++++++++++++
+ donate/page.mjs                       | 197 +++++++++++++++++++++++++++++++
+ donate/pictures.py                    | 102 ++++++++++++++++
+ donate/public-src/app.js              |  92 +++++++++++++++
+ donate/test/fixtures/prices.json      | 196 +++++++++++++++++++++++++++++++
+ donate/test/page.test.mjs             |  48 ++++++++
+ donate/test/view.test.mjs             |  28 +++++
+ donate/view.mjs                       |  63 ++++++++++
+ 11 files changed, 946 insertions(+), 2 deletions(-)
+
+## Diff
+diff --git a/.gitignore b/.gitignore
+index 3b5b656..b02683a 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -24,10 +24,13 @@ __pycache__/
+ .superpowers/
+ 
+ # The substack-post voice profile lives in ~/.config/csarko-sh/, never here.
+ voice.md
+ 
+ # apps.csarko.sh is built from GitHub at each deploy (apps/build.mjs); nothing in it is a source.
+ apps/public/
+ 
+ # aws-mail packages the Lambda here at plan time.
+ _infra/modules/aws-mail/.build/
++
++# donate.csarko.sh is built from the prices JSON (donate/build.mjs); nothing in it is a source.
++donate/public/
+diff --git a/admin/api/src/donate/doors.mjs b/admin/api/src/donate/doors.mjs
+index a40bc4f..bbdbc2d 100644
+--- a/admin/api/src/donate/doors.mjs
++++ b/admin/api/src/donate/doors.mjs
+@@ -55,21 +55,23 @@ export const DOORS = [
+     captions: APP_CAPTIONS, thanks: APP_THANKS,
+     back: { label: "Back to lib-visits", href: "https://apps.csarko.sh/lib-visits" },
+     picture: { source: "apps/lib-visits.png", dark: "apps/lib-visits-dark.png" },
+   },
+   {
+     door: "last-trail", slug: "the-last-trail", name: "The Last Trail", kind: "film", shipped: true, path: "/last-trail",
+     headline: "Fund the next short",
+     lead: "The Last Trail is free to watch. If it got under your skin, cover a slice of the compute that makes the next one.",
+     captions: FILM_CAPTIONS, thanks: "Tokens received. The next take is on you.",
+     back: { label: "Back to the film", href: "https://www.youtube.com/shorts/C1XsDuJE4MQ" },
+-    picture: { source: "films/the-last-trail.jpg", focusY: 0.3 },
++    // The poster is a portrait, 720 by 960: at 0.42 the 16:9 crop runs from the brows to the
++    // radio's lit LED, so her eyes and the radio are both in frame (0.3 lost the radio).
++    picture: { source: "films/the-last-trail.jpg", focusY: 0.42 },
+   },
+   {
+     door: "hallway", slug: "who-is-standing-in-my-hallway", name: "Who is standing in my hallway?", kind: "film", shipped: true, path: "/hallway",
+     headline: "Fund the next short",
+     lead: "It is free to watch, all 16 seconds. If it kept you up, cover a slice of the compute behind the next one.",
+     captions: FILM_CAPTIONS, thanks: "Tokens received. The next take is on you.",
+     back: { label: "Back to the film", href: "https://www.youtube.com/shorts/jBh7F1knRAA" },
+     // The poster is a portrait, 1080 by 1440: a 16:9 crop is 42% of its height, and at 0.25 it
+     // runs from the hair to below the mouth, face and eyes in frame.
+     picture: { source: "films/who-is-standing-in-my-hallway.jpg", focusY: 0.25 },
+diff --git a/admin/api/test/donate-prices.test.mjs b/admin/api/test/donate-prices.test.mjs
+index a29f708..20f2508 100644
+--- a/admin/api/test/donate-prices.test.mjs
++++ b/admin/api/test/donate-prices.test.mjs
+@@ -30,21 +30,21 @@ test("the pool is last month's rows less the commercial project, never negative"
+ 
+ test("the doors: seven, their URLs and sources, Day Hike not shipped", () => {
+   assert.deepEqual(DOORS.map((d) => [d.door, d.slug, d.path]), [
+     ["arkos", "ide-arkos", "/arkos"], ["macstats", "app-macstats", "/macstats"], ["visits", "lib-visits", "/visits"],
+     ["last-trail", "the-last-trail", "/last-trail"], ["hallway", "who-is-standing-in-my-hallway", "/hallway"], ["all", null, "/"], ["dayhike", "day-hike", "/dayhike"],
+   ]);
+   assert.deepEqual(shippedDoors().map((d) => d.door), ["arkos", "macstats", "visits", "last-trail", "hallway", "all"]);
+   assert.equal(doorOf("ide-arkos").door, "arkos");
+   assert.equal(doorOf("nope"), null);
+   assert.equal(doorByKey("all").picture.source, "donate/body-of-work.png");
+-  assert.equal(doorByKey("last-trail").picture.focusY, 0.3);
++  assert.equal(doorByKey("last-trail").picture.focusY, 0.42);
+   assert.equal(doorByKey("dayhike").picture, null);
+   for (const d of DOORS) {
+     assert.equal(d.captions.length, 4, d.door);
+     assert.ok(d.headline && d.lead && d.thanks && d.back.label && d.back.href.startsWith("https://"), d.door);
+     assert.ok(!/—|@/.test(JSON.stringify(d)), `${d.door}: no em-dash, no address`);
+   }
+   assert.equal(doorByKey("arkos").lead, "Arkos is free. If it saved you a few hours, cover a slice of the cloud bill that builds it and everything else here.");
+   assert.equal(DONATE_URL, "https://donate.csarko.sh");
+   assert.equal(PRICES_URL, "https://storage.googleapis.com/csarko-sh-donate-prices/prices.json");
+ });
+diff --git a/donate/build.mjs b/donate/build.mjs
+new file mode 100644
+index 0000000..682955a
+--- /dev/null
++++ b/donate/build.mjs
+@@ -0,0 +1,213 @@
++#!/usr/bin/env node
++/**
++ * build.mjs: build donate.csarko.sh into donate/public/. Node 22, no dependencies; Pillow for the
++ * pictures (donate/pictures.py).
++ *
++ *   node donate/build.mjs                        the prices from the bucket (PRICES_URL); fails
++ *                                                until the monthly step has written them
++ *   node donate/build.mjs --prices <file>        the prices from a file, to look before they exist:
++ *                                                --prices donate/test/fixtures/prices.json
++ *
++ * Tests: node --test donate/test/*.test.mjs
++ *
++ * One page per shipped door (DOORS in admin/api/src/donate/doors.mjs): index.html for the bare
++ * door and <door>/index.html for the others (donate/page.mjs), each with this month's prices baked
++ * in as its fallback and its picture beside it in assets/ (pictures.py: 16:9, AVIF, WebP and JPEG
++ * at 640 and 1280 wide, hashed). Around the pages:
++ *   thanks/index.html             where Stripe sends a payer back, every door's line and link
++ *   app.js, view.js               the pages' one script and the logic it shares with this build
++ *   icon.svg                      the Buy Me Tokens icon, for READMEs to embed as an <img>
++ *   assets/*.woff2                the site's hashed font files, copied from public/assets/
++ *   favicon.*, apple-touch-icon   the site's icons
++ *   404.html                      the site's not-found page, its links made absolute
++ *   robots.txt, sitemap.xml       this host's own, listing the door pages
++ * A shipped door fails the build, by name, when the prices carry no links for it, when its
++ * picture is missing, or when its picture is a portrait without a focus; a door the prices carry
++ * that is not shipped is skipped.
++ */
++
++import { execFile } from 'node:child_process';
++import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
++import path from 'node:path';
++import { fileURLToPath } from 'node:url';
++import { promisify } from 'node:util';
++import { DONATE_URL, PRICES_URL, TIER_KEYS, TIERS, shippedDoors } from '../admin/api/src/donate/doors.mjs';
++import { themeBlocks } from '../.agents/skills/site-quality/scripts/docs_lib.mjs';
++import { iconSvg } from './icon.mjs';
++import { doorPage, thanksPage } from './page.mjs';
++
++const DONATE = path.dirname(fileURLToPath(import.meta.url));
++const ROOT = path.resolve(DONATE, '..');
++const SITE_PUBLIC = path.join(ROOT, 'public');
++const ASSETS = path.join(ROOT, '.agents/skills/site-quality/assets');
++const OUT = path.join(DONATE, 'public');
++
++class BuildError extends Error {}
++const fail = (message) => { throw new BuildError(`donate: ${message}`); };
++
++function args(argv) {
++  const out = { prices: null };
++  for (let i = 0; i < argv.length; i++) {
++    if (argv[i] === '--prices' && argv[i + 1]) out.prices = path.resolve(argv[++i]);
++    else fail('usage: node donate/build.mjs [--prices <file>]');
++  }
++  return out;
++}
++
++async function loadPrices(file) {
++  if (file) return JSON.parse(readFileSync(file, 'utf8'));
++  const res = await fetch(PRICES_URL, { cache: 'no-cache' });
++  if (res.status === 404) fail('no prices.json yet; the step has not run. Preview with --prices donate/test/fixtures/prices.json');
++  if (!res.ok) fail(`${PRICES_URL}: ${res.status}`);
++  return res.json();
++}
++
++function checkPrices(json) {
++  if (typeof json?.month !== 'string' || !/^\d{4}-\d{2}$/.test(json.month)) fail('prices.json: no month');
++  if (!Number.isFinite(json.pool)) fail('prices.json: no pool');
++  for (const t of TIERS) {
++    if (!Number.isFinite(json.tiers?.find((x) => x.tier === t.key)?.usd)) fail(`prices.json: no price for the ${t.key} tier`);
++  }
++  if (typeof json.doors !== 'object' || json.doors === null) fail('prices.json: no doors');
++}
++
++/** A door's prices in the page's shape: its own five link URLs, no Stripe ids. */
++function doorPrices(json, door) {
++  const links = {};
++  for (const key of TIER_KEYS) {
++    const url = json.doors[door]?.links?.[key]?.url;
++    if (typeof url !== 'string' || !url.startsWith('https://')) fail(`${door}: prices.json has no ${key} link`);
++    links[key] = url;
++  }
++  return { month: json.month, pool: json.pool, tiers: json.tiers.map(({ tier, usd, label }) => ({ tier, usd, label })), links };
++}
++
++/** A project's own alt text, from its docs/apps or docs/films front matter, when it has one. */
++function altOf(slug) {
++  for (const dir of ['apps', 'films']) {
++    const file = path.join(ROOT, 'docs', dir, `${slug}.md`);
++    if (!existsSync(file)) continue;
++    const front = /^---\n([\s\S]*?)\n---/.exec(readFileSync(file, 'utf8'))?.[1] ?? '';
++    const alt = /^alt:\s*(.+)$/m.exec(front)?.[1]?.trim().replace(/^(["'])(.*)\1$/, '$2');
++    if (alt) return alt;
++  }
++  return '';
++}
++
++/** A door's picture files on disk, checked before anything is written. */
++function sourcesOf(door) {
++  if (!door.picture) fail(`${door.door}: a shipped door needs a picture`);
++  const files = { source: path.join(ASSETS, door.picture.source), dark: door.picture.dark ? path.join(ASSETS, door.picture.dark) : null };
++  for (const file of Object.values(files)) {
++    if (file && !existsSync(file)) fail(`${door.door}: no picture at ${path.relative(ROOT, file)}`);
++  }
++  return files;
++}
++
++const run = promisify(execFile);
++async function pictureOf(door, { source, dark }) {
++  const argv = ['-I', path.join(DONATE, 'pictures.py'), '--source', source, '--out', path.join(OUT, 'assets'), '--stem', door.door];
++  if (dark) argv.push('--dark', dark);
++  if (door.picture.focusY !== undefined) argv.push('--focus-y', String(door.picture.focusY));
++  let stdout;
++  try {
++    ({ stdout } = await run('python3', argv, { encoding: 'utf8' }));
++  } catch (e) {
++    fail(`${door.door}: ${(e.stderr || e.message).trim().replace(/^pictures\.py: /, '')}`);
++  }
++  const picture = JSON.parse(stdout);
++  for (const set of Object.values(picture.sets)) {
++    for (const fmt of Object.keys(set)) set[fmt] = set[fmt].map((entry) => `/assets/${entry}`);
++  }
++  return { ...picture, alt: door.slug ? altOf(door.slug) : '' };
++}
++
++// The site's theme, fonts and head, filled the way apps/build.mjs fills an app page's.
++function siteHead() {
++  const indexHtml = readFileSync(path.join(SITE_PUBLIC, 'index.html'), 'utf8');
++  const fontsMatch = /\/\* generated:fonts \*\/\n([\s\S]*?)\n\s*\/\* \/generated:fonts \*\//.exec(indexHtml);
++  if (!fontsMatch) fail('public/index.html: generated:fonts block not found');
++  const fonts = fontsMatch[1].replace(/url\("assets\//g, 'url("/assets/');
++  const fontFiles = [...fonts.matchAll(/url\("\/assets\/([^"]+)"\)/g)].map((m) => m[1]);
++  const inter = fontFiles.find((f) => f.startsWith('inter-'));
++  const fill = (html) => {
++    const out = html
++      .replace(/\/\* generated:fonts \*\/\n\s*\/\* \/generated:fonts \*\//, `/* generated:fonts */\n${fonts}\n    /* /generated:fonts */`)
++      .replace(/<!-- generated:head -->\n\s*<!-- \/generated:head -->/,
++        `<!-- generated:head -->\n  <link rel="preload" href="/assets/${inter}" as="font" type="font/woff2" crossorigin />\n  <!-- /generated:head -->`);
++    if (!out.includes(`/assets/${inter}" as="font"`) || !out.includes('@font-face')) fail('a page lacks its generated blocks');
++    return out;
++  };
++  return { theme: themeBlocks(indexHtml), fontFiles, fill };
++}
++
++async function main() {
++  const opts = args(process.argv.slice(2));
++  const { theme, fontFiles, fill } = siteHead();
++  const json = await loadPrices(opts.prices);
++  checkPrices(json);
++
++  const doors = shippedDoors();
++  const shipped = new Set(doors.map((d) => d.door));
++  for (const key of Object.keys(json.doors)) {
++    if (!shipped.has(key)) console.log(`donate: ${key} has links but is not shipped; skipped`);
++  }
++  for (const door of doors) {
++    if (!json.doors[door.door]) fail(`no links for ${door.door} yet; the next snapshot adds them`);
++  }
++  const prices = new Map(doors.map((d) => [d.door, doorPrices(json, d.door)]));
++  const sources = doors.map(sourcesOf);
++
++  // The app's script must fetch the same object the build read.
++  const app = readFileSync(path.join(DONATE, 'public-src', 'app.js'), 'utf8');
++  if (!app.includes(`'${PRICES_URL}'`)) fail(`public-src/app.js does not fetch ${PRICES_URL}`);
++
++  rmSync(OUT, { recursive: true, force: true });
++  mkdirSync(path.join(OUT, 'assets'), { recursive: true });
++  for (const f of fontFiles) copyFileSync(path.join(SITE_PUBLIC, 'assets', f), path.join(OUT, 'assets', f));
++  for (const icon of ['favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'apple-touch-icon.png']) {
++    copyFileSync(path.join(SITE_PUBLIC, icon), path.join(OUT, icon));
++  }
++
++  // A portrait without a focus fails here, by door, once every picture has finished.
++  const made = await Promise.allSettled(doors.map((door, i) => pictureOf(door, sources[i])));
++  const failed = made.find((r) => r.status === 'rejected');
++  if (failed) throw failed.reason;
++  const pictures = made.map((r) => r.value);
++  doors.forEach((door, i) => {
++    const html = fill(doorPage({ door, prices: prices.get(door.door), picture: pictures[i], theme }));
++    const dir = door.door === 'all' ? OUT : path.join(OUT, door.door);
++    mkdirSync(dir, { recursive: true });
++    writeFileSync(path.join(dir, 'index.html'), html);
++    console.log(`donate: ${door.path} (${door.name})`);
++  });
++
++  const thanks = Object.fromEntries(doors.map((d) => [d.door, { back: d.back, thanks: d.thanks }]));
++  mkdirSync(path.join(OUT, 'thanks'), { recursive: true });
++  writeFileSync(path.join(OUT, 'thanks', 'index.html'), fill(thanksPage({ theme, doors: thanks })));
++
++  writeFileSync(path.join(OUT, 'app.js'), app);
++  copyFileSync(path.join(DONATE, 'view.mjs'), path.join(OUT, 'view.js'));
++  // A standalone SVG renders as an image only with its namespace.
++  const svg = iconSvg().replace(/ class="[^"]*"/, '').replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
++  writeFileSync(path.join(OUT, 'icon.svg'), `<?xml version="1.0" encoding="UTF-8"?>\n${svg}\n`);
++
++  const urls = doors.map((d) => `${DONATE_URL}${d.path}`);
++  writeFileSync(path.join(OUT, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${DONATE_URL}/sitemap.xml\n`);
++  writeFileSync(path.join(OUT, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url>\n    <loc>${u}</loc>\n  </url>`).join('\n')}\n</urlset>\n`);
++  // The site's 404 page, so a wrong path here looks like one on csarko.sh; its links are made absolute.
++  if (existsSync(path.join(SITE_PUBLIC, '404.html'))) {
++    // Its analytics tags go: this host serves neither the scripts nor the /v beacon route.
++    const notFound = readFileSync(path.join(SITE_PUBLIC, '404.html'), 'utf8')
++      .replace(/(<!-- generated:analytics -->)[\s\S]*?(\s*<!-- \/generated:analytics -->)/, '$1$2')
++      .replace(/href="\/(?!assets\/|favicon|apple-touch)/g, 'href="https://csarko.sh/');
++    if (/<script\b(?![^>]*application\/ld\+json)/.test(notFound)) fail('404.html: a script survived the copy');
++    writeFileSync(path.join(OUT, '404.html'), notFound);
++  }
++  console.log(`donate: ${doors.length} door(s), ${json.month} prices → donate/public/`);
++}
++
++main().catch((e) => {
++  console.error(e instanceof BuildError ? e.message : e);
++  process.exit(1);
++});
+diff --git a/donate/page.mjs b/donate/page.mjs
+new file mode 100644
+index 0000000..27e6941
+--- /dev/null
++++ b/donate/page.mjs
+@@ -0,0 +1,197 @@
++/**
++ * page.mjs: the donate site's pages, pure. A door's prices, its picture's srcsets and the site's
++ * theme in, HTML out; build.mjs does the file work. Each page is a standalone page in the apps
++ * pages' shell (standaloneShell: the site's head, tokens and fonts, no nav or trail), holding one
++ * centred tip card: kicker, headline, lead, the picture, the bill sentence, four tiers and the free
++ * row, the button and the Stripe line. The prices this door was built with are baked into the page
++ * as JSON so it never shows an empty card; /app.js swaps in the live ones when they load.
++ */
++
++import { CUSTOM, DONATE_URL, TIERS } from '../admin/api/src/donate/doors.mjs';
++import { escapeHtml, standaloneShell } from '../.agents/skills/site-quality/scripts/docs_lib.mjs';
++import { ICON_CSS, iconSvg } from './icon.mjs';
++import { DEFAULT_TIER, PROJECTS_BACK, buttonLabel, monthName } from './view.mjs';
++
++const BRAND = 'Buy Me Tokens';
++// The free row's words: its name is CUSTOM's, its price the minimum.
++const OWN_CAPTION = 'set it at checkout';
++// The picture's rendered width: the card's full 560px (the card has no side padding), or the screen
++// less the page's 16px gutters on a phone.
++const SHOT_SIZES = '(max-width: 592px) calc(100vw - 32px), 560px';
++
++// A JSON data block: `<` escaped so no value can close the <script>.
++const jsonBlock = (id, data) => `<script type="application/json" id="${id}">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`;
++
++const author = { '@type': 'Person', '@id': 'https://csarko.sh/#person', name: 'Cyrus Sarkosh', url: 'https://csarko.sh/' };
++
++/** The shell around a donate page, with the icon beside the bar's name. */
++function shell({ title, description, canonical, main, noindex = false }) {
++  const html = standaloneShell({
++    title,
++    ogTitle: title,
++    description,
++    canonical,
++    ogType: 'website',
++    extraCss: DONATE_CSS,
++    graph: [{ '@type': 'WebPage', '@id': canonical, url: canonical, name: title, description, author }],
++    theme: THEME_SLOT,
++    name: BRAND,
++    links: [],
++    main,
++  });
++  const name = `<a class="app-name" href="${escapeHtml(canonical)}">${BRAND}</a>`;
++  if (!html.includes(name)) throw new Error('page.mjs: the shell lost its bar name');
++  let out = html.replace(name, `<a class="app-name" href="${escapeHtml(canonical)}">${iconSvg()}${BRAND}</a>`);
++  if (noindex) out = out.replace('<meta name="viewport" content="width=device-width, initial-scale=1" />', '$&\n  <meta name="robots" content="noindex" />');
++  return out;
++}
++
++// standaloneShell takes the theme as text and pastes it in; the slot keeps the theme out of the
++// replace() calls above, so a `$` in it can never be read as a replacement pattern.
++const THEME_SLOT = '/* theme */';
++const withTheme = (html, theme) => html.split(THEME_SLOT).join(theme);
++
++/** A <picture> from pictures.py's sets, the dark theme's sources first when there are any. */
++function pictureHtml(picture, alt) {
++  const srcset = (list) => escapeHtml(list.join(', '));
++  const sources = [];
++  const { light, dark } = picture.sets;
++  if (dark) {
++    sources.push(`<source media="(prefers-color-scheme: dark)" type="image/avif" srcset="${srcset(dark.avif)}" sizes="${SHOT_SIZES}" />`);
++    sources.push(`<source media="(prefers-color-scheme: dark)" type="image/webp" srcset="${srcset(dark.webp)}" sizes="${SHOT_SIZES}" />`);
++  }
++  sources.push(`<source type="image/avif" srcset="${srcset(light.avif)}" sizes="${SHOT_SIZES}" />`);
++  sources.push(`<source type="image/webp" srcset="${srcset(light.webp)}" sizes="${SHOT_SIZES}" />`);
++  const fallback = light.jpg[0].split(' ')[0];
++  return `<picture class="shot">
++        ${sources.join('\n        ')}
++        <img src="${escapeHtml(fallback)}" srcset="${srcset(light.jpg)}" sizes="${SHOT_SIZES}" width="${picture.width}" height="${picture.height}" alt="${escapeHtml(alt ?? '')}" fetchpriority="high" />
++      </picture>`;
++}
++
++/**
++ * A door's page. `door` is the DOORS entry, `prices` this door's prices ({ month, pool, tiers:
++ * [{ tier, usd, label, ... }], links: { <tier>: url } }), `picture` pictures.py's output (srcset
++ * entries as the page should request them, plus an optional `alt`), `theme` themeBlocks().
++ */
++export function doorPage({ door, prices, picture, theme }) {
++  const title = door.door === 'all' ? BRAND : `${BRAND} · ${door.name}`;
++  const canonical = `${DONATE_URL}${door.path}`;
++  const tierOf = (key) => {
++    const t = prices.tiers.find((x) => x.tier === key);
++    if (!t) throw new Error(`${door.door}: no price for the ${key} tier`);
++    return t;
++  };
++  const linkOf = (key) => {
++    const url = prices.links?.[key];
++    if (typeof url !== 'string' || !url) throw new Error(`${door.door}: no link for the ${key} tier`);
++    return url;
++  };
++  const rows = TIERS.map((t, i) => {
++    const p = tierOf(t.key);
++    return `        <label class="tier"><input type="radio" name="tier" value="${t.key}"${t.key === DEFAULT_TIER ? ' checked' : ''} /><span class="what"><b>${escapeHtml(t.name)}</b><small>${escapeHtml(door.captions[i])}</small></span><span class="price">$${escapeHtml(p.usd)}<small>${escapeHtml(p.label)}</small></span></label>`;
++  });
++  rows.push(`        <label class="tier own"><input type="radio" name="tier" value="${CUSTOM.key}" /><span class="what"><b>${escapeHtml(CUSTOM.name)}</b><small>${OWN_CAPTION}</small></span><span class="price">any<small>$${CUSTOM.minimumUsd} or more</small></span></label>`);
++  const baked = {
++    month: prices.month,
++    pool: prices.pool,
++    tiers: TIERS.map((t) => { const p = tierOf(t.key); return { tier: p.tier, usd: p.usd, label: p.label }; }),
++    links: Object.fromEntries([...TIERS, CUSTOM].map((t) => [t.key, linkOf(t.key)])),
++  };
++  const main = `  <main id="top" class="wrap" tabindex="-1">
++    <article class="tip">
++      <p class="kicker">${escapeHtml(title)}</p>
++      <h1>${escapeHtml(door.headline)}</h1>
++      <p class="lead">${escapeHtml(door.lead)}</p>
++      ${pictureHtml(picture, picture.alt)}
++      <p class="bill">Everything I give away here cost <b>$${Math.round(prices.pool)}</b> to run in ${monthName(prices.month)}. Each tier is a slice of that.</p>
++      <fieldset class="tiers">
++        <legend class="sr-only">Pick a tier</legend>
++${rows.join('\n')}
++      </fieldset>
++      <a id="pay" class="btn" href="${escapeHtml(linkOf(DEFAULT_TIER))}">${escapeHtml(buttonLabel(DEFAULT_TIER, prices))}</a>
++      <p class="foot">Payments by Stripe · no account needed</p>
++    </article>
++    ${jsonBlock('prices', baked)}
++    <script type="module" src="/app.js"></script>
++  </main>`;
++  return withTheme(shell({ title, description: door.lead, canonical, main }), theme);
++}
++
++/**
++ * The page Stripe sends a payer back to, /thanks?door=<door>. `doors` maps each door key to its
++ * { back, thanks }; without a script (or for a door it does not know) the page thanks plainly and
++ * links to the projects page, and /app.js puts in the door's own line and link.
++ */
++export function thanksPage({ theme, doors }) {
++  const canonical = `${DONATE_URL}/thanks`;
++  const main = `  <main id="top" class="wrap" tabindex="-1">
++    <article class="tip thanks">
++      <p class="kicker">${BRAND}</p>
++      <h1>Thank you</h1>
++      <p class="lead" id="line">Tokens received.</p>
++      <p class="back"><a id="back" href="${escapeHtml(PROJECTS_BACK.href)}">${escapeHtml(PROJECTS_BACK.label)}</a></p>
++    </article>
++    ${jsonBlock('doors', doors)}
++    <script type="module" src="/app.js"></script>
++  </main>`;
++  return withTheme(shell({ title: `${BRAND} · Thank you`, description: 'Tokens received.', canonical, main, noindex: true }), theme);
++}
++
++// The tip card, from the Oct 30 mockup's "Middle" layout, on the site's tokens and type. One
++// centred column, 560px at most; the page's gutters are 16px on a phone. Every colour is a token.
++export const DONATE_CSS = `
++    .app-bar { border-bottom: 1px solid var(--border); }
++    .app-bar .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 16px; }
++    .app-name { display: inline-flex; align-items: center; font-family: var(--mono); font-weight: 600; font-size: 15px; letter-spacing: -0.01em; color: var(--text); }
++    .app-bar ul { display: flex; list-style: none; margin: 0; padding: 0; }
++    ${ICON_CSS}
++    .app-name .tokens-icon { vertical-align: 0; }
++    footer .maker { color: var(--muted); transition: color var(--md-duration-short3) var(--md-easing-standard); }
++    footer .maker:hover { color: var(--text); }
++    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
++
++    .tip { max-width: 560px; margin: 0 auto; padding-block: 56px 72px; }
++    .tip .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin: 0 0 12px; }
++    .tip h1 { font-size: clamp(1.9rem, 6vw, 2.4rem); line-height: 1.1; letter-spacing: -0.03em; margin: 0 0 14px; }
++    .tip .lead { font-size: 1.05rem; color: var(--prose); margin: 0 0 24px; }
++    .shot { display: block; margin: 0 0 22px; }
++    .shot img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
++    .bill { margin: 0 0 18px; color: var(--text); }
++    .bill b { font-family: var(--mono); font-weight: 600; color: var(--accent); }
++    .note { margin: -10px 0 18px; font-size: 13.5px; color: var(--muted); }
++
++    .tiers { display: grid; gap: 8px; margin: 0 0 16px; padding: 0; border: 0; min-width: 0; }
++    .tier { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); cursor: pointer; line-height: 1.4;
++      transition: border-color var(--md-duration-short3) var(--md-easing-standard), background-color var(--md-duration-short3) var(--md-easing-standard); }
++    .tier:hover { border-color: var(--border-strong); }
++    .tier input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
++    .tier:has(:checked) { border-color: var(--accent-border); background: var(--accent-soft); }
++    .tier:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
++    .tier.own { border-style: dashed; }
++    .tier .what { min-width: 0; }
++    .tier b { display: block; font-weight: 600; color: var(--text); }
++    .tier .what small { display: block; font-size: 13.5px; color: var(--muted); }
++    .price { flex: none; text-align: right; font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--accent); }
++    .price small { display: block; font-family: var(--sans); font-size: 12.5px; font-weight: 400; color: var(--muted); }
++
++    .btn { display: block; padding: 13px 16px; border-radius: 10px; background: var(--accent); color: var(--on-accent); font-size: 16px; font-weight: 600; text-align: center;
++      transition: background-color var(--md-duration-short3) var(--md-easing-standard); }
++    .btn:hover { background: var(--accent-hover); }
++    .btn.swap { animation: swap var(--md-duration-short4) var(--md-easing-standard); }
++    @keyframes swap { from { color: transparent; } }
++    .foot { margin: 12px 0 0; font-size: 13px; color: var(--muted); text-align: center; }
++
++    .thanks .back { margin: 28px 0 0; }
++    .thanks .back a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; transition: text-decoration-color var(--md-duration-short3) var(--md-easing-standard); }
++    .thanks .back a:hover { text-decoration-color: var(--accent); }
++
++    @media (max-width: 640px) {
++      .wrap { padding-inline: 16px; }
++      .tip { padding-block: 32px 56px; }
++      .tier { padding: 11px 14px; }
++    }
++    @media (prefers-reduced-motion: reduce) {
++      .tier, .btn, footer .maker, .thanks .back a { transition: none; }
++      .btn.swap { animation: none; }
++    }`;
+diff --git a/donate/pictures.py b/donate/pictures.py
+new file mode 100644
+index 0000000..10c3ee9
+--- /dev/null
++++ b/donate/pictures.py
+@@ -0,0 +1,102 @@
++#!/usr/bin/env python3
++"""pictures.py: a donate door's picture, landscape, as hashed AVIF, WebP and JPEG.
++
++    python3 -I donate/pictures.py --source <png|jpg> [--dark <png>] [--focus-y 0.3] --out <dir> --stem <door>
++
++Every picture comes out 16:9, at 640 and 1280 pixels wide, as <stem>-<w>.<hash8>.<ext> (and
++<stem>-dark-<w>.<hash8>.<ext> for --dark). A source taller than wide (a film's poster) is cropped
++to 16:9 with the crop's centre at --focus-y of its height, clamped to the picture, and is refused
++without one. A landscape source of another shape (an app's hero, often wider than 16:9) is fitted
++whole inside the 16:9 frame and the rest left transparent, so the page's frame colour shows
++around it in either theme; the JPEG, which has no transparency, is laid on that colour instead
++(--surface-2 of the variant's theme, as build_assets.py lays an app preview). Encoding is
++build_assets.py's. Prints, as JSON, the srcset entries the page uses:
++
++    {"sets": {"light": {"avif": ["<file> 640w", ...], "webp": [...], "jpg": [...]}, "dark": {...}},
++     "width": 1280, "height": 720}
++"""
++
++import argparse
++import json
++import sys
++from pathlib import Path
++
++ROOT = Path(__file__).resolve().parents[1]
++sys.path.insert(0, str(ROOT / ".agents/skills/site-quality/scripts"))
++
++from PIL import Image  # noqa: E402
++
++from build_assets import encode, short_hash  # noqa: E402
++
++WIDTHS = (640, 1280)
++FRAME = (16, 9)
++FORMATS = ("avif", "webp", "jpg")
++# The JPEG's ground: --surface-2 in the dark and the light theme (public/index.html).
++GROUND = {"dark": "#161922", "light": "#eef0f4"}
++
++
++class PictureError(Exception):
++    pass
++
++
++def landscape(image: Image.Image, focus_y) -> Image.Image:
++    """The source as a 16:9 RGBA picture: a portrait cropped around focus_y, anything else fitted."""
++    image = image.convert("RGBA")
++    w, h = image.size
++    if h > w:
++        if focus_y is None:
++            raise PictureError(f"the source is {w}x{h}, taller than wide: give --focus-y for its 16:9 crop")
++        ch = round(w * FRAME[1] / FRAME[0])
++        top = min(max(round(focus_y * h - ch / 2), 0), h - ch)
++        return image.crop((0, top, w, top + ch))
++    if w * FRAME[1] == h * FRAME[0]:
++        return image
++    # Fit the whole source in the frame, centred, at the source's own scale.
++    fw, fh = (w, round(w * FRAME[1] / FRAME[0])) if w * FRAME[1] > h * FRAME[0] else (round(h * FRAME[0] / FRAME[1]), h)
++    frame = Image.new("RGBA", (fw, fh), (0, 0, 0, 0))
++    frame.paste(image, ((fw - w) // 2, (fh - h) // 2))
++    return frame
++
++
++def write_set(image: Image.Image, stem: str, out: Path, ground: str) -> dict:
++    sets = {fmt: [] for fmt in FORMATS}
++    for w in WIDTHS:
++        resized = image.resize((w, round(w * FRAME[1] / FRAME[0])), Image.Resampling.LANCZOS)
++        flat = Image.alpha_composite(Image.new("RGBA", resized.size, ground), resized).convert("RGB")
++        opaque = resized.getchannel("A").getextrema()[0] == 255
++        for fmt in FORMATS:
++            data = encode(flat if fmt == "jpg" or opaque else resized, fmt)
++            name = f"{stem}-{w}.{short_hash(data)}.{fmt}"
++            (out / name).write_bytes(data)
++            sets[fmt].append(f"{name} {w}w")
++    return sets
++
++
++def main(argv=None) -> int:
++    parser = argparse.ArgumentParser(description="A donate door's landscape picture.")
++    parser.add_argument("--source", required=True, type=Path)
++    parser.add_argument("--dark", type=Path)
++    parser.add_argument("--focus-y", type=float)
++    parser.add_argument("--out", required=True, type=Path)
++    parser.add_argument("--stem", required=True)
++    args = parser.parse_args(argv)
++    try:
++        if args.focus_y is not None and not 0 <= args.focus_y <= 1:
++            raise PictureError(f"--focus-y is a fraction of the height, 0 to 1, not {args.focus_y}")
++        args.out.mkdir(parents=True, exist_ok=True)
++        variants = [("light", args.source, args.stem)] + ([("dark", args.dark, f"{args.stem}-dark")] if args.dark else [])
++        sets = {}
++        for variant, path, stem in variants:
++            if not path.is_file():
++                raise PictureError(f"no picture at {path}")
++            with Image.open(path) as source:
++                sets[variant] = write_set(landscape(source, args.focus_y), stem, args.out, GROUND[variant])
++    except PictureError as e:
++        print(f"pictures.py: {e}", file=sys.stderr)
++        return 1
++    print(json.dumps({"sets": sets, "width": WIDTHS[-1], "height": WIDTHS[-1] * FRAME[1] // FRAME[0]}))
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/donate/public-src/app.js b/donate/public-src/app.js
+new file mode 100644
+index 0000000..b1602ab
+--- /dev/null
++++ b/donate/public-src/app.js
+@@ -0,0 +1,92 @@
++// The donate site's one script. On a door page: the selected tier sets the button's link and
++// words, and this month's prices replace the baked ones when the bucket answers. On /thanks: the
++// door in the address picks the thanks line and the link back. Every value reaches the page through
++// textContent or setAttribute, never as markup. Without this script both pages still work: the
++// button pays the default tier and the thanks page links to the projects page.
++import { DEFAULT_TIER, backLink, buttonLabel, monthName, pickPrices, thanksLine } from '/view.js';
++
++// PRICES_URL in admin/api/src/donate/doors.mjs; build.mjs fails if the two differ.
++const PRICES_URL = 'https://storage.googleapis.com/csarko-sh-donate-prices/prices.json';
++
++const readJson = (id) => {
++  try {
++    return JSON.parse(document.getElementById(id)?.textContent ?? 'null');
++  } catch {
++    return null;
++  }
++};
++
++function doorPage(pay, baked) {
++  // The door is the page's path: /arkos is arkos, / is the bare door.
++  const door = location.pathname.replace(/^\/+|\/+$/g, '') || 'all';
++  let prices = baked;
++  const selected = () => document.querySelector('input[name="tier"]:checked')?.value ?? DEFAULT_TIER;
++
++  // The button follows the selected tier; its words fade back in rather than jump.
++  function setButton() {
++    const tier = selected();
++    const href = prices.links[tier];
++    if (href) pay.setAttribute('href', href);
++    const label = buttonLabel(tier, prices);
++    if (pay.textContent !== label) {
++      pay.textContent = label;
++      pay.classList.remove('swap');
++      void pay.offsetWidth;
++      pay.classList.add('swap');
++    }
++  }
++  for (const radio of document.querySelectorAll('input[name="tier"]')) radio.addEventListener('change', setButton);
++  // A page restored from history may come back with another tier checked.
++  addEventListener('pageshow', setButton);
++
++  function apply({ prices: next, stale }) {
++    prices = next;
++    const bill = document.querySelector('.bill');
++    const figure = bill?.querySelector('b');
++    if (figure) {
++      figure.textContent = `$${Math.round(next.pool)}`;
++      const rest = figure.nextSibling;
++      if (rest) rest.textContent = ` to run in ${monthName(next.month)}. Each tier is a slice of that.`;
++    }
++    for (const row of document.querySelectorAll('.tier')) {
++      const key = row.querySelector('input')?.value;
++      const tier = next.tiers.find((t) => t.tier === key);
++      const price = row.querySelector('.price');
++      if (!tier || !price) continue;
++      const share = price.querySelector('small');
++      price.firstChild.textContent = `$${tier.usd}`;
++      if (share) share.textContent = tier.label;
++    }
++    if (stale && bill && !document.querySelector('.note')) {
++      const note = document.createElement('p');
++      note.className = 'note';
++      note.textContent = `Prices are from ${monthName(next.month)}.`;
++      bill.after(note);
++    }
++    setButton();
++  }
++
++  fetch(PRICES_URL, { cache: 'no-cache' })
++    .then((res) => (res.ok ? res.json() : null))
++    .catch(() => null)
++    .then((fetched) => apply(pickPrices(baked, fetched, door)));
++  setButton();
++}
++
++function thanksPage(doors) {
++  const door = new URL(location.href).searchParams.get('door');
++  const back = backLink(door, doors);
++  const link = document.getElementById('back');
++  const line = document.getElementById('line');
++  if (link) {
++    link.textContent = back.label;
++    link.setAttribute('href', back.href);
++  }
++  if (line) line.textContent = thanksLine(door, doors);
++}
++
++const pay = document.getElementById('pay');
++const baked = readJson('prices');
++if (pay && baked) doorPage(pay, baked);
++const doors = readJson('doors');
++if (doors) thanksPage(doors);
+diff --git a/donate/test/fixtures/prices.json b/donate/test/fixtures/prices.json
+new file mode 100644
+index 0000000..85b60f2
+--- /dev/null
++++ b/donate/test/fixtures/prices.json
+@@ -0,0 +1,196 @@
++{
++ "month": "2026-10",
++ "pool": 288,
++ "at": "2026-11-03T10:00:12.000Z",
++ "tiers": [
++  {
++   "tier": "prompt",
++   "name": "A prompt",
++   "share": 0.01,
++   "label": "about 1%",
++   "usd": 3,
++   "priceId": "price_test_2026-10_prompt"
++  },
++  {
++   "tier": "context",
++   "name": "A long context window",
++   "share": 0.03,
++   "label": "about 3%",
++   "usd": 9,
++   "priceId": "price_test_2026-10_context"
++  },
++  {
++   "tier": "run",
++   "name": "A whole agent run",
++   "share": 0.1,
++   "label": "about 10%",
++   "usd": 29,
++   "priceId": "price_test_2026-10_run"
++  },
++  {
++   "tier": "finetune",
++   "name": "A fine-tune",
++   "share": 0.3,
++   "label": "about 30%",
++   "usd": 87,
++   "priceId": "price_test_2026-10_finetune"
++  }
++ ],
++ "custom": {
++  "priceId": "price_test_2026-10_own",
++  "minimumUsd": 1
++ },
++ "products": {
++  "prompt": "prod_test_prompt",
++  "context": "prod_test_context",
++  "run": "prod_test_run",
++  "finetune": "prod_test_finetune",
++  "own": "prod_test_own"
++ },
++ "doors": {
++  "arkos": {
++   "links": {
++    "prompt": {
++     "id": "plink_test_arkos_prompt",
++     "url": "https://buy.stripe.com/test_arkos_prompt"
++    },
++    "context": {
++     "id": "plink_test_arkos_context",
++     "url": "https://buy.stripe.com/test_arkos_context"
++    },
++    "run": {
++     "id": "plink_test_arkos_run",
++     "url": "https://buy.stripe.com/test_arkos_run"
++    },
++    "finetune": {
++     "id": "plink_test_arkos_finetune",
++     "url": "https://buy.stripe.com/test_arkos_finetune"
++    },
++    "own": {
++     "id": "plink_test_arkos_own",
++     "url": "https://buy.stripe.com/test_arkos_own"
++    }
++   }
++  },
++  "macstats": {
++   "links": {
++    "prompt": {
++     "id": "plink_test_macstats_prompt",
++     "url": "https://buy.stripe.com/test_macstats_prompt"
++    },
++    "context": {
++     "id": "plink_test_macstats_context",
++     "url": "https://buy.stripe.com/test_macstats_context"
++    },
++    "run": {
++     "id": "plink_test_macstats_run",
++     "url": "https://buy.stripe.com/test_macstats_run"
++    },
++    "finetune": {
++     "id": "plink_test_macstats_finetune",
++     "url": "https://buy.stripe.com/test_macstats_finetune"
++    },
++    "own": {
++     "id": "plink_test_macstats_own",
++     "url": "https://buy.stripe.com/test_macstats_own"
++    }
++   }
++  },
++  "visits": {
++   "links": {
++    "prompt": {
++     "id": "plink_test_visits_prompt",
++     "url": "https://buy.stripe.com/test_visits_prompt"
++    },
++    "context": {
++     "id": "plink_test_visits_context",
++     "url": "https://buy.stripe.com/test_visits_context"
++    },
++    "run": {
++     "id": "plink_test_visits_run",
++     "url": "https://buy.stripe.com/test_visits_run"
++    },
++    "finetune": {
++     "id": "plink_test_visits_finetune",
++     "url": "https://buy.stripe.com/test_visits_finetune"
++    },
++    "own": {
++     "id": "plink_test_visits_own",
++     "url": "https://buy.stripe.com/test_visits_own"
++    }
++   }
++  },
++  "last-trail": {
++   "links": {
++    "prompt": {
++     "id": "plink_test_last-trail_prompt",
++     "url": "https://buy.stripe.com/test_last-trail_prompt"
++    },
++    "context": {
++     "id": "plink_test_last-trail_context",
++     "url": "https://buy.stripe.com/test_last-trail_context"
++    },
++    "run": {
++     "id": "plink_test_last-trail_run",
++     "url": "https://buy.stripe.com/test_last-trail_run"
++    },
++    "finetune": {
++     "id": "plink_test_last-trail_finetune",
++     "url": "https://buy.stripe.com/test_last-trail_finetune"
++    },
++    "own": {
++     "id": "plink_test_last-trail_own",
++     "url": "https://buy.stripe.com/test_last-trail_own"
++    }
++   }
++  },
++  "hallway": {
++   "links": {
++    "prompt": {
++     "id": "plink_test_hallway_prompt",
++     "url": "https://buy.stripe.com/test_hallway_prompt"
++    },
++    "context": {
++     "id": "plink_test_hallway_context",
++     "url": "https://buy.stripe.com/test_hallway_context"
++    },
++    "run": {
++     "id": "plink_test_hallway_run",
++     "url": "https://buy.stripe.com/test_hallway_run"
++    },
++    "finetune": {
++     "id": "plink_test_hallway_finetune",
++     "url": "https://buy.stripe.com/test_hallway_finetune"
++    },
++    "own": {
++     "id": "plink_test_hallway_own",
++     "url": "https://buy.stripe.com/test_hallway_own"
++    }
++   }
++  },
++  "all": {
++   "links": {
++    "prompt": {
++     "id": "plink_test_all_prompt",
++     "url": "https://buy.stripe.com/test_all_prompt"
++    },
++    "context": {
++     "id": "plink_test_all_context",
++     "url": "https://buy.stripe.com/test_all_context"
++    },
++    "run": {
++     "id": "plink_test_all_run",
++     "url": "https://buy.stripe.com/test_all_run"
++    },
++    "finetune": {
++     "id": "plink_test_all_finetune",
++     "url": "https://buy.stripe.com/test_all_finetune"
++    },
++    "own": {
++     "id": "plink_test_all_own",
++     "url": "https://buy.stripe.com/test_all_own"
++    }
++   }
++  }
++ }
++}
+diff --git a/donate/test/page.test.mjs b/donate/test/page.test.mjs
+new file mode 100644
+index 0000000..a284ba3
+--- /dev/null
++++ b/donate/test/page.test.mjs
+@@ -0,0 +1,48 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import { doorPage, thanksPage, DONATE_CSS } from '../page.mjs';
++import { doorByKey } from '../../admin/api/src/donate/doors.mjs';
++
++const THEME = ':root { --bg: #0a0b0e; }\n    @media (prefers-color-scheme: light) { :root { --bg: #f6f7f9; } }';
++const PICTURE = { sets: { light: { avif: ['arkos-640.abc.avif 640w', 'arkos-1280.abc.avif 1280w'], webp: ['arkos-640.abc.webp 640w'], jpg: ['arkos-640.abc.jpg 640w', 'arkos-1280.abc.jpg 1280w'] } }, width: 1280, height: 720 };
++const PRICES = { month: '2026-10', pool: 288, tiers: [{ tier: 'prompt', name: 'A prompt', share: 0.01, label: 'about 1%', usd: 3 }, { tier: 'context', name: 'A long context window', share: 0.03, label: 'about 3%', usd: 9 }, { tier: 'run', name: 'A whole agent run', share: 0.1, label: 'about 10%', usd: 29 }, { tier: 'finetune', name: 'A fine-tune', share: 0.3, label: 'about 30%', usd: 87 }], links: { prompt: 'https://buy.stripe.com/p', context: 'https://buy.stripe.com/c', run: 'https://buy.stripe.com/r', finetune: 'https://buy.stripe.com/f', own: 'https://buy.stripe.com/o' } };
++
++test('the Arkos door, top to bottom', () => {
++  const html = doorPage({ door: doorByKey('arkos'), prices: PRICES, picture: PICTURE, theme: THEME });
++  const at = (s) => { const i = html.indexOf(s); assert.ok(i >= 0, s); return i; };
++  assert.ok(at('<p class="kicker">Buy Me Tokens · Arkos IDE</p>') < at('<h1>Fund my next agent run</h1>'));
++  assert.ok(at('<h1>') < at('<picture class="shot">') && at('<picture class="shot">') < at('<p class="bill">'));
++  at('Everything I give away here cost <b>$288</b> to run in October. Each tier is a slice of that.');
++  assert.ok(html.includes('srcset="arkos-640.abc.avif 640w, arkos-1280.abc.avif 1280w"'));
++  assert.ok(html.includes('width="1280" height="720"'));
++  assert.equal((html.match(/<input type="radio" name="tier"/g) || []).length, 5);
++  assert.ok(html.includes('value="context" checked'));
++  assert.ok(html.includes('<b>A long context window</b><small>a whole feature, read end to end</small>'));
++  assert.ok(html.includes('<span class="price">$9<small>about 3%</small></span>'));
++  assert.ok(html.includes('<a id="pay" class="btn" href="https://buy.stripe.com/c">Tip $9</a>'));
++  assert.ok(html.includes('Payments by Stripe · no account needed'));
++  assert.ok(at('<script type="application/json" id="prices">') < at('<script type="module" src="/app.js">'));
++  assert.ok(!html.includes('plink_') && !html.includes('price_'), 'no Stripe ids on the page');
++  assert.ok(!/—/.test(html) && !/[a-z0-9._%+-]+@[a-z0-9-]+\.[a-z]{2,}/i.test(html.replace(/@font-face|@media/g, '')));
++  assert.ok(html.includes('<title>Buy Me Tokens · Arkos IDE</title>'));
++  assert.ok(html.includes('<link rel="canonical" href="https://donate.csarko.sh/arkos" />'));
++});
++
++test('the bare door says Buy Me Tokens alone and is canonical at the root', () => {
++  const html = doorPage({ door: doorByKey('all'), prices: PRICES, picture: PICTURE, theme: THEME });
++  assert.ok(html.includes('<p class="kicker">Buy Me Tokens</p>'));
++  assert.ok(html.includes('<link rel="canonical" href="https://donate.csarko.sh/" />'));
++});
++
++test('the thanks page bakes every shipped door’s line and link, escaped', () => {
++  const html = thanksPage({ theme: THEME, doors: { arkos: { back: doorByKey('arkos').back, thanks: doorByKey('arkos').thanks }, all: { back: { label: 'Back to the projects', href: 'https://csarko.sh/projects' }, thanks: 'Tokens received.' } } });
++  assert.ok(html.includes('<script type="application/json" id="doors">'));
++  assert.ok(html.includes('Tokens received. The next agent run is on you.'));
++  assert.ok(html.includes('<a id="back" href="https://csarko.sh/projects">Back to the projects</a>'));
++});
++
++test('the CSS is tokens only and sizes the picture 16:9', () => {
++  assert.ok(!/#[0-9a-f]{3,8}\b/i.test(DONATE_CSS.replace(/#(top|pay|back|prices|doors)\b/g, '')));
++  assert.ok(DONATE_CSS.includes('aspect-ratio: 16 / 9'));
++  assert.ok(DONATE_CSS.includes('.tier:has(:checked)'));
++});
+diff --git a/donate/test/view.test.mjs b/donate/test/view.test.mjs
+new file mode 100644
+index 0000000..6be1bd7
+--- /dev/null
++++ b/donate/test/view.test.mjs
+@@ -0,0 +1,28 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import { pickPrices, buttonLabel, backLink, monthName } from '../view.mjs';
++
++const BAKED = { month: '2026-10', pool: 288, tiers: [{ tier: 'prompt', usd: 3, label: 'about 1%' }, { tier: 'context', usd: 9, label: 'about 3%' }, { tier: 'run', usd: 29, label: 'about 10%' }, { tier: 'finetune', usd: 87, label: 'about 30%' }], links: { prompt: 'a', context: 'b', run: 'c', finetune: 'd', own: 'e' } };
++
++test('the live JSON wins when it is this month or newer, the baked one otherwise, marked stale', () => {
++  assert.deepEqual(pickPrices(BAKED, null), { prices: BAKED, stale: true });
++  assert.deepEqual(pickPrices(BAKED, { month: '2026-09', doors: {} }), { prices: BAKED, stale: true });
++  assert.deepEqual(pickPrices(BAKED, 'garbage'), { prices: BAKED, stale: true });
++  const live = { month: '2026-11', pool: 300, tiers: BAKED.tiers, doors: { arkos: { links: { prompt: { url: 'x' } } } } };
++  assert.equal(pickPrices(BAKED, live, 'arkos').stale, false);
++  assert.equal(pickPrices(BAKED, live, 'arkos').prices.links.prompt, 'x');
++});
++
++test('the button says the price, or what you like', () => {
++  assert.equal(buttonLabel('context', BAKED), 'Tip $9');
++  assert.equal(buttonLabel('own', BAKED), 'Tip what you like');
++  assert.equal(buttonLabel('nope', BAKED), 'Tip $9', 'an unknown tier falls back to the default one');
++});
++
++test('the thanks link: the door’s own, else the projects page; junk never passes through', () => {
++  const doors = { arkos: { back: { label: 'Back to Arkos IDE', href: 'https://apps.csarko.sh/ide-arkos' }, thanks: 'Tokens received. The next agent run is on you.' } };
++  assert.deepEqual(backLink('arkos', doors), doors.arkos.back);
++  assert.deepEqual(backLink('<img onerror=1>', doors), { label: 'Back to the projects', href: 'https://csarko.sh/projects' });
++  assert.deepEqual(backLink(null, doors), { label: 'Back to the projects', href: 'https://csarko.sh/projects' });
++  assert.equal(monthName('2026-10'), 'October');
++});
+diff --git a/donate/view.mjs b/donate/view.mjs
+new file mode 100644
+index 0000000..cb84497
+--- /dev/null
++++ b/donate/view.mjs
+@@ -0,0 +1,63 @@
++// The donate pages' logic that the browser shares with the build: which prices to show, what the
++// button says and where the thanks page links back to. Pure and browser-safe (no Node imports):
++// the build copies this file to /view.js beside /app.js, which imports it.
++
++/** The tier selected when the page loads, and the one an unknown key falls back to. */
++export const DEFAULT_TIER = 'context';
++export const OWN_TIER = 'own';
++export const PROJECTS_BACK = Object.freeze({ label: 'Back to the projects', href: 'https://csarko.sh/projects' });
++
++const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
++const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
++
++const isObject = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
++const own = (obj, key) => isObject(obj) && typeof key === 'string' && Object.hasOwn(obj, key);
++
++/** "2026-10" → "October"; anything else → "". */
++export function monthName(month) {
++  const m = MONTH.exec(String(month ?? ''));
++  return m ? MONTHS[Number(m[1]) - 1] : '';
++}
++
++/**
++ * The prices a door shows. `baked` is the build's copy for this door ({ month, pool, tiers:
++ * [{ tier, usd, label }], links: { <tier>: url } }); `fetched` is the bucket's whole prices.json,
++ * or whatever the fetch produced. The live one wins when it is a month at least as new as the baked
++ * one and carries this door; it is reshaped to the baked shape. Otherwise the baked prices stand,
++ * marked stale, so the page says which month they are from.
++ */
++export function pickPrices(baked, fetched, door) {
++  const fallback = { prices: baked, stale: true };
++  if (!isObject(fetched) || typeof fetched.month !== 'string' || !MONTH.test(fetched.month)) return fallback;
++  if (fetched.month < baked.month || !own(fetched.doors, door) || !isObject(fetched.doors[door].links)) return fallback;
++  const links = {};
++  for (const [tier, link] of Object.entries(fetched.doors[door].links)) {
++    if (own(link, 'url') && typeof link.url === 'string' && !/^\s*javascript:/i.test(link.url)) links[tier] = link.url;
++  }
++  const tiers = Array.isArray(fetched.tiers)
++    ? fetched.tiers.filter((t) => isObject(t) && typeof t.tier === 'string' && Number.isFinite(t.usd)).map(({ tier, usd, label }) => ({ tier, usd, label: String(label ?? '') }))
++    : [];
++  const pool = Number.isFinite(fetched.pool) ? fetched.pool : baked.pool;
++  return { prices: { month: fetched.month, pool, tiers: tiers.length ? tiers : baked.tiers, links }, stale: false };
++}
++
++/** The button's words for a tier: its price, or "what you like" for the free row. */
++export function buttonLabel(tierKey, prices) {
++  if (tierKey === OWN_TIER) return 'Tip what you like';
++  const tiers = prices?.tiers ?? [];
++  const tier = tiers.find((t) => t.tier === tierKey) ?? tiers.find((t) => t.tier === DEFAULT_TIER);
++  return tier ? `Tip $${tier.usd}` : 'Tip what you like';
++}
++
++/** The thanks page's one link: the door's own when `door` names one in `doors`, else the projects page. */
++export function backLink(door, doors) {
++  const back = own(doors, door) ? doors[door].back : null;
++  if (isObject(back) && typeof back.label === 'string' && typeof back.href === 'string' && back.href.startsWith('https://')) return back;
++  return { ...PROJECTS_BACK };
++}
++
++/** The thanks page's line for a door, else the plain one. */
++export function thanksLine(door, doors) {
++  const line = own(doors, door) ? doors[door].thanks : null;
++  return typeof line === 'string' && line ? line : 'Tokens received.';
++}

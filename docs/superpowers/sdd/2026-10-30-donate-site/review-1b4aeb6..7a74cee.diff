@@ -1,0 +1,260 @@
+# Review package: 1b4aeb6..7a74cee
+
+## Commits
+7a74cee donate: the GCP hold allows six days of lag
+
+## Files changed
+ admin/api/README.md                                     |  2 +-
+ admin/api/src/donate/doors.mjs                          |  6 ++++++
+ admin/api/src/donate/prices.mjs                         |  8 +++-----
+ admin/api/test/donate-prices.test.mjs                   | 11 ++++++-----
+ admin/api/test/donate-step.test.mjs                     |  6 +++---
+ docs/superpowers/specs/2026-10-30-donate-site-design.md |  6 +++---
+ 6 files changed, 22 insertions(+), 17 deletions(-)
+
+## Diff
+diff --git a/admin/api/README.md b/admin/api/README.md
+index e3f9753..cd74f58 100644
+--- a/admin/api/README.md
++++ b/admin/api/README.md
+@@ -97,21 +97,21 @@ The balance transactions are listed with `expand[]=data.source` so each carries
+ only field kept from it is the **door** (`metadata.door`): the `income` query's `byDoor` splits the
+ range by door, `unknown` for a charge without one.
+ The daily snapshot also runs the **donate step** (`src/donate/step.mjs`, `STRIPE_WRITE_KEY`): every
+ seven days from the last repricing (amended Oct 31; it was once a month) it prices the last 30 days'
+ spend (the 30 days ending yesterday, from the daily rows), makes the period's prices and payment
+ links and publishes the prices object, and stores `finance.donate = { period, pool, at, doors }`
+ (`period = { from, to, repricedOn }`; the `income` query's `prices`), carried forward on the days it
+ does nothing; without the key it is `notConfigured.donate`, and a failure is `errors.donate`. The
+ first day it ever prices is the `DONATE_FROM` constant in `src/donate/doors.mjs` (2026-10-31, the
+ launch day). A due turn holds with `waiting on GCP rows through <day>` until the GCP export has rows
+-through two days before the window's end, and with `waiting on <providers>` while a collector failed,
++through six days before the window's end (`GCP_LAG_DAYS`), and with `waiting on <providers>` while a collector failed,
+ up to three days late. A done run sweeps the links and prices of periods repriced more than 35 days
+ before the current one (`KEEP_DAYS`).
+ The job also stores the day's KPI values as `finance.kpi` (`monthToDate`, `idleRunRate`, `last30`,
+ `forecast`, `donations`; `last30` left the card on 2026-10-30 but keeps its history), which the index
+ card's trends read, a small `finance.stripe = { at, mtdNet, count, lastDay }` read live, and
+ `finance.awsCalls`, which the Sources card sums over the month. A failing finance step is
+ `errors.finance` on the snapshot and never fails the rest of the day's write.
+ 
+ AWS credentials come by **web identity federation**, so no key is stored: the service asks the
+ metadata server for a Google ID token for its own service account (audience `AWS_COST_AUDIENCE`,
+diff --git a/admin/api/src/donate/doors.mjs b/admin/api/src/donate/doors.mjs
+index 2c7161b..7be6413 100644
+--- a/admin/api/src/donate/doors.mjs
++++ b/admin/api/src/donate/doors.mjs
+@@ -17,20 +17,26 @@
+ export const DONATE_FROM = "2026-10-31";
+ /** The bill is the 30 days ending yesterday (UTC). */
+ export const WINDOW_DAYS = 30;
+ /** Prices turn every seven days from the last repricing. */
+ export const REPRICE_DAYS = 7;
+ /**
+  * A sweep retires the Stripe objects of a period repriced more than this many days before the
+  * current one, so the deployed pages' baked links still pay for a month after a turn.
+  */
+ export const KEEP_DAYS = 35;
++/**
++ * How many days the GCP billing export may lag the window's end before the step waits (Cyrus,
++ * 2026-10-31: launched with the export six days behind rather than wait a week; the export's own
++ * lag is a day or two, so this still guards against a stalled export).
++ */
++export const GCP_LAG_DAYS = 6;
+ 
+ /**
+  * The launch flag. Flipped to `true` by the launch commit (plan Task 9 Step 3) once donate.csarko.sh
+  * serves the doors; until then the entrances on csarko.sh and apps.csarko.sh render nothing.
+  */
+ export const DONATE_LIVE = false;
+ 
+ export const DONATE_URL = "https://donate.csarko.sh";
+ export const PRICES_BUCKET = "csarko-sh-donate-prices";
+ export const PRICES_OBJECT = "prices.json";
+diff --git a/admin/api/src/donate/prices.mjs b/admin/api/src/donate/prices.mjs
+index 4a0101e..53b1a25 100644
+--- a/admin/api/src/donate/prices.mjs
++++ b/admin/api/src/donate/prices.mjs
+@@ -1,29 +1,27 @@
+ /**
+  * The price rule of the donate site, pure: the last 30 days' spend (the 30 days ending yesterday,
+  * UTC, less the commercial project, which is not free public work) is the pool, each tier is a
+  * share of it rounded up to the dollar, and `decide` says whether today's snapshot run should
+  * publish new prices. Prices turn every seven days from the last repricing, from the launch day
+  * `DONATE_FROM` on; a due turn waits while a collector failed, up to three days late, and while
+- * GCP's export has no rows through two days before the window's end (it runs a day or two behind;
+- * three is the most tolerated). A door added between turns gets the current prices at the next run.
++ * GCP's export has no rows through six days before the window's end (it runs a day or two behind;
++ * six is the most tolerated, `GCP_LAG_DAYS`). A door added between turns gets the current prices at the next run.
+  */
+ 
+ import { addDays } from "../time.mjs";
+ import { projectOf } from "../finance/projects.mjs";
+-import { TIERS, DONATE_FROM, WINDOW_DAYS, REPRICE_DAYS } from "./doors.mjs";
++import { TIERS, DONATE_FROM, WINDOW_DAYS, REPRICE_DAYS, GCP_LAG_DAYS } from "./doors.mjs";
+ 
+ export const FLOOR_USD = 1;
+ /** How many days late a due turn may wait on a failed collector. */
+ const LATE_DAYS = 3;
+-/** How far behind the window's end GCP's export may run. */
+-const GCP_LAG_DAYS = 2;
+ 
+ /** The window priced on `today`: the 30 days ending yesterday. */
+ export const windowOf = (today) => ({ from: addDays(today, -WINDOW_DAYS), to: addDays(today, -1) });
+ 
+ /** The unrounded sum of the window's daily rows outside the commercial project, never below 0. */
+ export function poolOf(dailyRows, window) {
+   let sum = 0;
+   for (const r of dailyRows) {
+     if (typeof r.day !== "string" || r.day < window.from || r.day > window.to) continue;
+     if (r.project === "commercial" || projectOf(r) === "commercial") continue;
+diff --git a/admin/api/test/donate-prices.test.mjs b/admin/api/test/donate-prices.test.mjs
+index 0e9ec46..19a8735 100644
+--- a/admin/api/test/donate-prices.test.mjs
++++ b/admin/api/test/donate-prices.test.mjs
+@@ -1,14 +1,14 @@
+ // admin/api/test/donate-prices.test.mjs
+ import { test } from "node:test";
+ import assert from "node:assert/strict";
+-import { TIERS, CUSTOM, TIER_KEYS, DOORS, doorOf, doorByKey, shippedDoors, DONATE_URL, PRICES_URL, DONATE_FROM, WINDOW_DAYS, REPRICE_DAYS, KEEP_DAYS } from "../src/donate/doors.mjs";
++import { TIERS, CUSTOM, TIER_KEYS, DOORS, doorOf, doorByKey, shippedDoors, DONATE_URL, PRICES_URL, DONATE_FROM, WINDOW_DAYS, REPRICE_DAYS, KEEP_DAYS, GCP_LAG_DAYS } from "../src/donate/doors.mjs";
+ import { windowOf, poolOf, priceOf, pricesOf, decide } from "../src/donate/prices.mjs";
+ 
+ test("three tiers at 1, 3 and 10 percent, then the custom row", () => {
+   assert.deepEqual(TIERS.map((t) => [t.key, t.name, t.share]), [["prompt", "A prompt", 0.01], ["context", "A long context window", 0.03], ["run", "A whole agent run", 0.1]]);
+   assert.deepEqual(CUSTOM, { key: "own", name: "Your own number", minimumUsd: 1 });
+   assert.deepEqual(TIER_KEYS, ["prompt", "context", "run", "own"]);
+ });
+ 
+ test("a $287.40 bill gives $3, $9 and $29, labelled about n%", () => {
+   assert.deepEqual(pricesOf(287.4).map((p) => [p.tier, p.usd, p.label]), [["prompt", 3, "about 1%"], ["context", 9, "about 3%"], ["run", 29, "about 10%"]]);
+@@ -70,24 +70,25 @@ test("decide: a first run, done until seven days on, then a new period; a door a
+ });
+ 
+ test("decide: a failed provider holds a due turn up to three days late, then it runs with what is there", () => {
+   assert.deepEqual(decide({ today: "2026-11-07", current: at("2026-10-31"), failed: ["aws"], doors: DOORS2 }), { run: false, reason: "waiting on aws", window: W("2026-11-07"), newPeriod: false, pending: [] });
+   assert.equal(decide({ today: "2026-11-09", current: at("2026-10-31"), failed: ["aws", "gcp"], doors: DOORS2 }).reason, "waiting on aws, gcp");
+   assert.equal(decide({ today: "2026-11-10", current: at("2026-10-31"), failed: ["aws"], doors: DOORS2 }).run, true, "three days late it runs");
+   assert.equal(decide({ today: "2026-11-15", current: null, failed: ["aws"], doors: DOORS2 }).reason, "waiting on aws", "a first run always waits");
+   assert.equal(decide({ today: "2026-11-03", current: at("2026-10-31", ["arkos"]), failed: ["aws"], doors: DOORS2 }).reason, "doors added", "a door added is not a turn");
+ });
+ 
+-test("decide: a due turn waits on GCP rows through the window's end less two days", () => {
++test("decide: a due turn waits on GCP rows through the window's end less six days", () => {
+   const base = { today: "2026-11-07", current: at("2026-10-31"), doors: DOORS2, gcpConfigured: true };
+-  assert.deepEqual(decide({ ...base, gcpLastDay: "2026-11-03" }), { run: false, reason: "waiting on GCP rows through 2026-11-04", window: W("2026-11-07"), newPeriod: false, pending: [] });
+-  assert.equal(decide({ ...base, gcpLastDay: null }).reason, "waiting on GCP rows through 2026-11-04");
+-  assert.equal(decide({ ...base, gcpLastDay: "2026-11-04" }).run, true);
++  assert.deepEqual(decide({ ...base, gcpLastDay: "2026-10-30" }), { run: false, reason: "waiting on GCP rows through 2026-10-31", window: W("2026-11-07"), newPeriod: false, pending: [] });
++  assert.equal(decide({ ...base, gcpLastDay: null }).reason, "waiting on GCP rows through 2026-10-31");
++  assert.equal(decide({ ...base, gcpLastDay: "2026-10-31" }).run, true);
++  assert.equal(GCP_LAG_DAYS, 6);
+   assert.equal(decide({ ...base, gcpConfigured: false, gcpLastDay: null }).run, true, "GCP not configured: nothing to wait on");
+   assert.equal(decide({ ...base, today: "2026-11-06", gcpLastDay: null }).reason, "done", "a period not due still sweeps");
+ });
+ 
+ test("decide never prices before the launch day", () => {
+   assert.deepEqual(decide({ today: "2026-10-30", current: null, doors: DOORS2 }), { run: false, reason: "before the launch day", window: W("2026-10-30"), newPeriod: false, pending: [] });
+   assert.equal(decide({ today: "2026-10-31", current: null, doors: DOORS2 }).run, true);
+   assert.equal(decide({ today: "2026-10-30", current: null, doors: DOORS2, from: "2026-10-01" }).run, true, "the default guards, not the date");
+ });
+diff --git a/admin/api/test/donate-step.test.mjs b/admin/api/test/donate-step.test.mjs
+index 228c218..d70de03 100644
+--- a/admin/api/test/donate-step.test.mjs
++++ b/admin/api/test/donate-step.test.mjs
+@@ -40,21 +40,21 @@ function fakeWriter(calls, { products = [], failAt = null, prices = [], links =
+ /** A fake bucket over one object. */
+ function fakeBucket(initial = null) {
+   let json = initial;
+   return { configured: true, writes: 0, async read() { return json; }, async write(j) { json = j; this.writes += 1; }, get json() { return json; } };
+ }
+ 
+ test("a new period: four products, four prices, four links a door, one JSON, the record", async () => {
+   const calls = [];
+   const bucket = fakeBucket();
+   const step = createDonateStep({ writer: fakeWriter(calls), bucket, now: () => NOW, log: quiet });
+-  const out = await step.run({ dailyRows: ROWS, failed: [], today: TODAY, gcpConfigured: true, gcpLastDay: "2026-10-28" });
++  const out = await step.run({ dailyRows: ROWS, failed: [], today: TODAY, gcpConfigured: true, gcpLastDay: "2026-10-24" });
+   assert.equal(out.ran, true);
+   assert.deepEqual(out.record, { period: PERIOD, pool: 287.4, at: "2026-10-31T10:00:12.000Z", doors: SHIPPED });
+   const j = bucket.json;
+   assert.deepEqual(Object.keys(j), ["period", "pool", "at", "tiers", "custom", "products", "doors"]);
+   assert.deepEqual(j.period, PERIOD);
+   assert.deepEqual(j.tiers.map((t) => [t.tier, t.usd, t.label]), [["prompt", 3, "about 1%"], ["context", 9, "about 3%"], ["run", 29, "about 10%"]]);
+   assert.ok(j.tiers.every((t) => t.priceId.startsWith("price_")));
+   assert.deepEqual(Object.keys(j.products), TIER_KEYS);
+   assert.equal(j.custom.minimumUsd, 1);
+   assert.deepEqual(Object.keys(j.doors["arkos"].links), TIER_KEYS);
+@@ -83,22 +83,22 @@ test("existing products are reused by their tier metadata", async () => {
+ });
+ 
+ test("done, a failed provider and the GCP hold leave Stripe and the bucket alone and carry the record", async () => {
+   const calls = [];
+   const current = published(PERIOD);
+   const bucket = fakeBucket(current);
+   const step = createDonateStep({ writer: fakeWriter(calls), bucket, now: () => NOW, log: quiet });
+   assert.deepEqual(await step.run({ dailyRows: ROWS, failed: [], today: "2026-11-06" }), { ran: false, reason: "done", record: { period: PERIOD, pool: 288, at: "2026-10-31T10:00:12.000Z", doors: SHIPPED }, swept: { links: 0, prices: 0 } });
+   const fresh = () => createDonateStep({ writer: fakeWriter(calls), bucket: fakeBucket(), now: () => NOW, log: quiet });
+   assert.equal((await fresh().run({ dailyRows: ROWS, failed: ["gcp"], today: TODAY })).reason, "waiting on gcp");
+-  assert.equal((await fresh().run({ dailyRows: ROWS, failed: [], today: TODAY, gcpConfigured: true, gcpLastDay: "2026-10-27" })).reason, "waiting on GCP rows through 2026-10-28");
+-  assert.equal((await fresh().run({ dailyRows: ROWS, failed: [], today: TODAY, gcpConfigured: true, gcpLastDay: null })).reason, "waiting on GCP rows through 2026-10-28");
++  assert.equal((await fresh().run({ dailyRows: ROWS, failed: [], today: TODAY, gcpConfigured: true, gcpLastDay: "2026-10-23" })).reason, "waiting on GCP rows through 2026-10-24");
++  assert.equal((await fresh().run({ dailyRows: ROWS, failed: [], today: TODAY, gcpConfigured: true, gcpLastDay: null })).reason, "waiting on GCP rows through 2026-10-24");
+   assert.equal(calls.length, 0);
+   assert.equal(bucket.writes, 0);
+ });
+ 
+ test("the weekly turn: six days on is done, seven days on is a new period over the new window, and it retires nothing", async () => {
+   const calls = [];
+   const bucket = fakeBucket(published(PERIOD));
+   const rows = [...ROWS, { day: "2026-11-06", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 12.6 }];
+   const six = await createDonateStep({ writer: fakeWriter(calls), bucket, now: () => Date.parse("2026-11-06T10:00:00Z"), log: quiet }).run({ dailyRows: rows, failed: [], today: "2026-11-06" });
+   assert.equal(six.reason, "done");
+diff --git a/docs/superpowers/specs/2026-10-30-donate-site-design.md b/docs/superpowers/specs/2026-10-30-donate-site-design.md
+index ec19a65..048b9f2 100644
+--- a/docs/superpowers/specs/2026-10-30-donate-site-design.md
++++ b/docs/superpowers/specs/2026-10-30-donate-site-design.md
+@@ -156,40 +156,40 @@ increasing percentiles"; the ratio is mine, about threefold per step, close to t
+ $100 ladder he picked on the mockup). Each price is the pool times its share, **rounded up to
+ the next whole dollar**, and labelled "about 1%" and so on (Cyrus: "Round-up to the nearest
+ dollar and say about 1%"). A $287.40 month gives $3, $9 and $29. The lowest tier floors at $1 so
+ a small month cannot fall under Stripe's minimum charge (my call). The fourth row is a Stripe
+ "customer chooses what to pay" price with a $1 minimum and no preset (my call).
+ 
+ **When they change.** Every seven days from the last repricing (`REPRICE_DAYS`), each turn
+ pricing the window that ends the day before *(amended Oct 31: Cyrus chose a rolling 30-day bill
+ repriced weekly so the site could launch without waiting for a closed month; it was once a month,
+ on or after the 3rd)*. The GCP billing export runs a day or two behind, so a due turn waits until
+-the export has rows through two days before the window's end (three days behind is the most
+-tolerated); a failed collector holds a due turn up to three days, then it runs with what is
++the export has rows through six days before the window's end (six days behind is the most
++tolerated, Cyrus, Oct 31, to launch that day); a failed collector holds a due turn up to three days, then it runs with what is
+ there. A turn names its period by the day it ran (`repricedOn`). (The Finance data's "partial"
+ mark means something else: months before the GCP export began on 2026-10-29.)
+ 
+ **The first pool and the launch** (Cyrus, Oct 30: "Go with option 2"; *amended Oct 31: Cyrus
+ chose a rolling 30-day bill repriced weekly so the site could launch without waiting for a closed
+ month*). The first day the step may price is the launch day, 2026-10-31 (`DONATE_FROM`; a run
+ before it prices nothing). Its window is Oct 1 to Oct 30. The export backfilled October on its
+ own, so no hand load is needed. The site does not ship with a hand-typed or seeded pool: it
+ launches once the step's first run has written the JSON.
+ 
+ ## 4. The monthly step and the money
+ 
+ Nothing new runs on a schedule. The admin snapshot (Cloud Scheduler `csarko-admin-snapshot`
+ calling the admin API's snapshot route once a day) gains one idempotent step, **donate**:
+ 
+ 1. If the current period is under seven days old and has prices for every door that builds,
+    stop (a door added between turns gets the current period's links at the next snapshot).
+-2. Before the launch day, stop. If a turn is due and GCP's export has no rows through two days
++2. Before the launch day, stop. If a turn is due and GCP's export has no rows through six days
+    before the window's end, stop. If a turn is due and any configured provider's collector failed
+    today, stop and try tomorrow, up to three days late; then run with what is there. *(Amended
+    Oct 31: a rolling 30-day bill repriced weekly; it was the 3rd to the 7th of each month.)* A provider that is not configured,
+    and a Claude Code fee with no entry for the month, contribute $0 and the Finance page's own
+    "not configured" and "missing" marks say so; the step does not second-guess them.
+ 3. Read the pool (section 3), compute the three prices.
+ 4. In Stripe, with a restricted key that may write payment links, prices and products and
+    nothing else (a new Secret Manager secret on the API, like the read-only Stripe key the
+    income collector uses): for each tier, a new Price on that tier's Product (one Product per
+    tier, created once: "A prompt", "A long context window", "A whole agent run";

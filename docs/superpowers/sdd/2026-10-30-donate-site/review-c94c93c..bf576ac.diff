@@ -1,0 +1,160 @@
+# Review package: c94c93c..bf576ac
+
+## Commits
+bf576ac donate: the prices object is never served from cache
+
+## Files changed
+ admin/api/src/donate/bucket.mjs                         | 8 ++++----
+ admin/api/test/donate-step.test.mjs                     | 4 ++--
+ docs/superpowers/specs/2026-10-30-donate-site-design.md | 3 ++-
+ donate/deploy.sh                                        | 4 ++--
+ 4 files changed, 10 insertions(+), 9 deletions(-)
+
+## Diff
+diff --git a/admin/api/src/donate/bucket.mjs b/admin/api/src/donate/bucket.mjs
+index cadd784..f7b2866 100644
+--- a/admin/api/src/donate/bucket.mjs
++++ b/admin/api/src/donate/bucket.mjs
+@@ -1,16 +1,16 @@
+ /**
+  * The public prices object, `prices.json` in the bucket `PRICES_BUCKET`: the one file the donate
+  * site's pages read to show the current period's three prices and to find each door's payment links,
+  * so the site never talks to Stripe itself. The weekly step reads it to know what is already
+- * published and writes the next one; it is cached five minutes, which is how long a new period's
+- * prices can take to show. The Storage SDK is imported when first needed, so the tests, which inject a fake
++ * published and writes the next one; it is written with Cache-Control no-cache, so a new period's prices show at
++ * once and a cached copy never lacks its CORS header. The Storage SDK is imported when first needed, so the tests, which inject a fake
+  * `storage`, never load it. A missing object reads as null (nothing published yet); any other
+  * failure throws. Not configured without a bucket name.
+  */
+ 
+ import { PRICES_OBJECT } from "./doors.mjs";
+ 
+ export function createPricesBucket({ bucket, projectId = null, storage = null, log = console }) {
+   const name = typeof bucket === "string" ? bucket.replace(/^gs:\/\//, "").replace(/\/+$/, "") : "";
+   const configured = name !== "";
+   let storagePromise = null;
+@@ -33,24 +33,24 @@ export function createPricesBucket({ bucket, projectId = null, storage = null, l
+     async read() {
+       try {
+         const [buffer] = await (await file()).download();
+         return JSON.parse(buffer.toString("utf8"));
+       } catch (error) {
+         if (error?.code === 404) return null;
+         log.error?.(`donate: reading gs://${name}/${PRICES_OBJECT} failed`, error);
+         throw error;
+       }
+     },
+-    /** Replaces the object with `json`, public-readable by the bucket's own policy, cached five minutes. */
++    /** Replaces the object with `json`, public-readable by the bucket's own policy, never served from cache (no-cache, so GCS always applies the bucket's CORS). */
+     async write(json) {
+       try {
+         await (await file()).save(JSON.stringify(json, null, 1), {
+           contentType: "application/json",
+-          metadata: { cacheControl: "public, max-age=300" },
++          metadata: { cacheControl: "no-cache" },
+         });
+       } catch (error) {
+         log.error?.(`donate: writing gs://${name}/${PRICES_OBJECT} failed`, error);
+         throw error;
+       }
+     },
+   };
+ }
+diff --git a/admin/api/test/donate-step.test.mjs b/admin/api/test/donate-step.test.mjs
+index d70de03..1e97b4d 100644
+--- a/admin/api/test/donate-step.test.mjs
++++ b/admin/api/test/donate-step.test.mjs
+@@ -215,35 +215,35 @@ test("a Stripe failure midway writes nothing and rethrows; a same-day rerun uses
+   const same = [];
+   await createDonateStep({ writer: fakeWriter(same), bucket, now: () => NOW, log: quiet }).run({ dailyRows: ROWS, failed: [], today: TODAY });
+   assert.deepEqual(keys(same).slice(0, keys(calls).length), keys(calls));
+   // A replayed 500 cannot cost a second day: the next day's keys are new, products' aside.
+   const next = [];
+   await createDonateStep({ writer: fakeWriter(next), bucket: fakeBucket(), now: () => NOW, log: quiet }).run({ dailyRows: ROWS, failed: [], today: "2026-11-01" });
+   assert.ok(keys(next).filter((k) => !k.startsWith("donate:product:")).every((k) => k.endsWith(":2026-11-01")));
+   assert.equal(keys(next).filter((k) => keys(calls).includes(k)).length, 4, "only the four product keys repeat");
+ });
+ 
+-test("the bucket: a missing object reads as null, a write carries the content type and a five-minute cache", async () => {
++test("the bucket: a missing object reads as null, a write carries the content type and a no-cache header", async () => {
+   const saved = [];
+   const storage = { bucket: (name) => ({ file: (obj) => ({
+     async download() { const e = new Error("No such object"); e.code = 404; throw e; },
+     async save(body, opts) { saved.push({ name, obj, body: JSON.parse(body), opts }); },
+   }) }) };
+   const b = createPricesBucket({ bucket: "csarko-sh-donate-prices", projectId: "csarko-sh", storage, log: { error() {} } });
+   assert.equal(b.configured, true);
+   assert.equal(await b.read(), null);
+   await b.write({ period: { from: "2026-10-01", to: "2026-10-30", repricedOn: "2026-10-31" } });
+   assert.equal(saved[0].name, "csarko-sh-donate-prices");
+   assert.equal(saved[0].obj, "prices.json");
+   assert.deepEqual(saved[0].body, { period: { from: "2026-10-01", to: "2026-10-30", repricedOn: "2026-10-31" } });
+   assert.equal(saved[0].opts.contentType, "application/json");
+-  assert.equal(saved[0].opts.metadata.cacheControl, "public, max-age=300");
++  assert.equal(saved[0].opts.metadata.cacheControl, "no-cache");
+   assert.equal(createPricesBucket({ bucket: null, projectId: "csarko-sh" }).configured, false);
+ });
+ 
+ test("the bucket rethrows a read that fails with anything but a 404", async () => {
+   const storage = { bucket: () => ({ file: () => ({ async download() { const e = new Error("denied"); e.code = 403; throw e; } }) }) };
+   const b = createPricesBucket({ bucket: "csarko-sh-donate-prices", storage, log: { error() {} } });
+   await assert.rejects(b.read(), /denied/);
+ });
+ 
+ test("the launch-day hold: a run on Oct 30 touches neither Stripe nor the bucket; Oct 31 prices", async () => {
+diff --git a/docs/superpowers/specs/2026-10-30-donate-site-design.md b/docs/superpowers/specs/2026-10-30-donate-site-design.md
+index 048b9f2..649e86e 100644
+--- a/docs/superpowers/specs/2026-10-30-donate-site-design.md
++++ b/docs/superpowers/specs/2026-10-30-donate-site-design.md
+@@ -201,21 +201,22 @@ calling the admin API's snapshot route once a day) gains one idempotent step, **
+    payer's email for the receipt (Stripe's default). Four links per door, six shipped doors
+    today: 24 links a month, seven doors and 28 links with Day Hike.
+ 5. A period's links stay live for 35 days after the current period's repricing (`KEEP_DAYS`)
+    and are swept by the first snapshot that finds the current period done (links
+    `active: false`, Prices archived: every period repriced more than 35 days before the current
+    one), so the baked fallback on the deployed pages pays for a month after a turn. *(Amended Oct
+    30 after the branch review: the sweep retired them the day after the new month published.
+    Amended Oct 31 for the weekly turn: it kept one previous month.)*
+ 6. Write **one JSON** the page reads: the `period` (`{ from, to, repricedOn }`, amended Oct 31
+    from the month), the pool rounded to the dollar, and per door the four prices, shares and link
+-   URLs. It is published to a public Cloud Storage object with
++   URLs. It is published to a public Cloud Storage object (served with Cache-Control no-cache,
++   since a cached copy can lack its CORS header; Oct 31) with
+    CORS for `https://donate.csarko.sh` (my call; a Hosting rewrite cannot reach a bucket, and the
+    admin API stays private). The page fetches it at load; if the fetch fails, the page shows the
+    last prices baked into its build and a plain "Prices are from <Month D>." line (the day they
+    were repriced on), never an empty card.
+ 
+ The step is a module next to the Finance ones (`admin/api/src/donate/`), pure functions over
+ the Finance rows and Stripe's objects, with the Stripe calls behind the same collector shape as
+ `collectors/stripe.mjs`. It writes its last run into the daily snapshot so the Finance page can
+ show when prices last turned and refuse a second run in a month: the snapshot record is
+ `{ period, pool, at, doors }` (`month` until Oct 31), and the bucket JSON is the source of truth for the ids.
+diff --git a/donate/deploy.sh b/donate/deploy.sh
+index 6fc6e6a..c73e43e 100755
+--- a/donate/deploy.sh
++++ b/donate/deploy.sh
+@@ -74,20 +74,20 @@ verify() {
+     for i in 1 2 3 4 5 6; do
+       if serves_local "$url" "$path" "$file"; then echo "✓ $url$path serves $file"; continue 2; fi
+       sleep 5
+     done
+     echo "✗ $url$path does not serve $file (yet)"
+     return 1
+   done
+ }
+ prices_cors() {
+   local head
+-  head="$(curl -sI -m 20 -H "Origin: $SITE_URL" "https://storage.googleapis.com/$BUCKET/prices.json")" || return 1
++  head="$(curl -sI -m 20 -H "Origin: $SITE_URL" "https://storage.googleapis.com/$BUCKET/prices.json?check=$(date +%s)")" || return 1
+   grep -qE '^HTTP/[0-9.]+ 200' <<<"$head" || { echo "✗ prices.json did not answer 200"; return 1; }
+-  grep -qi '^access-control-allow-origin:' <<<"$head" || { echo "✗ prices.json sent no access-control-allow-origin for $SITE_URL"; return 1; }
++  grep -qi '^access-control-allow-origin:' <<<"$head" || { echo "✗ prices.json sent no access-control-allow-origin for $SITE_URL (a false negative looks like this when a plain fetch primed the cache; the remedy is gcloud storage objects update gs://$BUCKET/prices.json --cache-control=no-cache)"; return 1; }
+   echo "✓ prices.json answers 200 with access-control-allow-origin for $SITE_URL"
+ }
+ 
+ echo
+ verify "$DEFAULT_URL" || die "the deploy did not land on $DEFAULT_URL"
+ prices_cors || die "the prices object is not readable from $SITE_URL"
+ verify "$SITE_URL" || echo "  (the custom domain may still be propagating or its certificate may still be issuing; check \`terraform -chdir=_infra output donate_custom_domain_state\`)"
