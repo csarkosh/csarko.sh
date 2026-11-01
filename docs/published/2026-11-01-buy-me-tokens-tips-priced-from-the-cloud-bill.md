@@ -8,7 +8,7 @@ related: unlimited-email-aliases-that-scale-to-zero, a-zero-cost-analytics-dashb
 
 **Question:** The apps, the browser game and the short films on this site are free, and they are built with AI and run in the cloud, which is not. How do you let people who find the work useful help cover what it costs, with prices that track the real bill, without anyone having to update them by hand?
 
-**Short answer:** As of Nov 1, 2026, the tip page at donate.csarko.sh prices three tiers as shares of the [pool](#term "The cloud spend of the 30 days ending yesterday, summed across every billing source, less any spend on work that is not public. Each tier is a share of it."): about 1%, 3% and 10%, rounded up to the dollar, plus a box for your own number. A daily job collects the costs from five billing sources into one set of daily rows, and every seven days a step on the same job sums the last 30 days, makes the Stripe prices and payment links, and publishes one JSON file that the static pages read on every visit. Nothing in the loop needs a person: a source that lags holds the turn back, every Stripe call can be repeated safely, and old links retire on their own except the ones the live pages still carry.
+**Short answer:** As of Nov 1, 2026, the tip page at donate.csarko.sh prices three tiers as shares of the [pool](#term "The cloud spend of the 30 days ending yesterday, summed across every billing source, less any spend on work that is not public. Each tier is a share of it."): about 1%, 3% and 10%, rounded up to the dollar, plus a box for your own number. A daily job collects the costs from five billing sources into one set of daily rows, and every seven days a step on the same job sums the last 30 days, makes the Stripe prices and payment links, and publishes one JSON file that the static pages read on every visit. Nothing in the loop needs a person: a source that lags holds the turn back, every Stripe call can be repeated safely, and old links retire on their own except the ones the live pages still carry. Because Stripe prints a support email and a support address on every receipt, both point at stand-ins rather than the owner: an email alias at the site's domain and a virtual mailbox.
 
 ![Diagram of the pipeline: five billing sources feed a daily snapshot on Cloud Run at 06:00 New York time, which keeps daily rows in Firestore; every 7 days the donate step turns the last 30 days into three tiers, makes Stripe prices and links and writes prices.json to a public bucket, which the donate pages read on every visit before sending a visitor to Stripe's checkout](flow.svg "Teal is the costs coming in once a day; amber is what the weekly turn publishes. The pages have no server: a visit reads one public JSON file and goes to Stripe's hosted checkout.")
 
@@ -18,8 +18,8 @@ related: unlimited-email-aliases-that-scale-to-zero, a-zero-cost-analytics-dashb
 - **5 billing sources** land in one set of daily rows, gathered by one scheduled run at 06:00 New York time ([section 2](#five-billing-sources-become-one-set-of-daily-rows)).
 - **$313.57** was the first pool, Oct 1 to Oct 30, 2026, which priced the tiers at **$4, $10 and $32** ([section 4](#three-tiers-at-1-3-and-10-rounded-up-to-the-dollar)).
 - **6 days** is the most the Google Cloud export may lag before a turn waits for it; a failed source may hold a turn up to 3 days ([section 3](#the-pool-is-the-30-days-ending-yesterday-and-a-turn-waits-for-late-data)).
-- **28 payment links** a period, 4 for each of 7 project pages, each found again before it is ever created twice ([section 5](#stripe-objects-are-looked-up-before-they-are-made)).
 - **0 redeploys** a turn: the pages read the prices live, and the sweep never retires the links the live pages carry ([section 7](#old-links-retire-on-their-own-except-the-ones-the-live-pages-carry)).
+- **4 details** Stripe requires on every receipt include a support email and a support address, so both are stand-ins: an alias and a virtual mailbox ([section 8](#an-alias-and-a-mailbox-keep-the-owner-s-details-off-every-receipt)).
 
 ## 1. A tip is a visible share of a visible bill
 
@@ -92,6 +92,17 @@ The first version of this had a catch. The pages bake in a period's links as the
 
 So a turn needs no redeploy. Visitors see the current prices because the pages read them live; the fallback keeps working because its links are spared; and a redeploy is only for changing a project's words or picture. The whole loop, from a GPU bill to the price on the page, runs without anyone touching it.
 
+## 8. An alias and a mailbox keep the owner's details off every receipt
+
+Taking money from strangers has a privacy cost that the rest of this pipeline does not. Stripe shows the account's public business details on the receipts it emails and on card statements, and for compliance every receipt carries a legal business name, a customer support address, a customer support email and a privacy policy link [9]. This tip page is run by one person, not a company with an office and a help desk, so the obvious values would be his own: his personal inbox as the support email and his home address as the support address, sent to everyone who tips and to wherever those receipts are forwarded afterwards. The site already refuses to show an email address or a phone number on any page, for the same reason: spam, and worse.
+
+Two pieces of infrastructure stand in for those details.
+
+- **The support email is an alias.** As of Nov 1, 2026, the Stripe account's support email is `support@csarko.sh`, one of the domain's [unlimited email aliases](/research/unlimited-email-aliases-that-scale-to-zero). Amazon SES receives the mail and one Lambda forwards it to the owner's inbox, and a reply leaves through a reverse alias, so a tipper who writes in and gets an answer only ever sees csarko.sh. An alias that starts drawing spam can be blocked without touching any other address.
+- **The support address is a virtual mailbox.** A commercial mail receiving agency, a business that accepts mail on someone else's behalf, gives the account a street address with a private mailbox number. USPS lets it receive a person's mail only after that person completes PS Form 1583 with a primary and a secondary ID and signs it in front of the agency's staff or a notary, and the address must carry "PMB" or "#" [10]. For this account the form was notarized online on Nov 1, 2026, with a passport as the photo ID and a driver's license as the proof of the home address it keeps private. The agency reviews the form before the mailbox opens, and the Stripe support address moves to the mailbox once it does.
+
+The aliases cost a fraction of a cent a message and nothing while idle. What the pair buys is that a tip, the most personal transaction the site has, sends nothing personal back to the person who pays.
+
 ## Sources
 
 1. Amazon Web Services, "GetCostAndUsage," AWS Billing and Cost Management API Reference. Accessed: Nov. 1, 2026. [Online]. Available: https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_GetCostAndUsage.html
@@ -102,3 +113,5 @@ So a turn needs no redeploy. Visitors see the current prices because the pages r
 6. Stripe, "Update a payment link," Stripe API reference. Accessed: Nov. 1, 2026. [Online]. Available: https://docs.stripe.com/api/payment-link/update
 7. Stripe, "Idempotent requests," Stripe API reference. Accessed: Nov. 1, 2026. [Online]. Available: https://docs.stripe.com/api/idempotent_requests
 8. Google Cloud, "Configure cross-origin resource sharing (CORS)," Cloud Storage documentation. Accessed: Nov. 1, 2026. [Online]. Available: https://cloud.google.com/storage/docs/using-cors
+9. Stripe, "Receipts and paid invoices," Stripe documentation. Accessed: Nov. 1, 2026. [Online]. Available: https://docs.stripe.com/receipts
+10. United States Postal Service, "508 Recipient Services," Mailing Standards of the United States Postal Service, Domestic Mail Manual, sec. 1.8. Accessed: Nov. 1, 2026. [Online]. Available: https://pe.usps.com/text/dmm300/508.htm

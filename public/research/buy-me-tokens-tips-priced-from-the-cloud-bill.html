@@ -52,7 +52,7 @@
       "dateModified": "2026-11-01",
       "url": "https://csarko.sh/research/buy-me-tokens-tips-priced-from-the-cloud-bill",
       "mainEntityOfPage": "https://csarko.sh/research/buy-me-tokens-tips-priced-from-the-cloud-bill",
-      "wordCount": 2450,
+      "wordCount": 2930,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -423,6 +423,7 @@
         <li><a href="#stripe-objects-are-looked-up-before-they-are-made" data-visits-event="toc-rail"><span class="num" aria-hidden="true">05</span><span>Stripe objects are looked up before they are made</span></a></li>
         <li><a href="#the-pages-read-one-public-json-file" data-visits-event="toc-rail"><span class="num" aria-hidden="true">06</span><span>The pages read one public JSON file</span></a></li>
         <li><a href="#old-links-retire-on-their-own-except-the-ones-the-live-pages-carry" data-visits-event="toc-rail"><span class="num" aria-hidden="true">07</span><span>Old links retire on their own, except the ones the live pages carry</span></a></li>
+        <li><a href="#an-alias-and-a-mailbox-keep-the-owner-s-details-off-every-receipt" data-visits-event="toc-rail"><span class="num" aria-hidden="true">08</span><span>An alias and a mailbox keep the owner&#39;s details off every receipt</span></a></li>
         <li><a href="#sources" data-visits-event="toc-rail"><span>Sources</span></a></li>
       </ol>
     </aside>
@@ -432,12 +433,12 @@
         <h1>Buy me tokens: tips priced from the cloud bill</h1>
         <p class="lead">Tip tiers set at 1%, 3% and 10% of the last 30 days&#39; cloud bill, gathered daily from five billing sources and repriced weekly with no hand in the loop.</p>
         <ul class="tags">
-          <li>10 min read</li>
+          <li>12 min read</li>
         </ul>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> The apps, the browser game and the short films on this site are free, and they are built with AI and run in the cloud, which is not. How do you let people who find the work useful help cover what it costs, with prices that track the real bill, without anyone having to update them by hand?</p>
-<p><strong>Short answer:</strong> As of Nov 1, 2026, the tip page at donate.csarko.sh prices three tiers as shares of the <button type="button" class="term" popovertarget="term-1">pool</button><span class="term-def" id="term-1" popover role="note">The cloud spend of the 30 days ending yesterday, summed across every billing source, less any spend on work that is not public. Each tier is a share of it.</span>: about 1%, 3% and 10%, rounded up to the dollar, plus a box for your own number. A daily job collects the costs from five billing sources into one set of daily rows, and every seven days a step on the same job sums the last 30 days, makes the Stripe prices and payment links, and publishes one JSON file that the static pages read on every visit. Nothing in the loop needs a person: a source that lags holds the turn back, every Stripe call can be repeated safely, and old links retire on their own except the ones the live pages still carry.</p>
+<p><strong>Short answer:</strong> As of Nov 1, 2026, the tip page at donate.csarko.sh prices three tiers as shares of the <button type="button" class="term" popovertarget="term-1">pool</button><span class="term-def" id="term-1" popover role="note">The cloud spend of the 30 days ending yesterday, summed across every billing source, less any spend on work that is not public. Each tier is a share of it.</span>: about 1%, 3% and 10%, rounded up to the dollar, plus a box for your own number. A daily job collects the costs from five billing sources into one set of daily rows, and every seven days a step on the same job sums the last 30 days, makes the Stripe prices and payment links, and publishes one JSON file that the static pages read on every visit. Nothing in the loop needs a person: a source that lags holds the turn back, every Stripe call can be repeated safely, and old links retire on their own except the ones the live pages still carry. Because Stripe prints a support email and a support address on every receipt, both point at stand-ins rather than the owner: an email alias at the site&#39;s domain and a virtual mailbox.</p>
 <figure class="figure">
 <!-- generated:figure:buy-me-tokens-tips-priced-from-the-cloud-bill/flow -->
 <img src="/assets/fig-buy-me-tokens-tips-priced-from-the-cloud-bill-flow.7ab17c0c.svg" width="760" height="540" alt="Diagram of the pipeline: five billing sources feed a daily snapshot on Cloud Run at 06:00 New York time, which keeps daily rows in Firestore; every 7 days the donate step turns the last 30 days into three tiers, makes Stripe prices and links and writes prices.json to a public bucket, which the donate pages read on every visit before sending a visitor to Stripe&#39;s checkout" decoding="async" />
@@ -450,8 +451,8 @@
 <li><strong>5 billing sources</strong> land in one set of daily rows, gathered by one scheduled run at 06:00 New York time (<a href="#five-billing-sources-become-one-set-of-daily-rows">section 2</a>).</li>
 <li><strong>$313.57</strong> was the first pool, Oct 1 to Oct 30, 2026, which priced the tiers at <strong>$4, $10 and $32</strong> (<a href="#three-tiers-at-1-3-and-10-rounded-up-to-the-dollar">section 4</a>).</li>
 <li><strong>6 days</strong> is the most the Google Cloud export may lag before a turn waits for it; a failed source may hold a turn up to 3 days (<a href="#the-pool-is-the-30-days-ending-yesterday-and-a-turn-waits-for-late-data">section 3</a>).</li>
-<li><strong>28 payment links</strong> a period, 4 for each of 7 project pages, each found again before it is ever created twice (<a href="#stripe-objects-are-looked-up-before-they-are-made">section 5</a>).</li>
 <li><strong>0 redeploys</strong> a turn: the pages read the prices live, and the sweep never retires the links the live pages carry (<a href="#old-links-retire-on-their-own-except-the-ones-the-live-pages-carry">section 7</a>).</li>
+<li><strong>4 details</strong> Stripe requires on every receipt include a support email and a support address, so both are stand-ins: an alias and a virtual mailbox (<a href="#an-alias-and-a-mailbox-keep-the-owner-s-details-off-every-receipt">section 8</a>).</li>
 </ul>
       </div>
       <nav class="toc" aria-label="In this doc">
@@ -464,6 +465,7 @@
           <li><a href="#stripe-objects-are-looked-up-before-they-are-made" data-visits-event="toc"><span class="num" aria-hidden="true">05</span><span>Stripe objects are looked up before they are made</span></a></li>
           <li><a href="#the-pages-read-one-public-json-file" data-visits-event="toc"><span class="num" aria-hidden="true">06</span><span>The pages read one public JSON file</span></a></li>
           <li><a href="#old-links-retire-on-their-own-except-the-ones-the-live-pages-carry" data-visits-event="toc"><span class="num" aria-hidden="true">07</span><span>Old links retire on their own, except the ones the live pages carry</span></a></li>
+          <li><a href="#an-alias-and-a-mailbox-keep-the-owner-s-details-off-every-receipt" data-visits-event="toc"><span class="num" aria-hidden="true">08</span><span>An alias and a mailbox keep the owner&#39;s details off every receipt</span></a></li>
         </ol>
       </nav>
       <div class="prose">
@@ -547,6 +549,14 @@
 <p>Links and prices of past periods should not pile up in the Stripe account forever, so on a day with no turn due the step sweeps: it deactivates the links and archives the prices of every period repriced more than 35 days before the current one.</p>
 <p>The first version of this had a catch. The pages bake in a period&#39;s links as their fallback, and the sweep would eventually retire those links, so the site had to be rebuilt and redeployed at least once a month to keep its fallback pointing at live checkouts. That was one more thing for a person to remember, which was exactly what the design was meant to avoid. As of Nov 1, 2026, the sweep reads the period the live front page bakes in, straight from the page&#39;s own JSON block, and never retires that period, however old it gets. If it cannot read the page that day, it retires nothing and tries again the next day.</p>
 <p>So a turn needs no redeploy. Visitors see the current prices because the pages read them live; the fallback keeps working because its links are spared; and a redeploy is only for changing a project&#39;s words or picture. The whole loop, from a GPU bill to the price on the page, runs without anyone touching it.</p>
+<div class="section-head"><p class="section-label">08</p><h2 id="an-alias-and-a-mailbox-keep-the-owner-s-details-off-every-receipt"><a class="anchor" href="#an-alias-and-a-mailbox-keep-the-owner-s-details-off-every-receipt">An alias and a mailbox keep the owner&#39;s details off every receipt</a></h2></div>
+<p>Taking money from strangers has a privacy cost that the rest of this pipeline does not. Stripe shows the account&#39;s public business details on the receipts it emails and on card statements, and for compliance every receipt carries a legal business name, a customer support address, a customer support email and a privacy policy link <a class="cite" href="#ref-9">[9]</a>. This tip page is run by one person, not a company with an office and a help desk, so the obvious values would be his own: his personal inbox as the support email and his home address as the support address, sent to everyone who tips and to wherever those receipts are forwarded afterwards. The site already refuses to show an email address or a phone number on any page, for the same reason: spam, and worse.</p>
+<p>Two pieces of infrastructure stand in for those details.</p>
+<ul>
+<li><strong>The support email is an alias.</strong> As of Nov 1, 2026, the Stripe account&#39;s support email is <code>support@csarko.sh</code>, one of the domain&#39;s <a href="/research/unlimited-email-aliases-that-scale-to-zero" data-visits-event="doc-unlimited-email-aliases-that-scale-to-zero">unlimited email aliases</a>. Amazon SES receives the mail and one Lambda forwards it to the owner&#39;s inbox, and a reply leaves through a reverse alias, so a tipper who writes in and gets an answer only ever sees csarko.sh. An alias that starts drawing spam can be blocked without touching any other address.</li>
+<li><strong>The support address is a virtual mailbox.</strong> A commercial mail receiving agency, a business that accepts mail on someone else&#39;s behalf, gives the account a street address with a private mailbox number. USPS lets it receive a person&#39;s mail only after that person completes PS Form 1583 with a primary and a secondary ID and signs it in front of the agency&#39;s staff or a notary, and the address must carry &quot;PMB&quot; or &quot;#&quot; <a class="cite" href="#ref-10">[10]</a>. For this account the form was notarized online on Nov 1, 2026, with a passport as the photo ID and a driver&#39;s license as the proof of the home address it keeps private. The agency reviews the form before the mailbox opens, and the Stripe support address moves to the mailbox once it does.</li>
+</ul>
+<p>The aliases cost a fraction of a cent a message and nothing while idle. What the pair buys is that a tip, the most personal transaction the site has, sends nothing personal back to the person who pays.</p>
       </div>
       <section class="keep-reading" aria-labelledby="next-reads">
         <h2 id="next-reads" class="section-label">Keep reading</h2>
@@ -575,6 +585,8 @@
 <li id="ref-6"><span class="ref-num">[6]</span><div>Stripe, &quot;Update a payment link,&quot; Stripe API reference. Accessed: Nov. 1, 2026. [Online]. Available: <a class="external" href="https://docs.stripe.com/api/payment-link/update" target="_blank" rel="noopener">https://docs.stripe.com/api/payment-link/update</a></div></li>
 <li id="ref-7"><span class="ref-num">[7]</span><div>Stripe, &quot;Idempotent requests,&quot; Stripe API reference. Accessed: Nov. 1, 2026. [Online]. Available: <a class="external" href="https://docs.stripe.com/api/idempotent_requests" target="_blank" rel="noopener">https://docs.stripe.com/api/idempotent_requests</a></div></li>
 <li id="ref-8"><span class="ref-num">[8]</span><div>Google Cloud, &quot;Configure cross-origin resource sharing (CORS),&quot; Cloud Storage documentation. Accessed: Nov. 1, 2026. [Online]. Available: <a class="external" href="https://cloud.google.com/storage/docs/using-cors" target="_blank" rel="noopener">https://cloud.google.com/storage/docs/using-cors</a></div></li>
+<li id="ref-9"><span class="ref-num">[9]</span><div>Stripe, &quot;Receipts and paid invoices,&quot; Stripe documentation. Accessed: Nov. 1, 2026. [Online]. Available: <a class="external" href="https://docs.stripe.com/receipts" target="_blank" rel="noopener">https://docs.stripe.com/receipts</a></div></li>
+<li id="ref-10"><span class="ref-num">[10]</span><div>United States Postal Service, &quot;508 Recipient Services,&quot; Mailing Standards of the United States Postal Service, Domestic Mail Manual, sec. 1.8. Accessed: Nov. 1, 2026. [Online]. Available: <a class="external" href="https://pe.usps.com/text/dmm300/508.htm" target="_blank" rel="noopener">https://pe.usps.com/text/dmm300/508.htm</a></div></li>
 </ol>
       </div>
       <section class="author" aria-label="About the author">
