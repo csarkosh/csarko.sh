@@ -208,10 +208,14 @@ ${Object.entries(STORE_TOKENS).map(([k, v]) => `      ${k}: ${v};`).join('\n')}
     .top-video .top-copy { position: absolute; z-index: 1; left: 0; right: 0; top: clamp(32px, 7vw, 96px); max-width: 1156px; margin: 0 auto; padding-inline: 24px; color: var(--white); }
     .top-video h1 { color: var(--white); text-shadow: 0 2px 24px rgba(0, 0, 0, 0.5); }
     .top-video .tagline { margin-left: 0; color: rgba(255, 255, 255, 0.92); text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6); }
+    /* On a phone the words take half the clip's height, so a scrim under them hid most of it
+       (Cyrus, 2026-11-03): there the words sit above the clip on its dark ground, and the clip
+       plays below them whole, with no scrim. */
     @media (max-width: 640px) {
-      .top-video { height: clamp(300px, 92vw, 70vh); }
-      .top-video::after { background: linear-gradient(180deg, rgba(7, 9, 13, 0.94) 0%, rgba(7, 9, 13, 0.86) 42%, rgba(7, 9, 13, 0.35) 66%, rgba(7, 9, 13, 0) 82%); }
-      .top-video .top-copy { top: 28px; padding-inline: 16px; }
+      .top-video { height: auto; display: flex; flex-direction: column; padding-bottom: 32px; }
+      .top-video::after { content: none; }
+      .top-video .top-copy { position: static; order: -1; margin: 0; padding: 28px 16px 4px; }
+      .top-video video { position: relative; inset: auto; height: auto; aspect-ratio: 9 / 5; }
       .top-video h1 { font-size: 36px; }
       .top-video .tagline { font-size: 16px; }
     }
