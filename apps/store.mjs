@@ -299,8 +299,9 @@ ${Object.entries(STORE_TOKENS).map(([k, v]) => `      ${k}: ${v};`).join('\n')}
     .row-media img { width: 100%; border-radius: var(--r-card); }
     /* A swap (product.mjs swapHtml): the pictures stacked, the chosen one shown, crossfading on the
        motion tokens, and a pill of chips under them, the chosen one filled. */
-    .swap { display: grid; justify-items: center; gap: 16px; }
-    .swap-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .swap { position: relative; display: grid; justify-items: center; gap: 16px; }
+    /* The radios sit by the chips, so a chip's click (which focuses its radio) scrolls nothing. */
+    .swap-input { position: absolute; bottom: 20px; left: 50%; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
     .swap-stage { display: grid; width: 100%; }
     .swap-stage > img { grid-area: 1 / 1; transition: opacity var(--md-duration-medium2) var(--md-easing-standard); }
     .swap-stage > img + img { opacity: 0; }
