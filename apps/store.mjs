@@ -297,6 +297,20 @@ ${Object.entries(STORE_TOKENS).map(([k, v]) => `      ${k}: ${v};`).join('\n')}
     .row.flip { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
     .row.flip .row-media { order: 2; }
     .row-media img { width: 100%; border-radius: var(--r-card); }
+    /* A swap (product.mjs swapHtml): the pictures stacked, the chosen one shown, crossfading on the
+       motion tokens, and a pill of chips under them, the chosen one filled. */
+    .swap { display: grid; justify-items: center; gap: 16px; }
+    .swap-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .swap-stage { display: grid; width: 100%; }
+    .swap-stage > img { grid-area: 1 / 1; transition: opacity var(--md-duration-medium2) var(--md-easing-standard); }
+    .swap-stage > img + img { opacity: 0; }
+    .swap-chips { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 4px; padding: 4px; background: var(--white); border-radius: var(--r-pill); box-shadow: var(--shadow); }
+    .swap-chips label { display: inline-flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: var(--r-pill); font-size: 14px; font-weight: 500; color: var(--ink-2); cursor: pointer; transition: background var(--md-duration-short3) var(--md-easing-standard), color var(--md-duration-short3) var(--md-easing-standard); }
+    .swap-chips label:hover { color: var(--ink); }
+${[1, 2, 3, 4].map((k) => `    .swap-input:nth-of-type(${k}):checked ~ .swap-stage > img { opacity: 0; }
+    .swap-input:nth-of-type(${k}):checked ~ .swap-stage > img:nth-child(${k}) { opacity: 1; }
+    .swap-input:nth-of-type(${k}):checked ~ .swap-chips > label:nth-child(${k}) { background: var(--ink); color: var(--white); }
+    .swap-input:nth-of-type(${k}):focus-visible ~ .swap-chips > label:nth-child(${k}) { outline: 2px solid var(--link); outline-offset: 3px; }`).join('\n')}
     .row-copy > h3 { margin: 0 0 14px; font-size: 32px; line-height: 1.2; }
     .row-copy > p { font-size: 16.5px; }
     .row[class*="t-"] { margin-block: 0; padding-block: 96px; box-shadow: 0 0 0 100vmax var(--row-tint); clip-path: inset(0 -100vmax); background: var(--row-tint); }

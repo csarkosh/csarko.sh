@@ -260,9 +260,25 @@ export function recordingHtml({ url, poster, width, height, alt }) {
   return `<figure class="recording"><video autoplay muted loop playsinline preload="none" poster="${escapeHtml(poster)}" width="${width}" height="${height}" aria-label="${escapeHtml(alt)}"><source src="${escapeHtml(url)}" type="video/mp4" /></video></figure>`;
 }
 
-/** Every README image the page shows, for build.mjs to copy: the light one of each picture. The
- * README's hero is left out when the page opens with a clip instead (`withHero` false). */
-export const imagesOf = ({ hero, panels, figures = [] }, { withHero = true } = {}) => [...new Set([withHero ? hero : null, ...panels, ...figures].filter(Boolean).map((p) => p.light))];
+/** Every README image the page shows, for build.mjs to copy: the light one of each picture, and
+ * a swap's alternates (the app's `swap`). The README's hero is left out when the page opens with a
+ * clip instead (`withHero` false). */
+export const imagesOf = ({ hero, panels, figures = [] }, { withHero = true, swap = null } = {}) =>
+  [...new Set([...[withHero ? hero : null, ...panels, ...figures].filter(Boolean).map((p) => p.light), ...(swap ?? []).map((s) => s.file)])];
+
+/**
+ * A picture the visitor can swap for its alternates (the app's `swap`, the README's picture
+ * first): the pictures stacked, and a row of chips, one each, that crossfades to its picture. No
+ * script runs on this host, so a radio per picture holds the choice and the CSS shows the chosen
+ * one. Each alternate's alt is the picture's with the first label put for its own.
+ */
+function swapHtml(figure, swap, images, slug) {
+  const name = `swap-${slug}`;
+  const inputs = swap.map((_, i) => `<input type="radio" class="swap-input" name="${name}" id="${name}-${i}"${i ? '' : ' checked'} />`).join('');
+  const pictures = swap.map((s, i) => pictureHtml({ light: s.file, alt: i ? figure.alt.replaceAll(swap[0].label, s.label) : figure.alt }, images)).join('');
+  const chips = swap.map((s, i) => `<label for="${name}-${i}">${escapeHtml(s.label)}</label>`).join('');
+  return `<div class="swap">${inputs}<div class="swap-stage">${pictures}</div><div class="swap-chips">${chips}</div></div>`;
+}
 
 // The rendered README's `## ` sections: the text before the first, and each one's id, heading
 // (inner HTML) and body.
@@ -363,7 +379,8 @@ export function productPage({ app, prepared, release, images, motion = '', recor
     swap(`<p>${PANEL(i)}</p>`, `<div class="panel"><div class="panel-image">${pictureHtml(panel, images)}</div><div class="panel-body">`);
     swap(`<p>${PANEL_END}</p>`, '</div></div>');
   });
-  figures.forEach((figure, i) => swap(`<p>${FIGURE(i)}</p>`, `<figure class="figure">${pictureHtml(figure, images)}</figure>`));
+  if (app.swap && !figures.some((f) => f.light === app.swap[0].file)) throw new ProductError(`README: no picture ${app.swap[0].file} in the README for the swap`);
+  figures.forEach((figure, i) => swap(`<p>${FIGURE(i)}</p>`, `<figure class="figure">${app.swap && figure.light === app.swap[0].file ? swapHtml(figure, app.swap, images, app.slug) : pictureHtml(figure, images)}</figure>`));
   html = html.replaceAll(`<p>${MUTED} `, '<p class="muted">');
   if (html.includes('@@')) throw new ProductError('README: a marker was left in the page');
   // HTML the README carried that nothing above handled reaches the page escaped; refuse it.

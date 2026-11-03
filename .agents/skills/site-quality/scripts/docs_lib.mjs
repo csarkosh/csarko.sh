@@ -74,7 +74,7 @@ const GAME_FIELDS = { description: true, status: true, tags: true, play: false, 
 // `recording` is a loop the app's page plays (an .mp4 in the app's repository, its poster the same
 // name as .jpg), `recording-under` the README's `## ` heading it goes under, `recording-alt` what
 // it shows (Cyrus, 2026-10-31: Arkos IDE's window through its themes, under "Who it's for").
-const APP_FIELDS = { description: true, status: true, page: true, platforms: true, tags: true, license: false, repo: false, released: false, alt: false, link: false, order: false, sections: false, recording: false, 'recording-under': false, 'recording-alt': false, promo: false, 'promo-link': false, 'hero-video': false, 'hero-video-alt': false };
+const APP_FIELDS = { description: true, status: true, page: true, platforms: true, tags: true, license: false, repo: false, released: false, alt: false, link: false, order: false, sections: false, recording: false, 'recording-under': false, 'recording-alt': false, promo: false, 'promo-link': false, 'hero-video': false, 'hero-video-alt': false, swap: false };
 // A film is a video hosted on YouTube: the page carries its poster and links out, so every field
 // here but "order" is needed to build the card and its VideoObject. "alt" describes the poster.
 // There is no warning field: every film card carries the same notice (FILM_NOTICE).
@@ -226,7 +226,19 @@ export function parseAppFrontMatter(text, file) {
     if (!meta['hero-video-alt']) throw new DocError(`${file}: a hero-video needs hero-video-alt (what it shows)`);
     heroVideo = { file: meta['hero-video'], alt: meta['hero-video-alt'] };
   }
-  return { meta: { ...meta, tags, order, sections, recording, promo, heroVideo }, body };
+  // A picture the store page lets the visitor swap (apps/product.mjs): the README picture first,
+  // then its alternates, each "path label" and joined by " | ", two to four in all.
+  let swap;
+  if (meta.swap !== undefined) {
+    const entries = meta.swap.split('|').map((s) => s.trim()).filter(Boolean);
+    if (entries.length < 2 || entries.length > 4) throw new DocError(`${file}: a swap needs two to four pictures, each "path label", joined by " | "`);
+    swap = entries.map((entry) => {
+      const m = /^([\w./-]+\.(?:png|jpg))\s+(\S.*)$/.exec(entry);
+      if (!m || m[1].includes('..') || m[1].startsWith('/')) throw new DocError(`${file}: each swap picture is a .png or .jpg inside the repository and its label: "${entry}"`);
+      return { file: m[1], label: m[2].trim() };
+    });
+  }
+  return { meta: { ...meta, tags, order, sections, recording, promo, heroVideo, swap }, body };
 }
 
 export function parseFilmFrontMatter(text, file) {

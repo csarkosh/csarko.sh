@@ -139,7 +139,7 @@ for (const name of sources) {
   mkdirSync(dir, { recursive: true });
   // Every README image the page shows, as a WebP beside the page.
   const images = {};
-  for (const src of imagesOf(prepared, { withHero: !app.heroVideo })) {
+  for (const src of imagesOf(prepared, { withHero: !app.heroVideo, swap: app.swap ?? null })) {
     if (!/^[\w./-]+\.(png|jpe?g)$/.test(src) || src.includes('..')) throw new Error(`${repo} README: an image this page cannot copy: ${src}`);
     const tmp = path.join(dir, `.${path.basename(src)}`);
     writeFileSync(tmp, await fetchFile(src));

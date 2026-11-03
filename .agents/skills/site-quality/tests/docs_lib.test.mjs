@@ -677,6 +677,16 @@ test('an app\'s opening clip is an .mp4 in its repository with what it shows', (
   assert.throws(() => app('x', ['hero-video: ../x.mp4', 'hero-video-alt: a']), /inside the repository/);
 });
 
+test('an app\'s swap is a README picture and its alternates, each an image in its repository with its label', () => {
+  const line = 'swap: docs/images/blogger-dark.png Peach Watercolor | docs/images/blogger-lavender.png Lavender Watercolor';
+  assert.deepEqual(app('x', [line]).swap, [{ file: 'docs/images/blogger-dark.png', label: 'Peach Watercolor' }, { file: 'docs/images/blogger-lavender.png', label: 'Lavender Watercolor' }]);
+  assert.equal(app('x').swap, undefined);
+  assert.throws(() => app('x', ['swap: docs/images/a.png A']), /a swap needs two to four pictures/);
+  assert.throws(() => app('x', ['swap: docs/a.png A | ../b.png B']), /each swap picture is a \.png or \.jpg inside the repository and its label/);
+  assert.throws(() => app('x', ['swap: docs/a.png A | docs/b.png']), /and its label/);
+  assert.throws(() => app('x', ['swap: a.png A | b.png B | c.png C | d.png D | e.png E']), /two to four/);
+});
+
 test('an app card links out to its page, with SoftwareApplication JSON-LD', () => {
   const html = projectsPage([app('lib-visits', ['license: GPL-3.0'])], themeBlocks(INDEX));
   assert.ok(html.includes('<p class="project-kicker">Released · Open source, GPL-3.0</p>'));
