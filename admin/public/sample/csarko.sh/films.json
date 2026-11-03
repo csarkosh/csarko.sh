@@ -11,16 +11,16 @@
       "videoId": "C1XsDuJE4MQ",
       "published": "2026-10-29",
       "runtime": "0:56",
-      "totals": { "views": 1312, "estimatedMinutesWatched": 940, "averageViewDuration": 43, "averageViewPercentage": 76.8, "subscribersGained": 9, "likes": 61, "shares": 7, "comments": 4 },
-      "prev": { "views": 980, "estimatedMinutesWatched": 670, "averageViewDuration": 41, "averageViewPercentage": 73.5, "subscribersGained": 6, "likes": 44, "shares": 5, "comments": 3 },
+      "totals": { "views": 1312, "engagedViews": 813, "estimatedMinutesWatched": 940, "averageViewDuration": 43, "averageViewPercentage": 76.8, "subscribersGained": 9, "likes": 61, "shares": 7, "comments": 4 },
+      "prev": { "views": 980, "engagedViews": 608, "estimatedMinutesWatched": 670, "averageViewDuration": 41, "averageViewPercentage": 73.5, "subscribersGained": 6, "likes": 44, "shares": 5, "comments": 3 },
       "daily": [
-        { "day": "2026-11-02", "views": 310, "estimatedMinutesWatched": 222, "averageViewDuration": 43, "averageViewPercentage": 75.6, "subscribersGained": 3, "likes": 14, "shares": 2, "comments": 1 },
-        { "day": "2026-11-03", "views": 260, "estimatedMinutesWatched": 186, "averageViewDuration": 43, "averageViewPercentage": 76.8, "subscribersGained": 2, "likes": 12, "shares": 1, "comments": 1 },
-        { "day": "2026-11-04", "views": 220, "estimatedMinutesWatched": 158, "averageViewDuration": 43, "averageViewPercentage": 78.0, "subscribersGained": 2, "likes": 10, "shares": 1, "comments": 1 },
-        { "day": "2026-11-05", "views": 180, "estimatedMinutesWatched": 129, "averageViewDuration": 43, "averageViewPercentage": 76.2, "subscribersGained": 1, "likes": 8, "shares": 1, "comments": 1 },
-        { "day": "2026-11-06", "views": 140, "estimatedMinutesWatched": 100, "averageViewDuration": 43, "averageViewPercentage": 77.4, "subscribersGained": 1, "likes": 6, "shares": 1, "comments": 0 },
-        { "day": "2026-11-07", "views": 110, "estimatedMinutesWatched": 79, "averageViewDuration": 43, "averageViewPercentage": 75.6, "subscribersGained": 0, "likes": 5, "shares": 1, "comments": 0 },
-        { "day": "2026-11-08", "views": 92, "estimatedMinutesWatched": 66, "averageViewDuration": 43, "averageViewPercentage": 76.8, "subscribersGained": 0, "likes": 4, "shares": 0, "comments": 0 }
+        { "day": "2026-11-02", "views": 310, "engagedViews": 192, "estimatedMinutesWatched": 222, "averageViewDuration": 43, "averageViewPercentage": 75.6, "subscribersGained": 3, "likes": 14, "shares": 2, "comments": 1 },
+        { "day": "2026-11-03", "views": 260, "engagedViews": 161, "estimatedMinutesWatched": 186, "averageViewDuration": 43, "averageViewPercentage": 76.8, "subscribersGained": 2, "likes": 12, "shares": 1, "comments": 1 },
+        { "day": "2026-11-04", "views": 220, "engagedViews": 136, "estimatedMinutesWatched": 158, "averageViewDuration": 43, "averageViewPercentage": 78.0, "subscribersGained": 2, "likes": 10, "shares": 1, "comments": 1 },
+        { "day": "2026-11-05", "views": 180, "engagedViews": 112, "estimatedMinutesWatched": 129, "averageViewDuration": 43, "averageViewPercentage": 76.2, "subscribersGained": 1, "likes": 8, "shares": 1, "comments": 1 },
+        { "day": "2026-11-06", "views": 140, "engagedViews": 87, "estimatedMinutesWatched": 100, "averageViewDuration": 43, "averageViewPercentage": 77.4, "subscribersGained": 1, "likes": 6, "shares": 1, "comments": 0 },
+        { "day": "2026-11-07", "views": 110, "engagedViews": 68, "estimatedMinutesWatched": 79, "averageViewDuration": 43, "averageViewPercentage": 75.6, "subscribersGained": 0, "likes": 5, "shares": 1, "comments": 0 },
+        { "day": "2026-11-08", "views": 92, "engagedViews": 57, "estimatedMinutesWatched": 66, "averageViewDuration": 43, "averageViewPercentage": 76.8, "subscribersGained": 0, "likes": 4, "shares": 0, "comments": 0 }
       ],
       "retention": [
         { "ratio": 0.01, "watch": 0.965, "relative": 0.678 },
@@ -125,18 +125,18 @@
         { "ratio": 1.0, "watch": 0.62, "relative": 0.525 }
       ],
       "sources": [
-        { "source": "SHORTS", "views": 1004, "minutes": 721 },
-        { "source": "EXT_URL", "views": 141, "minutes": 104 },
-        { "source": "YT_CHANNEL", "views": 72, "minutes": 51 },
-        { "source": "SUBSCRIBER", "views": 48, "minutes": 36 },
-        { "source": "YT_SEARCH", "views": 29, "minutes": 20 },
-        { "source": "NO_LINK_OTHER", "views": 18, "minutes": 9 }
+        { "source": "SHORTS", "views": 1004, "engaged": 562, "minutes": 721 },
+        { "source": "EXT_URL", "views": 141, "engaged": 121, "minutes": 104 },
+        { "source": "YT_CHANNEL", "views": 72, "engaged": 62, "minutes": 51 },
+        { "source": "SUBSCRIBER", "views": 48, "engaged": 41, "minutes": 36 },
+        { "source": "YT_SEARCH", "views": 29, "engaged": 25, "minutes": 20 },
+        { "source": "NO_LINK_OTHER", "views": 18, "engaged": 15, "minutes": 9 }
       ],
       "external": [
-        { "url": "https://www.reddit.com/r/horror/comments/1okq2xa/the_last_trail_a_56_second_horror_short/", "views": 74, "minutes": 56 },
-        { "url": "https://old.reddit.com/r/aivideo/comments/1okr7bd/a_ranger_radio_that_answers_back/", "views": 39, "minutes": 28 },
-        { "url": "csarko.sh", "views": 21, "minutes": 15 },
-        { "url": "https://www.google.com/", "views": 7, "minutes": 5 }
+        { "url": "https://www.reddit.com/r/horror/comments/1okq2xa/the_last_trail_a_56_second_horror_short/", "views": 74, "engaged": 64, "minutes": 56 },
+        { "url": "https://old.reddit.com/r/aivideo/comments/1okr7bd/a_ranger_radio_that_answers_back/", "views": 39, "engaged": 34, "minutes": 28 },
+        { "url": "csarko.sh", "views": 21, "engaged": 18, "minutes": 15 },
+        { "url": "https://www.google.com/", "views": 7, "engaged": 6, "minutes": 5 }
       ]
     },
     {
@@ -145,16 +145,16 @@
       "videoId": "jBh7F1knRAA",
       "published": "2026-09-17",
       "runtime": "0:16",
-      "totals": { "views": 71, "estimatedMinutesWatched": 15, "averageViewDuration": 13, "averageViewPercentage": 81.2, "subscribersGained": 1, "likes": 3, "shares": 0, "comments": 1 },
-      "prev": { "views": 64, "estimatedMinutesWatched": 14, "averageViewDuration": 13, "averageViewPercentage": 79.9, "subscribersGained": 0, "likes": 3, "shares": 0, "comments": 0 },
+      "totals": { "views": 71, "engagedViews": 44, "estimatedMinutesWatched": 15, "averageViewDuration": 13, "averageViewPercentage": 81.2, "subscribersGained": 1, "likes": 3, "shares": 0, "comments": 1 },
+      "prev": { "views": 64, "engagedViews": 40, "estimatedMinutesWatched": 14, "averageViewDuration": 13, "averageViewPercentage": 79.9, "subscribersGained": 0, "likes": 3, "shares": 0, "comments": 0 },
       "daily": [
-        { "day": "2026-11-02", "views": 14, "estimatedMinutesWatched": 3, "averageViewDuration": 13, "averageViewPercentage": 80.0, "subscribersGained": 0, "likes": 1, "shares": 0, "comments": 0 },
-        { "day": "2026-11-03", "views": 11, "estimatedMinutesWatched": 2, "averageViewDuration": 13, "averageViewPercentage": 81.2, "subscribersGained": 0, "likes": 0, "shares": 0, "comments": 0 },
-        { "day": "2026-11-04", "views": 9, "estimatedMinutesWatched": 2, "averageViewDuration": 13, "averageViewPercentage": 82.4, "subscribersGained": 1, "likes": 0, "shares": 0, "comments": 0 },
-        { "day": "2026-11-05", "views": 12, "estimatedMinutesWatched": 3, "averageViewDuration": 13, "averageViewPercentage": 80.6, "subscribersGained": 0, "likes": 1, "shares": 0, "comments": 0 },
-        { "day": "2026-11-06", "views": 8, "estimatedMinutesWatched": 2, "averageViewDuration": 13, "averageViewPercentage": 81.8, "subscribersGained": 0, "likes": 0, "shares": 0, "comments": 0 },
-        { "day": "2026-11-07", "views": 7, "estimatedMinutesWatched": 2, "averageViewDuration": 13, "averageViewPercentage": 80.0, "subscribersGained": 0, "likes": 0, "shares": 0, "comments": 0 },
-        { "day": "2026-11-08", "views": 10, "estimatedMinutesWatched": 2, "averageViewDuration": 13, "averageViewPercentage": 81.2, "subscribersGained": 0, "likes": 0, "shares": 0, "comments": 0 }
+        { "day": "2026-11-02", "views": 14, "engagedViews": 9, "estimatedMinutesWatched": 3, "averageViewDuration": 13, "averageViewPercentage": 80.0, "subscribersGained": 0, "likes": 1, "shares": 0, "comments": 0 },
+        { "day": "2026-11-03", "views": 11, "engagedViews": 7, "estimatedMinutesWatched": 2, "averageViewDuration": 13, "averageViewPercentage": 81.2, "subscribersGained": 0, "likes": 0, "shares": 0, "comments": 0 },
+        { "day": "2026-11-04", "views": 9, "engagedViews": 6, "estimatedMinutesWatched": 2, "averageViewDuration": 13, "averageViewPercentage": 82.4, "subscribersGained": 1, "likes": 0, "shares": 0, "comments": 0 },
+        { "day": "2026-11-05", "views": 12, "engagedViews": 7, "estimatedMinutesWatched": 3, "averageViewDuration": 13, "averageViewPercentage": 80.6, "subscribersGained": 0, "likes": 1, "shares": 0, "comments": 0 },
+        { "day": "2026-11-06", "views": 8, "engagedViews": 5, "estimatedMinutesWatched": 2, "averageViewDuration": 13, "averageViewPercentage": 81.8, "subscribersGained": 0, "likes": 0, "shares": 0, "comments": 0 },
+        { "day": "2026-11-07", "views": 7, "engagedViews": 4, "estimatedMinutesWatched": 2, "averageViewDuration": 13, "averageViewPercentage": 80.0, "subscribersGained": 0, "likes": 0, "shares": 0, "comments": 0 },
+        { "day": "2026-11-08", "views": 10, "engagedViews": 6, "estimatedMinutesWatched": 2, "averageViewDuration": 13, "averageViewPercentage": 81.2, "subscribersGained": 0, "likes": 0, "shares": 0, "comments": 0 }
       ],
       "retention": [
         { "ratio": 0.01, "watch": 1.033, "relative": 0.678 },
@@ -259,12 +259,12 @@
         { "ratio": 1.0, "watch": 0.866, "relative": 0.525 }
       ],
       "sources": [
-        { "source": "SHORTS", "views": 58, "minutes": 13 },
-        { "source": "YT_CHANNEL", "views": 8, "minutes": 2 },
-        { "source": "EXT_URL", "views": 5, "minutes": 1 }
+        { "source": "SHORTS", "views": 58, "engaged": 32, "minutes": 13 },
+        { "source": "YT_CHANNEL", "views": 8, "engaged": 7, "minutes": 2 },
+        { "source": "EXT_URL", "views": 5, "engaged": 4, "minutes": 1 }
       ],
       "external": [
-        { "url": "csarko.sh", "views": 5, "minutes": 1 }
+        { "url": "csarko.sh", "views": 5, "engaged": 4, "minutes": 1 }
       ]
     }
   ],
@@ -272,8 +272,8 @@
     {
       "videoId": "pQ7sTrAiLr0",
       "title": "The Last Trail, a ten second teaser",
-      "totals": { "views": 38, "estimatedMinutesWatched": 5, "averageViewDuration": 8, "averageViewPercentage": 84.0, "subscribersGained": 0, "likes": 2, "shares": 0, "comments": 0 },
-      "prev": { "views": 52, "estimatedMinutesWatched": 7, "averageViewDuration": 8, "averageViewPercentage": 82.0, "subscribersGained": 1, "likes": 3, "shares": 0, "comments": 0 }
+      "totals": { "views": 38, "engagedViews": 24, "estimatedMinutesWatched": 5, "averageViewDuration": 8, "averageViewPercentage": 84.0, "subscribersGained": 0, "likes": 2, "shares": 0, "comments": 0 },
+      "prev": { "views": 52, "engagedViews": 32, "estimatedMinutesWatched": 7, "averageViewDuration": 8, "averageViewPercentage": 82.0, "subscribersGained": 1, "likes": 3, "shares": 0, "comments": 0 }
     }
   ]
 }

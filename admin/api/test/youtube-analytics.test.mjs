@@ -59,11 +59,11 @@ test("each report asks for the documented dimensions, metrics and filters", asyn
   assert.equal(retention[0].ratio, 0.01);
 
   const sources = await yta.sources("C1XsDuJE4MQ", "2026-10-24", "2026-10-30");
-  assert.deepEqual(params(), { ids: "channel==MINE", startDate: "2026-10-24", endDate: "2026-10-30", dimensions: "insightTrafficSourceType", metrics: "views,estimatedMinutesWatched", filters: "video==C1XsDuJE4MQ", sort: "-views" });
+  assert.deepEqual(params(), { ids: "channel==MINE", startDate: "2026-10-24", endDate: "2026-10-30", dimensions: "insightTrafficSourceType", metrics: "views,engagedViews,estimatedMinutesWatched", filters: "video==C1XsDuJE4MQ", sort: "-views" });
   assert.equal(sources[0].source, "SHORTS");
 
   const external = await yta.external("C1XsDuJE4MQ", "2026-10-24", "2026-10-30");
-  assert.deepEqual(params(), { ids: "channel==MINE", startDate: "2026-10-24", endDate: "2026-10-30", dimensions: "insightTrafficSourceDetail", metrics: "views,estimatedMinutesWatched", filters: "video==C1XsDuJE4MQ;insightTrafficSourceType==EXT_URL", sort: "-views", maxResults: "25" });
+  assert.deepEqual(params(), { ids: "channel==MINE", startDate: "2026-10-24", endDate: "2026-10-30", dimensions: "insightTrafficSourceDetail", metrics: "views,engagedViews,estimatedMinutesWatched", filters: "video==C1XsDuJE4MQ;insightTrafficSourceType==EXT_URL", sort: "-views", maxResults: "25" });
   assert.equal(external[0].url, "https://www.reddit.com/r/horror/comments/abc123/the_last_trail/");
 });
 
@@ -91,7 +91,7 @@ test("a refused report names the thing to fix, and a 401 drops the cached token"
 });
 
 test("rowsOf names each row's values by the column headers; no rows is []", () => {
-  assert.deepEqual(rowsOf(FIX.sources)[0], { insightTrafficSourceType: "EXT_URL", views: 96, estimatedMinutesWatched: 70 });
+  assert.deepEqual(rowsOf(FIX.sources)[0], { insightTrafficSourceType: "EXT_URL", views: 96, engagedViews: 81, estimatedMinutesWatched: 70 });
   assert.deepEqual(rowsOf(FIX.empty), [], "the API leaves rows out when there are none");
   assert.deepEqual(rowsOf({}), []);
   assert.deepEqual(rowsOf(null), []);
@@ -100,11 +100,11 @@ test("rowsOf names each row's values by the column headers; no rows is []", () =
 test("the mappers shape each documented report", () => {
   const totals = totalsOf(FIX.totals);
   assert.equal(totals.size, 3);
-  assert.deepEqual(totals.get("jBh7F1knRAA"), { views: 288, estimatedMinutesWatched: 61, averageViewDuration: 12, averageViewPercentage: 79.4, subscribersGained: 1, likes: 14, shares: 0, comments: 2 });
+  assert.deepEqual(totals.get("jBh7F1knRAA"), { views: 288, engagedViews: 201, estimatedMinutesWatched: 61, averageViewDuration: 12, averageViewPercentage: 79.4, subscribersGained: 1, likes: 14, shares: 0, comments: 2 });
 
   const daily = dailyOf(FIX.daily, "2026-10-29", "2026-11-01");
   assert.equal(daily.length, 4, "every day of the range");
-  assert.deepEqual(daily[1], { day: "2026-10-30", views: 0, estimatedMinutesWatched: 0, averageViewDuration: 0, averageViewPercentage: 0, subscribersGained: 0, likes: 0, shares: 0, comments: 0 });
+  assert.deepEqual(daily[1], { day: "2026-10-30", views: 0, engagedViews: 0, estimatedMinutesWatched: 0, averageViewDuration: 0, averageViewPercentage: 0, subscribersGained: 0, likes: 0, shares: 0, comments: 0 });
   assert.equal(daily[2].averageViewPercentage, 70.5);
 
   const retention = retentionOf(FIX.retention);
@@ -112,6 +112,8 @@ test("the mappers shape each documented report", () => {
   assert.deepEqual(retention[0], { ratio: 0.01, watch: 1.04, relative: 0.66 });
 
   assert.deepEqual(sourcesOf(FIX.sources).map((s) => s.source), ["SHORTS", "EXT_URL", "SUBSCRIBER", "YT_CHANNEL"], "most views first, then watch time");
+  assert.deepEqual(sourcesOf(FIX.sources)[0], { source: "SHORTS", views: 1080, engaged: 612, minutes: 760 }, "the views that stayed past the first seconds beside all views");
   assert.deepEqual(externalOf(FIX.external).map((e) => e.views), [48, 27, 21]);
+  assert.deepEqual(externalOf(FIX.external)[0], { url: "https://www.reddit.com/r/horror/comments/abc123/the_last_trail/", views: 48, engaged: 41, minutes: 36 });
   assert.deepEqual(externalOf(FIX.empty), []);
 });

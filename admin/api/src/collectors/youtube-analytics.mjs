@@ -1,6 +1,7 @@
 /**
  * YouTube Analytics API v2 (2026-11-01): what only the channel owner can see, per film. Views,
- * watch time, average view duration and percentage viewed, subscribers gained, the retention
+ * engaged views (added 2026-11-03: the views that stayed past a Short's first seconds; the rest
+ * swiped away), watch time, average view duration and percentage viewed, subscribers gained, the retention
  * curve, and where the views came from (traffic source types, and for External the sites and
  * pages, so a Reddit post shows up by its URL). `youtube.mjs` stays the public Data API
  * collector; this one reads the owner's numbers with the owner's consent.
@@ -32,7 +33,9 @@ export const REPORTS_URL = "https://youtubeanalytics.googleapis.com/v2/reports";
 export const ANALYTICS_LAG = "YouTube Analytics runs 2 to 3 days behind";
 export const CONSENT_EXPIRED = "YouTube consent expired or was revoked: run admin/tools/youtube-consent.mjs";
 /** The per-video metrics, in the order the totals and daily reports ask for them. */
-export const VIDEO_METRICS = ["views", "estimatedMinutesWatched", "averageViewDuration", "averageViewPercentage", "subscribersGained", "likes", "shares", "comments"];
+export const VIDEO_METRICS = ["views", "engagedViews", "estimatedMinutesWatched", "averageViewDuration", "averageViewPercentage", "subscribersGained", "likes", "shares", "comments"];
+/** The traffic source reports' metrics (the retention report takes no views, engaged or not). */
+export const SOURCE_METRICS = "views,engagedViews,estimatedMinutesWatched";
 /** The External detail report's limit (the API's maximum for insightTrafficSourceDetail). */
 export const EXTERNAL_LIMIT = 25;
 /** The top videos report's limit: every upload of a small channel. */
@@ -97,13 +100,13 @@ export function createYouTubeAnalytics({ oauth, fetch, cache, ttlMs = HOUR }) {
     async retention(id, start, end) {
       return retentionOf(await report({ startDate: start, endDate: end, dimensions: "elapsedVideoTimeRatio", metrics: "audienceWatchRatio,relativeRetentionPerformance", filters: `video==${id}`, sort: "elapsedVideoTimeRatio" }));
     },
-    /** Views and watch time by traffic source type (SHORTS, YT_SEARCH, EXT_URL...), most views first. */
+    /** Views, engaged views and watch time by traffic source type (SHORTS, YT_SEARCH, EXT_URL...), most views first. */
     async sources(id, start, end) {
-      return sourcesOf(await report({ startDate: start, endDate: end, dimensions: "insightTrafficSourceType", metrics: "views,estimatedMinutesWatched", filters: `video==${id}`, sort: "-views" }));
+      return sourcesOf(await report({ startDate: start, endDate: end, dimensions: "insightTrafficSourceType", metrics: SOURCE_METRICS, filters: `video==${id}`, sort: "-views" }));
     },
     /** External's sites and pages: each URL that sent views, most first, at most 25. */
     async external(id, start, end) {
-      return externalOf(await report({ startDate: start, endDate: end, dimensions: "insightTrafficSourceDetail", metrics: "views,estimatedMinutesWatched", filters: `video==${id};insightTrafficSourceType==EXT_URL`, sort: "-views", maxResults: EXTERNAL_LIMIT }));
+      return externalOf(await report({ startDate: start, endDate: end, dimensions: "insightTrafficSourceDetail", metrics: SOURCE_METRICS, filters: `video==${id};insightTrafficSourceType==EXT_URL`, sort: "-views", maxResults: EXTERNAL_LIMIT }));
     },
   };
 }
@@ -178,17 +181,17 @@ export function retentionOf(table) {
     .sort((a, b) => a.ratio - b.ratio);
 }
 
-/** The traffic sources report as `[{ source, views, minutes }]`, most views first. */
+/** The traffic sources report as `[{ source, views, engaged, minutes }]`, most views first. */
 export function sourcesOf(table) {
   return rowsOf(table)
-    .map((r) => ({ source: String(r.insightTrafficSourceType ?? ""), views: num(r.views), minutes: num(r.estimatedMinutesWatched) }))
+    .map((r) => ({ source: String(r.insightTrafficSourceType ?? ""), views: num(r.views), engaged: num(r.engagedViews), minutes: num(r.estimatedMinutesWatched) }))
     .sort((a, b) => b.views - a.views || b.minutes - a.minutes);
 }
 
-/** External's detail report as `[{ url, views, minutes }]`, most views first. */
+/** External's detail report as `[{ url, views, engaged, minutes }]`, most views first. */
 export function externalOf(table) {
   return rowsOf(table)
-    .map((r) => ({ url: String(r.insightTrafficSourceDetail ?? ""), views: num(r.views), minutes: num(r.estimatedMinutesWatched) }))
+    .map((r) => ({ url: String(r.insightTrafficSourceDetail ?? ""), views: num(r.views), engaged: num(r.engagedViews), minutes: num(r.estimatedMinutesWatched) }))
     .filter((r) => r.url !== "")
     .sort((a, b) => b.views - a.views || b.minutes - a.minutes);
 }

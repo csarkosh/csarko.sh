@@ -442,7 +442,8 @@ export function curve(points, { height = 180, label = '', format = compact, xTic
 /**
  * Horizontal bars: a name, a track and the value at the tip, each row focusable with a
  * title. `ramp` colours the rows down the ordinal ramp (a funnel); otherwise every bar is
- * the accent. `share` adds each row's share of `total` (or of the first row) after the value.
+ * the accent. `share` adds each row's share of `total` (or of the first row) after the value;
+ * without it, a row's own `aside` (a few words, such as the Films card's "58% engaged") goes there.
  */
 export function bars(rows, { unit = '', ramp = false, share = false, total = null, label = '', format = compact } = {}) {
   const list = el('ul', { class: 'bars', role: 'list', 'aria-label': label || undefined });
@@ -454,6 +455,7 @@ export function bars(rows, { unit = '', ramp = false, share = false, total = nul
     fill.style.width = `${width}%`;
     const n = el('span', { class: 'n' }, `${row.value.toLocaleString('en-US')}${unit}`);
     if (share && base > 0 && i > 0) n.append(el('small', {}, pct(row.value, base)));
+    else if (row.aside) n.append(el('small', {}, row.aside));
     const item = el('li', { tabindex: 0, title: `${row.detail ?? row.name}: ${row.value.toLocaleString('en-US')}${unit}` },
       el('span', { class: 'name' }, row.name),
       el('span', { class: 'track' }, fill),

@@ -509,17 +509,33 @@ const watchTime = (min) => (num(min) >= 120 ? `${compact(Math.round(num(min) / 6
 /** m:ss to seconds; null when the runtime is unknown. */
 const runtimeSecs = (rt) => { const m = /^(\d+):(\d{2})$/.exec(str(rt)); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
 
-/** A film's four numbers, each against the range before: views, watch time, average percentage viewed, subscribers gained. */
+/**
+ * Engaged views (2026-11-03): the views that played past a Short's first seconds. Since YouTube's
+ * 2025 change a Shorts view is any start or replay, so the rest of the views are swipes and loops.
+ * Snapshots made before the card read them have no `engagedViews`, which is null here, not 0.
+ */
+const engagedOf = (row) => (isNum(row?.engagedViews) ? row.engagedViews : isNum(row?.engaged) ? row.engaged : null);
+/** "58% engaged" for a row with views and engaged views, else null. */
+const engagedShare = (row) => { const e = engagedOf(row); return e === null || num(row?.views) <= 0 ? null : `${pct(e, num(row.views))} engaged`; };
+
+/** A film's five numbers, each against the range before: views, engaged views, watch time, average percentage viewed, subscribers gained. */
 function filmTiles(f, days) {
   const t = f.totals ?? {};
   const p = f.prev ?? {};
   const vs = previousText(days);
   const viewed = num(t.views) > 0;
+  const engaged = engagedOf(t);
+  // Watch time over the engaged views alone: the swipes' few seconds stay in it, so it is a ceiling.
+  const perEngaged = engaged ? `; at most ${duration((num(t.estimatedMinutesWatched) * 60) / engaged)} an engaged view` : '';
   return el('div', { class: 'tiles' },
     tile('Views', num(t.views), { delta: delta(num(t.views), p.views, { vs }) }),
+    tile('Engaged views', engaged === null ? '–' : engaged, {
+      delta: engaged === null ? undefined : delta(engaged, engagedOf(p), { vs }),
+      note: engaged === null ? 'not in this snapshot: the next daily one reads them' : viewed ? `${pct(engaged, num(t.views))} of views; the rest swiped away or looped` : 'no views in this range',
+    }),
     tile('Watch time', watchTime(t.estimatedMinutesWatched), {
       delta: delta(num(t.estimatedMinutesWatched), p.estimatedMinutesWatched, { vs, format: watchTime }),
-      note: viewed ? `${duration(num(t.averageViewDuration))} a view on average` : 'no views in this range',
+      note: viewed ? `${duration(num(t.averageViewDuration))} a view on average${perEngaged}` : 'no views in this range',
     }),
     tile('Average viewed', viewed ? `${num(t.averageViewPercentage).toFixed(1)}%` : '–', {
       delta: viewed ? delta(num(t.averageViewPercentage), num(p.views) > 0 ? p.averageViewPercentage : null, { vs, percent: false, format: (v) => `${v.toFixed(1)}%` }) : undefined,
@@ -554,9 +570,9 @@ function filmSources(f, days) {
   const external = Array.isArray(f.external) ? f.external : null;
   const left = el('div', {}, el('h3', {}, 'Traffic sources'), sources === null
     ? el('p', { class: 'empty' }, 'Traffic sources were not read.')
-    : sources.length ? bars(sources.map((s) => ({ name: trafficName(s.source), value: num(s.views), detail: `${trafficName(s.source)}, ${watchTime(s.minutes)} watched` })), { label: `Views by traffic source, ${rangeText(days)}` }) : el('p', { class: 'empty' }, 'No views in this range.'));
+    : sources.length ? bars(sources.map((s) => ({ name: trafficName(s.source), value: num(s.views), aside: engagedShare(s), detail: `${trafficName(s.source)}, ${engagedOf(s) === null ? '' : `${compact(engagedOf(s))} engaged, `}${watchTime(s.minutes)} watched` })), { label: `Views by traffic source, ${rangeText(days)}` }) : el('p', { class: 'empty' }, 'No views in this range.'));
   if (external === null) return [el('div', { class: 'pair' }, left, el('div', {}, el('h3', {}, 'External sites'), el('p', { class: 'empty' }, 'External sites were not read.')))];
-  const pages = external.map((e) => ({ ...externalSite(e.url), views: num(e.views), minutes: num(e.minutes) }));
+  const pages = external.map((e) => ({ ...externalSite(e.url), views: num(e.views), engaged: engagedOf(e), minutes: num(e.minutes) }));
   const sites = new Map();
   for (const pg of pages) sites.set(pg.site, (sites.get(pg.site) ?? 0) + pg.views);
   const right = el('div', {}, el('h3', {}, 'External sites'), sites.size
@@ -566,12 +582,28 @@ function filmSources(f, days) {
     { key: 'site', label: 'Site' },
     { key: 'page', label: 'Page', wrap: true, render: (v, row) => { const text = row.page || row.host; return row.href ? el('a', { href: row.href, target: '_blank', rel: 'noopener', class: 'mono' }, text) : mono(text); } },
     { key: 'views', label: 'Views', num: true },
+    { key: 'engaged', label: 'Engaged', num: true, render: (v) => (v === null ? '–' : compact(v)) },
     { key: 'minutes', label: 'Watch time', num: true, render: (v) => watchTime(v) },
   ], [...pages].sort((a, b) => (sites.get(b.site) ?? 0) - (sites.get(a.site) ?? 0) || a.site.localeCompare(b.site) || b.views - a.views), 'Nothing from outside YouTube in this range.'));
   return [el('div', { class: 'pair' }, left, right), list];
 }
 
-/** One film: its title, its four numbers, and folded under them its days, its retention and where its views came from. */
+/** A film's views per day, each day split into its engaged views and the rest once the snapshot has them. */
+function dailyViews(f, daily, days) {
+  const label = `Views per day of ${str(f.title)}, ${rangeText(days)}: ${compact(num(f.totals?.views))} in all`;
+  if (!daily.every((d) => engagedOf(d) !== null)) return columns(dayBars(daily, 'views'), { height: 160, label });
+  const engaged = daily.map((d) => Math.min(engagedOf(d), num(d.views)));
+  return columns(dayBars(daily, 'views'), {
+    height: 160,
+    label: `${label}, ${compact(engagedOf(f.totals) ?? 0)} of them engaged`,
+    series: [
+      { key: 'engaged', label: 'Engaged: played past the first seconds', values: engaged },
+      { key: 'rest', label: 'Swiped away or looped', tone: 'c9', values: daily.map((d, i) => num(d.views) - engaged[i]) },
+    ],
+  });
+}
+
+/** One film: its title, its five numbers, and folded under them its days, its retention and where its views came from. */
 function filmBlock(f, days) {
   const href = f.videoId ? `https://www.youtube.com/watch?v=${encodeURIComponent(str(f.videoId))}` : null;
   const title = el('h3', { class: 'film-title' }, href ? el('a', { href, target: '_blank', rel: 'noopener' }, str(f.title)) : str(f.title));
@@ -580,7 +612,7 @@ function filmBlock(f, days) {
   const opened = folded(`${str(f.title)}: by day, retention, traffic sources`, [
     ...errorLines(f),
     el('h3', {}, 'Views per day'),
-    daily.length ? columns(dayBars(daily, 'views'), { height: 160, label: `Views per day of ${str(f.title)}, ${rangeText(days)}: ${compact(num(f.totals?.views))} in all` }) : el('p', { class: 'empty' }, 'No days in this range.'),
+    daily.length ? dailyViews(f, daily, days) : el('p', { class: 'empty' }, 'No days in this range.'),
     el('h3', {}, 'Retention'),
     retentionChart(f),
     ...filmSources(f, days),
@@ -615,7 +647,7 @@ function filmsSub(d, films) {
   const shown = films?.days ?? (d === 1 ? 7 : d);
   const through = films?.to ? ` through ${shortDay(films.to)}` : '';
   const noDay = d === 1 ? 'YouTube Analytics has no view of a single day, so this is 7 days. ' : '';
-  return `${noDay}Each film on YouTube over the ${shown} days${through}, against the ${shown} days before: views, watch time, how much of it people watched and the subscribers it brought. Open a film for its days, its retention and where its views came from. YouTube Analytics runs 2 to 3 days behind, so the range ends on the last day it has finished; its days are Pacific Time's.`;
+  return `${noDay}Each film on YouTube over the ${shown} days${through}, against the ${shown} days before: views, engaged views (the ones that played past a Short's first seconds), watch time, how much of it people watched and the subscribers it brought. Open a film for its days, its retention and where its views came from. YouTube Analytics runs 2 to 3 days behind, so the range ends on the last day it has finished; its days are Pacific Time's.`;
 }
 
 function healthCard([health]) {
@@ -688,7 +720,7 @@ const CARDS = [
   { id: 'journeys', title: 'Journeys', queries: ['journeys'], sub: () => 'The most recent visits, newest first, each from where it came to how it left: every page with when it was reached, how far it was scrolled, how long it was visible and on screen, its LCP, and the click that ended the visit. From lib-visits, so since the cutover only.', render: journeysCard, skeleton: { chips: 4, items: 8 } },
   { id: 'search', title: 'Search', queries: ['search'], sub: searchSub, render: searchCard, skeleton: { tiles: 5, chart: 185, folds: 3 } },
   { id: 'reach', title: 'Reach', queries: ['reach'], sub: () => 'YouTube, GitHub, Hacker News and Substack: exposure beyond the site. A section reads Not configured until its credential is in Secret Manager.', render: reachCard, skeleton: [{ heading: true, tiles: 3, tile: 118, folds: 1 }, { rows: 2, row: 44, folds: 1 }, { tiles: 3, tile: 118, folds: 1 }, { tiles: 2, tile: 118, lines: 3 }] },
-  { id: 'films', title: 'Films', queries: ['films'], sub: filmsSub, render: filmsCard, skeleton: [{ heading: true, tiles: 4, tile: 145, folds: 1 }, { tiles: 4, tile: 145, folds: 1 }, { heading: false, folds: 1, lines: 1 }] },
+  { id: 'films', title: 'Films', queries: ['films'], sub: filmsSub, render: filmsCard, skeleton: [{ heading: true, tiles: 5, tile: 145, folds: 1 }, { tiles: 5, tile: 145, folds: 1 }, { heading: false, folds: 1, lines: 1 }] },
   { id: 'health', title: 'Health', queries: ['health'], sub: () => '', render: healthCard, skeleton: { lines: 1, tiles: 5, folds: 1 } },
   { id: 'audience', title: 'Audience', queries: ['audience'], sub: () => '', render: audienceCard, skeleton: { lines: 1, folds: 1 } },
 ];
