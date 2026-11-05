@@ -142,8 +142,12 @@ three from the command line):
 ## Content rules (Cyrus's standing preferences)
 
 - **No email address or phone number anywhere on the page.** He doesn't want
-  spam. Contact goes through LinkedIn (the primary button), GitHub, Substack and
+  spam. Contact goes through LinkedIn (the primary button), GitHub and
   YouTube (*the YouTube chip was added with the `/film` page, 2026-09-17*).
+  **No Substack link anywhere on the site** *(Cyrus, 2026-11-05: it has no posts,
+  and visitors were clicking out to an empty blog)*: not a hero chip, a Contact
+  button, the JSON-LD `sameAs`, nor the docs' "New research as it lands" line.
+  Bring it back only once csarko.log has posts and he asks.
   `deploy.sh` enforces this and refuses to publish otherwise.
 - **Dark and light themes, chosen by the visitor's system setting, no toggle**
   *(Cyrus, 2026-09-14; it was dark-only before)*. Dark is the default. The light
@@ -195,7 +199,7 @@ three from the command line):
   New York)*. An earlier "What I care about" version was tried and replaced. The
   Filming tile was **Writing** (csarko.log on Substack) until 2026-09-20, when Cyrus
   asked for it to highlight his YouTube channel instead: it links `@csarkosh` to
-  https://www.youtube.com/@csarkosh. Substack is still a hero and Contact chip.
+  https://www.youtube.com/@csarkosh. The Substack chips came off on 2026-11-05.
 - **No em-dashes in page copy**; commas, colons, semicolons.
 - **Motion follows Google's Material 3 motion guidance** *(Cyrus, 2026-10-29; standing rule for
   the public site and every admin page, Day Hike's included)*: nothing that appears, disappears,
@@ -532,8 +536,8 @@ dropped because its host went down and took the numbers with it.)*
   evening carry their arrival time instead. A named outbound link sends both its event name
   and its url, so a journey can end on the click.
 - **Events** *(unchanged from 2026-10-12, when they were added for the admin dashboard)*:
-  clicks out to LinkedIn, GitHub, Substack and YouTube count as `out-linkedin`,
-  `out-github`, `out-substack`, `out-youtube` (hero chips, Contact buttons and the Filming
+  clicks out to LinkedIn, GitHub and YouTube count as `out-linkedin`,
+  `out-github`, `out-youtube` (`out-substack` too until 2026-11-05, when the Substack links came off; hero chips, Contact buttons and the Filming
   tile's link in `index.html`); the nav's page links count `nav-projects` and
   `nav-research` in both navs (never on the page you are on; `nav-apps`, `nav-film` and
   `nav-games` until 2026-10-26, when those pages became `/projects`); a game card's "Play in your

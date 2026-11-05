@@ -78,7 +78,7 @@ file in place.
 **SEO** — title/description lengths; canonical `https://csarko.sh/` (Firebase also
 serves `csarko-sh.web.app`); `og:url` and JSON-LD `url` match it; Open Graph +
 Twitter tags with a real 1200×630 image; JSON-LD `Person` with `sameAs`
-(LinkedIn, GitHub, Substack); favicon files; one `<h1>`, no skipped heading
+(LinkedIn, GitHub, YouTube); favicon files; one `<h1>`, no skipped heading
 levels; robots.txt allows all and names the sitemap. Every page's canonical must
 match its clean URL (`research/x.html` → `https://csarko.sh/research/x`); docs need
 `og:type` `article`, `TechArticle` JSON-LD whose author is `#person`, and a
@@ -193,7 +193,7 @@ rename one without a reason the dashboard can absorb. Click events are
 
 | Event | On |
 |---|---|
-| `out-linkedin`, `out-github`, `out-substack`, `out-youtube` | the home page's hero chips, its Contact buttons, and the Filming tile's `@csarkosh` link (`public/index.html`) |
+| `out-linkedin`, `out-github`, `out-youtube` (`out-substack` until 2026-11-05) | the home page's hero chips, its Contact buttons, and the Filming tile's `@csarkosh` link (`public/index.html`) |
 | `nav-film`, `nav-games`, `nav-research` | the page links of every nav: the home page's by hand, the generated pages' from `PAGE_LINKS` in `docs_lib.mjs`; the link to the page you are on carries none, since a reload is not a navigation |
 | `play-<slug>` | a game card's "Play in your browser" (`gameList`) |
 | `watch-<slug>` | a film card's "Watch on YouTube" (`filmCard`) |

@@ -1126,7 +1126,7 @@ ${links.related.map((d) => `          <li class="card">
   const play = links.games.map((g) => `        <p class="play-line">${playLink(g)}</p>\n`).join('');
   return `      <section class="keep-reading" aria-labelledby="next-reads">
         <h2 id="next-reads" class="section-label">Keep reading</h2>
-${parts}${cards}${play}        <p class="follow">New research as it lands: <a href="/${DOCS_DIR}/feed.xml">the feed</a> (RSS) or <a class="external" href="https://csarko.substack.com/" target="_blank" rel="noopener" data-visits-event="out-substack">csarko.log</a>.</p>
+${parts}${cards}${play}        <p class="follow">New research as it lands: <a href="/${DOCS_DIR}/feed.xml">the feed</a> (RSS).</p>
       </section>
 `;
 }

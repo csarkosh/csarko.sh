@@ -33,7 +33,7 @@ command -v npx >/dev/null || die "npx not found — install Node 20 or later"
 [[ -f public/index.html ]] || die "public/index.html is missing"
 
 # Privacy guard. Cyrus does not want his email address or phone number on the
-# public site (spam). Links go to LinkedIn, GitHub, Substack and YouTube instead.
+# public site (spam). Links go to LinkedIn, GitHub and YouTube instead.
 # Docs, games, films and apps are scanned too, in their Markdown source and as built pages.
 shopt -s nullglob
 SCAN=(public/*.html public/research/*.html public/projects/*.html
