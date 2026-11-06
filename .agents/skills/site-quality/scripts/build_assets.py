@@ -294,7 +294,9 @@ def main() -> int:
                 image = Image.alpha_composite(ground, image)
             image = image.convert("RGB")
             ratio = image.height / image.width
-            app_srcsets[slug][variant] = {"avif": [], "webp": [], "jpg": []}
+            # A dark version is offered as AVIF and WebP only (app_picture), so it gets no JPEG.
+            fmts = ("avif", "webp") if variant.endswith("dark") else ("avif", "webp", "jpg")
+            app_srcsets[slug][variant] = {fmt: [] for fmt in fmts}
             stem = f"app-{slug}" + ("" if variant == "light" else f"-{variant}")
             for w in (APP_WIDTHS_PORTRAIT if variant.startswith("portrait") else APP_WIDTHS):
                 resized = image.resize((w, round(w * ratio)), Image.Resampling.LANCZOS)
