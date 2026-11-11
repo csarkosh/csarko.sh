@@ -5,8 +5,18 @@
   <link href="https://csarko.sh/research" />
   <link rel="self" href="https://csarko.sh/research/feed.xml" />
   <id>https://csarko.sh/research</id>
-  <updated>2026-11-01T00:00:00Z</updated>
+  <updated>2026-11-11T00:00:00Z</updated>
   <author><name>Cyrus Sarkosh</name><uri>https://csarko.sh/</uri></author>
+  <entry>
+    <title>The Well, shot by shot: how an AI short reads as cinema</title>
+    <link href="https://csarko.sh/research/the-well-shot-by-shot" />
+    <id>https://csarko.sh/research/the-well-shot-by-shot</id>
+    <published>2026-11-11T00:00:00Z</published>
+    <updated>2026-11-11T00:00:00Z</updated>
+    <summary>An award-winning AI short measured shot by shot: 122 shots, two reused camera set-ups, straight cuts only, a human score, and the record of how it was made.</summary>
+    <category term="AI" />
+    <category term="Film" />
+  </entry>
   <entry>
     <title>Buy me tokens: tips priced from the cloud bill</title>
     <link href="https://csarko.sh/research/buy-me-tokens-tips-priced-from-the-cloud-bill" />
