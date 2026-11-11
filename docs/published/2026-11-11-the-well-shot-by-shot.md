@@ -5,7 +5,7 @@ categories: AI, Film
 series: AI short films
 related: reverse-engineering-an-ai-horror-short, horror-sequences-shot-by-shot, how-horror-directors-make-sound-carry-the-fear
 ---
-# The Well, shot by shot: how an AI short reads as cinema
+# The Well: how an AI short reads as cinema
 
 **Question:** "The Well" by Dorian & Daniel took Gold at Runway's AI Festival 2026: five and a half
 minutes of snowbound crime drama played by a hare, a lynx, a wolf and a family of goats, with
