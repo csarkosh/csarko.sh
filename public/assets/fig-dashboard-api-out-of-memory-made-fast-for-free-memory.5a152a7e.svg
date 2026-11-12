@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" width="760" height="300" role="img" aria-labelledby="t">
+  <title id="t">Memory one Billing page load added to the API process, measured on Nov 11, 2026 against the live Firestore data. Before the fix, one query's snapshot reads added 79 MiB and a page load of nine queries at once added 666 MiB, over the service's 256 MiB limit and its new 512 MiB one. After the fix, with field masks and one shared read, a page load added 28 MiB.</title>
+  <style>
+    text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 13px; fill: #e8eaf0; }
+    .title { font-size: 16px; font-weight: 600; }
+    .sec { fill: #a0a8b8; font-size: 12px; }
+    .num { font-weight: 600; }
+    .before { fill: #f5c451; }
+    .after { fill: #7dd3c0; }
+    .limit { stroke: #a0a8b8; stroke-width: 1.5; stroke-dasharray: 5 4; }
+    .axis { stroke: #3a3f4b; stroke-width: 1; }
+    @media (prefers-color-scheme: light) {
+      text { fill: #12151c; }
+      .sec { fill: #4a5263; }
+      .before { fill: #8a6100; }
+      .after { fill: #0a735f; }
+      .limit { stroke: #4a5263; }
+      .axis { stroke: #c9ced6; }
+    }
+  </style>
+  <text class="title" x="16" y="28">Memory a Billing page load added to the API, in MiB</text>
+  <text class="sec" x="16" y="48">Measured Nov 11, 2026 against the live Firestore data; the dashed lines are the service's limits</text>
+
+  <line class="axis" x1="220" y1="70" x2="220" y2="250"/>
+
+  <text x="16" y="100">Before: one query's reads</text>
+  <rect class="before" x="220" y="86" width="59" height="22" rx="3"/>
+  <text class="num" x="287" y="102">79</text>
+
+  <text x="16" y="150">Before: nine queries at once</text>
+  <rect class="before" x="220" y="136" width="500" height="22" rx="3"/>
+  <text class="num" x="726" y="152">666</text>
+
+  <text x="16" y="200">After: a whole page load</text>
+  <rect class="after" x="220" y="186" width="21" height="22" rx="3"/>
+  <text class="num" x="249" y="202">28</text>
+
+  <line class="limit" x1="412" y1="70" x2="412" y2="250"/>
+  <text class="sec" x="412" y="270" text-anchor="middle">256 MiB, the old limit</text>
+  <line class="limit" x1="604" y1="70" x2="604" y2="250"/>
+  <text class="sec" x="604" y="270" text-anchor="middle">512 MiB, the new limit</text>
+</svg>

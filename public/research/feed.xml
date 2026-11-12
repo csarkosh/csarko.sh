@@ -8,6 +8,16 @@
   <updated>2026-11-11T00:00:00Z</updated>
   <author><name>Cyrus Sarkosh</name><uri>https://csarko.sh/</uri></author>
   <entry>
+    <title>A dashboard API that ran out of memory, made fast for free</title>
+    <link href="https://csarko.sh/research/dashboard-api-out-of-memory-made-fast-for-free" />
+    <id>https://csarko.sh/research/dashboard-api-out-of-memory-made-fast-for-free</id>
+    <published>2026-11-11T00:00:00Z</published>
+    <updated>2026-11-11T00:00:00Z</updated>
+    <summary>A 256 MiB Cloud Run API died under nine parallel queries; field masks, shared reads and saved answers made its dashboards fast, all on the free tier.</summary>
+    <category term="Distributed systems" />
+    <category term="Tooling" />
+  </entry>
+  <entry>
     <title>The Well: how an AI short reads as cinema</title>
     <link href="https://csarko.sh/research/the-well-shot-by-shot" />
     <id>https://csarko.sh/research/the-well-shot-by-shot</id>
