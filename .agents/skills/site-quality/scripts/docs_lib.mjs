@@ -26,7 +26,11 @@ export const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ENTI
 // "series" names the run of docs it belongs to (two or more share the name, read in published
 // order), and "related" the slugs its Keep reading block offers, in that order; without it the
 // build picks by shared category (2026-10-23, so no doc ends in a dead end).
-const FIELDS = { description: true, published: true, categories: true, updated: false, source: false, series: false, related: false };
+// "watch" with "watch-title" is the video a doc is about, drawn as a pill in its header so the
+// reader can open it from the first screen (Cyrus, 2026-11-12, for The Well: the whole doc is about
+// that film and its only link was a source at the bottom).
+const FIELDS = { description: true, published: true, categories: true, updated: false, source: false, series: false, related: false, watch: false, 'watch-title': false };
+const MAX_WATCH_TITLE = 60;
 const MAX_RELATED = 4;
 const SERIES_NAME = /^[A-Z][A-Za-z0-9' ]{2,39}$/;
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -151,6 +155,16 @@ export function parseFrontMatter(text, file) {
     if (bad) throw new DocError(`${file}: related "${bad}" is not a doc slug (the URL's last part, no date)`);
     if (new Set(related).size !== related.length) throw new DocError(`${file}: a related doc is listed twice`);
     meta.related = related;
+  }
+  if (meta['watch-title'] !== undefined && meta.watch === undefined) throw new DocError(`${file}: watch-title without "watch"`);
+  if (meta.watch !== undefined) {
+    if (!WATCH_URL.test(meta.watch)) throw new DocError(`${file}: watch must be a youtube.com/shorts/<id> or youtube.com/watch?v=<id> URL`);
+    const title = meta['watch-title'];
+    if (!title) throw new DocError(`${file}: watch needs "watch-title", the video's name for the button`);
+    const length = [...title].length;
+    if (length > MAX_WATCH_TITLE) throw new DocError(`${file}: watch-title is ${length} characters (1 to ${MAX_WATCH_TITLE})`);
+    meta.watch = { url: meta.watch, title };
+    delete meta['watch-title'];
   }
   return { meta, body };
 }
@@ -1100,6 +1114,11 @@ function seriesLine(doc, links) {
 
 const playLink = (game) => `<a class="play" href="${escapeHtml(game.play)}" target="_blank" rel="noopener" data-visits-event="play-${game.slug}">Play ${escapeHtml(game.title)} in your browser ${EXTERNAL_ARROW}</a>`;
 
+// The video a doc is about, as the same pill as Play, under the title so it is on the first screen.
+const watchLine = (doc) => (doc.watch
+  ? `\n        <p class="watch-line"><a class="play" href="${escapeHtml(doc.watch.url)}" target="_blank" rel="noopener" data-visits-event="watch-${doc.slug}">Watch ${escapeHtml(doc.watch.title)} on YouTube ${EXTERNAL_ARROW}</a></p>`
+  : '');
+
 // Where the prose ends, before Sources: the doc's series, two to four docs to read next, the game
 // it is about, and the feed. Hand-picked through front matter, else chosen by build (buildSite).
 function keepReading(doc, links) {
@@ -1197,7 +1216,7 @@ const DOC_CSS = `
     .next-list .card { padding: 16px 18px; background: var(--bg); }
     .next-list .doc-title { font-size: 1.05rem; }
     .next-list .doc-desc { font-size: 14.5px; }
-    .play-line { margin: 20px 0 0; }
+    .play-line, .watch-line { margin: 20px 0 0; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
@@ -1271,7 +1290,7 @@ ${rail}    <main id="top" tabindex="-1">
         <p class="lead">${escapeHtml(doc.description)}</p>
         <ul class="tags">
           <li>${readingMinutes(doc.readWords)} min read</li>${source}
-        </ul>${seriesLine(doc, links)}
+        </ul>${seriesLine(doc, links)}${watchLine(doc)}
       </header>
 ${prose(opening)}${inlineContents(doc)}${prose(sections)}${keepReading(doc, links)}${prose(sources)}      <section class="author" aria-label="About the author"${doc.hasSources ? '' : ' data-read-end'}>
         <p class="section-label">Written by</p>

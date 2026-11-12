@@ -32,6 +32,19 @@ test('parseFrontMatter reads categories in the fixed order and refuses anything 
   rejects(fm([...base, 'categories: AI, Film, Game design, Tooling']), /4 categories; at most 3/);
 });
 
+test('parseFrontMatter reads a watch link: a YouTube URL and the video\'s title, both or neither', () => {
+  const base = [`description: ${DESC}`, 'published: 2026-09-14'];
+  const url = 'https://www.youtube.com/watch?v=yBs_pMUDrrk';
+  const { meta } = parseFrontMatter(fm([...base, `watch: ${url}`, 'watch-title: The Well']), FILE);
+  assert.deepEqual(meta.watch, { url, title: 'The Well' });
+  assert.ok(!('watch-title' in meta), 'the title travels inside watch');
+  assert.equal(parseFrontMatter(fm(base), FILE).meta.watch, undefined);
+  rejects(fm([...base, 'watch: https://vimeo.com/123', 'watch-title: The Well']), /watch must be a youtube\.com\/shorts\/<id> or youtube\.com\/watch\?v=<id> URL/);
+  rejects(fm([...base, `watch: ${url}`]), /watch needs "watch-title"/);
+  rejects(fm([...base, 'watch-title: The Well']), /watch-title without "watch"/);
+  rejects(fm([...base, `watch: ${url}`, `watch-title: ${'x'.repeat(61)}`]), /watch-title is 61 characters \(1 to 60\)/);
+});
+
 test('parseFrontMatter accepts CRLF line endings', () => {
   const { meta } = parseFrontMatter(fm([`description: ${DESC}`, 'published: 2026-09-14']).replace(/\n/g, '\r\n'), FILE);
   assert.equal(meta.published, '2026-09-14');
@@ -331,6 +344,14 @@ test('docPage has the tags, JSON-LD and markers the checks expect', () => {
   assert.deepEqual(article.sameAs, [source]);
   const crumbs = graph.find((n) => n['@type'] === 'BreadcrumbList').itemListElement.map((i) => i.item);
   assert.deepEqual(crumbs, ['https://csarko.sh/', 'https://csarko.sh/research', 'https://csarko.sh/research/shader-looks']);
+});
+
+test('a doc with a watch link carries it as a pill in its header, on the first screen', () => {
+  const url = 'https://www.youtube.com/watch?v=yBs_pMUDrrk';
+  const html = docPage(doc('the-well', '2026-09-14', `watch: ${url}\nwatch-title: The Well & co\n`), themeBlocks(INDEX));
+  const header = /<header class="doc-header">([\s\S]*?)<\/header>/.exec(html)[1];
+  assert.ok(header.includes(`<p class="watch-line"><a class="play" href="${url}" target="_blank" rel="noopener" data-visits-event="watch-the-well">Watch The Well &amp; co on YouTube <svg`), header);
+  assert.ok(!docPage(doc('plain', '2026-09-14'), themeBlocks(INDEX)).includes('<p class="watch-line">'), 'no watch, no pill');
 });
 
 test('indexPage lists every doc with CollectionPage JSON-LD', () => {

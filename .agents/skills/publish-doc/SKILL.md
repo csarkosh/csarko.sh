@@ -75,9 +75,16 @@ updated: <YYYY-MM-DD, only when revising a published doc>
 series: <the run of docs it belongs to, only if it has one; see "Series and Keep reading">
 related: <2 to 4 doc slugs for its Keep reading block, only to hand-pick them>
 source: <https://github.com/… URL of the original, only if that repo is public>
+watch: <youtube.com/watch?v=<id> or youtube.com/shorts/<id> URL, only for a doc about one video>
+watch-title: <the video's name, up to 60 characters; required with watch>
 ---
 # <Title>
 ```
+
+**A doc about one video links it from its header** *(Cyrus, 2026-11-12, for The Well: the whole
+doc was about that film and its only link was source [1] at the bottom)*: `watch` and `watch-title`
+draw "Watch <watch-title> on YouTube" as the accent pill, under the title and the series line, so it
+is on the first screen. Keep the video in Sources too; the pill is not a citation.
 
 The build refuses: em-dashes (use commas, colons or semicolons), an image that is
 not a figure (below), links that aren't `https://`, `#anchor` or `/root-relative`,
@@ -189,8 +196,8 @@ best next read is in another category.
 
 Every link the page adds counts in the visits log, so the dashboard shows which ones are
 followed: `toc` and `toc-rail` (the contents), `doc-<slug>` (a link in the text to
-another doc), `series-<slug>`, `next-<slug>` (Keep reading), `end-<slug>` (Read next) and
-`play-<game>`, plus `section-<n>` from `reading.js` when a section has been on screen for
+another doc), `series-<slug>`, `next-<slug>` (Keep reading), `end-<slug>` (Read next),
+`watch-<doc slug>` (the header's watch pill) and `play-<game>`, plus `section-<n>` from `reading.js` when a section has been on screen for
 5 seconds (n 0 is the opening).
 
 ### Categories

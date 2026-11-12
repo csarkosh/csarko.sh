@@ -561,7 +561,7 @@ dropped because its host went down and took the numbers with it.)*
   spent a median of 16 s on a doc and most flicked to the end)*: the contents count `toc` and
   `toc-rail`, a link in the text to another doc `doc-<slug>`, the series line `series-<slug>`, Keep
   reading `next-<slug>`, the Read next link after the author box `end-<slug>`, the Play button
-  `play-<game>`, and the site's own `reading.js` (the one script of ours, doc pages only) sends
+  `play-<game>`, the header's watch pill `watch-<doc slug>` (a doc's `watch:` video, *2026-11-12*), and the site's own `reading.js` (the one script of ours, doc pages only) sends
   `section` (`d.n`, n 0 for the opening) once a section has sat across the middle of a visible
   screen for 5 s, which a flick never does; the dashboard's Events card lists it as `section-<n>`. A
   doc page now carries about 5,054 B of the 10,000 B script budget. Campaign tags on links Cyrus posts (`?ref=substack`, `?ref=linkedin`) are

@@ -4,6 +4,9 @@ published: 2026-11-11
 categories: AI, Film
 series: AI short films
 related: reverse-engineering-an-ai-horror-short, horror-sequences-shot-by-shot, how-horror-directors-make-sound-carry-the-fear
+updated: 2026-11-12
+watch: https://www.youtube.com/watch?v=yBs_pMUDrrk
+watch-title: The Well
 ---
 # The Well: how an AI short reads as cinema
 
