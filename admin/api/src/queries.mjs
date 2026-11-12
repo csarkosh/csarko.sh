@@ -84,7 +84,29 @@ export function snapshotAgo(snapshots, today, daysAgo = 7) {
   return pick;
 }
 
+/** How far back a card looks for the newest snapshot holding its part. */
+export const NEWEST_DAYS = 31;
+
 export function createQueries({ visits, gsc, youtube, youtubeAnalytics = null, github, hn, psi, uptime, hosting, sitemap, sitemapFor, store, config, finance = null, now = Date.now, log = console }) {
+  /**
+   * `{ <field>: { value, at } }` for each field: the newest snapshot of the last NEWEST_DAYS that
+   * holds it, read by those fields and `at` alone (absent fields are left out). Not the latest
+   * document: Modal's job opens each day's document ten minutes before the snapshot fills it, and a
+   * day whose snapshot failed holds Modal's part alone, so the newest document may carry none of the
+   * snapshot's own parts. Health and Search then inspected the sitemap's 33 URLs live and Films
+   * asked YouTube, 27 to 54 s a load (2026-10-30 to 11-01).
+   */
+  async function newestWith(...fields) {
+    const today = isoDate(now());
+    const docs = await store.listSnapshots(addDays(today, -NEWEST_DAYS), today, { fields: [...fields, "at"] });
+    const out = {};
+    for (const f of fields) {
+      const d = docs.findLast((x) => x[f] !== undefined && x[f] !== null);
+      if (d !== undefined) out[f] = { value: d[f], at: d.at ?? null };
+    }
+    return out;
+  }
+
   /** Runs one part of an answer, reporting a missing credential or a failure instead of throwing. */
   async function part(hints, name, envName, configured, fn) {
     if (!configured) {
@@ -144,7 +166,7 @@ export function createQueries({ visits, gsc, youtube, youtubeAnalytics = null, g
       log.error("admin: films failed", error);
       const message = error instanceof Error ? error.message : String(error);
       h.errors.films = message;
-      const last = (await store.latestSnapshot())?.films;
+      const last = (await newestWith("films")).films?.value;
       return isFilmsPart(last) ? { ...last, error: message, failedAt: new Date(t).toISOString() } : null;
     }
   }
@@ -256,12 +278,12 @@ export function createQueries({ visits, gsc, youtube, youtubeAnalytics = null, g
         gsc.query({ startDate: r.startDate, endDate: r.endDate, dimensions: ["query"], rowLimit: 100 }),
         gsc.query({ startDate: r.startDate, endDate: r.endDate, dimensions: ["page"], rowLimit: 100 }),
         part(h, "sitemap", "SITEMAP_URL", true, () => sitemap.urls()),
-        store.latestSnapshot(),
+        newestWith("indexed"),
       ]);
       const perDay = gscMap.perDayOf(dateRows, r.startDate, r.endDate);
       const prevTotals = gscMap.totalsOf(gscMap.perDayOf(prevRows, r.prevStartDate, r.prevEndDate));
       // The indexing result is the daily snapshot's (see health()); live only before the first snapshot.
-      const stored = latest?.indexed ?? null;
+      const stored = latest.indexed?.value ?? null;
       const [indexed, sitemapState] = await Promise.all([
         stored ?? (urls === null ? null : part(h, "indexed", "GSC_SA_KEY", true, () => gsc.indexedOf(urls))),
         part(h, "sitemapState", "GSC_SA_KEY", true, () => gsc.sitemap(config.sitemapUrl)),
@@ -276,7 +298,7 @@ export function createQueries({ visits, gsc, youtube, youtubeAnalytics = null, g
         queries: gscMap.topRowsOf(queryRows, "query"),
         pages: gscMap.topRowsOf(pageRows, "page").map(({ page, clicks, impressions }) => ({ page, clicks, impressions })),
         indexed,
-        indexedAt: indexed === null ? null : stored === null ? new Date(now()).toISOString() : latest.at ?? null,
+        indexedAt: indexed === null ? null : stored === null ? new Date(now()).toISOString() : latest.indexed.at,
         sitemap: sitemapState,
       }, h);
     },
@@ -302,16 +324,16 @@ export function createQueries({ visits, gsc, youtube, youtubeAnalytics = null, g
       const range = hourlyRange(days, now());
       const [live, latest, lastDeployAt, pageRows, urls, sitemapState] = await Promise.all([
         uptime.check(),
-        store.latestSnapshot(),
+        newestWith("lighthousePerformance", "indexed"),
         part(h, "hosting", "HOSTING_SITE", true, () => hosting.lastDeployAt()),
         part(h, "visits", "VISITS_DATASET", visits.configured, () => visits.pages(range)),
         part(h, "sitemap", "SITEMAP_URL", true, () => sitemap.urls()),
         part(h, "sitemapState", "GSC_SA_KEY", gsc.configured, () => gsc.sitemap(config.sitemapUrl)),
       ]);
-      let lighthousePerformance = latest?.lighthousePerformance ?? null;
-      let lighthouseAt = typeof latest?.lighthousePerformance === "number" ? latest.at ?? null : null;
-      if (latest === null) {
-        // No snapshot yet: run Lighthouse once (cached an hour) so the card is not empty on day one.
+      let lighthousePerformance = typeof latest.lighthousePerformance?.value === "number" ? latest.lighthousePerformance.value : null;
+      let lighthouseAt = lighthousePerformance === null ? null : latest.lighthousePerformance.at;
+      if (latest.lighthousePerformance === undefined) {
+        // No snapshot holds a score yet: run Lighthouse once (cached an hour) so the card is not empty on day one.
         const score = await part(h, "lighthouse", "PSI_KEY", psi.configured, () => psi.performance());
         lighthousePerformance = score?.performance ?? null;
         lighthouseAt = score?.at ?? null;
@@ -322,10 +344,10 @@ export function createQueries({ visits, gsc, youtube, youtubeAnalytics = null, g
       // on the request (seen 2026-10-13: 60 s and a 504). The daily job
       // inspects them once; a request inspects live only while no snapshot
       // holds a result, as on day one.
-      const stored = latest?.indexed ?? null;
+      const stored = latest.indexed?.value ?? null;
       const indexedFull = stored ?? (urls === null ? null : await part(h, "indexed", "GSC_SA_KEY", gsc.configured, () => gsc.indexedOf(urls)));
       const indexed = indexedFull === null ? null : { indexed: indexedFull.indexed, total: indexedFull.total };
-      const indexedAt = indexedFull === null ? null : stored === null ? new Date(now()).toISOString() : latest.at ?? null;
+      const indexedAt = indexedFull === null ? null : stored === null ? new Date(now()).toISOString() : latest.indexed.at;
       const sitemapFetchedAt = sitemapState?.lastDownloaded ?? null;
       const overall = assessHealth({ ...live, lighthousePerformance, indexed, notFound, sitemapFetchedAt, now: now() });
       return withHints({
@@ -355,8 +377,8 @@ export function createQueries({ visits, gsc, youtube, youtubeAnalytics = null, g
       const h = hints();
       const empty = { days: filmsDays(days), from: null, to: null, at: null, lag: ANALYTICS_LAG, films: null, others: null };
       if (youtubeAnalytics === null || !youtubeAnalytics.configured) return { ...empty, notConfigured: { films: "YOUTUBE_OAUTH" } };
-      const latest = await store.latestSnapshot();
-      let stored = isFilmsPart(latest?.films) ? latest.films : null;
+      const newest = (await newestWith("films")).films?.value;
+      let stored = isFilmsPart(newest) ? newest : null;
       if (stored !== null && typeof stored.error === "string") h.errors.films = stored.error;
       if (stored === null) stored = await part(h, "films", "YOUTUBE_OAUTH", true, () => filmsLive());
       return withHints(stored === null ? empty : filmsAnswer(stored, days), h);

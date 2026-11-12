@@ -738,7 +738,8 @@ resource "google_cloud_scheduler_job" "finance_views" {
 
 # The Firestore rules: the first this database has had (none was released
 # before, so no browser could read anything). They let the admin allowlist read
-# the views and nothing else; every other document stays the service
+# the Billing page's views and the dashboards' saved answers (2026-11-11), one
+# document at a time, and nothing else; every other document stays the service
 # accounts', which the rules never apply to. The allowlist is the tfvars' (the
 # repo is public), so the rules are made here rather than in a file.
 resource "google_firebaserules_ruleset" "firestore" {
@@ -751,10 +752,18 @@ resource "google_firebaserules_ruleset" "firestore" {
         rules_version = '2';
         service cloud.firestore {
           match /databases/{database}/documents {
-            match /financeViews/{range} {
-              allow get: if request.auth != null
+            function isAdmin() {
+              return request.auth != null
                 && request.auth.token.email_verified == true
                 && request.auth.token.email in ${jsonencode(var.admin_emails)};
+            }
+            // The Billing page's hourly views.
+            match /financeViews/{range} {
+              allow get: if isAdmin();
+            }
+            // The dashboards' saved answers, shown first while the live ones come (saved.mjs).
+            match /adminViews/{id} {
+              allow get: if isAdmin();
             }
           }
         }

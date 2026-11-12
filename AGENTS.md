@@ -416,11 +416,13 @@ anything related to the admin pages in this repo:
   (`https://apis.google.com` in `script-src`, Identity Toolkit and Secure Token in
   `connect-src`, `frame-src 'self'` for the auth iframe); the Firebase Auth SDK itself
   is bundled and self-hosted (`admin/public/vendor/`). The only other cross-origin
-  requests are to the app APIs listed in `admin/public/apps.json`, and the Billing page's
-  precomputed views in Firestore (that app's `views`, `https://firestore.googleapis.com`;
-  *2026-11-11*, after the page's nine queries took the API past its memory: the views are
-  rewritten hourly, the page reads one document a range with the reader's ID token and asks the
-  API for anything missing or stale; `admin/CONTRACT.md`, "The views").
+  requests are to the app APIs listed in `admin/public/apps.json`, and Firestore
+  (`https://firestore.googleapis.com`, an app's `views` or `saved`; *2026-11-11*): the Billing
+  page's views, rewritten hourly, and the csarko.sh and Arkos IDE dashboards' saved answers, each
+  the last live answer to the same request, which a card draws at once and then cross-fades to the
+  live one if it differs (*Cyrus: "instant, then live"*). Both are read with the reader's ID token
+  under rules that let the allowlist read those two collections only; `admin/CONTRACT.md`, "Saved
+  answers" and Finance's "The views".
 - **Not a target.** Indexing: the pages carry `noindex, nofollow`, `admin/public/robots.txt`
   disallows everything, there is no sitemap entry, JSON-LD, Open Graph card or canonical,
   and the Lighthouse SEO score is ignored. `check.py --admin` runs the checks that
@@ -441,7 +443,10 @@ anything related to the admin pages in this repo:
   card took 29 to 60 s)*: a Search Console URL inspection is 5 to 7 s a URL and a
   PageSpeed run longer, so the daily snapshot inspects the sitemap and runs Lighthouse
   and stores both; `health` and `search` read the snapshot and inspect live only before
-  the first one exists. Every other collector answers in under a second and is cached
+  the first one exists. They read the newest snapshot *that holds* the part, never just the
+  newest document *(2026-11-11)*: Modal's job opens each day's document ten minutes before the
+  snapshot fills it, and on a day the snapshot failed that document held Modal's part alone, so
+  Health and Search inspected 33 URLs live, 27 to 54 s a load (2026-10-30 to 11-01). Every other collector answers in under a second and is cached
   five minutes. Day Hike's BigQuery queries cost about a second each of fixed job
   overhead, in parallel.
 - **No cookies anywhere**: Firebase Auth keeps its session in IndexedDB.

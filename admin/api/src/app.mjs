@@ -35,6 +35,7 @@ import { clientIpOf } from "./limiter.mjs";
 import { isQueryName, isManualKey } from "./queries.mjs";
 import { isArkosQueryName, parseWho } from "./arkos-queries.mjs";
 import { isFinanceQueryName, isFinanceManualKey, parseRange } from "./finance-queries.mjs";
+import { savedId, SAVED_SLUGS } from "./saved.mjs";
 
 const MAX_BODY_BYTES = 1024;
 
@@ -43,8 +44,14 @@ const FINANCE_PREFIX = "/finance";
 /** The routes Cloud Scheduler calls with its OIDC token: the daily snapshot and the hourly finance views. */
 const SCHEDULED = ["/admin/snapshot", `${FINANCE_PREFIX}/admin/refresh`];
 
-export function createApp({ config, queries, arkos = null, finance = null, limiter, adminAuth, oidc, now = Date.now, log = console }) {
+export function createApp({ config, queries, arkos = null, finance = null, saver = null, limiter, adminAuth, oidc, now = Date.now, log = console }) {
   const readersMissingLogged = { done: false };
+
+  /** Saves a dashboard answer for the page to show first next time (saved.mjs), then answers it. */
+  async function answerSaved(res, prefix, path, search, body, cors) {
+    if (saver !== null) await saver.save(savedId(SAVED_SLUGS[prefix], path, search), body);
+    return answer(res, 200, body, cors);
+  }
 
   return function handle(req, res) {
     const url = new URL(req.url ?? "/", "http://localhost");
@@ -101,7 +108,7 @@ export function createApp({ config, queries, arkos = null, finance = null, limit
   async function route(req, res, path, search, cors) {
     if (path === "/admin/kpis") {
       if (req.method !== "GET") return fail(res, 405, "method not allowed", { ...cors, allow: "GET, OPTIONS" });
-      return answer(res, 200, await queries.kpis(), cors);
+      return answerSaved(res, "", path, search, await queries.kpis(), cors);
     }
 
     const query = /^\/admin\/query\/([a-z]+)$/.exec(path);
@@ -112,7 +119,7 @@ export function createApp({ config, queries, arkos = null, finance = null, limit
       if (days === null) return fail(res, 400, "days must be 1, 7, 30 or 90", cors);
       const tz = parseTz(search.get("tz"));
       if (tz === null) return fail(res, 400, "tz must be an IANA time zone", cors);
-      return answer(res, 200, await queries[query[1]](days, tz), cors);
+      return answerSaved(res, "", path, search, await queries[query[1]](days, tz), cors);
     }
 
     const manual = /^\/admin\/manual\/([a-z]+)$/.exec(path);
@@ -136,7 +143,7 @@ export function createApp({ config, queries, arkos = null, finance = null, limit
   async function routeArkos(req, res, path, search, cors) {
     if (path === "/admin/kpis") {
       if (req.method !== "GET") return fail(res, 405, "method not allowed", { ...cors, allow: "GET, OPTIONS" });
-      return answer(res, 200, await arkos.kpis(), cors);
+      return answerSaved(res, ARKOS_PREFIX, path, search, await arkos.kpis(), cors);
     }
 
     const query = /^\/admin\/query\/([a-z]+)$/.exec(path);
@@ -147,7 +154,7 @@ export function createApp({ config, queries, arkos = null, finance = null, limit
       if (days === null) return fail(res, 400, "days must be 1, 7, 30 or 90", cors);
       const who = parseWho(search.get("who"));
       if (who === null) return fail(res, 400, "who must be users, me or all", cors);
-      return answer(res, 200, await arkos[query[1]](days, who), cors);
+      return answerSaved(res, ARKOS_PREFIX, path, search, await arkos[query[1]](days, who), cors);
     }
 
     return fail(res, 404, "not found", cors);

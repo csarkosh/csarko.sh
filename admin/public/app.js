@@ -5,13 +5,15 @@
  * answers, and each fills on its own: a slow app never holds the others. An app whose
  * API fails still gets its card, marked Unreachable with the error in place of the tiles.
  * A KPI whose value is null (its source is not configured) shows a dash and names the
- * secret to add. The content fades in over its skeleton, where it stays (motion.js).
+ * secret to add. The content fades in over its skeleton, where it stays (motion.js). A card whose
+ * API saves its answers (apps.json `saved`) draws the saved one first and cross-fades to the live
+ * one when it differs (instant.js).
  */
 
 import { accountMenu, requireSession } from '/auth.js';
 import { ago, delta, el, errorLine, hold, loading, settle, status, tile } from '/charts.js';
 import { loadApps, preview, source } from '/data.js';
-import { fadeIn } from '/motion.js';
+import { savedAll, savedThenLive } from '/instant.js';
 
 const root = document.getElementById('top');
 const grid = document.getElementById('apps');
@@ -26,10 +28,17 @@ function appCard(app) {
   return card;
 }
 
+/** Puts the card's head and sub back as appCard made them, so a second fill (the live answer after the saved one) replaces the first. */
+function reset(card, app) {
+  card.querySelector('.card-head .status')?.remove();
+  card.querySelector('.sub').replaceChildren(el('a', { href: app.page }, 'Open the dashboard'));
+}
+
 /** The env name a KPI is waiting on, from the answer's notConfigured map (impressions share the search key). */
 const missingFor = (data, key) => data.notConfigured?.[key] ?? (key === 'impressions' ? data.notConfigured?.search : null) ?? null;
 
 function fill(card, app, data) {
+  reset(card, app);
   const health = data.health ?? {};
   card.querySelector('.card-head').append(status(health.status, health.note));
   card.querySelector('.sub').prepend(`Updated ${ago(data.at)}. `);
@@ -48,16 +57,13 @@ function fill(card, app, data) {
   const body = card.querySelector('.body');
   body.replaceChildren(el('div', { class: 'tiles' }, ...tiles),
     ...Object.entries(data.errors ?? {}).map(([part, message]) => errorLine(`${part} failed.`, String(message))));
-  body.removeAttribute('aria-busy');
-  fadeIn(body);
 }
 
 function unreachable(card, app, error) {
+  reset(card, app);
   card.querySelector('.card-head').append(status('critical', 'Unreachable'));
   const body = card.querySelector('.body');
   body.replaceChildren(errorLine(`Unreachable: ${app.api}`, error.message));
-  body.removeAttribute('aria-busy');
-  fadeIn(body);
 }
 
 /**
@@ -86,12 +92,16 @@ async function load() {
     return;
   }
   await Promise.all(apps.map(async (app, i) => {
-    try {
-      fill(cards[i], app, await data.kpis(app));
-    } catch (error) {
-      unreachable(cards[i], app, error);
-    }
-    settle(cards[i], app.slug);
+    const card = cards[i];
+    const live = data.kpis(app).then((answer) => [answer]);
+    live.catch(() => {});
+    await savedThenLive({
+      card, key: app.slug, body: card.querySelector('.body'), live,
+      saved: savedAll([data.savedKpis(app)]),
+      current: () => true,
+      draw: ([answer]) => fill(card, app, answer),
+      fail: (error) => unreachable(card, app, error),
+    });
   }));
 }
 

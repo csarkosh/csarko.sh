@@ -18,6 +18,7 @@ import { accountMenu, requireSession } from '/auth.js';
 import { ago, bars, columns, compact, delta, el, errorLine, filteredList, folded, hold, loading, pct, settle, shortDay, skeleton, table, tile } from '/charts.js';
 import { RANGES, loadApps, preview, readParam, readRange, readToggles, source, utcMidnightHere, viewerZone, viewerZoneName, writeParam, writeRange, writeToggles } from '/data.js';
 import { easeHeight, fadeIn, fadeOut, tokens } from '/motion.js';
+import { savedAll, savedThenLive } from '/instant.js';
 
 const SLUG = 'ide-arkos';
 const root = document.getElementById('top');
@@ -44,6 +45,13 @@ const query = (name, days) => {
   const key = `${name}:${days}:${who}`;
   if (!asked.has(key)) asked.set(key, data.query(app, name, days, { who }));
   return asked.get(key);
+};
+// The saved answers, asked once each the same way (instant.js draws them first).
+let askedSaved = new Map();
+const savedQuery = (name, days) => {
+  const key = `${name}:${days}:${who}`;
+  if (!askedSaved.has(key)) askedSaved.set(key, data.saved(app, name, days, { who }));
+  return askedSaved.get(key);
 };
 
 const rangeText = (days) => (days === 1 ? 'the last 24 hours' : `the last ${days} days`);
@@ -611,6 +619,7 @@ async function loadCard(def, gen, card) {
   body.setAttribute('aria-busy', 'true');
   const answers = Promise.all(def.queries.map((name) => query(name, range)));
   answers.catch(() => {});
+  const saved = savedAll(def.queries.map((name) => savedQuery(name, range)));
   // A rendered card goes back to its skeleton while it reloads (its content fades out, the
   // skeleton in), held at the height this view had last, else the one it has now, so nothing
   // under it moves but by easing; see hold() in charts.js.
@@ -624,23 +633,17 @@ async function loadCard(def, gen, card) {
     fadeIn(body, tokens().short3);
     hold(card, def.id, now);
   }
-  try {
-    const results = await answers;
-    if (gen !== generation) return;
-    const sub = def.sub(range, results[0]);
-    card.querySelector('.sub').textContent = sub;
-    card.querySelector('.sub').hidden = !sub;
-    body.replaceChildren(...def.render(results, range));
-  } catch (error) {
-    if (gen !== generation) return;
-    body.replaceChildren(errorLine(`${def.title} could not be read.`, error.message));
-  } finally {
-    if (gen === generation) {
-      body.removeAttribute('aria-busy');
-      fadeIn(body);
-      settle(card, def.id);
-    }
-  }
+  await savedThenLive({
+    card, key: def.id, body, live: answers, saved,
+    current: () => gen === generation,
+    draw: (results) => {
+      const sub = def.sub(range, results[0]);
+      card.querySelector('.sub').textContent = sub;
+      card.querySelector('.sub').hidden = !sub;
+      body.replaceChildren(...def.render(results, range));
+    },
+    fail: (error) => body.replaceChildren(errorLine(`${def.title} could not be read.`, error.message)),
+  });
 }
 
 /**
@@ -651,6 +654,7 @@ async function load() {
   generation += 1;
   const gen = generation;
   asked = new Map();
+  askedSaved = new Map();
   if (!grid.querySelector('.card')) grid.replaceChildren(...CARDS.map(cardShell));
   await Promise.allSettled(CARDS.map((def) => loadCard(def, gen, document.getElementById(`card-${def.id}`))));
 }

@@ -4,7 +4,8 @@
  * credentials. The shapes are the contract in admin/CONTRACT.md.
  */
 
-import { fetchWithAuth } from '/auth.js';
+import { fetchWithAuth, idToken } from '/auth.js';
+import { savedId } from '/saved-id.js';
 
 export const RANGES = [
   { days: 1, label: 'Today' },
@@ -184,7 +185,35 @@ function sampleRange(name, data, days) {
 }
 
 /**
- * A source: kpis(app), query(app, name, days, extra), manual(app, key, value). Every live request
+ * The answer an app's API last gave for this request, saved in Firestore (apps.json `saved`, the
+ * collection; admin/api/src/saved.mjs): `{ at, answer }`, or null when there is none to show (no
+ * `saved` for the app, not signed in, none yet, refused, any failure). The page draws it at once and
+ * then the live answer; a null only means it waits for the live one, as before.
+ */
+async function readSaved(app, path, query) {
+  if (!app?.saved) return null;
+  try {
+    const token = await idToken();
+    if (!token) return null;
+    const id = savedId(app.slug, path, query);
+    const response = await fetch(`${app.saved}/${encodeURIComponent(id)}`, { headers: { Authorization: `Bearer ${token}` }, credentials: 'omit', mode: 'cors' });
+    if (!response.ok) return null;
+    const fields = (await response.json())?.fields ?? {};
+    const at = fields.at?.stringValue;
+    const body = fields.body?.stringValue;
+    if (typeof at !== 'string' || typeof body !== 'string') return null;
+    return { at, answer: JSON.parse(body) };
+  } catch {
+    return null;
+  }
+}
+
+/** The parameters a query sends, as one object: `query()` sends them and `saved()` names its document by them. */
+const queryParams = (days, extra = {}) => ({ ...(days === null || days === undefined ? {} : { days: String(days) }), tz: viewerZone, ...extra });
+
+/**
+ * A source: kpis(app), query(app, name, days, extra), manual(app, key, value), and the saved
+ * answers of the first two, savedKpis(app) and saved(app, name, days, extra), which the sample has none of. Every live request
  * carries `tz` (viewerZone); `extra` adds query parameters (Arkos's `who`); the sample ignores both.
  * A page whose API scopes by something other than days passes `days` as null and the scope in
  * `extra` (finance's `range=month|last|90|13m`): no `days` is sent, and the sample file under
@@ -206,12 +235,20 @@ export function source() {
       async manual() {
         return { ok: true, at: new Date().toISOString() };
       },
+      async savedKpis() {
+        return null;
+      },
+      async saved() {
+        return null;
+      },
     };
   }
   return {
     kind: 'live',
     kpis: (app) => readJson(`${app.api}/admin/kpis?${new URLSearchParams({ tz: viewerZone })}`),
-    query: (app, name, days, extra = {}) => readJson(`${app.api}/admin/query/${encodeURIComponent(name)}?${new URLSearchParams({ ...(days === null || days === undefined ? {} : { days }), tz: viewerZone, ...extra })}`),
+    query: (app, name, days, extra = {}) => readJson(`${app.api}/admin/query/${encodeURIComponent(name)}?${new URLSearchParams(queryParams(days, extra))}`),
+    savedKpis: (app) => readSaved(app, '/admin/kpis', { tz: viewerZone }),
+    saved: (app, name, days, extra = {}) => readSaved(app, `/admin/query/${name}`, queryParams(days, extra)),
     manual: (app, key, value) => readJson(`${app.api}/admin/manual/${encodeURIComponent(key)}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

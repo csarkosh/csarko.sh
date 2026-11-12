@@ -19,6 +19,7 @@ import { createQueries } from "./queries.mjs";
 import { createArkosQueries } from "./arkos-queries.mjs";
 import { createFinanceQueries } from "./finance-queries.mjs";
 import { createMemoryStore, createFirestoreStore } from "./store.mjs";
+import { createSaver } from "./saved.mjs";
 import { BigQuery } from "@google-cloud/bigquery";
 import { createVisits } from "./collectors/visits.mjs";
 import { createArkos } from "./collectors/arkos.mjs";
@@ -110,6 +111,7 @@ const app = createApp({
   queries,
   arkos,
   finance,
+  saver: createSaver({ store, log }),
   limiter,
   adminAuth: createAdminAuth({ projectId: config.firebaseProject, allowed: config.adminEmails }),
   oidc: createOidcVerifier({ invoker: config.snapshotInvoker }),

@@ -15,6 +15,7 @@ import { accountMenu, requireSession } from '/auth.js';
 import { ago, bars, columns, compact, curve, delta, el, errorLine, filteredList, folded, hold, loading, pct, settle, shortDay, skeleton, status, table, tile } from '/charts.js';
 import { RANGES, loadApps, preview, readRange, readToggles, source, utcMidnightHere, viewerZone, viewerZoneName, writeRange, writeToggles } from '/data.js';
 import { fadeIn, fadeOut, tokens } from '/motion.js';
+import { savedAll, savedThenLive } from '/instant.js';
 
 const SLUG = 'csarko.sh';
 const root = document.getElementById('top');
@@ -739,6 +740,8 @@ async function loadCard(def, gen, card) {
   body.setAttribute('aria-busy', 'true');
   const answers = Promise.all(def.queries.map((name) => data.query(app, name, range)));
   answers.catch(() => {});
+  // The answers this request last got, drawn first when they come before the live ones (instant.js).
+  const saved = savedAll(def.queries.map((name) => data.saved(app, name, range)));
   // A rendered card goes back to its skeleton while it reloads (its content fades out, the
   // skeleton in), held at the height this view had last, else the one it has now, so nothing
   // under it moves but by easing; see hold() in charts.js.
@@ -752,23 +755,17 @@ async function loadCard(def, gen, card) {
     fadeIn(body, tokens().short3);
     hold(card, def.id, now);
   }
-  try {
-    const results = await answers;
-    if (gen !== generation) return;
-    const sub = def.sub(range, results[0]);
-    card.querySelector('.sub').textContent = sub;
-    card.querySelector('.sub').hidden = !sub;
-    body.replaceChildren(...def.render(results, range, () => loadCard(def, generation, card)));
-  } catch (error) {
-    if (gen !== generation) return;
-    body.replaceChildren(errorLine(`${def.title} could not be read.`, error.message));
-  } finally {
-    if (gen === generation) {
-      body.removeAttribute('aria-busy');
-      fadeIn(body);
-      settle(card, def.id);
-    }
-  }
+  await savedThenLive({
+    card, key: def.id, body, live: answers, saved,
+    current: () => gen === generation,
+    draw: (results) => {
+      const sub = def.sub(range, results[0]);
+      card.querySelector('.sub').textContent = sub;
+      card.querySelector('.sub').hidden = !sub;
+      body.replaceChildren(...def.render(results, range, () => loadCard(def, generation, card)));
+    },
+    fail: (error) => body.replaceChildren(errorLine(`${def.title} could not be read.`, error.message)),
+  });
 }
 
 /**

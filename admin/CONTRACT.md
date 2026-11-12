@@ -43,6 +43,16 @@ Conventions, for every route:
   deploy and depth checks never count.
 - `cache-control: no-store` on every answer; the API caches upstream calls for five
   minutes itself.
+- **Saved answers** *(2026-11-11, Cyrus: "instant, then live")*: every `kpis` and `query`
+  answer of csarko.sh (`/admin/…`) and Arkos IDE (`/arkos/admin/…`) that carries no `errors` is
+  also written to Firestore as `adminViews/<id>`, `{ at, body }` (the answer as JSON text, at
+  most 900 KB). The id is the request: the app's slug, the route under its prefix and the
+  parameters `days`, `range`, `tz`, `who` that were sent, sorted, URI-encoded
+  (`csarko.sh/admin/query/visits?days=7&tz=America/New_York`; `admin/api/src/saved.mjs`, and
+  `admin/public/saved-id.js` for the browser). A page reads that document with the reader's ID
+  token (apps.json `saved`; the rules let the allowlist `get` it), draws it at once marked
+  "saved N ago", and cross-fades to the live answer when it differs (`admin/public/instant.js`).
+  Billing has its own hourly views instead (Finance, "The views"). Day Hike's API is the game's.
 - CORS allows `https://admin.csarko.sh` and `http://localhost:8788` (the preview) with
   the `authorization` header.
 

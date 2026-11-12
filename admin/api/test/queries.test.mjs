@@ -427,3 +427,24 @@ test("a failed films step keeps the last good part with its age, and the rest of
   assert.equal(none.films, null);
   assert.deepEqual(none.errors, { films: "youtube analytics 500: boom" });
 });
+
+test("health and search read the newest snapshot that holds their parts, not a newer document Modal's job opened (2026-10-30 to 11-01: 33 URLs inspected live, 34 s a load)", async () => {
+  const deps = fakes({ psiOn: true });
+  await deps.store.writeSnapshot("2026-10-11", {
+    at: "2026-10-11T11:00:00.000Z",
+    lighthousePerformance: 93,
+    indexed: { indexed: 3, total: 3, missing: [] },
+  });
+  // Today's document, opened by Modal's job before the snapshot ran (or on a day it failed).
+  await deps.store.writeSnapshot("2026-10-12", { finance: { modal: { at: "2026-10-12T10:50:00Z", rows: [] } } });
+  deps.psi.performance = async () => { throw new Error("must not run Lighthouse on a request"); };
+  deps.gsc.indexedOf = async () => { throw new Error("must not inspect on a request"); };
+  const q = createQueries(deps);
+  const health = await q.health(7);
+  assert.equal(health.lighthousePerformance, 93);
+  assert.equal(health.lighthouseAt, "2026-10-11T11:00:00.000Z");
+  assert.deepEqual(health.indexed, { indexed: 3, total: 3 });
+  assert.equal(health.indexedAt, "2026-10-11T11:00:00.000Z");
+  const search = await q.search(28);
+  assert.equal(search.indexedAt, "2026-10-11T11:00:00.000Z");
+});

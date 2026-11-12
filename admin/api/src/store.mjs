@@ -3,7 +3,8 @@
  *
  *   snapshots/<YYYY-MM-DD>   one document a day, merged; about 500 KB since the finance part (2026-10-30)
  *   manual/<key>             { series: [{ at, value }] } newest last, capped
- *   financeViews/<range>     the Billing page's answers for one range, precomputed (finance-views.mjs)
+ *   financeViews/<range>     the Billing page's answers for one range, precomputed hourly (finance-queries.mjs)
+ *   adminViews/<id>          the last answer of a dashboard request, shown first next time (saved.mjs)
  *
  * A snapshot is mostly the day's Cost Explorer rows, so a read of a run of them names the fields
  * it needs (`fields`, Firestore's projection) and the latest is found by its id before its one
@@ -22,6 +23,7 @@ export const SNAPSHOTS = "snapshots";
 export const MANUAL = "manual";
 export const MANUAL_CAP = 400;
 export const FINANCE_VIEWS = "financeViews";
+export const SAVED = "adminViews";
 
 /** `doc` with only the dotted `fields` kept (Firestore's projection), every field when there are none. */
 export function projectFields(doc, fields) {
@@ -43,6 +45,7 @@ export function createMemoryStore() {
   const snapshots = new Map();
   const manual = new Map();
   const views = new Map();
+  const saved = new Map();
   return {
     async listSnapshots(fromDate, toDate, { fields } = {}) {
       return [...snapshots.entries()]
@@ -72,6 +75,12 @@ export function createMemoryStore() {
     },
     async getView(id) {
       return views.has(id) ? structuredClone(views.get(id)) : null;
+    },
+    async writeSaved(id, data) {
+      saved.set(id, structuredClone(data));
+    },
+    async getSaved(id) {
+      return saved.has(id) ? structuredClone(saved.get(id)) : null;
     },
   };
 }
@@ -157,6 +166,16 @@ export async function createFirestoreStore({ projectId, log = console } = {}) {
     getView(id) {
       return soft(`getView ${id}`, async () => {
         const d = await db.collection(FINANCE_VIEWS).doc(id).get();
+        return d.exists ? d.data() : null;
+      }, null);
+    },
+    /** `adminViews/<id>`, replaced whole; throws like every write (saved.mjs makes it soft). */
+    async writeSaved(id, data) {
+      await db.collection(SAVED).doc(id).set(data);
+    },
+    getSaved(id) {
+      return soft(`getSaved ${id}`, async () => {
+        const d = await db.collection(SAVED).doc(id).get();
         return d.exists ? d.data() : null;
       }, null);
     },
