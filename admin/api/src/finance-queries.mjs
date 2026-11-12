@@ -29,6 +29,20 @@
  * The shaping is pure, in `src/finance/`: categories, rows, months (the range and the
  * categories table), idle, daily, activity, projects, films, fal (the series), claude (the fee's
  * rows and the usage), income (the donations), kpis (health). This file only fetches and assembles.
+ *
+ * Read once, shared (2026-11-11). The page asks its ten queries at once, and each used to read the
+ * latest snapshot, a month of whole snapshots for fal and GCP's three jobs on its own: nine copies
+ * of 500 KB documents took the 256 MiB service down (Cloud Run's OOM kill, then 503s on every card).
+ * Now `inputs()` reads the latest snapshot, fal's window (its one field), the fee series and GCP
+ * once and shares the promise for SHARE_MS, so the ten queries of a page load are one set of reads.
+ *
+ * Precomputed views (2026-11-11, Cyrus: an hour's freshness is fine). `refreshViews()` runs every
+ * query for every range and writes each range's answers to `financeViews/<range>` as JSON strings,
+ * which the page reads straight from Firestore with the reader's ID token (the rules allow the
+ * admin allowlist that one collection), so a page load meets no Cloud Run start and no BigQuery
+ * job. The hourly Scheduler job (`POST /finance/admin/refresh`, ten past the hour, so the 06:00
+ * snapshot is in by then) and a fee entered on the page refresh them; the page falls back to these
+ * routes when a view is missing or older than its limit.
  */
 
 import { parseRange, monthsOf, categoriesTable, monthTotals, monthGross, runRateForecast, GCP_EXPORT_FROM } from "./finance/months.mjs";
@@ -51,6 +65,18 @@ export const FINANCE_QUERY_NAMES = ["summary", "categories", "idle", "daily", "a
 /** The hand-entered series the finance page writes (`POST /finance/admin/manual/<key>`): the claude.ai subscription's monthly fee. */
 export const FINANCE_MANUAL_KEYS = [CLAUDE_SUBSCRIPTION_KEY];
 export const FINANCE_APP = "finance";
+/** The ranges a view is written for, as `parseRange` names them. */
+export const VIEW_RANGES = ["month", "last", "90", "13m"];
+/** The queries that take no range: run once per refresh and written into every range's view. */
+export const RANGELESS_QUERIES = ["idle", "daily", "films", "sources"];
+/** A view document stays under Firestore's 1 MiB with room for its field names. */
+export const VIEW_MAX_BYTES = 1_000_000;
+/** How long the queries of one page load share their reads. */
+export const SHARE_MS = 30_000;
+/** The one field of a snapshot fal's series reads. */
+const FAL_FIELDS = ["finance.fal"];
+/** How far back the snapshot looks for the newest Claude Code sync and donate record to carry forward. */
+export const CARRY_DAYS = 60;
 /** What configures each source, for `notConfigured`: an environment variable, except Modal's (the job's secret: the API reports it from the snapshot) and Claude Code's (the manual series the fee is entered in). */
 export const SOURCE_ENV = { aws: "AWS_COST_ROLE_ARN", gcp: "BILLING_DATASET", github: "GITHUB_TOKEN", modal: "MODAL_TOKEN_ID", fal: "FAL_ADMIN_KEY", claude: CLAUDE_SUBSCRIPTION_KEY, ledgers: "FILM_LEDGERS_BUCKET", stripe: "STRIPE_KEY", donate: "STRIPE_WRITE_KEY" };
 export const SOURCE_LABELS = { aws: "AWS Cost Explorer", gcp: "Google Cloud billing export", github: "GitHub usage", modal: "Modal billing report", fal: "fal credit balance", claude: "Claude Code transcripts", ledgers: "Film ledgers", stripe: "Stripe donations", donate: "Tip prices" };
@@ -107,6 +133,39 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
 
   /** GCP's three jobs at once: `{ daily, monthly, lastDay }` (plain rows and a day). */
   const gcpLive = () => Promise.all([gcpBilling.daily(), gcpBilling.monthly(), gcpBilling.lastDay()]).then(([daily, monthly, lastDay]) => ({ daily, monthly, lastDay }));
+
+  /**
+   * What every query reads, read once and shared for SHARE_MS (see the head of the file): the
+   * latest snapshot, GCP's three jobs (with the hints their part left), fal's window and the fee
+   * series. A failure is forgotten at once, so the next query reads again.
+   */
+  let shared = null;
+  function inputs() {
+    const t = now();
+    const today = isoDate(t);
+    if (shared !== null && shared.today === today && shared.expires > t) return shared.promise;
+    const h = hints();
+    const promise = Promise.all([
+      store.latestSnapshot(),
+      part(h, "gcp", gcpBilling.configured, gcpLive),
+      fal.configured ? store.listSnapshots(falWindow(today), today, { fields: FAL_FIELDS }) : [],
+      store.getManual(CLAUDE_SUBSCRIPTION_KEY),
+    ]).then(([snapshot, gcp, falSnapshots, claudeSeries]) => ({ today, snapshot, gcp, falSnapshots, claudeSeries, hints: h }));
+    shared = { today, expires: t + SHARE_MS, promise };
+    promise.catch(() => {
+      if (shared?.promise === promise) shared = null;
+    });
+    return promise;
+  }
+  /** Drops the shared reads, so the next query reads afresh (a fee entered, a refresh). */
+  const forget = () => {
+    shared = null;
+  };
+  /** Copies the shared reads' hints into a query's own. */
+  const takeHints = (h, from) => {
+    Object.assign(h.notConfigured, from.notConfigured);
+    Object.assign(h.errors, from.errors);
+  };
 
   /**
    * A snapshot's part for a source read once a day: the rows when the snapshot has them, else
@@ -235,13 +294,8 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
    * and the line rows (rows.mjs) by day and by month across the sources that answered.
    */
   async function load(h) {
-    const today = isoDate(now());
-    const [snapshot, gcpData, snapshots, claudeSeries] = await Promise.all([
-      store.latestSnapshot(),
-      part(h, "gcp", gcpBilling.configured, gcpLive),
-      fal.configured ? store.listSnapshots(falWindow(today), today) : [],
-      store.getManual(CLAUDE_SUBSCRIPTION_KEY),
-    ]);
+    const { today, snapshot, gcp: gcpData, falSnapshots: snapshots, claudeSeries, hints: from } = await inputs();
+    takeHints(h, from);
     const aws = fromSnapshot(h, snapshot, "aws", awsCost.configured);
     const github = fromSnapshot(h, snapshot, "github", githubBilling.configured);
     const modal = modalFromSnapshot(h, snapshot);
@@ -393,7 +447,7 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
       if (income === null) {
         return withHints({ month, gross: null, fees: null, net: null, count: null, average: null, lastDay: null, days: null, months: null, recent: null, byDoor: null, prices: null, payouts: null, balance: null }, h);
       }
-      const snapshot = await store.latestSnapshot();
+      const { snapshot } = await inputs();
       const record = snapshot?.finance?.donate ?? null;
       return withHints({
         month,
@@ -458,7 +512,7 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
     async claude(range = "month") {
       const h = hints();
       const today = isoDate(now());
-      const [snapshot, rawSeries] = await Promise.all([store.latestSnapshot(), store.getManual(CLAUDE_SUBSCRIPTION_KEY)]);
+      const { snapshot, claudeSeries: rawSeries } = await inputs();
       const months = monthsOf(range, today);
       const month = months.at(-1);
       const series = subscriptionSeries(rawSeries);
@@ -485,6 +539,14 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
     async manual(key, value) {
       const at = new Date(now()).toISOString();
       await store.appendManual(key, { at, value });
+      forget();
+      // The page reloads its cards from the views as soon as this answers, so they are rewritten
+      // first; a refresh that fails leaves the page on the routes until the next one.
+      try {
+        await queries.refreshViews();
+      } catch (error) {
+        log.error("admin: finance views refresh after a manual entry failed", error);
+      }
       return { key, value, at };
     },
 
@@ -498,14 +560,12 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
     async sources() {
       const h = hints();
       const today = isoDate(now());
-      const [snapshot, monthSnapshots, gcpLastDay, gcpFirstDay, falSnapshots, ledgerList, claudeSeries, income] = await Promise.all([
-        store.latestSnapshot(),
-        store.listSnapshots(`${monthOf(today)}-01`, today),
+      const [{ snapshot, falSnapshots, claudeSeries }, monthSnapshots, gcpLastDay, gcpFirstDay, ledgerList, income] = await Promise.all([
+        inputs(),
+        store.listSnapshots(`${monthOf(today)}-01`, today, { fields: ["finance.awsCalls", "finance.aws.calls"] }),
         part(h, "gcp", gcpBilling.configured, () => gcpBilling.lastDay()),
         exportFirstDay(),
-        fal.configured ? store.listSnapshots(falWindow(today), today) : [],
         ledgers.configured ? part(h, "ledgers", true, () => ledgers.list()) : null,
-        store.getManual(CLAUDE_SUBSCRIPTION_KEY),
         loadIncome(h, today),
       ]);
       const fin = snapshot?.finance ?? null;
@@ -570,7 +630,7 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
       const h = hints();
       const t = now();
       const today = isoDate(t);
-      const [loaded, snapshots, income] = await Promise.all([load(h), store.listSnapshots(addDays(today, -7 * TREND_WEEKS + 1), today), loadIncome(h, today)]);
+      const [loaded, snapshots, income] = await Promise.all([load(h), store.listSnapshots(addDays(today, -7 * TREND_WEEKS + 1), today, { fields: ["finance.kpi"] }), loadIncome(h, today)]);
       const values = kpiValues(loaded, today);
       const donations = donationsKpi(income, today);
       const points = snapshots.map((s) => ({ date: s.date, ...(s.finance?.kpi ?? {}) }));
@@ -638,15 +698,21 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
           if (forecast === null) h.errors.awsForecast = failures.join("; ");
         }
       }
-      const [github, gcp, falReading, latest, snapshots, claudeSeries, income] = await Promise.all([
+      const [github, gcp, falReading, latest, snapshots, claudeSeries, income, earlier] = await Promise.all([
         part(h, "github", githubBilling.configured, () => githubBilling.usage()),
         part(h, "gcp", gcpBilling.configured, gcpLive),
         part(h, "fal", fal.configured, () => fal.balance()),
         store.latestSnapshot(),
-        fal.configured ? store.listSnapshots(falWindow(today), addDays(today, -1)) : [],
+        fal.configured ? store.listSnapshots(falWindow(today), addDays(today, -1), { fields: FAL_FIELDS }) : [],
         store.getManual(CLAUDE_SUBSCRIPTION_KEY),
         loadIncome(h, today),
+        // The days before today, by the two parts carried forward alone. Not `latest`: Modal's job
+        // writes today's document at 10:50 UTC, before this runs, so `latest` is today's and never
+        // reached yesterday's (the Mac's sync of 2026-10-30 was dropped on the 31st and every day after).
+        store.listSnapshots(addDays(today, -CARRY_DAYS), addDays(today, -1), { fields: ["finance.claude", "finance.donate"] }),
       ]);
+      /** The newest earlier snapshot's `finance[key]`, or null. */
+      const carried = (key) => earlier.findLast((d) => d.finance?.[key] !== undefined && d.finance?.[key] !== null)?.finance[key] ?? null;
       const donations = donationsKpi(income, today);
       const stripePart = income === null ? null : { at: new Date(t).toISOString(), mtdNet: donations.value, count: incomeFor(income.rows, [monthOf(today)]).count, lastDay: income.lastDay };
       const falPart = falReading === null ? null : { at: new Date(t).toISOString(), balance: falReading.balance, currency: falReading.currency, lastDay: today };
@@ -655,7 +721,7 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
       const modalPart = todays?.finance?.modal ?? null;
       // The usage sync runs on the Mac when Cyrus runs it, not daily, so a new day's document
       // carries the newest part forward until the next sync (its `at` says how old it is).
-      const claudePart = todays?.finance?.claude ?? latest?.finance?.claude ?? null;
+      const claudePart = todays?.finance?.claude ?? carried("claude");
       const modalHints = hints();
       const modal = modalFromSnapshot(modalHints, todays);
       const falHints = hints();
@@ -685,12 +751,63 @@ export function createFinanceQueries({ awsCost, gcpBilling, githubBilling, fal =
           stripe: stripePart,
           ...(modalPart !== null ? { modal: modalPart } : {}),
           ...(claudePart !== null ? { claude: claudePart } : {}),
-          donate: donateOut?.record ?? latest?.finance?.donate ?? null,
+          donate: donateOut?.record ?? todays?.finance?.donate ?? carried("donate"),
           awsCalls,
           kpi,
         }, h),
       };
     },
+  };
+
+  /**
+   * Every range's view: `{ <range>: { at, <query>: "<the answer as JSON>" } }`, the rangeless
+   * queries run once and copied into each. A query that fails is left out (the page asks the route
+   * for it); a view over VIEW_MAX_BYTES drops its largest answers until it fits, the same way.
+   */
+  async function buildViews() {
+    forget();
+    const at = new Date(now()).toISOString();
+    const ranged = FINANCE_QUERY_NAMES.filter((n) => !RANGELESS_QUERIES.includes(n));
+    const settle = async (name, fn) => {
+      try {
+        return [name, JSON.stringify(await fn())];
+      } catch (error) {
+        log.error(`admin: finance view ${name} failed`, error);
+        return [name, null];
+      }
+    };
+    const [once, ...perRange] = await Promise.all([
+      Promise.all(RANGELESS_QUERIES.map((n) => settle(n, () => queries[n]()))),
+      ...VIEW_RANGES.map((r) => Promise.all(ranged.map((n) => settle(n, () => queries[n](r))))),
+    ]);
+    const out = {};
+    VIEW_RANGES.forEach((r, i) => {
+      const fields = Object.fromEntries([...once, ...perRange[i]].filter(([, v]) => v !== null));
+      let bytes = Object.values(fields).reduce((n, v) => n + Buffer.byteLength(v), 0);
+      for (const [name, v] of Object.entries(fields).sort(([, a], [, b]) => b.length - a.length)) {
+        if (bytes <= VIEW_MAX_BYTES) break;
+        log.error(`admin: finance view ${r} drops ${name} (${Buffer.byteLength(v)} B) to fit`);
+        bytes -= Buffer.byteLength(v);
+        delete fields[name];
+      }
+      out[r] = { at, ...fields };
+    });
+    return out;
+  }
+
+  let refreshing = null;
+  /** Builds and writes every view; calls while one runs share it. Answers `{ at, bytes: { <range>: n } }`. */
+  queries.refreshViews = function refreshViews() {
+    if (refreshing !== null) return refreshing;
+    refreshing = (async () => {
+      const views = await buildViews();
+      await store.writeViews(views);
+      const bytes = Object.fromEntries(Object.entries(views).map(([r, v]) => [r, Object.values(v).reduce((n, x) => n + Buffer.byteLength(String(x)), 0)]));
+      return { at: views[VIEW_RANGES[0]].at, bytes };
+    })().finally(() => {
+      refreshing = null;
+    });
+    return refreshing;
   };
 
   return queries;

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createFinanceQueries, isFinanceQueryName, isFinanceManualKey, FINANCE_QUERY_NAMES, FINANCE_MANUAL_KEYS, SOURCE_ENV, CLAUDE_NO_SYNC, STRIPE_NOTE, parseRange } from "../src/finance-queries.mjs";
+import { createFinanceQueries, isFinanceQueryName, isFinanceManualKey, FINANCE_QUERY_NAMES, FINANCE_MANUAL_KEYS, SOURCE_ENV, CLAUDE_NO_SYNC, STRIPE_NOTE, parseRange, VIEW_RANGES, RANGELESS_QUERIES, VIEW_MAX_BYTES } from "../src/finance-queries.mjs";
 import { UpstreamError } from "../src/http.mjs";
 import { createQueries } from "../src/queries.mjs";
 import { createMemoryStore } from "../src/store.mjs";
@@ -741,4 +741,118 @@ test("income carries the by-door split and the prices record from the snapshot",
   const off = await createFinanceQueries({ ...fakes({ stripeOn: false }), store, now: () => NOW, log }).income("month");
   assert.equal(off.byDoor, null);
   assert.equal(off.prices, null);
+});
+
+/** The store with every call counted by method, and the `fields` each listSnapshots asked for. */
+function counted(store) {
+  const counts = {};
+  const fields = [];
+  const wrapped = Object.fromEntries(Object.entries(store).map(([name, fn]) => [name, (...args) => {
+    counts[name] = (counts[name] ?? 0) + 1;
+    if (name === "listSnapshots") fields.push(args[2]?.fields ?? null);
+    return fn(...args);
+  }]));
+  return { store: wrapped, counts, fields };
+}
+
+test("a page load's ten queries share one read of the latest snapshot, fal's window, the fee and GCP (the 2026-11-04 OOM: each read 30 whole snapshots on its own)", async () => {
+  const deps = await seeded(fakes(), { claude: true });
+  const c = counted(deps.store);
+  const finance = make({ ...deps, store: c.store });
+  await Promise.all(FINANCE_QUERY_NAMES.map((n) => finance[n]("month")));
+  assert.equal(c.counts.latestSnapshot, 1, "the latest snapshot once, not once a query");
+  assert.equal(c.counts.getManual, 1);
+  assert.deepEqual(c.fields, [["finance.fal"], ["finance.awsCalls", "finance.aws.calls"]], "fal's window once and the month's call counts, each by its fields alone; no whole run of snapshots");
+  assert.deepEqual(deps.calls.filter((x) => x.startsWith("gcp:daily") || x.startsWith("gcp:monthly")), ["gcp:daily", "gcp:monthly"], "GCP's jobs once");
+  // Past SHARE_MS the reads are made again.
+  let t = NOW;
+  const later = createFinanceQueries({ ...deps, store: c.store, now: () => t, log });
+  await later.summary();
+  t += 31_000;
+  await later.summary();
+  assert.equal(c.counts.latestSnapshot, 3);
+});
+
+test("kpis reads its twelve weeks of snapshots by finance.kpi alone; snapshotPart reads its windows by their fields", async () => {
+  const deps = await seeded(fakes());
+  const c = counted(deps.store);
+  await make({ ...deps, store: c.store }).kpis();
+  assert.ok(c.fields.some((f) => f?.length === 1 && f[0] === "finance.kpi"));
+  assert.ok(c.fields.every((f) => f !== null), "no listSnapshots without fields");
+  c.fields.length = 0;
+  await make({ ...deps, store: c.store }).snapshotPart();
+  assert.deepEqual(c.fields, [["finance.fal"], ["finance.claude", "finance.donate"]], "fal's window and the parts carried forward, each by its fields");
+});
+
+test("the memory store projects fields as Firestore does: dotted paths kept, the rest dropped, a doc without them kept as its date", async () => {
+  const store = createMemoryStore();
+  await store.writeSnapshot("2026-11-01", { visits7: 3, finance: { kpi: { monthToDate: 1 }, aws: { daily: [1, 2], calls: 2 } } });
+  await store.writeSnapshot("2026-11-02", { visits7: 4 });
+  assert.deepEqual(await store.listSnapshots("2026-11-01", "2026-11-02", { fields: ["finance.kpi", "finance.aws.calls"] }), [
+    { date: "2026-11-01", finance: { kpi: { monthToDate: 1 }, aws: { calls: 2 } } },
+    { date: "2026-11-02" },
+  ]);
+  assert.equal((await store.listSnapshots("2026-11-01", "2026-11-01"))[0].finance.aws.daily.length, 2, "no fields is the whole document");
+});
+
+test("refreshViews: one document a range, each holding every query's answer as JSON, equal to the route's; the rangeless ones in all four", async () => {
+  const deps = await seeded(fakes(), { claude: true });
+  const finance = make(deps);
+  const out = await finance.refreshViews();
+  assert.equal(out.at, "2026-10-28T23:10:00.000Z");
+  assert.deepEqual(Object.keys(out.bytes).sort(), [...VIEW_RANGES].sort());
+  for (const r of VIEW_RANGES) {
+    const view = await deps.store.getView(r);
+    assert.equal(view.at, out.at);
+    assert.deepEqual(Object.keys(view).filter((k) => k !== "at").sort(), [...FINANCE_QUERY_NAMES].sort(), `${r}: all ten`);
+    for (const n of FINANCE_QUERY_NAMES) {
+      const direct = RANGELESS_QUERIES.includes(n) ? await finance[n]() : await finance[n](r);
+      assert.deepEqual(JSON.parse(view[n]), direct, `${r} ${n}`);
+    }
+    assert.ok(out.bytes[r] < VIEW_MAX_BYTES);
+  }
+  assert.ok(!deps.calls.some((x) => x.startsWith("aws:") || x.startsWith("fal:")), "a refresh never calls Cost Explorer or fal: they stay the snapshot's");
+});
+
+test("refreshViews leaves a failing query out of its views (the page asks the route for it) and shares one run between callers", async () => {
+  const deps = await seeded(fakes());
+  const finance = make(deps);
+  finance.films = async () => { throw new Error("boom"); };
+  const [a, b] = await Promise.all([finance.refreshViews(), finance.refreshViews()]);
+  assert.equal(a, b, "one run");
+  const view = await deps.store.getView("month");
+  assert.equal(view.films, undefined);
+  assert.ok(typeof view.summary === "string");
+});
+
+test("a fee entered on the page rewrites the views before it answers, so the reload reads the new fee", async () => {
+  const deps = await seeded(fakes());
+  const finance = make(deps);
+  await finance.refreshViews();
+  assert.equal(JSON.parse((await deps.store.getView("month")).claude).subscriptionUsd, null);
+  await finance.manual("claude-subscription", 200);
+  assert.equal(JSON.parse((await deps.store.getView("month")).claude).subscriptionUsd, 200);
+});
+
+test("snapshotPart carries the newest earlier sync and donate record forward when Modal's job opened today's document first (the 2026-10-31 bug: the sync was dropped the day after it was made)", async () => {
+  const job = fakes();
+  await seeded(job, { date: "2026-10-25", modal: null, claude: true });
+  // Two days with no sync of their own, then today, opened by Modal's job at 10:50 before the 11:00 snapshot.
+  await job.store.writeSnapshot("2026-10-26", { at: "2026-10-26T11:00:00Z", finance: { at: "2026-10-26T11:00:00Z" } });
+  await job.store.writeSnapshot("2026-10-28", { finance: { modal: MODAL } });
+  const part = await make(job).snapshotPart();
+  assert.deepEqual(part.finance.claude, CLAUDE, "the 25th's sync, found past the 26th that lacks it and today's that holds only Modal's part");
+  assert.deepEqual(part.finance.modal, MODAL);
+
+  // A donate step that fails keeps the newest earlier record, not today's empty one.
+  const failing = fakes();
+  await seeded(failing, { date: "2026-10-27", modal: null });
+  const record = { period: { from: "2026-09-27", to: "2026-10-26", repricedOn: "2026-10-27" }, pool: 120, at: "2026-10-27T11:00:00Z" };
+  const yesterday = await failing.store.listSnapshots("2026-10-27", "2026-10-27");
+  await failing.store.writeSnapshot("2026-10-27", { finance: { ...yesterday[0].finance, donate: record } });
+  await failing.store.writeSnapshot("2026-10-28", { finance: { modal: MODAL } });
+  failing.donate.run = async () => { throw new Error("Stripe down"); };
+  const out = await make(failing).snapshotPart();
+  assert.deepEqual(out.finance.donate, record);
+  assert.ok(out.finance.errors?.donate);
 });

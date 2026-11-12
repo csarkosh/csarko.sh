@@ -285,7 +285,7 @@ export function createQueries({ visits, gsc, youtube, youtubeAnalytics = null, g
       const h = hints();
       const today = isoDate(now());
       const [snapshots, channel, repos, mentions, series] = await Promise.all([
-        store.listSnapshots(addDays(today, -14), today),
+        store.listSnapshots(addDays(today, -14), today, { fields: ["youtube"] }),
         part(h, "youtube", "YOUTUBE_KEY", youtube.configured, () => youtube.channel()),
         part(h, "github", "GITHUB_OWNER", github.enabled, () => github.all()),
         part(h, "hn", "HN", true, () => hn.mentions()),
@@ -367,7 +367,7 @@ export function createQueries({ visits, gsc, youtube, youtubeAnalytics = null, g
       const today = isoDate(now());
       const range = hourlyRange(7, now());
       const [snapshots, visitsKpi, outbound, search, health] = await Promise.all([
-        store.listSnapshots(addDays(today, -7 * TREND_WEEKS + 1), today),
+        store.listSnapshots(addDays(today, -7 * TREND_WEEKS + 1), today, { fields: ["visits7", "searchClicks7", "impressions7", "outbound7"] }),
         part(h, "visits", "VISITS_DATASET", visits.configured, async () => {
           const { current, previous } = await visits.visits(range);
           return { value: current.visits, prev: previous.visits };
@@ -454,6 +454,8 @@ export function createQueries({ visits, gsc, youtube, youtubeAnalytics = null, g
         ...(Object.keys(h.notConfigured).length > 0 ? { notConfigured: h.notConfigured } : {}),
         ...(Object.keys(h.errors).length > 0 ? { errors: h.errors } : {}),
       };
+      // The Billing page's views are not refreshed here: the snapshot already takes 50 to 56 s of
+      // the service's 60 (2026-11), so the hourly refresh at ten past picks the new day up.
       return store.writeSnapshot(date, doc);
     },
 

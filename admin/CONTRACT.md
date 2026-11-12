@@ -607,6 +607,19 @@ categories and their fixed order are `compute`, `serverless`, `hosting`, `loadBa
 (label "Claude Code", `fixed`). **There is no spend goal** (Cyrus, 2026-10-30:
 the films drive the cost on purpose); the idle run-rate is reported as a fact, not judged.
 
+**The views** *(2026-11-11)*. `POST /finance/admin/refresh` (the admin token, or the scheduler's
+OIDC token, as on `/admin/snapshot`; Cloud Scheduler `csarko-admin-finance-views` calls it at ten
+past every hour) runs every query below for every range and writes one Firestore document a range,
+`financeViews/<range>` (`month`, `last`, `90`, `13m`): `{ at: "<ISO time>", <query>: "<the
+answer, as JSON text>" }`, the rangeless `idle`, `daily`, `films` and `sources` in all four, about
+23 KB each. It answers `{ at, bytes: { <range>: n } }`. The page reads its range's document over
+Firestore's REST API with the reader's ID token (`apps.json` `views`; the rules let the allowlist
+`get` that collection and nothing else, `_infra/modules/gcp-admin-api`), and asks the route below
+for any answer the document lacks, or for all of them when it is refused, missing or more than
+75 minutes old. A query that throws during a refresh is left out of the views; a fee entered with
+`POST /finance/admin/manual/claude-subscription` rewrites them before it answers. The refresh reads
+Cost Explorer and fal from the snapshot like every query, so it calls neither.
+
 Projects, the second axis (`projects` query): every line is also one of `films` (Vertex AI in
 `fps-csarko`, Modal apps named `cinema-*`, every fal line), `dayhike` (everything else in
 `fps-csarko`, every AWS line but the domains and the `csarko.sh` zone, Modal apps named

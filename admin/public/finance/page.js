@@ -18,9 +18,15 @@
  * `month|last|90|13m` (`?range=`), not days: data.js sends it in place of `days`. A part the API
  * cannot answer is `null` with `notConfigured` naming the secret, or an `errors` entry; every
  * card renders those in place, never as a blank or a 0.
+ *
+ * Views first (2026-11-11). The API writes each range's ten answers to Firestore every hour
+ * (`financeViews/<range>`, finance-queries.mjs `refreshViews`), and the page reads that one document
+ * with the reader's ID token (apps.json `views`; the rules let the allowlist read that collection and
+ * nothing else), so a load meets no Cloud Run start and no BigQuery job. A view that is missing,
+ * refused or older than VIEW_MAX_AGE_MS, or an answer it lacks, is asked of the API as before.
  */
 
-import { accountMenu, requireSession } from '/auth.js';
+import { accountMenu, idToken, requireSession } from '/auth.js';
 import { ago, columns, compact, delta, el, errorLine, folded, hold, loading, settle, shortDay, skeleton, table, tile } from '/charts.js';
 import { loadApps, preview, readParam, source, writeParam } from '/data.js';
 import { fadeIn, fadeOut, tokens as motion } from '/motion.js';
@@ -43,6 +49,10 @@ const DEFAULT_RANGE = 'month';
 const asked = readParam('range');
 let range = RANGES.some((r) => r.range === asked) ? asked : DEFAULT_RANGE;
 let generation = 0;
+/** A view older than this is not used: the refresh is hourly, so this allows one run late by a quarter hour. */
+const VIEW_MAX_AGE_MS = 75 * 60_000;
+/** The views asked for in this load, by range; emptied on every load, so a save or range change reads afresh. */
+let views = new Map();
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const num = (v) => (isNum(v) ? v : 0);
@@ -693,11 +703,47 @@ function cardShell(def) {
     loading(def.skeleton));
 }
 
+/**
+ * The range's view, `{ <query>: answer }`, or null when there is none to use: preview, no
+ * `views` in apps.json, not signed in, a refusal (before the rules are released), a failure, or
+ * one older than VIEW_MAX_AGE_MS. Firestore's REST document is `{ fields: { at, <query> } }`,
+ * each a string.
+ */
+function viewOf(r) {
+  if (preview || !app?.views) return Promise.resolve(null);
+  if (!views.has(r)) {
+    views.set(r, (async () => {
+      try {
+        const token = await idToken();
+        if (!token) return null;
+        const response = await fetch(`${app.views}/${encodeURIComponent(r)}`, { headers: { Authorization: `Bearer ${token}` }, credentials: 'omit', mode: 'cors' });
+        if (!response.ok) return null;
+        const fields = (await response.json())?.fields ?? {};
+        const at = Date.parse(fields.at?.stringValue ?? '');
+        if (!Number.isFinite(at) || Date.now() - at > VIEW_MAX_AGE_MS) return null;
+        const out = {};
+        for (const [name, value] of Object.entries(fields)) if (name !== 'at' && typeof value?.stringValue === 'string') out[name] = JSON.parse(value.stringValue);
+        return out;
+      } catch {
+        return null;
+      }
+    })());
+  }
+  return views.get(r);
+}
+
+/** One query's answer for the range: the view's when it has it, else the API's. */
+async function ask(name, r) {
+  const view = await viewOf(r);
+  if (view !== null && Object.hasOwn(view, name)) return view[name];
+  return data.query(app, name, null, { range: r });
+}
+
 async function loadCard(def, gen, card) {
   const body = card.querySelector('.body');
   body.setAttribute('aria-busy', 'true');
   card.querySelector('h2').textContent = def.title(range);
-  const answers = Promise.all(def.queries.map((name) => data.query(app, name, null, { range })));
+  const answers = Promise.all(def.queries.map((name) => ask(name, range)));
   answers.catch(() => {});
   // A rendered card goes back to its skeleton while it reloads (its content fades out, the
   // skeleton in), held at the height this view had last, else the one it has now, so nothing
@@ -735,6 +781,7 @@ async function loadCard(def, gen, card) {
 async function load() {
   generation += 1;
   const gen = generation;
+  views = new Map();
   if (!grid.querySelector('.card')) grid.replaceChildren(...CARDS.map(cardShell));
   await Promise.allSettled(CARDS.map((def) => loadCard(def, gen, document.getElementById(`card-${def.id}`))));
 }

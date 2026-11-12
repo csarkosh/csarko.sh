@@ -96,6 +96,18 @@ export async function fetchWithAuth(url, init = {}) {
   return response;
 }
 
+/**
+ * A fresh ID token for the signed-in account, or null. For a request to something other than an
+ * app API (the Billing page's views in Firestore), whose refusal must not bring the gate back the
+ * way an API's 401 does: the page then asks its API instead.
+ */
+export async function idToken() {
+  const s = await session();
+  if (!s) return null;
+  await s.auth.authStateReady();
+  return s.auth.currentUser ? s.auth.currentUser.getIdToken() : null;
+}
+
 /** Sign the account out; the gate returns through onAuthStateChanged. */
 export async function signOut() {
   // Drop the persisted session at once too, so a caller that reloads the page right after

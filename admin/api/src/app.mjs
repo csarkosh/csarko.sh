@@ -14,6 +14,7 @@
  *   GET  /finance/admin/kpis           the finance page's index card
  *   GET  /finance/admin/query/<name>?range=month|last|90|13m   one of the ten finance queries
  *   POST /finance/admin/manual/<key>   { value } appended to a finance series (claude-subscription)
+ *   POST /finance/admin/refresh        rewrites the finance page's views (admin token or the scheduler's OIDC token)
  *
  * Arkos IDE is served under the prefix `/arkos`, and the finance page under
  * `/finance`, so that each one's `api` in apps.json is `<service>/<prefix>`
@@ -39,6 +40,8 @@ const MAX_BODY_BYTES = 1024;
 
 const ARKOS_PREFIX = "/arkos";
 const FINANCE_PREFIX = "/finance";
+/** The routes Cloud Scheduler calls with its OIDC token: the daily snapshot and the hourly finance views. */
+const SCHEDULED = ["/admin/snapshot", `${FINANCE_PREFIX}/admin/refresh`];
 
 export function createApp({ config, queries, arkos = null, finance = null, limiter, adminAuth, oidc, now = Date.now, log = console }) {
   const readersMissingLogged = { done: false };
@@ -79,7 +82,7 @@ export function createApp({ config, queries, arkos = null, finance = null, limit
       try {
         const token = bearerOf(req.headers.authorization);
         let authorized = (await adminAuth.verify(token)) !== null;
-        if (!authorized && path === "/admin/snapshot" && req.method === "POST" && oidc) {
+        if (!authorized && SCHEDULED.includes(path) && req.method === "POST" && oidc) {
           authorized = (await oidc.verify(token, audiencesFor(req, config.serviceUrl))) !== null;
         }
         if (!authorized) return fail(res, 401, "unauthorized", cors);
@@ -164,6 +167,11 @@ export function createApp({ config, queries, arkos = null, finance = null, limit
       const range = parseRange(search.get("range"));
       if (range === null) return fail(res, 400, "range must be month, last, 90 or 13m", cors);
       return answer(res, 200, await finance[query[1]](range), cors);
+    }
+
+    if (path === "/admin/refresh") {
+      if (req.method !== "POST") return fail(res, 405, "method not allowed", { ...cors, allow: "POST, OPTIONS" });
+      return answer(res, 200, await finance.refreshViews(), cors);
     }
 
     const manual = /^\/admin\/manual\/([a-z-]+)$/.exec(path);

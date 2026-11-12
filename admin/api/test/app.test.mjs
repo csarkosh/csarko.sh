@@ -42,6 +42,7 @@ const finance = {
   async income(range) { return { range }; },
   async manual(key, value) { calls.push(["finance-manual", key, value]); return { key, value, at: "t" }; },
   async snapshotPart() { calls.push(["finance-snapshot"]); return { finance: {} }; },
+  async refreshViews() { calls.push(["finance-refresh"]); return { at: "t", bytes: {} }; },
 };
 const oidc = { async verify(token, audiences) { return token === "oidc-ok" && audiences.length > 0 ? { email: "s@x" } : null; } };
 const log = { error() {}, warn() {}, log() {} };
@@ -310,4 +311,20 @@ test("Finance under /finance: the index card, its ten queries with range and the
   const closed = await serve({ adminAuth: { enabled: false, async verify() { return null; } } });
   servers.push(closed);
   assert.equal((await call(closed, "GET", "/finance/admin/kpis", auth())).status, 503);
+});
+
+test("finance refresh: the admin token or the scheduler's OIDC token, POST only; the OIDC token opens no other finance route", async () => {
+  const server = await serve({});
+  try {
+    const before = calls.length;
+    assert.equal((await call(server, "POST", "/finance/admin/refresh", auth("13.0.0.1"))).status, 200);
+    const sched = await call(server, "POST", "/finance/admin/refresh", { headers: { authorization: "Bearer oidc-ok" }, ip: "13.0.0.1" });
+    assert.deepEqual([sched.status, sched.body], [200, { at: "t", bytes: {} }]);
+    assert.equal(calls.slice(before).filter((c) => c[0] === "finance-refresh").length, 2);
+    assert.equal((await call(server, "POST", "/finance/admin/refresh", { headers: { authorization: "Bearer oidc-bad" }, ip: "13.0.0.1" })).status, 401);
+    assert.equal((await call(server, "GET", "/finance/admin/refresh", auth("13.0.0.1"))).status, 405);
+    assert.equal((await call(server, "GET", "/finance/admin/query/summary", { headers: { authorization: "Bearer oidc-ok" }, ip: "13.0.0.1" })).status, 401, "the scheduler's token reads nothing");
+  } finally {
+    server.close();
+  }
 });

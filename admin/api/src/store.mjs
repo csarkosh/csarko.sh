@@ -1,8 +1,14 @@
 /**
  * The ledger: daily snapshots and the hand-entered series, in Firestore.
  *
- *   snapshots/<YYYY-MM-DD>   one document a day, merged, a few KB
+ *   snapshots/<YYYY-MM-DD>   one document a day, merged; about 500 KB since the finance part (2026-10-30)
  *   manual/<key>             { series: [{ at, value }] } newest last, capped
+ *   financeViews/<range>     the Billing page's answers for one range, precomputed (finance-views.mjs)
+ *
+ * A snapshot is mostly the day's Cost Explorer rows, so a read of a run of them names the fields
+ * it needs (`fields`, Firestore's projection) and the latest is found by its id before its one
+ * document is read: nine finance queries reading 30 whole documents each took the service past
+ * its memory on 2026-11-04 (about 74 MiB a query, measured 2026-11-11).
  *
  * The trend on the index reads the last 84 days of snapshots (84 reads of a
  * 50,000 a day free quota); the snapshot job writes one document a day. The
@@ -15,16 +21,34 @@
 export const SNAPSHOTS = "snapshots";
 export const MANUAL = "manual";
 export const MANUAL_CAP = 400;
+export const FINANCE_VIEWS = "financeViews";
+
+/** `doc` with only the dotted `fields` kept (Firestore's projection), every field when there are none. */
+export function projectFields(doc, fields) {
+  if (!Array.isArray(fields) || fields.length === 0) return doc;
+  const out = {};
+  for (const path of fields) {
+    const keys = path.split(".");
+    let from = doc;
+    for (const k of keys) from = from !== null && typeof from === "object" ? from[k] : undefined;
+    if (from === undefined) continue;
+    let to = out;
+    for (const k of keys.slice(0, -1)) to = to[k] ??= {};
+    to[keys.at(-1)] = from;
+  }
+  return out;
+}
 
 export function createMemoryStore() {
   const snapshots = new Map();
   const manual = new Map();
+  const views = new Map();
   return {
-    async listSnapshots(fromDate, toDate) {
+    async listSnapshots(fromDate, toDate, { fields } = {}) {
       return [...snapshots.entries()]
         .filter(([date]) => date >= fromDate && date <= toDate)
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([date, data]) => ({ date, ...data }));
+        .map(([date, data]) => ({ date, ...projectFields(structuredClone(data), fields) }));
     },
     async latestSnapshot() {
       const dates = [...snapshots.keys()].sort();
@@ -43,6 +67,12 @@ export function createMemoryStore() {
       const series = [...(manual.get(key) ?? []), point].slice(-cap);
       manual.set(key, series);
     },
+    async writeViews(entries) {
+      for (const [id, data] of Object.entries(entries)) views.set(id, structuredClone(data));
+    },
+    async getView(id) {
+      return views.has(id) ? structuredClone(views.get(id)) : null;
+    },
   };
 }
 
@@ -60,16 +90,17 @@ export async function createFirestoreStore({ projectId, log = console } = {}) {
   };
 
   return {
-    listSnapshots(fromDate, toDate) {
+    listSnapshots(fromDate, toDate, { fields } = {}) {
       return soft("listSnapshots", async () => {
         // A range filter on the document id asks Firestore for a composite
         // index (seen on the first deploy, 2026-10-13); a cursor on the id
         // needs none. Ids are UTC dates, so string order is date order.
-        const snap = await db.collection(SNAPSHOTS)
+        let q = db.collection(SNAPSHOTS)
           .orderBy(FieldPath.documentId())
           .startAt(fromDate)
-          .endAt(toDate)
-          .get();
+          .endAt(toDate);
+        if (Array.isArray(fields) && fields.length > 0) q = q.select(...fields);
+        const snap = await q.get();
         return snap.docs.map((d) => ({ date: d.id, ...d.data() }));
       }, []);
     },
@@ -81,11 +112,15 @@ export async function createFirestoreStore({ projectId, log = console } = {}) {
         // snapshot yet). Ascending with a cursor needs none: read the last
         // month's worth, newest last, and take the last. The job writes one
         // a day, so a month with none means the scheduler is broken, and the
-        // card then falls back as it would on day one.
+        // card then falls back as it would on day one. The month is read as
+        // ids alone (an empty projection, 131 ms) and only the newest document
+        // whole: read whole, the month was 30 documents of 500 KB (1.1 s).
         const from = new Date(Date.now() - 31 * 86_400_000).toISOString().slice(0, 10);
-        const snap = await db.collection(SNAPSHOTS).orderBy(FieldPath.documentId()).startAt(from).get();
-        const d = snap.docs.at(-1);
-        return d === undefined ? null : { date: d.id, ...d.data() };
+        const ids = await db.collection(SNAPSHOTS).orderBy(FieldPath.documentId()).startAt(from).select().get();
+        const last = ids.docs.at(-1);
+        if (last === undefined) return null;
+        const d = await last.ref.get();
+        return d.exists ? { date: d.id, ...d.data() } : null;
       }, null);
     },
     async writeSnapshot(date, data) {
@@ -112,6 +147,18 @@ export async function createFirestoreStore({ projectId, log = console } = {}) {
         const series = Array.isArray(d.data()?.series) ? d.data().series : [];
         tx.set(ref, { series: [...series, point].slice(-cap) });
       });
+    },
+    /** Writes `{ <id>: data }` to `financeViews/<id>`, each document replaced whole, in one batch. */
+    async writeViews(entries) {
+      const batch = db.batch();
+      for (const [id, data] of Object.entries(entries)) batch.set(db.collection(FINANCE_VIEWS).doc(id), data);
+      await batch.commit();
+    },
+    getView(id) {
+      return soft(`getView ${id}`, async () => {
+        const d = await db.collection(FINANCE_VIEWS).doc(id).get();
+        return d.exists ? d.data() : null;
+      }, null);
     },
   };
 }

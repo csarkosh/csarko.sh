@@ -148,6 +148,12 @@ variable "donate_origin" {
   type        = string
 }
 
+variable "finance_views_schedule" {
+  description = "Cron schedule for the Billing page's views, in snapshot_time_zone: hourly, ten past, after the snapshot."
+  type        = string
+  default     = "10 * * * *"
+}
+
 variable "snapshot_schedule" {
   description = "Cron schedule for the daily snapshot."
   type        = string

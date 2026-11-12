@@ -416,7 +416,11 @@ anything related to the admin pages in this repo:
   (`https://apis.google.com` in `script-src`, Identity Toolkit and Secure Token in
   `connect-src`, `frame-src 'self'` for the auth iframe); the Firebase Auth SDK itself
   is bundled and self-hosted (`admin/public/vendor/`). The only other cross-origin
-  requests are to the app APIs listed in `admin/public/apps.json`.
+  requests are to the app APIs listed in `admin/public/apps.json`, and the Billing page's
+  precomputed views in Firestore (that app's `views`, `https://firestore.googleapis.com`;
+  *2026-11-11*, after the page's nine queries took the API past its memory: the views are
+  rewritten hourly, the page reads one document a range with the reader's ID token and asks the
+  API for anything missing or stale; `admin/CONTRACT.md`, "The views").
 - **Not a target.** Indexing: the pages carry `noindex, nofollow`, `admin/public/robots.txt`
   disallows everything, there is no sitemap entry, JSON-LD, Open Graph card or canonical,
   and the Lighthouse SEO score is ignored. `check.py --admin` runs the checks that

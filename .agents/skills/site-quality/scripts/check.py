@@ -1941,6 +1941,11 @@ def admin_checks():
     check(csp.get("frame-src") == ["'self'"], f"admin CSP frame-src 'self' (the same-origin auth iframe; {csp.get('frame-src')})")
     for app in apps:
         check(origin(app["api"]) in csp.get("connect-src", []), f"admin CSP connect-src names {app['name']}'s API")
+        # The Billing page reads its precomputed views from Firestore (2026-11-11): an app's `views`
+        # is the one other origin it may name, and only Firestore's, on the admin project.
+        if "views" in app:
+            check(app["views"].startswith("https://firestore.googleapis.com/v1/projects/csarko-sh/databases/(default)/documents/"), f"{app['name']}'s views are a csarko-sh Firestore collection ({app['views']})")
+            check(origin(app["views"]) in csp.get("connect-src", []), f"admin CSP connect-src names {app['name']}'s views")
     check("'none'" in csp.get("frame-ancestors", []), "admin CSP frame-ancestors 'none'")
     check(headers.get("X-Robots-Tag", "").startswith("noindex"), "admin site sends X-Robots-Tag: noindex")
     robots = (ADMIN / "robots.txt").read_text()

@@ -56,6 +56,7 @@ resource "google_project_service" "apis" {
     "youtube.googleapis.com",
     "pagespeedonline.googleapis.com",
     "youtubeanalytics.googleapis.com",
+    "firebaserules.googleapis.com",
   ])
 
   project            = var.project_id
@@ -307,13 +308,16 @@ resource "google_cloud_run_v2_service" "admin" {
       }
 
       # CPU only while a request is in flight (request-based billing), which is
-      # the shape the free tier counts in and the only one Cloud Run accepts
-      # under 512Mi: "always allocated" CPU needs 512Mi and bills idle time.
+      # the shape the free tier counts in; "always allocated" CPU bills idle
+      # time. 512Mi since 2026-11-11: at 256Mi the Billing page's nine queries,
+      # each reading a month of 500 KB snapshots, were OOM-killed (fixed in the
+      # code, measured at +28 MiB a page load after); the headroom is free, the
+      # service using about 2,000 of the free tier's 360,000 GiB-seconds a month.
       resources {
         cpu_idle = true
         limits = {
           cpu    = "1"
-          memory = "256Mi"
+          memory = "512Mi"
         }
       }
 
@@ -694,6 +698,85 @@ resource "google_cloud_scheduler_job" "finance_modal" {
     google_project_service_identity.scheduler,
     google_cloud_run_v2_job_iam_member.scheduler_runs_finance_modal,
   ]
+}
+
+# ---- the Billing page's views (2026-11-11) -------------------------------------------
+
+# Every hour the API rewrites financeViews/<range>, each range's ten answers,
+# and the page reads that one document from the browser with the reader's
+# Firebase ID token, so a load waits on no Cloud Run start and no BigQuery job
+# (Cyrus: an hour's freshness is fine). Ten past, so the 06:00 snapshot is in.
+# The third Scheduler job on the billing account, the last the free tier's
+# three covers. The same account and OIDC audience as the snapshot's: the app
+# accepts that token on /admin/snapshot and /finance/admin/refresh only.
+resource "google_cloud_scheduler_job" "finance_views" {
+  project     = var.project_id
+  region      = var.region
+  name        = "csarko-admin-finance-views"
+  description = "Rewrites the Billing page's precomputed views in Firestore (financeViews/<range>)."
+  schedule    = var.finance_views_schedule
+  time_zone   = var.snapshot_time_zone
+
+  attempt_deadline = "120s"
+
+  retry_config {
+    retry_count = 1
+  }
+
+  http_target {
+    http_method = "POST"
+    uri         = "${google_cloud_run_v2_service.admin.uri}/finance/admin/refresh"
+
+    oidc_token {
+      service_account_email = google_service_account.scheduler.email
+      audience              = google_cloud_run_v2_service.admin.uri
+    }
+  }
+
+  depends_on = [google_project_service_identity.scheduler]
+}
+
+# The Firestore rules: the first this database has had (none was released
+# before, so no browser could read anything). They let the admin allowlist read
+# the views and nothing else; every other document stays the service
+# accounts', which the rules never apply to. The allowlist is the tfvars' (the
+# repo is public), so the rules are made here rather than in a file.
+resource "google_firebaserules_ruleset" "firestore" {
+  project = var.project_id
+
+  source {
+    files {
+      name    = "firestore.rules"
+      content = <<-RULES
+        rules_version = '2';
+        service cloud.firestore {
+          match /databases/{database}/documents {
+            match /financeViews/{range} {
+              allow get: if request.auth != null
+                && request.auth.token.email_verified == true
+                && request.auth.token.email in ${jsonencode(var.admin_emails)};
+            }
+          }
+        }
+      RULES
+    }
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  depends_on = [google_project_service.apis["firebaserules.googleapis.com"]]
+}
+
+resource "google_firebaserules_release" "firestore" {
+  project      = var.project_id
+  name         = "cloud.firestore"
+  ruleset_name = "projects/${var.project_id}/rulesets/${google_firebaserules_ruleset.firestore.name}"
+
+  lifecycle {
+    replace_triggered_by = [google_firebaserules_ruleset.firestore]
+  }
 }
 
 # ---- the film ledgers (the Finance page) --------------------------------------------
