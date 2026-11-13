@@ -559,7 +559,7 @@ dropped because its host went down and took the numbers with it.)*
   doc). **Event names are stable identifiers, not copy:** renaming a button or a URL must
   not rename its series. **On a doc page** *(2026-10-23, after the reading research: real visitors
   spent a median of 16 s on a doc and most flicked to the end)*: the contents count `toc` and
-  `toc-rail`, a link in the text to another doc `doc-<slug>`, the series line `series-<slug>`, Keep
+  `toc-rail`, a link in the text to another doc `doc-<slug>`, the series line `series-<slug>` (the previous and the next part, *2026-11-12*), Keep
   reading `next-<slug>`, the Read next link after the author box `end-<slug>`, the Play button
   `play-<game>`, the header's watch pill `watch-<doc slug>` (a doc's `watch:` video, *2026-11-12*), and the site's own `reading.js` (the one script of ours, doc pages only) sends
   `section` (`d.n`, n 0 for the opening) once a section has sat across the middle of a visible

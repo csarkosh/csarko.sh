@@ -862,7 +862,12 @@ test('docLinks: a series in published order, related by front matter or shared c
   assert.deepEqual(links.get('two').games, [game]);
   assert.deepEqual(links.get('one').games, []);
   const page = docPage(docs.find((d) => d.slug === 'one'), themeBlocks(INDEX), links.get('one'));
-  assert.ok(page.includes('Part 1 of 2 in <strong>Fog notes</strong> · Next: <a href="/research/two" data-visits-event="series-two">two title</a>'));
+  assert.ok(page.includes('<p>Part 1 of 2 in <strong>Fog notes</strong></p>'));
+  assert.ok(page.includes('<p class="series-steps"><span>Next: <a href="/research/two" rel="next" data-visits-event="series-two">two title</a></span></p>'));
+  // A middle part links both ways (Cyrus, 2026-11-12: it showed only Next).
+  const three = sortDocs(['one', 'two', 'three'].map((slug, i) => load(longDoc(slug, `2026-0${i + 1}-01`, 'series: Fog notes\n'))));
+  const middle = docPage(three.find((d) => d.slug === 'two'), themeBlocks(INDEX), docLinks(three).get('two'));
+  assert.ok(middle.includes('<span>Previous: <a href="/research/one" rel="prev" data-visits-event="series-one">one title</a></span><span>Next: <a href="/research/three" rel="next" data-visits-event="series-three">three title</a></span>'));
   assert.ok(page.includes('<a class="next" href="/research/two" data-visits-event="end-two">'));
   assert.throws(() => docLinks([load(longDoc('solo', '2026-01-01', 'series: Lonely\n'))]), /has one doc/);
   assert.throws(() => docLinks([load(longDoc('x', '2026-01-01', 'related: nope\n'))]), /not a published doc/);

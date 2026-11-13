@@ -329,7 +329,9 @@
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
     .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line p { margin: 0; }
     .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
     .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
@@ -431,7 +433,10 @@
         <ul class="tags">
           <li>7 min read</li>
         </ul>
-        <p class="series-line">Part 3 of 7 in <strong>Horror craft</strong> · Next: <a href="/research/horror-cinematography-shot-by-shot" data-visits-event="series-horror-cinematography-shot-by-shot">How Horror Directors Build Dread Shot by Shot</a></p>
+        <nav class="series-line" aria-label="Series">
+          <p>Part 3 of 7 in <strong>Horror craft</strong></p>
+          <p class="series-steps"><span>Previous: <a href="/research/building-dread-toward-a-late-reveal" rel="prev" data-visits-event="series-building-dread-toward-a-late-reveal">Building dread toward a late reveal in horror games</a></span><span>Next: <a href="/research/horror-cinematography-shot-by-shot" rel="next" data-visits-event="series-horror-cinematography-shot-by-shot">How Horror Directors Build Dread Shot by Shot</a></span></p>
+        </nav>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> Remedy&#39;s Alan Wake games are the reference for a particular kind of horror:

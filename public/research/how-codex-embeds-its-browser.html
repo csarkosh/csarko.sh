@@ -329,7 +329,9 @@
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
     .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line p { margin: 0; }
     .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
     .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
@@ -434,7 +436,10 @@
         <ul class="tags">
           <li>9 min read</li>
         </ul>
-        <p class="series-line">Part 3 of 3 in <strong>Arkos IDE notes</strong> · Previous: <a href="/research/update-the-ide-keep-the-shells" data-visits-event="series-update-the-ide-keep-the-shells">Update the IDE, keep the shells</a></p>
+        <nav class="series-line" aria-label="Series">
+          <p>Part 3 of 3 in <strong>Arkos IDE notes</strong></p>
+          <p class="series-steps"><span>Previous: <a href="/research/update-the-ide-keep-the-shells" rel="prev" data-visits-event="series-update-the-ide-keep-the-shells">Update the IDE, keep the shells</a></span></p>
+        </nav>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> The Codex desktop app shows a browser in a pane beside the chat, and the agent can

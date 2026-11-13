@@ -329,7 +329,9 @@
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
     .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line p { margin: 0; }
     .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
     .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
@@ -435,7 +437,10 @@
         <ul class="tags">
           <li>18 min read</li>
         </ul>
-        <p class="series-line">Part 4 of 7 in <strong>Rendering a browser forest</strong> · Next: <a href="/research/ground-fog-without-the-wall" data-visits-event="series-ground-fog-without-the-wall">Volumetric ground fog without the sprite wall</a></p>
+        <nav class="series-line" aria-label="Series">
+          <p>Part 4 of 7 in <strong>Rendering a browser forest</strong></p>
+          <p class="series-steps"><span>Previous: <a href="/research/grass-and-trail-realism" rel="prev" data-visits-event="series-grass-and-trail-realism">Grass, wind and trails in a browser meadow</a></span><span>Next: <a href="/research/ground-fog-without-the-wall" rel="next" data-visits-event="series-ground-fog-without-the-wall">Volumetric ground fog without the sprite wall</a></span></p>
+        </nav>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> In Day Hike, a first-person hiking game in Babylon.js, a misty screenshot taken in a

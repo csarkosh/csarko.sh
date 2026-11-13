@@ -329,7 +329,9 @@
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
     .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line p { margin: 0; }
     .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
     .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
@@ -435,7 +437,10 @@
         <ul class="tags">
           <li>24 min read</li>
         </ul>
-        <p class="series-line">Part 2 of 3 in <strong>Olympic Peninsula field notes</strong> · Next: <a href="/research/rock-formations-of-the-olympic-peninsula" data-visits-event="series-rock-formations-of-the-olympic-peninsula">Rock formations of the Olympic Peninsula, and how games build them</a></p>
+        <nav class="series-line" aria-label="Series">
+          <p>Part 2 of 3 in <strong>Olympic Peninsula field notes</strong></p>
+          <p class="series-steps"><span>Previous: <a href="/research/olympic-vegetation-for-games" rel="prev" data-visits-event="series-olympic-vegetation-for-games">Olympic Peninsula vegetation for game worlds</a></span><span>Next: <a href="/research/rock-formations-of-the-olympic-peninsula" rel="next" data-visits-event="series-rock-formations-of-the-olympic-peninsula">Rock formations of the Olympic Peninsula, and how games build them</a></span></p>
+        </nav>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> a game set on Washington&#39;s Olympic Peninsula needs lakes, and the usual first

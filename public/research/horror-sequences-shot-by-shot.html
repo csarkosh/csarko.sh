@@ -329,7 +329,9 @@
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
     .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line p { margin: 0; }
     .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
     .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
@@ -432,7 +434,10 @@
         <ul class="tags">
           <li>36 min read</li>
         </ul>
-        <p class="series-line">Part 5 of 7 in <strong>Horror craft</strong> · Next: <a href="/research/how-horror-directors-steer-the-eye" data-visits-event="series-how-horror-directors-steer-the-eye">Five Ways Horror Directors Steer the Eye</a></p>
+        <nav class="series-line" aria-label="Series">
+          <p>Part 5 of 7 in <strong>Horror craft</strong></p>
+          <p class="series-steps"><span>Previous: <a href="/research/horror-cinematography-shot-by-shot" rel="prev" data-visits-event="series-horror-cinematography-shot-by-shot">How Horror Directors Build Dread Shot by Shot</a></span><span>Next: <a href="/research/how-horror-directors-steer-the-eye" rel="next" data-visits-event="series-how-horror-directors-steer-the-eye">Five Ways Horror Directors Steer the Eye</a></span></p>
+        </nav>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> How are the most studied set pieces in horror cinema actually built, shot by shot, and what does each one show about how a director, cinematographer and editor move an audience from calm to dread to shock and back?</p>

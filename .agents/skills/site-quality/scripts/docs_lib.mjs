@@ -1102,14 +1102,18 @@ ${items.map((s) => `          <li><a href="#${s.id}" data-visits-event="toc">${s
 `;
 }
 
-// The series line under the title: where this doc sits in its run, and the way to the next part.
+// The series line under the title: where this doc sits in its run, and the parts either side of it
+// (Cyrus, 2026-11-12: a middle part showed only Next), each on its own line.
 function seriesLine(doc, links) {
   const s = links.series;
   if (!s) return '';
   const at = s.parts.indexOf(doc);
-  const step = s.parts[at + 1] ? ['Next', s.parts[at + 1]] : ['Previous', s.parts[at - 1]];
+  const step = (label, d, rel) => (d ? `<span>${label}: <a href="${d.path}" rel="${rel}" data-visits-event="series-${d.slug}">${d.titleHtml}</a></span>` : '');
   return `
-        <p class="series-line">Part ${at + 1} of ${s.parts.length} in <strong>${escapeHtml(s.name)}</strong> · ${step[0]}: <a href="${step[1].path}" data-visits-event="series-${step[1].slug}">${step[1].titleHtml}</a></p>`;
+        <nav class="series-line" aria-label="Series">
+          <p>Part ${at + 1} of ${s.parts.length} in <strong>${escapeHtml(s.name)}</strong></p>
+          <p class="series-steps">${step('Previous', s.parts[at - 1], 'prev')}${step('Next', s.parts[at + 1], 'next')}</p>
+        </nav>`;
 }
 
 const playLink = (game) => `<a class="play" href="${escapeHtml(game.play)}" target="_blank" rel="noopener" data-visits-event="play-${game.slug}">Play ${escapeHtml(game.title)} in your browser ${EXTERNAL_ARROW}</a>`;
@@ -1172,7 +1176,9 @@ const DOC_CSS = `
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
     .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
+    .series-line p { margin: 0; }
     .series-line strong { color: var(--text); font-weight: 600; }
+    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
     .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
