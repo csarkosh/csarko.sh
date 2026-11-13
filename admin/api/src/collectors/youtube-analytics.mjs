@@ -213,11 +213,11 @@ export function externalOf(table) {
     .sort((a, b) => b.views - a.views || b.minutes - a.minutes);
 }
 
-/** A views, engaged views and watch time report as `[{ <key>, views, engaged, minutes }]`, most views first. */
+/** A views, engaged views and watch time report as `[{ <key>, views, engaged, minutes }]`, most views first; the API's rows with no views (live 2026-11-13: countries at 0) are left out. */
 function viewsBy(table, dimension, key) {
   return rowsOf(table)
     .map((r) => ({ [key]: String(r[dimension] ?? ""), views: num(r.views), engaged: num(r.engagedViews), minutes: num(r.estimatedMinutesWatched) }))
-    .filter((r) => r[key] !== "")
+    .filter((r) => r[key] !== "" && r.views > 0)
     .sort((a, b) => b.views - a.views || b.minutes - a.minutes);
 }
 
@@ -227,10 +227,14 @@ export const countriesOf = (table) => viewsBy(table, "country", "country");
 /** The device type report as `[{ device, views, engaged, minutes }]`, most views first. */
 export const devicesOf = (table) => viewsBy(table, "deviceType", "device");
 
-/** The demographics report as `[{ age, gender, percent }]` (age13-17..., female/male/user_specified), youngest first. */
+/**
+ * The demographics report as `[{ age, gender, percent }]` (age13-17..., female/male/user_specified), youngest
+ * first, a 0 left out. YouTube reports only the groups with enough signed-in viewers and gives each its share of
+ * those groups alone: on 2026-11-13 a film with 1,293 views had one age group, 25 to 34, at 100%.
+ */
 export function demographicsOf(table) {
   return rowsOf(table)
     .map((r) => ({ age: String(r.ageGroup ?? ""), gender: String(r.gender ?? ""), percent: num(r.viewerPercentage) }))
-    .filter((r) => r.age !== "" && r.gender !== "")
+    .filter((r) => r.age !== "" && r.gender !== "" && r.percent > 0)
     .sort((a, b) => a.age.localeCompare(b.age) || a.gender.localeCompare(b.gender));
 }

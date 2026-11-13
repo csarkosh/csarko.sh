@@ -628,15 +628,25 @@ function filmAudience(f, days) {
       { key: 'minutes', label: 'Watch time', num: true, render: (v) => watchTime(v) },
     ], countries, 'No views in this range.')));
   }
-  parts.push(el('p', { class: 'note' }, 'Engaged is the share of a group\'s views that played past the first seconds; the rest swiped away. With few views it moves by chance: by up to 10 points either way at 100 views, 5 at 400.'));
+  const listed = countries === null ? 0 : countries.reduce((n, r) => n + num(r.views), 0);
+  const all = num(f.totals?.views);
+  const coverage = countries !== null && countries.length && listed < all ? ` These ${countries.length} ${countries.length === 1 ? 'country holds' : 'countries hold'} ${compact(listed)} of the ${compact(all)} views; YouTube leaves out countries with too few viewers.` : '';
+  parts.push(el('p', { class: 'note' }, `Engaged is the share of a group's views that played past the first seconds; the rest swiped away. With few views it moves by chance: by up to 10 points either way at 100 views, 5 at 400.${coverage}`));
   parts.push(el('h3', {}, 'Age and gender'));
   if (demographics === null) parts.push(el('p', { class: 'empty' }, f.errors?.demographics ? 'Age and gender were not read.' : 'Not in this snapshot: the next daily one reads them.'));
   else if (!demographics.length) parts.push(el('p', { class: 'empty' }, 'YouTube shows no age or gender for this range: too few signed-in viewers.'));
   else {
     const sum = (key) => { const m = new Map(); for (const d of demographics) m.set(d[key], (m.get(d[key]) ?? 0) + num(d.percent)); return [...m]; };
     const share = (v) => Math.round(v * 10) / 10;
-    parts.push(bars(sum('age').map(([age, v]) => ({ name: ageName(age), value: share(v), detail: `${ageName(age)} years old` })), { unit: '%', label: `Signed-in viewers by age, ${rangeText(days)}` }));
-    parts.push(el('p', { class: 'note' }, `${sum('gender').sort((a, b) => b[1] - a[1]).map(([g, v]) => `${GENDERS[g] ?? cap(str(g))} ${share(v)}%`).join(' · ')}. Shares of signed-in viewers only; YouTube gives no views or watch time by age or gender, so it cannot say which group stayed.`));
+    const ages = sum('age');
+    const genders = `${sum('gender').sort((a, b) => b[1] - a[1]).map(([g, v]) => `${GENDERS[g] ?? cap(str(g))} ${share(v)}%`).join(' · ')}`;
+    // YouTube shows only the groups with enough signed-in viewers, each a share of those alone, so one group reads 100%.
+    if (ages.length === 1) parts.push(el('p', { class: 'note' }, `Only one age group had enough signed-in viewers for YouTube to show it: ${ageName(ages[0][0])}. Within it: ${genders}.`));
+    else {
+      parts.push(bars(ages.map(([age, v]) => ({ name: ageName(age), value: share(v), detail: `${ageName(age)} years old` })), { unit: '%', label: `Signed-in viewers by age, ${rangeText(days)}` }));
+      parts.push(el('p', { class: 'note' }, `${genders}. Shares of the groups YouTube shows, which leaves out any with too few signed-in viewers.`));
+    }
+    parts.push(el('p', { class: 'note' }, 'YouTube gives no views or watch time by age or gender, so it cannot say which group stayed.'));
   }
   return parts;
 }
