@@ -3,10 +3,14 @@
 // section has spent 5 seconds across the middle of a visible screen, n 0 for the opening before
 // section 01. A flick to the bottom passes every section in under a second and sends nothing, so
 // the events tell a reader from a skimmer, which the leave beacon's depth and end mark cannot.
+// The last section stops counting once the page's closing reaches the middle of the screen: the
+// What next section, or on a page without one the read-end mark (the Sources heading, else the
+// author box). So its event means the last body section was read, not the links, the source list
+// or the author box (2026-11-13: 30 of 145 reads had logged only that bottom zone).
 // Whole-line comments like these are stripped before the file is hashed (build_assets.py).
 (() => {
   var d = document, heads = [].slice.call(d.querySelectorAll('.prose .section-head:not([data-read-end])')),
-    rail = [].slice.call(d.querySelectorAll('.rail a')), secs = {}, cur, queued;
+    rail = [].slice.call(d.querySelectorAll('.rail a')), end = d.querySelector('.what-next,[data-read-end]'), secs = {}, cur, queued;
   if (!heads.length) return;
   // The last section whose heading is above the middle of the screen; -1 in the opening.
   var at = () => {
@@ -25,7 +29,7 @@
   addEventListener('scroll', () => { if (!queued) { queued = 1; requestAnimationFrame(spy); } }, { passive: true });
   spy();
   setInterval(() => {
-    if (d.visibilityState !== 'visible') return;
+    if (d.visibilityState !== 'visible' || (end && end.getBoundingClientRect().top < innerHeight / 2)) return;
     var n = at() + 1;
     secs[n] = (secs[n] || 0) + 1;
     if (secs[n] === 5 && window.visits) visits.send('section', { n: n, of: heads.length });

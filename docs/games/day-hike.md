@@ -6,6 +6,7 @@ repo: https://github.com/csarkosh/game-dayhike
 tags: TypeScript, Babylon.js, WebRTC, Claude Code
 order: 1
 alt: Day Hike's cover: the trailhead towards evening, ground fog rolling between tall trunks and the trail kiosk standing alone by the path, under the title Day Hike, Trail 14
+blurb: a first-person co-op horror game that runs in your browser
 ---
 # Day Hike
 

@@ -30,7 +30,7 @@
     },
     {
       "started": "2026-10-15T11:20:44Z",
-      "source": { "kind": "direct" },
+      "source": { "kind": "direct", "campaign": "chatgpt.com", "assistant": "chatgpt.com" },
       "device": { "browser": "Firefox", "version": "148", "os": "Windows", "viewport": [1920, 919], "tz": "Europe/Berlin", "theme": "dark", "touch": false, "lang": "de-DE" },
       "steps": [
         { "path": "/", "title": "Cyrus Sarkosh", "at": 0, "left": 12, "secs": 12, "depth": 35, "read": null, "nav": "navigate", "lcp": 1680, "cls": 0.03, "inp": 72 },

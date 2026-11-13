@@ -14,6 +14,7 @@ hero-video: docs/previews/hero.mp4
 hero-video-alt: The camera starts close on MacStats' CPU and GPU items ticking in a Mac's menu bar, follows the CPU panel as it drops open over its usage and temperature gauges and its three-minute chart, then pulls back to the whole bar with the panel open under it
 promo: Every number updates each second, all five together for well under 1% of one core, and MacStats asks for no permissions on its own.
 promo-link: https://github.com/csarkosh/app-macstats#readme
+blurb: a Mac menu bar app for CPU, GPU, RAM and temperature
 ---
 # MacStats
 

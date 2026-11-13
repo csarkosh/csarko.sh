@@ -3,6 +3,10 @@ description: How AAA games soften and lighten forest shade, texture and shade ba
 published: 2026-10-13
 categories: Rendering
 series: Rendering a browser forest
+project: day-hike
+project-line: This research was done for Day Hike, a first-person co-op horror game that runs in your browser. Its trees wear scanned bark at the sizes of section 4.2 and trunk moss placed by the mask terms of section 6.2.
+closing: Of the three failures this page opened on, the varnished trunks and the missing moss are the ones to check in Day Hike. Its large trees wear tiling bark scans with their own roughness maps, shipped as KTX2 at 2K on the high quality tier and 1K below it, which is section 4.2's rule. Moss grows low on each trunk and on its wet side, more on some trees than others: section 6.2's mask of facing, height band and per-tree variation. Both are in the old-growth forest the trail climbs through from the trailhead.
+asks: Why does forest shade in a game go black, and why does bark look shiny?
 ---
 # Soft shade, bark and moss for browser forests
 

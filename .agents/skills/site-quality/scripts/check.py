@@ -412,7 +412,8 @@ def jsonld_checks(page, kind, canonical):
 
 
 CRUMB_NAV = re.compile(r'<nav class="crumbs" aria-label="Breadcrumb">(.*?)</nav>', re.S)
-CRUMB_ITEM = re.compile(r'<(?:a href="([^"]*)"|span aria-current="page")>(.*?)<')
+# A crumb link may carry more than its href: a doc page names its Home crumb's click (crumb-home).
+CRUMB_ITEM = re.compile(r'<(?:a href="([^"]*)"[^>]*|span aria-current="page")>(.*?)<')
 
 
 def breadcrumb_checks(html, graph, kind, canonical):
@@ -1330,6 +1331,9 @@ def live_checks(base):
         # Any page under /apps lands on the Apps filter too, not on a /projects/<name> that does not exist.
         s, h, _ = fetch(f"{base}/apps/some-app")
         check(s == 301 and h.get("location", "").endswith(f"/{PROJECTS_DIR}?filter=apps"), f"/apps/some-app -> {s} {h.get('location', '')}")
+    # The old site's /contact page (still in Google's results, 2026-11-12) is the home page's Contact section.
+    s, h, _ = fetch(f"{base}/contact")
+    check(s == 301 and h.get("location", "").endswith("/#contact"), f"/contact -> {s} {h.get('location', '')}")
     # The docs moved from /docs to /research; links and search results still point at the old URLs.
     if any(rel.startswith(f"{DOCS_DIR}/") for rel in built):
         old = [f"/{LEGACY_DOCS_DIR}"] + ([f"/{LEGACY_DOCS_DIR}/{Path(newest).stem}"] if newest else [])

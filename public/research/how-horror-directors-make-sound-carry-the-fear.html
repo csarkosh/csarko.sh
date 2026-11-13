@@ -18,7 +18,7 @@
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta property="article:published_time" content="2026-10-24" />
-  <meta property="article:modified_time" content="2026-10-24" />
+  <meta property="article:modified_time" content="2026-11-13" />
   <meta property="article:author" content="https://csarko.sh/" />
   <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -49,10 +49,10 @@
       "headline": "How Horror Directors Make Sound Carry the Fear",
       "description": "How horror directors use score, noise, voice, silence and the needle drop to make you afraid. Startle and roughness are measured; dread is lore.",
       "datePublished": "2026-10-24",
-      "dateModified": "2026-10-24",
+      "dateModified": "2026-11-13",
       "url": "https://csarko.sh/research/how-horror-directors-make-sound-carry-the-fear",
       "mainEntityOfPage": "https://csarko.sh/research/how-horror-directors-make-sound-carry-the-fear",
-      "wordCount": 21180,
+      "wordCount": 21140,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -328,19 +328,23 @@
     .doc-page .prose { font-size: 17px; }
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
-    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
-    .series-line p { margin: 0; }
+    .series-line { display: flex; gap: 8px; margin: 18px 0 0; font-size: 14.5px; color: var(--muted); white-space: nowrap; }
+    .series-line > * { flex: none; }
+    .series-line > :first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .series-line strong { color: var(--text); font-weight: 600; }
-    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
-    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-line a, .afterward a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
-    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .prose h2, .prose h3, .prose h4 { scroll-margin-top: 28px; }
+    ::target-text { background: var(--accent-underline); color: var(--text); }
+    .toc { margin: 32px 0 0; }
     .toc .section-label { margin: 0 0 6px; }
     .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
     .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
     .toc a:hover { color: var(--accent); }
     .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    @media (min-width: 1060px) { .toc { display: none; } }
+    @media (max-width: 1059px) { .prose > .section-head:first-child:not([data-read-end]) { border-top: 0; padding-top: 0; margin-top: 36px; } }
     .figure { margin: 32px 0; }
     .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
     /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
@@ -365,26 +369,28 @@
       radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
       radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
       var(--surface); }
-    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
-    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
-    .series-name { margin: 0 0 8px; font-weight: 600; }
-    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
-    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
-    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
-    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
-    .next-list .card { padding: 16px 18px; background: var(--bg); }
-    .next-list .doc-title { font-size: 1.05rem; }
-    .next-list .doc-desc { font-size: 14.5px; }
-    .play-line, .watch-line { margin: 20px 0 0; }
+    .what-next { margin-top: 48px; }
+    .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
+    .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
+    .watch-line { margin: 20px 0 0; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
-    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
-    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
-    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color var(--md-duration-short3) var(--md-easing-standard); }
-    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
-    .afterward .next:hover { border-color: var(--accent); }
-    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
+    .afterward { display: flex; align-items: baseline; gap: 6px 22px; margin-top: 24px; font-size: 14.5px; color: var(--muted); text-wrap: balance; }
+    .afterward > * { flex: none; }
+    .afterward > a:not(:last-child) { flex: 0 1 auto; }
+    @media (max-width: 640px) {
+      .doc-page .shell { padding-top: 16px; }
+      .doc-page .crumbs ol { padding-block: 8px; }
+      .doc-page .eyebrow { margin-bottom: 8px; }
+      .doc-page h1 { margin-bottom: 10px; font-size: 2rem; }
+      .doc-header .lead { margin-bottom: 12px; font-size: 1rem; line-height: 1.5; }
+      .doc-page .doc-header { padding-bottom: 12px; }
+      .series-line { gap: 6px; margin-top: 8px; font-size: 13px; }
+      .afterward { flex-direction: column; }
+    }
+    @media (max-width: 439px) { .series-line a span { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .play { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -397,7 +403,7 @@
   <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
-      <a class="wordmark" href="/">csarko<span>.sh</span></a>
+      <a class="wordmark" href="/" data-visits-event="nav-home">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/projects" data-visits-event="nav-projects">Projects</a></li>
         <li><a href="/research" data-visits-event="nav-research">Research</a></li>
@@ -407,7 +413,7 @@
   <nav class="crumbs" aria-label="Breadcrumb">
     <div class="wrap">
       <ol>
-        <li><a href="/">Home</a></li>
+        <li><a href="/" data-visits-event="crumb-home">Home</a></li>
         <li><a href="/research">Research</a></li>
         <li><span aria-current="page">How Horror Directors Make Sound Carry the Fear</span></li>
       </ol>
@@ -435,30 +441,27 @@
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Oct 24, 2026</p>
+        <p class="eyebrow">Oct 24, 2026 · Updated Nov 13, 2026</p>
         <h1>How Horror Directors Make Sound Carry the Fear</h1>
         <p class="lead">How horror directors use score, noise, voice, silence and the needle drop to make you afraid. Startle and roughness are measured; dread is lore.</p>
         <ul class="tags">
           <li>74 min read</li>
         </ul>
         <nav class="series-line" aria-label="Series">
-          <p>Part 7 of 7 in <strong>Horror craft</strong></p>
-          <p class="series-steps"><span>Previous: <a href="/research/how-horror-directors-steer-the-eye" rel="prev" data-visits-event="series-how-horror-directors-steer-the-eye">Five Ways Horror Directors Steer the Eye</a></span></p>
+          <span>Part 7 of 7 in <strong>Horror craft</strong></span><span aria-hidden="true">·</span><a href="/research/how-horror-directors-steer-the-eye" rel="prev" aria-label="Previous: Five Ways Horror Directors Steer the Eye" title="Five Ways Horror Directors Steer the Eye" data-visits-event="series-how-horror-directors-steer-the-eye"><span aria-hidden="true">←</span> Previous</a>
         </nav>
       </header>
       <div class="prose">
-<p><strong>Question:</strong> How do renowned horror directors use sound effects, audio design, music and silence to drive the emotion they want the audience to feel? Taken whole, from the film&#39;s side rather than the composer&#39;s or the mixer&#39;s: the score, the sound design, the voice, silence and dynamics, and <button type="button" class="term" popovertarget="term-1">diegetic</button><span class="term-def" id="term-1" popover role="note">Sound whose source exists inside the story world, such as a radio in the room, as opposed to non-diegetic score the characters cannot hear.</span> music, across eras and across Western and East Asian horror. And which of the claimed effects are measured rather than craft lore?</p>
-<p><strong>Short answer:</strong> The makers describe one job and five ways of doing it. The job is to make the audience feel a threat the picture is withholding; Spielberg&#39;s summary of John Williams is that &quot;he became the shark.&quot; The five ways are the score as the monster&#39;s presence or absence (Jaws, Halloween, Psycho, The Invisible Man), innocence placed first and then curdled (the lullabies of The Innocents, Rosemary&#39;s Baby and Us, the cheerful pop of American Psycho), the voice built as an effect rather than as dialogue (The Exorcist, Kayako, Pennywise), noise where music would be (Chain Saw, Goblin, Kurosawa, Korven, Stetson), and silence engineered so that the audience loses the cue that tells it how to feel (The Birds, No Country for Old Men, Hereditary, A Quiet Place). Japanese makers state the subtractive version of this, Nakata&#39;s &quot;aesthetics of subtraction&quot; and Kurosawa&#39;s &quot;It is the things that we can&#39;t see,&quot; while the Korean makers on record ask for more music, not less. The laboratory has measured the two reflexes horror sound leans on, the acoustic <button type="button" class="term" popovertarget="term-2">startle reflex</button><span class="term-def" id="term-2" popover role="note">A fast brainstem reflex to a sudden intense stimulus, measured in humans as an eyeblink; it is larger in darkness and under anticipatory fear and shrinks with repetition.</span> and the aversion to vocal <button type="button" class="term" popovertarget="term-3">roughness</button><span class="term-def" id="term-3" popover role="note">Fast amplitude modulation in the 30 to 150 Hz range that gives screams and alarm sounds their harsh, grating quality and engages the brain&#39;s salience networks.</span>, and it has shown that music changes what viewers see in the same footage; it has not measured dread, the drone, the needle drop, silence, rear-channel placement or any director&#39;s rationing of the jump scare, and infrasound and subliminals remain lore.</p>
+<p><strong>Question:</strong> How do renowned horror directors, Western and East Asian, use the score, sound effects, the voice, silence and songs that play inside the story (<button type="button" class="term" popovertarget="term-1" data-visits-event="term">diegetic</button><span class="term-def" id="term-1" popover role="note">Sound whose source exists inside the story world, such as a radio in the room, as opposed to non-diegetic score the characters cannot hear.</span> music) to drive the emotion they want the audience to feel? And which of the claimed effects are measured rather than craft lore?</p>
+<p><strong>Short answer:</strong> Makers describe one job for sound: making viewers feel a threat the picture withholds. Spielberg said John Williams &quot;became the shark.&quot; They describe five ways: a score standing in for the monster, an innocent tune turned wrong, a voice built as an effect, noise instead of music, and silence that removes the cue for how to feel. Japanese makers subtract sound; Korean makers ask for more music. Laboratories have measured the jump at a sudden noise, aversion to harsh, scream-like sound and music changing what viewers see, but not dread.</p>
+<p><strong>What that leaves open:</strong> how to tell a measured effect from a story the trade repeats, because three claims that circulate as science turn out to be lore. The idea that infrasound, bass too low to hear, frightens people rests on one anecdote about a 19 Hz standing wave from an extractor fan, on inconclusive concerts and on one 2026 study of 36 people that found raised cortisol and worse mood, not fear; the 27 Hz that Gaspar Noé says he added to Irréversible is audible bass, not infrasound. By the end of the page every device has its maker&#39;s claim and its evidence side by side in <a href="#device-maker-s-claim-evidence-the-table">one table</a>, and three pieces of famous lore are corrected, one of them that the Jaws theme fires whenever the audience should be afraid.</p>
+<p class="project-line">This research covers how horror directors make a voice, a score and a silence carry the fear. The Last Trail is a 56 second AI-generated horror short in which a voice that sounds like a woman&#39;s late father answers on his ranger radio. <a href="https://www.youtube.com/shorts/C1XsDuJE4MQ" target="_blank" rel="noopener" data-visits-event="lead-the-last-trail">Watch it&nbsp;on&nbsp;YouTube</a>.</p>
 <p><strong>In short:</strong></p>
 <ul>
-<li><strong>&quot;There is no soundtrack&quot;:</strong> Chion&#39;s added value and <button type="button" class="term" popovertarget="term-4">synchresis</button><span class="term-def" id="term-4" popover role="note">Chion&#39;s term for the involuntary weld the brain makes between a sound and an image that occur at the same moment, regardless of whether they belong together.</span> explain why a stinger reads as part of the picture, and his <button type="button" class="term" popovertarget="term-5">acousmatic</button><span class="term-def" id="term-5" popover role="note">Heard without its source being seen; Chion&#39;s acousmêtre is a voice whose unseen body gives it powers the visible body loses.</span> mother in Psycho is the horror case (<a href="#the-contract-what-sound-does-that-the-picture-cannot">section 1</a>)</li>
-<li><strong>&quot;He became the shark&quot;:</strong> Williams&#39;s two notes play fair, Carpenter scored Halloween after an executive called the silent cut not scary, and Wallfisch&#39;s synth &quot;growl&quot; is the only evidence of The Invisible Man (<a href="#the-score-as-the-monster-s-presence-or-absence">section 2</a>)</li>
-<li><strong>Forty-five seconds of black and a child singing:</strong> Clayton, Polanski, Craven, Peele and Harron state the same rule from both ends, that the happier the music the worse the violence feels (<a href="#the-lullaby-turned-wrong-and-the-diegetic-song">section 3</a>)</li>
 <li><strong>&quot;I did all of the demon sounds&quot;:</strong> McCambridge&#39;s wheeze, Shimizu&#39;s own croak, Skarsgård&#39;s throat tones and Dzuban&#39;s octave-down layers are one recipe, a performance first and processing kept light (<a href="#the-voice-and-the-body-how-the-famous-sounds-were-built">section 4</a>)</li>
-<li><strong>&quot;Something dreadful is bubbling under the surface&quot;:</strong> Bell&#39;s cymbals, Kawai&#39;s broken violin, Korven&#39;s abused cello and Stetson&#39;s clarinets mistaken for synths hide the instrument so the ear cannot file the sound as music (<a href="#noise-instead-of-music-from-chain-saw-to-the-apprehension-engine">section 5</a>)</li>
-<li><strong>&quot;Remove the safety net&quot;:</strong> Hitchcock&#39;s &quot;No music,&quot; Lievsay&#39;s No Country, Goldstein&#39;s one cricket and Aadahl&#39;s digital zero describe silence as the removal of instruction (<a href="#silence-and-the-mix-taking-away-the-cue-that-says-how-to-feel">section 6</a>)</li>
-<li><strong>A lull with the transients filed off:</strong> Dzuban&#39;s recipe, Gates&#39;s &quot;quiet followed by loud&quot; and the Lewton bus are the same device; the reflex habituates, the fear riding on it does not (<a href="#the-sting-how-the-jump-scare-is-built-and-rationed">section 7</a>)</li>
-<li><strong>Measured versus lore:</strong> startle, roughness, dissonance, expectancy violation and the auditory Kuleshov effect are measured; infrasound rests on one anecdote and one small 2026 study; nobody has measured a drone, a needle drop or a silence (<a href="#measured-versus-lore-the-reflexes-are-proven-the-dread-is-not">section 11</a>)</li>
+<li><strong>&quot;Remove the safety net&quot;:</strong> Hitchcock&#39;s &quot;No music,&quot; Lievsay&#39;s No Country, Goldstein&#39;s one cricket and Aadahl&#39;s digital zero, a track with no signal at all, describe silence as the removal of instruction (<a href="#silence-and-the-mix-taking-away-the-cue-that-says-how-to-feel">section 6</a>)</li>
+<li><strong>A lull with the transients filed off:</strong> Dzuban&#39;s recipe, which softens the sharp edges of door closes and footsteps before a strident sting, Gates&#39;s &quot;quiet followed by loud&quot; and the Lewton bus (the loud air-brake sound that made the first classic jump scare, in Cat People, 1942) are the same device; the reflex shrinks with repetition (it habituates), the fear riding on it does not (<a href="#the-sting-how-the-jump-scare-is-built-and-rationed">section 7</a>)</li>
+<li><strong>Measured versus lore:</strong> the <button type="button" class="term" popovertarget="term-2" data-visits-event="term">startle reflex</button><span class="term-def" id="term-2" popover role="note">A fast brainstem reflex to a sudden intense stimulus, measured in humans as an eyeblink; it is larger in darkness and under anticipatory fear and shrinks with repetition.</span> (the jump at a sudden noise), <button type="button" class="term" popovertarget="term-3" data-visits-event="term">roughness</button><span class="term-def" id="term-3" popover role="note">Fast amplitude modulation in the 30 to 150 Hz range that gives screams and alarm sounds their harsh, grating quality and engages the brain&#39;s salience networks.</span> (the harshness of a scream), dissonance, the unexpected chord (expectancy violation) and music changing what viewers see in the same footage (the auditory Kuleshov effect) are measured; infrasound rests on one anecdote and one small 2026 study; nobody has measured a drone, a needle drop or a silence (<a href="#measured-versus-lore-the-reflexes-are-proven-the-dread-is-not">section 11</a>)</li>
 </ul>
       </div>
       <nav class="toc" aria-label="In this doc">
@@ -480,6 +483,7 @@
       </nav>
       <div class="prose">
 <div class="section-head"><p class="section-label">01</p><h2 id="the-contract-what-sound-does-that-the-picture-cannot"><a class="anchor" href="#the-contract-what-sound-does-that-the-picture-cannot">The contract: what sound does that the picture cannot</a></h2></div>
+<p>Take one scene before the theory. Alfred Hitchcock&#39;s dictated note for Psycho asked for no music through the motel sequence, and Bernard Herrmann recalled that Hitchcock did not want any in the shower scene either. Herrmann scored it for strings anyway, and when Hitchcock heard the shower cue he withdrew the instruction and nearly doubled Herrmann&#39;s fee. The picture was the same in both versions; the terror arrived with the track. The end of this section gives that argument with its sources, and the paragraphs between give the terms for what happened, and for why a stinger, the sudden loud chord, reads as part of the picture.</p>
 <p>Every maker in this report assumes something Michel Chion wrote down. In Audio-Vision he defines added value as &quot;the expressive and informative value with which a sound enriches a given image so as to create the definite impression, in the immediate or remembered experience one has of it, that this information or expression &#39;naturally&#39; comes from what is seen, and is already contained in the image itself,&quot; and he adds that this is &quot;what gives the (eminently incorrect) impression that sound is unnecessary, that sound merely duplicates a meaning which in reality it brings about&quot; <a class="cite" href="#ref-1">[1]</a>. The mechanism is synchresis, &quot;the spontaneous and irresistible weld produced between a particular auditory phenomenon and visual phenomenon when they occur at the same time,&quot; a join that &quot;results independently of any rational logic&quot; and is &quot;Pavlovian. But it is not totally automatic&quot; <a class="cite" href="#ref-1">[1]</a>. Walter Murch&#39;s foreword gives the craft form: &quot;The sound of an ax chopping wood, for instance, played exactly in sync with a bat hitting a baseball, will &#39;read&#39; as a particularly forceful hit rather than a mistake by the filmmakers&quot; <a class="cite" href="#ref-1">[1]</a>. The consequence for horror is in Chion&#39;s own words: &quot;Most falls, blows, and explosions on the screen, simulated to some extent or created from the impact of nonresistant materials, only take on consistency and materiality through sound&quot; <a class="cite" href="#ref-1">[1]</a>. A puppet head on a pole is a decapitation because the track says so.</p>
 <p>Two more of Chion&#39;s terms carry the rest of this report. The first is acousmatic sound, &quot;a situation wherein one hears the sound without seeing its cause,&quot; which &quot;maintains suspense, constituting a dramatic technique in itself,&quot; and whose horror instance is Lang&#39;s M, where &quot;for as long as possible the film conceals the physical appearance of the child-murderer, even though we hear his voice and his maniacal whistling from the very beginning&quot; <a class="cite" href="#ref-1">[1]</a>. He distinguishes active offscreen sound, which &quot;raises questions (What is this? What is happening?) whose answer lies offscreen,&quot; from passive offscreen sound that &quot;envelops and stabilizes the image,&quot; and he names the genre&#39;s founding case: &quot;Films like Psycho are based entirely on the curiosity aroused by active offscreen sound: this mother we keep hearing, what does she look like?&quot; <a class="cite" href="#ref-1">[1]</a>. The unseen voice, the acousmêtre, has in his account from The Voice in Cinema &quot;the ability to be everywhere, to see all, to know all, and to have complete power,&quot; and giving it a body, de-acousmatization, dooms it &quot;to the fate of ordinary mortals&quot;; Psycho&#39;s ending, the mother&#39;s voice speaking while Norman&#39;s mouth is closed, is &quot;the triumph of the acousmêtre&quot; <a class="cite" href="#ref-2">[2]</a>. The second term is rendering: the spectator accepts sounds &quot;not so much if they reproduce what would be heard in the same situation in reality, but if they render (convey, express) the feelings associated with the situation&quot; <a class="cite" href="#ref-1">[1]</a>. That sentence licenses every exaggerated bone crack in section 4.</p>
 <p>Chion also supplies the theory of the two devices horror uses most against expectation. Music can show &quot;conspicuous indifference to the situation, by progressing in a steady, undaunted, and ineluctable manner,&quot; which &quot;has the effect not of freezing emotion but rather of intensifying it, by inscribing it on a cosmic background&quot;; he calls this anempathetic, and he lists its stock in trade, &quot;those countless musical bits from player pianos, celestas, music boxes, and dance bands, whose studied frivolity and naivete reinforce the individual emotion of the character and of the spectator, even as the music pretends not to notice them,&quot; with Psycho&#39;s running shower as the noise version <a class="cite" href="#ref-1">[1]</a>. And he insists that &quot;the impression of silence in a film scene does not simply come from an absence of noise. It can only be produced as a result of context and preparation ... So silence is never a neutral emptiness. It is the negative of sound we&#39;ve heard beforehand or imagined; it is the product of a contrast&quot; <a class="cite" href="#ref-1">[1]</a>. His worked example is the cat shot in Alien, where &quot;The shots leading up to this are sonically rich, preparing for the void that follows, but care has been taken that the silence doesn&#39;t strike too suddenly. During the first three seconds of the shot of the cat we can hear a small unidentified sound, like a tick-tock&quot; <a class="cite" href="#ref-1">[1]</a>. Sections 3 and 6 are the makers independently describing both.</p>
@@ -679,35 +683,15 @@
 <p>The maker-statement gaps are large and worth naming for the knowledge-base pass. No Tobe Hooper quotation about Wayne Bell or any cue; no Kubrick statement on music, silence or the mix in his own words (the Ciment interview was unreachable); no Wes Craven statement on the Elm Street rhyme, Bernstein&#39;s score or &quot;Red Right Hand&quot;; no Demme explanation of &quot;Goodbye Horses&quot;; no Romero statement of musical intent beyond &quot;right for each specific scene&quot;; no Bava, Clayton, Oram, Komeda or Polanski statement of intent; no Myrick, Sánchez or Peli explanation of refusing a score; no Lievsay statement on The Silence of the Lambs or on suspense technique; no Shimizu statement of why Kayako is a sound; no Nakata or Kawai account of the cursed tape&#39;s audio; no Kurosawa statement on Cure&#39;s washing machine or its missing score; no Miike or Endō statement on Audition&#39;s sound; no Na, Jang or Dalpalan statement on The Wailing&#39;s drums; no Mowg, Jo Yeong-wook, Shiro Sato or Takefumi Haketa interview; no Parker Finn or Tapia de Veer statement on Smile&#39;s daxophone score (the Variety interview was blocked); no Kyle Edward Ball or Rob Savage statement on refusing score; no Aster statement on his own music in his own words (everything is the composers reporting him); no Dzuban account of the 2013 hide-and-clap; no account of the Poltergeist, Thing or Babadook creature sounds from their makers; and no maker in Korea or Japan using the words han or ma about their own film.</p>
 <p>Texts not reached, which the knowledge base should treat as the primary sources for the claims here attributed to catalogues, blurbs and reviews: Donnelly&#39;s The Spectre of Sound; van Elferen&#39;s Gothic Music; Hayward&#39;s Terror Tracks (Wierzbicki, Koizumi, Coyle and the Shining chapter); Whittington&#39;s book-length work; Baird&#39;s 2000 &quot;The Startle Effect&quot;; Weis&#39;s The Silent Scream; Auiler&#39;s Hitchcock&#39;s Secret Notebooks (the Birds sound notes, p. 516); the Hitchcock-Truffaut chapters on Psycho and The Birds; Smith&#39;s A Heart at Fire&#39;s Center; Lucas&#39;s All the Colors of the Dark; Sinyard&#39;s Jack Clayton; Brend&#39;s The Sound of Tomorrow; Roman by Polanski; the Lerner collection&#39;s chapters in text; Chion&#39;s Film, a Sound Art and The Voice in Cinema; Kerins&#39;s Beyond Dolby (Stereo); Yewdall&#39;s The Practical Art of Motion Picture Sound; Juslin and Västfjäll&#39;s definitional text; and the Blu-ray commentaries and featurettes that are the likely primary sources for most of the maker gaps above. The web-search budget for every research thread was exhausted part-way, and Google Books, JSTOR, Project MUSE, Criterion, Rolling Stone, Variety, The Hollywood Reporter, Bloody Disgusting and the Hitchcock Wiki blocked fetches throughout.</p>
       </div>
-      <section class="keep-reading" aria-labelledby="next-reads">
-        <h2 id="next-reads" class="section-label">Keep reading</h2>
-        <p class="series-name">Horror craft · 7 parts</p>
-        <ol class="series-parts">
-          <li><a href="/research/opening-a-game-like-a-film" data-visits-event="next-opening-a-game-like-a-film">Opening a game like a film: sixty seconds of drive, radio and dread</a></li>
-          <li><a href="/research/building-dread-toward-a-late-reveal" data-visits-event="next-building-dread-toward-a-late-reveal">Building dread toward a late reveal in horror games</a></li>
-          <li><a href="/research/how-alan-wake-introduces-its-darkness" data-visits-event="next-how-alan-wake-introduces-its-darkness">How Alan Wake introduces its darkness</a></li>
-          <li><a href="/research/horror-cinematography-shot-by-shot" data-visits-event="next-horror-cinematography-shot-by-shot">How Horror Directors Build Dread Shot by Shot</a></li>
-          <li><a href="/research/horror-sequences-shot-by-shot" data-visits-event="next-horror-sequences-shot-by-shot">23 Horror Sequences Broken Down Shot by Shot</a></li>
-          <li><a href="/research/how-horror-directors-steer-the-eye" data-visits-event="next-how-horror-directors-steer-the-eye">Five Ways Horror Directors Steer the Eye</a></li>
-          <li aria-current="true"><span>How Horror Directors Make Sound Carry the Fear</span></li>
-        </ol>
-        <ul class="doc-list next-list" role="list">
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/horror-cinematography-shot-by-shot" data-visits-event="next-horror-cinematography-shot-by-shot">How Horror Directors Build Dread Shot by Shot</a></h3>
-            <p class="doc-meta">40 min read</p>
-            <p class="doc-desc">How Hitchcock, Kubrick, Carpenter, Nakata, Aster and Eggers build dread: the three levers, a feeling-to-technique table, 30 director profiles, 168 sources.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/horror-sequences-shot-by-shot" data-visits-event="next-horror-sequences-shot-by-shot">23 Horror Sequences Broken Down Shot by Shot</a></h3>
-            <p class="doc-meta">36 min read</p>
-            <p class="doc-desc">Shot-by-shot breakdowns of 23 horror sequences, from the Psycho shower to Weapons: sizes, moves, durations, cut points, and what each one teaches.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/how-horror-directors-steer-the-eye" data-visits-event="next-how-horror-directors-steer-the-eye">Five Ways Horror Directors Steer the Eye</a></h3>
-            <p class="doc-meta">42 min read</p>
-            <p class="doc-desc">Horror inverts five framing rules: space behind the face, threat in the dark, focus on nothing, lines to nowhere. The eye is measured; the dread is lore.</p>
-          </li>
+      <section class="prose what-next" aria-labelledby="what-next">
+        <h2 id="what-next">What next</h2>
+        <p>Spielberg&#39;s line on Jaws was that John Williams became the shark: two notes stood in for a monster the picture was not showing. Carpenter&#39;s Halloween was not scary to an executive who saw it without music, so the test is open to anyone: mute a horror film, unmute it, and name which of the five ways brought the fear back. One short enough to try twice is The Last Trail, a 56 second horror short about a woman, her late father&#39;s ashes and a voice on his ranger radio. <a href="https://www.youtube.com/shorts/C1XsDuJE4MQ" target="_blank" rel="noopener" data-visits-event="close-the-last-trail">Watch it&nbsp;on&nbsp;YouTube</a>.</p>
+        <ul>
+          <li><a href="/research/horror-cinematography-shot-by-shot" data-visits-event="series-horror-cinematography-shot-by-shot">How do horror directors build dread with the camera, the cut and sound?</a></li>
+          <li><a href="/research/horror-sequences-shot-by-shot" data-visits-event="series-horror-sequences-shot-by-shot">How are famous horror scenes like the Psycho shower built, shot by shot?</a></li>
+          <li><a href="/research/how-horror-directors-steer-the-eye" data-visits-event="series-how-horror-directors-steer-the-eye">Where do horror films make you look, and which framing rules do they break?</a></li>
         </ul>
+        <p class="series-at"><span>Part 7 of 7 in <strong>Horror craft</strong></span><span>Previous: <a href="/research/how-horror-directors-steer-the-eye" rel="prev" data-visits-event="series-how-horror-directors-steer-the-eye">Five Ways Horror Directors Steer the Eye</a></span></p>
         <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS).</p>
       </section>
       <div class="prose">
@@ -908,12 +892,13 @@
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
-        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
+        <p class="author-name"><a href="/" data-visits-event="author-home">Cyrus Sarkosh</a></p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
-        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
+        <p class="author-links"><a href="/" data-visits-event="author-home">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
       <nav class="afterward" aria-label="Read next">
-        <a class="next" href="/research/horror-cinematography-shot-by-shot" data-visits-event="end-horror-cinematography-shot-by-shot"><span class="section-label">Read next</span><span>How Horror Directors Build Dread Shot by Shot <span aria-hidden="true">→</span></span></a>
+        <span>The Last Trail: <a href="https://www.youtube.com/shorts/C1XsDuJE4MQ" target="_blank" rel="noopener" data-visits-event="after-the-last-trail">Watch it&nbsp;on&nbsp;YouTube</a></span>
+        <a href="/research/horror-cinematography-shot-by-shot" data-visits-event="end-horror-cinematography-shot-by-shot">How do horror directors build dread with the camera, the cut and sound?</a>
         <a href="/research">All research</a>
       </nav>
     </main>
@@ -928,7 +913,7 @@
   <!-- generated:analytics -->
   <script defer src="/assets/visits.4378bd36.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
-  <script defer src="/assets/reading.c3e27b33.js"></script>
+  <script defer src="/assets/reading.3a8c03e0.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

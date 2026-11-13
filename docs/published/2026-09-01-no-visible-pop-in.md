@@ -4,6 +4,10 @@ published: 2026-09-01
 categories: Rendering
 updated: 2026-10-10
 series: Rendering a browser forest
+project: day-hike
+project-line: Day Hike, a first-person co-op horror game that runs in your browser, streams an endless forest around the player. This is the dissolve built to keep its trees, bushes and grass from visibly spawning.
+closing: Day Hike's rule is that the player never sees anything spawn, and section 10 names where to hold the game to it. Walk toward the far rim of a meadow: the grass there should thicken as a speckle of pixels and never grow. Where the forest's modelled trees hand over to flat billboards, a tree should never appear whole; its crown fills in through the screen-door dither of section 3. Only walking can judge it, which is the one check this page could not make from stills.
+asks: How do you stop trees and grass popping in as a game world streams in?
 ---
 # No visible pop-in: dissolving a streamed forest
 

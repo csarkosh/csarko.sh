@@ -36,11 +36,62 @@ Conventions, for every route:
   per-page-per-session counts (a browser once per page per session), the rows after it are
   lib-visits' visits (one browser on one UTC day). A range that spans the cutover adds the
   two, and the page should say so where it matters.
-- **Bots and checks are out of every live number.** A page load (one `id`) is a bot when any
-  of its beacons says so (Lighthouse's view says bot=false, its leave and vitals true) or
-  names a browser brand starting `Headless` (the client hints' HeadlessChrome, under a
-  User-Agent that claims a real browser, which the collector's own check misses), and the
-  deploy and depth checks never count.
+- **Bots, crawlers and checks are out of every live number.** The deploy and depth checks
+  never count, and neither does a page load (one `id`) that is a bot's or a crawler's. The
+  test is one SQL fragment, `admin/api/queries/_bot.sql`, which the collector splices into all
+  six visits queries (`{{bot}}`; `renderSql` in `collectors/visits.mjs`), so `visits`, `pages`,
+  `referrers`, `events`, `journeys` and `audience` agree. A page load is out when any of these
+  holds, and a visit whose page loads are all out is out with them:
+  - **the flag**: any of its beacons carries the collector's bot flag (Lighthouse's view says
+    bot=false, its leave and vitals true) or names a browser brand starting `Headless` (the
+    client hints' HeadlessChrome, under a User-Agent that claims a real browser, which the
+    collector's own check misses);
+  - **an impossible device** *(2026-11-13)*, read from its view: a viewport larger than its
+    screen at pixel ratio 1, on the 800x600 screen a headless Chrome has by default (only that
+    screen: a reader on a scaled display who zooms out, 125% scaling at 80% zoom, reports
+    pixel ratio 1 and a viewport wider than the screen too, and every catch was 800x600); a
+    square screen; a viewport that is the whole screen at pixel ratio 1 (no browser frame, no
+    OS bar); a phone-width viewport (480 px or less) at pixel ratio 1, or on a named desktop OS
+    (Windows, macOS, Linux, ChromeOS) whose screen is phone-width too. Firefox is spared the
+    square-screen and whole-screen rules, since its resist-fingerprinting mode (Tor Browser,
+    Mullvad Browser, LibreWolf) reports the window as the screen;
+  - **the Linux fleet** *(2026-11-13)*: Chrome on Linux, a 1920x1080 screen at pixel ratio 1,
+    a viewport of 1919x992 or more (Chrome's own bars and nothing else, so no desktop panel;
+    every one of its page loads was 1920x993 or 1919x992, and the people's maximised windows
+    on such a screen were 990 high at most), the light theme, arriving from google.com, and no
+    leave from the page load. It loads one page and is killed, 45 times in four weeks, and it
+    was a third of what the page called search. A person on that exact desktop is counted from
+    their first leave on (the first time the tab is hidden or closed), so one still reading is
+    missing until then;
+  - **the game's tooling** *(2026-11-13)*: its visit (the daily hash) opened Day Hike's tooling
+    lobby, `/dayhike/game/0f1c2a3b-4d5e-4f60-8a9b-0c1d2e3f4a5b`, the fixed game id the game's
+    capture and frame-budget tools open from the cloud; every page load of that visit. If the
+    game's tools change that id, change it in `_bot.sql`.
+
+  Measured on the four weeks to 2026-11-13: of 458 page loads the flag alone let through, a
+  hand review called 178 crawlers, 277 people and 3 unclear; the test drops 151 of the 178 (135
+  crawler visits and the 6 tooling visits) and none of the people or the unclear. **Left in on
+  purpose**, because no rule on one page load tells them from a person: a Windows Chrome fleet
+  in zh-CN on Shanghai time with a different window each time (11 page loads), a Windows fleet
+  whose viewport is always exactly 1366x768 (5; a real reader's window was exactly 1280x720), the
+  Linux fleet's page loads that did send a leave or came with no referrer (4), a Linux probe of
+  the game's lobby (3), and 4 single views with a UTC clock or a full-screen viewport at a
+  higher pixel ratio (a UTC clock alone is not a bot: a reader with one engaged for 3 minutes).
+  All but one of those 27 are glances, so they count as visits and not as readers (the one
+  stayed 5 seconds on the game's lobby), and Journeys still marks the UTC ones `suspect`.
+  **It can drop a real reader**, so a live number misses a person in these known cases (none
+  of the 277 people in the four weeks was one):
+  - a browser other than Firefox in true full screen (F11, a kiosk) on a pixel-ratio-1 display:
+    its viewport is the whole screen. The one full-screen reader in the rows was on a
+    pixel-ratio-2 Mac and counted;
+  - a window 480 px wide or less at pixel ratio 1: a browser's side panel, or DevTools'
+    responsive mode on such a display. A narrow window at a higher pixel ratio (a split view
+    on a laptop, a half screen zoomed to 200%) counts, and so does a phone whose OS the
+    collector cannot name;
+  - a phone emulated in DevTools on a desktop (a desktop OS with a phone's screen);
+  - a person on the Linux fleet's exact desktop (Chrome with no desktop panel on 1920x1080,
+    the light theme, from Google) until their page load's first leave, and for good if that
+    leave is lost or falls after the range.
 - `cache-control: no-store` on every answer; the API caches upstream calls for five
   minutes itself.
 - **Saved answers** *(2026-11-11, Cyrus: "instant, then live")*: every `kpis` and `query`
@@ -78,6 +129,15 @@ trend, and the health dot.
 - `kpis[].value` and `prev` may be `null` (not configured): the tile shows a dash and
   "Not configured (ENV)" from `notConfigured[key]` (`impressions` falls back to the
   `search` entry). `trend` is always 12 numbers; a week with no snapshot is 0.
+- **The visits trend spans the crawler rule** *(2026-11-13)*. `value` and `prev` are counted
+  live, with the bot test as it is now; `trend` reads each week's stored snapshot (`visits7`),
+  and a snapshot written before the crawler rule was deployed counted the crawlers the flag
+  missed. For the same seven days those points read 1.5 to 1.8 times the live count (the week
+  to 2026-10-29: 88 stored, 59 by the rule; to 2026-11-05: 106 and 64; to 2026-11-12: 92 and
+  52), so the tile's value sits well under its sparkline until twelve weeks of new snapshots
+  have replaced them. That step is the rule, not a fall in traffic. The stored points are not
+  rewritten by a deploy; to line them up, re-run the rendered `visits.sql` for each snapshot
+  date since 2026-10-15 and write its count back as `visits7` (a Firestore write, Cyrus's call).
 - `search` and `impressions` cover the 28 days ending on Google's last finished day, as
   the `search` query's range does, not today.
 - `unit` is `""` or a short suffix (`"%"`, `"ms"`); the page appends it to the value.
@@ -108,8 +168,8 @@ The sample files are `admin/public/sample/csarko.sh/<name>.json`, each for `days
 
 `readers` are the visits that did something a person does: 5 or more engaged seconds on one
 page load, views of 2 or more paths, or a click (`visits.sql`). The rest, a single page gone in
-under 5 seconds or with no leave at all, are mostly crawlers the bot flag misses, with real
-bounces among them. GoatCounter's history kept no engaged time, so readers come from lib-visits'
+under 5 seconds or with no leave at all, are real bounces and the crawlers the bot test leaves
+in (see "Bots, crawlers and checks" above). GoatCounter's history kept no engaged time, so readers come from lib-visits'
 rows only: a range that reaches before the cutover carries `readersSince` (the cutover instant,
 `VISITS_HISTORY_UNTIL`) and counts readers from then, and a day wholly before it has
 `"readers": null`. `readersSince` is `null` otherwise.
@@ -136,7 +196,12 @@ on the path, among page loads that sent a leave (a load's time is the most its l
 reported, capped at 1800 s), `null` when no load did. `reached` (0 to 1) is the share of all
 the path's views whose load reached the end of the page (a view with no leave did not), and
 only on `/research/<slug>` pages, the ones with a read-end marker; `null` for every other
-path. `inSitemap: null` on every row means the sitemap could not be read
+path. **Reached the end** *(2026-11-13)*, here, in `events`' `read-<slug>` and in a journey
+step's `read`, is the leave beacon's read-end flag (`re`) on a page load whose scroll depth
+reached 50 or more: the flag alone is set by anything that renders the whole page at once,
+without scrolling, and in the four weeks to 2026-11-13 it sat on 18 page loads that never got
+past a depth of 15 (17 of them crawlers the bot test now drops), while every page load that
+did scroll to the end was at 72 or more. `inSitemap: null` on every row means the sitemap could not be read
 (`notConfigured.sitemap`). `rows` is `null` with `notConfigured.visits`.
 
 ### `referrers`
@@ -159,6 +224,20 @@ visitor) and `other`. Each visit counts once, by its first view's referrer; `cam
 the first view's too. `paths` are the site's own edges, the previous page to this one, every
 view counted. All four are `null` with `notConfigured.visits`.
 
+**An assistant's tag is its referrer** *(2026-11-13)*. A link inside a ChatGPT answer arrives
+with no referrer and with `utm_source=chatgpt.com`, so a visit whose first view has no external
+referrer and whose campaign (`?ref=`, else `utm_source`) is an assistant's host is reported in
+`rows` under that host, `chatgpt.com`, and so in the `ai` group, not as `(direct)`. It shows
+once: an assistant's tag is never listed in `campaigns`, which keep the tags of the site's own
+links. A visit with a real external referrer stays under that referrer whatever its tag.
+`referrers.mjs` holds the list of assistants (`assistantOf`), NotebookLM among them
+(`notebooklm.google.com`, whose links arrive from `notebook.google.com`). In the four weeks to
+2026-11-13 the `ai` group read 3 where 50 visits came from assistants: ChatGPT 46, Gemini 3,
+NotebookLM 1. A journey says the same: its `source` keeps the view's own `kind` and
+`campaign` and adds `assistant`, the host, so such a visit reads
+`{ "kind": "direct", "campaign": "chatgpt.com", "assistant": "chatgpt.com" }` and the Journeys
+card names it "ChatGPT", by a tagged link, where the Referrers card counts it.
+
 ### `events`
 
 ```json
@@ -166,8 +245,8 @@ view counted. All four are `null` with `notConfigured.visits`.
 ```
 
 `visitors` is the distinct visits that fired the event, `clicks` how many times it fired
-(for `read-<slug>`, the page loads that reached the end; the history's one count stands for
-both). `kind` is the name's prefix: `out`, `play`, `watch`, `read`, `nav`, `start` (a card in /research's Start here row), `filter` (a category chip there), `app` (an app card's link to its page), and since 2026-11-01, when apps.csarko.sh and donate.csarko.sh began sending beacons too, on an app's page `get` (the bar's Install or Download pill), `download` (a release button), `promo`, `tokens`, `release` and `source` (each `-<slug>`), and on the donate pages `tier` (a tier picked, `tier-<key>`), `pay` (the Stripe button, `pay-<door>`), `tipped` (the thanks page after Stripe, with `door` in its data: the tip made) and `back`; and on a doc page *(2026-10-23)* `toc` (its contents, `toc` inline and `toc-rail` in the rail), `doc` (a link in its text to another doc, `doc-<slug>`), `next` (Keep reading, `next-<slug>`), `series` (the series line under the title), `end` (the Read next link after the author box) and `section` (`section-<n>`, a section that sat across the middle of a visible screen for 5 s, n 0 for the opening; from the site's `reading.js`, so `clicks` counts page loads), else `other`;
+(for `read-<slug>`, the page loads that reached the end, as `pages` defines it: the read-end
+flag and a scroll depth of 50 or more; the history's one count stands for both). `kind` is the name's prefix: `out`, `play`, `watch`, `read`, `nav`, `start` (a card in /research's Start here row), `filter` (a category chip there), `app` (an app card's link to its page), and since 2026-11-01, when apps.csarko.sh and donate.csarko.sh began sending beacons too, on an app's page `get` (the bar's Install or Download pill), `download` (a release button), `promo`, `tokens`, `release` and `source` (each `-<slug>`), and on the donate pages `tier` (a tier picked, `tier-<key>`), `pay` (the Stripe button, `pay-<door>`), `tipped` (the thanks page after Stripe, with `door` in its data: the tip made) and `back`; and on a doc page *(2026-10-23)* `toc` (its contents, `toc` inline and `toc-rail` in the rail), `doc` (a link in its text to another doc, `doc-<slug>`), `next` (a next question in its What next section, Keep reading until 2026-11-13, `next-<slug>`), `series` (a part of its series, `series-<slug>`: the series line under the title, and in What next, a part named in the doc's `related:` included), `end` (the next question after the author box, `end-<slug>`) and `section` (`section-<n>`, a section that sat across the middle of a visible screen for 5 s, n 0 for the opening, the last one ending where What next begins since 2026-11-13; from the site's `reading.js`, so `clicks` counts page loads), and since 2026-11-13 `lead`, `close` and `after` (the link to the doc's project, its game, app or film: in the opening, in What next and after the author box, each `-<project slug>`), `term` (a term's definition tapped open), `crumb` (`crumb-home`, the trail's Home link) and `author` (`author-home`, the author box's links to the home page). A doc sends no `play-<game>` since that day, so the Events card's "Went to play" and "Went to watch" count the `/projects` cards (and a doc's Watch pill), and its "Doc to its project" tile and bar sum the visitors of `lead`, `close` and `after`; `nav-home` (the nav's wordmark on any page but the home page) is kind `nav`; else `other`;
 `link-<host>` (a click on a link to another host that the page did not name, the host
 without `www.`) is kind `out`. `outboundVisitors` is the distinct visitors who clicked any `out-*` or `link-*` event; `outboundRate` is the distinct visitors who clicked any
 `out-*` or `link-*` over the home page's visitors, so it never passes 1; `null` when nobody
@@ -181,7 +260,7 @@ nothing before the cutover. A page's leave, vitals and clicks belong to the view
 page-load id, whatever visit they name themselves.
 
 ```
-{ started, source: { kind: 'direct'|'external'|'internal', host?, path?, campaign? },
+{ started, source: { kind: 'direct'|'external'|'internal', host?, path?, campaign?, assistant? },
   device: { browser, version, os, viewport: [w, h], tz, theme, touch, lang },
   steps: [{ path, host?, title, at, left, secs, depth, read, nav, lcp, cls, inp, back }],
   exit: { kind: 'click', event, url, host } | { kind: 'left' },
@@ -189,7 +268,11 @@ page-load id, whatever visit they name themselves.
 ```
 
 - `source` is the first view's referrer: `host` with `external`, `path` (the site's own page it
-  came from) with `internal`, `campaign` when the view carried one.
+  came from) with `internal`, `campaign` when the view carried one. `assistant` *(2026-11-13)*
+  is there when the view had no external referrer and its campaign is an assistant's host
+  (`referrers`, "An assistant's tag is its referrer"): that host without `www.`, `chatgpt.com`,
+  which is where the visit came from. `kind` stays `direct` (or `internal`), since the browser
+  sent no referrer.
 - `device` is the first view's: `browser` and `version` (a string) and `os` as the collector
   names them, `viewport` as `[width, height]` in CSS pixels (each `null` when unknown), `tz`
   the IANA zone, `theme` `dark` or `light`, `touch` a boolean, `lang` the browser's language.
@@ -199,8 +282,8 @@ page-load id, whatever visit they name themselves.
   visitor left that page, in the same seconds: the next step's `at`, else the exit click's
   time, else `at + secs` when the page sent a leave, else `null`. `secs` and `depth` (0 to
   100) come from the page's leave beacon (`null` when none arrived). `read` is whether the
-  reader reached the end, only on `/research/<slug>` pages (the ones with a read-end marker)
-  and `null` elsewhere. `nav` is the navigation type (`navigate`, `reload`, `back_forward`, or
+  reader reached the end (the read-end flag and a depth of 50 or more, as in `pages`), only on
+  `/research/<slug>` pages (the ones with a read-end marker) and `null` elsewhere. `nav` is the navigation type (`navigate`, `reload`, `back_forward`, or
   `spa` for a screen a single-page app such as Day Hike reported with lib-visits' `visits.page()`)
   or `null`. `back` is `true` on a step the visitor reached 30 minutes or more after the page
   before was last seen (its `at` plus its engaged seconds): they came back, later that day or

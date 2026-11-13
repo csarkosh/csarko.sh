@@ -35,7 +35,7 @@ $S/generate-assets.sh          # rebuild EVERYTHING generated (see below) — de
 node $S/build_docs.mjs         # just the pages built from Markdown: docs/published/*.md → public/research/, docs/games/*.md → public/games/ and docs/films/*.md → public/film/, plus the sitemap and the home sections (generate-assets.sh runs it)
 ```
 
-Unit tests: `node --test .agents/skills/site-quality/tests/docs_lib.test.mjs` and
+Unit tests: `node --test .agents/skills/site-quality/tests/*.test.mjs` and
 `python3 -m unittest discover -s .agents/skills/site-quality/tests`.
 
 `preview.sh` runs `check.py` every time. `deploy.sh` refuses to publish if it
@@ -56,7 +56,7 @@ Same inputs, same outputs (two builds produce identical hashes).
 | `public/assets/film-<slug>-{200,240,400,480}.<hash>.{avif,webp,jpg}`, `public/film/<slug>.jpg` | `assets/films/<slug>.jpg`, one poster per film, portrait (3:4) | `build_docs.mjs` writes a `<!-- generated:film-poster:<slug> -->` marker holding a plain `<img>` with the `alt` from the front matter; `build_assets.py` swaps in the hashed `<picture>` and reads that `alt` back out, so the Markdown stays the one source of truth. The stable `film/<slug>.jpg` is what the `VideoObject` cites. A film with no source image keeps the plain `<img>`. |
 | `public/research/feed.xml` | `docs/published/` via `build_docs.mjs` | The Atom feed of every doc, newest first; doc pages and `/research` link it as `rel="alternate"`. |
 | `public/assets/fig-<slug>-<name>-<w>.<hash>.{avif,webp,jpg}`, `fig-<slug>-<name>.<hash>.svg`, `public/research/figures/<slug>-<name>.{jpg,svg}` | `assets/research/<slug>/<name>.{png,svg}`, a doc's figures *(2026-10-23)* | `build_docs.mjs` reads each file's size and writes a `<!-- generated:figure:<slug>/<name> -->` marker holding a plain `<img>` with the Markdown's alt; `build_assets.py` swaps in the hashed `<picture>` (an SVG as one `<img>`). The stable JPEG, cut to 1200x630 from the middle, is the doc's share card when its first figure is a PNG. See the `publish-doc` skill's "Figures". |
-| `public/assets/reading.<hash>.js` | `assets/reading.js` | A doc page's own script, written into its `generated:analytics` block after the lib-visits tags: the contents rail's current section, and the `section` event. Whole-line comments stripped before hashing, so its source can explain itself. |
+| `public/assets/reading.<hash>.js` | `assets/reading.js` | A doc page's own script, written into its `generated:analytics` block after the lib-visits tags: the contents rail's current section, and the `section` event, whose last section ends where the page's What next section begins *(2026-11-13)*. Whole-line comments stripped before hashing, so its source can explain itself. Tests: `tests/reading.test.mjs`. |
 | `public/assets/filters.<hash>.js` | `assets/filters.js` | `/projects`' and `/research`'s own script *(2026-10-29)*, in the same block: a link's `?filter=a,b` (the chips' values) checks those chips on load, and each chip change writes the checked ones back into the address bar, keeping other parameters such as `?ref=`. **It also makes the list glide** (Material 3 motion, 2026-10-29): leaving cards fade out where they were, staying cards move to their new places, arriving ones fade in and rise, and the list's height eases, all on the `--md-*` tokens, so under reduced motion the filter is instant; a link's filter applies with no motion at all. The chips still filter through CSS alone; without the script a filter link just opens unfiltered and a click is instant. All (the form's reset) is done by hand, so its glide starts in the click's own task. 4,997 B served (2026-10-30), which takes the list pages to 8,989 B of the 10,000 B script budget. |
 | `public/sitemap.xml` | `docs/published/`, `docs/games/` and `docs/films/` via `build_docs.mjs` | `/`, `/film`, `/games`, `/research` (no `lastmod` on any of the four), then each doc with its own. Each section's URL appears only while it has content. |
 | `public/assets/portrait-{240,360,480,720}.<hash>.{avif,webp,jpg}` | `assets/portrait-source.jpg` | Responsive LCP image. Desktop 2x loads a ~15 KB AVIF instead of a 100 KB JPEG. |
@@ -195,14 +195,17 @@ rename one without a reason the dashboard can absorb. Click events are
 |---|---|
 | `out-linkedin`, `out-github`, `out-youtube` (`out-substack` until 2026-11-05) | the home page's hero chips, its Contact buttons, and the Filming tile's `@csarkosh` link (`public/index.html`) |
 | `nav-film`, `nav-games`, `nav-research` | the page links of every nav: the home page's by hand, the generated pages' from `PAGE_LINKS` in `docs_lib.mjs`; the link to the page you are on carries none, since a reload is not a navigation |
+| `nav-home` | the nav's wordmark on every generated page *(2026-11-13)*, on the same rule: the home page's own, which only jumps to its top, carries none |
 | `play-<slug>` | a game card's "Play in your browser" (`gameList`) |
 | `watch-<slug>` | a film card's "Watch on YouTube" (`filmCard`) |
 | `read-<slug>` | derived, not sent: a doc page whose reader's last leave reached the end (`leave.re`) |
 | `toc`, `toc-rail` | a doc's "In this doc" list and its contents rail *(2026-10-23, as are the rows below)* |
 | `doc-<slug>` | a link in a doc's text to another doc (`renderMarkdown`) |
-| `series-<slug>`, `next-<slug>`, `end-<slug>` | the series line under a doc's title, its Keep reading block, and the Read next link after its author box |
-| `play-<game>` | a doc's Play button, shown when its text names a playable game (the same name as the game card's) |
-| `section` | sent by `reading.js`, not a click: a section that sat across the middle of a visible screen for 5 s, `d: { n, of }`, n 0 for the opening; the dashboard lists it as `section-<n>` |
+| `series-<slug>`, `next-<slug>`, `end-<slug>` | a part of a doc's series (the Previous and Next links in the line under its title and in What next, and any part among What next's questions: the next part, which leads them, or one the doc names in `related:`), a next question in What next from outside the series (Keep reading's cards until 2026-11-13), and the next question after its author box |
+| `lead-<project>`, `close-<project>`, `after-<project>` | the link to a doc's project, its game, app or film *(2026-11-13, as are the two rows below)*: in the product line of its opening, in What next's closing paragraph, and after the author box. They took the place of a doc's Play button, so on a doc page there is no `play-<game>` any more; the dashboard's Events card sums the three in its "Doc to its project" tile and bar, beside "Went to play" (the `/projects` card) |
+| `term` | a term's definition tapped open on a doc page (`renderMarkdown`) |
+| `crumb-home`, `author-home` | on a doc page, the trail's Home link and the author box's two links to the home page |
+| `section` | sent by `reading.js`, not a click: a section that sat across the middle of a visible screen for 5 s, `d: { n, of }`, n 0 for the opening; the last one stops counting once What next (or, on a page without one, the read-end mark) reaches the middle of the screen; the dashboard lists it as `section-<n>` |
 
 `read-<slug>` needs no script of ours any more (`engage.js` is gone):
 `docs_lib.mjs` still marks one element per doc `data-read-end`, the Sources
@@ -230,7 +233,7 @@ This is the change most likely to regress everything above. In order:
    does not know, so a new script needs its own hash check and page rule
    there, next to the lib-visits scripts'.
 4. Stay within `BUDGET_SCRIPTS` (10,000 B). The lib-visits scripts already
-   and `reading.js` take about 5,054 B of it on a doc page, so anything new displaces something or
+   and `reading.js` take about 5,225 B of it on a doc page, so anything new displaces something or
    comes with a deliberate budget change, agreed with Cyrus.
 5. Run `check.py`, deploy, then `check.py --live --lighthouse --observatory`.
    Performance must stay ≥ 95 and Observatory A+.

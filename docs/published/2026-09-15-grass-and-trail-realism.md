@@ -2,33 +2,46 @@
 description: Flat game grass is a grounding failure, not a triangle count: ground tint, clumping, one wind field and a banded trail fix it in Babylon.js at 60 Hz.
 published: 2026-09-15
 categories: Rendering
-updated: 2026-10-23
+updated: 2026-11-13
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-15-grass-and-trail-realism.md
 series: Rendering a browser forest
 related: grass-fullness-without-thinning, babylon-material-plugin-traps, olympic-vegetation-for-games
+project: day-hike
+project-line: This research was done for Day Hike, a first-person co-op horror game that runs in your browser. Its ground-tinted grass, its one shared wind and its four-band trail were built from this survey.
+closing: The picture at the top is Day Hike's trailhead, where each hike starts, a month after this research. The path is painted as section 5's four bands: its edge is ragged, and wear widens and darkens it in places along its length. In the game the grass leans and gusts with the bushes and the nearer trees, and the mist drifts and the rain slants along the same wind: that is section 4's one wind field. On the medium and high quality tiers the grass nearest the camera is section 6's opaque blade clumps.
+asks: Why do grass and trails in a game look flat and fake, and what fixes them?
 ---
 # Grass, wind and trails in a browser meadow
 
-**Question:** grass and trails in a browser game can read as flat and game-like, as Day
-Hike's did. The goal is grass that looks fuller, has volume and moves with a wind the rest of
-the world shares, and a trail that reads as trodden ground rather than a stripe of another
-texture, all inside a 60 Hz frame budget. What do modern games do to get there, which of it is
-a grounding problem and which a geometry problem, and how much of it can Babylon.js 9.18 on
-WebGL2 do in 16.7 ms?
+**Question:** Grass and trails in a browser game can look flat and game-like, as Day Hike's
+did. What do modern games do so that grass looks full and moves with a wind the rest of the
+world shares and a trail looks trodden rather than a stripe of another texture, is the flat
+look a lack of triangles or something cheaper, and how much of the fix fits a 16.7 ms frame
+(60 Hz) in Babylon.js 9.18 on WebGL2?
 
-**Short answer:** "flat and game-like" is mostly a
+**Short answer:** Flat grass mostly does not look grown from its ground: a
 [grounding](#term "Making grass look as if it grows out of the ground under it: tinted by that ground, darker at the root, shadowed where blade meets soil.")
-failure, not a triangle-count failure, and most of the fix is cheap: tint the grass to its
-ground, darken it root to tip, vary it per clump, light the field as one mass and let low sun
-through the blades. Wind reads as wind when it is one shared field that leans and travels
-downwind, and a trail reads as trodden when it is a
-[bench](#term "A trail tread cut into the hillside: it sits a little below the uphill turf, with a short soil face above it.")
-with a ragged four-band edge. The one structural change worth its risk is opaque blade clumps
-for the nearest 10 to 20 m, because the binding frame cost is
-[alpha-tested](#term "Drawn on flat cards whose see-through texels are thrown away pixel by pixel, which switches off the GPU's early depth rejection for the whole draw.")
-fill, not triangles, and opaque geometry gives early depth rejection back.
+failure, not a triangle-count failure. The fix is mostly cheap: tint the grass to that ground,
+darken it root to tip, vary it per clump, light it as one mass and let low sun through. Wind
+should be one shared field that leans and travels downwind. A trail should be cut below the turf, a
+[bench](#term "A trail tread cut into the hillside: it sits a little below the uphill turf, with a short soil face above it."),
+with a ragged four-band edge. The one structural change worth its risk: opaque blade clumps for
+the nearest 10 to 20 m.
 
-![Day Hike's trailhead: a dirt path leading into a misty forest through dark grass, with an information kiosk on the right](trailhead.png "Day Hike's trailhead as of October 2026, a month after this doc: the trail is painted as four bands with a ragged edge that wear noise widens and darkens along its length, and on the medium and high tiers the near grass is opaque blade clumps rather than cards.")
+**What that leaves open:** whether those blade clumps pay for themselves, since triangles are
+not what grass costs. As of Sep 15, 2026, Day Hike's grass and other ground clutter came to
+about 0.97 M triangles a frame, which any GPU of the last decade sets up in well under a
+millisecond; the cost was the 4 to 6 M times a frame the pixel shader ran, because the grass was
+drawn on flat cards whose see-through texels are thrown away pixel by pixel
+([alpha-tested](#term "Drawn on flat cards whose see-through texels are thrown away pixel by pixel, which switches off the GPU's early depth rejection for the whole draw.")),
+and that stops the GPU from skipping pixels hidden behind nearer grass. Opaque blades were
+expected to save 1 to 3 ms of that fill for 0.2 to 0.5 ms of vertex work, but that was
+arithmetic, not a measurement:
+[section 7](#grass-costs-fill-not-triangles-the-60-hz-arithmetic) gives the sum and the four
+viewpoints at which to measure it, and everything else in the answer comes to well under 0.5 ms
+of the 16.7 ms frame.
+
+![Day Hike's trailhead: a dirt path leading into a misty forest through dark grass, with an information kiosk on the right](trailhead.png "Look at the path's ragged edge and the grass nearest the camera: this is Day Hike's trailhead as of October 2026, a month after this doc. The trail is painted as four bands with a ragged edge that wear noise widens and darkens along its length, and on the medium and high tiers the near grass is opaque blade clumps rather than cards.")
 
 **In numbers:**
 
@@ -42,20 +55,14 @@ fill, not triangles, and opaque geometry gives early depth rejection back.
 - **Four bands** from the centre out: a 40 to 75 cm compacted core, a loose margin, trampled
   vegetation, then a ragged boundary at full growth
   ([section 5](#a-real-trail-is-a-sunken-bench-with-four-ragged-bands)).
-- **4 to 6 M fragment invocations,** not 0.97 M triangles, are what the grass costs a frame:
-  a fill-rate problem wearing a geometry costume
-  ([section 7](#grass-costs-fill-not-triangles-the-60-hz-arithmetic)).
-- **−1 to −3 ms on fill** is the expected net of opaque blade clumps, against +0.2 to +0.5 ms
-  of vertex work ([section 7](#grass-costs-fill-not-triangles-the-60-hz-arithmetic)).
-
-The game is public in [game-dayhike](https://github.com/csarkosh/game-dayhike). Sources are
-listed at the end; anything marked *unverified* comes from a secondary write-up of a talk
-whose slides could not be read.
 
 ## 1. The starting point: cards, three sines and a painted stripe
 
-This section describes Day Hike as of Sep 15, 2026, when this doc was written; the game has
-changed since.
+As of Sep 15, 2026, when this doc was written, Day Hike's grass was flat cards that all wore
+one texture and swayed about their rest position on a fixed axis, and its trail was a
+constant-width stripe of gravel with a soft ring where the grass stopped. This section describes
+that state part by part; the game has changed since. The game is public in
+[game-dayhike](https://github.com/csarkosh/game-dayhike).
 
 **Grass** is ground clutter: two card-based tuft models, 0.32 and 0.40 m tall, alpha-masked and
 double-sided, 290 triangles at the near level of detail and 130 at the far, scattered on a 3 m
@@ -612,6 +619,8 @@ More of these are collected in
 48. Babylon.js Authors, "lightVxFragmentDeclaration.fx," Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Shaders/ShadersInclude/lightVxFragmentDeclaration.fx
 49. Babylon.js Authors, "lightVxUboDeclaration.fx," Babylon.js, GitHub repository, v9.18.0. Accessed: Oct. 10, 2026. [Online]. Available: https://github.com/BabylonJS/Babylon.js/blob/9.18.0/packages/dev/core/src/Shaders/ShadersInclude/lightVxUboDeclaration.fx
 
+Anything marked *unverified* in the text comes from a secondary write-up of a talk whose slides
+could not be read.
 Explicitly unverified: Tsushima's 83,000 blades at 2.5 ms and its 15 and 7 vertex figures;
 Horizon's placement densities; any Firewatch trail technique; Tsushima's road authoring; every
 technical claim about Breath of the Wild, Tears of the Kingdom, Genshin Impact, Flower and Sky;

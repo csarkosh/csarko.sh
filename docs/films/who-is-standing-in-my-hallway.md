@@ -8,6 +8,7 @@ tags: Analog horror, Found footage, AI generated
 model: Image model: Qwen-Image-Edit
 order: 5
 focus: 0.25
+blurb: a 16 second analog horror short
 ---
 # Who is standing in my hallway?
 

@@ -3,6 +3,10 @@ description: How Hitchcock, Kubrick, Carpenter, Nakata, Aster and Eggers build d
 published: 2026-10-22
 categories: Film
 series: Horror craft
+project: the-last-trail
+project-line: The story and the camera of The Last Trail follow this research. It is a 56 second AI-generated horror short: a woman carries her father's ashes up his old trail, and a voice that sounds like him answers on his ranger radio.
+closing: Carry Hitchcock's bomb under the table into the next horror scene and ask three things: what the audience knows that the character does not, where the eye is being sent, and how long the wait is held. The research on this page is what the story and the camera of The Last Trail follow, and that horror short runs 56 seconds, so all three can be asked of a whole film in under a minute.
+asks: How do horror directors build dread with the camera, the cut and sound?
 ---
 # How Horror Directors Build Dread Shot by Shot
 

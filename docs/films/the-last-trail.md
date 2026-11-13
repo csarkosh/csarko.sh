@@ -8,6 +8,7 @@ tags: Horror, Short film, AI generated
 model: Video model: Veo 3.1
 order: 4
 focus: 0.42
+blurb: a 56 second horror short
 ---
 # The Last Trail
 

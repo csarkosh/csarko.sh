@@ -96,7 +96,9 @@ Three sources, each for a different question. **Pick by the question, not by hab
   command line, `bq query --project_id=csarko-sh` over `csarko_visits._AllLogs` (the
   collector's rows) and `csarko_history.goatcounter_history` (the old hourly counts).
   The SQL the dashboard runs is in `admin/api/queries/`; start from it rather than
-  guessing column names. It needs Cyrus's `gcloud` login; **never commit a key.**
+  guessing column names. The six visits queries splice the shared bot rule in as `{{bot}}`
+  *(2026-11-13)*, so render a file before running it by hand (`renderSql` in
+  `admin/api/src/collectors/visits.mjs`; the full command is in `admin/api/README.md`). It needs Cyrus's `gcloud` login; **never commit a key.**
 - **Expect small numbers and lag.** It's a personal site. Search Console's
   reports run 2–3 days behind and show nothing for queries with very low volume.
   Its Core Web Vitals report needs real-user traffic volume the site may never
@@ -250,12 +252,40 @@ three from the command line):
   and `docs/apps/*.md`). Docs
   from private repositories such as `magicpixel.ai` need Cyrus's OK per doc, and
   never describe the commercial asset pipeline. Launched with
-  `stylized-shader-looks`, from `game-dayhike`. **A doc page is built for the skim**
-  *(2026-10-23)*: its description under the title, a verdict and key numbers first, an "In this
-  doc" list, claim headings, figures (`assets/research/<slug>/`), tap-to-open term definitions,
-  a Keep reading block (its `series:`, `related:` docs, Play Day Hike) before Sources, Read next
-  after the author box, and an Atom feed at `/research/feed.xml`; the `publish-doc` skill's
-  "Write for the skim" has the rules. **A doc dates its present** *(Cyrus, 2026-10-23)*: never a
+  `stylized-shader-looks`, from `game-dayhike`. **A doc page is built for the skim, and to send
+  its reader on to the project it was written for** *(2026-10-23; rebuilt for Cyrus, 2026-11-13,
+  after a four-week review of real visits: median engaged time on a doc 21.5 s, 91% of visits
+  never opened a second page, the boxed Keep reading block got 1 click and Read next 0 in 172
+  page loads, and no doc linked its app or its film; research
+  `docs/superpowers/specs/2026-11-13-doc-reading-and-funnel-research.md`)*: its description under
+  the title; for a doc in a series one line, "Part 2 of 3 in <name>" with short Previous and Next
+  links (both directions from the top of the page, Cyrus 2026-11-12; it never wraps, so on a
+  phone the links drop their arrows and a long name still gives way to an ellipsis); the opening
+  as Question, Short answer and What that leaves open (the build stops on a label that is nearly
+  one of the three, since the page finds them by their spelling);
+  then **the product line**, one plain paragraph with one link to the doc's `project:` (a game's
+  play address "Play it in your browser, no install", an app's page "See what it does", a film
+  "Watch it on YouTube"; `project: none` gets no line; the link is words alone, with no arrow
+  mark even to YouTube, and its last three words stay together), after the last of those labelled
+  paragraphs and never before the Short answer, in the doc's own `project-line:` or a sentence
+  built from the project's title and `blurb:`; key numbers; an "In this doc" list only where the
+  contents rail is not showing (below 1060px), with no box and no rule above section 1; claim
+  headings, figures (`assets/research/<slug>/`), tap-to-open term definitions; a **What next**
+  section right under the last section and before Sources, in the text column with no box, card
+  or pill: the doc's `closing:` with the project's link, up to three next docs each worded as the
+  question it answers (`asks:`, the next part of its series first, then `related:`, which names
+  up to three; the list never holds more than three, so a doc with a next part shows two of
+  them), its place in its series with Previous and Next by title, and the feed; one line after the author box
+  (the project's link, the next question, All research); and an Atom feed at
+  `/research/feed.xml`. A link to one of the site's own hosts (csarko.sh, games, apps, donate)
+  opens in the same tab, so Back returns to the doc; links to other sites keep their new tab.
+  A sentence reached by a text-fragment link wears the accent tint (`::target-text`), and a
+  heading reached by a link clears the sticky nav. The header's Watch pill (`watch:`) is as it
+  was. `project-line`, `closing` and `asks` are plain text, printed as written (the build refuses
+  Markdown in them), and the first two date their present as the body does. `project` stays
+  optional in the build until every doc carries it; making it required is
+  one flag, `FIELDS.project` in `docs_lib.mjs`. The `publish-doc` skill's "Write for the skim"
+  and "The project a doc belongs to" have the rules. **A doc dates its present** *(Cyrus, 2026-10-23)*: never a
   bare "today", "now" or "currently", always "as of <published date>", so its wording never goes
   stale as the game moves on (publish-doc, "Date the present"; the build refuses it from
   2026-10-24). **Every doc carries `categories:`**
@@ -538,7 +568,7 @@ dropped because its host went down and took the numbers with it.)*
   *(2026-10-22)*: the Visitors card counts, beside visits, the visits that engaged 5 s or more on
   a page, saw 2+ pages or clicked; the rest are glances, mostly crawlers the bot flag misses
   (one sends a `google.com` referrer from Linux at 1920px with no engagement), labelled and
-  hidden by default in Journeys. The rule is in `admin/api/queries/visits.sql` and `admin/CONTRACT.md`.
+  hidden by default in Journeys. The rule is in `admin/api/queries/visits.sql` and `admin/CONTRACT.md`. **Crawlers and assistants** *(2026-11-13, after the metrics review: the flag alone let through 178 crawler page loads in four weeks, 357 dashboard visits against 184 real ones)*: beyond the collector's flag and the Headless brand, the dashboard's queries drop a page load whose view reports an impossible device (a viewport larger than headless Chrome's 800x600 screen, a square screen, a viewport that is the whole screen at pixel ratio 1, a phone-width viewport at pixel ratio 1 or on a desktop OS with a phone-sized screen), the Chrome on Linux fleet that arrives from google.com in a 1919x992 or larger window and never sends a leave, and every page load of a visit that opened Day Hike's tooling lobby. The one rule is `admin/api/queries/_bot.sql`; `admin/CONTRACT.md` (Bots, crawlers and checks) lists what it leaves in (27 of the 178, mostly glances) and the few ways it can drop a real reader. Every reached-the-end figure, `read-<slug>` included, is `leave.re` on a page load whose scroll depth reached 50 or more (a crawler that renders the whole page sets `re` without scrolling). A visit with no external referrer and an assistant's tag (`utm_source=chatgpt.com`) is reported under that host in the ai group, not as direct and not in campaigns, and its journey carries `source.assistant`. The Visits tile's sparkline reads stored `visits7` snapshots, and those written before this rule run 1.5 to 1.8 times the live count.
 - **Every row's `timestamp` is the event's time** *(v0.2.0)*: the client sends its clock (`ts`)
   and the collector writes `time`, which Cloud Logging takes as the entry's timestamp, so
   beacons arriving together after a cold start keep their order. Rows before 2026-10-15
@@ -549,7 +579,9 @@ dropped because its host went down and took the numbers with it.)*
   `out-github`, `out-youtube` (`out-substack` too until 2026-11-05, when the Substack links came off; hero chips, Contact buttons and the Filming
   tile's link in `index.html`); the nav's page links count `nav-projects` and
   `nav-research` in both navs (never on the page you are on; `nav-apps`, `nav-film` and
-  `nav-games` until 2026-10-26, when those pages became `/projects`); a game card's "Play in your
+  `nav-games` until 2026-10-26, when those pages became `/projects`), and the wordmark counts
+  `nav-home` on every generated page *(2026-11-13; the home page's own only jumps to its top, so
+  it carries none)*; a game card's "Play in your
   browser" counts `play-<slug>`, an app card's link `app-<slug>`, a film card's "Watch on YouTube" `watch-<slug>`,
   and a card's GitHub mark, "Source on GitHub", `source-<slug>` *(2026-10-26)* (`docs_lib.mjs`; a `tokens-<slug>` event for the card line existed 2026-10-30 to 31 and was removed with it); on `/research`, a category chip
   `filter-<category>` (`filter-all` for All; a click that clears a chip counts too) *(2026-10-18,
@@ -558,13 +590,14 @@ dropped because its host went down and took the numbers with it.)*
   ours any more: it is derived from lib-visits' `leave.re` (the reader reached the end of a
   doc). **Event names are stable identifiers, not copy:** renaming a button or a URL must
   not rename its series. **On a doc page** *(2026-10-23, after the reading research: real visitors
-  spent a median of 16 s on a doc and most flicked to the end)*: the contents count `toc` and
-  `toc-rail`, a link in the text to another doc `doc-<slug>`, the series line `series-<slug>` (the previous and the next part, *2026-11-12*), Keep
-  reading `next-<slug>`, the Read next link after the author box `end-<slug>`, the Play button
-  `play-<game>`, the header's watch pill `watch-<doc slug>` (a doc's `watch:` video, *2026-11-12*), and the site's own `reading.js` (the one script of ours, doc pages only) sends
+  spent a median of 16 s on a doc and most flicked to the end; the names below are as of
+  2026-11-13, when Cyrus had the page rebuilt)*: the contents count `toc` and
+  `toc-rail`, a link in the text to another doc `doc-<slug>`, a part of the doc's series `series-<slug>` (the previous and the next part in the line under the title, *2026-11-12*, and again in What next, where the next part also leads the questions and a part named in `related:` counts the same), a next question in What
+  next from outside the series `next-<slug>` (the name Keep reading's cards had), the next question after the author box `end-<slug>`, the link to the doc's project
+  `lead-<project slug>` in the opening, `close-<project slug>` in What next and `after-<project slug>` after the author box (three names so the three places can be compared; they took the place of the doc page's Play button, so `play-<game>` now comes from the `/projects` card alone, and the dashboard's Events card sums the three as its own tile and bar, "Doc to its project"), the header's watch pill `watch-<doc slug>` (a doc's `watch:` video, *2026-11-12*), a term's definition tapped open `term`, the trail's Home link `crumb-home` and the author box's two links to the home page `author-home`, and the site's own `reading.js` (the one script of ours, doc pages only) sends
   `section` (`d.n`, n 0 for the opening) once a section has sat across the middle of a visible
-  screen for 5 s, which a flick never does; the dashboard's Events card lists it as `section-<n>`. A
-  doc page now carries about 5,054 B of the 10,000 B script budget. Campaign tags on links Cyrus posts (`?ref=substack`, `?ref=linkedin`) are
+  screen for 5 s, which a flick never does; the dashboard's Events card lists it as `section-<n>`. The last section stops counting once What next reaches the middle of the screen *(2026-11-13: 30 of 145 reads had logged only the links, the source list and the author box under it)*. A
+  doc page now carries about 5,225 B of the 10,000 B script budget. Campaign tags on links Cyrus posts (`?ref=substack`, `?ref=linkedin`) are
   recorded as the page's query; the site does nothing for them.
 
 ## Theme tokens

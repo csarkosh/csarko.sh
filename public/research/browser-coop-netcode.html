@@ -328,19 +328,23 @@
     .doc-page .prose { font-size: 17px; }
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
-    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
-    .series-line p { margin: 0; }
+    .series-line { display: flex; gap: 8px; margin: 18px 0 0; font-size: 14.5px; color: var(--muted); white-space: nowrap; }
+    .series-line > * { flex: none; }
+    .series-line > :first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .series-line strong { color: var(--text); font-weight: 600; }
-    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
-    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-line a, .afterward a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
-    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .prose h2, .prose h3, .prose h4 { scroll-margin-top: 28px; }
+    ::target-text { background: var(--accent-underline); color: var(--text); }
+    .toc { margin: 32px 0 0; }
     .toc .section-label { margin: 0 0 6px; }
     .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
     .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
     .toc a:hover { color: var(--accent); }
     .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    @media (min-width: 1060px) { .toc { display: none; } }
+    @media (max-width: 1059px) { .prose > .section-head:first-child:not([data-read-end]) { border-top: 0; padding-top: 0; margin-top: 36px; } }
     .figure { margin: 32px 0; }
     .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
     /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
@@ -365,33 +369,35 @@
       radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
       radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
       var(--surface); }
-    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
-    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
-    .series-name { margin: 0 0 8px; font-weight: 600; }
-    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
-    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
-    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
-    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
-    .next-list .card { padding: 16px 18px; background: var(--bg); }
-    .next-list .doc-title { font-size: 1.05rem; }
-    .next-list .doc-desc { font-size: 14.5px; }
-    .play-line, .watch-line { margin: 20px 0 0; }
+    .what-next { margin-top: 48px; }
+    .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
+    .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
+    .watch-line { margin: 20px 0 0; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
-    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
-    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
-    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color var(--md-duration-short3) var(--md-easing-standard); }
-    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
-    .afterward .next:hover { border-color: var(--accent); }
-    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
+    .afterward { display: flex; align-items: baseline; gap: 6px 22px; margin-top: 24px; font-size: 14.5px; color: var(--muted); text-wrap: balance; }
+    .afterward > * { flex: none; }
+    .afterward > a:not(:last-child) { flex: 0 1 auto; }
+    @media (max-width: 640px) {
+      .doc-page .shell { padding-top: 16px; }
+      .doc-page .crumbs ol { padding-block: 8px; }
+      .doc-page .eyebrow { margin-bottom: 8px; }
+      .doc-page h1 { margin-bottom: 10px; font-size: 2rem; }
+      .doc-header .lead { margin-bottom: 12px; font-size: 1rem; line-height: 1.5; }
+      .doc-page .doc-header { padding-bottom: 12px; }
+      .series-line { gap: 6px; margin-top: 8px; font-size: 13px; }
+      .afterward { flex-direction: column; }
+    }
+    @media (max-width: 439px) { .series-line a span { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .play { transition: none; } }
   </style>
 </head>
 <body class="doc-page">
   <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
-      <a class="wordmark" href="/">csarko<span>.sh</span></a>
+      <a class="wordmark" href="/" data-visits-event="nav-home">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/projects" data-visits-event="nav-projects">Projects</a></li>
         <li><a href="/research" data-visits-event="nav-research">Research</a></li>
@@ -401,7 +407,7 @@
   <nav class="crumbs" aria-label="Breadcrumb">
     <div class="wrap">
       <ol>
-        <li><a href="/">Home</a></li>
+        <li><a href="/" data-visits-event="crumb-home">Home</a></li>
         <li><a href="/research">Research</a></li>
         <li><span aria-current="page">Host-authoritative co-op netcode in the browser</span></li>
       </ol>
@@ -432,8 +438,7 @@
           <li>15 min read</li>
         </ul>
         <nav class="series-line" aria-label="Series">
-          <p>Part 1 of 2 in <strong>Day Hike netcode</strong></p>
-          <p class="series-steps"><span>Next: <a href="/research/webrtc-signaling-on-cloud-run" rel="next" data-visits-event="series-webrtc-signaling-on-cloud-run">Hosting WebRTC signaling on Cloud Run</a></span></p>
+          <span>Part 1 of 2 in <strong>Day Hike netcode</strong></span><span aria-hidden="true">·</span><a href="/research/webrtc-signaling-on-cloud-run" rel="next" aria-label="Next: Hosting WebRTC signaling on Cloud Run" title="Hosting WebRTC signaling on Cloud Run" data-visits-event="series-webrtc-signaling-on-cloud-run">Next <span aria-hidden="true">→</span></a>
         </nav>
       </header>
       <div class="prose">
@@ -449,6 +454,7 @@ snapshots are quantized and sent unreliably at 20 Hz, and remote players are dra
 the past. Solo play is the same host with nobody connected. The one piece that changed
 fundamentally after launch is who becomes host: it used to be whoever reached the room first,
 and now it is only the player who opened the lobby.</p>
+<p class="project-line">Day Hike is a first-person co-op horror game for up to five players that runs in your browser. This is the netcode that keeps a party in step, with one player&#39;s browser as the host and no game server. <a href="https://games.csarko.sh/dayhike/" data-visits-event="lead-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>
 <p>The architecture is summarized in the game&#39;s public
 <a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/README.md" target="_blank" rel="noopener">README</a> and
 <a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/ARCHITECTURE.md" target="_blank" rel="noopener">ARCHITECTURE.md</a>. This
@@ -880,37 +886,26 @@ data channels are up, signaling errors such as <code>host_away</code> or <code>r
 they describe join attempts and say nothing about a match that is already running. TURN relay,
 anti-cheat and PvP stay out of scope, which the co-op, trusted-peer premise in section 1 allows.</p>
       </div>
-      <section class="keep-reading" aria-labelledby="next-reads">
-        <h2 id="next-reads" class="section-label">Keep reading</h2>
-        <p class="series-name">Day Hike netcode · 2 parts</p>
-        <ol class="series-parts">
-          <li aria-current="true"><span>Host-authoritative co-op netcode in the browser</span></li>
-          <li><a href="/research/webrtc-signaling-on-cloud-run" data-visits-event="next-webrtc-signaling-on-cloud-run">Hosting WebRTC signaling on Cloud Run</a></li>
-        </ol>
-        <ul class="doc-list next-list" role="list">
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/dashboard-api-out-of-memory-made-fast-for-free" data-visits-event="next-dashboard-api-out-of-memory-made-fast-for-free">A dashboard API that ran out of memory, made fast for free</a></h3>
-            <p class="doc-meta">10 min read</p>
-            <p class="doc-desc">A 256 MiB Cloud Run API died under nine parallel queries; field masks, shared reads and saved answers made its dashboards fast, all on the free tier.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/buy-me-tokens-tips-priced-from-the-cloud-bill" data-visits-event="next-buy-me-tokens-tips-priced-from-the-cloud-bill">Buy me tokens: tips priced from the cloud bill</a></h3>
-            <p class="doc-meta">12 min read</p>
-            <p class="doc-desc">Tip tiers set at 1%, 3% and 10% of the last 30 days&#39; cloud bill, gathered daily from five billing sources and repriced weekly with no hand in the loop.</p>
-          </li>
+      <section class="prose what-next" aria-labelledby="what-next">
+        <h2 id="what-next">What next</h2>
+        <p>Press Invite in Day Hike and send a friend the link: your browser is the host from then on, and theirs applies each of its own inputs at once and corrects against the snapshots yours sends 20 times a second. No game server sits between the two. Whoever joined can press F3 or the backquote key during a hike: the pred err line in that overlay is section 6&#39;s prediction error, the distance the last snapshot moved their own player. <a href="https://games.csarko.sh/dayhike/" data-visits-event="close-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>
+        <ul>
+          <li><a href="/research/webrtc-signaling-on-cloud-run" data-visits-event="series-webrtc-signaling-on-cloud-run">What breaks when you host a WebRTC signaling server on Cloud Run?</a></li>
+          <li><a href="/research/dashboard-api-out-of-memory-made-fast-for-free" data-visits-event="next-dashboard-api-out-of-memory-made-fast-for-free">Why did a small Cloud Run API run out of memory, and how was it made fast?</a></li>
+          <li><a href="/research/buy-me-tokens-tips-priced-from-the-cloud-bill" data-visits-event="next-buy-me-tokens-tips-priced-from-the-cloud-bill">How do you price a tip jar from your real cloud bill, with no manual updates?</a></li>
         </ul>
-        <p class="play-line"><a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
+        <p class="series-at"><span>Part 1 of 2 in <strong>Day Hike netcode</strong></span><span>Next: <a href="/research/webrtc-signaling-on-cloud-run" rel="next" data-visits-event="series-webrtc-signaling-on-cloud-run">Hosting WebRTC signaling on Cloud Run</a></span></p>
         <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS).</p>
       </section>
       <section class="author" aria-label="About the author" data-read-end>
         <p class="section-label">Written by</p>
-        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
+        <p class="author-name"><a href="/" data-visits-event="author-home">Cyrus Sarkosh</a></p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
-        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
+        <p class="author-links"><a href="/" data-visits-event="author-home">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
       <nav class="afterward" aria-label="Read next">
-        <a class="next" href="/research/webrtc-signaling-on-cloud-run" data-visits-event="end-webrtc-signaling-on-cloud-run"><span class="section-label">Read next</span><span>Hosting WebRTC signaling on Cloud Run <span aria-hidden="true">→</span></span></a>
-        <a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        <span>Day Hike: <a href="https://games.csarko.sh/dayhike/" data-visits-event="after-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a></span>
+        <a href="/research/webrtc-signaling-on-cloud-run" data-visits-event="end-webrtc-signaling-on-cloud-run">What breaks when you host a WebRTC signaling server on Cloud Run?</a>
         <a href="/research">All research</a>
       </nav>
     </main>
@@ -925,7 +920,7 @@ anti-cheat and PvP stay out of scope, which the co-op, trusted-peer premise in s
   <!-- generated:analytics -->
   <script defer src="/assets/visits.4378bd36.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
-  <script defer src="/assets/reading.c3e27b33.js"></script>
+  <script defer src="/assets/reading.3a8c03e0.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

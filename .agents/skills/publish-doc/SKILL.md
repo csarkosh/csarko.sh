@@ -21,7 +21,7 @@ belongs to the file name and never appears in a link. The design is in
 **A game is not a doc.** It goes in `docs/games/<slug>.md`, the slug alone with
 no date prefix, with front matter `description` (70–160 characters), `status`
 (`playable` or `in-development`, which becomes the kicker line), `tags` (1 to 5,
-comma-separated), and optional `play`, `repo` and `released` (`YYYY-MM-DD`). The
+comma-separated), and optional `play`, `repo`, `released` (`YYYY-MM-DD`) and `blurb` (below). The
 H1 is the game's name and the body is its card copy. The same
 `generate-assets.sh` run builds both directories, with the same refusals
 (em-dashes, images, links that aren't `https://`, `#anchor` or root-relative),
@@ -38,6 +38,11 @@ body is its card copy. Its poster is a portrait (9:16) JPEG committed at
 `generate-assets.sh` run turns into the hashed responsive images; without it the
 card falls back to a plain `<img>`. Films land on `/film` only; the home page
 has no film section.
+
+**A game, an app (`docs/apps/<slug>.md`) or a film that a doc names as its `project:` needs a
+`blurb`** *(2026-11-13)*: the phrase that follows its name where a doc introduces it, 10 to 90
+characters, lower case, no full stop, as in "Day Hike, a first-person co-op horror game that runs
+in your browser". All six projects have one, and the build refuses a doc whose project has none.
 
 **The csarko.sh repository is public on GitHub. Committing a file under
 `docs/published/` publishes it, before any deploy.** Do the review first.
@@ -72,8 +77,12 @@ description: <70–160 characters: what a searcher learns from this doc>
 published: <YYYY-MM-DD, the doc's original date>
 categories: <one to three of the list below, comma-separated, spelled exactly>
 updated: <YYYY-MM-DD, only when revising a published doc>
-series: <the run of docs it belongs to, only if it has one; see "Series and Keep reading">
-related: <2 to 4 doc slugs for its Keep reading block, only to hand-pick them>
+project: <the game, app or film this research was done for: its slug in docs/games, docs/apps or docs/films, or none>
+project-line: <20 to 240 characters, whole sentences, plain text: the product line, in place of the default; only with a project>
+closing: <40 to 520 characters, whole sentences, plain text: the doc's last paragraph, under What next>
+asks: <15 to 90 characters ending in "?", plain text: the question this doc answers, in a reader's words>
+series: <the run of docs it belongs to, only if it has one; see "Series and What next">
+related: <1 to 3 doc slugs for its What next section, only to hand-pick them; 2 on a doc with a next part in its series>
 source: <https://github.com/… URL of the original, only if that repo is public>
 watch: <youtube.com/watch?v=<id> or youtube.com/shorts/<id> URL, only for a doc about one video>
 watch-title: <the video's name, up to 60 characters; required with watch>
@@ -96,40 +105,118 @@ number shows as a label.
 
 *(2026-10-23, from the site's own visit data and published reading research: NN/g's
 eyetracking and scanning studies, Chartbeat's engaged-time data, Wikipedia's link and
-preview tests.)* Real visitors
-spend a median of about 16 seconds on a doc; most flick to the end without reading, and
-Google visitors decide from the first screen. The first two screens get about 74% of all
-viewing time (NN/g). So a doc is written to pay off a 15 to 120 second skim, and every
-fact still stays on the page: nothing is gated, collapsed or cut to make it shorter.
+preview tests. Revised 2026-11-13, Cyrus, after a four-week review of real visits and the
+fact-checked report in `docs/superpowers/specs/2026-11-13-doc-reading-and-funnel-research.md`.)*
+Real visitors spend a median of about 21.5 seconds on a doc; most flick to the end without
+reading, 91% never open a second page, and half the readers an assistant sends are on
+phones. The first two screens get about 74% of all viewing time (NN/g), and that is where a
+visit is decided. So a doc is written to pay off a 15 to 120 second skim, then to hand the
+reader who has the answer a reason to go on, and every fact still stays on the page:
+nothing is gated, collapsed or cut to make it shorter.
 
 What the page does by itself: the `description` shows under the title (so write it as
-the doc's one-line result, not a topic), an "In this doc" list follows the opening, a
-Keep reading block (its series, related docs, Play Day Hike when the text names the
-game, the feed) comes before Sources and a Read next link after the author box, and the
-read time counts the words before Sources. What the doc has to do:
+the doc's one-line result, not a topic); a doc in a series gets one line under it, "Part 2
+of 5 in <Name>", with short Previous and Next links; the product line goes in after the
+opening's last labelled paragraph ("The project a doc belongs to", below); an "In this doc"
+list follows the opening on screens too narrow for the contents rail, which lists the same
+sections; a What next section comes right under the last section and before Sources (the
+doc's `closing` with its project's link, up to three next questions, its place in its
+series, the feed); one line after the author box repeats the project's link, the next
+question and All research; and the read time counts the words before Sources. There is no
+Keep reading box, no card and no Play pill any more: a block that looks like a promotion
+got 1 click in 172 page loads. What the doc has to do:
 
-1. **Open with the answer.** `**Question:**` in at most three sentences, then
-   `**Short answer:**`, a verdict of 2 to 4 sentences that says the finding plainly. A
-   searcher who never heard of Day Hike should get the answer before Day Hike comes up.
+1. **Open with the answer, then say what it leaves open.** Three labelled paragraphs, in
+   this order and spelled exactly so, since the page places the product line by them
+   (each a paragraph of its own, the label in bold with its colon inside the bold; the
+   build stops on a near miss such as `**Short Answer:**`, `**Short answer**:`, a label
+   with no bold or a label in a list item, and names it):
+   `**Question:**` in at most two sentences, in the reader's words. `**Short answer:**` in
+   60 to 90 words, in plain words: shorter in words, never in content. Every part of the
+   Question still gets its answer there and nothing is withheld; a searcher who never
+   heard of Day Hike gets the answer before Day Hike comes up. Then
+   `**What that leaves open:**` in two or three sentences: what the answer does not
+   settle (the number that looks wrong, the approach that failed, the cost) and what the
+   reader will be able to check by the end. Never a tease: it names the open thing
+   outright, and it is the reason to read on that the Short answer alone does not give.
 2. **Then the figure**, if the doc has one (below): one real result in the first two
-   screens.
-3. **Then `**In numbers:**`** (or `**In short:**`): 3 to 6 bullets, each opening with a
-   **bold** number or fact from the body and ending with a link to the section that proves
-   it, `([section 2](#heading-id))`. No other summary section: no "answer in five lines".
+   screens. The sentence before a figure says what to look for in it, and its caption
+   states the claim the figure proves, not the picture's name.
+3. **Then `**In numbers:**`** (or `**In short:**`): at most four bullets, each opening
+   with a **bold** number or fact from the body and ending with a link to the section that
+   proves it, `([section 2](#heading-id))`. No other summary section, and no companion
+   paragraph between the bullets and section 1: a pointer to another doc belongs in
+   `related:`, and anything about the project in `project-line:` or `closing:`. Section 1
+   should start within three phone screens.
 4. **Headings say the finding.** A scanner reads about the first two words of a heading,
    so lead with the result, the number or the technique's name: "Device loss under GPU
    saturation", not "Gotchas"; "1.3 to 1.5 ms per frame, and where it comes from", not
    "Results". The contents list is built from them, so together they read as the argument.
-5. **Define the jargon in place.** `[froxel](#term "A frustum voxel: one cell of …")`
-   draws the word as a button whose definition opens on a tap (a popover, no script; the
-   definition is in the HTML, so it is public and searchable). One to three in the
-   opening, where a newcomer meets them.
-6. **Callouts stay visible.** A `>` blockquote whose first words are bold
+5. **Say the idea in plain words before naming the term.** "A still picture animated by a
+   video model", then "image-to-video". Any term the argument needs is explained in its
+   own sentence where it first appears. `[froxel](#term "A frustum voxel: one cell of …")`
+   still draws the word as a button whose definition opens on a tap (a popover, no script;
+   the definition is in the HTML, so it is public and searchable), but a tap-to-open
+   definition is a reminder only: about half of readers never open one, and a link that
+   lands on a sentence cannot land inside a closed one. The sentence itself carries the
+   meaning.
+6. **Section 1 opens on a concrete case, in prose**: a frame, the bug as it looked, a
+   measured number. Not a table and not definitions. A table comes after the paragraph
+   that says what to look for in it.
+7. **Each section ends on the problem the next one solves**, so the headings and the
+   section endings, read in order, are the argument: the problem, the sticking point, what
+   was tried, what worked. Keep the failed attempt in.
+8. **Callouts stay visible.** A `>` blockquote whose first words are bold
    (`> **Takeaway:** …`) draws as a boxed callout with that label. Never put core content
    in anything collapsed.
-7. **Citations stay in the body.** References are numbered by first citation, so no `[n]`
+9. **Citations stay in the body.** References are numbered by first citation, so no `[n]`
    in the opening, a caption or a definition: one cited earlier than its number breaks the
    build.
+10. **One doc, one question**, stated in the title in the reader's words. Split a long doc
+    only where it answers separate questions, each part standing alone with its own
+    Question and Short answer; never to make a second page.
+
+### The project a doc belongs to
+
+*(Cyrus, 2026-11-13: no doc linked its app or its film, and the Play button reached only the
+readers who finished.)* Four front matter fields tie a doc to the game, app or film its
+research was done for, and say how another doc points to it:
+
+- **`project:`** a slug in `docs/games`, `docs/apps` or `docs/films`, or `none` for a doc
+  with no honest tie to one. Every doc makes the choice once. The build refuses a slug
+  that is not a project, a project without a `blurb`, and a project with nowhere to send
+  the reader (a game with no `play`).
+- **`project-line:`** the product line, 20 to 240 characters of whole sentences: what the
+  project is, what in it this doc explains, and what the click gives. "I build Day Hike, a
+  co-op horror game that runs in your browser. This doc is how its ground fog is drawn."
+  Without it the page writes "This research was done for <Title>, <blurb>." (a film:
+  "The author of this page also made <Title>, <blurb>.", which claims nothing about how the film was made). Either way the page adds the link and the full
+  stop itself: "Play it in your browser, no install" for a game, "See what it does" for
+  an app, "Watch it on YouTube" for a film. It is one plain paragraph after the last of
+  the Question, Short answer and What that leaves open paragraphs (after the first
+  paragraph of an opening with none of them), never before the Short answer. Do not
+  write a second link to the project into the opening.
+- **`closing:`** the doc's last paragraph, 40 to 520 characters of whole sentences, shown
+  under What next: what the reader can now recognise in the project and where to see it.
+  "Stand at the trailhead at dusk. The band of fog under the trees is section 3; the way
+  it thins as you climb is section 5." The page adds the same link after it. Without one
+  the page writes a sentence from the project's title and blurb; with `project: none` a
+  closing is shown without a link, and a doc with neither gets no paragraph.
+- **`asks:`** the question this doc answers, in a reader's words, 15 to 90 characters
+  ending in "?". It is the link's text wherever another doc offers this one as a next
+  read; until it is written the title stands in.
+
+`project-line`, `closing` and `asks` are **plain text**: the page prints them as written,
+so the build refuses Markdown in them (backticks, `*emphasis*`, `_emphasis_`, a
+`[link](...)`). Name a file or a function in plain words. The first two are paragraphs of
+the page, so they date their present like the body ("Date the present", below): "as of
+<published date>", never a bare "now" or "currently", which the build refuses from
+2026-10-24. The project's link in all three places is words alone, with no arrow mark
+even when it leaves for YouTube, and its last three words stay on one line.
+
+How a film was made stays private (AGENTS.md, the films row): a `project-line` or `closing`
+on a film doc may say what to watch for in the film, and nothing about models beyond the
+one its card names, prompts, pipeline or costs.
 
 ## Date the present
 
@@ -178,10 +265,15 @@ and `height`, with an inline `<style>` in the site's dark colours and a
 `@media (prefers-color-scheme: light)` block for the light ones, and every number in it
 from the doc.
 
-## Series and Keep reading
+## Series and What next
 
 `series: <Name>` *(2026-10-23)* puts a doc in a run of docs read in published order: the
-title shows "Part 2 of 5 in <Name> · Next: …", and Keep reading lists every part. A
+line under the title shows "Part 2 of 5 in <Name> · Previous · Next" (one line at every
+width; the two short links carry their targets' titles for a screen reader), and What next
+names the previous and the next part by title. The line never wraps, so on a phone a long
+name is cut with an ellipsis (the full name is in What next): on a 390 px screen a middle
+part shows about 19 characters of it, and "Rendering a browser forest" loses its last
+word. Keep a new series name under about 20 characters. A
 series needs two or more docs (the build refuses one of one); the name is 3 to 40
 letters, digits, spaces or apostrophes, starting with a capital, spelled the same on
 every doc. The series now: WebGPU against WebGL2; Rendering a browser forest; Filling the
@@ -189,16 +281,28 @@ distance; Day Hike's look; Olympic Peninsula field notes; Horror craft; AI short
 Arkos IDE notes; Analytics without cookies; Day Hike netcode. A new doc joins one when
 it continues that work, and a new series starts when a second doc would join it.
 
-Keep reading also offers docs to read next: `related: slug-a, slug-b` hand-picks 2 to 4
-(the build refuses a slug that is not a published doc), else the build picks the three
-sharing the most categories, newest first (two, beside a series). Hand-pick when the
-best next read is in another category.
+What next *(2026-11-13; it was a boxed Keep reading block)* also offers up to three docs
+to read next, each as the question it answers (its `asks:`): the next part of the series
+first, then `related: slug-a, slug-b`, which hand-picks 1 to 3 (the build refuses a
+fourth, and a slug that is not a published doc), else the three sharing the most
+categories, newest first (two, beside a series). **The list never holds more than three,
+and the next part of a series takes the first place**, so on a doc that has a next part
+only the first two `related` slugs are shown: name two there, the ones that matter most
+first, or the third is left off the page without a word from the build. The last part of a
+series has no next part and shows all three. Hand-pick when the best next read is in
+another category.
 
 Every link the page adds counts in the visits log, so the dashboard shows which ones are
 followed: `toc` and `toc-rail` (the contents), `doc-<slug>` (a link in the text to
-another doc), `series-<slug>`, `next-<slug>` (Keep reading), `end-<slug>` (Read next),
-`watch-<doc slug>` (the header's watch pill) and `play-<game>`, plus `section-<n>` from `reading.js` when a section has been on screen for
-5 seconds (n 0 is the opening).
+another doc), `series-<slug>` (a part of the doc's own series: under the title, and in What
+next whether it is the next part or one named in `related`),
+`next-<slug>` (a next question in What next from outside the series), `end-<slug>` (the next question after
+the author box), `lead-<project>`, `close-<project>` and `after-<project>` (the project's
+link in the opening, in What next and after the author box), `watch-<doc slug>` (the
+header's watch pill), `term` (a definition tapped open), `crumb-home` and `author-home`
+(the trail's and the author box's links home), plus `section-<n>` from `reading.js` when
+a section has been on screen for 5 seconds (n 0 is the opening; the last section stops
+counting where What next begins).
 
 ### Categories
 
@@ -292,7 +396,8 @@ Read `doc-desktop.png`, `doc-desktop-light.png`, `doc-mobile.png` and
 `doc-mobile-light.png` (the newest doc; for an older one use
 `preview.sh --serve` and open it), plus `desktop.png` for the home section.
 Check the first two phone screens in particular: the title, the description, the
-verdict and, if the doc has one, the figure should be there.
+Question and the first line of the Short answer should be on the first, and the product
+line near the end of the second.
 The desktop shots are 1440×4000, so a long doc's bottom is cut off in
 `doc-desktop*.png`; use `preview.sh --serve` to check the end of a long doc.
 `check.py` must pass. A title longer than 65 characters only warns.

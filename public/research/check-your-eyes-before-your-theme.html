@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dark mode and headaches: check your eyes first · Cyrus Sarkosh</title>
+  <title>Dark mode, astigmatism and eye strain: the evidence · Cyrus Sarkosh</title>
   <meta name="description" content="What the evidence says about dark mode, contrast, line spacing, font size, blue light, flicker, breaks and the eye exam for a developer&#39;s screen headaches." />
   <link rel="canonical" href="https://csarko.sh/research/check-your-eyes-before-your-theme" />
 
@@ -11,18 +11,18 @@
   <meta property="og:site_name" content="Cyrus Sarkosh" />
   <meta property="og:locale" content="en_US" />
   <meta property="og:url" content="https://csarko.sh/research/check-your-eyes-before-your-theme" />
-  <meta property="og:title" content="Dark mode and headaches: check your eyes first" />
+  <meta property="og:title" content="Dark mode, astigmatism and eye strain: the evidence" />
   <meta property="og:description" content="What the evidence says about dark mode, contrast, line spacing, font size, blue light, flicker, breaks and the eye exam for a developer&#39;s screen headaches." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta property="article:published_time" content="2026-10-13" />
-  <meta property="article:modified_time" content="2026-10-18" />
+  <meta property="article:modified_time" content="2026-11-13" />
   <meta property="article:author" content="https://csarko.sh/" />
   <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Dark mode and headaches: check your eyes first" />
+  <meta name="twitter:title" content="Dark mode, astigmatism and eye strain: the evidence" />
   <meta name="twitter:description" content="What the evidence says about dark mode, contrast, line spacing, font size, blue light, flicker, breaks and the eye exam for a developer&#39;s screen headaches." />
   <meta name="twitter:image" content="https://csarko.sh/og-image.jpg" />
   <meta name="twitter:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
@@ -46,13 +46,13 @@
     {
       "@type": "TechArticle",
       "@id": "https://csarko.sh/research/check-your-eyes-before-your-theme#article",
-      "headline": "Dark mode and headaches: check your eyes first",
+      "headline": "Dark mode, astigmatism and eye strain: the evidence",
       "description": "What the evidence says about dark mode, contrast, line spacing, font size, blue light, flicker, breaks and the eye exam for a developer's screen headaches.",
       "datePublished": "2026-10-13",
-      "dateModified": "2026-10-18",
+      "dateModified": "2026-11-13",
       "url": "https://csarko.sh/research/check-your-eyes-before-your-theme",
       "mainEntityOfPage": "https://csarko.sh/research/check-your-eyes-before-your-theme",
-      "wordCount": 9957,
+      "wordCount": 10005,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -89,7 +89,7 @@
         {
           "@type": "ListItem",
           "position": 3,
-          "name": "Dark mode and headaches: check your eyes first",
+          "name": "Dark mode, astigmatism and eye strain: the evidence",
           "item": "https://csarko.sh/research/check-your-eyes-before-your-theme"
         }
       ]
@@ -328,19 +328,23 @@
     .doc-page .prose { font-size: 17px; }
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
-    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
-    .series-line p { margin: 0; }
+    .series-line { display: flex; gap: 8px; margin: 18px 0 0; font-size: 14.5px; color: var(--muted); white-space: nowrap; }
+    .series-line > * { flex: none; }
+    .series-line > :first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .series-line strong { color: var(--text); font-weight: 600; }
-    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
-    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-line a, .afterward a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
-    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .prose h2, .prose h3, .prose h4 { scroll-margin-top: 28px; }
+    ::target-text { background: var(--accent-underline); color: var(--text); }
+    .toc { margin: 32px 0 0; }
     .toc .section-label { margin: 0 0 6px; }
     .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
     .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
     .toc a:hover { color: var(--accent); }
     .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    @media (min-width: 1060px) { .toc { display: none; } }
+    @media (max-width: 1059px) { .prose > .section-head:first-child:not([data-read-end]) { border-top: 0; padding-top: 0; margin-top: 36px; } }
     .figure { margin: 32px 0; }
     .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
     /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
@@ -365,26 +369,28 @@
       radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
       radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
       var(--surface); }
-    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
-    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
-    .series-name { margin: 0 0 8px; font-weight: 600; }
-    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
-    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
-    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
-    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
-    .next-list .card { padding: 16px 18px; background: var(--bg); }
-    .next-list .doc-title { font-size: 1.05rem; }
-    .next-list .doc-desc { font-size: 14.5px; }
-    .play-line, .watch-line { margin: 20px 0 0; }
+    .what-next { margin-top: 48px; }
+    .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
+    .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
+    .watch-line { margin: 20px 0 0; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
-    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
-    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
-    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color var(--md-duration-short3) var(--md-easing-standard); }
-    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
-    .afterward .next:hover { border-color: var(--accent); }
-    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
+    .afterward { display: flex; align-items: baseline; gap: 6px 22px; margin-top: 24px; font-size: 14.5px; color: var(--muted); text-wrap: balance; }
+    .afterward > * { flex: none; }
+    .afterward > a:not(:last-child) { flex: 0 1 auto; }
+    @media (max-width: 640px) {
+      .doc-page .shell { padding-top: 16px; }
+      .doc-page .crumbs ol { padding-block: 8px; }
+      .doc-page .eyebrow { margin-bottom: 8px; }
+      .doc-page h1 { margin-bottom: 10px; font-size: 2rem; }
+      .doc-header .lead { margin-bottom: 12px; font-size: 1rem; line-height: 1.5; }
+      .doc-page .doc-header { padding-bottom: 12px; }
+      .series-line { gap: 6px; margin-top: 8px; font-size: 13px; }
+      .afterward { flex-direction: column; }
+    }
+    @media (max-width: 439px) { .series-line a span { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .play { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -397,7 +403,7 @@
   <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
-      <a class="wordmark" href="/">csarko<span>.sh</span></a>
+      <a class="wordmark" href="/" data-visits-event="nav-home">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/projects" data-visits-event="nav-projects">Projects</a></li>
         <li><a href="/research" data-visits-event="nav-research">Research</a></li>
@@ -407,9 +413,9 @@
   <nav class="crumbs" aria-label="Breadcrumb">
     <div class="wrap">
       <ol>
-        <li><a href="/">Home</a></li>
+        <li><a href="/" data-visits-event="crumb-home">Home</a></li>
         <li><a href="/research">Research</a></li>
-        <li><span aria-current="page">Dark mode and headaches: check your eyes first</span></li>
+        <li><span aria-current="page">Dark mode, astigmatism and eye strain: the evidence</span></li>
       </ol>
     </div>
   </nav>
@@ -433,16 +439,25 @@
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Oct 13, 2026 · Updated Oct 18, 2026</p>
-        <h1>Dark mode and headaches: check your eyes first</h1>
+        <p class="eyebrow">Oct 13, 2026 · Updated Nov 13, 2026</p>
+        <h1>Dark mode, astigmatism and eye strain: the evidence</h1>
         <p class="lead">What the evidence says about dark mode, contrast, line spacing, font size, blue light, flicker, breaks and the eye exam for a developer&#39;s screen headaches.</p>
         <ul class="tags">
-          <li>32 min read</li>
+          <li>33 min read</li>
         </ul>
       </header>
       <div class="prose">
-<p><strong>Question:</strong> A developer who ends most workdays with a headache after long terminal sessions wants to know what the published evidence says about the usual suspects: dark mode against light mode, pure white on black against a softened palette, line spacing, font size and typeface, blue light and warm screen tints, backlight flicker and refresh rate, blinking and break schedules, and what an eye examination can find that a theme change cannot. Which of these has evidence behind it, what should change first, and what defaults should a terminal-focused IDE ship as a result?</p>
-<p><strong>Short answer:</strong> the highest-yield first move is a comprehensive eye examination that explicitly includes refraction for small astigmatism, binocular (convergence) and accommodative testing, and a dry-eye assessment, not a change of editor theme. Every major review of digital eye strain puts refractive correction and binocular and ocular-surface management first, and no display-side variable (polarity, contrast, font, refresh rate, blue light, line spacing) has ever been tested with headache as a measured outcome. On the display side the one change with real mechanistic support is larger text with looser line spacing: reading speed collapses below an x-height of about 0.2 degrees, the light-mode legibility advantage grows as fonts shrink, and rows of text at the pitch of a typical 12-14 px terminal font on a laptop land close to the 3 cycles-per-degree stripe frequency that provokes the most visual discomfort in susceptible people. Dark against light mode is a draw on comfort: light mode wins every legibility experiment because its higher luminance shrinks the pupil, but fatigue trials find no significant difference and no study has measured headache. Blue-light filtering fails a 120-person double-masked trial and a Cochrane review; software warm tints have no eye-strain trial at all. Invisible 100 Hz lighting flicker more than halved headaches in a double-blind office crossover, but an M4 MacBook Pro backlight was bench-measured at 14,880 Hz, far above every published sensitivity threshold. A 5-minute break every hour has field-trial support that the 20-20-20 rule lacks, and complete blinks matter more than blink count. This is a synthesis of published evidence, not medical advice.</p>
+<p><strong>Question:</strong> A developer ends most workdays with a headache after long terminal sessions. Which of the usual suspects (dark mode, contrast, font size and line spacing, blue light, flicker, missed breaks) has evidence behind it, what should change first, and what defaults should a terminal-focused IDE ship?</p>
+<p><strong>Short answer:</strong> For headaches, start with a comprehensive eye examination, not a theme: one that checks small astigmatism, how the eyes aim and focus up close, and dry eye. Dark against light is a draw on comfort: light mode wins every legibility experiment, but fatigue trials find no significant difference, and the claim that dark mode is worse with astigmatism is plausible but untested. On screen, the one change a mechanism supports is larger text with looser line spacing; an IDE should ship about 16 to 18 px at line height 1.5.</p>
+<p><strong>What that leaves open:</strong> which cause is yours, because a headache after screen work is too common to point to any one cause, and no display setting has ever been tested with headache as its primary outcome. Seeing 20/20 does not clear the eyes either: just half a dioptre (0.50 D) of induced astigmatism raised eye strain within 25 minutes of screen reading. By the end of this page you can sort a headache into one of two symptom clusters, name the eye tests that have to be asked for, and check a terminal&#39;s row spacing against the stripe spacing that provokes the most discomfort; all of it is a synthesis of published evidence, not medical advice.</p>
+<p class="project-line">This research set Arkos IDE&#39;s default text size and line spacing, 16 px at line height 1.5. Arkos IDE is a Mac app that keeps many Claude Code sessions running side by side. <a href="https://apps.csarko.sh/ide-arkos" data-visits-event="lead-ide-arkos">See what&nbsp;it&nbsp;does</a>.</p>
+<p><strong>In numbers:</strong></p>
+<ul>
+<li><strong>Below an x-height of about 0.2 degrees</strong> (the height of a lowercase x, as an angle at the eye) reading speed collapses, and rows of a typical 12-14 px terminal font on a laptop land close to the 3 cycles-per-degree stripe frequency that provokes the most discomfort in susceptible people (<a href="#text-as-a-grating-line-spacing-size-typeface">section 4</a>).</li>
+<li><strong>Blue-light filtering fails</strong> a 120-person double-masked trial and a Cochrane review; software warm tints have no eye-strain trial at all (<a href="#5-1-blue-light-lenses-and-software-warm-tints">section 5.1</a>).</li>
+<li><strong>100 Hz against 14,880 Hz:</strong> removing invisible 100 Hz lighting flicker more than halved headaches in a double-blind office crossover; an M4 MacBook Pro backlight, bench-measured at 14,880 Hz, is far above every published sensitivity threshold (<a href="#6-1-100-hz-lighting-halves-headaches-a-14-9-khz-backlight-does-not">section 6.1</a>).</li>
+<li><strong>A 5-minute break every hour</strong> has field-trial support that the 20-20-20 rule lacks, and complete blinks matter more than blink count (<a href="#blinks-dry-eye-and-breaks">section 7</a>).</li>
+</ul>
       </div>
       <nav class="toc" aria-label="In this doc">
         <p class="section-label">In this doc</p>
@@ -461,7 +476,7 @@
       </nav>
       <div class="prose">
 <div class="section-head"><p class="section-label">01</p><h2 id="headache-after-screen-work-is-common-and-non-specific"><a class="anchor" href="#headache-after-screen-work-is-common-and-non-specific">Headache after screen work is common and non-specific</a></h2></div>
-<p>Headache is one of the core symptoms of what optometry calls computer vision syndrome or digital eye strain, and it is common enough that its presence says almost nothing about its cause. In a survey of 520 New York office workers, 22.3% reported headache at least half the time during computer use in the prior week <a class="cite" href="#ref-1">[1]</a>, <a class="cite" href="#ref-2">[2]</a>. Pooled estimates of any visual symptom run from 50% to 90% of computer users, and the 2023 Tear Film and Ocular Surface Society (TFOS) consensus report notes figures &quot;up to 97%&quot; because there are no agreed diagnostic criteria <a class="cite" href="#ref-3">[3]</a>, <a class="cite" href="#ref-4">[4]</a>. All of these are cross-sectional self-reports; none shows that screens cause the headache rather than co-occur with it.</p>
+<p>In a survey of 520 New York office workers, 22.3% reported headache at least half the time during computer use in the prior week <a class="cite" href="#ref-1">[1]</a>, <a class="cite" href="#ref-2">[2]</a>. Headache is one of the core symptoms of what optometry calls computer vision syndrome or digital eye strain, and it is common enough that its presence says almost nothing about its cause. Pooled estimates of any visual symptom run from 50% to 90% of computer users, and the 2023 Tear Film and Ocular Surface Society (TFOS) consensus report notes figures &quot;up to 97%&quot; because there are no agreed diagnostic criteria <a class="cite" href="#ref-3">[3]</a>, <a class="cite" href="#ref-4">[4]</a>. All of these are cross-sectional self-reports; none shows that screens cause the headache rather than co-occur with it.</p>
 <p>What the reviews agree on is the order of attack. TFOS states that &quot;interventions are not well established; patients experiencing digital eye strain should be provided with a full refractive correction for the appropriate working distances. Improving blinking, optimizing the work environment and encouraging regular breaks may help. Based on current, best evidence, blue-light blocking interventions do not appear to be an effective management strategy&quot; <a class="cite" href="#ref-4">[4]</a>. Rosenfield&#39;s review identifies oculomotor anomalies and dry eye as the principal ocular causes and concludes that &quot;the efficacy of proposed treatments to reduce symptoms of CVS is unproven&quot; <a class="cite" href="#ref-3">[3]</a>. Both imply the same order: refraction and binocular status, then the ocular surface, then workstation ergonomics, with unproven add-ons such as tints last.</p>
 <p>A useful triage tool comes from Sheedy&#39;s factor analysis of induced eye strain in 20 subjects. Symptoms split into an &quot;external&quot; cluster (burning, irritation, tearing and dryness, provoked by glare, up-gaze, small fonts and flicker, &quot;highly related to dry eye&quot;) and an &quot;internal&quot; cluster (ache, strain and headache behind the eyes, provoked by close viewing distance, accommodative flippers and mixed astigmatism, &quot;likely related to accommodative and vergence stress&quot;) <a class="cite" href="#ref-5">[5]</a>. A developer whose headache sits behind the eyes and arrives in the afternoon should suspect the internal cluster, which points to refraction and binocular vision, not to the colour of the editor background.</p>
 <p>One framing point matters throughout: not a single study in this evidence base used a terminal, a monospaced code font or a multi-hour session. The polarity trials run 15 minutes to an hour on tablets and phones with prose, the typography work is on print, and the break studies are on data-entry clerks. Everything applied here to a terminal is extrapolation.</p>
@@ -840,24 +855,13 @@
 </tbody></table></div>
 <p>The useful reframing is that &quot;dark mode versus light mode&quot; is the wrong axis. The variables that move measured outcomes are luminance reaching the eye, angular text size, line pitch relative to x-height, and whether anything in view modulates at 100 Hz; polarity is a proxy for the first and nothing else. The strongest results here are negative (blue-light lenses) or clinical (sub-dioptre astigmatism multiplying symptom scores, lighting flicker halving headaches), while the display-side folklore with the widest circulation (softened palettes, named coding fonts, 120 Hz, warm tints, 20-20-20) has either no controlled test or a failed one. The three things most likely to help a developer today are an exam that measures convergence and small cylinder, a font two sizes larger with 1.5 line height, and a five-minute walk every hour; none of them is a theme.</p>
       </div>
-      <section class="keep-reading" aria-labelledby="next-reads">
-        <h2 id="next-reads" class="section-label">Keep reading</h2>
-        <ul class="doc-list next-list" role="list">
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/dashboard-api-out-of-memory-made-fast-for-free" data-visits-event="next-dashboard-api-out-of-memory-made-fast-for-free">A dashboard API that ran out of memory, made fast for free</a></h3>
-            <p class="doc-meta">10 min read</p>
-            <p class="doc-desc">A 256 MiB Cloud Run API died under nine parallel queries; field masks, shared reads and saved answers made its dashboards fast, all on the free tier.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/buy-me-tokens-tips-priced-from-the-cloud-bill" data-visits-event="next-buy-me-tokens-tips-priced-from-the-cloud-bill">Buy me tokens: tips priced from the cloud bill</a></h3>
-            <p class="doc-meta">12 min read</p>
-            <p class="doc-desc">Tip tiers set at 1%, 3% and 10% of the last 30 days&#39; cloud bill, gathered daily from five billing sources and repriced weekly with no hand in the loop.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/unlimited-email-aliases-that-scale-to-zero" data-visits-event="next-unlimited-email-aliases-that-scale-to-zero">Unlimited email aliases that scale to zero</a></h3>
-            <p class="doc-meta">18 min read</p>
-            <p class="doc-desc">Every address at a domain receives mail through SES and one Lambda, about $0.0003 a message and $0 idle. Why Google Cloud cannot, what Cloudflare costs.</p>
-          </li>
+      <section class="prose what-next" aria-labelledby="what-next">
+        <h2 id="what-next">What next</h2>
+        <p>The developer this page opened with has an order to work in: red flags, an eye examination and a headache diary before any theme debate, then larger text with looser lines, hourly breaks and the room&#39;s lighting. As of Nov 13, 2026, Arkos IDE ships the text part as its defaults: 16 px Menlo at line height 1.5, with a 14 px preset its configuration file labels as below the research&#39;s comfort floor. That file calls each default a preference, not a health feature, and puts the eye examination ahead of any setting. <a href="https://apps.csarko.sh/ide-arkos" data-visits-event="close-ide-arkos">See what&nbsp;it&nbsp;does</a>.</p>
+        <ul>
+          <li><a href="/research/dashboard-api-out-of-memory-made-fast-for-free" data-visits-event="next-dashboard-api-out-of-memory-made-fast-for-free">Why did a small Cloud Run API run out of memory, and how was it made fast?</a></li>
+          <li><a href="/research/buy-me-tokens-tips-priced-from-the-cloud-bill" data-visits-event="next-buy-me-tokens-tips-priced-from-the-cloud-bill">How do you price a tip jar from your real cloud bill, with no manual updates?</a></li>
+          <li><a href="/research/unlimited-email-aliases-that-scale-to-zero" data-visits-event="next-unlimited-email-aliases-that-scale-to-zero">How do you run unlimited email aliases on your own domain with no monthly fee?</a></li>
         </ul>
         <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS).</p>
       </section>
@@ -938,12 +942,13 @@
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
-        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
+        <p class="author-name"><a href="/" data-visits-event="author-home">Cyrus Sarkosh</a></p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
-        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
+        <p class="author-links"><a href="/" data-visits-event="author-home">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
       <nav class="afterward" aria-label="Read next">
-        <a class="next" href="/research/dashboard-api-out-of-memory-made-fast-for-free" data-visits-event="end-dashboard-api-out-of-memory-made-fast-for-free"><span class="section-label">Read next</span><span>A dashboard API that ran out of memory, made fast for free <span aria-hidden="true">→</span></span></a>
+        <span>Arkos IDE: <a href="https://apps.csarko.sh/ide-arkos" data-visits-event="after-ide-arkos">See what&nbsp;it&nbsp;does</a></span>
+        <a href="/research/dashboard-api-out-of-memory-made-fast-for-free" data-visits-event="end-dashboard-api-out-of-memory-made-fast-for-free">Why did a small Cloud Run API run out of memory, and how was it made fast?</a>
         <a href="/research">All research</a>
       </nav>
     </main>
@@ -958,7 +963,7 @@
   <!-- generated:analytics -->
   <script defer src="/assets/visits.4378bd36.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
-  <script defer src="/assets/reading.c3e27b33.js"></script>
+  <script defer src="/assets/reading.3a8c03e0.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

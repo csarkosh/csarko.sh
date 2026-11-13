@@ -4,9 +4,13 @@ published: 2026-11-11
 categories: AI, Film
 series: AI short films
 related: reverse-engineering-an-ai-horror-short, horror-sequences-shot-by-shot, how-horror-directors-make-sound-carry-the-fear
-updated: 2026-11-12
+updated: 2026-11-13
 watch: https://www.youtube.com/watch?v=yBs_pMUDrrk
 watch-title: The Well
+project: the-last-trail
+project-line: The author of this page makes AI-generated films too. One is The Last Trail, a 56 second horror short.
+closing: Run The Well again with the timeline from the top of this page beside it: the low angle from desk height first appears at 3:26, on the line about the thin ice, and the track falls to its quietest point from 4:58 to 5:02, just before the blow. The same four questions (shot, cut, light, sound) can be put to any generated short. One to try them on is The Last Trail, a 56 second AI-generated horror short by this page's author, released on Oct 29, 2026, before these measurements were made.
+asks: How was the AI short film The Well made, and why does it look like a studio film?
 ---
 # The Well: how an AI short reads as cinema
 
@@ -17,32 +21,35 @@ of shot, cut, light and sound make it read as a studio film and not as a run of 
 
 **Short answer:** less of it is generated than the label suggests, and almost none of its craft
 is new. The only tools on record are ComfyUI, Nano Banana and Kling 3.0, used over years by two
-award-winning commercial directors, and the film's own credits give the music and the sound to a
-composer and an engineer at a commercial music house. The film is built the way a studio
-interrogation scene is built: a few camera
-[set-ups](#term "One camera position and framing. A scene is covered from a handful of them and cut between.")
-reused many times, straight cuts only, a very dark frame lit from lamps and windows, a quiet room
-set against loud memories. And it never asks a model for what models do badly: no human face, no
-long physical action, no shot over 9.3 seconds.
+award-winning commercial directors; its music and sound are human work. It is built like a studio
+interrogation scene: a few camera positions
+([set-ups](#term "One camera position and framing. A scene is covered from a handful of them and cut between."))
+reused throughout, straight cuts only, a dark frame lit by lamps and windows, a quiet room against
+loud memories. It avoids what models do badly: human faces, long action, shots over 9.3 seconds.
 
-![A timeline of The Well. A strip of 122 bars, one per shot, coloured by where the picture is: the present, the family's story, the sheriff's theory, or photographs. Below it, the loudness of the soundtrack second by second, with peaks at the torch flash, the break-in and the wall opening, and near silence before the blow.](timeline.svg "The whole film on one line. In the office scene the picture keeps leaving the room for a witness's story, the sheriff's theory and photographs; the sound is quiet in the room, loud in the memories, and almost silent just before the blow.")
+**What that leaves open:** how the voices were made. The dialogue sounds acted, yet no cast is
+credited and nothing is on record. The one clue that can be measured is that on the hare's and the
+lynx's longest close-ups the face moves in time with the speech: a voice laid over a silent clip
+would not show that, but a shot generated together with its line would, and so would one driven by
+a recorded performance. The method is unknown; the nearest precedents put a person in the chain,
+so the likely one is a recorded read under each line. Every figure about the film was measured
+from Runway's upload of it as it stood on Nov 11, 2026, and compared with published measurements
+of studio films; the last section says how, and lists what else is unpublished as of that date:
+who edited and graded the film, how many images and clips were generated, and which image model
+ran inside ComfyUI.
+
+![A timeline of The Well. A strip of 122 bars, one per shot, coloured by where the picture is: the present, the family's story, the sheriff's theory, or photographs. Below it, the loudness of the soundtrack second by second, with peaks at the torch flash, the break-in and the wall opening, and near silence before the blow.](timeline.svg "The whole film on one line. Look at the Office stretch: the bars keep changing colour because the picture leaves the room for a witness's story, the sheriff's theory and photographs, 41% of the three-minute conversation. Under it, the sound is quiet in the room, loud in the memories, and almost silent at the hush mark just before the blow.")
 
 **In numbers:**
 
 - **122 shots in 5 minutes 14 seconds:** a mean of 2.57 s and a median of 2.29 s. Four shots run
   past 6 s, and each is a face at a turn in the story
   ([shot length](#122-shots-at-2-6-seconds-with-almost-no-long-takes)).
-- **Two single set-ups carry 26 of the 39 shots** inside the office. The two-shot
-  [master](#term "A wide shot that holds everyone in the scene and shows where they stand.")
+- **Two set-ups of one character alone, called singles, carry 26 of the 39 shots** inside the
+  office. The wide shot that holds both characters, the
+  [master](#term "A wide shot that holds everyone in the scene and shows where they stand."),
   appears three times, and a low angle is held back until the sheriff has the answer
   ([coverage](#two-singles-carry-the-office-and-a-low-angle-waits-for-the-answer)).
-- **41% of the three-minute conversation** is spent away from the room, in a witness's story, the
-  sheriff's theory and photographs
-  ([time layers](#41-of-the-conversation-is-somewhere-else)).
-- **No dissolve, wipe or fade** until the credits: scenes join on a word, an object or a light
-  ([joins](#every-join-is-a-straight-cut-hooked-on-a-word-an-object-or-a-light)).
-- **A mean frame brightness of 34 on a scale of 0 to 255,** under half the darkest feature in a
-  160-film study ([light](#half-as-bright-as-the-darkest-studio-feature-one-palette-per-place)).
 - **About five seconds of near silence** before the killing blow, in a track whose loud passages
   sit 11 to 14 dB over its dialogue
   ([sound](#a-quiet-room-loud-memories-and-five-seconds-of-hush)).
@@ -50,20 +57,17 @@ long physical action, no shot over 9.3 seconds.
   commercial music house
   ([the record](#on-record-three-tools-years-of-work-and-a-human-score)).
 
-This is a companion to [Reverse engineering an AI horror short](/research/reverse-engineering-an-ai-horror-short).
-That doc took a 45 second clip apart to find its recipe; this one takes a festival film apart and
-sets its numbers against published measurements of studio films. Every figure about the film was
-measured from Runway's upload of it [1], as it stood on Nov 11, 2026; the last section
-says how.
-
 ## A Grimm tale turned inside out, in three parts
 
-The film opens on a card, "Inspired by the Brothers Grimm: The Wolf and the Seven Young Goats".
-In the tale a wolf eats the kids, the mother cuts them out, and the wolf drowns in a well. Here a
+The film opens on a card, "Inspired by the Brothers Grimm: The Wolf and the Seven Young Goats"
+[1]. In the tale a wolf eats the kids, the mother cuts them out, and the wolf drowns in a well. Here a
 hare sheriff and a lynx detective stand over a wolf found dead at the bottom of a well in a
 trailer park. The festival's synopsis: "A tragic accident - or so they say. But when a
 sharp-witted hare starts to investigate, the truth shifts" [2]. The goats are the criminals and
 the wolf is the victim.
+
+The table splits the film into its three parts. Look at the Shots and Speech columns: the office
+takes 80 of the 122 shots and nearly all of the words, and the finale has no words at all.
 
 | Part | Time | Shots | Mean shot | What happens | Speech |
 |---|---|---|---|---|---|

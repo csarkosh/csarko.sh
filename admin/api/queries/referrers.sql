@@ -2,19 +2,23 @@
 -- empty name), the external host, or 'csarko.sh' when the first view already came from one of
 -- the site's own pages or subdomains (the daily hash rolled mid-visit at UTC midnight, or a
 -- subdomain linked here; the collector keeps no host for an internal referrer, and referrers.mjs
--- groups the row as "own"). Campaigns are the first view's too. The site's own edges
+-- groups the row as "own"). Campaigns are the first view's too. A referrer row also carries, as
+-- its `target`, the first view's campaign when that view had no external referrer: an assistant
+-- such as ChatGPT sends no referrer and tags its links (utm_source=chatgpt.com), so the collector
+-- (visits.mjs) reports such a row under the tag's host, which referrers.mjs groups as "ai", and
+-- leaves that tag out of the campaigns. The site's own edges
 -- (the previous page to this one) count every view, as before. The check beacons (/deploy-check,
--- /depth-check) are left out, and so is every page load (id) that any of its rows calls a bot
--- (Lighthouse's view says bot=false, its leave and vitals true).
+-- /depth-check) are left out, and so is every page load (id) that is a bot's or a crawler's
+-- (the shared test in _bot.sql).
 WITH beacons AS (
   SELECT
     timestamp AS ts,
     JSON_VALUE(json_payload.n) AS n,
     JSON_VALUE(json_payload.id) AS id,
     json_payload AS j,
-    -- A browser brand starting Headless (the client hints' HeadlessChrome, under a User-Agent that
-    -- claims a real browser) is a bot too, whatever s.bot says.
-    LOGICAL_OR(IFNULL(JSON_VALUE(json_payload.s.bot), 'false') = 'true' OR STARTS_WITH(IFNULL(JSON_VALUE(json_payload.s.bn), ''), 'Headless')) OVER (PARTITION BY JSON_VALUE(json_payload.id)) AS bot
+    -- The shared bot test, queries/_bot.sql: the collector's flag, a Headless brand, an impossible
+    -- device, the Linux fleet from google.com and Day Hike's tooling lobby, over the whole page load.
+    {{bot}} AS bot
   FROM `csarko-sh.csarko_visits._AllLogs`
   WHERE timestamp >= TIMESTAMP(@start) AND timestamp < TIMESTAMP(@end)
     AND JSON_VALUE(json_payload.p) NOT IN ('/deploy-check', '/depth-check')
@@ -37,9 +41,9 @@ first_views AS (
 SELECT
   'referrer' AS kind,
   CASE f.rk WHEN 'external' THEN IFNULL(f.rh, '(unknown)') WHEN 'internal' THEN 'csarko.sh' ELSE '' END AS name,
-  '' AS target,
+  IF(f.rk = 'external', '', IFNULL(f.campaign, '')) AS target,
   COUNT(*) AS visitors
-FROM first_views GROUP BY name
+FROM first_views GROUP BY name, target
 UNION ALL
 SELECT 'campaign', f.campaign, '', COUNT(*) FROM first_views WHERE f.campaign IS NOT NULL GROUP BY f.campaign
 UNION ALL

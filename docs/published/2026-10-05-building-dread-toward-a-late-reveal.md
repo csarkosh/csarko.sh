@@ -3,6 +3,10 @@ description: How horror games make a late monster reveal feel earned, with trace
 published: 2026-10-05
 categories: Game design
 series: Horror craft
+project: day-hike
+project-line: This research was done for Day Hike, a first-person co-op horror game that runs in your browser. The sounds of its climb to the crest, and what a look at its monster costs, were built from sections 4, 7 and 8 the same day.
+closing: Day Hike spends its walk this way. On the climb the birdsong thins and stops, and the monster's call comes six times from up the trail, nearer each time: section 4. Looking at the monster never ends the game: the dark closes in from its side on a heartbeat held under 90 beats a minute, the woods go muffled, and both linger after the look ends, as sections 7 and 8 advise. At the crest the world's sound cuts to nothing, then the same call comes from where the monster stands, which is item 8 of the recipe.
+asks: How do horror games make a late monster reveal feel earned?
 ---
 # Building dread toward a late reveal in horror games
 

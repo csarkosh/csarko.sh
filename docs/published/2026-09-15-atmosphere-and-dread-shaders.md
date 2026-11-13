@@ -6,6 +6,10 @@ updated: 2026-10-23
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-15-atmosphere-and-dread-shaders.md
 series: Day Hike's look
 related: ground-fog-without-the-wall, a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2, building-dread-toward-a-late-reveal
+project: day-hike
+project-line: This survey was done for Day Hike, a first-person co-op horror game that runs in your browser. As of October 2026 its look follows most of direction 1 in section 5: height fog, an AgX tone map and one grade pass.
+closing: In the picture at the top, the far trunks fade into grey mist without banding: the fog, tone map and closing dither of section 2's five moves, at work in Day Hike. As of November 2026 its medium and high quality tiers also shift the grade after dark with a night white point and a Purkinje matrix, the second move, and carry pollen and frost motes on the wind, the fourth. The high tier adds halation, the film glow of the third.
+asks: How do horror games use fog, colour grading and film grain to build dread?
 ---
 # Atmosphere and dread shaders for horror games
 

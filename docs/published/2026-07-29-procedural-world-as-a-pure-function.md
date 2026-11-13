@@ -3,6 +3,10 @@ description: Unbounded mountains, a warped coastline, a highway and cliff bands 
 published: 2026-07-29
 categories: Worlds and terrain
 updated: 2026-10-10
+project: day-hike
+project-line: Day Hike is a co-op horror game that runs in your browser, and every hike is its own world, built from a seed. This is how its mountains, coast, road and cliffs are generated so that every player's browser builds the same ground.
+closing: A hike in Day Hike starts beside the coast road, and that road is section 5's highway: its bed follows the big landforms and ignores small bumps, because a B-spline low-passes the ground under it. The beach below it and the sea stacks standing off the shore are the coast stage, and the cliff faces on the mountains are altitude terraced into 26 m bands. Every browser in a party computed all of it from the seed, and nothing about the ground crossed the network.
+asks: How do you generate an endless game world that is identical for every player?
 ---
 # An endless world as a pure function
 

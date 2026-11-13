@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { classifyReferrer, hostOf, groupReferrers } from "../src/referrers.mjs";
+import { assistantOf, classifyReferrer, hostOf, groupReferrers } from "../src/referrers.mjs";
 
 const toprefs = JSON.parse(readFileSync(new URL("./fixtures/goatcounter-toprefs.json", import.meta.url), "utf8"));
 
@@ -30,6 +30,9 @@ test("classifyReferrer puts each host in its group", () => {
     ["www.perplexity.ai", "ai"],
     ["claude.ai", "ai"],
     ["gemini.google.com", "ai"],
+    ["notebooklm.google.com", "ai"],
+    ["notebook.google.com", "ai"],
+    ["docs.google.com", "other"],
     ["copilot.microsoft.com", "ai"],
     ["you.com", "ai"],
     ["apps.csarko.sh", "own"],
@@ -65,6 +68,14 @@ test("classifyReferrer puts each host in its group", () => {
     ["(no data)", "direct"],
   ];
   for (const [referrer, group, scheme] of cases) assert.equal(classifyReferrer(referrer, scheme), group, referrer);
+});
+
+test("assistantOf reads a campaign tag as an assistant's host, and nothing else as one", () => {
+  assert.equal(assistantOf("chatgpt.com"), "chatgpt.com", "utm_source=chatgpt.com, as ChatGPT tags its links");
+  assert.equal(assistantOf("www.ChatGPT.com"), "chatgpt.com");
+  assert.equal(assistantOf("perplexity.ai"), "perplexity.ai");
+  assert.equal(assistantOf("notebooklm.google.com"), "notebooklm.google.com");
+  for (const tag of ["substack", "linkedin", "google.com", "csarko.sh", "cutover-check", "chatgpt", "", null, undefined]) assert.equal(assistantOf(tag), null, String(tag));
 });
 
 test("groupReferrers sums the fixture into every group, zeros included", () => {

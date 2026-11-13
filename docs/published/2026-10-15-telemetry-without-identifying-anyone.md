@@ -5,6 +5,10 @@ categories: Tooling, Distributed systems
 source: https://github.com/csarkosh/ide-arkos
 updated: 2026-10-18
 series: Analytics without cookies
+project: ide-arkos
+project-line: Arkos IDE is a Mac app that keeps many Claude Code sessions running side by side. This research was done to decide what its update check, usage reports and crash reports send, and what consent each needs.
+closing: Arkos IDE went on to ship the three tiers recommended here: a daily update check that counts installs with no id, usage reports recorded on the Mac and sent only once turned on, and a crash dialog that shows a report's exact bytes before Send. The shipped session report differs from the recommendation: it carries up to 200 allowlisted events under a random id used once, not counters alone. In the app, Help, What Arkos Sends lists every key, and nothing in a report identifies the person or the Mac.
+asks: How can a desktop app measure usage and crashes without identifying anyone?
 ---
 # Privacy-first telemetry without user IDs
 

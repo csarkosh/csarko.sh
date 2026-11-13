@@ -3,6 +3,10 @@ description: How Alan Wake and Alan Wake 2 introduce their evil, voice it in whi
 published: 2026-10-06
 categories: Game design
 series: Horror craft
+project: day-hike
+project-line: This research was done for the night in Day Hike, a co-op horror game that runs in your browser. Its figures at the edge of a player's sight, most of them harmless, follow sections 3 and 4.
+closing: The Alan Wake games bring their evil in as a mood, then as whispers, then as figures that may or may not be real. Day Hike's climb is three acts: a semi-sunny day with birdsong, then cloud and rain, then a night in which shades stand up at the edge of a player's sight and are gone when neared or watched too long. Most are harmless and a real one walks straight at its player, which is item 7 of section 4, and the whispers start while one is near.
+asks: How do the Alan Wake games build dread from whispers and shadow figures?
 ---
 # How Alan Wake introduces its darkness
 

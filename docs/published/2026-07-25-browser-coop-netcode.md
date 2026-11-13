@@ -3,6 +3,10 @@ description: How Day Hike's browser co-op stays responsive: a 60 Hz fixed step, 
 published: 2026-07-25
 categories: Distributed systems
 series: Day Hike netcode
+project: day-hike
+project-line: Day Hike is a first-person co-op horror game for up to five players that runs in your browser. This is the netcode that keeps a party in step, with one player's browser as the host and no game server.
+closing: Press Invite in Day Hike and send a friend the link: your browser is the host from then on, and theirs applies each of its own inputs at once and corrects against the snapshots yours sends 20 times a second. No game server sits between the two. Whoever joined can press F3 or the backquote key during a hike: the pred err line in that overlay is section 6's prediction error, the distance the last snapshot moved their own player.
+asks: How does a browser co-op game stay in sync without a game server?
 ---
 # Host-authoritative co-op netcode in the browser
 

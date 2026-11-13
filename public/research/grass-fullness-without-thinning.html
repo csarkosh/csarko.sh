@@ -328,19 +328,23 @@
     .doc-page .prose { font-size: 17px; }
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
-    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
-    .series-line p { margin: 0; }
+    .series-line { display: flex; gap: 8px; margin: 18px 0 0; font-size: 14.5px; color: var(--muted); white-space: nowrap; }
+    .series-line > * { flex: none; }
+    .series-line > :first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .series-line strong { color: var(--text); font-weight: 600; }
-    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
-    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-line a, .afterward a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
-    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .prose h2, .prose h3, .prose h4 { scroll-margin-top: 28px; }
+    ::target-text { background: var(--accent-underline); color: var(--text); }
+    .toc { margin: 32px 0 0; }
     .toc .section-label { margin: 0 0 6px; }
     .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
     .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
     .toc a:hover { color: var(--accent); }
     .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    @media (min-width: 1060px) { .toc { display: none; } }
+    @media (max-width: 1059px) { .prose > .section-head:first-child:not([data-read-end]) { border-top: 0; padding-top: 0; margin-top: 36px; } }
     .figure { margin: 32px 0; }
     .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
     /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
@@ -365,26 +369,28 @@
       radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
       radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
       var(--surface); }
-    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
-    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
-    .series-name { margin: 0 0 8px; font-weight: 600; }
-    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
-    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
-    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
-    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
-    .next-list .card { padding: 16px 18px; background: var(--bg); }
-    .next-list .doc-title { font-size: 1.05rem; }
-    .next-list .doc-desc { font-size: 14.5px; }
-    .play-line, .watch-line { margin: 20px 0 0; }
+    .what-next { margin-top: 48px; }
+    .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
+    .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
+    .watch-line { margin: 20px 0 0; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
-    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
-    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
-    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color var(--md-duration-short3) var(--md-easing-standard); }
-    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
-    .afterward .next:hover { border-color: var(--accent); }
-    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
+    .afterward { display: flex; align-items: baseline; gap: 6px 22px; margin-top: 24px; font-size: 14.5px; color: var(--muted); text-wrap: balance; }
+    .afterward > * { flex: none; }
+    .afterward > a:not(:last-child) { flex: 0 1 auto; }
+    @media (max-width: 640px) {
+      .doc-page .shell { padding-top: 16px; }
+      .doc-page .crumbs ol { padding-block: 8px; }
+      .doc-page .eyebrow { margin-bottom: 8px; }
+      .doc-page h1 { margin-bottom: 10px; font-size: 2rem; }
+      .doc-header .lead { margin-bottom: 12px; font-size: 1rem; line-height: 1.5; }
+      .doc-page .doc-header { padding-bottom: 12px; }
+      .series-line { gap: 6px; margin-top: 8px; font-size: 13px; }
+      .afterward { flex-direction: column; }
+    }
+    @media (max-width: 439px) { .series-line a span { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .play { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -397,7 +403,7 @@
   <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
-      <a class="wordmark" href="/">csarko<span>.sh</span></a>
+      <a class="wordmark" href="/" data-visits-event="nav-home">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/projects" data-visits-event="nav-projects">Projects</a></li>
         <li><a href="/research" data-visits-event="nav-research">Research</a></li>
@@ -407,7 +413,7 @@
   <nav class="crumbs" aria-label="Breadcrumb">
     <div class="wrap">
       <ol>
-        <li><a href="/">Home</a></li>
+        <li><a href="/" data-visits-event="crumb-home">Home</a></li>
         <li><a href="/research">Research</a></li>
         <li><span aria-current="page">Grass fullness without thinning the field</span></li>
       </ol>
@@ -438,8 +444,7 @@
           <li>18 min read</li>
         </ul>
         <nav class="series-line" aria-label="Series">
-          <p>Part 4 of 7 in <strong>Rendering a browser forest</strong></p>
-          <p class="series-steps"><span>Previous: <a href="/research/grass-and-trail-realism" rel="prev" data-visits-event="series-grass-and-trail-realism">Grass, wind and trails in a browser meadow</a></span><span>Next: <a href="/research/ground-fog-without-the-wall" rel="next" data-visits-event="series-ground-fog-without-the-wall">Volumetric ground fog without the sprite wall</a></span></p>
+          <span>Part 4 of 7 in <strong>Rendering a browser forest</strong></span><span aria-hidden="true">·</span><a href="/research/grass-and-trail-realism" rel="prev" aria-label="Previous: Grass, wind and trails in a browser meadow" title="Grass, wind and trails in a browser meadow" data-visits-event="series-grass-and-trail-realism"><span aria-hidden="true">←</span> Previous</a><span aria-hidden="true">·</span><a href="/research/ground-fog-without-the-wall" rel="next" aria-label="Next: Volumetric ground fog without the sprite wall" title="Volumetric ground fog without the sprite wall" data-visits-event="series-ground-fog-without-the-wall">Next <span aria-hidden="true">→</span></a>
         </nav>
       </header>
       <div class="prose">
@@ -460,10 +465,11 @@ shader carry the far sward as shipped systems since Ghost of Tsushima do <a clas
 toward the eye and hug them to the ground as Horizon Zero Dawn did <a class="cite" href="#ref-3">[3]</a>, and match the card roots
 to the ground&#39;s colour. All of it is WebGL2 work. WebGPU compute culling is the long-term route,
 but core Babylon has no indirect draw yet <a class="cite" href="#ref-4">[4]</a>, so it gets a bounded spike first.</p>
+<p class="project-line">Day Hike, a first-person co-op horror game that runs in your browser, filled in the bare ground at the player&#39;s feet and paid about 1.3 ms a frame at the heaviest pose. This is the research into winning that back without drawing less grass. <a href="https://games.csarko.sh/dayhike/" data-visits-event="lead-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>
 <p>This continues <a href="/research/grass-and-trail-realism" data-visits-event="doc-grass-and-trail-realism">the September survey of grass, wind and trails</a>,
 which asked why the grass looked flat; this one is about what fullness costs once it is there. The
 game is public at <a class="external" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener">game-dayhike</a> and playable at
-<a class="external" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener">games.csarko.sh/dayhike</a>.</p>
+<a href="https://games.csarko.sh/dayhike/">games.csarko.sh/dayhike</a>.</p>
       </div>
       <nav class="toc" aria-label="In this doc">
         <p class="section-label">In this doc</p>
@@ -799,31 +805,15 @@ for a first-person ground ring.</li>
 <code>discard</code> is inferred from Arm&#39;s statement, not stated by Apple.</li>
 </ul>
       </div>
-      <section class="keep-reading" aria-labelledby="next-reads">
-        <h2 id="next-reads" class="section-label">Keep reading</h2>
-        <p class="series-name">Rendering a browser forest · 7 parts</p>
-        <ol class="series-parts">
-          <li><a href="/research/floating-props-on-procedural-terrain" data-visits-event="next-floating-props-on-procedural-terrain">Why props float on procedural terrain</a></li>
-          <li><a href="/research/no-visible-pop-in" data-visits-event="next-no-visible-pop-in">No visible pop-in: dissolving a streamed forest</a></li>
-          <li><a href="/research/grass-and-trail-realism" data-visits-event="next-grass-and-trail-realism">Grass, wind and trails in a browser meadow</a></li>
-          <li aria-current="true"><span>Grass fullness without thinning the field</span></li>
-          <li><a href="/research/ground-fog-without-the-wall" data-visits-event="next-ground-fog-without-the-wall">Volumetric ground fog without the sprite wall</a></li>
-          <li><a href="/research/rock-on-steep-terrain-shape-it-cover-it-or-skin-it" data-visits-event="next-rock-on-steep-terrain-shape-it-cover-it-or-skin-it">Rock on steep terrain: shape it, cover it, or skin it</a></li>
-          <li><a href="/research/soft-shade-bark-and-moss-for-browser-forests" data-visits-event="next-soft-shade-bark-and-moss-for-browser-forests">Soft shade, bark and moss for browser forests</a></li>
-        </ol>
-        <ul class="doc-list next-list" role="list">
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/cloud-rigs-for-graphics-work" data-visits-event="next-cloud-rigs-for-graphics-work">Cloud rigs for graphics work: fan out, not a cheaper cloud</a></h3>
-            <p class="doc-meta">27 min read</p>
-            <p class="doc-desc">AWS, Azure and GCP price a T4 GPU within 3%. Fanning out shader recording and tests, not switching clouds, cuts a 4.5-hour graphics change to about 30 minutes.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/parallel-gpu-browser-rigs" data-visits-event="next-parallel-gpu-browser-rigs">Parallel GPU browser rigs: AWS, GCP and Modal</a></h3>
-            <p class="doc-meta">20 min read</p>
-            <p class="doc-desc">Ten stopped AWS Windows GPU machines run a round of browser GPU benchmarks in under two hours; GCP allows one GPU, and Modal&#39;s Chrome falls back to software.</p>
-          </li>
+      <section class="prose what-next" aria-labelledby="what-next">
+        <h2 id="what-next">What next</h2>
+        <p>This doc opened on a screenshot with the ground 1 to 8 m from the eye nearly bare. In Day Hike, on the medium and high quality tiers, that ground is a sward: meadow cards stand under the blades out to 18 m, over a darkened floor, the steps of section 2.2. The first ranked technique shipped there too: the blade clumps and the grass-class cards are cut to the view each time the camera turns 3.5 degrees or moves half a metre, so those behind the player are not drawn. Stand in the grass beside a trail and look down. <a href="https://games.csarko.sh/dayhike/" data-visits-event="close-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>
+        <ul>
+          <li><a href="/research/ground-fog-without-the-wall" data-visits-event="series-ground-fog-without-the-wall">How do AAA games draw ground fog, and can a browser game do the same?</a></li>
+          <li><a href="/research/cloud-rigs-for-graphics-work" data-visits-event="next-cloud-rigs-for-graphics-work">Is AWS, Azure or GCP cheapest for a T4 GPU, and does switching save time?</a></li>
+          <li><a href="/research/parallel-gpu-browser-rigs" data-visits-event="next-parallel-gpu-browser-rigs">Which cloud runs browser GPU benchmarks in parallel: AWS, GCP or Modal?</a></li>
         </ul>
-        <p class="play-line"><a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
+        <p class="series-at"><span>Part 4 of 7 in <strong>Rendering a browser forest</strong></span><span>Previous: <a href="/research/grass-and-trail-realism" rel="prev" data-visits-event="series-grass-and-trail-realism">Grass, wind and trails in a browser meadow</a></span><span>Next: <a href="/research/ground-fog-without-the-wall" rel="next" data-visits-event="series-ground-fog-without-the-wall">Volumetric ground fog without the sprite wall</a></span></p>
         <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS).</p>
       </section>
       <div class="prose">
@@ -881,13 +871,13 @@ for a first-person ground ring.</li>
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
-        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
+        <p class="author-name"><a href="/" data-visits-event="author-home">Cyrus Sarkosh</a></p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
-        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
+        <p class="author-links"><a href="/" data-visits-event="author-home">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
       <nav class="afterward" aria-label="Read next">
-        <a class="next" href="/research/ground-fog-without-the-wall" data-visits-event="end-ground-fog-without-the-wall"><span class="section-label">Read next</span><span>Volumetric ground fog without the sprite wall <span aria-hidden="true">→</span></span></a>
-        <a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        <span>Day Hike: <a href="https://games.csarko.sh/dayhike/" data-visits-event="after-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a></span>
+        <a href="/research/ground-fog-without-the-wall" data-visits-event="end-ground-fog-without-the-wall">How do AAA games draw ground fog, and can a browser game do the same?</a>
         <a href="/research">All research</a>
       </nav>
     </main>
@@ -902,7 +892,7 @@ for a first-person ground ring.</li>
   <!-- generated:analytics -->
   <script defer src="/assets/visits.4378bd36.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
-  <script defer src="/assets/reading.c3e27b33.js"></script>
+  <script defer src="/assets/reading.3a8c03e0.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

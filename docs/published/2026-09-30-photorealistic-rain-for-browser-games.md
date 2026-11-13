@@ -3,6 +3,10 @@ description: A survey of how AAA games render rain, from streaks to wet ground, 
 published: 2026-09-30
 categories: Rendering
 series: Day Hike's look
+project: day-hike
+project-line: This survey was done for Day Hike, a first-person co-op horror game that runs in your browser, whose rain was a particle box that followed the camera. The game's rain was then rebuilt from section 7, layer by layer.
+closing: The opening complaint was a rain source chasing the player. Day Hike's rain was rebuilt as section 7's stack on Oct 1, 2026: a camera-locked volume of wrapped streaks, fog that thickens with the rain and, on the medium and high tiers, a top-down map that stops it under cover, splashes, canopy drip and drops on the lens. When the weather turns to rain, sprint: no dry edge runs ahead of the player. The game's verification note measured that build's whole stack at about 1 ms or less on an Apple M4 in Chrome at 1080p.
+asks: How do AAA games render realistic rain, and can a browser game afford it?
 ---
 # Photorealistic rain for browser games
 
@@ -58,8 +62,8 @@ browser on named hardware; those estimates are scaled from console and desktop f
 from the one browser particle study that used GPU timer queries.
 
 The questions came from Day Hike, a first-person co-op hiking game in Babylon.js 9.18 set
-on a coast and forest like Washington's Olympic Peninsula, whose rain today is a particle
-box that follows the camera. It is public at [game-dayhike](https://github.com/csarkosh/game-dayhike)
+on a coast and forest like Washington's Olympic Peninsula, whose rain, as of Sep 30, 2026, was a
+particle box that followed the camera. It is public at [game-dayhike](https://github.com/csarkosh/game-dayhike)
 and playable at [games.csarko.sh/dayhike](https://games.csarko.sh/dayhike/); its
 renderer's two paths are described in
 [WebGPU vs WebGL2: what changes and what does not](/research/webgpu-vs-webgl2), its

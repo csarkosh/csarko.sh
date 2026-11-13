@@ -4,6 +4,10 @@ published: 2026-09-26
 categories: Rendering
 updated: 2026-09-26
 series: Rendering a browser forest
+project: day-hike
+project-line: Day Hike, a first-person co-op horror game that runs in your browser, filled in the bare ground at the player's feet and paid about 1.3 ms a frame at the heaviest pose. This is the research into winning that back without drawing less grass.
+closing: This doc opened on a screenshot with the ground 1 to 8 m from the eye nearly bare. In Day Hike, on the medium and high quality tiers, that ground is a sward: meadow cards stand under the blades out to 18 m, over a darkened floor, the steps of section 2.2. The first ranked technique shipped there too: the blade clumps and the grass-class cards are cut to the view each time the camera turns 3.5 degrees or moves half a metre, so those behind the player are not drawn. Stand in the grass beside a trail and look down.
+asks: How do you make game grass look full without killing the frame rate?
 ---
 # Grass fullness without thinning the field
 

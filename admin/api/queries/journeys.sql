@@ -1,24 +1,25 @@
 -- The 50 visitors most recently seen in [start, end), each as its journey: where it came from (the
 -- first view's referrer, internal path and campaign), the first view's device, its latest 40 page
 -- views (newest first here; the API puts them in order) with the engaged seconds, scroll depth and
--- read-to-the-end of that page load's leaves and the LCP, CLS and INP of its vitals row, and its
+-- read-to-the-end of that page load's leaves (`re` AND a scroll depth of 50 or more, as in
+-- pages.sql) and the LCP, CLS and INP of its vitals row, and its
 -- last outbound click. A visitor is the collector's visitor hash (s.vid, lib-visits --visitor, since
 -- 2026-11-01), which holds across days, so a browser that comes back lands in the journey it began;
 -- rows from before it carry only the daily visit hash, which stands in for it. Leaves, vitals and clicks
 -- join their view by the page load's id ONLY: a page load's visit is its view's visit, whatever
 -- the later row says (the daily hash can roll between them). A row with neither hash is its own
 -- visit. The check beacons (/deploy-check, /depth-check) are
--- left out, and so is every page load (id) that any of its rows calls a bot (Lighthouse's view
--- says bot=false, its leave and vitals true).
+-- left out, and so is every page load (id) that is a bot's or a crawler's (the shared test in
+-- _bot.sql).
 WITH beacons AS (
   SELECT
     timestamp AS ts,
     JSON_VALUE(json_payload.n) AS n,
     JSON_VALUE(json_payload.id) AS id,
     json_payload AS j,
-    -- A browser brand starting Headless (the client hints' HeadlessChrome, under a User-Agent that
-    -- claims a real browser) is a bot too, whatever s.bot says.
-    LOGICAL_OR(IFNULL(JSON_VALUE(json_payload.s.bot), 'false') = 'true' OR STARTS_WITH(IFNULL(JSON_VALUE(json_payload.s.bn), ''), 'Headless')) OVER (PARTITION BY JSON_VALUE(json_payload.id)) AS bot
+    -- The shared bot test, queries/_bot.sql: the collector's flag, a Headless brand, an impossible
+    -- device, the Linux fleet from google.com and Day Hike's tooling lobby, over the whole page load.
+    {{bot}} AS bot
   FROM `csarko-sh.csarko_visits._AllLogs`
   WHERE timestamp >= TIMESTAMP(@start) AND timestamp < TIMESTAMP(@end)
     AND JSON_VALUE(json_payload.p) NOT IN ('/deploy-check', '/depth-check')
@@ -54,7 +55,7 @@ leaves AS (
     id,
     MAX(SAFE_CAST(JSON_VALUE(j.e) AS INT64)) AS secs,
     MAX(SAFE_CAST(JSON_VALUE(j.sd) AS INT64)) AS depth,
-    LOGICAL_OR(JSON_VALUE(j.re) = 'true') AS reached
+    LOGICAL_OR(JSON_VALUE(j.re) = 'true') AND MAX(SAFE_CAST(JSON_VALUE(j.sd) AS INT64)) >= 50 AS reached
   FROM beacons WHERE n = 'leave' GROUP BY id
 ),
 vitals AS (

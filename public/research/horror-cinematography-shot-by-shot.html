@@ -328,19 +328,23 @@
     .doc-page .prose { font-size: 17px; }
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
-    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
-    .series-line p { margin: 0; }
+    .series-line { display: flex; gap: 8px; margin: 18px 0 0; font-size: 14.5px; color: var(--muted); white-space: nowrap; }
+    .series-line > * { flex: none; }
+    .series-line > :first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .series-line strong { color: var(--text); font-weight: 600; }
-    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
-    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-line a, .afterward a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
-    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .prose h2, .prose h3, .prose h4 { scroll-margin-top: 28px; }
+    ::target-text { background: var(--accent-underline); color: var(--text); }
+    .toc { margin: 32px 0 0; }
     .toc .section-label { margin: 0 0 6px; }
     .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
     .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
     .toc a:hover { color: var(--accent); }
     .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    @media (min-width: 1060px) { .toc { display: none; } }
+    @media (max-width: 1059px) { .prose > .section-head:first-child:not([data-read-end]) { border-top: 0; padding-top: 0; margin-top: 36px; } }
     .figure { margin: 32px 0; }
     .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
     /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
@@ -365,26 +369,28 @@
       radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
       radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
       var(--surface); }
-    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
-    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
-    .series-name { margin: 0 0 8px; font-weight: 600; }
-    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
-    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
-    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
-    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
-    .next-list .card { padding: 16px 18px; background: var(--bg); }
-    .next-list .doc-title { font-size: 1.05rem; }
-    .next-list .doc-desc { font-size: 14.5px; }
-    .play-line, .watch-line { margin: 20px 0 0; }
+    .what-next { margin-top: 48px; }
+    .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
+    .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
+    .watch-line { margin: 20px 0 0; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
-    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
-    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
-    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color var(--md-duration-short3) var(--md-easing-standard); }
-    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
-    .afterward .next:hover { border-color: var(--accent); }
-    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
+    .afterward { display: flex; align-items: baseline; gap: 6px 22px; margin-top: 24px; font-size: 14.5px; color: var(--muted); text-wrap: balance; }
+    .afterward > * { flex: none; }
+    .afterward > a:not(:last-child) { flex: 0 1 auto; }
+    @media (max-width: 640px) {
+      .doc-page .shell { padding-top: 16px; }
+      .doc-page .crumbs ol { padding-block: 8px; }
+      .doc-page .eyebrow { margin-bottom: 8px; }
+      .doc-page h1 { margin-bottom: 10px; font-size: 2rem; }
+      .doc-header .lead { margin-bottom: 12px; font-size: 1rem; line-height: 1.5; }
+      .doc-page .doc-header { padding-bottom: 12px; }
+      .series-line { gap: 6px; margin-top: 8px; font-size: 13px; }
+      .afterward { flex-direction: column; }
+    }
+    @media (max-width: 439px) { .series-line a span { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .play { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -397,7 +403,7 @@
   <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
-      <a class="wordmark" href="/">csarko<span>.sh</span></a>
+      <a class="wordmark" href="/" data-visits-event="nav-home">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/projects" data-visits-event="nav-projects">Projects</a></li>
         <li><a href="/research" data-visits-event="nav-research">Research</a></li>
@@ -407,7 +413,7 @@
   <nav class="crumbs" aria-label="Breadcrumb">
     <div class="wrap">
       <ol>
-        <li><a href="/">Home</a></li>
+        <li><a href="/" data-visits-event="crumb-home">Home</a></li>
         <li><a href="/research">Research</a></li>
         <li><span aria-current="page">How Horror Directors Build Dread Shot by Shot</span></li>
       </ol>
@@ -439,13 +445,13 @@
           <li>40 min read</li>
         </ul>
         <nav class="series-line" aria-label="Series">
-          <p>Part 4 of 7 in <strong>Horror craft</strong></p>
-          <p class="series-steps"><span>Previous: <a href="/research/how-alan-wake-introduces-its-darkness" rel="prev" data-visits-event="series-how-alan-wake-introduces-its-darkness">How Alan Wake introduces its darkness</a></span><span>Next: <a href="/research/horror-sequences-shot-by-shot" rel="next" data-visits-event="series-horror-sequences-shot-by-shot">23 Horror Sequences Broken Down Shot by Shot</a></span></p>
+          <span>Part 4 of 7 in <strong>Horror craft</strong></span><span aria-hidden="true">·</span><a href="/research/how-alan-wake-introduces-its-darkness" rel="prev" aria-label="Previous: How Alan Wake introduces its darkness" title="How Alan Wake introduces its darkness" data-visits-event="series-how-alan-wake-introduces-its-darkness"><span aria-hidden="true">←</span> Previous</a><span aria-hidden="true">·</span><a href="/research/horror-sequences-shot-by-shot" rel="next" aria-label="Next: 23 Horror Sequences Broken Down Shot by Shot" title="23 Horror Sequences Broken Down Shot by Shot" data-visits-event="series-horror-sequences-shot-by-shot">Next <span aria-hidden="true">→</span></a>
         </nav>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> How do the most renowned horror directors, classic, Japanese and Korean, and modern, together with their cinematographers and editors, design shot sequences and cinematic composition (shot size, angle, lens, depth of field, aspect ratio, framing, negative space, depth staging, lighting and darkness, camera movement and stillness, point of view, editing rhythm and cut types, and sound with image) to create specific feelings and perspectives in the audience and to guide the story, and which of their methods are general film craft a filmmaker can apply to any film?</p>
 <p><strong>Short answer:</strong> Horror directors build feeling by controlling three things at once: what the audience knows relative to the characters, where the audience&#39;s eye is at each moment, and how long the audience is made to wait. Dread and suspense come from giving the viewer more knowledge than the character, then holding a wide, deep, often static frame until the viewer finds the threat before anyone on screen does: Hitchcock&#39;s bomb under the table, the background figure in Halloween and It Follows, the empty door-space in Longlegs. Shock is the opposite: a long quiet lead-in, then a sub-second cut to a close-up on a loud sting, used so rarely it is never anticipated. Confinement comes from wide lenses placed close and tall or square frames; the uncanny from a familiar space made wrong and a figure that moves the wrong way; presence from a smooth, operator-less camera. Editors converge on one rhythm: a slow, flat cutting baseline for dread, short bursts of fast cutting for violence, and music removed wherever the picture already carries the fear. Measured evidence supports a few of these claims and leaves most lens, angle and framing doctrine as craft lore; several famous production facts remain disputed. The 23 sequences behind these conclusions are broken down on a companion page, <a href="/research/horror-sequences-shot-by-shot" data-visits-event="doc-horror-sequences-shot-by-shot">23 Horror Sequences Broken Down Shot by Shot</a>.</p>
+<p class="project-line">The story and the camera of The Last Trail follow this research. It is a 56 second AI-generated horror short: a woman carries her father&#39;s ashes up his old trail, and a voice that sounds like him answers on his ranger radio. <a href="https://www.youtube.com/shorts/C1XsDuJE4MQ" target="_blank" rel="noopener" data-visits-event="lead-the-last-trail">Watch it&nbsp;on&nbsp;YouTube</a>.</p>
       </div>
       <nav class="toc" aria-label="In this doc">
         <p class="section-label">In this doc</p>
@@ -895,30 +901,15 @@
 <p>Some claims rest on excerpts rather than full texts. Nakata&#39;s statement that he watched The Haunting at least five times is relayed through an encyclopaedia summary of a newspaper interview <a class="cite" href="#ref-90">[90]</a>. Several cinematographer interviews were readable only in reprints or summaries, and the Longlegs editor&#39;s and cinematographer&#39;s remarks come from a reprint and a podcast summary <a class="cite" href="#ref-28">[28]</a>, <a class="cite" href="#ref-168">[168]</a>. Wan&#39;s defence that &quot;a great jump scare is really hard to design&quot; is relayed second hand <a class="cite" href="#ref-129">[129]</a>. Hanich&#39;s five fear types are reported through a publisher&#39;s chapter list and a Danish-language summary <a class="cite" href="#ref-25">[25]</a>, <a class="cite" href="#ref-26">[26]</a>; Burch&#39;s six zones through a thesis quoting the French edition <a class="cite" href="#ref-20">[20]</a>; Chion&#39;s four powers of the acousmêtre through summaries without page numbers <a class="cite" href="#ref-19">[19]</a>.</p>
 <p>The remaining gaps are specific. No verbatim statement by Carpenter or Cundey on placing Michael at the edge of frame or in the far background was found; the depth-staging reading is critics&#39;. No primary statement by Kurosawa on camera distance or static takes, or by Shimizu on Kayako&#39;s choreography, was reached. Flanagan&#39;s reasoning about what the Hill House long take does to a viewer, as opposed to how it was made, is not in any reachable text. On the empirical side there is no peer-reviewed horror-specific average-shot-length study by era, no controlled comparison of dread under slow versus fast cutting of the same material, no eye-tracking study that manipulates a horror framing variable (negative space, depth placement of a threat), no study of stillness after movement or of killer-POV versus objective framing, and no physiological study of the jump scare as cut, with sting timing relative to the picture cut; the 2026 review explicitly proposes one <a class="cite" href="#ref-163">[163]</a>. Claims about infrasound and low-frequency rumble are common in blogs and were not sourced to any primary study, so they are omitted.</p>
       </div>
-      <section class="keep-reading" aria-labelledby="next-reads">
-        <h2 id="next-reads" class="section-label">Keep reading</h2>
-        <p class="series-name">Horror craft · 7 parts</p>
-        <ol class="series-parts">
-          <li><a href="/research/opening-a-game-like-a-film" data-visits-event="next-opening-a-game-like-a-film">Opening a game like a film: sixty seconds of drive, radio and dread</a></li>
-          <li><a href="/research/building-dread-toward-a-late-reveal" data-visits-event="next-building-dread-toward-a-late-reveal">Building dread toward a late reveal in horror games</a></li>
-          <li><a href="/research/how-alan-wake-introduces-its-darkness" data-visits-event="next-how-alan-wake-introduces-its-darkness">How Alan Wake introduces its darkness</a></li>
-          <li aria-current="true"><span>How Horror Directors Build Dread Shot by Shot</span></li>
-          <li><a href="/research/horror-sequences-shot-by-shot" data-visits-event="next-horror-sequences-shot-by-shot">23 Horror Sequences Broken Down Shot by Shot</a></li>
-          <li><a href="/research/how-horror-directors-steer-the-eye" data-visits-event="next-how-horror-directors-steer-the-eye">Five Ways Horror Directors Steer the Eye</a></li>
-          <li><a href="/research/how-horror-directors-make-sound-carry-the-fear" data-visits-event="next-how-horror-directors-make-sound-carry-the-fear">How Horror Directors Make Sound Carry the Fear</a></li>
-        </ol>
-        <ul class="doc-list next-list" role="list">
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/the-well-shot-by-shot" data-visits-event="next-the-well-shot-by-shot">The Well: how an AI short reads as cinema</a></h3>
-            <p class="doc-meta">18 min read</p>
-            <p class="doc-desc">An award-winning AI short measured shot by shot: 122 shots, two reused camera set-ups, straight cuts only, a human score, and the record of how it was made.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/synthetic-voices-for-a-radio-call" data-visits-event="next-synthetic-voices-for-a-radio-call">Synthetic voices for a radio call</a></h3>
-            <p class="doc-meta">12 min read</p>
-            <p class="doc-desc">Text-to-speech for a game&#39;s radio call in 2026: the models that take direction, what gives them away, the radio chain, licences, cost, cloning your own voice.</p>
-          </li>
+      <section class="prose what-next" aria-labelledby="what-next">
+        <h2 id="what-next">What next</h2>
+        <p>Carry Hitchcock&#39;s bomb under the table into the next horror scene and ask three things: what the audience knows that the character does not, where the eye is being sent, and how long the wait is held. The research on this page is what the story and the camera of The Last Trail follow, and that horror short runs 56 seconds, so all three can be asked of a whole film in under a minute. <a href="https://www.youtube.com/shorts/C1XsDuJE4MQ" target="_blank" rel="noopener" data-visits-event="close-the-last-trail">Watch it&nbsp;on&nbsp;YouTube</a>.</p>
+        <ul>
+          <li><a href="/research/horror-sequences-shot-by-shot" data-visits-event="series-horror-sequences-shot-by-shot">How are famous horror scenes like the Psycho shower built, shot by shot?</a></li>
+          <li><a href="/research/the-well-shot-by-shot" data-visits-event="next-the-well-shot-by-shot">How was the AI short film The Well made, and why does it look like a studio film?</a></li>
+          <li><a href="/research/synthetic-voices-for-a-radio-call" data-visits-event="next-synthetic-voices-for-a-radio-call">Which AI voice models sound human, and how do you make one sound like a radio?</a></li>
         </ul>
+        <p class="series-at"><span>Part 4 of 7 in <strong>Horror craft</strong></span><span>Previous: <a href="/research/how-alan-wake-introduces-its-darkness" rel="prev" data-visits-event="series-how-alan-wake-introduces-its-darkness">How Alan Wake introduces its darkness</a></span><span>Next: <a href="/research/horror-sequences-shot-by-shot" rel="next" data-visits-event="series-horror-sequences-shot-by-shot">23 Horror Sequences Broken Down Shot by Shot</a></span></p>
         <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS).</p>
       </section>
       <div class="prose">
@@ -1096,12 +1087,13 @@
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
-        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
+        <p class="author-name"><a href="/" data-visits-event="author-home">Cyrus Sarkosh</a></p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
-        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
+        <p class="author-links"><a href="/" data-visits-event="author-home">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
       <nav class="afterward" aria-label="Read next">
-        <a class="next" href="/research/horror-sequences-shot-by-shot" data-visits-event="end-horror-sequences-shot-by-shot"><span class="section-label">Read next</span><span>23 Horror Sequences Broken Down Shot by Shot <span aria-hidden="true">→</span></span></a>
+        <span>The Last Trail: <a href="https://www.youtube.com/shorts/C1XsDuJE4MQ" target="_blank" rel="noopener" data-visits-event="after-the-last-trail">Watch it&nbsp;on&nbsp;YouTube</a></span>
+        <a href="/research/horror-sequences-shot-by-shot" data-visits-event="end-horror-sequences-shot-by-shot">How are famous horror scenes like the Psycho shower built, shot by shot?</a>
         <a href="/research">All research</a>
       </nav>
     </main>
@@ -1116,7 +1108,7 @@
   <!-- generated:analytics -->
   <script defer src="/assets/visits.4378bd36.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
-  <script defer src="/assets/reading.c3e27b33.js"></script>
+  <script defer src="/assets/reading.3a8c03e0.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

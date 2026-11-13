@@ -3,6 +3,10 @@ description: What grows where on Washington's Olympic Peninsula, from drift logs
 published: 2026-10-04
 categories: Worlds and terrain
 series: Olympic Peninsula field notes
+project: day-hike
+project-line: This research was done for Day Hike, a co-op horror game that runs in your browser, set on a fictional stretch of the Olympic Peninsula. Its sword fern, salal thickets, nurse logs and drift logs follow section 7's list.
+closing: The first pass in the question was conifers over grass with a generic bush. Since Oct 4, 2026 Day Hike's forest floor has carried sword fern in patches under the canopy and fallen logs over a metre through, seven in ten of them nurse logs with ferns and seedlings along the top: items 1 and 2 of section 7. Salal stands in thickets behind the beach and on drained slopes, a drift line of bleached trunks lies along the top of the beach, and skunk cabbage and devil's club grow on wet ground: items 3, 4 and 8.
+asks: What plants grow on the Olympic Peninsula, and how do you place them in a game?
 ---
 # Olympic Peninsula vegetation for game worlds
 

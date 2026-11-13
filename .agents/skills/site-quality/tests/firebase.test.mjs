@@ -34,6 +34,12 @@ test("the old project pages land on /projects with their own kind's chip checked
   }
 });
 
+// The old React site's /contact still shows in Google (position 2.6, Search Console 2026-11-12)
+// and was the one retired path that answered 404; the home page's Contact section replaced it.
+test("the old /contact page lands on the home page's Contact section", () => {
+  assert.ok(site.redirects.some((r) => r.source === "/contact" && r.destination === "/#contact" && r.type === 301));
+});
+
 test("every other /apps address lands on the Apps filter; only the old pictures keep their files", () => {
   const i = (pred) => site.redirects.findIndex(pred);
   const pictures = i((r) => r.regex === "^/apps/(?P<file>[^/]+\\.(?:jpg|jpeg|png|webp|avif))$" && r.destination === "/projects/:file");

@@ -2,59 +2,68 @@
 description: WebGPU vs WebGL2, measured in a Babylon.js game: 1.3 to 1.5 ms faster per frame at native resolution, 9.9 ms at 4x the pixels, for 2.7 MB of shader translators.
 published: 2026-09-27
 categories: Rendering
-updated: 2026-10-23
+updated: 2026-11-13
 series: WebGPU against WebGL2
 related: babylon-material-plugin-traps, grass-fullness-without-thinning
+project: day-hike
+project-line: This page's own measurements were all taken in Day Hike, a first-person co-op horror game that runs in your browser: the same frame drawn with WebGL2 and with WebGPU.
+closing: The bars this page opened on are one Day Hike pose: grass under a closed canopy, in mist, at noon. Since Sep 28, 2026 the game has drawn its high quality tier with WebGPU by default in Chrome and Edge on macOS and Windows, and has kept Safari and Firefox on WebGL2, the second render path section 4.2 says to keep. Adding ?engine=webgl2 to the game's address forces the WebGL2 path, so the two can be compared on one machine.
+asks: Is WebGPU actually faster than WebGL2 in a real game?
 ---
 # WebGPU vs WebGL2: what changes and what does not
 
-**Question:** what does WebGPU change against WebGL2 in how a browser builds a frame, where does
-that make a real game faster, where can it not, and what goes wrong on the way?
+**Question:** What does WebGPU change against WebGL2 in how a browser builds a frame, and where
+does that make a real game faster? Where can it not, and what goes wrong on the way?
 
-**Short answer:** WebGPU replaces WebGL2's one global state machine with
-[pipelines](#term "Immutable objects made up front that bake in a shader with its blend, depth and cull state and its vertex layout, so a draw does not re-describe them.")
-and other objects checked when they are made, and adds
-[compute shaders](#term "GPU programs that are not drawing: culling, simulation and particles, feeding draws without a round trip to the CPU. WebGL2 has none.").
-No API makes the shading of a pixel cheaper, and a frame the GPU limits hides any CPU saving. In
-a real Babylon.js game the engine switch alone saved 1.3 to 1.5 ms a frame at native resolution
-and 9.93 ms at four times the pixels: a gain that grows with pixels, not with draws. WebGL2 is
-still needed as a fallback.
+**Short answer:** Each WebGL2 draw uses whatever settings are switched on at that moment. WebGPU
+fixes those settings up front in objects called
+[pipelines](#term "Immutable objects made up front that bake in a shader with its blend, depth and cull state and its vertex layout, so a draw does not re-describe them."),
+checked when made, and adds
+[compute shaders](#term "GPU programs that are not drawing: culling, simulation and particles, feeding draws without a round trip to the CPU. WebGL2 has none."),
+GPU programs that do work other than drawing. No API makes the shading of a pixel cheaper, and a
+frame the GPU limits hides any CPU saving. In a real Babylon.js game the engine switch alone saved
+1.3 to 1.5 ms a frame at native resolution and 9.93 ms at four times the pixels. WebGL2 is still
+needed as a fallback.
 
-![A bar chart of frame times in two pairs. At 1200 by 2029 pixels, WebGL2 24.22 ms and WebGPU 22.69 ms; at 2400 by 4058 pixels, WebGL2 55.14 ms and WebGPU 45.21 ms](frame-times.svg "The same pose in Day Hike on an Apple M4 in Chrome 153: switching the engine to WebGPU saved 1.53 ms at native resolution (1.34 to 1.49 ms on the quiet pages) and 9.93 ms at four times the pixels, so the saving grows faster than the pixel count.")
+**What that leaves open:** why the saving is there at all. WebGPU's design promises less CPU work
+per draw, yet only 3.79 ms of the game's 24.2 ms frame was JavaScript, and the gain grows with
+pixels, not with draws: about 6.5 times larger at 4 times the pixels. This page does not attribute
+it: memory traffic, multisample resolves and what each pass loads and stores are the candidates,
+and per-pass GPU timestamps would settle it. By the end you can check which kind of frame yours is
+and what the switch costs: a WebGL2 fallback, six shader fixes and 2.7 MB of shader translators.
+
+![A bar chart of frame times in two pairs. At 1200 by 2029 pixels, WebGL2 24.22 ms and WebGPU 22.69 ms; at 2400 by 4058 pixels, WebGL2 55.14 ms and WebGPU 45.21 ms](frame-times.svg "Compare the gap inside each pair of bars. Both pairs are the same pose in Day Hike on an Apple M4 in Chrome 153: switching the engine to WebGPU saved 1.53 ms at native resolution (1.34 to 1.49 ms on the quiet pages) and 9.93 ms at four times the pixels, so the saving grows faster than the pixel count.")
 
 **In numbers:**
 
 - **1.3 to 1.5 ms faster** per frame at native resolution, and **9.93 ms** at 9.7 Mpx, from the
   WebGPU engine alone, drawing Day Hike's heaviest pose on an Apple M4 in Chrome 153
   ([section 3](#1-3-to-1-5-ms-faster-at-native-9-93-ms-at-four-times-the-pixels)).
-- **3.79 ms of a 24.2 ms frame** was JavaScript, so the GPU limits it and per-draw CPU savings
-  barely show ([section 3](#1-3-to-1-5-ms-faster-at-native-9-93-ms-at-four-times-the-pixels)).
 - **About 1 ms more** from culling grass in a compute pass, but it dropped clumps on fast turns;
   against the CPU filter that has shipped since, it would be worth about 0.17 ms
   ([section 3](#1-3-to-1-5-ms-faster-at-native-9-93-ms-at-four-times-the-pixels)).
-- **2.7 MB of shader translators** (913 KB gzipped) to run GLSL on WebGPU, and a cold start of
-  1.37 s against 1.1 s on WebGL2
+- **2.7 MB of shader translators** (913 KB gzipped) to run GLSL on WebGPU, a cold start of 1.37 s
+  against 1.1 s on WebGL2, six fixes before every material compiled, and four defects in the
+  engine and its loaders, two each in sections 4.4 and 4.8
   ([section 4](#the-costs-a-fallback-six-wgsl-fixes-and-2-7-mb-of-translators)).
-- **Six fixes** before every material compiled, and four defects in the engine and its loaders,
-  in sections 4.4 and 4.8 ([section 4](#the-costs-a-fallback-six-wgsl-fixes-and-2-7-mb-of-translators)).
 - **Still off** for most Linux users, on Windows on Arm, and in Firefox on Linux and Android as of
   September 2026, though on by default in Safari 26, in Chrome and Edge on Windows, macOS,
   ChromeOS and most Android devices, and in Firefox on Windows and Apple-silicon Macs
   ([section 4](#the-costs-a-fallback-six-wgsl-fixes-and-2-7-mb-of-translators)).
 
-**The test bed.** Day Hike, our first-person co-op hiking game in Babylon.js 9.18, renders with
-WebGL2; a WebGPU path for it is being built and has not shipped. Every measurement here is from
-it. Day Hike is public at [game-dayhike](https://github.com/csarkosh/game-dayhike) and playable at
-[games.csarko.sh/dayhike](https://games.csarko.sh/dayhike/). Its GLSL material plugins are described
-in [Babylon.js material plugins: hooks and traps](/research/babylon-material-plugin-traps), and
-[Grass fullness without thinning the field](/research/grass-fullness-without-thinning) asked whether
-WebGPU compute culling would pay. Two later notes take the comparison down to single passes:
-[Scene depth for a post process](/research/scene-depth-for-a-post-process-webgpu-vs-webgl2) finds
-six places the APIs part ways in getting depth to a post process, and
-[A painted look over a photoreal render](/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2)
-four in a stroke filter and a palette grade.
-
 ## 1. WebGL2 is a state machine; WebGPU is objects made up front
+
+Take one frame of Day Hike, our first-person co-op hiking game in Babylon.js 9.18 and the test bed
+for every measurement here: measured on WebGL2, its heaviest pose took 222 to 229 draw calls and
+24.2 ms (section 3.2). WebGL2 runs each of those draws against whatever is bound at that moment and
+checks it then. On WebGPU the same draws refer to objects that were made beforehand, with the heavy
+checks done when they were made. This section sets the two side by side, down to the same triangle
+written in both.
+
+Day Hike is public at [game-dayhike](https://github.com/csarkosh/game-dayhike) and playable at
+[games.csarko.sh/dayhike](https://games.csarko.sh/dayhike/). As of Sep 27, 2026 it rendered with
+WebGL2, and a WebGPU path for it was being built and had not shipped; that path became the high
+quality tier's default in Chrome and Edge on macOS and Windows on Sep 28, 2026.
 
 ### 1.1 WebGL2: one context, one state machine
 
@@ -531,6 +540,15 @@ second shader language until it is ported.
    pixel-scaled gain lives.
 5. Only then port shaders to WGSL and move work to compute, one measured lever at a time, each
    against the best WebGL2 version of the same idea.
+
+**Where the comparison goes next.** Two later notes take it down to single passes:
+[Scene depth for a post process](/research/scene-depth-for-a-post-process-webgpu-vs-webgl2) finds
+six places the APIs part ways in getting depth to a post process, and
+[A painted look over a photoreal render](/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2)
+four in a stroke filter and a palette grade. Day Hike's GLSL material plugins are described in
+[Babylon.js material plugins: hooks and traps](/research/babylon-material-plugin-traps), and
+[Grass fullness without thinning the field](/research/grass-fullness-without-thinning) asked whether
+WebGPU compute culling would pay.
 
 ## 6. Sources
 

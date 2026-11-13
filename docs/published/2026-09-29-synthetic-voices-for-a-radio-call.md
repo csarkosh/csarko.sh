@@ -3,6 +3,10 @@ description: Text-to-speech for a game's radio call in 2026: the models that tak
 published: 2026-09-29
 categories: AI, Film, Game design
 series: AI short films
+project: day-hike
+project-line: Day Hike, a co-op horror game that runs in your browser, opens on a film of a park ranger taking a radio call from dispatch. This is the research behind that call's two voices, made with text-to-speech as section 7 describes.
+closing: Section 7 is how the call's ten lines were made so that any one of them can be redone alone; in the first cut it describes, dispatch goes through a radio chain from section 3 (band-pass, compression, key click and squelch tail). The drive and its radio call are the film that starts a hike in Day Hike: the ranger close and dry, dispatch heard through a two-way radio, and the signal breaking up on the words that matter.
+asks: Which AI voice models sound human, and how do you make one sound like a radio?
 ---
 # Synthetic voices for a radio call
 

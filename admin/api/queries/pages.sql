@@ -5,9 +5,12 @@
 --                   MAX(e), capped at 1800 s so a tab left open does not swamp the rest);
 --   reached         the share of ALL the path's views whose page load reached the end (a view
 --                   with no leave did not), only for /research/<slug> pages, which are the ones
---                   with a data-read-end marker; NULL for every other path.
+--                   with a data-read-end marker; NULL for every other path. Reached the end is
+--                   the leave's `re` AND a scroll depth of 50 or more (the load's MAX(sd)): a
+--                   crawler that renders the whole page at once sets `re` without scrolling, and
+--                   in four weeks of rows no load sat between 15 and 72 (2026-11-13).
 -- The check beacons (/deploy-check, /depth-check) are left out, and so is every page load (id)
--- that any of its rows calls a bot (Lighthouse's view says bot=false, its leave and vitals true).
+-- that is a bot's or a crawler's (the shared test in _bot.sql).
 -- A page on another of the site's hosts (apps.csarko.sh, donate.csarko.sh, whose beacons the
 -- collector takes since 2026-11-01) is named with its host, `apps.csarko.sh/ide-arkos`, so it
 -- never folds into csarko.sh's path of the same name (both have a /).
@@ -16,9 +19,9 @@ WITH beacons AS (
     JSON_VALUE(json_payload.n) AS n,
     JSON_VALUE(json_payload.id) AS id,
     json_payload AS j,
-    -- A browser brand starting Headless (the client hints' HeadlessChrome, under a User-Agent that
-    -- claims a real browser) is a bot too, whatever s.bot says.
-    LOGICAL_OR(IFNULL(JSON_VALUE(json_payload.s.bot), 'false') = 'true' OR STARTS_WITH(IFNULL(JSON_VALUE(json_payload.s.bn), ''), 'Headless')) OVER (PARTITION BY JSON_VALUE(json_payload.id)) AS bot
+    -- The shared bot test, queries/_bot.sql: the collector's flag, a Headless brand, an impossible
+    -- device, the Linux fleet from google.com and Day Hike's tooling lobby, over the whole page load.
+    {{bot}} AS bot
   FROM `csarko-sh.csarko_visits._AllLogs`
   WHERE timestamp >= TIMESTAMP(@start) AND timestamp < TIMESTAMP(@end)
     AND JSON_VALUE(json_payload.p) NOT IN ('/deploy-check', '/depth-check')
@@ -32,7 +35,7 @@ leaves AS (
     id,
     LEAST(MAX(SAFE_CAST(JSON_VALUE(j.e) AS INT64)), 1800) AS secs,
     MAX(SAFE_CAST(JSON_VALUE(j.sd) AS INT64)) AS depth,
-    LOGICAL_OR(JSON_VALUE(j.re) = 'true') AS reached
+    LOGICAL_OR(JSON_VALUE(j.re) = 'true') AND MAX(SAFE_CAST(JSON_VALUE(j.sd) AS INT64)) >= 50 AS reached
   FROM beacons WHERE n = 'leave' AND NOT bot GROUP BY id
 ),
 loads AS (

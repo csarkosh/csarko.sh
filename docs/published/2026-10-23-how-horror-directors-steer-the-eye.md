@@ -4,6 +4,10 @@ published: 2026-10-23
 categories: Film
 series: Horror craft
 related: horror-cinematography-shot-by-shot, horror-sequences-shot-by-shot
+project: the-last-trail
+project-line: This page belongs to the Horror craft series. The story and the camera of The Last Trail, a 56 second AI-generated horror short, follow the series' research on how horror directors build dread shot by shot.
+closing: Five questions fit any horror frame: is the empty space behind the face, is the brightest surface behind the figure, is the sharp plane on nothing, do the lines end on nothing, has the horizon rolled. The Last Trail is a 56 second horror short whose story and camera follow the companion research on building dread, and at that length all five questions can be put to it shot by shot.
+asks: Where do horror films make you look, and which framing rules do they break?
 ---
 # Five Ways Horror Directors Steer the Eye
 

@@ -273,7 +273,11 @@ on the project and `roles/bigquery.dataViewer` on the three datasets, `csarko_vi
 Log Analytics linked dataset), `csarko_history` (`_infra/modules/gcp-visits`) and `billing` (the
 cost export, `_infra`), and `roles/storage.objectViewer` on the film ledgers' bucket. Each
 query in `queries/*.sql` is one BigQuery job (about a second of fixed overhead), run in
-parallel and cached five minutes by window. Dependencies: `@google-cloud/firestore`,
+parallel and cached five minutes by window. A file named `_<name>.sql` is a fragment, not a
+query: the runner puts it wherever a query says `{{<name>}}` (`renderSql` in
+`collectors/visits.mjs`). `_bot.sql` is the one there is, the bot and crawler test the six visits
+queries share, so to run one of them by hand render it first:
+`node -e 'import("./src/collectors/visits.mjs").then((m) => console.log(m.renderSql("pages")))' | bq query --project_id=csarko-sh --use_legacy_sql=false --parameter=start::2026-11-01T00:00:00Z --parameter=end::2026-11-08T00:00:00Z`. Dependencies: `@google-cloud/firestore`,
 `jose`, `@google-cloud/bigquery` and `@google-cloud/storage`.
 
 ## Local run
@@ -343,11 +347,12 @@ src/finance/*.mjs       pure shaping over plain rows: categories (the table), ro
                         claude (the subscription's rows, the transcripts' value), income (Stripe's transactions to
                         amounts and days, never who gave), kpis (health)
 src/health.mjs          the thresholds behind the health dot
-src/referrers.mjs       host to group classifier (rows are `{ name, count }`)
+src/referrers.mjs       host to group classifier (rows are `{ name, count }`), and the assistants a campaign tag can name
 src/store.mjs           Firestore and in-memory stores
 src/collectors/*.mjs    visits (and the BigQuery runner), arkos, gsc, youtube, youtube-analytics (the owner's numbers, by OAuth), github, hn, psi, uptime, hosting, sitemap,
                         aws-cost (Cost Explorer by federation), gcp-billing (the export in BigQuery), github-billing (usage),
                         fal (the credit balance), stripe (the donations, paged, a restricted key), ledgers (the film ledgers in their bucket)
-queries/*.sql           the saved BigQuery SQL, one job per query, copied into the image (finance-*.sql read the export)
+queries/*.sql           the saved BigQuery SQL, one job per query, copied into the image (finance-*.sql read the export);
+                        _bot.sql is the fragment the visits queries share, which pages are a bot's or a crawler's
 test/                   node:test suites and JSON fixtures
 ```

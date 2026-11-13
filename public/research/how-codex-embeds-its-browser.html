@@ -18,7 +18,7 @@
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta property="article:published_time" content="2026-10-24" />
-  <meta property="article:modified_time" content="2026-10-24" />
+  <meta property="article:modified_time" content="2026-11-13" />
   <meta property="article:author" content="https://csarko.sh/" />
   <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -49,10 +49,10 @@
       "headline": "How Codex embeds its browser, and what a Rust IDE can copy",
       "description": "Codex's browser pane is an Electron webview guest of its own Chromium, driven over CDP by a plugin; a Rust IDE gets there with WKWebView, not by docking Chrome.",
       "datePublished": "2026-10-24",
-      "dateModified": "2026-10-24",
+      "dateModified": "2026-11-13",
       "url": "https://csarko.sh/research/how-codex-embeds-its-browser",
       "mainEntityOfPage": "https://csarko.sh/research/how-codex-embeds-its-browser",
-      "wordCount": 2454,
+      "wordCount": 2526,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -328,19 +328,23 @@
     .doc-page .prose { font-size: 17px; }
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
-    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
-    .series-line p { margin: 0; }
+    .series-line { display: flex; gap: 8px; margin: 18px 0 0; font-size: 14.5px; color: var(--muted); white-space: nowrap; }
+    .series-line > * { flex: none; }
+    .series-line > :first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .series-line strong { color: var(--text); font-weight: 600; }
-    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
-    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-line a, .afterward a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
-    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .prose h2, .prose h3, .prose h4 { scroll-margin-top: 28px; }
+    ::target-text { background: var(--accent-underline); color: var(--text); }
+    .toc { margin: 32px 0 0; }
     .toc .section-label { margin: 0 0 6px; }
     .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
     .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
     .toc a:hover { color: var(--accent); }
     .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    @media (min-width: 1060px) { .toc { display: none; } }
+    @media (max-width: 1059px) { .prose > .section-head:first-child:not([data-read-end]) { border-top: 0; padding-top: 0; margin-top: 36px; } }
     .figure { margin: 32px 0; }
     .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
     /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
@@ -365,26 +369,28 @@
       radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
       radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
       var(--surface); }
-    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
-    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
-    .series-name { margin: 0 0 8px; font-weight: 600; }
-    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
-    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
-    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
-    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
-    .next-list .card { padding: 16px 18px; background: var(--bg); }
-    .next-list .doc-title { font-size: 1.05rem; }
-    .next-list .doc-desc { font-size: 14.5px; }
-    .play-line, .watch-line { margin: 20px 0 0; }
+    .what-next { margin-top: 48px; }
+    .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
+    .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
+    .watch-line { margin: 20px 0 0; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
-    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
-    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
-    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color var(--md-duration-short3) var(--md-easing-standard); }
-    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
-    .afterward .next:hover { border-color: var(--accent); }
-    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
+    .afterward { display: flex; align-items: baseline; gap: 6px 22px; margin-top: 24px; font-size: 14.5px; color: var(--muted); text-wrap: balance; }
+    .afterward > * { flex: none; }
+    .afterward > a:not(:last-child) { flex: 0 1 auto; }
+    @media (max-width: 640px) {
+      .doc-page .shell { padding-top: 16px; }
+      .doc-page .crumbs ol { padding-block: 8px; }
+      .doc-page .eyebrow { margin-bottom: 8px; }
+      .doc-page h1 { margin-bottom: 10px; font-size: 2rem; }
+      .doc-header .lead { margin-bottom: 12px; font-size: 1rem; line-height: 1.5; }
+      .doc-page .doc-header { padding-bottom: 12px; }
+      .series-line { gap: 6px; margin-top: 8px; font-size: 13px; }
+      .afterward { flex-direction: column; }
+    }
+    @media (max-width: 439px) { .series-line a span { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .play { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -397,7 +403,7 @@
   <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
-      <a class="wordmark" href="/">csarko<span>.sh</span></a>
+      <a class="wordmark" href="/" data-visits-event="nav-home">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/projects" data-visits-event="nav-projects">Projects</a></li>
         <li><a href="/research" data-visits-event="nav-research">Research</a></li>
@@ -407,7 +413,7 @@
   <nav class="crumbs" aria-label="Breadcrumb">
     <div class="wrap">
       <ol>
-        <li><a href="/">Home</a></li>
+        <li><a href="/" data-visits-event="crumb-home">Home</a></li>
         <li><a href="/research">Research</a></li>
         <li><span aria-current="page">How Codex embeds its browser, and what a Rust IDE can copy</span></li>
       </ol>
@@ -430,51 +436,53 @@
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Oct 24, 2026</p>
+        <p class="eyebrow">Oct 24, 2026 · Updated Nov 13, 2026</p>
         <h1>How Codex embeds its browser, and what a Rust IDE can copy</h1>
         <p class="lead">Codex&#39;s browser pane is an Electron webview guest of its own Chromium, driven over CDP by a plugin; a Rust IDE gets there with WKWebView, not by docking Chrome.</p>
         <ul class="tags">
           <li>9 min read</li>
         </ul>
         <nav class="series-line" aria-label="Series">
-          <p>Part 3 of 3 in <strong>Arkos IDE notes</strong></p>
-          <p class="series-steps"><span>Previous: <a href="/research/update-the-ide-keep-the-shells" rel="prev" data-visits-event="series-update-the-ide-keep-the-shells">Update the IDE, keep the shells</a></span></p>
+          <span>Part 3 of 3 in <strong>Arkos IDE notes</strong></span><span aria-hidden="true">·</span><a href="/research/update-the-ide-keep-the-shells" rel="prev" aria-label="Previous: Update the IDE, keep the shells" title="Update the IDE, keep the shells" data-visits-event="series-update-the-ide-keep-the-shells"><span aria-hidden="true">←</span> Previous</a>
         </nav>
       </header>
       <div class="prose">
-<p><strong>Question:</strong> The Codex desktop app shows a browser in a pane beside the chat, and the agent can
-drive it. Arkos IDE, a Rust app on gpui with no browser engine of its own, wanted the same
-pane. How does Codex do it, and which parts can an app that is not Electron copy?</p>
-<p><strong>Short answer:</strong> Codex is an Electron app, so it ships a Chromium, and its browser pane is an
-Electron
-<button type="button" class="term" popovertarget="term-1">webview</button><span class="term-def" id="term-1" popover role="note">Electron&#39;s &lt;webview&gt; tag: a guest page hosted inside the app&#39;s own renderer, drawn as part of the window and running in a separate Chromium process.</span>
-guest of that Chromium: a child view of the window, not a separate window kept in position. A
-bundled plugin drives the guest over the
-<button type="button" class="term" popovertarget="term-2">CDP</button><span class="term-def" id="term-2" popover role="note">Chrome DevTools Protocol: the debugging interface a client uses to navigate a Chromium page, run script in it, read its network traffic and take screenshots.</span>
-through a local socket, and the page runs in a profile of its own. None of that transfers to
-an app without Chromium. Arkos had docked a real Chrome window over a pane, and the seam showed;
-as of Oct 24, 2026, it is moving to
-<button type="button" class="term" popovertarget="term-3">WKWebView</button><span class="term-def" id="term-3" popover role="note">Apple&#39;s web view: the Safari engine as an NSView an app places in its own window, with its own data store, script evaluation and snapshots, but no CDP.</span>,
-which gives the child view and the separate profile without shipping an engine, and loses CDP.</p>
+<p><strong>Question:</strong> Arkos IDE, a Rust app with no browser engine of its own, wanted what the Codex
+desktop app has: a browser pane beside the chat that the agent can drive. How does Codex do it,
+and which parts can an app that is not Electron copy?</p>
+<p><strong>Short answer:</strong> Codex is an Electron app, so it carries its own Chromium browser. The pane is
+a page that Chromium draws inside the app&#39;s window, an Electron
+<button type="button" class="term" popovertarget="term-1" data-visits-event="term">webview</button><span class="term-def" id="term-1" popover role="note">Electron&#39;s &lt;webview&gt; tag: a guest page hosted inside the app&#39;s own renderer, drawn as part of the window and running in a separate Chromium process.</span>
+guest, not a separate window kept in position. A bundled plugin drives it with Chrome&#39;s
+debugging protocol,
+<button type="button" class="term" popovertarget="term-2" data-visits-event="term">CDP</button><span class="term-def" id="term-2" popover role="note">Chrome DevTools Protocol: the debugging interface a client uses to navigate a Chromium page, run script in it, read its network traffic and take screenshots.</span>,
+and the page has its own profile, signed out of everything. None of that transfers to an app
+without Chromium. As of Oct 24, 2026, Arkos is moving to the Mac&#39;s Safari engine,
+<button type="button" class="term" popovertarget="term-3" data-visits-event="term">WKWebView</button><span class="term-def" id="term-3" popover role="note">Apple&#39;s web view: the Safari engine as an NSView an app places in its own window, with its own data store, script evaluation and snapshots, but no CDP.</span>,
+which gives the in-window page and the profile but no CDP.</p>
+<p><strong>What that leaves open:</strong> how anyone outside OpenAI can tell, since OpenAI has not published
+the pane&#39;s design. The evidence is the app&#39;s own log lines, which users pasted into three bug
+reports, and a crash that lands inside the bundled <code>chrome.dll</code>; sections 2, 3 and 6 quote them,
+so each claim can be checked against its source. It also leaves the choice an app without
+Chromium faces: Arkos first docked a real Chrome window over a pane, and the seam showed, so
+section 7 sets that attempt beside the two other routes, shipping Chromium and using the engine
+the OS has, with what each one costs.</p>
+<p class="project-line">This research was done for Arkos IDE, a Mac app that keeps many Claude Code sessions running side by side, and it is why the app&#39;s browser tab is a WebKit view inside the Arkos window and not a docked Chrome. <a href="https://apps.csarko.sh/ide-arkos" data-visits-event="lead-ide-arkos">See what&nbsp;it&nbsp;does</a>.</p>
 <figure class="figure">
 <!-- generated:figure:how-codex-embeds-its-browser/architecture -->
 <img src="/assets/fig-how-codex-embeds-its-browser-architecture.456968ea.svg" width="640" height="430" alt="Boxes and arrows: the Electron main process, its renderer holding the browser sidebar webview guest, the bundled browser plugin reaching the guest over a Unix socket with CDP commands, and a second route from the plugin to the user&#39;s Chrome through the extension and native messaging" decoding="async" />
 <!-- /generated:figure:how-codex-embeds-its-browser/architecture -->
-<figcaption>What the logs show: the browser pane is a webview guest inside Codex&#39;s own renderer, and the bundled plugin reaches it over a local socket with CDP commands; the user&#39;s real Chrome is a second route, through the extension.</figcaption>
+<figcaption>Look at where the pane sits: inside the box for the app&#39;s own window, Codex&#39;s renderer, as a webview guest, not in a window beside it. The logs show the bundled plugin reaching it over a local socket with CDP commands; the user&#39;s real Chrome is a second route, through the extension.</figcaption>
 </figure>
 <p><strong>In short:</strong></p>
 <ul>
-<li><strong>Electron and Node.js</strong> is the stack, chosen so other operating systems could follow
-(<a href="#codex-is-an-electron-app-so-it-already-ships-a-chromium">section 1</a>).</li>
 <li><strong>A webview guest</strong> with <code>guestWebContentsId=2</code> is the pane; a crash inside the bundled
 <code>chrome.dll</code> is the proof it is the app&#39;s own Chromium
 (<a href="#the-pane-is-a-webview-guest-of-the-app-s-own-chromium">section 2</a>).</li>
 <li><strong>CDP over a Unix socket</strong> at <code>/tmp/codex-browser-use/.sock</code> is how the agent drives it, with
 full CDP an opt-in since June 11, 2026
 (<a href="#a-bundled-plugin-drives-the-guest-over-cdp-through-a-local-socket">section 3</a>).</li>
-<li><strong>A separate profile</strong>, no existing tabs, sessions or extensions
-(<a href="#the-page-runs-in-its-own-profile-signed-out-of-everything">section 4</a>).</li>
-<li><strong>Three Windows crash threads</strong> and a kill switch, <code>in_app_browser = false</code>
+<li><strong>Three bug threads</strong>, two of them Windows crashes with a kill switch, <code>in_app_browser = false</code>
 (<a href="#what-it-costs-crashes-on-attach-and-a-route-that-goes-missing">section 6</a>).</li>
 <li><strong>WKWebView</strong> is the engine Arkos chose, as of Oct 24, 2026, over CEF and over docking
 (<a href="#what-a-rust-ide-can-copy-the-child-view-and-the-profile-not-the-cdp">section 7</a>).</li>
@@ -614,26 +622,14 @@ engine, and WKWebView gives both without shipping one. The third is Chromium&#39
 that will not carry Chromium writes its own smaller version of it.</p>
 </blockquote>
       </div>
-      <section class="keep-reading" aria-labelledby="next-reads">
-        <h2 id="next-reads" class="section-label">Keep reading</h2>
-        <p class="series-name">Arkos IDE notes · 3 parts</p>
-        <ol class="series-parts">
-          <li><a href="/research/bring-the-agents-back-after-a-reboot" data-visits-event="next-bring-the-agents-back-after-a-reboot">Bring the agents back after a reboot</a></li>
-          <li><a href="/research/update-the-ide-keep-the-shells" data-visits-event="next-update-the-ide-keep-the-shells">Update the IDE, keep the shells</a></li>
-          <li aria-current="true"><span>How Codex embeds its browser, and what a Rust IDE can copy</span></li>
-        </ol>
-        <ul class="doc-list next-list" role="list">
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/voice-profile-vs-pangram" data-visits-event="next-voice-profile-vs-pangram">Why a voice profile didn&#39;t get Claude past Substack&#39;s AI check</a></h3>
-            <p class="doc-meta">8 min read</p>
-            <p class="doc-desc">A Claude draft written to its author&#39;s voice profile scored 100% AI on Substack&#39;s Pangram check. Why, and the workflow that replaced it.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/dashboard-api-out-of-memory-made-fast-for-free" data-visits-event="next-dashboard-api-out-of-memory-made-fast-for-free">A dashboard API that ran out of memory, made fast for free</a></h3>
-            <p class="doc-meta">10 min read</p>
-            <p class="doc-desc">A 256 MiB Cloud Run API died under nine parallel queries; field masks, shared reads and saved answers made its dashboards fast, all on the free tier.</p>
-          </li>
+      <section class="prose what-next" aria-labelledby="what-next">
+        <h2 id="what-next">What next</h2>
+        <p>Look again at the diagram at the top: the pane sits inside Codex&#39;s own window. Arkos IDE&#39;s browser tab has that and the separate profile: WebKit draws the page in a view of the Arkos window, and its pages keep a profile apart from Safari and Chrome. CDP is the part Arkos IDE does not have: its coding agents put a page in the pane with the arkos open command. <a href="https://apps.csarko.sh/ide-arkos" data-visits-event="close-ide-arkos">See what&nbsp;it&nbsp;does</a>.</p>
+        <ul>
+          <li><a href="/research/voice-profile-vs-pangram" data-visits-event="next-voice-profile-vs-pangram">Can a voice profile get AI-written posts past Substack&#39;s AI detector?</a></li>
+          <li><a href="/research/dashboard-api-out-of-memory-made-fast-for-free" data-visits-event="next-dashboard-api-out-of-memory-made-fast-for-free">Why did a small Cloud Run API run out of memory, and how was it made fast?</a></li>
         </ul>
+        <p class="series-at"><span>Part 3 of 3 in <strong>Arkos IDE notes</strong></span><span>Previous: <a href="/research/update-the-ide-keep-the-shells" rel="prev" data-visits-event="series-update-the-ide-keep-the-shells">Update the IDE, keep the shells</a></span></p>
         <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS).</p>
       </section>
       <div class="prose">
@@ -656,12 +652,13 @@ that will not carry Chromium writes its own smaller version of it.</p>
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
-        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
+        <p class="author-name"><a href="/" data-visits-event="author-home">Cyrus Sarkosh</a></p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
-        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
+        <p class="author-links"><a href="/" data-visits-event="author-home">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
       <nav class="afterward" aria-label="Read next">
-        <a class="next" href="/research/voice-profile-vs-pangram" data-visits-event="end-voice-profile-vs-pangram"><span class="section-label">Read next</span><span>Why a voice profile didn&#39;t get Claude past Substack&#39;s AI check <span aria-hidden="true">→</span></span></a>
+        <span>Arkos IDE: <a href="https://apps.csarko.sh/ide-arkos" data-visits-event="after-ide-arkos">See what&nbsp;it&nbsp;does</a></span>
+        <a href="/research/voice-profile-vs-pangram" data-visits-event="end-voice-profile-vs-pangram">Can a voice profile get AI-written posts past Substack&#39;s AI detector?</a>
         <a href="/research">All research</a>
       </nav>
     </main>
@@ -676,7 +673,7 @@ that will not carry Chromium writes its own smaller version of it.</p>
   <!-- generated:analytics -->
   <script defer src="/assets/visits.4378bd36.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
-  <script defer src="/assets/reading.c3e27b33.js"></script>
+  <script defer src="/assets/reading.3a8c03e0.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

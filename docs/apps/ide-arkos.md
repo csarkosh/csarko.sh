@@ -15,6 +15,7 @@ hero-video-alt: The camera pulls back from the tab bar of an Arkos IDE window, i
 promo: Sessions that survive updates, restarts and frozen windows. Nine built-in themes with animated effects, or your own. A markdown editor you edit in its rendered view, a web pane, a video pane, a file tree, and a live list of every repository's worktrees with how stale each is.
 promo-link: https://github.com/csarkosh/ide-arkos/blob/main/docs/guide.md
 swap: docs/images/blogger-dark.png Peach Watercolor | docs/images/blogger-lavender.png Lavender Watercolor
+blurb: a Mac app that keeps many Claude Code sessions running side by side
 ---
 # Arkos IDE
 

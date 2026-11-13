@@ -328,19 +328,23 @@
     .doc-page .prose { font-size: 17px; }
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
-    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
-    .series-line p { margin: 0; }
+    .series-line { display: flex; gap: 8px; margin: 18px 0 0; font-size: 14.5px; color: var(--muted); white-space: nowrap; }
+    .series-line > * { flex: none; }
+    .series-line > :first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .series-line strong { color: var(--text); font-weight: 600; }
-    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
-    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-line a, .afterward a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
-    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .prose h2, .prose h3, .prose h4 { scroll-margin-top: 28px; }
+    ::target-text { background: var(--accent-underline); color: var(--text); }
+    .toc { margin: 32px 0 0; }
     .toc .section-label { margin: 0 0 6px; }
     .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
     .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
     .toc a:hover { color: var(--accent); }
     .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    @media (min-width: 1060px) { .toc { display: none; } }
+    @media (max-width: 1059px) { .prose > .section-head:first-child:not([data-read-end]) { border-top: 0; padding-top: 0; margin-top: 36px; } }
     .figure { margin: 32px 0; }
     .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
     /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
@@ -365,26 +369,28 @@
       radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
       radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
       var(--surface); }
-    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
-    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
-    .series-name { margin: 0 0 8px; font-weight: 600; }
-    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
-    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
-    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
-    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
-    .next-list .card { padding: 16px 18px; background: var(--bg); }
-    .next-list .doc-title { font-size: 1.05rem; }
-    .next-list .doc-desc { font-size: 14.5px; }
-    .play-line, .watch-line { margin: 20px 0 0; }
+    .what-next { margin-top: 48px; }
+    .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
+    .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
+    .watch-line { margin: 20px 0 0; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
-    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
-    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
-    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color var(--md-duration-short3) var(--md-easing-standard); }
-    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
-    .afterward .next:hover { border-color: var(--accent); }
-    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
+    .afterward { display: flex; align-items: baseline; gap: 6px 22px; margin-top: 24px; font-size: 14.5px; color: var(--muted); text-wrap: balance; }
+    .afterward > * { flex: none; }
+    .afterward > a:not(:last-child) { flex: 0 1 auto; }
+    @media (max-width: 640px) {
+      .doc-page .shell { padding-top: 16px; }
+      .doc-page .crumbs ol { padding-block: 8px; }
+      .doc-page .eyebrow { margin-bottom: 8px; }
+      .doc-page h1 { margin-bottom: 10px; font-size: 2rem; }
+      .doc-header .lead { margin-bottom: 12px; font-size: 1rem; line-height: 1.5; }
+      .doc-page .doc-header { padding-bottom: 12px; }
+      .series-line { gap: 6px; margin-top: 8px; font-size: 13px; }
+      .afterward { flex-direction: column; }
+    }
+    @media (max-width: 439px) { .series-line a span { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .play { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -397,7 +403,7 @@
   <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
-      <a class="wordmark" href="/">csarko<span>.sh</span></a>
+      <a class="wordmark" href="/" data-visits-event="nav-home">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/projects" data-visits-event="nav-projects">Projects</a></li>
         <li><a href="/research" data-visits-event="nav-research">Research</a></li>
@@ -407,7 +413,7 @@
   <nav class="crumbs" aria-label="Breadcrumb">
     <div class="wrap">
       <ol>
-        <li><a href="/">Home</a></li>
+        <li><a href="/" data-visits-event="crumb-home">Home</a></li>
         <li><a href="/research">Research</a></li>
         <li><span aria-current="page">Cloud rigs for graphics work: fan out, not a cheaper cloud</span></li>
       </ol>
@@ -439,7 +445,8 @@
       </header>
       <div class="prose">
 <p><strong>Question:</strong> A graphics change to a browser game, one that changes which shaders it compiles, took 4 h 24 min from its code commit to a passing CI run, and most of that was waiting. Would GCP, Azure, Modal or another provider beat the rented AWS GPU machine on price or start-up time without losing measurement quality, and what would make the change faster?</p>
-<p><strong>Short answer:</strong> No provider beats AWS on demand for this machine. AWS and Azure both charge $0.526 an hour for a Linux T4 and about $0.71 for Windows, GCP is within 3 %, and AWS starts fastest. The time went to tools running one after another on one busy laptop: 34 <button type="button" class="term" popovertarget="term-1">shader corpus</button><span class="term-def" id="term-1" popover role="note">The set of exact shader texts the game&#39;s pages ask the GPU to compile, recorded from real pages and translated ahead of time so a first visit finds them ready.</span> recordings in a row, a local test gate that never finished, and a <button type="button" class="term" popovertarget="term-2">WGSL map</button><span class="term-def" id="term-2" popover role="note">The file of shaders translated ahead of time to WebGPU&#39;s shading language, one for each quality tier, which the game downloads and which must stay under a 10 MiB ceiling.</span> size ceiling that only CI checks. Recording on several machines at once, running the tests on GitHub&#39;s free runners and checking the map size before the commit would bring the same change to about 25 to 35 minutes, for about $50 to $60 a month.</p>
+<p><strong>Short answer:</strong> No provider beats AWS on demand for this machine. AWS and Azure both charge $0.526 an hour for a Linux T4 and about $0.71 for Windows, GCP is within 3 %, and AWS starts fastest. The time went to tools running one after another on one busy laptop: 34 <button type="button" class="term" popovertarget="term-1" data-visits-event="term">shader corpus</button><span class="term-def" id="term-1" popover role="note">The set of exact shader texts the game&#39;s pages ask the GPU to compile, recorded from real pages and translated ahead of time so a first visit finds them ready.</span> recordings in a row, a local test gate that never finished, and a <button type="button" class="term" popovertarget="term-2" data-visits-event="term">WGSL map</button><span class="term-def" id="term-2" popover role="note">The file of shaders translated ahead of time to WebGPU&#39;s shading language, one for each quality tier, which the game downloads and which must stay under a 10 MiB ceiling.</span> size ceiling that only CI checks. Recording on several machines at once, running the tests on GitHub&#39;s free runners and checking the map size before the commit would bring the same change to about 25 to 35 minutes, for about $50 to $60 a month.</p>
+<p class="project-line">The game in the worked example is Day Hike, a co-op horror game that runs in your browser. The change timed here is the one that dropped the sun&#39;s shadow map on its medium and high tiers. <a href="https://games.csarko.sh/dayhike/" data-visits-event="lead-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>
 <figure class="figure">
 <!-- generated:figure:cloud-rigs-for-graphics-work/commit-to-live -->
 <img src="/assets/fig-cloud-rigs-for-graphics-work-commit-to-live.235d1606.svg" width="440" height="250" alt="Horizontal bars of commit-to-live time: 4 h 27 min as it ran, about 1 h 50 min on a quiet machine, 25 to 35 min under the recommended pipeline" decoding="async" />
@@ -1070,21 +1077,13 @@
 </blockquote>
 <p>Every provider that looked cheaper or quicker on paper either cannot hold this work as of Oct 29, 2026 (Linux containers until a WebGPU canvas is shown to draw, virtual Macs until their Metal profile is known), cannot be bought by a personal account (Depot, Blacksmith, GitHub&#39;s larger runners), or is cheaper only on spot, which timing cannot use. The cheapest path to a half-hour graphics change is almost all tooling the repository already has: the rig copies, the sysprepped image, the corpus merge, the CI workflow and the gate&#39;s runner hook, plus one Mac so the laptop stops being the bottleneck for its own measurements.</p>
       </div>
-      <section class="keep-reading" aria-labelledby="next-reads">
-        <h2 id="next-reads" class="section-label">Keep reading</h2>
-        <ul class="doc-list next-list" role="list">
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/parallel-gpu-browser-rigs" data-visits-event="next-parallel-gpu-browser-rigs">Parallel GPU browser rigs: AWS, GCP and Modal</a></h3>
-            <p class="doc-meta">20 min read</p>
-            <p class="doc-desc">Ten stopped AWS Windows GPU machines run a round of browser GPU benchmarks in under two hours; GCP allows one GPU, and Modal&#39;s Chrome falls back to software.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/webgpu-vs-webgl2" data-visits-event="next-webgpu-vs-webgl2">WebGPU vs WebGL2: what changes and what does not</a></h3>
-            <p class="doc-meta">24 min read</p>
-            <p class="doc-desc">WebGPU vs WebGL2, measured in a Babylon.js game: 1.3 to 1.5 ms faster per frame at native resolution, 9.9 ms at 4x the pixels, for 2.7 MB of shader translators.</p>
-          </li>
+      <section class="prose what-next" aria-labelledby="what-next">
+        <h2 id="what-next">What next</h2>
+        <p>The 4 h 24 min at the top was one real change to Day Hike: on Oct 28, 2026, the sun&#39;s shadow map was dropped on the medium and high tiers, so the shader corpus was recorded again and the map rebuilt. As of Oct 29, 2026, the recorder ran its 34 jobs one at a time; the fan-out is this doc&#39;s recommendation, with probes A and B to run first. The recorder, the map build with its 10 MiB ceiling and the CI workflow are in the game&#39;s public repository. <a href="https://games.csarko.sh/dayhike/" data-visits-event="close-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>
+        <ul>
+          <li><a href="/research/parallel-gpu-browser-rigs" data-visits-event="next-parallel-gpu-browser-rigs">Which cloud runs browser GPU benchmarks in parallel: AWS, GCP or Modal?</a></li>
+          <li><a href="/research/webgpu-vs-webgl2" data-visits-event="next-webgpu-vs-webgl2">Is WebGPU actually faster than WebGL2 in a real game?</a></li>
         </ul>
-        <p class="play-line"><a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
         <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS).</p>
       </section>
       <div class="prose">
@@ -1180,13 +1179,13 @@
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
-        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
+        <p class="author-name"><a href="/" data-visits-event="author-home">Cyrus Sarkosh</a></p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
-        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
+        <p class="author-links"><a href="/" data-visits-event="author-home">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
       <nav class="afterward" aria-label="Read next">
-        <a class="next" href="/research/parallel-gpu-browser-rigs" data-visits-event="end-parallel-gpu-browser-rigs"><span class="section-label">Read next</span><span>Parallel GPU browser rigs: AWS, GCP and Modal <span aria-hidden="true">→</span></span></a>
-        <a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        <span>Day Hike: <a href="https://games.csarko.sh/dayhike/" data-visits-event="after-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a></span>
+        <a href="/research/parallel-gpu-browser-rigs" data-visits-event="end-parallel-gpu-browser-rigs">Which cloud runs browser GPU benchmarks in parallel: AWS, GCP or Modal?</a>
         <a href="/research">All research</a>
       </nav>
     </main>
@@ -1201,7 +1200,7 @@
   <!-- generated:analytics -->
   <script defer src="/assets/visits.4378bd36.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
-  <script defer src="/assets/reading.c3e27b33.js"></script>
+  <script defer src="/assets/reading.3a8c03e0.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

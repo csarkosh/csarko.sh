@@ -3,6 +3,8 @@ description: A 256 MiB Cloud Run API died under nine parallel queries; field mas
 published: 2026-11-11
 categories: Distributed systems, Tooling
 related: a-zero-cost-analytics-dashboard-without-cookies, buy-me-tokens-tips-priced-from-the-cloud-bill, unlimited-email-aliases-that-scale-to-zero
+project: none
+asks: Why did a small Cloud Run API run out of memory, and how was it made fast?
 ---
 # A dashboard API that ran out of memory, made fast for free
 

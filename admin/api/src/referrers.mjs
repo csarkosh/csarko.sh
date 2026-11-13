@@ -9,13 +9,20 @@
  * rows (the years before the cutover) fold the Google country domains into one
  * "Google" row, which is why the `ref_scheme` parameter stays; the live SQL
  * never sends it.
+ *
+ * An assistant often sends no referrer at all and tags the link instead:
+ * ChatGPT's answers link out with `utm_source=chatgpt.com`. `assistantOf`
+ * reads such a tag as the assistant's host, so the collector can report the
+ * visit under it (2026-11-13: 46 of four weeks' visits came that way and
+ * counted as direct).
  */
 
 const GROUPS = [
   ["own", [/(^|\.)csarko\.sh$/, /--preview-[^.]*\.web\.app$/, /^csarko-sh\.web\.app$/]],
   ["spam", [/(^|\.)wnnkd\.com$/, /(^|\.)webdig\.asia$/, /(^|\.)cindyblog\.online$/]],
-  // Before search: gemini.google.com is an assistant, not a search.
-  ["ai", [/^(www\.)?chatgpt\.com$/, /^chat\.openai\.com$/, /^(www\.)?perplexity\.ai$/, /^(www\.)?claude\.ai$/, /^gemini\.google\.com$/, /^copilot\.microsoft\.com$/, /^(www\.)?you\.com$/]],
+  // Before search: gemini.google.com is an assistant, not a search, and so is NotebookLM
+  // (notebooklm.google.com; its links arrive from notebook.google.com).
+  ["ai", [/^(www\.)?chatgpt\.com$/, /^chat\.openai\.com$/, /^(www\.)?perplexity\.ai$/, /^(www\.)?claude\.ai$/, /^gemini\.google\.com$/, /^notebook(lm)?\.google\.com$/, /^copilot\.microsoft\.com$/, /^(www\.)?you\.com$/]],
   ["search", [/^(www\.)?google\./, /^(www\.)?bing\./, /^(www\.)?duckduckgo\./, /(^|\.)yahoo\./, /^(www\.)?ecosia\./, /^search\.brave\.com$/, /^(www\.)?brave\.com$/, /^(www\.)?startpage\.com$/, /^(www\.)?qwant\.com$/, /^(www\.)?yandex(\.|$)/, /^(www\.)?baidu\.com$/]],
   ["social", [/(^|\.)linkedin\.com$/, /^lnkd\.in$/, /^t\.co$/, /(^|\.)twitter\.com$/, /^(www\.)?x\.com$/, /(^|\.)facebook\.com$/, /^(l\.|m\.)?facebook\.com$/, /^fb\.me$/, /(^|\.)instagram\.com$/, /^l\.instagram\.com$/, /(^|\.)bsky\.app$/, /(^|\.)threads\.net$/, /^(www\.|old\.|out\.)?reddit\.com$/, /^news\.ycombinator\.com$/, /(^|\.)mastodon\.(social|online|world)$/, /^(www\.)?(hachyderm\.io|fosstodon\.org|mstdn\.social|techhub\.social|infosec\.exchange)$/, /^(www\.)?lobste\.rs$/]],
   ["newsletter", [/(^|\.)substack\.com$/, /^substack\.com$/, /^mail\./, /(^|\.)outlook\.(com|live\.com|office\.com)$/, /^outlook\./, /(^|\.)gmail\.com$/, /^(www\.)?getpocket\.com$/, /^email\./]],
@@ -53,6 +60,16 @@ export function classifyReferrer(referrer, scheme = undefined) {
   if (/^google$|^bing$|^duckduckgo$|^yahoo/.test(lower)) return "search";
   if (/^hacker news$|^reddit$|^twitter$|^linkedin$|^facebook$/.test(lower)) return "social";
   return "other";
+}
+
+/**
+ * The assistant a campaign tag names, as its host without `www.` (`chatgpt.com` for
+ * `utm_source=chatgpt.com`), or null when the tag is not an assistant's host: a campaign of
+ * the site's own (`substack`, `linkedin`) or any other word.
+ */
+export function assistantOf(tag) {
+  const host = hostOf(tag).replace(/^www\./, "");
+  return host !== "" && classifyReferrer(host) === "ai" ? host : null;
 }
 
 export const REFERRER_GROUPS = ["search", "ai", "social", "newsletter", "code", "video", "direct", "own", "spam", "other"];

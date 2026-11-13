@@ -5,8 +5,10 @@ import { buildSite, PROJECT_KINDS, CATEGORIES, categorySlug, DATED_SINCE, DocErr
 
 const FILE = 'docs/published/2026-09-14-example.md';
 const DESC = 'A description that is long enough to pass the seventy character minimum for search.';
-// Every doc needs categories; the tests that are not about them get one by default.
-const fm = (lines) => `---\n${lines.join('\n')}${lines.some((l) => l.startsWith('categories:')) ? '' : '\ncategories: Tooling'}\n---\n# Title\n\nBody.\n`;
+// Every doc needs categories; the tests that are not about them get one by default. Every fixture
+// also says its project (none, unless the test is about one), so the day `project` becomes required
+// (FIELDS.project in docs_lib.mjs) this file passes as it stands; see PROJECT_REQUIRED below.
+const fm = (lines) => `---\n${lines.join('\n')}${lines.some((l) => l.startsWith('categories:')) ? '' : '\ncategories: Tooling'}${lines.some((l) => l.startsWith('project:')) ? '' : '\nproject: none'}\n---\n# Title\n\nBody.\n`;
 const rejects = (text, pattern) =>
   assert.throws(() => parseFrontMatter(text, FILE), (e) => e instanceof DocError && pattern.test(e.message));
 
@@ -14,7 +16,7 @@ test('parseFrontMatter reads required and optional keys and returns the body', (
   const source = 'https://github.com/csarkosh/game-dayhike/blob/main/docs/x.md';
   const { meta, body } = parseFrontMatter(
     fm([`description: ${DESC}`, 'published: 2026-09-14', 'updated: 2026-09-15', `source: ${source}`]), FILE);
-  assert.deepEqual(meta, { description: DESC, published: '2026-09-14', updated: '2026-09-15', source, categories: ['Tooling'] });
+  assert.deepEqual(meta, { description: DESC, published: '2026-09-14', updated: '2026-09-15', source, categories: ['Tooling'], project: 'none' });
   assert.equal(body, '# Title\n\nBody.\n');
 });
 
@@ -173,7 +175,7 @@ test('renderMarkdown requires IEEE references once a doc is new enough', () => {
 });
 
 test('loadDoc holds docs published from IEEE_SINCE to IEEE, and only their pages carry its CSS', () => {
-  const doc = (published, body) => `---\ndescription: ${DESC}\npublished: ${published}\ncategories: Tooling\n---\n${body}`;
+  const doc = (published, body) => `---\ndescription: ${DESC}\npublished: ${published}\ncategories: Tooling\nproject: none\n---\n${body}`;
   const bullets = '# T\n\nText.\n\n## Sources\n\n- [A](https://example.com)\n';
   assert.doesNotThrow(() => loadDoc('2026-09-22-old.md', doc('2026-09-22', bullets)));
   assert.throws(() => loadDoc(`${IEEE_SINCE}-new.md`, doc(IEEE_SINCE, bullets)), /must be a numbered list of IEEE references/);
@@ -183,7 +185,7 @@ test('loadDoc holds docs published from IEEE_SINCE to IEEE, and only their pages
   assert.ok(!without.includes('.prose .references {'));
 });
 
-const SOURCE = `---\ndescription: ${DESC}\npublished: 2026-09-14\ncategories: Rendering, Tooling\n---\n# Title\n\n## 1. One\n\nText.\n`;
+const SOURCE = `---\ndescription: ${DESC}\npublished: 2026-09-14\ncategories: Rendering, Tooling\nproject: none\n---\n# Title\n\n## 1. One\n\nText.\n`;
 
 test('parseDocFileName splits a dated file name into its date and slug', () => {
   assert.deepEqual(parseDocFileName('2026-09-14-stylized-shader-looks.md'),
@@ -262,7 +264,7 @@ const INDEX = `<style>
   </style>
   <main></main>`;
 const src = (slug, published, extra = '') =>
-  ({ name: `${published}-${slug}.md`, text: `---\ndescription: ${DESC}\npublished: ${published}\n${extra.includes('categories:') ? '' : 'categories: Tooling\n'}${extra}---\n# ${slug} title\n\n## 1. One\n\nText.\n` });
+  ({ name: `${published}-${slug}.md`, text: `---\ndescription: ${DESC}\npublished: ${published}\n${extra.includes('categories:') ? '' : 'categories: Tooling\n'}${/^project:/m.test(extra) ? '' : 'project: none\n'}${extra}---\n# ${slug} title\n\n## 1. One\n\nText.\n` });
 const doc = (...args) => { const s = src(...args); return loadDoc(s.name, s.text); };
 const jsonLd = (html) => JSON.parse(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(html)[1])['@graph'];
 
@@ -510,7 +512,7 @@ test('a game with an alt gets a preview the asset build fills, as an app does', 
 const trail = (html) => {
   const block = /<nav class="crumbs" aria-label="Breadcrumb">([\s\S]*?)<\/nav>/.exec(html);
   assert.ok(block, 'page has a breadcrumb nav');
-  return [...block[1].matchAll(/<(?:a href="([^"]*)"|span aria-current="page")>(.*?)</g)]
+  return [...block[1].matchAll(/<(?:a href="([^"]*)"[^>]*|span aria-current="page")>(.*?)</g)]
     .map(([, href, name]) => [name, href]);
 };
 const crumbNames = (html) =>
@@ -534,7 +536,7 @@ test('every generated page carries a trail its BreadcrumbList repeats exactly', 
 
 test('a crumb escapes its title and names the same page the nav marks current', () => {
   const theme = themeBlocks(INDEX);
-  const amp = loadDoc('2026-09-14-grass.md', `---\ndescription: ${DESC}\npublished: 2026-09-14\ncategories: Rendering\n---\n# Grass & trails\n\nText.\n`);
+  const amp = loadDoc('2026-09-14-grass.md', `---\ndescription: ${DESC}\npublished: 2026-09-14\ncategories: Rendering\nproject: none\n---\n# Grass & trails\n\nText.\n`);
   const html = docPage(amp, theme);
   assert.ok(html.includes('<li><span aria-current="page">Grass &amp; trails</span></li>'));
   assert.equal(crumbNames(html).at(-1), 'Grass & trails');
@@ -800,7 +802,7 @@ test('sitemap carries /projects before /research, neither with a lastmod', () =>
 // ---------------------------------------------------------------- reading (2026-10-23)
 
 const longDoc = (slug, published, extra = '', body = 'Text.') =>
-  ({ name: `${published}-${slug}.md`, text: `---\ndescription: ${DESC}\npublished: ${published}\n${extra.includes('categories:') ? '' : 'categories: Tooling\n'}${extra}---\n# ${slug} title\n\n${body}\n\n## 1. One\n\nText one.\n\n## 2. Two\n\nText two.\n\n## 3. Three\n\nText three.\n` });
+  ({ name: `${published}-${slug}.md`, text: `---\ndescription: ${DESC}\npublished: ${published}\n${extra.includes('categories:') ? '' : 'categories: Tooling\n'}${/^project:/m.test(extra) ? '' : 'project: none\n'}${extra}---\n# ${slug} title\n\n${body}\n\n## 1. One\n\nText one.\n\n## 2. Two\n\nText two.\n\n## 3. Three\n\nText three.\n` });
 const load = (s, figures) => loadDoc(s.name, s.text, figures);
 
 test('a paragraph that is one image is a figure, from the doc\'s own files, with alt and caption', () => {
@@ -823,7 +825,8 @@ test('a paragraph that is one image is a figure, from the doc\'s own files, with
 
 test('a term opens its definition in a popover, and the read time leaves Sources and definitions out', () => {
   const d = load(longDoc('t', '2026-10-07', '', 'A [froxel](#term "A frustum-aligned voxel.") holds fog.'));
-  assert.ok(d.html.includes('<button type="button" class="term" popovertarget="term-1">froxel</button><span class="term-def" id="term-1" popover role="note">A frustum-aligned voxel.</span>'));
+  // A tap counts as "term" (2026-11-13), so the dashboard can say whether definitions get opened at all.
+  assert.ok(d.html.includes('<button type="button" class="term" popovertarget="term-1" data-visits-event="term">froxel</button><span class="term-def" id="term-1" popover role="note">A frustum-aligned voxel.</span>'));
   assert.ok(d.readWords < d.words);
   assert.throws(() => load(longDoc('t', '2026-10-07', '', '[froxel](#term)')), /a term needs its definition/);
 });
@@ -833,19 +836,23 @@ test('a link to another doc counts as doc-<slug>', () => {
   assert.ok(d.html.includes('<a href="/research/ground-fog#sources" data-visits-event="doc-ground-fog">the fog doc</a>'));
 });
 
-test('docPage shows the description under the title, contents under the opening, and Keep reading before Sources', () => {
-  const d = load(longDoc('a', '2026-10-07'));
+test('docPage shows the description under the title, contents under the opening, and What next before Sources', () => {
+  const s = longDoc('a', '2026-09-07');
+  const d = load({ ...s, text: `${s.text}\n## Sources\n\n- [A](https://example.com)\n` });
   const html = docPage(d, themeBlocks(INDEX));
   assert.ok(html.includes(`<h1>a title</h1>\n        <p class="lead">${DESC}</p>`));
   const toc = html.indexOf('<nav class="toc" aria-label="In this doc">');
   assert.ok(toc > html.indexOf('<p>Text.</p>') && toc < html.indexOf('<div class="section-head">'));
   assert.ok(html.includes('<a href="#one" data-visits-event="toc"><span class="num" aria-hidden="true">01</span><span>One</span></a>'));
-  assert.ok(html.indexOf('<section class="keep-reading"') < html.indexOf('<section class="author"'));
+  // Right under the last section's last paragraph, then Sources, then the author box.
+  const next = html.indexOf('<section class="prose what-next" aria-labelledby="what-next">');
+  assert.ok(html.includes('<p>Text three.</p>\n      </div>\n      <section class="prose what-next"'), 'nothing between the last paragraph and the closing section');
+  assert.ok(next < html.indexOf('<div class="section-head" data-read-end>') && html.indexOf('data-read-end>') < html.indexOf('<section class="author"'));
   assert.ok(html.includes('<nav class="afterward" aria-label="Read next">'));
   assert.ok(html.includes('<link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />'));
 });
 
-test('docLinks: a series in published order, related by front matter or shared category, and games named in the text', () => {
+test('docLinks: a series in published order, related by front matter or shared category', () => {
   const docs = sortDocs([
     load(longDoc('one', '2026-01-01', 'series: Fog notes\n')),
     load(longDoc('two', '2026-02-01', 'series: Fog notes\n', 'Play Day Hike.')),
@@ -853,25 +860,18 @@ test('docLinks: a series in published order, related by front matter or shared c
     load(longDoc('four', '2026-04-01')),
     load(longDoc('five', '2026-05-01', 'related: three, one\n')),
   ]);
-  const game = { slug: 'day-hike', title: 'Day Hike', play: 'https://games.csarko.sh/dayhike/' };
-  const links = docLinks(docs, [game]);
+  const links = docLinks(docs, [game('day-hike', ['play: https://games.csarko.sh/dayhike/'])]);
   assert.deepEqual(links.get('one').series.parts.map((d) => d.slug), ['one', 'two']);
   // A series' own docs are listed apart, so the shared-category picks skip them.
   assert.deepEqual(links.get('one').related.map((d) => d.slug), ['five', 'four']);
   assert.deepEqual(links.get('five').related.map((d) => d.slug), ['three', 'one']);
-  assert.deepEqual(links.get('two').games, [game]);
-  assert.deepEqual(links.get('one').games, []);
-  const page = docPage(docs.find((d) => d.slug === 'one'), themeBlocks(INDEX), links.get('one'));
-  assert.ok(page.includes('<p>Part 1 of 2 in <strong>Fog notes</strong></p>'));
-  assert.ok(page.includes('<p class="series-steps"><span>Next: <a href="/research/two" rel="next" data-visits-event="series-two">two title</a></span></p>'));
-  // A middle part links both ways (Cyrus, 2026-11-12: it showed only Next).
-  const three = sortDocs(['one', 'two', 'three'].map((slug, i) => load(longDoc(slug, `2026-0${i + 1}-01`, 'series: Fog notes\n'))));
-  const middle = docPage(three.find((d) => d.slug === 'two'), themeBlocks(INDEX), docLinks(three).get('two'));
-  assert.ok(middle.includes('<span>Previous: <a href="/research/one" rel="prev" data-visits-event="series-one">one title</a></span><span>Next: <a href="/research/three" rel="next" data-visits-event="series-three">three title</a></span>'));
-  assert.ok(page.includes('<a class="next" href="/research/two" data-visits-event="end-two">'));
+  // A game the text names is no longer linked for that alone (2026-11-13): `project:` says it.
+  assert.equal(links.get('two').project, null);
+  assert.ok(!('games' in links.get('two')));
+  assert.ok(!docPage(docs.find((d) => d.slug === 'two'), themeBlocks(INDEX), links.get('two')).includes('games.csarko.sh'));
   assert.throws(() => docLinks([load(longDoc('solo', '2026-01-01', 'series: Lonely\n'))]), /has one doc/);
   assert.throws(() => docLinks([load(longDoc('x', '2026-01-01', 'related: nope\n'))]), /not a published doc/);
-  assert.throws(() => parseFrontMatter(`---\ndescription: ${DESC}\npublished: 2026-01-01\ncategories: AI\nseries: lowercase\n---\n# T\n`, 'f'), /series must be/);
+  assert.throws(() => parseFrontMatter(`---\ndescription: ${DESC}\npublished: 2026-01-01\ncategories: AI\nproject: none\nseries: lowercase\n---\n# T\n`, 'f'), /series must be/);
 });
 
 test('the feed lists every doc, newest first', () => {
@@ -947,4 +947,399 @@ test('on a phone a film poster is a 16 / 9 crop around its focus point', () => {
   assert.match(phone, /aspect-ratio: 16 \/ 9/);
   assert.match(phone, /object-position: center var\(--focus, 50%\)/);
   assert.match(phone, /object-fit: cover/);
+});
+
+// ---------------------------------------------------------------- 2026-11-13: the doc page and its project
+
+// Whether `project` is required yet: FIELDS.project in docs_lib.mjs, read through the parser.
+// Flipping that flag is the only change the day every doc has the field; the two tests that
+// depend on it swap over by themselves.
+const NO_PROJECT = `---\ndescription: ${DESC}\npublished: 2026-11-13\ncategories: Tooling\n---\n# bare title\n\n**Question:** Why?\n\n**Short answer:** Because.\n\n## 1. One\n\nText one.\n`;
+const PROJECT_REQUIRED = (() => {
+  try {
+    parseFrontMatter(NO_PROJECT, FILE);
+    return false;
+  } catch (e) {
+    return /front matter needs "project"/.test(e.message);
+  }
+})();
+
+const PLAY = 'https://games.csarko.sh/dayhike/';
+const projects = () => [
+  game('day-hike', [`play: ${PLAY}`, 'blurb: a co-op horror game that runs in your browser']),
+  app('ide-arkos', ['blurb: a Mac app that runs many agents side by side']),
+  film('the-last-trail', ['blurb: a 56 second horror short']),
+];
+const LABELS = '**Question:** Why does the fog cut?\n\n**Short answer:** It is drawn flat.';
+const FIGURES = new Map([['fog.png', { width: 1200, height: 675 }]]);
+// One doc's page, built with its neighbours and the three projects, as buildSite does.
+const page = (source, others = [], given = projects()) => {
+  const docs = sortDocs([source, ...others].map((s) => load(s, FIGURES)));
+  const d = docs.find((x) => source.name === `${x.published}-${x.slug}.md`);
+  return docPage(d, themeBlocks(INDEX), docLinks(docs, given).get(d.slug));
+};
+const opening = (html) => /<div class="prose">\n([\s\S]*?)      <\/div>/.exec(html)[1];
+const closing = (html) => /<section class="prose what-next"[^>]*>([\s\S]*?)<\/section>/.exec(html)[1];
+const after = (html) => /<nav class="afterward"[^>]*>([\s\S]*?)<\/nav>/.exec(html)[1];
+const LEAD = {
+  game: `<p class="project-line">This research was done for day-hike title, a co-op horror game that runs in your browser. <a href="${PLAY}" data-visits-event="lead-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>\n`,
+  app: '<p class="project-line">This research was done for ide-arkos, a Mac app that runs many agents side by side. <a href="https://apps.csarko.sh/ide-arkos" data-visits-event="lead-ide-arkos">See what&nbsp;it&nbsp;does</a>.</p>\n',
+  film: `<p class="project-line">The author of this page also made the-last-trail title, a 56 second horror short. <a href="${WATCH}" target="_blank" rel="noopener" data-visits-event="lead-the-last-trail">Watch it&nbsp;on&nbsp;YouTube</a>.</p>\n`,
+};
+
+test('parseFrontMatter reads project, project-line, closing and asks, and refuses what the page cannot use', () => {
+  const base = [`description: ${DESC}`, 'published: 2026-09-14'];
+  const line = 'I build Day Hike. This doc is how its fog is drawn.';
+  const end = 'Stand at the trailhead at dusk: the band under the trees is section 3.';
+  const { meta } = parseFrontMatter(fm([...base, 'project: day-hike', `project-line: ${line}`, `closing: ${end}`, 'asks: Why does ground fog cut along the terrain?']), FILE);
+  assert.equal(meta.project, 'day-hike');
+  assert.equal(meta['project-line'], line);
+  assert.equal(meta.closing, end);
+  assert.equal(meta.asks, 'Why does ground fog cut along the terrain?');
+  assert.equal(parseFrontMatter(fm(base), FILE).meta.project, 'none');
+  rejects(fm([...base, 'project: Day Hike']), /project must be a game's, app's or film's slug, or none/);
+  rejects(fm([...base, `project-line: ${line}`]), /project-line without a project/);
+  rejects(fm([...base, 'project: day-hike', 'project-line: Too short.']), /project-line is 10 characters \(20 to 240\)/);
+  rejects(fm([...base, 'project: day-hike', `project-line: ${'x'.repeat(241)}`]), /project-line is 241 characters/);
+  rejects(fm([...base, 'project: day-hike', 'project-line: I build Day Hike, and this is its fog']), /project-line must be whole sentences/);
+  rejects(fm([...base, 'closing: Too short to close on.']), /closing is 22 characters \(40 to 520\)/);
+  rejects(fm([...base, `closing: ${'x'.repeat(521)}`]), /closing is 521 characters/);
+  rejects(fm([...base, 'closing: Stand at the trailhead at dusk and look under the trees']), /closing must be whole sentences/);
+  rejects(fm([...base, 'asks: Why fog?']), /asks is one question of 15 to 90 characters ending in "\?" \(8\)/);
+  rejects(fm([...base, 'asks: This one is a statement, not a question.']), /asks is one question/);
+  rejects(fm([...base, `asks: ${'x'.repeat(90)}?`]), /asks is one question/);
+  // A closing needs no project: it is then shown without a link.
+  assert.equal(parseFrontMatter(fm([...base, `closing: ${end}`]), FILE).meta.closing, end);
+});
+
+test('a doc that does not say its project yet builds, and gets no product link anywhere', { skip: PROJECT_REQUIRED }, () => {
+  const html = page({ name: '2026-11-13-bare.md', text: NO_PROJECT });
+  assert.ok(!html.includes('class="project-line"'));
+  for (const place of ['lead', 'close', 'after']) assert.ok(!html.includes(`data-visits-event="${place}-`), place);
+  assert.ok(html.includes('<h2 id="what-next">What next</h2>\n        <p class="follow">'), 'no closing paragraph either');
+  assert.equal(docLinks([load({ name: '2026-11-13-bare.md', text: NO_PROJECT })], projects()).get('bare').project, null);
+});
+
+test('once project is required, a doc must name one or say none', { skip: !PROJECT_REQUIRED }, () => {
+  rejects(NO_PROJECT, /front matter needs "project"/);
+  assert.doesNotThrow(() => parseFrontMatter(NO_PROJECT.replace('categories: Tooling\n', 'categories: Tooling\nproject: none\n'), FILE));
+});
+
+test('the product line: one plain paragraph after the opening\'s labelled paragraphs, worded and linked by the project\'s kind', () => {
+  for (const [kind, slug] of [['game', 'day-hike'], ['app', 'ide-arkos'], ['film', 'the-last-trail']]) {
+    const html = page(longDoc('fog', '2026-10-07', `project: ${slug}\n`, `${LABELS}\n\n![Fog](fog.png "The fog sits low.")\n\n**In numbers:**\n\n- **3 ms** a frame.`));
+    const top = opening(html);
+    assert.ok(top.includes(`<p><strong>Short answer:</strong> It is drawn flat.</p>\n${LEAD[kind]}<figure class="figure">`), `${kind}: after the Short answer, before the figure\n${top}`);
+    assert.equal((top.match(/<a /g) ?? []).length, 1, `${kind}: its link is the opening's only one`);
+    assert.equal((html.match(/class="project-line"/g) ?? []).length, 1);
+    assert.ok(!/<p class="project-line">[^\n]*<(?:svg|img|button)/.test(html), 'no icon, no pill');
+    assert.ok(!html.includes('.project-line {'), 'and no rule of its own: it is body text');
+  }
+});
+
+test('the product line follows What that leaves open when the opening has one, and never comes before the Short answer', () => {
+  const open = `${LABELS}\n\n**What that leaves open:** What it costs. By the end you can check it.`;
+  const withList = opening(page(longDoc('fog', '2026-10-07', 'project: day-hike\n', `${open}\n\n**In numbers:**\n\n- **3 ms** a frame.`)));
+  assert.ok(withList.includes(`By the end you can check it.</p>\n${LEAD.game}<p><strong>In numbers:</strong></p>`), withList);
+  // A figure between the labels does not pull the line up in front of the answer.
+  const split = opening(page(longDoc('fog', '2026-10-07', 'project: day-hike\n', '**Question:** Why?\n\n![Fog](fog.png "The fog sits low.")\n\n**Short answer:** It is drawn flat.\n\nMore.')));
+  assert.ok(split.includes(`<p><strong>Short answer:</strong> It is drawn flat.</p>\n${LEAD.game}<p>More.</p>`), split);
+  assert.ok(split.indexOf('Short answer') < split.indexOf('project-line'));
+  // A labelled line inside a callout is not the opening's own.
+  const quoted = opening(page(longDoc('fog', '2026-10-07', 'project: day-hike\n', 'First.\n\n> **Short answer:** quoted.\n\nLast.')));
+  assert.ok(quoted.startsWith(`<p>First.</p>\n${LEAD.game}<blockquote>`), quoted);
+});
+
+test('the product line in an opening with no labels follows its first paragraph, and stands alone when there is none', () => {
+  const plain = opening(page(longDoc('fog', '2026-10-07', 'project: day-hike\n', 'Arkos can learn how many machines run it.\n\nA second paragraph.')));
+  assert.ok(plain.startsWith(`<p>Arkos can learn how many machines run it.</p>\n${LEAD.game}<p>A second paragraph.</p>`), plain);
+  const figureOnly = opening(page(longDoc('fog', '2026-10-07', 'project: day-hike\n', '![Fog](fog.png "The fog sits low.")')));
+  assert.ok(figureOnly.startsWith(`${LEAD.game}<figure class="figure">`), figureOnly);
+  const s = src('fog', '2026-10-07', 'project: day-hike\n');
+  const none = page(s);
+  assert.ok(none.includes(`<div class="prose">\n${LEAD.game}      </div>\n      <div class="prose">\n<div class="section-head">`), 'no opening at all: the line is the opening');
+});
+
+test('project-line replaces the default sentence, escaped, and the page still adds the link and the full stop', () => {
+  const html = page(longDoc('fog', '2026-10-07', 'project: day-hike\nproject-line: I build Day Hike & this doc is how its ground fog is drawn.\n', LABELS));
+  assert.ok(html.includes(`<p class="project-line">I build Day Hike &amp; this doc is how its ground fog is drawn. <a href="${PLAY}" data-visits-event="lead-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>`));
+  assert.ok(!html.includes('This research was done for'));
+});
+
+test('a doc with project none gets no product line, no closing paragraph and no project link after the author box', () => {
+  const html = page(longDoc('fog', '2026-10-07', 'project: none\n', LABELS));
+  assert.ok(!html.includes('project-line') && !html.includes('lead-') && !html.includes('close-') && !html.includes('after-'));
+  assert.ok(closing(html).trim().startsWith('<h2 id="what-next">What next</h2>\n        <p class="follow">'));
+  assert.equal(after(html).trim(), '<a href="/research">All research</a>');
+  // Its own closing is shown, without a link.
+  const own = page(longDoc('fog', '2026-10-07', 'project: none\nclosing: Nothing here belongs to a project: it is a note on eyes & screens.\n', LABELS));
+  assert.ok(closing(own).includes('<h2 id="what-next">What next</h2>\n        <p>Nothing here belongs to a project: it is a note on eyes &amp; screens.</p>\n'));
+});
+
+test('buildSite refuses a doc whose project is not a project, has no blurb, or has nowhere to send the reader', () => {
+  const sources = (slug) => [longDoc('fog', '2026-10-07', `project: ${slug}\n`)];
+  const build = (slug, extra) => buildSite({ sources: sources(slug), indexHtml: INDEX, ...extra });
+  assert.throws(() => build('day-hike', {}), (e) => e instanceof DocError && /docs\/published\/2026-10-07-fog\.md: project "day-hike" is not a game, app or film/.test(e.message));
+  assert.throws(() => build('day-hike', { gameSources: [gameSrc('day-hike', [`play: ${PLAY}`])] }), /its project, docs\/games\/day-hike\.md, needs a "blurb"/);
+  assert.throws(() => build('ide-arkos', { appSources: [appSrc('ide-arkos')] }), /its project, docs\/apps\/ide-arkos\.md, needs a "blurb"/);
+  assert.throws(() => build('hallway', { filmSources: [filmSrc('hallway')] }), /its project, docs\/films\/hallway\.md, needs a "blurb"/);
+  assert.throws(() => build('day-hike', { gameSources: [gameSrc('day-hike', ['blurb: a co-op horror game'])] }), /docs\/games\/day-hike\.md, has no "play" address/);
+  const files = build('day-hike', { gameSources: [gameSrc('day-hike', [`play: ${PLAY}`, 'blurb: a co-op horror game'])] });
+  assert.ok(files.get('research/fog.html').includes('data-visits-event="lead-day-hike"'));
+  // A blurb is the phrase after the name: lower case, no full stop.
+  assert.throws(() => game('x', ['blurb: A co-op horror game']), /blurb is a phrase/);
+  assert.throws(() => game('x', ['blurb: a co-op horror game.']), /blurb is a phrase/);
+  assert.doesNotThrow(() => buildSite({ sources: [longDoc('fog', '2026-10-07', 'project: none\n')], indexHtml: INDEX }));
+});
+
+test('What next: an ordinary heading, the closing with the project\'s link, next questions, and the feed, with no box, card or pill', () => {
+  const others = [
+    longDoc('b', '2026-10-01', 'asks: How do you keep fog from thinning at the camera?\n'),
+    longDoc('c', '2026-10-02'),
+    longDoc('d', '2026-10-03'),
+    longDoc('e', '2026-10-04'),
+  ];
+  // The list shows three, so a doc may name three: a fourth could never be on the page.
+  assert.throws(() => load(longDoc('fog', '2026-10-07', 'related: b, c, d, e\n')), /related names 1 to 3 doc slugs/);
+  const html = page(longDoc('fog', '2026-10-07', 'project: day-hike\nrelated: b, c, d\nclosing: Stand at the trailhead at dusk. The band of fog under the trees is section 3.\n', LABELS), others);
+  const end = closing(html);
+  assert.ok(end.includes('<h2 id="what-next">What next</h2>\n        <p>Stand at the trailhead at dusk. The band of fog under the trees is section 3. '
+    + `<a href="${PLAY}" data-visits-event="close-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>\n        <ul>\n`), end);
+  // At most three, each worded as the question the linked doc answers, or its title until it has one.
+  assert.deepEqual([...end.matchAll(/<li><a href="\/research\/(\w+)" data-visits-event="(next-\w+)">(.*?)<\/a><\/li>/g)].map((m) => m.slice(1)), [
+    ['b', 'next-b', 'How do you keep fog from thinning at the camera?'],
+    ['c', 'next-c', 'c title'],
+    ['d', 'next-d', 'd title'],
+  ]);
+  assert.ok(end.includes('<p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS).</p>'));
+  // Not a numbered section: no label, no .section-head for reading.js, not in the contents or the rail.
+  assert.ok(!end.includes('section-head') && !end.includes('section-label'));
+  assert.ok(!html.includes('href="#what-next"'));
+  assert.equal((html.match(/<h1/g) ?? []).length, 1);
+  for (const gone of ['keep-reading', 'Keep reading', 'next-list', 'series-parts', 'play-line', 'class="play"', 'class="next"', 'Read next</span>']) assert.ok(!html.includes(gone), gone);
+  assert.ok(!/<section class="prose what-next"[\s\S]*?class="card"[\s\S]*?<\/section>/.test(html), 'no cards');
+  // A doc heading of the same words keeps the closing section's id free.
+  assert.deepEqual(renderMarkdown('# T\n\n## What next\n', FILE, { slug: 'fog' }).rail.map((r) => r.id), ['what-next-1']);
+  assert.deepEqual(renderMarkdown('# T\n\n## What next\n', FILE).rail.map((r) => r.id), ['what-next'], 'a card or an app\'s README keeps its own');
+});
+
+test('What next without a closing builds its sentence from the project, by kind', () => {
+  const end = (slug) => closing(page(longDoc('fog', '2026-10-07', `project: ${slug}\n`, LABELS)));
+  assert.ok(end('day-hike').includes(`<p>Everything on this page was worked out for day-hike title, a co-op horror game that runs in your browser. <a href="${PLAY}" data-visits-event="close-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>`));
+  assert.ok(end('ide-arkos').includes('<p>Everything on this page was worked out for ide-arkos, a Mac app that runs many agents side by side. <a href="https://apps.csarko.sh/ide-arkos" data-visits-event="close-ide-arkos">See what&nbsp;it&nbsp;does</a>.</p>'));
+  assert.ok(end('the-last-trail').includes(`<p>the-last-trail title is a 56 second horror short by this page's author. <a href="${WATCH}" target="_blank" rel="noopener" data-visits-event="close-the-last-trail">Watch it&nbsp;on&nbsp;YouTube</a>.</p>`));
+});
+
+test('after the author box, one line: the project\'s link as after-<project>, the next question as end-<doc>, All research', () => {
+  const others = [longDoc('b', '2026-10-01', 'asks: How do you keep fog from thinning at the camera?\n')];
+  const html = page(longDoc('fog', '2026-10-07', 'project: day-hike\nrelated: b\n', LABELS), others);
+  assert.ok(html.indexOf('<section class="author"') < html.indexOf('<nav class="afterward"'));
+  assert.deepEqual(after(html).trim().split('\n').map((l) => l.trim()), [
+    `<span>day-hike title: <a href="${PLAY}" data-visits-event="after-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a></span>`,
+    '<a href="/research/b" data-visits-event="end-b">How do you keep fog from thinning at the camera?</a>',
+    '<a href="/research">All research</a>',
+  ]);
+  // The three places are told apart by name, and none borrows a doc's end-<slug>.
+  assert.deepEqual([...html.matchAll(/data-visits-event="((?:lead|close|after|end)-[\w-]+)"/g)].map((m) => m[1]), ['lead-day-hike', 'close-day-hike', 'after-day-hike', 'end-b']);
+});
+
+const seriesOf = (extra = '') => ['one', 'two', 'three'].map((slug, i) => longDoc(slug, `2026-0${i + 1}-01`, `series: Fog notes\n${slug === 'three' ? 'asks: Where does the fog go at the ridge?\n' : ''}${extra}`));
+
+test('the series line under the title is one line: where the doc sits, then short Previous and Next links named for their targets', () => {
+  const [one, two, three] = seriesOf();
+  const header = (s) => /<header class="doc-header">([\s\S]*?)<\/header>/.exec(page(s, seriesOf().filter((x) => x.name !== s.name)))[1];
+  const at = (n) => `<nav class="series-line" aria-label="Series">\n          <span>Part ${n} of 3 in <strong>Fog notes</strong></span>`;
+  const dot = '<span aria-hidden="true">·</span>';
+  const prev = (slug) => `${dot}<a href="/research/${slug}" rel="prev" aria-label="Previous: ${slug} title" title="${slug} title" data-visits-event="series-${slug}"><span aria-hidden="true">←</span> Previous</a>`;
+  const next = (slug) => `${dot}<a href="/research/${slug}" rel="next" aria-label="Next: ${slug} title" title="${slug} title" data-visits-event="series-${slug}">Next <span aria-hidden="true">→</span></a>`;
+  // Only the directions that exist; a middle part has both (Cyrus, 2026-11-12).
+  assert.ok(header(one).includes(`${at(1)}${next('two')}\n        </nav>`), header(one));
+  assert.ok(header(two).includes(`${at(2)}${prev('one')}${next('three')}\n        </nav>`), header(two));
+  assert.ok(header(three).includes(`${at(3)}${prev('two')}\n        </nav>`), header(three));
+  assert.ok(!header(two).includes('series-steps') && !header(two).includes('<p>Part'), 'not three lines any more');
+  assert.ok(!page(longDoc('solo', '2026-01-01')).includes('<nav class="series-line"'), 'no series, no line');
+  const css = page(two, [one, three]);
+  assert.ok(css.includes('.series-line { display: flex;') && /\.series-line \{[^}]*white-space: nowrap/.test(css), 'it never wraps');
+  assert.ok(css.includes('.series-line > :first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }'), 'the name gives way first');
+});
+
+test('What next in a series: the next part leads the questions as series-<slug>, and one line names Previous and Next by title', () => {
+  const [one, two, three] = seriesOf();
+  const end = (s) => closing(page(s, seriesOf().filter((x) => x.name !== s.name)));
+  const first = (html) => /<ul>\n\s*<li>(.*?)<\/li>/.exec(html)?.[1];
+  assert.equal(first(end(two)), '<a href="/research/three" data-visits-event="series-three">Where does the fog go at the ridge?</a>');
+  assert.equal(first(end(one)), '<a href="/research/two" data-visits-event="series-two">two title</a>');
+  const at = (n) => `<p class="series-at"><span>Part ${n} of 3 in <strong>Fog notes</strong></span>`;
+  const prev = (slug) => `<span>Previous: <a href="/research/${slug}" rel="prev" data-visits-event="series-${slug}">${slug} title</a></span>`;
+  const next = (slug) => `<span>Next: <a href="/research/${slug}" rel="next" data-visits-event="series-${slug}">${slug} title</a></span>`;
+  assert.ok(end(one).includes(`${at(1)}${next('two')}</p>`));
+  assert.ok(end(two).includes(`${at(2)}${prev('one')}${next('three')}</p>`));
+  assert.ok(end(three).includes(`${at(3)}${prev('two')}</p>`));
+  assert.ok(!end(two).includes('<ol'), 'the full parts list is gone: with seven titled parts it was not compact');
+  // A hand-picked next part is not listed twice, and any part of the doc's own series counts as
+  // series-<slug> wherever it came from; a doc outside it is next-<slug>.
+  const listed = (html) => [...html.matchAll(/<li><a href="\/research\/(\w+)" data-visits-event="([\w-]+)"/g)].map((m) => m.slice(1));
+  const outside = longDoc('other', '2026-04-01');
+  const picked = closing(page(longDoc('one', '2026-01-01', 'series: Fog notes\nrelated: two, other, three\n'), [two, three, outside]));
+  assert.deepEqual(listed(picked), [['two', 'series-two'], ['other', 'next-other'], ['three', 'series-three']]);
+  // The last part has no next part, so its questions are all its related docs: the previous part is a series part still.
+  const last = closing(page(longDoc('three', '2026-03-01', 'series: Fog notes\nrelated: other, two\n'), [one, two, outside]));
+  assert.deepEqual(listed(last), [['other', 'next-other'], ['two', 'series-two']]);
+  // The next part takes the first of the three places, so a third hand-picked doc is not shown.
+  const full = closing(page(longDoc('two', '2026-02-01', 'series: Fog notes\nrelated: other, one, three\n'), [one, three, outside]));
+  assert.deepEqual(listed(full), [['three', 'series-three'], ['other', 'next-other'], ['one', 'series-one']]);
+  const crowded = closing(page(longDoc('one', '2026-01-01', 'series: Fog notes\nrelated: other, three, b\n'), [two, three, outside, longDoc('b', '2026-05-01')]));
+  assert.deepEqual(listed(crowded), [['two', 'series-two'], ['other', 'next-other'], ['three', 'series-three']]);
+  // After the author box the one next question is the next part's.
+  assert.ok(after(page(two, [one, three])).includes('<a href="/research/three" data-visits-event="end-three">Where does the fog go at the ridge?</a>'));
+});
+
+test('a link to one of the site\'s own hosts opens in the same tab, unmarked; a link to another site keeps its new tab', () => {
+  const d = load(longDoc('a', '2026-10-07', '', 'See [the game](https://games.csarko.sh/dayhike/), [the app](https://apps.csarko.sh/ide-arkos "Arkos"), [tips](https://donate.csarko.sh), [home](https://csarko.sh/) and [YouTube](https://www.youtube.com/@csarkosh), not [a lookalike](https://csarko.sh.example.com/).'));
+  assert.ok(d.html.includes('<a href="https://games.csarko.sh/dayhike/">the game</a>'));
+  assert.ok(d.html.includes('<a href="https://apps.csarko.sh/ide-arkos" title="Arkos">the app</a>'));
+  assert.ok(d.html.includes('<a href="https://donate.csarko.sh">tips</a>'));
+  assert.ok(d.html.includes('<a href="https://csarko.sh/">home</a>'));
+  assert.ok(d.html.includes('<a class="external" href="https://www.youtube.com/@csarkosh" target="_blank" rel="noopener">YouTube</a>'));
+  assert.ok(d.html.includes('<a class="external" href="https://csarko.sh.example.com/" target="_blank" rel="noopener">a lookalike</a>'));
+  // Every project link a doc page builds follows the same rule: only the film, on YouTube, leaves the tab.
+  const html = page(longDoc('fog', '2026-10-07', 'project: day-hike\nsource: https://github.com/csarkosh/game-dayhike/blob/main/x.md\n', LABELS));
+  const blank = [...html.matchAll(/<a [^>]*target="_blank"[^>]*>/g)].map((m) => /href="([^"]+)"/.exec(m[0])[1]);
+  assert.deepEqual(blank, ['https://github.com/csarkosh/game-dayhike/blob/main/x.md', 'https://www.linkedin.com/in/csarkosh']);
+  // The /projects card is drawn by its own function and keeps its new tab, and so does a link in a card's copy.
+  assert.ok(projectsPage(projects(), themeBlocks(INDEX)).includes(`<a class="card-link stretch" href="${PLAY}" target="_blank" rel="noopener" data-visits-event="play-day-hike">`));
+  assert.ok(game('x', [], 'See [the app](https://apps.csarko.sh/ide-arkos) and a [term](#term "Its meaning.").').html.includes('<a class="external" href="https://apps.csarko.sh/ide-arkos" target="_blank" rel="noopener">the app</a> and a <button type="button" class="term" popovertarget="term-1">term</button>'));
+});
+
+test('a doc page names the ways home and a tapped definition; the nav\'s wordmark counts nav-home off the home page', () => {
+  const html = page(longDoc('fog', '2026-10-07', '', 'A [froxel](#term "A frustum-aligned voxel.") holds fog.'));
+  assert.ok(html.includes('<li><a href="/" data-visits-event="crumb-home">Home</a></li>'));
+  assert.ok(html.includes('<li><a href="/research">Research</a></li>'), 'the Research crumb stays unnamed');
+  assert.ok(html.includes('<p class="author-name"><a href="/" data-visits-event="author-home">Cyrus Sarkosh</a></p>'));
+  assert.ok(html.includes('<a href="/" data-visits-event="author-home">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh"'));
+  assert.ok(html.includes('popovertarget="term-1" data-visits-event="term">froxel</button>'));
+  const wordmark = '<a class="wordmark" href="/" data-visits-event="nav-home">csarko<span>.sh</span></a>';
+  const lists = [indexPage([doc('a', '2026-01-01')], themeBlocks(INDEX)), projectsPage(projects(), themeBlocks(INDEX))];
+  for (const p of [html, ...lists]) assert.ok(p.includes(wordmark), 'one bar on every generated page');
+  for (const p of lists) assert.ok(!p.includes('crumb-home') && !p.includes('author-home'), 'the crumb and author names are a doc page\'s');
+});
+
+test('a doc page styles a text-fragment landing with theme tokens, keeps linked headings clear of the nav, and drops the contents list beside the rail', () => {
+  const html = page(longDoc('fog', '2026-10-07', 'project: day-hike\n', LABELS));
+  assert.ok(html.includes('::target-text { background: var(--accent-underline); color: var(--text); }'));
+  assert.ok(html.includes('.prose h2, .prose h3, .prose h4 { scroll-margin-top: 28px; }'));
+  assert.ok(html.includes('@media (min-width: 1060px) { .toc { display: none; } }'));
+  assert.ok(/\.toc \{ margin: [^;}]+; \}/.test(html), 'the list has no box: a margin and nothing else');
+  assert.ok(html.includes('@media (max-width: 1059px) { .prose > .section-head:first-child:not([data-read-end]) { border-top: 0;'), 'no rule above section 1 where the list shows');
+  const css = /<style>([\s\S]*?)<\/style>/.exec(html)[1];
+  for (const gone of ['.keep-reading', '.next-list', '.series-parts', '.series-name', '.play-line', '.afterward .next']) assert.ok(!css.includes(gone), `${gone} rule`);
+  // The list pages carry none of it.
+  assert.ok(!indexPage([doc('a', '2026-01-01')], themeBlocks(INDEX)).includes('::target-text'));
+});
+
+// ---------------------------------------------------------------- the review's fixes (2026-11-13)
+
+test('a project link wears no external mark, even to YouTube, and keeps its last three words together', () => {
+  for (const slug of ['day-hike', 'ide-arkos', 'the-last-trail']) {
+    const html = page(longDoc('fog', '2026-10-07', `project: ${slug}\n`, LABELS));
+    const links = [...html.matchAll(/<a ([^>]*data-visits-event="(?:lead|close|after)-[^"]+")>(.*?)<\/a>/g)];
+    assert.equal(links.length, 3, slug);
+    for (const [, attrs, words] of links) {
+      // The mark is drawn by a.external::after, and it could wrap to a line of its own with the full stop.
+      assert.ok(!attrs.includes('class='), `${slug}: no class, so no mark: ${attrs}`);
+      assert.match(words, /^[^<↗&]+ [^\s&]+&nbsp;[^\s&]+&nbsp;[^\s&]+$/, `${slug}: words only, the last three joined: ${words}`);
+      assert.equal(attrs.includes('target="_blank" rel="noopener"'), slug === 'the-last-trail', `${slug}: only the film, on YouTube, leaves the tab`);
+    }
+  }
+  // The product line and the closing end on the link and one full stop, nothing between them.
+  const film = page(longDoc('fog', '2026-10-07', 'project: the-last-trail\n', LABELS));
+  assert.equal((film.match(/Watch it&nbsp;on&nbsp;YouTube<\/a>\.<\/p>/g) ?? []).length, 2);
+});
+
+test('a project whose title ends in its own mark is quoted in a sentence, and takes no colon after the author box', () => {
+  const asked = () => {
+    const s = filmSrc('hallway', ['blurb: a 16 second analog horror short']);
+    return loadFilm(s.name, s.text.replace('# hallway title', '# Who is standing in my hallway?'));
+  };
+  const html = page(longDoc('fog', '2026-10-07', 'project: hallway\n', LABELS), [], [asked()]);
+  assert.ok(opening(html).includes('<p class="project-line">The author of this page also made &quot;Who is standing in my hallway?&quot;, a 16 second analog horror short. <a href='), opening(html));
+  assert.ok(closing(html).includes('<p>&quot;Who is standing in my hallway?&quot; is a 16 second analog horror short by this page\'s author. <a href='), closing(html));
+  assert.ok(after(html).includes(`<span>Who is standing in my hallway? <a href="${WATCH}"`), after(html));
+  assert.ok(!/\?[,:]/.test(opening(html) + closing(html) + after(html)), 'no comma or colon straight after the question mark');
+  // Any other title is as it was: bare in the sentence, a colon after the author box.
+  const plain = page(longDoc('fog', '2026-10-07', 'project: the-last-trail\n', LABELS));
+  assert.ok(opening(plain).includes('The author of this page also made the-last-trail title, a 56 second horror short.'));
+  assert.ok(after(plain).includes('<span>the-last-trail title: <a href='));
+});
+
+test('project-line, closing and asks are plain text: Markdown in one is refused, since the page would print its marks', () => {
+  const base = [`description: ${DESC}`, 'published: 2026-09-14', 'project: day-hike'];
+  for (const [key, value] of [
+    ['closing', 'Open `fog.wgsl` and read the march: the band under the trees is there.'],
+    ['closing', 'Stand at the trailhead in **Day Hike** at dusk and look under the trees.'],
+    ['closing', 'Stand at the trailhead in [the game](https://games.csarko.sh/dayhike/) at dusk.'],
+    ['closing', 'Stand at the trailhead at dusk and _look_ under the trees for the band.'],
+    ['project-line', 'I build *Day Hike*, and this doc is how its fog is drawn.'],
+    ['asks', 'Why does `fog.wgsl` cut along the terrain?'],
+  ]) rejects(fm([...base, `${key}: ${value}`]), new RegExp(`${key} is plain text, printed as written: no Markdown`));
+  // An underscore inside a name is not emphasis, and brackets alone are not a link.
+  const { meta } = parseFrontMatter(fm([...base, 'closing: The uniform u_time drives it [see section 3], and snake_case names stay as they are.']), FILE);
+  assert.ok(meta.closing.includes('u_time'));
+});
+
+test('the product line and the closing date their present, as the body does from DATED_SINCE', () => {
+  const dated = (extra, published = DATED_SINCE) => load(longDoc('fog', published, extra));
+  assert.throws(() => dated('closing: The game now runs twelve steps a pixel and currently ships it on the high tier only.\n'), (e) => e instanceof DocError && e.message.includes(`closing speaks of the present without a date; say "as of ${formatDate(DATED_SINCE)}"`));
+  assert.throws(() => dated('project: day-hike\nproject-line: Day Hike is the game this fog is drawn in today.\n'), /project-line speaks of the present without a date/);
+  assert.doesNotThrow(() => dated(`closing: As of ${formatDate(DATED_SINCE)} the game runs twelve steps a pixel, on the high tier only.\n`));
+  assert.doesNotThrow(() => dated('closing: The game now runs twelve steps a pixel and ships it on the high tier only.\n', '2026-10-07'), 'an older doc builds as it is');
+});
+
+test('the build names a near miss of an opening label, so the product line never lands in front of the answer', () => {
+  const bad = (body, shown) => assert.throws(() => load(longDoc('fog', '2026-10-07', 'project: day-hike\n', body)),
+    (e) => e instanceof DocError && e.message.includes(`docs/published/2026-10-07-fog.md: the opening has "${shown}`) && e.message.includes('**Short answer:**'), body);
+  bad('**Question:** Why?\n\n**Short answer**: It is drawn flat.', 'Short answer: It is drawn flat.');
+  bad('**Question:** Why?\n\n**Short Answer:** It is drawn flat.', 'Short Answer: It is drawn flat.');
+  bad('**Question:** Why?\n\n**Short answer** It is drawn flat.', 'Short answer It is drawn flat.');
+  bad('**Question:** Why?\n\n**Short answer.** It is drawn flat.', 'Short answer. It is drawn flat.');
+  bad('**Question:** Why?\n\nShort answer: It is drawn flat.', 'Short answer: It is drawn flat.');
+  bad('**question:** Why?\n\n**Short answer:** It is drawn flat.', 'question: Why?');
+  bad('*Question:* Why?\n\n**Short answer:** It is drawn flat.', 'Question: Why?');
+  bad('**Question:** Why?\n\n- **Short answer:** It is drawn flat.', 'Short answer: It is drawn flat.');
+  bad('**Question:** Why?\n\n- one\n\n- **Short answer:** It is drawn flat.', 'Short answer: It is drawn flat.');
+  bad(`${LABELS}\n\n**What That Leaves Open:** The cost.`, 'What That Leaves Open: The cost.');
+  for (const fine of [
+    LABELS,
+    `${LABELS}\n\n**What that leaves open:** The cost. By the end you can check it.`,
+    'First.\n\n> **Short answer:** quoted.\n\nLast.',
+    'The short answer: it is drawn flat. Question after question follows.',
+    'Short answers are rare here.\n\n**In numbers:**\n\n- **3 ms** a frame.',
+  ]) assert.doesNotThrow(() => load(longDoc('fog', '2026-10-07', 'project: day-hike\n', fine)), fine);
+  // Only the opening is read for labels: a section may say what it likes.
+  assert.doesNotThrow(() => load({ name: '2026-10-07-fog.md', text: `---\ndescription: ${DESC}\npublished: 2026-10-07\ncategories: Tooling\nproject: none\n---\n# T\n\n${LABELS}\n\n## 1. One\n\nShort answer: in a section, it is prose.\n` }));
+});
+
+test('the series line and the feed sentence in What next are muted: their rule outranks the body colour', () => {
+  const css = /<style>([\s\S]*?)<\/style>/.exec(page(longDoc('fog', '2026-10-07')))[1];
+  const rule = (start) => css.split('\n').map((l) => l.trim()).find((l) => l.startsWith(start));
+  const body = rule('.doc-page .prose p,');
+  const quiet = rule('.doc-page .prose .series-at,');
+  assert.match(body, /\{ color: var\(--prose\); \}$/);
+  assert.match(quiet, /^\.doc-page \.prose \.series-at, \.doc-page \.prose \.follow \{[^}]*color: var\(--muted\);/);
+  // [classes, tags] of each selector in a rule: every selector of the quiet rule must beat every one of the body's.
+  const weights = (r) => r.split('{')[0].split(',').map((sel) => {
+    const classes = (sel.match(/\.[\w-]+/g) ?? []).length;
+    return classes * 100 + sel.replace(/\.[\w-]+/g, ' ').split(/[\s>]+/).filter(Boolean).length;
+  });
+  assert.ok(Math.min(...weights(quiet)) > Math.max(...weights(body)), `${weights(quiet)} against ${weights(body)}`);
+  assert.ok(!css.includes('\n    .prose .series-at'), 'the weaker selector is gone');
+});
+
+test('a phone gets a tighter header and a series line without arrows, and wider screens keep theirs', () => {
+  const css = /<style>([\s\S]*?)<\/style>/.exec(page(longDoc('fog', '2026-10-07')))[1];
+  const phone = /@media \(max-width: 640px\) \{\n\s+\.doc-page \.shell([\s\S]*?)\n    \}/.exec(css)[0];
+  for (const rule of ['.doc-page .shell { padding-top: 16px; }', '.doc-page h1 { margin-bottom: 10px; font-size: 2rem; }', '.doc-page .doc-header { padding-bottom: 12px; }', '.series-line { gap: 6px; margin-top: 8px; font-size: 13px; }']) assert.ok(phone.includes(rule), rule);
+  // The arrows are decoration (aria-hidden); below 440px the series name needs their room.
+  assert.ok(css.includes('@media (max-width: 439px) { .series-line a span { display: none; } }'));
+  assert.ok(!/\.series-line[^{}]*\{[^}]*flex-wrap/.test(css), 'still one line at every width');
 });

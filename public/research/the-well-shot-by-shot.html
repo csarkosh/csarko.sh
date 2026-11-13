@@ -18,7 +18,7 @@
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta property="article:published_time" content="2026-11-11" />
-  <meta property="article:modified_time" content="2026-11-12" />
+  <meta property="article:modified_time" content="2026-11-13" />
   <meta property="article:author" content="https://csarko.sh/" />
   <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -49,10 +49,10 @@
       "headline": "The Well: how an AI short reads as cinema",
       "description": "An award-winning AI short measured shot by shot: 122 shots, two reused camera set-ups, straight cuts only, a human score, and the record of how it was made.",
       "datePublished": "2026-11-11",
-      "dateModified": "2026-11-12",
+      "dateModified": "2026-11-13",
       "url": "https://csarko.sh/research/the-well-shot-by-shot",
       "mainEntityOfPage": "https://csarko.sh/research/the-well-shot-by-shot",
-      "wordCount": 5172,
+      "wordCount": 5239,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -328,19 +328,23 @@
     .doc-page .prose { font-size: 17px; }
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
-    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
-    .series-line p { margin: 0; }
+    .series-line { display: flex; gap: 8px; margin: 18px 0 0; font-size: 14.5px; color: var(--muted); white-space: nowrap; }
+    .series-line > * { flex: none; }
+    .series-line > :first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .series-line strong { color: var(--text); font-weight: 600; }
-    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
-    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-line a, .afterward a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
-    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .prose h2, .prose h3, .prose h4 { scroll-margin-top: 28px; }
+    ::target-text { background: var(--accent-underline); color: var(--text); }
+    .toc { margin: 32px 0 0; }
     .toc .section-label { margin: 0 0 6px; }
     .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
     .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
     .toc a:hover { color: var(--accent); }
     .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    @media (min-width: 1060px) { .toc { display: none; } }
+    @media (max-width: 1059px) { .prose > .section-head:first-child:not([data-read-end]) { border-top: 0; padding-top: 0; margin-top: 36px; } }
     .figure { margin: 32px 0; }
     .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
     /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
@@ -365,26 +369,28 @@
       radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
       radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
       var(--surface); }
-    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
-    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
-    .series-name { margin: 0 0 8px; font-weight: 600; }
-    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
-    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
-    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
-    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
-    .next-list .card { padding: 16px 18px; background: var(--bg); }
-    .next-list .doc-title { font-size: 1.05rem; }
-    .next-list .doc-desc { font-size: 14.5px; }
-    .play-line, .watch-line { margin: 20px 0 0; }
+    .what-next { margin-top: 48px; }
+    .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
+    .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
+    .watch-line { margin: 20px 0 0; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
-    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
-    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
-    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color var(--md-duration-short3) var(--md-easing-standard); }
-    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
-    .afterward .next:hover { border-color: var(--accent); }
-    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
+    .afterward { display: flex; align-items: baseline; gap: 6px 22px; margin-top: 24px; font-size: 14.5px; color: var(--muted); text-wrap: balance; }
+    .afterward > * { flex: none; }
+    .afterward > a:not(:last-child) { flex: 0 1 auto; }
+    @media (max-width: 640px) {
+      .doc-page .shell { padding-top: 16px; }
+      .doc-page .crumbs ol { padding-block: 8px; }
+      .doc-page .eyebrow { margin-bottom: 8px; }
+      .doc-page h1 { margin-bottom: 10px; font-size: 2rem; }
+      .doc-header .lead { margin-bottom: 12px; font-size: 1rem; line-height: 1.5; }
+      .doc-page .doc-header { padding-bottom: 12px; }
+      .series-line { gap: 6px; margin-top: 8px; font-size: 13px; }
+      .afterward { flex-direction: column; }
+    }
+    @media (max-width: 439px) { .series-line a span { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .play { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -397,7 +403,7 @@
   <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
-      <a class="wordmark" href="/">csarko<span>.sh</span></a>
+      <a class="wordmark" href="/" data-visits-event="nav-home">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/projects" data-visits-event="nav-projects">Projects</a></li>
         <li><a href="/research" data-visits-event="nav-research">Research</a></li>
@@ -407,7 +413,7 @@
   <nav class="crumbs" aria-label="Breadcrumb">
     <div class="wrap">
       <ol>
-        <li><a href="/">Home</a></li>
+        <li><a href="/" data-visits-event="crumb-home">Home</a></li>
         <li><a href="/research">Research</a></li>
         <li><span aria-current="page">The Well: how an AI short reads as cinema</span></li>
       </ol>
@@ -436,15 +442,14 @@
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Nov 11, 2026 · Updated Nov 12, 2026</p>
+        <p class="eyebrow">Nov 11, 2026 · Updated Nov 13, 2026</p>
         <h1>The Well: how an AI short reads as cinema</h1>
         <p class="lead">An award-winning AI short measured shot by shot: 122 shots, two reused camera set-ups, straight cuts only, a human score, and the record of how it was made.</p>
         <ul class="tags">
           <li>18 min read</li>
         </ul>
         <nav class="series-line" aria-label="Series">
-          <p>Part 4 of 4 in <strong>AI short films</strong></p>
-          <p class="series-steps"><span>Previous: <a href="/research/synthetic-voices-for-a-radio-call" rel="prev" data-visits-event="series-synthetic-voices-for-a-radio-call">Synthetic voices for a radio call</a></span></p>
+          <span>Part 4 of 4 in <strong>AI short films</strong></span><span aria-hidden="true">·</span><a href="/research/synthetic-voices-for-a-radio-call" rel="prev" aria-label="Previous: Synthetic voices for a radio call" title="Synthetic voices for a radio call" data-visits-event="series-synthetic-voices-for-a-radio-call"><span aria-hidden="true">←</span> Previous</a>
         </nav>
         <p class="watch-line"><a class="play" href="https://www.youtube.com/watch?v=yBs_pMUDrrk" target="_blank" rel="noopener" data-visits-event="watch-the-well-shot-by-shot">Watch The Well on YouTube <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
       </header>
@@ -455,35 +460,38 @@ dialogue that sounds acted and pictures that look photographed. How was it made,
 of shot, cut, light and sound make it read as a studio film and not as a run of generated clips?</p>
 <p><strong>Short answer:</strong> less of it is generated than the label suggests, and almost none of its craft
 is new. The only tools on record are ComfyUI, Nano Banana and Kling 3.0, used over years by two
-award-winning commercial directors, and the film&#39;s own credits give the music and the sound to a
-composer and an engineer at a commercial music house. The film is built the way a studio
-interrogation scene is built: a few camera
-<button type="button" class="term" popovertarget="term-1">set-ups</button><span class="term-def" id="term-1" popover role="note">One camera position and framing. A scene is covered from a handful of them and cut between.</span>
-reused many times, straight cuts only, a very dark frame lit from lamps and windows, a quiet room
-set against loud memories. And it never asks a model for what models do badly: no human face, no
-long physical action, no shot over 9.3 seconds.</p>
+award-winning commercial directors; its music and sound are human work. It is built like a studio
+interrogation scene: a few camera positions
+(<button type="button" class="term" popovertarget="term-1" data-visits-event="term">set-ups</button><span class="term-def" id="term-1" popover role="note">One camera position and framing. A scene is covered from a handful of them and cut between.</span>)
+reused throughout, straight cuts only, a dark frame lit by lamps and windows, a quiet room against
+loud memories. It avoids what models do badly: human faces, long action, shots over 9.3 seconds.</p>
+<p><strong>What that leaves open:</strong> how the voices were made. The dialogue sounds acted, yet no cast is
+credited and nothing is on record. The one clue that can be measured is that on the hare&#39;s and the
+lynx&#39;s longest close-ups the face moves in time with the speech: a voice laid over a silent clip
+would not show that, but a shot generated together with its line would, and so would one driven by
+a recorded performance. The method is unknown; the nearest precedents put a person in the chain,
+so the likely one is a recorded read under each line. Every figure about the film was measured
+from Runway&#39;s upload of it as it stood on Nov 11, 2026, and compared with published measurements
+of studio films; the last section says how, and lists what else is unpublished as of that date:
+who edited and graded the film, how many images and clips were generated, and which image model
+ran inside ComfyUI.</p>
+<p class="project-line">The author of this page makes AI-generated films too. One is The Last Trail, a 56 second horror short. <a href="https://www.youtube.com/shorts/C1XsDuJE4MQ" target="_blank" rel="noopener" data-visits-event="lead-the-last-trail">Watch it&nbsp;on&nbsp;YouTube</a>.</p>
 <figure class="figure">
 <!-- generated:figure:the-well-shot-by-shot/timeline -->
 <img src="/assets/fig-the-well-shot-by-shot-timeline.4c2e354e.svg" width="440" height="372" alt="A timeline of The Well. A strip of 122 bars, one per shot, coloured by where the picture is: the present, the family&#39;s story, the sheriff&#39;s theory, or photographs. Below it, the loudness of the soundtrack second by second, with peaks at the torch flash, the break-in and the wall opening, and near silence before the blow." decoding="async" />
 <!-- /generated:figure:the-well-shot-by-shot/timeline -->
-<figcaption>The whole film on one line. In the office scene the picture keeps leaving the room for a witness&#39;s story, the sheriff&#39;s theory and photographs; the sound is quiet in the room, loud in the memories, and almost silent just before the blow.</figcaption>
+<figcaption>The whole film on one line. Look at the Office stretch: the bars keep changing colour because the picture leaves the room for a witness&#39;s story, the sheriff&#39;s theory and photographs, 41% of the three-minute conversation. Under it, the sound is quiet in the room, loud in the memories, and almost silent at the hush mark just before the blow.</figcaption>
 </figure>
 <p><strong>In numbers:</strong></p>
 <ul>
 <li><strong>122 shots in 5 minutes 14 seconds:</strong> a mean of 2.57 s and a median of 2.29 s. Four shots run
 past 6 s, and each is a face at a turn in the story
 (<a href="#122-shots-at-2-6-seconds-with-almost-no-long-takes">shot length</a>).</li>
-<li><strong>Two single set-ups carry 26 of the 39 shots</strong> inside the office. The two-shot
-<button type="button" class="term" popovertarget="term-2">master</button><span class="term-def" id="term-2" popover role="note">A wide shot that holds everyone in the scene and shows where they stand.</span>
+<li><strong>Two set-ups of one character alone, called singles, carry 26 of the 39 shots</strong> inside the
+office. The wide shot that holds both characters, the
+<button type="button" class="term" popovertarget="term-2" data-visits-event="term">master</button><span class="term-def" id="term-2" popover role="note">A wide shot that holds everyone in the scene and shows where they stand.</span>,
 appears three times, and a low angle is held back until the sheriff has the answer
 (<a href="#two-singles-carry-the-office-and-a-low-angle-waits-for-the-answer">coverage</a>).</li>
-<li><strong>41% of the three-minute conversation</strong> is spent away from the room, in a witness&#39;s story, the
-sheriff&#39;s theory and photographs
-(<a href="#41-of-the-conversation-is-somewhere-else">time layers</a>).</li>
-<li><strong>No dissolve, wipe or fade</strong> until the credits: scenes join on a word, an object or a light
-(<a href="#every-join-is-a-straight-cut-hooked-on-a-word-an-object-or-a-light">joins</a>).</li>
-<li><strong>A mean frame brightness of 34 on a scale of 0 to 255,</strong> under half the darkest feature in a
-160-film study (<a href="#half-as-bright-as-the-darkest-studio-feature-one-palette-per-place">light</a>).</li>
 <li><strong>About five seconds of near silence</strong> before the killing blow, in a track whose loud passages
 sit 11 to 14 dB over its dialogue
 (<a href="#a-quiet-room-loud-memories-and-five-seconds-of-hush">sound</a>).</li>
@@ -491,11 +499,6 @@ sit 11 to 14 dB over its dialogue
 commercial music house
 (<a href="#on-record-three-tools-years-of-work-and-a-human-score">the record</a>).</li>
 </ul>
-<p>This is a companion to <a href="/research/reverse-engineering-an-ai-horror-short" data-visits-event="doc-reverse-engineering-an-ai-horror-short">Reverse engineering an AI horror short</a>.
-That doc took a 45 second clip apart to find its recipe; this one takes a festival film apart and
-sets its numbers against published measurements of studio films. Every figure about the film was
-measured from Runway&#39;s upload of it <a class="cite" href="#ref-1">[1]</a>, as it stood on Nov 11, 2026; the last section
-says how.</p>
       </div>
       <nav class="toc" aria-label="In this doc">
         <p class="section-label">In this doc</p>
@@ -517,12 +520,14 @@ says how.</p>
       </nav>
       <div class="prose">
 <div class="section-head"><h2 id="a-grimm-tale-turned-inside-out-in-three-parts"><a class="anchor" href="#a-grimm-tale-turned-inside-out-in-three-parts">A Grimm tale turned inside out, in three parts</a></h2></div>
-<p>The film opens on a card, &quot;Inspired by the Brothers Grimm: The Wolf and the Seven Young Goats&quot;.
-In the tale a wolf eats the kids, the mother cuts them out, and the wolf drowns in a well. Here a
+<p>The film opens on a card, &quot;Inspired by the Brothers Grimm: The Wolf and the Seven Young Goats&quot;
+<a class="cite" href="#ref-1">[1]</a>. In the tale a wolf eats the kids, the mother cuts them out, and the wolf drowns in a well. Here a
 hare sheriff and a lynx detective stand over a wolf found dead at the bottom of a well in a
 trailer park. The festival&#39;s synopsis: &quot;A tragic accident - or so they say. But when a
 sharp-witted hare starts to investigate, the truth shifts&quot; <a class="cite" href="#ref-2">[2]</a>. The goats are the criminals and
 the wolf is the victim.</p>
+<p>The table splits the film into its three parts. Look at the Shots and Speech columns: the office
+takes 80 of the 122 shots and nearly all of the words, and the finale has no words at all.</p>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
 <thead>
 <tr>
@@ -578,7 +583,7 @@ took years to make, evolving along with the technology; first, using early platf
 more recent image generators Kling 3.0 and Nano Banana&quot; <a class="cite" href="#ref-5">[5]</a>. Kling is a video model and
 Nano Banana an image model, so the likely reading is stills first, then stills animated, which is
 how the duo described making an earlier short: an image workflow in ComfyUI on FLUX, a custom
-<button type="button" class="term" popovertarget="term-3">LoRA</button><span class="term-def" id="term-3" popover role="note">A small add-on trained on a few dozen pictures so that an image model keeps drawing the same character or style.</span>
+<button type="button" class="term" popovertarget="term-3" data-visits-event="term">LoRA</button><span class="term-def" id="term-3" popover role="note">A small add-on trained on a few dozen pictures so that an image model keeps drawing the same character or style.</span>
 for the lead, Daniel Titz&#39;s own photographs &quot;to guide the light and style&quot;, and Photoshop to
 finish each still <a class="cite" href="#ref-6">[6]</a>. No Runway model is named anywhere, and the festival did not ask for
 one: its rules call for video made with &quot;tools similar to Runway&#39;s&quot; <a class="cite" href="#ref-7">[7]</a>.</p>
@@ -947,32 +952,15 @@ that description is unpublished.</li>
 the same magazine sentence <a class="cite" href="#ref-45">[45]</a>. The numbers here were made independently of it.</li>
 </ul>
       </div>
-      <section class="keep-reading" aria-labelledby="next-reads">
-        <h2 id="next-reads" class="section-label">Keep reading</h2>
-        <p class="series-name">AI short films · 4 parts</p>
-        <ol class="series-parts">
-          <li><a href="/research/ai-short-film-generation" data-visits-event="next-ai-short-film-generation">AI short films: consistent characters and sets</a></li>
-          <li><a href="/research/reverse-engineering-an-ai-horror-short" data-visits-event="next-reverse-engineering-an-ai-horror-short">Reverse engineering an AI horror short</a></li>
-          <li><a href="/research/synthetic-voices-for-a-radio-call" data-visits-event="next-synthetic-voices-for-a-radio-call">Synthetic voices for a radio call</a></li>
-          <li aria-current="true"><span>The Well: how an AI short reads as cinema</span></li>
-        </ol>
-        <ul class="doc-list next-list" role="list">
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/reverse-engineering-an-ai-horror-short" data-visits-event="next-reverse-engineering-an-ai-horror-short">Reverse engineering an AI horror short</a></h3>
-            <p class="doc-meta">9 min read</p>
-            <p class="doc-desc">A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/horror-sequences-shot-by-shot" data-visits-event="next-horror-sequences-shot-by-shot">23 Horror Sequences Broken Down Shot by Shot</a></h3>
-            <p class="doc-meta">36 min read</p>
-            <p class="doc-desc">Shot-by-shot breakdowns of 23 horror sequences, from the Psycho shower to Weapons: sizes, moves, durations, cut points, and what each one teaches.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/how-horror-directors-make-sound-carry-the-fear" data-visits-event="next-how-horror-directors-make-sound-carry-the-fear">How Horror Directors Make Sound Carry the Fear</a></h3>
-            <p class="doc-meta">74 min read</p>
-            <p class="doc-desc">How horror directors use score, noise, voice, silence and the needle drop to make you afraid. Startle and roughness are measured; dread is lore.</p>
-          </li>
+      <section class="prose what-next" aria-labelledby="what-next">
+        <h2 id="what-next">What next</h2>
+        <p>Run The Well again with the timeline from the top of this page beside it: the low angle from desk height first appears at 3:26, on the line about the thin ice, and the track falls to its quietest point from 4:58 to 5:02, just before the blow. The same four questions (shot, cut, light, sound) can be put to any generated short. One to try them on is The Last Trail, a 56 second AI-generated horror short by this page&#39;s author, released on Oct 29, 2026, before these measurements were made. <a href="https://www.youtube.com/shorts/C1XsDuJE4MQ" target="_blank" rel="noopener" data-visits-event="close-the-last-trail">Watch it&nbsp;on&nbsp;YouTube</a>.</p>
+        <ul>
+          <li><a href="/research/reverse-engineering-an-ai-horror-short" data-visits-event="series-reverse-engineering-an-ai-horror-short">How was a viral AI horror short made, and what does one like it cost?</a></li>
+          <li><a href="/research/horror-sequences-shot-by-shot" data-visits-event="next-horror-sequences-shot-by-shot">How are famous horror scenes like the Psycho shower built, shot by shot?</a></li>
+          <li><a href="/research/how-horror-directors-make-sound-carry-the-fear" data-visits-event="next-how-horror-directors-make-sound-carry-the-fear">How do horror films use sound and silence to scare you, and is any of it proven?</a></li>
         </ul>
+        <p class="series-at"><span>Part 4 of 4 in <strong>AI short films</strong></span><span>Previous: <a href="/research/synthetic-voices-for-a-radio-call" rel="prev" data-visits-event="series-synthetic-voices-for-a-radio-call">Synthetic voices for a radio call</a></span></p>
         <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS).</p>
       </section>
       <div class="prose">
@@ -1027,12 +1015,13 @@ the same magazine sentence <a class="cite" href="#ref-45">[45]</a>. The numbers 
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
-        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
+        <p class="author-name"><a href="/" data-visits-event="author-home">Cyrus Sarkosh</a></p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
-        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
+        <p class="author-links"><a href="/" data-visits-event="author-home">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
       <nav class="afterward" aria-label="Read next">
-        <a class="next" href="/research/reverse-engineering-an-ai-horror-short" data-visits-event="end-reverse-engineering-an-ai-horror-short"><span class="section-label">Read next</span><span>Reverse engineering an AI horror short <span aria-hidden="true">→</span></span></a>
+        <span>The Last Trail: <a href="https://www.youtube.com/shorts/C1XsDuJE4MQ" target="_blank" rel="noopener" data-visits-event="after-the-last-trail">Watch it&nbsp;on&nbsp;YouTube</a></span>
+        <a href="/research/reverse-engineering-an-ai-horror-short" data-visits-event="end-reverse-engineering-an-ai-horror-short">How was a viral AI horror short made, and what does one like it cost?</a>
         <a href="/research">All research</a>
       </nav>
     </main>
@@ -1047,7 +1036,7 @@ the same magazine sentence <a class="cite" href="#ref-45">[45]</a>. The numbers 
   <!-- generated:analytics -->
   <script defer src="/assets/visits.4378bd36.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
-  <script defer src="/assets/reading.c3e27b33.js"></script>
+  <script defer src="/assets/reading.3a8c03e0.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

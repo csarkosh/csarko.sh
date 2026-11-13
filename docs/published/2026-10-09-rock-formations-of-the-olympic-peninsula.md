@@ -3,6 +3,10 @@ description: How the Olympic Peninsula's crags, talus, cirques and sea stacks fo
 published: 2026-10-09
 categories: Worlds and terrain
 series: Olympic Peninsula field notes
+project: day-hike
+project-line: This research was done for Day Hike, a co-op horror game that runs in your browser, set on a fictional stretch of the Olympic Peninsula. Section 14 reads the game's three attempts at steep rock against these findings.
+closing: The pale cobbled hillside is the rock ground section 14's three attempts worked on, and the cliff models standing in rows are the third of them, each read there against how the Peninsula's rock forms and how shipped games build it. By Oct 12, 2026 Day Hike had taken the cliff models off its steep faces and drawn a finer rock surface over them instead: columns or jointed blocks on tilted slabs, standing up to 4 m out of the ground. It covers the ground too steep to stand on, sea stacks included.
+asks: How does rock form on the Olympic Peninsula, and how do games build cliffs?
 ---
 # Rock formations of the Olympic Peninsula, and how games build them
 

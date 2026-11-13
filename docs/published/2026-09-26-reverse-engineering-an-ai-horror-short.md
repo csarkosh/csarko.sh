@@ -3,35 +3,39 @@ description: A viral AI horror short, taken apart from its pixels: five image-to
 published: 2026-09-26
 categories: AI, Film
 series: AI short films
-updated: 2026-10-23
-related: horror-sequences-shot-by-shot, horror-cinematography-shot-by-shot
+updated: 2026-11-13
+related: horror-sequences-shot-by-shot, horror-cinematography-shot-by-shot, ai-short-film-generation
+project: the-last-trail
+project-line: The author of this page makes AI-generated horror shorts too. The Last Trail, 56 seconds long, is one of them, and is a different film from the one taken apart here.
+closing: Go back to the woman on the windowsill. The white shape that becomes her, the candles that change number within one take and the door lock that changes as the camera nears are the tells that settle that it was generated, and 19 to 21 new frames a second is the one that narrows the field of models. None of them needs the file's tags, only the picture, so the same checks can be tried on any clip. The Last Trail, a 56 second AI-generated horror short, is one to try them on.
+asks: How was a viral AI horror short made, and what does one like it cost?
 ---
 # Reverse engineering an AI horror short
 
-**Question:** a 45 second vertical horror short turned up on Reddit with no credit: a grinning
-woman in a nightgown climbs out of a fifth floor window of a Soviet apartment block, runs across
-the courtyard, appears through the peephole, then climbs in through the living room window. Was it
-generated, with what, and how would someone make one just like it?
+**Question:** A 45 second vertical horror short turned up on Reddit with no credit: a grinning
+woman in a nightgown climbs out of a fifth floor window, and by the end she is climbing in through
+the living room window. Was it generated, with what, and how would someone make one just like it?
 
-**Short answer:** yes, it was generated. It is episode 18 part 5 of "Архив Аномалии" (Archive of
-Anomaly), a Russian AI anthology by the two person studio XCVmind, made as five
-[image-to-video](#term "A video model that takes a finished still and a prompt, and animates the scene from it.")
-clips from one shared character reference and finished in a video editor. The exact model cannot
-be read from the file, because
-[Reddit's transcode](#term "Reddit's own re-encode of an uploaded video, which drops the original file's creation tags.")
-strips every provenance tag. The same look is reproducible today on the Gemini API, with Nano
-Banana Pro for keyframes and Veo 3.1 Fast for motion, for under $15 in generation per finished
-minute.
+**Short answer:** Yes, it was generated. It is five clips, each a still picture animated by a
+video model
+([image-to-video](#term "A video model that takes a finished still and a prompt, and animates the scene from it.")),
+all from one reference image of the woman, then slowed and grained in an editor. It comes from
+"Архив Аномалии" (Archive of Anomaly), a Russian AI anthology by the two person studio XCVmind.
+Reddit's re-encode strips every tag, so the file cannot name the model. As of Sep 26, 2026 a
+45 second reproduction costs $14.10 in generation on the Gemini API: Nano Banana Pro for stills,
+Veo 3.1 Fast for motion.
 
-![A timeline of the 45 second short: an establishing shot of 2.2 seconds, then four longer clips (window, courtyard, hallway to peephole, room) and a 3 second title card](shots.svg "The short as section 1 reconstructs it: five generated clips and a still title card. Four of the clips are 24 fps sources slowed to about 80 % on a 30 fps timeline.")
+**What that leaves open:** how anyone can tell, when Reddit's copy carries no tags at all and the
+only evidence is the picture. Three things in the picture settle that it was generated: a white
+shape on the windowsill turns into a person, the candles change number and place inside one take,
+and a door's lock changes as the camera walks up to it. Section 2 gives the time of each, so it
+can be checked in the short itself, and section 4 prices the $14.10 line by line, at two takes per
+shot where the recipe's own step keeps the least broken of three to five.
+
+![A timeline of the 45 second short: an establishing shot of 2.2 seconds, then four longer clips (window, courtyard, hallway to peephole, room) and a 3 second title card](shots.svg "Look at the four longer bars, the ones marked as slowed: each is a 24 fps clip slowed to about 80 % on a 30 fps timeline, which leaves only 19 to 21 new frames a second. With the short establishing shot at its native speed they are the five generated clips section 1 reconstructs; the title card is a still.")
 
 **In numbers:**
 
-- **Five clips of 2.2 to 13 seconds** and a 3 second title card make up the 45 seconds
-  ([section 1](#five-clips-and-a-title-card-from-an-xcvmind-anthology)).
-- **No provenance at all:** no C2PA manifest, no XMP, zeroed creation dates and no encoder name
-  but ffmpeg in Reddit's x264 re-encode
-  ([section 1](#five-clips-and-a-title-card-from-an-xcvmind-anthology)).
 - **19 to 21 unique frames a second** in four of the clips: 24 fps sources slowed to about 80 %,
   which fits Veo, Sora 2, Runway Gen-4, Seedance and Wan 2.5 better than Kling or Hailuo
   ([section 2](#the-pixels-prove-generation-and-a-24-fps-source-slowed-to-80)).
@@ -43,11 +47,14 @@ minute.
 - **$14.10** in generation for a 45 second reproduction on the Gemini API, at two takes per shot
   ([section 4](#a-14-10-recipe-nano-banana-pro-keyframes-veo-3-1-fast-motion)).
 
-This is a companion to [the September survey of consistent characters and sets in AI
-film](/research/ai-short-film-generation). That doc asked whether a series could be locked; this
-one takes one real short apart to see what a working studio actually does.
-
 ## 1. Five clips and a title card, from an XCVmind anthology
+
+On screen, a grinning woman in a nightgown climbs out of a fifth floor window of a Soviet
+apartment block, runs across the courtyard, appears through the peephole, then climbs in through
+the living room window. Cut by cut that is five clips and a title card. In the table, read the
+Length column first: the establishing shot is trimmed to 2.2 seconds, while the walk down the
+hallway to the peephole runs 13 seconds with no cut, the longest take in the short and one of the
+tells section 2 weighs.
 
 | Segment | Time | Length | Content |
 |---|---|---|---|

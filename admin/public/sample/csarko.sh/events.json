@@ -71,6 +71,24 @@
       "kind": "nav",
       "visitors": 10,
       "clicks": 12
+    },
+    {
+      "name": "lead-day-hike",
+      "kind": "lead",
+      "visitors": 6,
+      "clicks": 6
+    },
+    {
+      "name": "close-day-hike",
+      "kind": "close",
+      "visitors": 3,
+      "clicks": 3
+    },
+    {
+      "name": "after-the-last-trail",
+      "kind": "after",
+      "visitors": 1,
+      "clicks": 1
     }
   ],
   "outboundRate": 0.16,

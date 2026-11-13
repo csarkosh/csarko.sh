@@ -18,7 +18,7 @@
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta property="article:published_time" content="2026-09-26" />
-  <meta property="article:modified_time" content="2026-10-23" />
+  <meta property="article:modified_time" content="2026-11-13" />
   <meta property="article:author" content="https://csarko.sh/" />
   <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -49,10 +49,10 @@
       "headline": "Reverse engineering an AI horror short",
       "description": "A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe.",
       "datePublished": "2026-09-26",
-      "dateModified": "2026-10-23",
+      "dateModified": "2026-11-13",
       "url": "https://csarko.sh/research/reverse-engineering-an-ai-horror-short",
       "mainEntityOfPage": "https://csarko.sh/research/reverse-engineering-an-ai-horror-short",
-      "wordCount": 2288,
+      "wordCount": 2408,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -328,19 +328,23 @@
     .doc-page .prose { font-size: 17px; }
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
-    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
-    .series-line p { margin: 0; }
+    .series-line { display: flex; gap: 8px; margin: 18px 0 0; font-size: 14.5px; color: var(--muted); white-space: nowrap; }
+    .series-line > * { flex: none; }
+    .series-line > :first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .series-line strong { color: var(--text); font-weight: 600; }
-    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
-    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-line a, .afterward a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
-    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .prose h2, .prose h3, .prose h4 { scroll-margin-top: 28px; }
+    ::target-text { background: var(--accent-underline); color: var(--text); }
+    .toc { margin: 32px 0 0; }
     .toc .section-label { margin: 0 0 6px; }
     .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
     .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
     .toc a:hover { color: var(--accent); }
     .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    @media (min-width: 1060px) { .toc { display: none; } }
+    @media (max-width: 1059px) { .prose > .section-head:first-child:not([data-read-end]) { border-top: 0; padding-top: 0; margin-top: 36px; } }
     .figure { margin: 32px 0; }
     .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
     /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
@@ -365,26 +369,28 @@
       radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
       radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
       var(--surface); }
-    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
-    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
-    .series-name { margin: 0 0 8px; font-weight: 600; }
-    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
-    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
-    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
-    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
-    .next-list .card { padding: 16px 18px; background: var(--bg); }
-    .next-list .doc-title { font-size: 1.05rem; }
-    .next-list .doc-desc { font-size: 14.5px; }
-    .play-line, .watch-line { margin: 20px 0 0; }
+    .what-next { margin-top: 48px; }
+    .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
+    .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
+    .watch-line { margin: 20px 0 0; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
-    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
-    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
-    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color var(--md-duration-short3) var(--md-easing-standard); }
-    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
-    .afterward .next:hover { border-color: var(--accent); }
-    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
+    .afterward { display: flex; align-items: baseline; gap: 6px 22px; margin-top: 24px; font-size: 14.5px; color: var(--muted); text-wrap: balance; }
+    .afterward > * { flex: none; }
+    .afterward > a:not(:last-child) { flex: 0 1 auto; }
+    @media (max-width: 640px) {
+      .doc-page .shell { padding-top: 16px; }
+      .doc-page .crumbs ol { padding-block: 8px; }
+      .doc-page .eyebrow { margin-bottom: 8px; }
+      .doc-page h1 { margin-bottom: 10px; font-size: 2rem; }
+      .doc-header .lead { margin-bottom: 12px; font-size: 1rem; line-height: 1.5; }
+      .doc-page .doc-header { padding-bottom: 12px; }
+      .series-line { gap: 6px; margin-top: 8px; font-size: 13px; }
+      .afterward { flex-direction: column; }
+    }
+    @media (max-width: 439px) { .series-line a span { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .play { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -397,7 +403,7 @@
   <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
-      <a class="wordmark" href="/">csarko<span>.sh</span></a>
+      <a class="wordmark" href="/" data-visits-event="nav-home">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/projects" data-visits-event="nav-projects">Projects</a></li>
         <li><a href="/research" data-visits-event="nav-research">Research</a></li>
@@ -407,7 +413,7 @@
   <nav class="crumbs" aria-label="Breadcrumb">
     <div class="wrap">
       <ol>
-        <li><a href="/">Home</a></li>
+        <li><a href="/" data-visits-event="crumb-home">Home</a></li>
         <li><a href="/research">Research</a></li>
         <li><span aria-current="page">Reverse engineering an AI horror short</span></li>
       </ol>
@@ -428,44 +434,43 @@
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Sep 26, 2026 · Updated Oct 23, 2026</p>
+        <p class="eyebrow">Sep 26, 2026 · Updated Nov 13, 2026</p>
         <h1>Reverse engineering an AI horror short</h1>
         <p class="lead">A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe.</p>
         <ul class="tags">
-          <li>9 min read</li>
+          <li>10 min read</li>
         </ul>
         <nav class="series-line" aria-label="Series">
-          <p>Part 2 of 4 in <strong>AI short films</strong></p>
-          <p class="series-steps"><span>Previous: <a href="/research/ai-short-film-generation" rel="prev" data-visits-event="series-ai-short-film-generation">AI short films: consistent characters and sets</a></span><span>Next: <a href="/research/synthetic-voices-for-a-radio-call" rel="next" data-visits-event="series-synthetic-voices-for-a-radio-call">Synthetic voices for a radio call</a></span></p>
+          <span>Part 2 of 4 in <strong>AI short films</strong></span><span aria-hidden="true">·</span><a href="/research/ai-short-film-generation" rel="prev" aria-label="Previous: Consistent characters in AI video: what holds up" title="Consistent characters in AI video: what holds up" data-visits-event="series-ai-short-film-generation"><span aria-hidden="true">←</span> Previous</a><span aria-hidden="true">·</span><a href="/research/synthetic-voices-for-a-radio-call" rel="next" aria-label="Next: Synthetic voices for a radio call" title="Synthetic voices for a radio call" data-visits-event="series-synthetic-voices-for-a-radio-call">Next <span aria-hidden="true">→</span></a>
         </nav>
       </header>
       <div class="prose">
-<p><strong>Question:</strong> a 45 second vertical horror short turned up on Reddit with no credit: a grinning
-woman in a nightgown climbs out of a fifth floor window of a Soviet apartment block, runs across
-the courtyard, appears through the peephole, then climbs in through the living room window. Was it
-generated, with what, and how would someone make one just like it?</p>
-<p><strong>Short answer:</strong> yes, it was generated. It is episode 18 part 5 of &quot;Архив Аномалии&quot; (Archive of
-Anomaly), a Russian AI anthology by the two person studio XCVmind, made as five
-<button type="button" class="term" popovertarget="term-1">image-to-video</button><span class="term-def" id="term-1" popover role="note">A video model that takes a finished still and a prompt, and animates the scene from it.</span>
-clips from one shared character reference and finished in a video editor. The exact model cannot
-be read from the file, because
-<button type="button" class="term" popovertarget="term-2">Reddit&#39;s transcode</button><span class="term-def" id="term-2" popover role="note">Reddit&#39;s own re-encode of an uploaded video, which drops the original file&#39;s creation tags.</span>
-strips every provenance tag. The same look is reproducible today on the Gemini API, with Nano
-Banana Pro for keyframes and Veo 3.1 Fast for motion, for under $15 in generation per finished
-minute.</p>
+<p><strong>Question:</strong> A 45 second vertical horror short turned up on Reddit with no credit: a grinning
+woman in a nightgown climbs out of a fifth floor window, and by the end she is climbing in through
+the living room window. Was it generated, with what, and how would someone make one just like it?</p>
+<p><strong>Short answer:</strong> Yes, it was generated. It is five clips, each a still picture animated by a
+video model
+(<button type="button" class="term" popovertarget="term-1" data-visits-event="term">image-to-video</button><span class="term-def" id="term-1" popover role="note">A video model that takes a finished still and a prompt, and animates the scene from it.</span>),
+all from one reference image of the woman, then slowed and grained in an editor. It comes from
+&quot;Архив Аномалии&quot; (Archive of Anomaly), a Russian AI anthology by the two person studio XCVmind.
+Reddit&#39;s re-encode strips every tag, so the file cannot name the model. As of Sep 26, 2026 a
+45 second reproduction costs $14.10 in generation on the Gemini API: Nano Banana Pro for stills,
+Veo 3.1 Fast for motion.</p>
+<p><strong>What that leaves open:</strong> how anyone can tell, when Reddit&#39;s copy carries no tags at all and the
+only evidence is the picture. Three things in the picture settle that it was generated: a white
+shape on the windowsill turns into a person, the candles change number and place inside one take,
+and a door&#39;s lock changes as the camera walks up to it. Section 2 gives the time of each, so it
+can be checked in the short itself, and section 4 prices the $14.10 line by line, at two takes per
+shot where the recipe&#39;s own step keeps the least broken of three to five.</p>
+<p class="project-line">The author of this page makes AI-generated horror shorts too. The Last Trail, 56 seconds long, is one of them, and is a different film from the one taken apart here. <a href="https://www.youtube.com/shorts/C1XsDuJE4MQ" target="_blank" rel="noopener" data-visits-event="lead-the-last-trail">Watch it&nbsp;on&nbsp;YouTube</a>.</p>
 <figure class="figure">
 <!-- generated:figure:reverse-engineering-an-ai-horror-short/shots -->
 <img src="/assets/fig-reverse-engineering-an-ai-horror-short-shots.a5a6a28b.svg" width="440" height="440" alt="A timeline of the 45 second short: an establishing shot of 2.2 seconds, then four longer clips (window, courtyard, hallway to peephole, room) and a 3 second title card" decoding="async" />
 <!-- /generated:figure:reverse-engineering-an-ai-horror-short/shots -->
-<figcaption>The short as section 1 reconstructs it: five generated clips and a still title card. Four of the clips are 24 fps sources slowed to about 80 % on a 30 fps timeline.</figcaption>
+<figcaption>Look at the four longer bars, the ones marked as slowed: each is a 24 fps clip slowed to about 80 % on a 30 fps timeline, which leaves only 19 to 21 new frames a second. With the short establishing shot at its native speed they are the five generated clips section 1 reconstructs; the title card is a still.</figcaption>
 </figure>
 <p><strong>In numbers:</strong></p>
 <ul>
-<li><strong>Five clips of 2.2 to 13 seconds</strong> and a 3 second title card make up the 45 seconds
-(<a href="#five-clips-and-a-title-card-from-an-xcvmind-anthology">section 1</a>).</li>
-<li><strong>No provenance at all:</strong> no C2PA manifest, no XMP, zeroed creation dates and no encoder name
-but ffmpeg in Reddit&#39;s x264 re-encode
-(<a href="#five-clips-and-a-title-card-from-an-xcvmind-anthology">section 1</a>).</li>
 <li><strong>19 to 21 unique frames a second</strong> in four of the clips: 24 fps sources slowed to about 80 %,
 which fits Veo, Sora 2, Runway Gen-4, Seedance and Wan 2.5 better than Kling or Hailuo
 (<a href="#the-pixels-prove-generation-and-a-24-fps-source-slowed-to-80">section 2</a>).</li>
@@ -477,9 +482,6 @@ account (<a href="#the-studio-animates-stills-on-several-models-best-take-wins">
 <li><strong>$14.10</strong> in generation for a 45 second reproduction on the Gemini API, at two takes per shot
 (<a href="#a-14-10-recipe-nano-banana-pro-keyframes-veo-3-1-fast-motion">section 4</a>).</li>
 </ul>
-<p>This is a companion to <a href="/research/ai-short-film-generation" data-visits-event="doc-ai-short-film-generation">the September survey of consistent characters and sets in AI
-film</a>. That doc asked whether a series could be locked; this
-one takes one real short apart to see what a working studio actually does.</p>
       </div>
       <nav class="toc" aria-label="In this doc">
         <p class="section-label">In this doc</p>
@@ -493,6 +495,12 @@ one takes one real short apart to see what a working studio actually does.</p>
       </nav>
       <div class="prose">
 <div class="section-head"><p class="section-label">01</p><h2 id="five-clips-and-a-title-card-from-an-xcvmind-anthology"><a class="anchor" href="#five-clips-and-a-title-card-from-an-xcvmind-anthology">Five clips and a title card, from an XCVmind anthology</a></h2></div>
+<p>On screen, a grinning woman in a nightgown climbs out of a fifth floor window of a Soviet
+apartment block, runs across the courtyard, appears through the peephole, then climbs in through
+the living room window. Cut by cut that is five clips and a title card. In the table, read the
+Length column first: the establishing shot is trimmed to 2.2 seconds, while the walk down the
+hallway to the peephole runs 13 seconds with no cut, the longest take in the short and one of the
+tells section 2 weighs.</p>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
 <thead>
 <tr>
@@ -749,27 +757,15 @@ directly, so the workflow statements above come from indexed excerpts of those c
 from reading them end to end.</li>
 </ul>
       </div>
-      <section class="keep-reading" aria-labelledby="next-reads">
-        <h2 id="next-reads" class="section-label">Keep reading</h2>
-        <p class="series-name">AI short films · 4 parts</p>
-        <ol class="series-parts">
-          <li><a href="/research/ai-short-film-generation" data-visits-event="next-ai-short-film-generation">AI short films: consistent characters and sets</a></li>
-          <li aria-current="true"><span>Reverse engineering an AI horror short</span></li>
-          <li><a href="/research/synthetic-voices-for-a-radio-call" data-visits-event="next-synthetic-voices-for-a-radio-call">Synthetic voices for a radio call</a></li>
-          <li><a href="/research/the-well-shot-by-shot" data-visits-event="next-the-well-shot-by-shot">The Well: how an AI short reads as cinema</a></li>
-        </ol>
-        <ul class="doc-list next-list" role="list">
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/horror-sequences-shot-by-shot" data-visits-event="next-horror-sequences-shot-by-shot">23 Horror Sequences Broken Down Shot by Shot</a></h3>
-            <p class="doc-meta">36 min read</p>
-            <p class="doc-desc">Shot-by-shot breakdowns of 23 horror sequences, from the Psycho shower to Weapons: sizes, moves, durations, cut points, and what each one teaches.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/horror-cinematography-shot-by-shot" data-visits-event="next-horror-cinematography-shot-by-shot">How Horror Directors Build Dread Shot by Shot</a></h3>
-            <p class="doc-meta">40 min read</p>
-            <p class="doc-desc">How Hitchcock, Kubrick, Carpenter, Nakata, Aster and Eggers build dread: the three levers, a feeling-to-technique table, 30 director profiles, 168 sources.</p>
-          </li>
+      <section class="prose what-next" aria-labelledby="what-next">
+        <h2 id="what-next">What next</h2>
+        <p>Go back to the woman on the windowsill. The white shape that becomes her, the candles that change number within one take and the door lock that changes as the camera nears are the tells that settle that it was generated, and 19 to 21 new frames a second is the one that narrows the field of models. None of them needs the file&#39;s tags, only the picture, so the same checks can be tried on any clip. The Last Trail, a 56 second AI-generated horror short, is one to try them on. <a href="https://www.youtube.com/shorts/C1XsDuJE4MQ" target="_blank" rel="noopener" data-visits-event="close-the-last-trail">Watch it&nbsp;on&nbsp;YouTube</a>.</p>
+        <ul>
+          <li><a href="/research/synthetic-voices-for-a-radio-call" data-visits-event="series-synthetic-voices-for-a-radio-call">Which AI voice models sound human, and how do you make one sound like a radio?</a></li>
+          <li><a href="/research/horror-sequences-shot-by-shot" data-visits-event="next-horror-sequences-shot-by-shot">How are famous horror scenes like the Psycho shower built, shot by shot?</a></li>
+          <li><a href="/research/horror-cinematography-shot-by-shot" data-visits-event="next-horror-cinematography-shot-by-shot">How do horror directors build dread with the camera, the cut and sound?</a></li>
         </ul>
+        <p class="series-at"><span>Part 2 of 4 in <strong>AI short films</strong></span><span>Previous: <a href="/research/ai-short-film-generation" rel="prev" data-visits-event="series-ai-short-film-generation">Consistent characters in AI video: what holds up</a></span><span>Next: <a href="/research/synthetic-voices-for-a-radio-call" rel="next" data-visits-event="series-synthetic-voices-for-a-radio-call">Synthetic voices for a radio call</a></span></p>
         <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS).</p>
       </section>
       <div class="prose">
@@ -790,12 +786,13 @@ from reading them end to end.</li>
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
-        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
+        <p class="author-name"><a href="/" data-visits-event="author-home">Cyrus Sarkosh</a></p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
-        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
+        <p class="author-links"><a href="/" data-visits-event="author-home">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
       <nav class="afterward" aria-label="Read next">
-        <a class="next" href="/research/synthetic-voices-for-a-radio-call" data-visits-event="end-synthetic-voices-for-a-radio-call"><span class="section-label">Read next</span><span>Synthetic voices for a radio call <span aria-hidden="true">→</span></span></a>
+        <span>The Last Trail: <a href="https://www.youtube.com/shorts/C1XsDuJE4MQ" target="_blank" rel="noopener" data-visits-event="after-the-last-trail">Watch it&nbsp;on&nbsp;YouTube</a></span>
+        <a href="/research/synthetic-voices-for-a-radio-call" data-visits-event="end-synthetic-voices-for-a-radio-call">Which AI voice models sound human, and how do you make one sound like a radio?</a>
         <a href="/research">All research</a>
       </nav>
     </main>
@@ -810,7 +807,7 @@ from reading them end to end.</li>
   <!-- generated:analytics -->
   <script defer src="/assets/visits.4378bd36.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
-  <script defer src="/assets/reading.c3e27b33.js"></script>
+  <script defer src="/assets/reading.3a8c03e0.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

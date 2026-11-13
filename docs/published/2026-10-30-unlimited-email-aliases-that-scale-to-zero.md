@@ -3,6 +3,8 @@ description: Every address at a domain receives mail through SES and one Lambda,
 published: 2026-10-30
 categories: Distributed systems, Tooling
 related: cloud-rigs-for-graphics-work, how-codex-embeds-its-browser
+project: none
+asks: How do you run unlimited email aliases on your own domain with no monthly fee?
 ---
 # Unlimited email aliases that scale to zero
 

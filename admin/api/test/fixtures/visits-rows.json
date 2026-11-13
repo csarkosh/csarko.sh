@@ -78,10 +78,34 @@
       "visitors": 3
     },
     {
+      "kind": "referrer",
+      "name": "",
+      "target": "chatgpt.com",
+      "visitors": 5
+    },
+    {
+      "kind": "referrer",
+      "name": "chatgpt.com",
+      "target": "",
+      "visitors": 2
+    },
+    {
+      "kind": "referrer",
+      "name": "",
+      "target": "substack",
+      "visitors": 1
+    },
+    {
       "kind": "campaign",
       "name": "substack",
       "target": "",
       "visitors": 1
+    },
+    {
+      "kind": "campaign",
+      "name": "chatgpt.com",
+      "target": "",
+      "visitors": 6
     },
     {
       "kind": "internal",
@@ -270,6 +294,41 @@
           "lcp": "250.0",
           "cls": "0.0",
           "inp": "40.0"
+        }
+      ],
+      "last_click": null
+    },
+    {
+      "started": "2026-10-14T22:10:00Z",
+      "source": {
+        "rk": "direct",
+        "rh": null,
+        "rp": null,
+        "campaign": "chatgpt.com"
+      },
+      "device": {
+        "bn": "Safari",
+        "bv": "26",
+        "os": "iOS",
+        "vw": "390",
+        "vh": "664",
+        "tz": "Europe/Berlin",
+        "th": "light",
+        "tp": "true",
+        "lg": "de-DE"
+      },
+      "steps": [
+        {
+          "stamp": "2026-10-14T22:10:00Z",
+          "path": "/research/x",
+          "title": "X",
+          "nt": "navigate",
+          "secs": "95",
+          "depth": "100",
+          "reached": "true",
+          "lcp": "900.0",
+          "cls": "0.0",
+          "inp": null
         }
       ],
       "last_click": null

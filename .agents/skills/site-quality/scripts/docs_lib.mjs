@@ -24,14 +24,31 @@ export const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ENTI
 
 // key -> required?
 // "series" names the run of docs it belongs to (two or more share the name, read in published
-// order), and "related" the slugs its Keep reading block offers, in that order; without it the
-// build picks by shared category (2026-10-23, so no doc ends in a dead end).
+// order), and "related" the slugs its What next section offers, in that order; without it the
+// build picks by shared category (2026-10-23, so no doc ends in a dead end). What next lists
+// MAX_QUESTIONS docs at most and the next part of a series takes the first place, so a doc names
+// up to three, and the third is not shown on a doc that has a next part.
 // "watch" with "watch-title" is the video a doc is about, drawn as a pill in its header so the
 // reader can open it from the first screen (Cyrus, 2026-11-12, for The Well: the whole doc is about
 // that film and its only link was a source at the bottom).
-const FIELDS = { description: true, published: true, categories: true, updated: false, source: false, series: false, related: false, watch: false, 'watch-title': false };
+// "project" ties a doc to the game, app or film its research was done for (a slug in docs/games,
+// docs/apps or docs/films, or "none"), so the page can send its reader on to it (Cyrus, 2026-11-13,
+// after the metrics review: 91% of visits never opened a second page and no doc linked its app or
+// film; design: docs/superpowers/specs/2026-11-13-doc-reading-and-funnel-research.md).
+// "project-line" replaces the default sentence that introduces the project after the Short answer,
+// "closing" is the doc's last paragraph (what the reader can now recognise in the project and
+// where to see it), and "asks" is the question this doc answers in a reader's words, the link's
+// text when another doc points here. The page appends the project's link to both sentences itself.
+const FIELDS = { description: true, published: true, categories: true, updated: false, source: false, series: false, related: false, watch: false, 'watch-title': false, project: true, 'project-line': false, closing: false, asks: false };
+const MAX_PROJECT_LINE = 240;
+const MAX_CLOSING = 520;
+const MAX_ASKS = 90;
 const MAX_WATCH_TITLE = 60;
-const MAX_RELATED = 4;
+const MAX_QUESTIONS = 3;
+const MAX_RELATED = MAX_QUESTIONS;
+// The page prints these three as written, so Markdown in one would show as its marks.
+const PLAIN_FIELDS = ['project-line', 'closing', 'asks'];
+const MARKDOWN = /`|\*|\[[^\]]*\]\([^)]*\)|(?<!\w)_[^_\s](?:[^_]*[^_\s])?_(?!\w)/;
 const SERIES_NAME = /^[A-Z][A-Za-z0-9' ]{2,39}$/;
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 // The categories a doc may carry (Cyrus, 2026-10-13), in the order the /research filter
@@ -67,7 +84,7 @@ export function undatedParagraphs(body) {
 // Games, apps and films share one list, /projects (Cyrus, 2026-10-26). "order" places a project
 // in it, 1 first, across all three kinds; "alt" on a game describes its card's preview, which
 // comes from the same place as an app's (assets/apps/<slug>.png).
-const GAME_FIELDS = { description: true, status: true, tags: true, play: false, repo: false, released: false, order: false, alt: false };
+const GAME_FIELDS = { description: true, status: true, tags: true, play: false, repo: false, released: false, order: false, alt: false, blurb: false };
 // An app is software to download or use: "page" is its own page (on apps.csarko.sh), "platforms"
 // what it runs on, "license" joins the status in the card's kicker when the app is open source,
 // and "alt" describes its card's preview image (assets/apps/<slug>.png, and <slug>-dark.png for
@@ -78,11 +95,11 @@ const GAME_FIELDS = { description: true, status: true, tags: true, play: false, 
 // `recording` is a loop the app's page plays (an .mp4 in the app's repository, its poster the same
 // name as .jpg), `recording-under` the README's `## ` heading it goes under, `recording-alt` what
 // it shows (Cyrus, 2026-10-31: Arkos IDE's window through its themes, under "Who it's for").
-const APP_FIELDS = { description: true, status: true, page: true, platforms: true, tags: true, license: false, repo: false, released: false, alt: false, link: false, order: false, sections: false, recording: false, 'recording-under': false, 'recording-alt': false, promo: false, 'promo-link': false, 'hero-video': false, 'hero-video-alt': false, swap: false };
+const APP_FIELDS = { description: true, status: true, page: true, platforms: true, tags: true, license: false, repo: false, released: false, alt: false, link: false, order: false, sections: false, recording: false, 'recording-under': false, 'recording-alt': false, promo: false, 'promo-link': false, 'hero-video': false, 'hero-video-alt': false, swap: false, blurb: false };
 // A film is a video hosted on YouTube: the page carries its poster and links out, so every field
 // here but "order" is needed to build the card and its VideoObject. "alt" describes the poster.
 // There is no warning field: every film card carries the same notice (FILM_NOTICE).
-const FILM_FIELDS = { description: true, watch: true, released: true, runtime: true, alt: true, tags: true, model: true, order: false, focus: false };
+const FILM_FIELDS = { description: true, watch: true, released: true, runtime: true, alt: true, tags: true, model: true, order: false, focus: false, blurb: false };
 // A film's main AI model, shown as the first tag on its card (Cyrus, 2026-10-29), written the way
 // the tag reads: "Video model: Veo 3.1", or "Image model: ..." for a film animated from stills with
 // no video model. Only the one model may be named in public (film-generation's AGENTS.md, "What the
@@ -124,6 +141,12 @@ function parseBlock(text, file, fields) {
   }
   const length = [...meta.description].length;
   if (length < 70 || length > 160) throw new DocError(`${file}: description is ${length} characters (70–160)`);
+  // A project's blurb: the phrase that follows its name where a research doc introduces it
+  // ("Day Hike, a co-op horror game that runs in your browser"), so lower case and no full stop.
+  if (meta.blurb !== undefined) {
+    const n = [...meta.blurb].length;
+    if (n < 10 || n > 90 || /[.!?]$/.test(meta.blurb) || !/^[a-z0-9]/.test(meta.blurb)) throw new DocError(`${file}: blurb is a phrase of 10 to 90 characters that follows the project's name: lower case, no full stop (${n})`);
+  }
   return { meta, body: normalized.slice(block[0].length) };
 }
 
@@ -155,6 +178,27 @@ export function parseFrontMatter(text, file) {
     if (bad) throw new DocError(`${file}: related "${bad}" is not a doc slug (the URL's last part, no date)`);
     if (new Set(related).size !== related.length) throw new DocError(`${file}: a related doc is listed twice`);
     meta.related = related;
+  }
+  if (meta.project !== undefined && meta.project !== 'none' && !SLUG.test(meta.project)) {
+    throw new DocError(`${file}: project must be a game's, app's or film's slug, or none`);
+  }
+  if (meta['project-line'] !== undefined) {
+    if (meta.project === undefined || meta.project === 'none') throw new DocError(`${file}: project-line without a project`);
+    const length = [...meta['project-line']].length;
+    if (length < 20 || length > MAX_PROJECT_LINE) throw new DocError(`${file}: project-line is ${length} characters (20 to ${MAX_PROJECT_LINE})`);
+    if (!/[.!?]$/.test(meta['project-line'])) throw new DocError(`${file}: project-line must be whole sentences, ending in a full stop (the page adds the link after it)`);
+  }
+  if (meta.closing !== undefined) {
+    const length = [...meta.closing].length;
+    if (length < 40 || length > MAX_CLOSING) throw new DocError(`${file}: closing is ${length} characters (40 to ${MAX_CLOSING})`);
+    if (!/[.!?]$/.test(meta.closing)) throw new DocError(`${file}: closing must be whole sentences, ending in a full stop`);
+  }
+  if (meta.asks !== undefined) {
+    const length = [...meta.asks].length;
+    if (length < 15 || length > MAX_ASKS || !meta.asks.endsWith('?')) throw new DocError(`${file}: asks is one question of 15 to ${MAX_ASKS} characters ending in "?" (${length})`);
+  }
+  for (const key of PLAIN_FIELDS) {
+    if (meta[key] !== undefined && MARKDOWN.test(meta[key])) throw new DocError(`${file}: ${key} is plain text, printed as written: no Markdown in it (backticks, *emphasis*, _emphasis_ or a [link](...))`);
   }
   if (meta['watch-title'] !== undefined && meta.watch === undefined) throw new DocError(`${file}: watch-title without "watch"`);
   if (meta.watch !== undefined) {
@@ -364,13 +408,20 @@ const countWords = (html) => decodeEntities(html.replace(/<[^>]+>/g, ' ')).split
 // A doc's figure: ![alt](name.png "caption") alone in its paragraph, the file in the site-quality
 // skill's assets/research/<slug>/. build_assets.py fills the marker with the hashed <picture>.
 const FIGURE_FILE = /^([a-z0-9]+(?:-[a-z0-9]+)*)\.(png|svg)$/;
+// The site's own hosts. A link to one opens in the same tab and wears no external mark, so Back
+// returns the reader to their place in the doc (2026-11-13; half the assistant-referred readers
+// are on phones, where a new tab loses Back). Links to other sites still open a new tab.
+const OWN_HOST = /^https:\/\/(?:(?:www|apps|donate|games)\.)?csarko\.sh(?:[/?#]|$)/;
 const DOC_LINK = new RegExp(`^/${DOCS_DIR}/([a-z0-9]+(?:-[a-z0-9]+)*)(?:#[\\w-]+)?$`);
 
 // The first "# H1" is the title (removed from the body); every "## H2" becomes a section and a
 // stop on the contents rail, and "## 1. Title" shows its number as a mono label ("01").
 // `ieee` makes IEEE references mandatory for a doc with a Sources section (see IEEE_SINCE).
 // `figures` is the doc's own figure files (name -> { width, height }); without it, as on the
-// games, films and apps lists, an image is refused.
+// games, films and apps lists, an image is refused. `slug` is given for a research doc alone, and
+// three things are a doc page's only (2026-11-13), so a project's card and an app's README render
+// as before: a link to one of the site's own hosts opens in the same tab, a tapped term counts
+// as "term", and "what-next" is kept for the page's closing section.
 export function renderMarkdown(body, file, { ieee = false, slug = null, figures = null } = {}) {
   const marked = new Marked({ gfm: true });
   const tokens = marked.lexer(body);
@@ -381,7 +432,8 @@ export function renderMarkdown(body, file, { ieee = false, slug = null, figures 
   const problems = [];
   const references = findReferences(tokens, file, ieee, problems);
   const rail = [];
-  const usedIds = new Set(['top']); // "top" is the skip link's target; never reused
+  const isDoc = slug !== null;
+  const usedIds = new Set(isDoc ? ['top', 'what-next'] : ['top']); // the skip link's target, and a doc's closing section; never reused
   // lib-visits derives a "read-<slug>" event when a leave reached the element marked data-read-end.
   // With a Sources section that is its heading: a reader who finished the prose has read the doc,
   // and a long reference list would otherwise hide them. Without one, docPage marks its author box.
@@ -485,9 +537,10 @@ export function renderMarkdown(body, file, { ieee = false, slug = null, figures 
             return text;
           }
           terms += 1;
-          return `<button type="button" class="term" popovertarget="term-${terms}">${text}</button><span class="term-def" id="term-${terms}" popover role="note">${escapeHtml(title)}</span>`;
+          return `<button type="button" class="term" popovertarget="term-${terms}"${isDoc ? ' data-visits-event="term"' : ''}>${text}</button><span class="term-def" id="term-${terms}" popover role="note">${escapeHtml(title)}</span>`;
         }
         const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
+        if (isDoc && OWN_HOST.test(href)) return `<a href="${escapeHtml(href)}"${titleAttr}>${text}</a>`;
         if (/^https?:\/\//.test(href)) {
           return `<a class="external" href="${escapeHtml(href)}"${titleAttr} target="_blank" rel="noopener">${text}</a>`;
         }
@@ -607,6 +660,28 @@ export function loadFilm(name, text) {
   };
 }
 
+// The opening's labels as the page finds them (withProjectLine): a top-level paragraph that starts
+// with one of the three in bold, spelled exactly so. A near miss ("**Short Answer:**", the colon
+// outside the bold, no bold at all, a label in a list item) would be passed over without a word
+// and the product line would land in front of the answer, so the build names the first one it
+// finds. A callout's lines are not the opening's own and may say what they like.
+const OPENING_LABELS = ['Question', 'Short answer', 'What that leaves open'];
+const LABEL_LIKE = new RegExp(`^(?:${OPENING_LABELS.join('|')})\\s*[:.]`, 'i');
+function mislabelled(html) {
+  const cut = html.indexOf('<div class="section-head"');
+  const opening = (cut < 0 ? html : html.slice(0, cut)).replace(/<blockquote>[\s\S]*?<\/blockquote>/g, '');
+  for (const m of opening.matchAll(/<(p|li)>(?:<p>)?((?:<(?:strong|em)>)*)([^<]*)/g)) {
+    const [, tag, marks, text] = m;
+    const top = m.index === 0 || opening[m.index - 1] === '\n';
+    const lead = decodeEntities(text).trim();
+    // "**Short answer** and then the text": the bold phrase is the whole label, with no colon.
+    if (!LABEL_LIKE.test(lead) && !(marks && OPENING_LABELS.some((l) => l.toLowerCase() === lead.toLowerCase()))) continue;
+    const exact = top && tag === 'p' && marks === '<strong>' && OPENING_LABELS.some((l) => text === `${l}:`) && opening.startsWith('</strong>', m.index + m[0].length);
+    if (!exact) return plainText(opening.slice(m.index, m.index + 80)).slice(0, 40).trim();
+  }
+  return null;
+}
+
 // `figures` is the doc's figure files, name -> { width, height } (build_docs.mjs reads them).
 export function loadDoc(name, text, figures = new Map()) {
   const file = `docs/published/${name}`;
@@ -622,14 +697,21 @@ export function loadDoc(name, text, figures = new Map()) {
     if (undated.length) {
       throw new DocError(`${file}: ${undated.length} paragraph(s) speak of the present without a date; say "as of ${formatDate(meta.published)}" (see publish-doc, "Date the present"):\n${undated.map((p) => `  ${p.slice(0, 100).replace(/\s+/g, ' ')}…`).join('\n')}`);
     }
+    // The product line and the closing are paragraphs of the page too.
+    for (const key of ['project-line', 'closing']) {
+      if (meta[key] && undatedParagraphs(meta[key]).length) throw new DocError(`${file}: ${key} speaks of the present without a date; say "as of ${formatDate(meta.published)}" (see publish-doc, "Date the present")`);
+    }
   }
+  const rendered = renderMarkdown(body, file, { ieee: meta.published >= IEEE_SINCE, slug, figures });
+  const slip = mislabelled(rendered.html);
+  if (slip) throw new DocError(`${file}: the opening has "${slip}", which the page does not read as a label; write each label as a paragraph of its own that starts **Question:**, **Short answer:** or **What that leaves open:** (that spelling, the colon inside the bold), or the product line lands before the answer`);
   return {
     slug,
     url: `${SITE}/${DOCS_DIR}/${slug}`,
     path: `/${DOCS_DIR}/${slug}`,
     ...meta,
     modified: meta.updated ?? meta.published,
-    ...renderMarkdown(body, file, { ieee: meta.published >= IEEE_SINCE, slug, figures }),
+    ...rendered,
   };
 }
 
@@ -716,14 +798,15 @@ const breadcrumbs = (items) => ({
 // already on, so it is a <span> rather than a link back to itself. The separators are CSS, so they
 // reach neither the accessibility tree nor a copied line of text.
 // `local` is false on a page served from another host (apps.csarko.sh), whose crumbs must name
-// csarko.sh in full.
-function crumbs(trail, { local = true } = {}) {
+// csarko.sh in full. `homeEvent` names the Home crumb's click in the visits log (a doc page's is
+// crumb-home, 2026-11-13: the review could not tell which link took a reader home).
+function crumbs(trail, { local = true, homeEvent = '' } = {}) {
   const items = trail.map(([name, url], i) => {
     const text = escapeHtml(name);
     const href = local && url.startsWith(SITE) ? url.slice(SITE.length) || '/' : url;
     const inner = i === trail.length - 1
       ? `<span aria-current="page">${text}</span>`
-      : `<a href="${href}">${text}</a>`;
+      : `<a href="${href}"${i === 0 && homeEvent ? ` data-visits-event="${homeEvent}"` : ''}>${text}</a>`;
     return `        <li>${inner}</li>`;
   });
   return `  <nav class="crumbs" aria-label="Breadcrumb">
@@ -1018,6 +1101,8 @@ ${DOCS_CSS}${extraCss}
 // (lib-visits' client, visits.min.js, binds every data-visits-event), a stable identifier that
 // outlives a rename of the label or the URL; the home page's nav carries the same names. Until
 // 2026-10-26 there were four: Apps, Film and Games (nav-apps, nav-film, nav-games) before Research.
+// The wordmark counts nav-home on the same rule (2026-11-13): never on the page it points to, so
+// the home page's own, which only jumps to its top, carries none.
 const PAGE_LINKS = [[`/${PROJECTS_DIR}`, PROJECTS_TITLE, 'nav-projects'], [`/${DOCS_DIR}`, DOCS_NAV, 'nav-research']];
 
 // The link to the page you are on reloads it, which is not a navigation, so it counts nothing.
@@ -1025,7 +1110,7 @@ const PAGE_LINKS = [[`/${PROJECTS_DIR}`, PROJECTS_TITLE, 'nav-projects'], [`/${D
 const nav = (current, origin = '') => `  <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
-      <a class="wordmark" href="${origin}/">csarko<span>.sh</span></a>
+      <a class="wordmark" href="${origin}/" data-visits-event="nav-home">csarko<span>.sh</span></a>
       <ul>
 ${PAGE_LINKS.map(([href, label, event]) =>
     `        <li><a href="${origin}${href}"${href === current ? ' aria-current="page"' : ` data-visits-event="${event}"`}>${label}</a></li>`).join('\n')}
@@ -1088,8 +1173,9 @@ function ogImageOf(doc) {
   return { url: `${SITE}/${DOCS_DIR}/figures/${doc.slug}-${f.name}.jpg`, width: 1200, height: 630, alt: doc.title };
 }
 
-// The "In this doc" list under the opening, at every width (the rail is for wide screens only):
-// a phone gets a map of the page before section 01. Sources is left out; the rail keeps it.
+// The "In this doc" list under the opening, where there is no rail (below 1060px; DOC_CSS hides it
+// beside the rail, which lists the same sections): a phone gets a map of the page before section
+// 01. Sources is left out; the rail keeps it.
 function inlineContents(doc) {
   const items = doc.rail.filter((s) => !SOURCES_HEADING.test(s.text));
   if (items.length < 3) return '';
@@ -1102,66 +1188,133 @@ ${items.map((s) => `          <li><a href="#${s.id}" data-visits-event="toc">${s
 `;
 }
 
-// The series line under the title: where this doc sits in its run, and the parts either side of it
-// (Cyrus, 2026-11-12: a middle part showed only Next), each on its own line.
+// The series line under the title, one line at every width (2026-11-13; it was three, about 110px
+// above the Question on a phone): where this doc sits in its run, then short Previous and Next
+// links, so both directions stay reachable from the top of the page (Cyrus, 2026-11-12). Each
+// link's name carries its target's title; the titled links are in the closing section (whatNext).
 function seriesLine(doc, links) {
   const s = links.series;
   if (!s) return '';
   const at = s.parts.indexOf(doc);
-  const step = (label, d, rel) => (d ? `<span>${label}: <a href="${d.path}" rel="${rel}" data-visits-event="series-${d.slug}">${d.titleHtml}</a></span>` : '');
+  const step = (word, d, rel, inner) => (d
+    ? `<span aria-hidden="true">·</span><a href="${d.path}" rel="${rel}" aria-label="${word}: ${escapeHtml(d.title)}" title="${escapeHtml(d.title)}" data-visits-event="series-${d.slug}">${inner}</a>`
+    : '');
   return `
         <nav class="series-line" aria-label="Series">
-          <p>Part ${at + 1} of ${s.parts.length} in <strong>${escapeHtml(s.name)}</strong></p>
-          <p class="series-steps">${step('Previous', s.parts[at - 1], 'prev')}${step('Next', s.parts[at + 1], 'next')}</p>
+          <span>Part ${at + 1} of ${s.parts.length} in <strong>${escapeHtml(s.name)}</strong></span>${step('Previous', s.parts[at - 1], 'prev', '<span aria-hidden="true">←</span> Previous')}${step('Next', s.parts[at + 1], 'next', `Next ${ARROW}`)}
         </nav>`;
 }
 
-const playLink = (game) => `<a class="play" href="${escapeHtml(game.play)}" target="_blank" rel="noopener" data-visits-event="play-${game.slug}">Play ${escapeHtml(game.title)} in your browser ${EXTERNAL_ARROW}</a>`;
-
-// The video a doc is about, as the same pill as Play, under the title so it is on the first screen.
+// The video a doc is about, as an accent pill under the title so it is on the first screen.
 const watchLine = (doc) => (doc.watch
   ? `\n        <p class="watch-line"><a class="play" href="${escapeHtml(doc.watch.url)}" target="_blank" rel="noopener" data-visits-event="watch-${doc.slug}">Watch ${escapeHtml(doc.watch.title)} on YouTube ${EXTERNAL_ARROW}</a></p>`
   : '');
 
-// Where the prose ends, before Sources: the doc's series, two to four docs to read next, the game
-// it is about, and the feed. Hand-picked through front matter, else chosen by build (buildSite).
-function keepReading(doc, links) {
+// The link that sends a doc's reader on to its project (2026-11-13), in words that say what the
+// click gives: [the field that holds its address, the link's words] by kind. It took the place of
+// the Play pill, which only a doc that named a playable game got, and only at its end.
+// The last three words are joined (&nbsp;), so the paragraph never ends on a word or two and its
+// full stop, in a browser without text-wrap: pretty too ("it does." alone is 59px wide).
+const PROJECT_LINKS = { game: ['play', 'Play it in your browser,&nbsp;no&nbsp;install'], app: ['page', 'See what&nbsp;it&nbsp;does'], film: ['watch', 'Watch it&nbsp;on&nbsp;YouTube'] };
+const projectFile = (p) => `docs/${{ game: 'games', app: APPS_DIR, film: 'films' }[p.kind]}/${p.slug}.md`;
+
+// `place` is where on the page the link sits (lead, close or after), so the dashboard tells the
+// three apart: <place>-<project slug>. A game or an app on one of the site's own hosts opens in
+// the same tab; a film on YouTube opens a new one, as every link to another site does, but
+// without the external mark (class="external"): its words already say YouTube, the product line
+// carries no icon, and the mark could wrap to a line of its own with the full stop.
+function projectLink(project, place) {
+  const [field, words] = PROJECT_LINKS[project.kind];
+  const href = project[field];
+  return `<a href="${escapeHtml(href)}"${OWN_HOST.test(href) ? '' : ' target="_blank" rel="noopener"'} data-visits-event="${place}-${project.slug}">${words}</a>`;
+}
+
+// A project's title inside a sentence. One that ends in its own mark ("Who is standing in my
+// hallway?") is quoted, as the docs write it, so no comma follows a question mark bare.
+const ENDS_IN_MARK = /[.!?]$/;
+const named = (title) => (ENDS_IN_MARK.test(title) ? `"${title}"` : title);
+
+// The product line: one plain paragraph in the opening, the doc's own sentence (project-line) or
+// one built from the project's title and blurb, then the link. No box, no pill, no icon: a block
+// that looks like a promotion is skipped (NN/g, banner blindness).
+function projectLine(doc, project) {
+  if (!project) return '';
+  const text = doc['project-line']
+    // A film's default claims nothing about how the film was made (several film docs study someone
+    // else's film, and how a film was made stays private): it only says whose it is.
+    ?? (project.kind === 'film'
+      ? `The author of this page also made ${named(project.title)}, ${project.blurb}.`
+      : `This research was done for ${named(project.title)}, ${project.blurb}.`);
+  return `<p class="project-line">${escapeHtml(text)} ${projectLink(project, 'lead')}.</p>\n`;
+}
+
+// Where the product line goes in the opening: after the last of its labelled paragraphs (so never
+// before the Short answer, which a searcher gets first) and so before the figure and the In
+// numbers list that follow them; in an opening with no labels, after its first paragraph. A
+// paragraph inside a callout is not one of the opening's own.
+const LABELLED = /^<p><strong>(?:Question|Short answer|What that leaves open):<\/strong>/gm;
+function withProjectLine(opening, line) {
+  if (!line) return opening;
+  const quotes = [...opening.matchAll(/<blockquote>[\s\S]*?<\/blockquote>/g)].map((m) => [m.index, m.index + m[0].length]);
+  const own = (m) => !quotes.some(([from, to]) => m.index > from && m.index < to);
+  const at = [...opening.matchAll(LABELLED)].filter(own).at(-1) ?? [...opening.matchAll(/^<p>/gm)].find(own);
+  if (!at) return line + opening;
+  const end = opening.indexOf('</p>\n', at.index) + 5;
+  return opening.slice(0, end) + line + opening.slice(end);
+}
+
+// What a link to a doc says where the page offers it as a next read: the question it answers, in a
+// reader's words (its `asks`), or its title until that is written.
+const askOf = (d) => (d.asks ? escapeHtml(d.asks) : d.titleHtml);
+
+// The closing section, right under the last section's last paragraph and before Sources, in the
+// text column and body type (2026-11-13; a boxed Keep reading block stood here and got 1 click in
+// 172 page loads): the doc's closing paragraph with the project's link, up to three next questions
+// (the next part of its series first, then links.related), where it sits in its series, and the
+// feed. Its heading is an ordinary one, not a numbered section: it is not in the contents, and
+// reading.js stops counting the last section here.
+function whatNext(doc, links) {
+  const p = links.project;
+  const words = doc.closing
+    ? escapeHtml(doc.closing)
+    : p ? (p.kind === 'film'
+      ? `${escapeHtml(named(p.title))} is ${escapeHtml(p.blurb)} by this page's author.`
+      : `Everything on this page was worked out for ${escapeHtml(named(p.title))}, ${escapeHtml(p.blurb)}.`) : '';
+  const closing = words ? `        <p>${words}${p ? ` ${projectLink(p, 'close')}.` : ''}</p>\n` : '';
   const s = links.series;
-  const parts = s
-    ? `        <p class="series-name">${escapeHtml(s.name)} · ${s.parts.length} parts</p>
-        <ol class="series-parts">
-${s.parts.map((d) => (d === doc
-    ? `          <li aria-current="true"><span>${d.titleHtml}</span></li>`
-    : `          <li><a href="${d.path}" data-visits-event="next-${d.slug}">${d.titleHtml}</a></li>`)).join('\n')}
-        </ol>
-`
-    : '';
-  const cards = links.related.length
-    ? `        <ul class="doc-list next-list" role="list">
-${links.related.map((d) => `          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="${d.path}" data-visits-event="next-${d.slug}">${d.titleHtml}</a></h3>
-            <p class="doc-meta">${readingMinutes(d.readWords)} min read</p>
-            <p class="doc-desc">${escapeHtml(d.description)}</p>
-          </li>`).join('\n')}
+  const at = s ? s.parts.indexOf(doc) : -1;
+  const before = s?.parts[at - 1];
+  const after = s?.parts[at + 1];
+  // Any part of the doc's own series counts as series-<slug>, wherever it came from: the next
+  // part, or a part the doc names in `related`.
+  const asks = [...(after ? [after] : []), ...links.related.filter((d) => d !== after)].slice(0, MAX_QUESTIONS).map((d) => [d, s?.parts.includes(d) ? 'series' : 'next']);
+  const list = asks.length
+    ? `        <ul>
+${asks.map(([d, event]) => `          <li><a href="${d.path}" data-visits-event="${event}-${d.slug}">${askOf(d)}</a></li>`).join('\n')}
         </ul>
 `
     : '';
-  const play = links.games.map((g) => `        <p class="play-line">${playLink(g)}</p>\n`).join('');
-  return `      <section class="keep-reading" aria-labelledby="next-reads">
-        <h2 id="next-reads" class="section-label">Keep reading</h2>
-${parts}${cards}${play}        <p class="follow">New research as it lands: <a href="/${DOCS_DIR}/feed.xml">the feed</a> (RSS).</p>
+  const step = (word, d, rel) => (d ? `<span>${word}: <a href="${d.path}" rel="${rel}" data-visits-event="series-${d.slug}">${d.titleHtml}</a></span>` : '');
+  const series = s
+    ? `        <p class="series-at"><span>Part ${at + 1} of ${s.parts.length} in <strong>${escapeHtml(s.name)}</strong></span>${step('Previous', before, 'prev')}${step('Next', after, 'next')}</p>\n`
+    : '';
+  return `      <section class="prose what-next" aria-labelledby="what-next">
+        <h2 id="what-next">What next</h2>
+${closing}${list}${series}        <p class="follow">New research as it lands: <a href="/${DOCS_DIR}/feed.xml">the feed</a> (RSS).</p>
       </section>
 `;
 }
 
-// After the author box, where a reader who flicked to the bottom lands: the one next doc, the game,
-// and the way back to the list.
+// After the author box, where a reader who flicked to the bottom lands, one line: the project's
+// link (after-<project slug>; end-<doc slug> is the next doc's), the one next question, and the
+// way back to the list.
 function afterward(doc, links) {
   const s = links.series;
   const next = (s && s.parts[s.parts.indexOf(doc) + 1]) || links.related[0];
+  const p = links.project;
   const items = [
-    next ? `<a class="next" href="${next.path}" data-visits-event="end-${next.slug}"><span class="section-label">Read next</span><span>${next.titleHtml} ${ARROW}</span></a>` : '',
-    ...links.games.map(playLink),
+    p ? `<span>${escapeHtml(p.title)}${ENDS_IN_MARK.test(p.title) ? '' : ':'} ${projectLink(p, 'after')}</span>` : '',
+    next ? `<a href="${next.path}" data-visits-event="end-${next.slug}">${askOf(next)}</a>` : '',
     `<a href="/${DOCS_DIR}">All research</a>`,
   ].filter(Boolean);
   return `      <nav class="afterward" aria-label="Read next">
@@ -1170,24 +1323,44 @@ function afterward(doc, links) {
 `;
 }
 
-// Only doc pages carry these rules (the lists share DOCS_CSS and sit nearer their budgets).
+// Only doc pages carry these rules (the lists share DOCS_CSS and sit nearer their budgets). The
+// 2026-11-13 rules are explained here, not in the CSS, since every doc page ships these bytes:
+// - .series-line is one line at every width: the series name gives way (an ellipsis) before the
+//   links do.
+// - scroll-margin-top: a heading reached by a link clears the sticky nav, its number label too
+//   (html's scroll-padding-top alone left the label under the bar).
+// - ::target-text is the sentence a text-fragment link lands on (Google's AI answers link
+//   mid-page): the accent tint under --text, 6.2:1 or better on every surface in both themes.
+// - .toc: beside the rail (1060px up) the list would say the same thing twice, so it is hidden
+//   there. Below that it stays, unboxed, and no rule or wide gap stands between it and section 1:
+//   both read as the end of the page.
+// - .what-next follows the last paragraph with no rule and no box; .series-at is where the doc
+//   sits in its series, then each neighbour by title, and a part wraps whole.
+// - .afterward is one row: the next question, the one long item, wraps inside its own place; a
+//   phone stacks the three.
+// - The 640px block is a phone's first screen: less air above the eyebrow and between the title,
+//   the description and the tags, so the Question starts high and the Short answer is in view.
 const DOC_CSS = `
     .doc-page .prose { font-size: 17px; }
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
-    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
-    .series-line p { margin: 0; }
+    .series-line { display: flex; gap: 8px; margin: 18px 0 0; font-size: 14.5px; color: var(--muted); white-space: nowrap; }
+    .series-line > * { flex: none; }
+    .series-line > :first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .series-line strong { color: var(--text); font-weight: 600; }
-    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
-    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-line a, .afterward a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
-    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .prose h2, .prose h3, .prose h4 { scroll-margin-top: 28px; }
+    ::target-text { background: var(--accent-underline); color: var(--text); }
+    .toc { margin: 32px 0 0; }
     .toc .section-label { margin: 0 0 6px; }
     .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
     .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
     .toc a:hover { color: var(--accent); }
     .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    @media (min-width: 1060px) { .toc { display: none; } }
+    @media (max-width: 1059px) { .prose > .section-head:first-child:not([data-read-end]) { border-top: 0; padding-top: 0; margin-top: 36px; } }
     .figure { margin: 32px 0; }
     .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
     /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
@@ -1212,28 +1385,30 @@ const DOC_CSS = `
       radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
       radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
       var(--surface); }
-    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
-    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
-    .series-name { margin: 0 0 8px; font-weight: 600; }
-    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
-    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
-    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
-    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
-    .next-list .card { padding: 16px 18px; background: var(--bg); }
-    .next-list .doc-title { font-size: 1.05rem; }
-    .next-list .doc-desc { font-size: 14.5px; }
-    .play-line, .watch-line { margin: 20px 0 0; }
+    .what-next { margin-top: 48px; }
+    .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
+    .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
+    .watch-line { margin: 20px 0 0; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
-    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
-    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
-    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color var(--md-duration-short3) var(--md-easing-standard); }
-    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
-    .afterward .next:hover { border-color: var(--accent); }
-    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }`;
+    .afterward { display: flex; align-items: baseline; gap: 6px 22px; margin-top: 24px; font-size: 14.5px; color: var(--muted); text-wrap: balance; }
+    .afterward > * { flex: none; }
+    .afterward > a:not(:last-child) { flex: 0 1 auto; }
+    @media (max-width: 640px) {
+      .doc-page .shell { padding-top: 16px; }
+      .doc-page .crumbs ol { padding-block: 8px; }
+      .doc-page .eyebrow { margin-bottom: 8px; }
+      .doc-page h1 { margin-bottom: 10px; font-size: 2rem; }
+      .doc-header .lead { margin-bottom: 12px; font-size: 1rem; line-height: 1.5; }
+      .doc-page .doc-header { padding-bottom: 12px; }
+      .series-line { gap: 6px; margin-top: 8px; font-size: 13px; }
+      .afterward { flex-direction: column; }
+    }
+    @media (max-width: 439px) { .series-line a span { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .play { transition: none; } }`;
 
-export function docPage(doc, theme, links = { series: null, related: [], games: [] }) {
+export function docPage(doc, theme, links = { series: null, related: [], project: null }) {
   const trail = [HOME_CRUMB, [DOCS_NAV, `${SITE}/${DOCS_DIR}`], [doc.title, doc.url]];
   const og = ogImageOf(doc);
   const graph = [
@@ -1274,10 +1449,11 @@ ${doc.rail.map((s) => `        <li><a href="#${s.id}" data-visits-event="toc-rai
   const source = doc.source
     ? `\n          <li><a class="external" href="${escapeHtml(doc.source)}" target="_blank" rel="noopener">Also on GitHub</a></li>`
     : '';
-  // The prose in three runs: the opening (the question and its answer), the sections, and Sources,
-  // with the contents list after the first and Keep reading before the last.
+  // The prose in three runs: the opening (the question and its answer, then the product line),
+  // the sections, and Sources, with the contents list after the first and the closing section
+  // (What next) before the last.
   const firstSection = doc.html.indexOf('<div class="section-head"');
-  const opening = firstSection < 0 ? doc.html : doc.html.slice(0, firstSection);
+  const opening = withProjectLine(firstSection < 0 ? doc.html : doc.html.slice(0, firstSection), projectLine(doc, links.project));
   const rest = firstSection < 0 ? '' : doc.html.slice(firstSection);
   const sourcesAt = rest.indexOf('<div class="section-head" data-read-end>');
   const sections = sourcesAt < 0 ? rest : rest.slice(0, sourcesAt);
@@ -1286,7 +1462,7 @@ ${doc.rail.map((s) => `        <li><a href="#${s.id}" data-visits-event="toc-rai
   return `${head({ title: `${doc.title} · Cyrus Sarkosh`, ogTitle: doc.title, description: doc.description, canonical: doc.url, ogType: 'article', ogImage: og, extraMeta, extraCss: DOC_CSS + (doc.references ? REFERENCES_CSS : ''), graph, theme })}
 <body class="doc-page">
 ${nav(null)}
-${crumbs(trail)}
+${crumbs(trail, { homeEvent: 'crumb-home' })}
 
   <div class="wrap shell${doc.rail.length ? '' : ' no-rail'}">
 ${rail}    <main id="top" tabindex="-1">
@@ -1298,11 +1474,11 @@ ${rail}    <main id="top" tabindex="-1">
           <li>${readingMinutes(doc.readWords)} min read</li>${source}
         </ul>${seriesLine(doc, links)}${watchLine(doc)}
       </header>
-${prose(opening)}${inlineContents(doc)}${prose(sections)}${keepReading(doc, links)}${prose(sources)}      <section class="author" aria-label="About the author"${doc.hasSources ? '' : ' data-read-end'}>
+${prose(opening)}${inlineContents(doc)}${prose(sections)}${whatNext(doc, links)}${prose(sources)}      <section class="author" aria-label="About the author"${doc.hasSources ? '' : ' data-read-end'}>
         <p class="section-label">Written by</p>
-        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
+        <p class="author-name"><a href="/" data-visits-event="author-home">Cyrus Sarkosh</a></p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
-        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="${LINKEDIN}" target="_blank" rel="noopener">LinkedIn</a></p>
+        <p class="author-links"><a href="/" data-visits-event="author-home">csarko.sh</a> · <a class="external" href="${LINKEDIN}" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
 ${afterward(doc, links)}    </main>
   </div>
@@ -1575,15 +1751,17 @@ ${entries.join('\n')}
 `;
 }
 
-const RELATED_AUTO = 3;
+const RELATED_AUTO = MAX_QUESTIONS;
 
 /**
  * What each doc links on to (2026-10-23): its series (every doc sharing the name, oldest first),
  * the docs it names in `related` or, without that, the ones sharing the most categories with it
- * (newest first among equals, none from its own series, which is listed apart), and the games it
- * mentions by name that can be played.
+ * (newest first among equals, none from its own series, which is listed apart), and its project
+ * (2026-11-13): the game, app or film its `project` names, which must exist, carry a blurb for
+ * the sentence that introduces it, and have somewhere to send the reader. null for `none`, and for
+ * a doc that does not say yet. Until then a doc got a Play link when its text named a playable game.
  */
-export function docLinks(docs, games = []) {
+export function docLinks(docs, projects = []) {
   const bySlug = new Map(docs.map((d) => [d.slug, d]));
   const series = new Map();
   for (const d of docs.filter((x) => x.series)) series.set(d.series, [...(series.get(d.series) ?? []), d]);
@@ -1591,7 +1769,17 @@ export function docLinks(docs, games = []) {
     if (parts.length < 2) throw new DocError(`docs/published/: the series "${name}" has one doc (${parts[0].slug}); a series needs two or more`);
     parts.sort((a, b) => (a.published === b.published ? (a.slug < b.slug ? -1 : 1) : a.published < b.published ? -1 : 1));
   }
-  const playable = games.filter((g) => g.play);
+  const bySlugProject = new Map(projects.map((p) => [p.slug, p]));
+  const projectOf = (doc) => {
+    if (doc.project === undefined || doc.project === 'none') return null;
+    const file = `docs/published/${doc.published}-${doc.slug}.md`;
+    const project = bySlugProject.get(doc.project);
+    if (!project) throw new DocError(`${file}: project "${doc.project}" is not a game, app or film (a slug in docs/games, docs/${APPS_DIR} or docs/films, or none)`);
+    if (!project.blurb) throw new DocError(`${file}: its project, ${projectFile(project)}, needs a "blurb", the phrase that follows its name`);
+    const [field] = PROJECT_LINKS[project.kind];
+    if (!project[field]) throw new DocError(`${file}: its project, ${projectFile(project)}, has no "${field}" address to send a reader to`);
+    return project;
+  };
   const links = new Map();
   for (const doc of docs) {
     let related;
@@ -1611,11 +1799,10 @@ export function docLinks(docs, games = []) {
         .slice(0, doc.series ? RELATED_AUTO - 1 : RELATED_AUTO)
         .map((x) => x.d);
     }
-    const text = plainText(doc.html);
     links.set(doc.slug, {
       series: doc.series ? { name: doc.series, parts: series.get(doc.series) } : null,
       related,
-      games: playable.filter((g) => new RegExp(`\\b${g.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(text)),
+      project: projectOf(doc),
     });
   }
   return links;
@@ -1630,7 +1817,6 @@ export function buildSite({ sources, gameSources = [], filmSources = [], appSour
     ...appSources.map(({ name, text }) => loadApp(name, text)),
     ...filmSources.map(({ name, text }) => loadFilm(name, text)),
   ]);
-  const games = projects.filter((p) => p.kind === 'game');
   // The date lives in the file name, so the directory no longer keeps slugs unique: two dates can
   // claim one URL, and the second page would silently overwrite the first.
   const bySlug = new Map();
@@ -1643,19 +1829,18 @@ export function buildSite({ sources, gameSources = [], filmSources = [], appSour
   }
   // Every project shares one page, so a slug is its card's #anchor and its picture's
   // /projects/<slug>.jpg across all three folders, and an order is one place in one list.
-  const source = (p) => `docs/${{ game: 'games', app: APPS_DIR, film: 'films' }[p.kind]}/${p.slug}.md`;
   const projectSlugs = new Map();
   const projectOrders = new Map();
   for (const p of projects) {
-    if (projectSlugs.has(p.slug)) throw new DocError(`${projectSlugs.get(p.slug)} and ${source(p)} share the slug "${p.slug}" on /${PROJECTS_DIR}`);
-    projectSlugs.set(p.slug, source(p));
+    if (projectSlugs.has(p.slug)) throw new DocError(`${projectSlugs.get(p.slug)} and ${projectFile(p)} share the slug "${p.slug}" on /${PROJECTS_DIR}`);
+    projectSlugs.set(p.slug, projectFile(p));
     if (p.order === undefined) continue;
-    if (projectOrders.has(p.order)) throw new DocError(`${projectOrders.get(p.order)} and ${source(p)} both have order: ${p.order}`);
-    projectOrders.set(p.order, source(p));
+    if (projectOrders.has(p.order)) throw new DocError(`${projectOrders.get(p.order)} and ${projectFile(p)} both have order: ${p.order}`);
+    projectOrders.set(p.order, projectFile(p));
   }
   const theme = themeBlocks(indexHtml);
   const files = new Map();
-  const links = docLinks(docs, games);
+  const links = docLinks(docs, projects);
   for (const doc of docs) files.set(`${DOCS_DIR}/${doc.slug}.html`, docPage(doc, theme, links.get(doc.slug)));
   if (docs.length) {
     files.set(`${DOCS_DIR}/index.html`, indexPage(docs, theme));

@@ -3,6 +3,10 @@ description: How films open on a drive, a call and a wrong note; what makes sixt
 published: 2026-09-29
 categories: Film, Game design
 series: Horror craft
+project: day-hike
+project-line: This research was done for the opening of Day Hike, a first-person co-op horror game that runs in your browser: a short film of a ranger's drive to the trailhead and a radio call that breaks up.
+closing: The opening this page planned was built. As of Oct 15, 2026 it runs 72 seconds in eight shots, above the sixty second floor of section 12, in mist, at 24 frames a second in a 2:1 frame. Dispatch reports a missing hiker last seen at Trail 14, and the signal drops the words that come before "get back to the road". The last frame holds, and a click cuts to first person at the trailhead, facing the trail.
+asks: How do you open a game like a film, and how long should the intro run?
 ---
 # Opening a game like a film: sixty seconds of drive, radio and dread
 

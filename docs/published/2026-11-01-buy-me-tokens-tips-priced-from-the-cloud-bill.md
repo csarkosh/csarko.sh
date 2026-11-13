@@ -3,6 +3,8 @@ description: Tip tiers set at 1%, 3% and 10% of the last 30 days' cloud bill, ga
 published: 2026-11-01
 categories: Distributed systems, Tooling
 related: unlimited-email-aliases-that-scale-to-zero, a-zero-cost-analytics-dashboard-without-cookies
+project: none
+asks: How do you price a tip jar from your real cloud bill, with no manual updates?
 ---
 # Buy me tokens: tips priced from the cloud bill
 

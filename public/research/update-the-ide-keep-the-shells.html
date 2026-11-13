@@ -331,19 +331,23 @@
     .doc-page .prose { font-size: 17px; }
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
-    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
-    .series-line p { margin: 0; }
+    .series-line { display: flex; gap: 8px; margin: 18px 0 0; font-size: 14.5px; color: var(--muted); white-space: nowrap; }
+    .series-line > * { flex: none; }
+    .series-line > :first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .series-line strong { color: var(--text); font-weight: 600; }
-    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
-    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-line a, .afterward a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
-    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .prose h2, .prose h3, .prose h4 { scroll-margin-top: 28px; }
+    ::target-text { background: var(--accent-underline); color: var(--text); }
+    .toc { margin: 32px 0 0; }
     .toc .section-label { margin: 0 0 6px; }
     .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
     .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
     .toc a:hover { color: var(--accent); }
     .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    @media (min-width: 1060px) { .toc { display: none; } }
+    @media (max-width: 1059px) { .prose > .section-head:first-child:not([data-read-end]) { border-top: 0; padding-top: 0; margin-top: 36px; } }
     .figure { margin: 32px 0; }
     .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
     /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
@@ -368,26 +372,28 @@
       radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
       radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
       var(--surface); }
-    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
-    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
-    .series-name { margin: 0 0 8px; font-weight: 600; }
-    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
-    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
-    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
-    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
-    .next-list .card { padding: 16px 18px; background: var(--bg); }
-    .next-list .doc-title { font-size: 1.05rem; }
-    .next-list .doc-desc { font-size: 14.5px; }
-    .play-line, .watch-line { margin: 20px 0 0; }
+    .what-next { margin-top: 48px; }
+    .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
+    .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
+    .watch-line { margin: 20px 0 0; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
-    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
-    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
-    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color var(--md-duration-short3) var(--md-easing-standard); }
-    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
-    .afterward .next:hover { border-color: var(--accent); }
-    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
+    .afterward { display: flex; align-items: baseline; gap: 6px 22px; margin-top: 24px; font-size: 14.5px; color: var(--muted); text-wrap: balance; }
+    .afterward > * { flex: none; }
+    .afterward > a:not(:last-child) { flex: 0 1 auto; }
+    @media (max-width: 640px) {
+      .doc-page .shell { padding-top: 16px; }
+      .doc-page .crumbs ol { padding-block: 8px; }
+      .doc-page .eyebrow { margin-bottom: 8px; }
+      .doc-page h1 { margin-bottom: 10px; font-size: 2rem; }
+      .doc-header .lead { margin-bottom: 12px; font-size: 1rem; line-height: 1.5; }
+      .doc-page .doc-header { padding-bottom: 12px; }
+      .series-line { gap: 6px; margin-top: 8px; font-size: 13px; }
+      .afterward { flex-direction: column; }
+    }
+    @media (max-width: 439px) { .series-line a span { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .play { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -400,7 +406,7 @@
   <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
-      <a class="wordmark" href="/">csarko<span>.sh</span></a>
+      <a class="wordmark" href="/" data-visits-event="nav-home">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/projects" data-visits-event="nav-projects">Projects</a></li>
         <li><a href="/research" data-visits-event="nav-research">Research</a></li>
@@ -410,7 +416,7 @@
   <nav class="crumbs" aria-label="Breadcrumb">
     <div class="wrap">
       <ol>
-        <li><a href="/">Home</a></li>
+        <li><a href="/" data-visits-event="crumb-home">Home</a></li>
         <li><a href="/research">Research</a></li>
         <li><span aria-current="page">Update the IDE, keep the shells</span></li>
       </ol>
@@ -440,13 +446,13 @@
           <li><a class="external" href="https://github.com/csarkosh/ide-sarkos/blob/main/docs/superpowers/specs/2026-10-14-update-in-place-design.md" target="_blank" rel="noopener">Also on GitHub</a></li>
         </ul>
         <nav class="series-line" aria-label="Series">
-          <p>Part 2 of 3 in <strong>Arkos IDE notes</strong></p>
-          <p class="series-steps"><span>Previous: <a href="/research/bring-the-agents-back-after-a-reboot" rel="prev" data-visits-event="series-bring-the-agents-back-after-a-reboot">Bring the agents back after a reboot</a></span><span>Next: <a href="/research/how-codex-embeds-its-browser" rel="next" data-visits-event="series-how-codex-embeds-its-browser">How Codex embeds its browser, and what a Rust IDE can copy</a></span></p>
+          <span>Part 2 of 3 in <strong>Arkos IDE notes</strong></span><span aria-hidden="true">·</span><a href="/research/bring-the-agents-back-after-a-reboot" rel="prev" aria-label="Previous: Bring the agents back after a reboot" title="Bring the agents back after a reboot" data-visits-event="series-bring-the-agents-back-after-a-reboot"><span aria-hidden="true">←</span> Previous</a><span aria-hidden="true">·</span><a href="/research/how-codex-embeds-its-browser" rel="next" aria-label="Next: How Codex embeds its browser, and what a Rust IDE can copy" title="How Codex embeds its browser, and what a Rust IDE can copy" data-visits-event="series-how-codex-embeds-its-browser">Next <span aria-hidden="true">→</span></a>
         </nav>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> Why does updating an IDE end the terminal sessions and the Claude Code agents running inside it; which tools avoid that, and how; what do Unix process and pseudo-terminal semantics actually allow; and how can Sarkos IDE update in place, with its daemon replacing itself by <code>exec</code> while the shells stay its children, so that no session is ever lost?</p>
 <p><strong>Short answer:</strong> An update ends sessions because the terminal&#39;s master side and the shell&#39;s parent live in a process the update quits: Electron&#39;s updater closes every window and quits the app <a class="cite" href="#ref-1">[1]</a>, VS Code reconnects to a live process only on a window reload and relaunches a new one on an application restart <a class="cite" href="#ref-2">[2]</a>, <a class="cite" href="#ref-3">[3]</a>, a reply on Cursor&#39;s forum calls the loss a known limitation and recommends tmux <a class="cite" href="#ref-4">[4]</a>, and a Zed RFC says every terminal process dies when Zed restarts for an update <a class="cite" href="#ref-5">[5]</a>. Multiplexers such as tmux survive any client restart because a separate server owns the terminals, but the server itself cannot be upgraded live: a new client refuses an old server across a protocol change, and killing the server ends every session <a class="cite" href="#ref-6">[6]</a>, <a class="cite" href="#ref-7">[7]</a>. Claude Code&#39;s resume reloads the conversation in a new process; tools that were running do not finish <a class="cite" href="#ref-8">[8]</a>. Servers that upgrade without dropping work either start a second process and pass it their listening sockets (nginx, HAProxy, Envoy, tableflip) or re-execute themselves in place (systemd, sshd) <a class="cite" href="#ref-9">[9]</a>, <a class="cite" href="#ref-10">[10]</a>, <a class="cite" href="#ref-11">[11]</a>, <a class="cite" href="#ref-12">[12]</a>, <a class="cite" href="#ref-13">[13]</a>. <code>execve</code> keeps the process id, parent, children, session, controlling terminal and every descriptor not marked close-on-exec, and drops caught signal handlers, other threads and memory <a class="cite" href="#ref-14">[14]</a>, <a class="cite" href="#ref-15">[15]</a>; a descriptor sent to another process carries the terminal but not parenthood, because only a parent can wait for a child <a class="cite" href="#ref-16">[16]</a>, <a class="cite" href="#ref-17">[17]</a>. Sarkos IDE&#39;s design uses exactly this: the daemon that owns every terminal writes a handover file, clears close-on-exec on its terminal masters and listening socket, and execs the new binary in the same process, so the shells never see their parent change; the window reconnects on its own, and the daemon relaunches it when its binary changed too. One gap remains: nothing survives the daemon&#39;s death, a logout or a reboot.</p>
+<p class="project-line">Arkos IDE is a Mac app that keeps many Claude Code sessions running side by side, called Sarkos IDE on this page. The design in section 5, a spec when written, shipped in it: the daemon replaces itself in place, so an update ends no shell. <a href="https://apps.csarko.sh/ide-arkos" data-visits-event="lead-ide-arkos">See what&nbsp;it&nbsp;does</a>.</p>
       </div>
       <nav class="toc" aria-label="In this doc">
         <p class="section-label">In this doc</p>
@@ -611,26 +617,15 @@
 <p><strong>Signal state needs care.</strong> Caught handlers reset and the signal mask carries over <a class="cite" href="#ref-14">[14]</a>. The new daemon has to set its <code>SIGCHLD</code> handling explicitly, never inherit an ignore setting that would discard exit statuses <a class="cite" href="#ref-16">[16]</a>, and sweep its children once at start.</p>
 <p><strong>Some facts were not verified.</strong> No VS Code source read here states what an update does to the pty host; the inference in section 1.1 is strong but it is an inference. Linux terminal buffer sizes were not measured; the design targets macOS only.</p>
       </div>
-      <section class="keep-reading" aria-labelledby="next-reads">
-        <h2 id="next-reads" class="section-label">Keep reading</h2>
-        <p class="series-name">Arkos IDE notes · 3 parts</p>
-        <ol class="series-parts">
-          <li><a href="/research/bring-the-agents-back-after-a-reboot" data-visits-event="next-bring-the-agents-back-after-a-reboot">Bring the agents back after a reboot</a></li>
-          <li aria-current="true"><span>Update the IDE, keep the shells</span></li>
-          <li><a href="/research/how-codex-embeds-its-browser" data-visits-event="next-how-codex-embeds-its-browser">How Codex embeds its browser, and what a Rust IDE can copy</a></li>
-        </ol>
-        <ul class="doc-list next-list" role="list">
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/dashboard-api-out-of-memory-made-fast-for-free" data-visits-event="next-dashboard-api-out-of-memory-made-fast-for-free">A dashboard API that ran out of memory, made fast for free</a></h3>
-            <p class="doc-meta">10 min read</p>
-            <p class="doc-desc">A 256 MiB Cloud Run API died under nine parallel queries; field masks, shared reads and saved answers made its dashboards fast, all on the free tier.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/buy-me-tokens-tips-priced-from-the-cloud-bill" data-visits-event="next-buy-me-tokens-tips-priced-from-the-cloud-bill">Buy me tokens: tips priced from the cloud bill</a></h3>
-            <p class="doc-meta">12 min read</p>
-            <p class="doc-desc">Tip tiers set at 1%, 3% and 10% of the last 30 days&#39; cloud bill, gathered daily from five billing sources and repriced weekly with no hand in the loop.</p>
-          </li>
+      <section class="prose what-next" aria-labelledby="what-next">
+        <h2 id="what-next">What next</h2>
+        <p>An update ends sessions when it quits the process that owns the terminals, and an Arkos IDE update does not quit it. The daemon writes a handover file and execs the new binary under the same pid, so the shells stay its children, and the window relaunches with every tab and its history. The gap section 6 names remains: when the daemon is killed or the Mac restarts, the shells end, and the app recovers by resuming the sessions, not by keeping them alive. <a href="https://apps.csarko.sh/ide-arkos" data-visits-event="close-ide-arkos">See what&nbsp;it&nbsp;does</a>.</p>
+        <ul>
+          <li><a href="/research/how-codex-embeds-its-browser" data-visits-event="series-how-codex-embeds-its-browser">How does the Codex app embed its browser, and can a non-Electron app copy it?</a></li>
+          <li><a href="/research/dashboard-api-out-of-memory-made-fast-for-free" data-visits-event="next-dashboard-api-out-of-memory-made-fast-for-free">Why did a small Cloud Run API run out of memory, and how was it made fast?</a></li>
+          <li><a href="/research/buy-me-tokens-tips-priced-from-the-cloud-bill" data-visits-event="next-buy-me-tokens-tips-priced-from-the-cloud-bill">How do you price a tip jar from your real cloud bill, with no manual updates?</a></li>
         </ul>
+        <p class="series-at"><span>Part 2 of 3 in <strong>Arkos IDE notes</strong></span><span>Previous: <a href="/research/bring-the-agents-back-after-a-reboot" rel="prev" data-visits-event="series-bring-the-agents-back-after-a-reboot">Bring the agents back after a reboot</a></span><span>Next: <a href="/research/how-codex-embeds-its-browser" rel="next" data-visits-event="series-how-codex-embeds-its-browser">How Codex embeds its browser, and what a Rust IDE can copy</a></span></p>
         <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS).</p>
       </section>
       <div class="prose">
@@ -682,12 +677,13 @@
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
-        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
+        <p class="author-name"><a href="/" data-visits-event="author-home">Cyrus Sarkosh</a></p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
-        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
+        <p class="author-links"><a href="/" data-visits-event="author-home">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
       <nav class="afterward" aria-label="Read next">
-        <a class="next" href="/research/how-codex-embeds-its-browser" data-visits-event="end-how-codex-embeds-its-browser"><span class="section-label">Read next</span><span>How Codex embeds its browser, and what a Rust IDE can copy <span aria-hidden="true">→</span></span></a>
+        <span>Arkos IDE: <a href="https://apps.csarko.sh/ide-arkos" data-visits-event="after-ide-arkos">See what&nbsp;it&nbsp;does</a></span>
+        <a href="/research/how-codex-embeds-its-browser" data-visits-event="end-how-codex-embeds-its-browser">How does the Codex app embed its browser, and can a non-Electron app copy it?</a>
         <a href="/research">All research</a>
       </nav>
     </main>
@@ -702,7 +698,7 @@
   <!-- generated:analytics -->
   <script defer src="/assets/visits.4378bd36.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
-  <script defer src="/assets/reading.c3e27b33.js"></script>
+  <script defer src="/assets/reading.3a8c03e0.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

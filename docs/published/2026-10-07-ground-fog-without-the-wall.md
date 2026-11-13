@@ -3,22 +3,37 @@ description: How AAA engines draw ground fog as a frustum-aligned volume instead
 published: 2026-10-07
 categories: Rendering
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-07-ground-fog-in-aaa-games.md
-updated: 2026-10-23
+updated: 2026-11-13
 series: Rendering a browser forest
+project: day-hike
+project-line: Day Hike, a co-op horror game that runs in your browser, first drew its night mist as camera-facing sprites, and it read as a wall. This research is why that mist became a volume the game steps through, up to 12 steps a pixel.
+closing: In the picture at the top, the tree line fades into Day Hike's closed-form height fog, the first design of section 3. As of Nov 13, 2026, the mist that rises after dark is the march of section 4, run once a pixel in a post pass that reads the scene's depth: 12 steps on the high tier, 8 on medium and none on low, out to 40 m. On the low tier the closed-form fog stands alone.
+asks: How do AAA games draw ground fog, and can a browser game do the same?
 ---
 # Volumetric ground fog without the sprite wall
 
-**Question:** fog drawn as camera-facing sprites reads as a wall: the terrain cuts each quad along
-a hard line, and a dozen soft blobs overlapping average into a flat sheet. How do the games whose
-fog looks real draw it, and which of it can a browser game run?
+**Question:** ground fog drawn as sprites, flat pictures turned to face the camera, reads as a
+wall: the terrain cuts each one along a hard line, and a dozen soft blobs overlapping average
+into a flat sheet. How do the games whose fog looks real draw it, and which of it can a browser
+game run?
 
-**Short answer:** every current AAA fog is a volume, not a set of sprites: a low-resolution
+**Short answer:** every current AAA fog is a volume, not a set of sprites. The game fills a small
+3D grid fitted to the camera's view, a
 [froxel](#term "A frustum voxel: one cell of a small 3D grid fitted to the camera's view, finer near the eye than far from it.")
-grid that the scene's lights shine through, integrated for each pixel up to that pixel's own
-depth, so there is no surface for the ground to cut. A browser can run the same integral in one
-half-resolution fragment pass on WebGL2 and WebGPU alike; only a true froxel grid needs WebGPU.
+grid, with fog that the scene's lights shine through, then adds it up for each pixel only as far
+as that pixel's own depth, so there is no surface for the ground to cut. A browser can run the
+same sum in one half-resolution pass on both of its graphics APIs, WebGL2 and WebGPU; only a true
+froxel grid needs WebGPU.
 
-![The crest in Day Hike: bare ground in the foreground, an animal on the ridge, and a line of trees beyond it fading into a low grey mist](crest.png "As of October 2026, Day Hike draws the cheapest of the three browser designs in section 3, an analytic height fog: mist that thickens toward the ground and with distance, with no edge for the terrain to cut.")
+**What that leaves open:** why a grid that coarse does not look blocky, and what goes wrong with
+it. Unreal's default is one cell for every 8 screen pixels, yet no cell is ever visible, because
+fog holds only soft, low-frequency light and each pixel reads the grid with filtering at its own
+depth; the price is one flaw every engine documents, trails left in the fog by fast-changing
+lights such as flashlights and muzzle flashes. Of the three browser designs, the closed-form
+height fog gives only a smooth layer and the half-resolution march gives wisps to walk through;
+section 1 names the source for each claim about the grid, so you can check them.
+
+![The crest in Day Hike: bare ground in the foreground, an animal on the ridge, and a line of trees beyond it fading into a low grey mist](crest.png "Look at the foot of the trees beyond the ridge: the trunks fade into the mist by height, and the mist has no flat edge where the ground rises through it. As of October 2026, Day Hike draws the cheapest of the three browser designs in section 3, an analytic height fog: mist that thickens toward the ground and with distance, with no edge for the terrain to cut.")
 
 **In numbers:**
 
@@ -28,12 +43,19 @@ half-resolution fragment pass on WebGL2 and WebGPU alike; only a true froxel gri
   holds only soft, low-frequency light ([section 1](#every-aaa-fog-is-a-froxel-volume)).
 - **One octave of wind-blown noise** times a height falloff is the whole density; the look comes
   from the lighting and the temporal filter ([section 1](#every-aaa-fog-is-a-froxel-volume)).
-- **One known artifact:** ghosting from that temporal filter, which every engine documents
-  ([section 1](#every-aaa-fog-is-a-froxel-volume)).
 - **12 to 16 steps at half resolution** is the browser's version, of the order of 1 to 2 ms on
   an integrated GPU ([section 3](#three-browser-designs-two-of-them-on-webgl2)).
 
 ## 1. Every AAA fog is a froxel volume
+
+Take one frame of Assassin's Creed 4, where this design began. Its fog is a volume, not a set
+of sprites: the game works out how much fog and how much scattered light sit in every cell of a
+small 3D grid fitted to the camera's view, adds the cells up from the camera outward, and each
+screen pixel then reads its fog with "just one bilinear volume texture fetch" at its own
+depth [1]. A pixel on a ridge gets only the fog in front of the ridge, so there is no quad for
+the ridge to cut. The paragraphs below take that design apart in order: its origin, what it
+stores, how small the grid can be, the passes, the density, the light, the temporal filter and
+its ghosting, the cost and the limits.
 
 **Origin.** Wronski's volumetric fog for Assassin's Creed 4 at GDC and SIGGRAPH 2014 [1], [2],
 made physically based and unified with every other participating medium by Hillaire at Frostbite

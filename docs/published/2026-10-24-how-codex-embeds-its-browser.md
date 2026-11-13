@@ -3,40 +3,48 @@ description: Codex's browser pane is an Electron webview guest of its own Chromi
 published: 2026-10-24
 categories: Tooling, AI
 series: Arkos IDE notes
+updated: 2026-11-13
+project: ide-arkos
+project-line: This research was done for Arkos IDE, a Mac app that keeps many Claude Code sessions running side by side, and it is why the app's browser tab is a WebKit view inside the Arkos window and not a docked Chrome.
+closing: Look again at the diagram at the top: the pane sits inside Codex's own window. Arkos IDE's browser tab has that and the separate profile: WebKit draws the page in a view of the Arkos window, and its pages keep a profile apart from Safari and Chrome. CDP is the part Arkos IDE does not have: its coding agents put a page in the pane with the arkos open command.
+asks: How does the Codex app embed its browser, and can a non-Electron app copy it?
 ---
 # How Codex embeds its browser, and what a Rust IDE can copy
 
-**Question:** The Codex desktop app shows a browser in a pane beside the chat, and the agent can
-drive it. Arkos IDE, a Rust app on gpui with no browser engine of its own, wanted the same
-pane. How does Codex do it, and which parts can an app that is not Electron copy?
+**Question:** Arkos IDE, a Rust app with no browser engine of its own, wanted what the Codex
+desktop app has: a browser pane beside the chat that the agent can drive. How does Codex do it,
+and which parts can an app that is not Electron copy?
 
-**Short answer:** Codex is an Electron app, so it ships a Chromium, and its browser pane is an
-Electron
+**Short answer:** Codex is an Electron app, so it carries its own Chromium browser. The pane is
+a page that Chromium draws inside the app's window, an Electron
 [webview](#term "Electron's <webview> tag: a guest page hosted inside the app's own renderer, drawn as part of the window and running in a separate Chromium process.")
-guest of that Chromium: a child view of the window, not a separate window kept in position. A
-bundled plugin drives the guest over the
-[CDP](#term "Chrome DevTools Protocol: the debugging interface a client uses to navigate a Chromium page, run script in it, read its network traffic and take screenshots.")
-through a local socket, and the page runs in a profile of its own. None of that transfers to
-an app without Chromium. Arkos had docked a real Chrome window over a pane, and the seam showed;
-as of Oct 24, 2026, it is moving to
+guest, not a separate window kept in position. A bundled plugin drives it with Chrome's
+debugging protocol,
+[CDP](#term "Chrome DevTools Protocol: the debugging interface a client uses to navigate a Chromium page, run script in it, read its network traffic and take screenshots."),
+and the page has its own profile, signed out of everything. None of that transfers to an app
+without Chromium. As of Oct 24, 2026, Arkos is moving to the Mac's Safari engine,
 [WKWebView](#term "Apple's web view: the Safari engine as an NSView an app places in its own window, with its own data store, script evaluation and snapshots, but no CDP."),
-which gives the child view and the separate profile without shipping an engine, and loses CDP.
+which gives the in-window page and the profile but no CDP.
 
-![Boxes and arrows: the Electron main process, its renderer holding the browser sidebar webview guest, the bundled browser plugin reaching the guest over a Unix socket with CDP commands, and a second route from the plugin to the user's Chrome through the extension and native messaging](architecture.svg "What the logs show: the browser pane is a webview guest inside Codex's own renderer, and the bundled plugin reaches it over a local socket with CDP commands; the user's real Chrome is a second route, through the extension.")
+**What that leaves open:** how anyone outside OpenAI can tell, since OpenAI has not published
+the pane's design. The evidence is the app's own log lines, which users pasted into three bug
+reports, and a crash that lands inside the bundled `chrome.dll`; sections 2, 3 and 6 quote them,
+so each claim can be checked against its source. It also leaves the choice an app without
+Chromium faces: Arkos first docked a real Chrome window over a pane, and the seam showed, so
+section 7 sets that attempt beside the two other routes, shipping Chromium and using the engine
+the OS has, with what each one costs.
+
+![Boxes and arrows: the Electron main process, its renderer holding the browser sidebar webview guest, the bundled browser plugin reaching the guest over a Unix socket with CDP commands, and a second route from the plugin to the user's Chrome through the extension and native messaging](architecture.svg "Look at where the pane sits: inside the box for the app's own window, Codex's renderer, as a webview guest, not in a window beside it. The logs show the bundled plugin reaching it over a local socket with CDP commands; the user's real Chrome is a second route, through the extension.")
 
 **In short:**
 
-- **Electron and Node.js** is the stack, chosen so other operating systems could follow
-  ([section 1](#codex-is-an-electron-app-so-it-already-ships-a-chromium)).
 - **A webview guest** with `guestWebContentsId=2` is the pane; a crash inside the bundled
   `chrome.dll` is the proof it is the app's own Chromium
   ([section 2](#the-pane-is-a-webview-guest-of-the-app-s-own-chromium)).
 - **CDP over a Unix socket** at `/tmp/codex-browser-use/.sock` is how the agent drives it, with
   full CDP an opt-in since June 11, 2026
   ([section 3](#a-bundled-plugin-drives-the-guest-over-cdp-through-a-local-socket)).
-- **A separate profile**, no existing tabs, sessions or extensions
-  ([section 4](#the-page-runs-in-its-own-profile-signed-out-of-everything)).
-- **Three Windows crash threads** and a kill switch, `in_app_browser = false`
+- **Three bug threads**, two of them Windows crashes with a kill switch, `in_app_browser = false`
   ([section 6](#what-it-costs-crashes-on-attach-and-a-route-that-goes-missing)).
 - **WKWebView** is the engine Arkos chose, as of Oct 24, 2026, over CEF and over docking
   ([section 7](#what-a-rust-ide-can-copy-the-child-view-and-the-profile-not-the-cdp)).

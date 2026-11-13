@@ -3,6 +3,10 @@ description: Three ways to put rock on a height field's steep faces, measured in
 published: 2026-10-12
 categories: Rendering, Worlds and terrain
 series: Rendering a browser forest
+project: day-hike
+project-line: This is how the rock on the steep faces of Day Hike, a co-op horror game that runs in your browser, came to be drawn: a finer skin pushed out of the ground, after paint and cliff models were thrown away.
+closing: Go back to the foot of the sea scarp that read as a sand dune. Since Oct 12, 2026 Day Hike has drawn section 5's skin over ground too steep to stand on: patches on 16 m cells that push columns or jointed blocks up to 4 m out of the smooth face, with no cliff models standing on it. At the start of a hike the nearest band of rock is built at once and the rest fills in a few milliseconds a frame, which is section 5's build over frames.
+asks: How do you make cliffs on a height-map terrain look like real rock?
 ---
 # Rock on steep terrain: shape it, cover it, or skin it
 

@@ -4,6 +4,10 @@ published: 2026-08-29
 categories: Rendering, Worlds and terrain
 updated: 2026-10-10
 series: Rendering a browser forest
+project: day-hike
+project-line: This is why the trees in Day Hike, a first-person co-op horror game that runs in your browser, floated above its hillsides, and the two fixes that ground them in the game.
+closing: This doc opened on a trunk ending in a flat plate with a black gap under it. In Day Hike, at the foot of a big pine or fir on steep ground, the trunk stands plumb while its base bends down into the hillside: the conform of section 5. A boulder beside it lies tilted to the slope. From a hilltop, the far ridges are drawn slightly high to meet the trees on them, the lift of section 8, which left 1.1 px of daylight under the worst tree at the three measured viewpoints.
+asks: Why do trees float above the ground on slopes in a procedural world?
 ---
 # Why props float on procedural terrain
 

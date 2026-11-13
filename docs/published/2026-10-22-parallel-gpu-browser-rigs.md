@@ -4,6 +4,10 @@ published: 2026-10-22
 categories: Tooling, Distributed systems, Rendering
 updated: 2026-10-24
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-22-parallel-rigs-research.md
+project: day-hike
+project-line: These rigs measure frame times for Day Hike, a co-op horror game that runs in your browser. Its frame-budget harness compares two builds on a real GPU, and everything built here is in the game's public repository.
+closing: The bars at the top are a round of Day Hike's frame-budget harness: 40 experiment-tiers of 25 minutes each, 16 h 40 min on one rig and 1 h 40 min on ten. The queue over N ports, the forward that watches itself and the idle watchdog are in the game's public repository under tools/frame-budget/rig, with the rig copies in its Terraform, as section 11 lists. A rig run there is judged against the frame-time budget of the game's medium or high quality tier.
+asks: Which cloud runs browser GPU benchmarks in parallel: AWS, GCP or Modal?
 ---
 # Parallel GPU browser rigs: AWS, GCP and Modal
 

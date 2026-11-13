@@ -2,28 +2,40 @@
 description: A painterly post chain on WebGPU and WebGL2: the same look on both, but a stroke filter written with sector arrays cost 12.5 ms on WebGPU against 2.1 ms.
 published: 2026-10-17
 categories: Rendering
-updated: 2026-10-24
+updated: 2026-11-13
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-17-painted-post-webgpu-vs-webgl2.md
 series: WebGPU against WebGL2
+project: day-hike
+project-line: This is how the painted look of Day Hike, a co-op horror game that runs in your browser, is made: a stroke filter and an oils palette, measured on WebGPU and on WebGL2.
+closing: The 25.5 ms bar in the opening chart is the sector-array shape, which Day Hike does not use. Its stroke filter is written with named sums, the shape that added 2.3 ms a frame on both APIs: on the medium and high tiers it flattens the fine texture of bark and grass into strokes and keeps the edges. The umber shadows, olive midtones and cream highlights are the oils palette, the default.
+asks: Why can the same painterly shader cost far more on WebGPU than on WebGL2?
 ---
 # A painted look over a photoreal render: WebGPU against WebGL2
 
 **Question:** a browser game built to read as a photograph can be given the look of a landscape
-in oils with two full-screen fragment shaders written once in GLSL: a stroke filter and a palette
-grade. On an engine that runs them on WebGPU as well as WebGL2, where do the two APIs part ways,
-and what does the same shader cost on each?
+in oils with two full-screen shaders written once in GLSL, WebGL's shading language: a stroke
+filter, which turns fine texture into brush strokes, and a palette grade, which tints the frame
+toward a chosen palette. On an engine that runs them on WebGPU as well as WebGL2, where do the two
+APIs part ways, and what does the same shader cost on each?
 
 **Short answer:** the look is the same on both, and so is the cost once the shader has the right
-shape: the stroke filter, a
-[Kuwahara filter](#term "An edge-preserving smoothing filter: it cuts the window round each pixel into sectors and keeps the mean of the flattest, so texture flattens into strokes while edges stay."),
-added 2.3 ms a frame on each. Written the textbook way, its sector sums in arrays indexed by a loop
-variable, it cost 12.5 ms on WebGPU against 2.1 ms on WebGL2, because the longer translation chain
-to [WGSL](#term "WebGPU's shading language. Babylon.js translates a GLSL shader to it through SPIR-V before the browser compiles it again for the GPU.")
-kept the sums in memory. The other differences are smaller: loops that end on a uniform pass WGSL's
-uniformity analysis, a palette's uniforms become one padded buffer, and a frame rate read with the
-display's cap on can hide the filter's cost behind the cap.
+shape. The stroke filter, which flattens texture into strokes and keeps edges (a
+[Kuwahara filter](#term "An edge-preserving smoothing filter: it cuts the window round each pixel into sectors and keeps the mean of the flattest, so texture flattens into strokes while edges stay.")),
+added 2.3 ms a frame on each. Written the textbook way, its sums in arrays, it cost 12.5 ms on
+WebGPU against 2.1 ms on WebGL2, because the longer translation to
+[WGSL](#term "WebGPU's shading language. Babylon.js translates a GLSL shader to it through SPIR-V before the browser compiles it again for the GPU."),
+WebGPU's shading language, kept them in memory. Smaller differences: the filter's loops pass WGSL's
+checks, and the palette's nine values become one padded buffer.
 
-![A bar chart of frame times. WebGL2: 18.1 ms with no filter, 20.2 ms with sector arrays, 20.4 ms with named sums. WebGPU: 13.0 ms with no filter, 25.5 ms with sector arrays, 15.3 ms with named sums](filter-cost.svg "The same stroke filter on an Apple M4 in Chrome 157: with its sector sums in arrays it added 12.5 ms on WebGPU and 2.1 ms on WebGL2; with the same sums as named variables it added 2.3 ms on both.")
+**What that leaves open:** whether the gap belongs to WebGPU or to this machine: every timing is
+from one Apple M4 in Chrome 157, and a discrete GPU, where the array shape may well cost what it
+should, was not measured. The cost can also be misread: with the display's frame cap on, WebGPU
+read 60 fps with no filter, so the filter's cost could not be told from the cap. Section 2 has the
+three shapes that were timed and the Chrome flags that turn the cap off; section 6 has the bug
+that took longest, the same on both APIs: at a low sun, strokes painted on linear light turned
+every tree crown against the sky cyan-white.
+
+![A bar chart of frame times. WebGL2: 18.1 ms with no filter, 20.2 ms with sector arrays, 20.4 ms with named sums. WebGPU: 13.0 ms with no filter, 25.5 ms with sector arrays, 15.3 ms with named sums](filter-cost.svg "Look at the longest bar, WebGPU with sector arrays at 25.5 ms. On an Apple M4 in Chrome 157 the same stroke filter added 12.5 ms on WebGPU and 2.1 ms on WebGL2 with its sector sums in arrays, and 2.3 ms on both with the same sums as named variables.")
 
 **In numbers:**
 
@@ -34,26 +46,24 @@ display's cap on can hide the filter's cost behind the cap.
 - **60 fps** is what WebGPU read with no filter until the cap was turned off, so a cost taken as a
   difference of frame rates can be wrong by the whole cap
   ([section 2](#sector-arrays-cost-12-5-ms-on-webgpu-and-2-1-ms-on-webgl2)).
-- **No diagnostic** from WGSL's uniformity analysis for texture reads in loops that exit on
-  uniforms; the one pass that branches per pixel turns the analysis off for itself alone
+- **No diagnostic** from WGSL's uniformity analysis, its check that a texture read is reached by
+  every pixel of a quad together, for texture reads in loops that exit on uniforms; the one pass
+  that branches per pixel turns the analysis off for itself alone
   ([section 3](#loops-that-end-on-a-uniform-pass-wgsl-s-uniformity-analysis)).
-- **48 bytes** for three `vec3` tints in WebGPU's uniform buffer, where a tint and its amount packed
-  as one `vec4` take 16 bytes with no padding
-  ([section 4](#nine-uniforms-nine-calls-on-webgl2-one-padded-buffer-on-webgpu)).
-- **Three seconds** to fade between named palettes (oils, ash, amber, none), for nothing beyond
-  nine uniforms ([section 7](#the-palette-is-a-record-the-game-fades-between)).
-
-The worked example is Day Hike, a first-person hiking game in Babylon.js 9.18, public at
-[game-dayhike](https://github.com/csarkosh/game-dayhike) and playable at
-[games.csarko.sh/dayhike](https://games.csarko.sh/dayhike/). As of Oct 17, 2026, its high tier
-draws with WebGPU in Chrome and Edge and everything else draws with WebGL2
-([WebGPU vs WebGL2: what changes and what does not](/research/webgpu-vs-webgl2)); the
-post chain's prepass for the far field is the subject of
-[Scene depth for a post process](/research/scene-depth-for-a-post-process-webgpu-vs-webgl2).
-The machine throughout is an Apple M4 running Chrome 157, WebGPU through Metal and
-WebGL2 through ANGLE's Metal backend, with the render at 1200 by 675.
 
 ## 1. Strokes, a value curve and a palette, all in post
+
+With no stroke filter, a frame of Day Hike at 1200 by 675 took 13.0 ms on WebGPU and 18.1 ms on
+WebGL2, on the medium tier with the display's cap off; the question is what the paint adds to it.
+Day Hike is the worked example: a first-person hiking game in Babylon.js 9.18, public at
+[game-dayhike](https://github.com/csarkosh/game-dayhike) and playable at
+[games.csarko.sh/dayhike](https://games.csarko.sh/dayhike/). Every measurement here is of that
+frame on an Apple M4 running Chrome 157, WebGPU through Metal and WebGL2 through ANGLE's Metal
+backend. As of Oct 17, 2026, the game's high tier draws with WebGPU in Chrome and Edge and
+everything else draws with WebGL2
+([WebGPU vs WebGL2: what changes and what does not](/research/webgpu-vs-webgl2)); the post
+chain's prepass for the far field is the subject of
+[Scene depth for a post process](/research/scene-depth-for-a-post-process-webgpu-vs-webgl2).
 
 Three things, read off landscape painting in oils, and each a different part of
 the chain.

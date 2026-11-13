@@ -5,6 +5,10 @@ categories: Rendering
 updated: 2026-10-24
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-16-scene-depth-webgpu-vs-webgl2.md
 series: WebGPU against WebGL2
+project: day-hike
+project-line: The post process on this page shipped in Day Hike, a first-person co-op horror game that runs in your browser: it is the soft blur over the far field on the game's medium and high quality tiers.
+closing: In Day Hike the far field past 80 m of camera depth is blurred while near grass in front of it keeps a hard edge: that edge is the scene depth of section 1's prepass, read the same way on WebGPU and WebGL2. Adding ?engine=webgl2 to the game's address draws the same blur with WebGL2. The 6 s frames of the chart at the top are why the game holds a frame while its pipelines are still being created; with such frames held, the Mac that chart was measured on lost the device in 0 of 18 runs.
+asks: How does a blur or fog effect get each pixel's depth on WebGPU and WebGL2?
 ---
 # Scene depth for a post process: WebGPU against WebGL2
 

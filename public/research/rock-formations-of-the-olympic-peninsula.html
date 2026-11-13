@@ -328,19 +328,23 @@
     .doc-page .prose { font-size: 17px; }
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
-    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
-    .series-line p { margin: 0; }
+    .series-line { display: flex; gap: 8px; margin: 18px 0 0; font-size: 14.5px; color: var(--muted); white-space: nowrap; }
+    .series-line > * { flex: none; }
+    .series-line > :first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .series-line strong { color: var(--text); font-weight: 600; }
-    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
-    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-line a, .afterward a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
-    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .prose h2, .prose h3, .prose h4 { scroll-margin-top: 28px; }
+    ::target-text { background: var(--accent-underline); color: var(--text); }
+    .toc { margin: 32px 0 0; }
     .toc .section-label { margin: 0 0 6px; }
     .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
     .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
     .toc a:hover { color: var(--accent); }
     .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    @media (min-width: 1060px) { .toc { display: none; } }
+    @media (max-width: 1059px) { .prose > .section-head:first-child:not([data-read-end]) { border-top: 0; padding-top: 0; margin-top: 36px; } }
     .figure { margin: 32px 0; }
     .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
     /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
@@ -365,26 +369,28 @@
       radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
       radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
       var(--surface); }
-    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
-    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
-    .series-name { margin: 0 0 8px; font-weight: 600; }
-    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
-    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
-    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
-    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
-    .next-list .card { padding: 16px 18px; background: var(--bg); }
-    .next-list .doc-title { font-size: 1.05rem; }
-    .next-list .doc-desc { font-size: 14.5px; }
-    .play-line, .watch-line { margin: 20px 0 0; }
+    .what-next { margin-top: 48px; }
+    .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
+    .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
+    .watch-line { margin: 20px 0 0; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
-    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
-    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
-    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color var(--md-duration-short3) var(--md-easing-standard); }
-    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
-    .afterward .next:hover { border-color: var(--accent); }
-    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
+    .afterward { display: flex; align-items: baseline; gap: 6px 22px; margin-top: 24px; font-size: 14.5px; color: var(--muted); text-wrap: balance; }
+    .afterward > * { flex: none; }
+    .afterward > a:not(:last-child) { flex: 0 1 auto; }
+    @media (max-width: 640px) {
+      .doc-page .shell { padding-top: 16px; }
+      .doc-page .crumbs ol { padding-block: 8px; }
+      .doc-page .eyebrow { margin-bottom: 8px; }
+      .doc-page h1 { margin-bottom: 10px; font-size: 2rem; }
+      .doc-header .lead { margin-bottom: 12px; font-size: 1rem; line-height: 1.5; }
+      .doc-page .doc-header { padding-bottom: 12px; }
+      .series-line { gap: 6px; margin-top: 8px; font-size: 13px; }
+      .afterward { flex-direction: column; }
+    }
+    @media (max-width: 439px) { .series-line a span { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .play { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -397,7 +403,7 @@
   <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
-      <a class="wordmark" href="/">csarko<span>.sh</span></a>
+      <a class="wordmark" href="/" data-visits-event="nav-home">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/projects" data-visits-event="nav-projects">Projects</a></li>
         <li><a href="/research" data-visits-event="nav-research">Research</a></li>
@@ -407,7 +413,7 @@
   <nav class="crumbs" aria-label="Breadcrumb">
     <div class="wrap">
       <ol>
-        <li><a href="/">Home</a></li>
+        <li><a href="/" data-visits-event="crumb-home">Home</a></li>
         <li><a href="/research">Research</a></li>
         <li><span aria-current="page">Rock formations of the Olympic Peninsula, and how games build them</span></li>
       </ol>
@@ -446,8 +452,7 @@
           <li>20 min read</li>
         </ul>
         <nav class="series-line" aria-label="Series">
-          <p>Part 3 of 3 in <strong>Olympic Peninsula field notes</strong></p>
-          <p class="series-steps"><span>Previous: <a href="/research/olympic-lakes-for-game-worlds" rel="prev" data-visits-event="series-olympic-lakes-for-game-worlds">Olympic Peninsula lakes for game worlds</a></span></p>
+          <span>Part 3 of 3 in <strong>Olympic Peninsula field notes</strong></span><span aria-hidden="true">·</span><a href="/research/olympic-lakes-for-game-worlds" rel="prev" aria-label="Previous: Olympic Peninsula lakes for game worlds" title="Olympic Peninsula lakes for game worlds" data-visits-event="series-olympic-lakes-for-game-worlds"><span aria-hidden="true">←</span> Previous</a>
         </nav>
       </header>
       <div class="prose">
@@ -473,8 +478,9 @@ afford <a class="cite" href="#ref-12">[12]</a>, <a class="cite" href="#ref-13">[
 but no tessellation stage and no production virtual geometry, so a browser game has the cliff kit
 and the shaped height field to work with, not the tessellated ground of the last console
 generation <a class="cite" href="#ref-14">[14]</a>, <a class="cite" href="#ref-15">[15]</a>, <a class="cite" href="#ref-16">[16]</a>.</p>
+<p class="project-line">This research was done for Day Hike, a co-op horror game that runs in your browser, set on a fictional stretch of the Olympic Peninsula. Section 14 reads the game&#39;s three attempts at steep rock against these findings. <a href="https://games.csarko.sh/dayhike/" data-visits-event="lead-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>
 <p>The game is public at <a class="external" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener">game-dayhike</a>; this note pairs
-with <a class="external" href="https://csarko.sh/research/olympic-lakes-for-game-worlds" target="_blank" rel="noopener">the lakes note</a> <a class="cite" href="#ref-17">[17]</a>, whose
+with <a href="https://csarko.sh/research/olympic-lakes-for-game-worlds">the lakes note</a> <a class="cite" href="#ref-17">[17]</a>, whose
 cirques are the same ones.</p>
 <p><strong>Part one: how rock formations occur in the Pacific Northwest</strong></p>
       </div>
@@ -889,27 +895,14 @@ dimensions; the sizes taken from them above are marked as estimates. And no brow
 shown voxel or virtual-geometry terrain at open-world scale with frame times. Every cost in a
 browser proposal built on this note has to come from the game&#39;s own paired measurements.</p>
       </div>
-      <section class="keep-reading" aria-labelledby="next-reads">
-        <h2 id="next-reads" class="section-label">Keep reading</h2>
-        <p class="series-name">Olympic Peninsula field notes · 3 parts</p>
-        <ol class="series-parts">
-          <li><a href="/research/olympic-vegetation-for-games" data-visits-event="next-olympic-vegetation-for-games">Olympic Peninsula vegetation for game worlds</a></li>
-          <li><a href="/research/olympic-lakes-for-game-worlds" data-visits-event="next-olympic-lakes-for-game-worlds">Olympic Peninsula lakes for game worlds</a></li>
-          <li aria-current="true"><span>Rock formations of the Olympic Peninsula, and how games build them</span></li>
-        </ol>
-        <ul class="doc-list next-list" role="list">
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/full-far-field-for-browser-worlds" data-visits-event="next-full-far-field-for-browser-worlds">A full far field: how games fill the distance</a></h3>
-            <p class="doc-meta">15 min read</p>
-            <p class="doc-desc">How shipped open-world games keep the distance looking full, from far terrain and vegetation to the camera-side tricks that hide the seams, for a browser frame.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/rock-on-steep-terrain-shape-it-cover-it-or-skin-it" data-visits-event="next-rock-on-steep-terrain-shape-it-cover-it-or-skin-it">Rock on steep terrain: shape it, cover it, or skin it</a></h3>
-            <p class="doc-meta">16 min read</p>
-            <p class="doc-desc">Three ways to put rock on a height field&#39;s steep faces, measured in a browser game: paint and cliff kits, relief in the height field, or a finer displaced skin.</p>
-          </li>
+      <section class="prose what-next" aria-labelledby="what-next">
+        <h2 id="what-next">What next</h2>
+        <p>The pale cobbled hillside is the rock ground section 14&#39;s three attempts worked on, and the cliff models standing in rows are the third of them, each read there against how the Peninsula&#39;s rock forms and how shipped games build it. By Oct 12, 2026 Day Hike had taken the cliff models off its steep faces and drawn a finer rock surface over them instead: columns or jointed blocks on tilted slabs, standing up to 4 m out of the ground. It covers the ground too steep to stand on, sea stacks included. <a href="https://games.csarko.sh/dayhike/" data-visits-event="close-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>
+        <ul>
+          <li><a href="/research/full-far-field-for-browser-worlds" data-visits-event="next-full-far-field-for-browser-worlds">Why does the distance in a game look empty, and how do games fill it?</a></li>
+          <li><a href="/research/rock-on-steep-terrain-shape-it-cover-it-or-skin-it" data-visits-event="next-rock-on-steep-terrain-shape-it-cover-it-or-skin-it">How do you make cliffs on a height-map terrain look like real rock?</a></li>
         </ul>
-        <p class="play-line"><a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
+        <p class="series-at"><span>Part 3 of 3 in <strong>Olympic Peninsula field notes</strong></span><span>Previous: <a href="/research/olympic-lakes-for-game-worlds" rel="prev" data-visits-event="series-olympic-lakes-for-game-worlds">Olympic Peninsula lakes for game worlds</a></span></p>
         <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS).</p>
       </section>
       <div class="prose">
@@ -931,7 +924,7 @@ browser proposal built on this note has to come from the game&#39;s own paired m
 <li id="ref-14"><span class="ref-num">[14]</span><div>W3C, &quot;WebGPU Shading Language,&quot; W3C Candidate Recommendation. Accessed: Oct. 9, 2026. [Online]. Available: <a class="external" href="https://www.w3.org/TR/wgsl/" target="_blank" rel="noopener">https://www.w3.org/TR/wgsl/</a></div></li>
 <li id="ref-15"><span class="ref-num">[15]</span><div>Babylon.js, &quot;Thin Instances,&quot; Babylon.js documentation. Accessed: Oct. 9, 2026. [Online]. Available: <a class="external" href="https://doc.babylonjs.com/features/featuresDeepDive/mesh/copies/thinInstances" target="_blank" rel="noopener">https://doc.babylonjs.com/features/featuresDeepDive/mesh/copies/thinInstances</a></div></li>
 <li id="ref-16"><span class="ref-num">[16]</span><div>Scthe, &quot;nanite-webgpu,&quot; GitHub. Accessed: Oct. 9, 2026. [Online]. Available: <a class="external" href="https://github.com/Scthe/nanite-webgpu" target="_blank" rel="noopener">https://github.com/Scthe/nanite-webgpu</a></div></li>
-<li id="ref-17"><span class="ref-num">[17]</span><div>C. Sarkosh, &quot;Olympic Peninsula lakes for game worlds,&quot; csarko.sh, Oct. 8, 2026. Accessed: Oct. 9, 2026. [Online]. Available: <a class="external" href="https://csarko.sh/research/olympic-lakes-for-game-worlds" target="_blank" rel="noopener">https://csarko.sh/research/olympic-lakes-for-game-worlds</a></div></li>
+<li id="ref-17"><span class="ref-num">[17]</span><div>C. Sarkosh, &quot;Olympic Peninsula lakes for game worlds,&quot; csarko.sh, Oct. 8, 2026. Accessed: Oct. 9, 2026. [Online]. Available: <a href="https://csarko.sh/research/olympic-lakes-for-game-worlds">https://csarko.sh/research/olympic-lakes-for-game-worlds</a></div></li>
 <li id="ref-18"><span class="ref-num">[18]</span><div>R. W. Tabor and W. M. Cady, &quot;The Structure of the Olympic Mountains, Washington: Analysis of a Subduction Zone,&quot; U.S. Geological Survey Professional Paper 1033, 1978. Accessed: Oct. 9, 2026. [Online]. Available: <a class="external" href="https://npshistory.com/publications/geology/pp/1033/contents.htm" target="_blank" rel="noopener">https://npshistory.com/publications/geology/pp/1033/contents.htm</a></div></li>
 <li id="ref-19"><span class="ref-num">[19]</span><div>G. E. Batt, M. T. Brandon, K. A. Farley, and M. Roden-Tice, &quot;Tectonic synthesis of the Olympic Mountains segment of the Cascadia wedge, using two-dimensional thermal and kinematic modeling of thermochronological ages,&quot; J. Geophys. Res., vol. 106, no. B11, pp. 26731-26746, 2001. Accessed: Oct. 9, 2026. [Online]. Available: <a class="external" href="https://authors.library.caltech.edu/records/3xgjg-3xn61" target="_blank" rel="noopener">https://authors.library.caltech.edu/records/3xgjg-3xn61</a></div></li>
 <li id="ref-20"><span class="ref-num">[20]</span><div>R. W. Tabor, &quot;Geologic Guide to the Deer Park Area,&quot; Olympic Natural History Association, 1965. Accessed: Oct. 9, 2026. [Online]. Available: <a class="external" href="https://npshistory.com/publications/olym/deer_park_geology/index.htm" target="_blank" rel="noopener">https://npshistory.com/publications/olym/deer_park_geology/index.htm</a></div></li>
@@ -988,13 +981,13 @@ browser proposal built on this note has to come from the game&#39;s own paired m
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
-        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
+        <p class="author-name"><a href="/" data-visits-event="author-home">Cyrus Sarkosh</a></p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
-        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
+        <p class="author-links"><a href="/" data-visits-event="author-home">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
       <nav class="afterward" aria-label="Read next">
-        <a class="next" href="/research/full-far-field-for-browser-worlds" data-visits-event="end-full-far-field-for-browser-worlds"><span class="section-label">Read next</span><span>A full far field: how games fill the distance <span aria-hidden="true">→</span></span></a>
-        <a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        <span>Day Hike: <a href="https://games.csarko.sh/dayhike/" data-visits-event="after-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a></span>
+        <a href="/research/full-far-field-for-browser-worlds" data-visits-event="end-full-far-field-for-browser-worlds">Why does the distance in a game look empty, and how do games fill it?</a>
         <a href="/research">All research</a>
       </nav>
     </main>
@@ -1009,7 +1002,7 @@ browser proposal built on this note has to come from the game&#39;s own paired m
   <!-- generated:analytics -->
   <script defer src="/assets/visits.4378bd36.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
-  <script defer src="/assets/reading.c3e27b33.js"></script>
+  <script defer src="/assets/reading.3a8c03e0.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

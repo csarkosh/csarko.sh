@@ -3,6 +3,10 @@ description: How shipped open-world games keep the distance looking full, from f
 published: 2026-10-15
 categories: Rendering, Worlds and terrain
 series: Filling the distance
+project: day-hike
+project-line: This research was done for Day Hike, a first-person co-op horror game that runs in your browser. Its ground, grass, trees and air past about 40 m were rebuilt from it the day after it was published.
+closing: Three of the opening's faults have stand-ins to look for in Day Hike. The grass thins plant by plant, each with its own cutoff distance, where it used to stop at a line; the far ground carries drifts of colour tens to hundreds of metres across; and each far tree is a card lit live through a baked normal map, its crown edge cut from a signed distance field. These are items 2, 4 and 3 of section 6, though a far tree has one baked view, not a hemisphere. The meadow, the trail's first long view, is where to check them.
+asks: Why does the distance in a game look empty, and how do games fill it?
 ---
 # A full far field: how games fill the distance
 

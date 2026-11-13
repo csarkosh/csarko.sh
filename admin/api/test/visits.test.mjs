@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createCache } from "../src/cache.mjs";
-import { createVisits, journeyOf, stitchJourneys, sumBy, plainRow, utcDates, zoneDates } from "../src/collectors/visits.mjs";
+import { createVisits, journeyOf, renderSql, stitchJourneys, sumBy, plainRow, utcDates, zoneDates } from "../src/collectors/visits.mjs";
+import { groupReferrers } from "../src/referrers.mjs";
 import { UpstreamError } from "../src/http.mjs";
 
 const rows = JSON.parse(readFileSync(new URL("./fixtures/visits-rows.json", import.meta.url), "utf8"));
@@ -17,6 +18,7 @@ function fakeBigQuery(calls = []) {
       const name = Object.keys(rows).find((n) => query.startsWith(first(n)));
       if (!name) throw new Error(`no fixture for query starting ${query.slice(0, 60)}`);
       assert.ok(query.includes("`p.d._AllLogs`") || query.includes("`p.h.goatcounter_history`"), "tables rewritten");
+      assert.ok(!query.includes("{{"), "fragments spliced in");
       calls.push({ name, params });
       return [rows[name]];
     },
@@ -96,9 +98,97 @@ test("pages merge history by path and keep engaged time and reached share from l
 test("referrers split into referrers (direct as empty name), campaigns and internal paths", async () => {
   const { v } = make();
   const r = await v.referrers(range);
-  assert.deepEqual(r.referrers, [{ name: "google.com", visitors: 10 }, { name: "", visitors: 4 }]);
+  // Direct is 4 untagged visits and 1 tagged with a campaign of the site's own; google.com has the history's 7.
+  assert.deepEqual(r.referrers, [{ name: "google.com", visitors: 10 }, { name: "chatgpt.com", visitors: 7 }, { name: "", visitors: 5 }]);
   assert.deepEqual(r.campaigns, [{ campaign: "substack", visitors: 1 }]);
   assert.deepEqual(r.paths, [{ from: "/", to: "/games", visitors: 2 }]);
+});
+
+test("a visit with no external referrer and an assistant's tag is that assistant's, grouped as ai, and its tag is no campaign", async () => {
+  const { v } = make({ historyUntil: "2026-10-01T00:00:00Z" });
+  const r = await v.referrers(range);
+  // 5 arrived tagged utm_source=chatgpt.com with no referrer, 2 with chatgpt.com as the referrer itself.
+  assert.deepEqual(r.referrers.find((x) => x.name === "chatgpt.com"), { name: "chatgpt.com", visitors: 7 });
+  assert.equal(r.referrers.find((x) => x.name === "").visitors, 5, "the tagged visits are not direct as well");
+  assert.ok(!r.campaigns.some((c) => c.campaign === "chatgpt.com"), "counted once, as a source");
+  const { groups } = groupReferrers(r.referrers.map((x) => ({ name: x.name, count: x.visitors })));
+  assert.equal(groups.find((g) => g.group === "ai").visitors, 7);
+  assert.equal(groups.find((g) => g.group === "direct").visitors, 5);
+  assert.equal(groups.reduce((n, g) => n + g.visitors, 0), 15, "every visit in one group");
+});
+
+const VISITS_QUERIES = ["visits", "pages", "referrers", "events", "journeys", "audience"];
+const botFragment = () => readFileSync(`${queriesDir}_bot.sql`, "utf8").replace(/^(--.*\n)+/, "").trim();
+
+test("every visits query runs the one shared bot test over the page load, spliced in from _bot.sql", () => {
+  const fragment = botFragment();
+  for (const name of VISITS_QUERIES) {
+    const file = readFileSync(`${queriesDir}${name}.sql`, "utf8");
+    const sql = renderSql(name, queriesDir);
+    assert.equal(file.split("{{bot}}").length, 2, `${name}.sql asks for the fragment once, and never in a comment`);
+    assert.ok(sql.includes(`${fragment} AS bot`), `${name}: the fragment is the bot column`);
+    assert.ok(!/\{\{|\}\}/.test(sql), `${name}: nothing left to splice`);
+    assert.equal(sql.split("\n")[0], file.split("\n")[0], `${name}: the first line is the file's own`);
+    assert.ok(!/s\.bot/.test(file), `${name}.sql keeps no copy of the rule`);
+    assert.ok(/WHERE n = 'view' AND NOT bot/.test(sql), `${name}: views drop a bot's page load`);
+  }
+  for (const name of ["history-visits", "history-pages", "history-referrers", "history-events", "arkos-kpis", "finance-daily"]) {
+    assert.equal(renderSql(name, queriesDir), readFileSync(`${queriesDir}${name}.sql`, "utf8"), `${name}: a file with no fragment is sent as it is`);
+  }
+  assert.throws(() => renderSql("_bot-missing", queriesDir), /ENOENT/);
+});
+
+test("the bot test: the flag, an impossible device, the Linux fleet from google.com and the game's tooling lobby", () => {
+  const sql = botFragment();
+  const flat = sql.replace(/\s+/g, " ");
+  const n = (k) => `SAFE_CAST(JSON_VALUE(json_payload.${k}) AS INT64)`;
+  const dpr1 = "SAFE_CAST(JSON_VALUE(json_payload.dpr) AS FLOAT64) = 1";
+  const perLoad = "OVER (PARTITION BY JSON_VALUE(json_payload.id))";
+  // One boolean expression, never NULL: a NULL would drop a real page load from `NOT bot`.
+  assert.ok(sql.startsWith("(") && sql.endsWith(")"));
+  assert.ok(!sql.includes(";") && !/\bSELECT\b/.test(sql), "an expression, not a statement");
+  assert.equal(flat.match(/IFNULL\(LOGICAL_OR\(/g).length, 4, "every window is NULL-safe");
+  assert.equal(flat.split(`${perLoad}, FALSE)`).length, 4, "the flag and device, the fleet's view and its leave, each over the page load");
+  // The collector's flag and the Headless brand, as before.
+  assert.ok(flat.includes("IFNULL(JSON_VALUE(json_payload.s.bot), 'false') = 'true'"));
+  assert.ok(flat.includes("STARTS_WITH(IFNULL(JSON_VALUE(json_payload.s.bn), ''), 'Headless')"));
+  // The device rules read the view row only.
+  assert.ok(flat.includes("JSON_VALUE(json_payload.n) = 'view' AND IFNULL("));
+  // D1: a viewport larger than its screen at pixel ratio 1, on headless Chrome's default 800x600 screen
+  // only: a reader on a scaled display who zooms out reports the same at any other size.
+  assert.ok(flat.includes(`(${dpr1} AND ${n("sw")} = 800 AND ${n("sh")} = 600 AND (${n("vw")} > 800 OR ${n("vh")} > 600))`));
+  // D2 a square screen, D3 a viewport that is the screen at pixel ratio 1; Firefox is spared both.
+  assert.ok(flat.includes(`(IFNULL(JSON_VALUE(json_payload.s.bn), '') != 'Firefox' AND ${n("sw")} > 0 AND (${n("sw")} = ${n("sh")} OR (${dpr1} AND ${n("vw")} = ${n("sw")} AND ${n("vh")} = ${n("sh")})))`));
+  // D4: a phone-width viewport at pixel ratio 1, or on a named desktop OS whose screen is phone-width
+  // too. A narrow window on a desktop at a higher pixel ratio, and an OS the collector cannot name, stay in.
+  assert.ok(flat.includes(`(${n("vw")} BETWEEN 1 AND 480 AND (${dpr1} OR (JSON_VALUE(json_payload.s.os) IN ('Windows', 'macOS', 'Linux', 'ChromeOS') AND ${n("sw")} BETWEEN 1 AND 480)))`));
+  assert.ok(!flat.includes("'other'"), "an unnamed OS is not a desktop");
+  // F1: the cloud Linux profile from google.com, its window Chrome's own bars and nothing else, and
+  // only while the load has no leave.
+  assert.ok(flat.includes(`JSON_VALUE(json_payload.s.bn) = 'Chrome' AND JSON_VALUE(json_payload.s.os) = 'Linux' AND ${n("sw")} = 1920 AND ${n("sh")} = 1080 AND ${n("vw")} >= 1919 AND ${n("vh")} >= 992 AND ${dpr1} AND JSON_VALUE(json_payload.th) = 'light' AND JSON_VALUE(json_payload.s.rk) = 'external' AND JSON_VALUE(json_payload.s.rh) = 'google.com'`));
+  assert.ok(flat.includes(`AND NOT IFNULL(LOGICAL_OR(JSON_VALUE(json_payload.n) = 'leave') ${perLoad}, FALSE)`));
+  // T1: every row of a visit that opened the game's tooling lobby.
+  assert.ok(flat.includes("LOGICAL_OR( JSON_VALUE(json_payload.p) = '/dayhike/game/0f1c2a3b-4d5e-4f60-8a9b-0c1d2e3f4a5b' ) OVER (PARTITION BY COALESCE(JSON_VALUE(json_payload.s.visit), JSON_VALUE(json_payload.id)))"));
+  // Left out on purpose: a UTC clock alone, a stock viewport size, a visitor's language or zone.
+  assert.ok(!/json_payload\.(tz|lg)\b/.test(sql));
+});
+
+test("reached the end is the leave's re and a scroll depth of 50 or more, wherever it is computed", () => {
+  const reached = "LOGICAL_OR(JSON_VALUE(j.re) = 'true') AND MAX(SAFE_CAST(JSON_VALUE(j.sd) AS INT64)) >= 50 AS reached";
+  assert.ok(readFileSync(`${queriesDir}pages.sql`, "utf8").includes(reached));
+  assert.ok(readFileSync(`${queriesDir}journeys.sql`, "utf8").includes(reached));
+  const events = readFileSync(`${queriesDir}events.sql`, "utf8");
+  assert.ok(events.includes("GROUP BY b.id\n    HAVING LOGICAL_OR(JSON_VALUE(b.j.re) = 'true') AND MAX(SAFE_CAST(JSON_VALUE(b.j.sd) AS INT64)) >= 50"), "read-<slug> counts a page load once, by its deepest leave");
+  for (const name of VISITS_QUERIES) {
+    const sql = readFileSync(`${queriesDir}${name}.sql`, "utf8").split("\n").filter((l) => !l.trimStart().startsWith("--")).join("\n");
+    for (const m of sql.matchAll(/\.re\) = 'true'\)?/g)) assert.ok(sql.slice(m.index, m.index + 90).includes(">= 50"), `${name}: re is never read without the depth`);
+  }
+});
+
+test("referrers.sql hands a visit's tag over with its referrer row unless the referrer was external", () => {
+  const sql = readFileSync(`${queriesDir}referrers.sql`, "utf8");
+  assert.ok(sql.includes("IF(f.rk = 'external', '', IFNULL(f.campaign, '')) AS target"));
+  assert.ok(sql.includes("FROM first_views GROUP BY name, target"));
 });
 
 test("events fold history (its one count stands for visitors and clicks) and lift (home) and (outbound) out of the rows", async () => {
@@ -112,8 +202,8 @@ test("events fold history (its one count stands for visitors and clicks) and lif
 test("journeys come newest first, stitched across the UTC midnight roll, with the device and the suspect flag", async () => {
   const { v } = make();
   const rows = await v.journeys(range);
-  assert.equal(rows.length, 2, "three visits, two of them one visitor");
-  const [suspect, visit] = rows;
+  assert.equal(rows.length, 3, "four visits, two of them one visitor");
+  const [suspect, visit, fromChatGPT] = rows;
   assert.equal(suspect.started, "2026-10-14T23:59:00Z");
   assert.deepEqual(suspect.device, { browser: "Chrome", version: "148", os: "Windows", viewport: [1024, 768], tz: "UTC", theme: "light", touch: false, lang: "en-US" });
   assert.equal(suspect.suspect, true);
@@ -127,6 +217,22 @@ test("journeys come newest first, stitched across the UTC midnight roll, with th
   assert.deepEqual(visit.steps.map((s) => [s.path, s.at, s.left, s.secs, s.read, s.lcp, s.inp]), [["/", 0, 30, 30, null, 200, null], ["/research/x", 30, 790, 600, true, 250, 40], ["/games", 790, 805, 20, null, 300, null]]);
   assert.deepEqual(visit.exit, { kind: "click", event: "play-dayhike", url: "https://games.csarko.sh/dayhike", host: "games.csarko.sh" });
   assert.equal(visit.engaged, 650);
+
+  // A link in a ChatGPT answer: no referrer, the tag alone. The journey names the assistant the
+  // referrers count it under, and its kind stays the view's own.
+  assert.deepEqual(fromChatGPT.source, { kind: "direct", campaign: "chatgpt.com", assistant: "chatgpt.com" });
+  assert.equal(fromChatGPT.steps[0].read, true);
+});
+
+test("journeyOf: no external referrer and an assistant's tag names the assistant, as referrers() does; any other tag or a real referrer does not", () => {
+  const sourceOf = (source) => journeyOf(journeyRow({ source })).source;
+  assert.deepEqual(sourceOf({ rk: "direct", campaign: "chatgpt.com" }), { kind: "direct", campaign: "chatgpt.com", assistant: "chatgpt.com" });
+  assert.deepEqual(sourceOf({ rk: null, campaign: "www.ChatGPT.com" }), { kind: "direct", campaign: "www.ChatGPT.com", assistant: "chatgpt.com" }, "the host, lower case, without www.");
+  assert.deepEqual(sourceOf({ rk: "internal", rp: "/", campaign: "perplexity.ai" }), { kind: "internal", path: "/", campaign: "perplexity.ai", assistant: "perplexity.ai" }, "kind and path stay, so the stitching still reads them");
+  assert.deepEqual(sourceOf({ rk: "external", rh: "google.com", campaign: "chatgpt.com" }), { kind: "external", host: "google.com", campaign: "chatgpt.com" }, "a real referrer keeps the visit");
+  assert.deepEqual(sourceOf({ rk: "external", rh: "gemini.google.com", campaign: null }), { kind: "external", host: "gemini.google.com" }, "an assistant that sends its referrer needs no tag");
+  assert.deepEqual(sourceOf({ rk: "direct", campaign: "substack" }), { kind: "direct", campaign: "substack" }, "a campaign of the site's own");
+  assert.deepEqual(sourceOf({ rk: "direct", campaign: null }), { kind: "direct" });
 });
 
 test("audience groups by dimension", async () => {

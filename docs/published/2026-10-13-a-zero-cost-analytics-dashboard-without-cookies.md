@@ -3,6 +3,10 @@ description: Whether a personal site is gaining traction, with no cookies and no
 published: 2026-10-13
 categories: Distributed systems, Tooling
 series: Analytics without cookies
+project: lib-visits
+project-line: lib-visits is the cookieless counter that took GoatCounter's place behind this dashboard: a 3 KB script and a small Rust collector that count visits and the path each one took.
+closing: On Oct 15, 2026, two days after this dashboard first deployed, GoatCounter's host went down, and lib-visits was written to do its job. It also sets no cookies and stores no ID in the browser, and its leave event reports the seconds a page was visible, the time on page that section 2.1 lists as not available. Its page follows one sample visit from the Google search it arrived by to its click out to GitHub: this doc's second question, what people do while they are there, answered for one visitor.
+asks: How can a personal site track its traffic for free, without cookies?
 ---
 # A zero-cost analytics dashboard without cookies
 

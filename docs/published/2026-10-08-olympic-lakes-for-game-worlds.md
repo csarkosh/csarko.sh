@@ -3,6 +3,10 @@ description: How the lakes of Washington's Olympic Peninsula formed, their measu
 published: 2026-10-08
 categories: Worlds and terrain
 series: Olympic Peninsula field notes
+project: day-hike
+project-line: This research was done for Day Hike, a co-op horror game that runs in your browser, set on a fictional stretch of the Olympic Peninsula. The shore of its lake is drawn to the shapes measured on this page.
+closing: The first pass in the question was a circle with a clean, even edge. The perched step of rule 6, a headwall behind the water and a drop past the outlet, is designed for the game's summit and, as of Nov 13, 2026, is not built. What is built: since Oct 11, 2026 a lake in Day Hike has had a shore drawn about a bent spine, longer than it is wide, with harmonics, a fine wobble and one outlet, which are rules 3, 4, 5 and 10 of section 7.
+asks: What shape are real mountain lakes, and how can a game generate them?
 ---
 # Olympic Peninsula lakes for game worlds
 

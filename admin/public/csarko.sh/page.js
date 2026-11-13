@@ -51,7 +51,7 @@ function errorLines(...answers) {
 
 /**
  * Readers: the visits that engaged 5 s or more on a page, saw two or more paths, or clicked; the
- * rest are mostly crawlers the bot flag misses. Counted from lib-visits' rows alone, so a range
+ * rest are real bounces and the crawlers the API's bot test leaves in (CONTRACT.md). Counted from lib-visits' rows alone, so a range
  * that reaches before the cutover (`readersSince`) shows them since the cutover, with no share
  * of visits and no change against a previous range that has none.
  */
@@ -90,19 +90,22 @@ function visitorsCard([visits], days) {
   return [...errorLines(visits), tiles, chart, list];
 }
 
+/** A referrer group as the card names it: the API's word capitalised, and "ai" as the initials it is. */
+const groupName = (group) => (str(group) === 'ai' ? 'AI' : cap(str(group)));
+
 function referrersCard([refs]) {
   if (!refs.groups) return [notConfigured(missing(refs, 'visits'))];
-  const groups = refs.groups.map((g) => ({ name: cap(g.group), value: num(g.visitors), detail: `${cap(g.group)} referrers` }));
+  const groups = refs.groups.map((g) => ({ name: groupName(g.group), value: num(g.visitors), detail: `${groupName(g.group)} referrers` }));
   const chart = groups.length ? bars(groups, { label: 'Visitors by referrer group' }) : el('p', { class: 'empty' }, 'No referrers in this range.');
   const raw = folded(`Referrers · ${refs.rows?.length ?? 0}`, refs.rows ? table([
     { key: 'referrer', label: 'Referrer', render: mono },
-    { key: 'group', label: 'Group', render: (v) => cap(str(v)) },
+    { key: 'group', label: 'Group', render: groupName },
     { key: 'visitors', label: 'Visitors', num: true },
   ], [...refs.rows].sort((a, b) => b.visitors - a.visitors), 'No referrers in this range.') : notConfigured(missing(refs, 'visits')));
   const campaigns = folded(`Campaigns · ${refs.campaigns?.length ?? 0}`, refs.campaigns ? table([
     { key: 'campaign', label: 'Campaign', render: mono },
     { key: 'visitors', label: 'Visitors', num: true },
-  ], [...refs.campaigns].sort((a, b) => b.visitors - a.visitors), 'No tagged links were followed in this range.') : notConfigured(missing(refs, 'visits')));
+  ], [...refs.campaigns].sort((a, b) => b.visitors - a.visitors), "No tagged links of the site's own were followed in this range. An assistant's tag, such as ChatGPT's, counts as its referrer above.") : notConfigured(missing(refs, 'visits')));
   const paths = folded('Paths through the site', table([
     { key: 'from', label: 'From', render: mono },
     { key: 'to', label: 'To', render: mono },
@@ -131,7 +134,11 @@ function pagesCard([pages]) {
   return parts;
 }
 
-const KINDS = { out: 'Outbound', play: 'Play', watch: 'Watch', read: 'Read to the end', nav: 'Navigation', start: 'Research: Start here', filter: 'Research: filter', toc: 'Doc: contents', doc: 'Doc: link to a doc', next: 'Doc: keep reading', series: 'Doc: series line', end: 'Doc: read next', section: 'Doc: section read 5 s', other: 'Other' };
+// A doc page's kinds are as of 2026-11-13, when its Keep reading box became the What next section and
+// its Play button the three links to the doc's project (lead, close, after; -<project slug>).
+const KINDS = { out: 'Outbound', play: 'Play', watch: 'Watch', read: 'Read to the end', nav: 'Navigation', start: 'Research: Start here', filter: 'Research: filter', toc: 'Doc: contents', doc: 'Doc: link to a doc', next: 'Doc: next question', series: 'Doc: series part', end: 'Doc: next question, page end', section: 'Doc: section read 5 s', lead: 'Doc: project link, opening', close: 'Doc: project link, What next', after: 'Doc: project link, page end', term: 'Doc: term opened', crumb: 'Doc: trail to Home', author: 'Doc: author box to Home', other: 'Other' };
+/** The kinds of a doc's link on to its project: a game's play address, an app's page or a film on YouTube. */
+const PROJECT_LINK_KINDS = ['lead', 'close', 'after'];
 
 function eventsCard([events, visits], days) {
   if (!events.rows) return [notConfigured(missing(events, 'visits'))];
@@ -143,11 +150,16 @@ function eventsCard([events, visits], days) {
   const out = distinct ? events.outboundVisitors : byKind('out');
   const total = visits?.current ? num(visits.current.visits) : null;
   const rate = isNum(events.outboundRate) ? events.outboundRate : null;
+  // A doc no longer sends play-<game> (2026-11-13): its clicks on to the game, an app or a film are
+  // these three kinds, so Went to play and Went to watch count the /projects cards (and a doc's
+  // Watch pill) and this tile counts the docs.
+  const toProject = PROJECT_LINK_KINDS.reduce((n, kind) => n + byKind(kind), 0);
   const tiles = el('div', { class: 'tiles' },
     tile(distinct ? 'Visitors who clicked out' : 'Outbound clicks', out, { note: rate === null ? 'LinkedIn, GitHub, Substack, YouTube' : `${pct(rate)} of home page visitors went on to a profile` }),
-    tile('Went to play', byKind('play'), { note: 'Play in your browser, on /games' }),
-    tile('Went to watch', byKind('watch'), { note: 'Watch on YouTube, on /film' }),
-    tile('Read to the end', byKind('read'), { note: 'Reached the last line of a doc' }));
+    tile('Went to play', byKind('play'), { note: 'Play in your browser, on /projects' }),
+    tile('Went to watch', byKind('watch'), { note: "Watch on YouTube, on /projects or a doc's pill" }),
+    tile('Doc to its project', toProject, { note: "A doc's link to its game, app or film" }),
+    tile('Read to the end', byKind('read'), { note: "Scrolled to a doc's last section" }));
   const funnel = total === null
     ? el('p', { class: 'empty' }, 'Visits are not available, so the share of visits cannot be drawn.')
     : bars([
@@ -155,6 +167,7 @@ function eventsCard([events, visits], days) {
       { name: 'Clicked out', value: out, detail: distinct ? 'Visitors who clicked out' : 'Outbound clicks' },
       { name: 'Went to play', value: byKind('play'), detail: 'Play clicks' },
       { name: 'Went to watch', value: byKind('watch'), detail: 'Watch clicks' },
+      { name: 'Doc to its project', value: toProject, detail: "Clicks on a doc's link to its project" },
     ], { ramp: true, share: true, label: 'From a visit to a click out, as a share of visits' });
   const list = folded(`Events · ${rows.length}`, table([
     { key: 'name', label: 'Event', render: mono },
@@ -171,14 +184,20 @@ function eventsCard([events, visits], days) {
 const duration = (s) => { const n = Math.max(0, Math.round(s)); return n >= 60 ? `${Math.floor(n / 60)}m ${String(n % 60).padStart(2, '0')}s` : `${n}s`; };
 /** Seconds as m:ss: positions on the timeline and spans. */
 const clock = (s) => { const n = Math.max(0, Math.round(s)); return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`; };
-const SOURCE_NAMES = { 'google.com': 'Google', 'bing.com': 'Bing', 'duckduckgo.com': 'DuckDuckGo', 'github.com': 'GitHub', 'linkedin.com': 'LinkedIn', 'substack.com': 'Substack', 'youtube.com': 'YouTube', 'chatgpt.com': 'ChatGPT', 't.co': 'X' };
+// The assistants first: the names match by suffix, and gemini.google.com is not Google.
+const SOURCE_NAMES = { 'chatgpt.com': 'ChatGPT', 'gemini.google.com': 'Gemini', 'notebook.google.com': 'NotebookLM', 'notebooklm.google.com': 'NotebookLM', 'perplexity.ai': 'Perplexity', 'claude.ai': 'Claude', 'google.com': 'Google', 'bing.com': 'Bing', 'duckduckgo.com': 'DuckDuckGo', 'github.com': 'GitHub', 'linkedin.com': 'LinkedIn', 'substack.com': 'Substack', 'youtube.com': 'YouTube', 't.co': 'X' };
 /** The host's name by suffix (www.google.com is Google too), else the host as given. */
 function hostName(host) {
   const h = str(host).toLowerCase();
   for (const [suffix, name] of Object.entries(SOURCE_NAMES)) if (h === suffix || h.endsWith(`.${suffix}`)) return name;
   return str(host);
 }
-const sourceName = (src) => (src?.kind === 'external' ? hostName(src.host) || 'Elsewhere' : src?.kind === 'internal' ? 'This site' : 'Direct');
+/** Where a journey began. A visit with no referrer and an assistant's tag (`assistant`, a link in a ChatGPT answer) is that assistant's, as the Referrers card counts it. */
+const sourceName = (src) => (src?.kind === 'external' ? hostName(src.host) || 'Elsewhere' : src?.assistant ? hostName(src.assistant) : src?.kind === 'internal' ? 'This site' : 'Direct');
+/** The small line under it: the host, the page of ours it came from, or that it brought no referrer; an assistant's link brought its tag alone. Short: the line is cut at the node's width. */
+const sourceLine = (src) => (src.kind === 'external' ? str(src.host) : src.assistant ? 'tagged link' : src.kind === 'internal' ? str(src.path) || 'an earlier page' : 'no referrer');
+/** That line in full, for its tooltip. */
+const sourceTitle = (src) => (src.kind === 'external' ? str(src.host) : src.assistant ? `tagged ${str(src.campaign)}, ${src.kind === 'internal' ? `from ${str(src.path) || 'an earlier page'}` : 'no referrer'}` : src.kind === 'internal' ? str(src.path) : '');
 const ARROW_SVG = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const arrow = () => { const a = el('li', { class: 'j-arrow', 'aria-hidden': 'true' }); a.innerHTML = ARROW_SVG; return a; };
 
@@ -274,7 +293,7 @@ function journey(j, now) {
   const from = el('li', { class: 'j-node edge' },
     el('span', { class: 'j-kicker' }, 'Arrived from'),
     el('span', { class: 'j-main' }, sourceName(src)),
-    el('span', { class: 'j-small mono', title: str(src.kind === 'internal' ? src.path : src.host) || null }, src.kind === 'external' ? str(src.host) : src.kind === 'internal' ? str(src.path) || 'an earlier page' : 'no referrer'));
+    el('span', { class: 'j-small mono', title: sourceTitle(src) || null }, sourceLine(src)));
   const items = [from];
   steps.forEach((s, i) => {
     if (s.back && i > 0) items.push(arrow(), backNode(num(s.at) - (num(steps[i - 1].at) + (isNum(steps[i - 1].secs) ? steps[i - 1].secs : 0))));
@@ -295,7 +314,8 @@ function journey(j, now) {
   if (num(j.stitched) > 0) chips.push(el('span', { class: 'badge' }, 'stitched across midnight'));
   if (j.suspect) chips.push(el('span', { class: 'badge warn' }, 'suspect: UTC clock, no engaged time'));
   else if (j.reader === false) chips.push(el('span', { class: 'badge warn' }, 'glance: one page, under 5 s, no click'));
-  if (src.campaign) chips.push(el('span', { class: 'badge' }, `tagged ${str(src.campaign)}`));
+  // An assistant's tag is already the journey's source, so it is not said twice.
+  if (src.campaign && !src.assistant) chips.push(el('span', { class: 'badge' }, `tagged ${str(src.campaign)}`));
   const device = deviceLine(j.device);
   const meta = el('div', { class: 'j-meta' }, device ? el('span', { class: 'j-device mono' }, device) : null, chips.length ? el('span', { class: 'tags j-chips' }, ...chips) : null);
   return el('li', { class: `journey${j.suspect || j.reader === false ? ' suspect' : ''}` }, head, meta, el('ol', { class: 'j-flow', 'aria-label': `Journey from ${sourceName(src)}` }, ...items), strip);
@@ -778,9 +798,9 @@ function searchSub(d, search) {
 /** Each card: its queries, its copy, how it renders, and the skeleton that stands in for it while the queries run. */
 const CARDS = [
   { id: 'visitors', title: 'Visitors', queries: ['visits'], sub: visitorsSub, render: visitorsCard, skeleton: { tiles: 2, tile: 188, chart: true, folds: 1 } },
-  { id: 'referrers', title: 'Where they come from', queries: ['referrers'], sub: () => `Visitors by where the visit started; the raw referrers and the tagged links folded below. ${GOATCOUNTER_NOTE}`, render: referrersCard, skeleton: { bars: 10, folds: 3 } },
+  { id: 'referrers', title: 'Where they come from', queries: ['referrers'], sub: () => `Visitors by where the visit started; the referrers (an assistant's tagged link counts as its host) and the site's own tagged links folded below. ${GOATCOUNTER_NOTE}`, render: referrersCard, skeleton: { bars: 10, folds: 3 } },
   { id: 'pages', title: 'What they read', queries: ['pages'], sub: () => `Pages by visitors; the paths that hit the 404 page folded below. ${GOATCOUNTER_NOTE}`, render: pagesCard, skeleton: { rows: 8, row: 62, folds: 2 } },
-  { id: 'events', title: 'Where they go next', queries: ['events', 'visits'], sub: () => `Clicks out to a profile, to play, to watch, and docs read to the end. ${GOATCOUNTER_NOTE}`, render: eventsCard, skeleton: [{ tiles: 4 }, { bars: 4, folds: 1 }] },
+  { id: 'events', title: 'Where they go next', queries: ['events', 'visits'], sub: () => `Clicks out to a profile, to play, to watch, from a doc to its project, and docs read to the end. ${GOATCOUNTER_NOTE}`, render: eventsCard, skeleton: [{ tiles: 5 }, { bars: 5, folds: 1 }] },
   { id: 'journeys', title: 'Journeys', queries: ['journeys'], sub: () => 'The most recent visits, newest first, each from where it came to how it left: every page with when it was reached, how far it was scrolled, how long it was visible and on screen, its LCP, and the click that ended the visit. From lib-visits, so since the cutover only.', render: journeysCard, skeleton: { chips: 4, items: 8 } },
   { id: 'search', title: 'Search', queries: ['search'], sub: searchSub, render: searchCard, skeleton: { tiles: 5, chart: 185, folds: 3 } },
   { id: 'reach', title: 'Reach', queries: ['reach'], sub: () => 'YouTube, GitHub, Hacker News and Substack: exposure beyond the site. A section reads Not configured until its credential is in Secret Manager.', render: reachCard, skeleton: [{ heading: true, tiles: 3, tile: 118, folds: 1 }, { rows: 2, row: 44, folds: 1 }, { tiles: 3, tile: 118, folds: 1 }, { tiles: 2, tile: 118, lines: 3 }] },

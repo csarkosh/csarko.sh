@@ -6,14 +6,32 @@
  * string parameters the SQL casts to TIMESTAMP; one job a query, cached five
  * minutes by name and window. History rows are merged in code (summed by
  * day, path or name), each query reading one dataset.
+ *
+ * A query shares SQL with the others through a fragment: `{{bot}}` in a file is
+ * replaced by `queries/_bot.sql` (the bot and crawler test all six visits
+ * queries run over a page load) before the job is sent, so the rule is written
+ * once. `renderSql` is that step, for the tests and for running a file by hand.
  */
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { UpstreamError } from "../http.mjs";
+import { assistantOf } from "../referrers.mjs";
 
 const LIVE_TABLE = /`csarko-sh\.csarko_visits\._AllLogs`/g;
 const HISTORY_TABLE = /`csarko-sh\.csarko_history\.goatcounter_history`/g;
+const FRAGMENT = /\{\{([a-z][a-z0-9-]*)\}\}/g;
+
+/**
+ * A saved SQL file as BigQuery gets it, but for the table names: every `{{name}}` replaced by
+ * the fragment `_<name>.sql` beside it, without the comment lines that head the fragment (they
+ * explain it to a reader of the file, and a query's first line stays its own). A fragment
+ * holds no fragment of its own; a name with no file throws.
+ */
+export function renderSql(name, queriesDir = join(process.cwd(), "queries")) {
+  const sql = readFileSync(join(queriesDir, `${name}.sql`), "utf8");
+  return sql.replace(FRAGMENT, (_, fragment) => readFileSync(join(queriesDir, `_${fragment}.sql`), "utf8").replace(/^(--.*\n)+/, "").trim());
+}
 
 /**
  * Runs a saved SQL file by name with string parameters, its table names
@@ -22,7 +40,7 @@ const HISTORY_TABLE = /`csarko-sh\.csarko_history\.goatcounter_history`/g;
  */
 export function createRunner({ bigquery, projectId, dataset, historyDataset, cache, ttlMs = 300_000, queriesDir = join(process.cwd(), "queries") }) {
   const sqlOf = (name) => {
-    const sql = readFileSync(join(queriesDir, `${name}.sql`), "utf8");
+    const sql = renderSql(name, queriesDir);
     return sql.replace(LIVE_TABLE, `\`${projectId}.${dataset}._AllLogs\``).replace(HISTORY_TABLE, `\`${projectId}.${historyDataset}.goatcounter_history\``);
   };
 
@@ -91,13 +109,18 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
       return sumBy([...rows, ...history.map((r) => ({ path: r.path, title: r.title ?? "", visitors: Number(r.visitors), pageviews: null, engagedMedian: null, reached: null }))], "path", "visitors");
     },
 
+    // A visit that came with no external referrer but with an assistant's tag (ChatGPT sends no
+    // referrer and tags its links utm_source=chatgpt.com; referrers.sql hands the tag over as the
+    // referrer row's `target`) is reported under that assistant's host, so it groups as "ai" and
+    // not as direct. An assistant's tag is a source, never a campaign of the site's: it is left
+    // out of `campaigns`, so the visit shows once.
     async referrers(range) {
       const live = await run("referrers", { start: range.start, end: range.end });
       const all = wantsHistory(range.start) ? [...live, ...(await hist("history-referrers", { start: range.start, end: range.end }))] : live;
       const of = (kind) => all.filter((r) => r.kind === kind);
       return {
-        referrers: sumBy(of("referrer").map((r) => ({ name: r.name ?? "", visitors: Number(r.visitors) })), "name", "visitors"),
-        campaigns: of("campaign").map((r) => ({ campaign: r.name, visitors: Number(r.visitors) })),
+        referrers: sumBy(of("referrer").map((r) => ({ name: assistantOf(r.target) ?? r.name ?? "", visitors: Number(r.visitors) })), "name", "visitors"),
+        campaigns: of("campaign").filter((r) => assistantOf(r.name) === null).map((r) => ({ campaign: r.name, visitors: Number(r.visitors) })),
         paths: of("internal").map((r) => ({ from: r.name, to: r.target, visitors: Number(r.visitors) })),
       };
     },
@@ -149,8 +172,11 @@ const secondsFrom = (startedMs, stamp) => Math.max(0, Math.round((Date.parse(sta
  * (`nt='reload'`), is the same step with the larger engaged time and depth. `at` is seconds from the
  * first view; `left` is when the visitor left that page, in the same seconds: the next step's `at`,
  * else the exit click's time, else `at + secs` when the page sent a leave, else null. `read` is the
- * leave's reached-the-end, and only on a /research/<slug> page (null elsewhere). `exit` is the last
- * outbound click when it came on or after the last view, else { kind: "left" }. `engaged` sums the
+ * leave's reached-the-end (journeys.sql: the flag and a scroll depth of 50 or more), and only on a
+ * /research/<slug> page (null elsewhere). `exit` is the last
+ * outbound click when it came on or after the last view, else { kind: "left" }. `source.assistant`
+ * is the assistant's host when the first view had no external referrer and its tag names one
+ * (ChatGPT's utm_source=chatgpt.com), the host referrers() counts the visit under. `engaged` sums the
  * known `secs` (null with none). `suspect` marks a visit that looks like automation: a UTC clock, no
  * leave and no vitals from any page. `reader` is visits.sql's reader: 5 or more engaged seconds on
  * one page, 2 or more paths, or a click (here the exit click, the only one a journey keeps).
@@ -199,6 +225,10 @@ export function journeyOf(row) {
   if (source.kind === "external") source.host = src.rh ?? "(unknown)";
   if (source.kind === "internal" && src.rp) source.path = src.rp;
   if (src.campaign) source.campaign = src.campaign;
+  // The same reading as referrers(): no external referrer and an assistant's tag is that assistant's
+  // visit. `kind` stays the view's own (the stitching reads it); `assistant` is the host to show.
+  const assistant = source.kind === "external" ? null : assistantOf(src.campaign);
+  if (assistant) source.assistant = assistant;
   const d = plainRow(r.device ?? {});
   const device = { browser: d.bn ?? null, version: d.bv === null || d.bv === undefined ? null : String(d.bv), os: d.os ?? null, viewport: [num(d.vw), num(d.vh)], tz: d.tz ?? null, theme: d.th ?? null, touch: flag(d.tp), lang: d.lg ?? null };
   const click = r.last_click ? plainRow(r.last_click) : null;

@@ -31,12 +31,16 @@ export const APP_NAME = "csarko.sh";
 export const TREND_WEEKS = 12;
 
 // toc, doc, next, series and end are a doc page's own links (its contents, a link in its text to
-// another doc, Keep reading, the series line and the link after the author box); section is a
-// section read for 5 s (2026-10-23). On an app's page (apps.csarko.sh, 2026-11-01): get (the bar's
+// another doc, a next question in its What next section (Keep reading until 2026-11-13), a part of
+// its series and the next question after the author box); section is a section read for 5 s
+// (2026-10-23). Since 2026-11-13 a doc page also sends lead, close and after (the link to its
+// project in the opening, in What next and after the author box, each -<project slug>), term (a
+// definition tapped open), crumb (crumb-home, the trail's Home link) and author (author-home, the
+// author box's links to the home page). On an app's page (apps.csarko.sh, 2026-11-01): get (the bar's
 // Install or Download pill), download (a release button), promo (the promo card), tokens (Buy me
 // tokens), release and source (the footer's version and GitHub), each -<slug>; on donate.csarko.sh:
 // tier (a tier picked), pay (the Stripe button), tipped (the thanks page, the tip made) and back.
-const EVENT_KINDS = ["out", "play", "watch", "read", "nav", "start", "filter", "toc", "doc", "next", "series", "end", "section", "get", "download", "promo", "tokens", "release", "source", "app", "tier", "pay", "tipped", "back"];
+const EVENT_KINDS = ["out", "play", "watch", "read", "nav", "start", "filter", "toc", "doc", "next", "series", "end", "section", "lead", "close", "after", "term", "crumb", "author", "get", "download", "promo", "tokens", "release", "source", "app", "tier", "pay", "tipped", "back"];
 /** The kind of an event name from its prefix: `out-github` is an outbound click, `read-<slug>` a read to the end; `link-<host>` (an unnamed link out) is `out` too. */
 export function eventKindOf(name) {
   const prefix = String(name).split("-")[0];

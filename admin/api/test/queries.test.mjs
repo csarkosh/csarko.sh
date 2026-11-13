@@ -223,6 +223,9 @@ test("eventKindOf reads the prefix, counts an unnamed link out as out, and calls
     assert.equal(eventKindOf(name), kind, `${name} on the apps and donate pages`);
   }
   assert.equal(eventKindOf("app-lib-visits"), "app", "an app card's link to its page is its own kind since 2026-11-01");
+  for (const [name, kind] of [["lead-day-hike", "lead"], ["close-ide-arkos", "close"], ["after-the-last-trail", "after"], ["term", "term"], ["crumb-home", "crumb"], ["author-home", "author"], ["nav-home", "nav"], ["series-webgpu-vs-webgl2", "series"], ["end-ground-fog-without-the-wall", "end"]]) {
+    assert.equal(eventKindOf(name), kind, `${name} on a doc page since 2026-11-13`);
+  }
 });
 
 test("search ends on Google's last finished day, with the lag note, per-day rows for every day, totals, previous, tops, indexed and sitemap", async () => {

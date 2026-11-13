@@ -3,6 +3,10 @@ description: Chromium refuses pointer lock for 1.25 s after Esc. What failed in 
 published: 2026-08-25
 categories: Tooling
 updated: 2026-10-18
+project: day-hike
+project-line: Day Hike is a first-person co-op horror game that runs in your browser. This is how its desktop build removed the wait after Esc, and why in a browser a click on Resume straight after Esc can still do nothing for over a second.
+closing: Day Hike's desktop launcher for macOS and Windows loads the live site on the patched Electron; measured with that patch on macOS arm64, the pause menu's Resume click relocked in 12 to 16 ms. The browser build keeps section 1's cooldown: in a Chromium browser, press Esc during a hike and click Resume as fast as you can, and a click inside the first 1.25 s is refused, so you click again. Only the time it takes to move the mouse to the button softens it.
+asks: Why does pointer lock fail right after pressing Esc in Chrome?
 ---
 # Pointer lock fails after Esc: an 8-byte fix
 

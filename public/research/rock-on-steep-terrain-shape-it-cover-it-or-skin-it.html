@@ -328,19 +328,23 @@
     .doc-page .prose { font-size: 17px; }
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
-    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
-    .series-line p { margin: 0; }
+    .series-line { display: flex; gap: 8px; margin: 18px 0 0; font-size: 14.5px; color: var(--muted); white-space: nowrap; }
+    .series-line > * { flex: none; }
+    .series-line > :first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .series-line strong { color: var(--text); font-weight: 600; }
-    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
-    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-line a, .afterward a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
-    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .prose h2, .prose h3, .prose h4 { scroll-margin-top: 28px; }
+    ::target-text { background: var(--accent-underline); color: var(--text); }
+    .toc { margin: 32px 0 0; }
     .toc .section-label { margin: 0 0 6px; }
     .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
     .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
     .toc a:hover { color: var(--accent); }
     .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    @media (min-width: 1060px) { .toc { display: none; } }
+    @media (max-width: 1059px) { .prose > .section-head:first-child:not([data-read-end]) { border-top: 0; padding-top: 0; margin-top: 36px; } }
     .figure { margin: 32px 0; }
     .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
     /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
@@ -365,26 +369,28 @@
       radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
       radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
       var(--surface); }
-    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
-    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
-    .series-name { margin: 0 0 8px; font-weight: 600; }
-    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
-    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
-    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
-    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
-    .next-list .card { padding: 16px 18px; background: var(--bg); }
-    .next-list .doc-title { font-size: 1.05rem; }
-    .next-list .doc-desc { font-size: 14.5px; }
-    .play-line, .watch-line { margin: 20px 0 0; }
+    .what-next { margin-top: 48px; }
+    .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
+    .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
+    .watch-line { margin: 20px 0 0; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
-    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
-    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
-    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color var(--md-duration-short3) var(--md-easing-standard); }
-    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
-    .afterward .next:hover { border-color: var(--accent); }
-    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
+    .afterward { display: flex; align-items: baseline; gap: 6px 22px; margin-top: 24px; font-size: 14.5px; color: var(--muted); text-wrap: balance; }
+    .afterward > * { flex: none; }
+    .afterward > a:not(:last-child) { flex: 0 1 auto; }
+    @media (max-width: 640px) {
+      .doc-page .shell { padding-top: 16px; }
+      .doc-page .crumbs ol { padding-block: 8px; }
+      .doc-page .eyebrow { margin-bottom: 8px; }
+      .doc-page h1 { margin-bottom: 10px; font-size: 2rem; }
+      .doc-header .lead { margin-bottom: 12px; font-size: 1rem; line-height: 1.5; }
+      .doc-page .doc-header { padding-bottom: 12px; }
+      .series-line { gap: 6px; margin-top: 8px; font-size: 13px; }
+      .afterward { flex-direction: column; }
+    }
+    @media (max-width: 439px) { .series-line a span { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .play { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -397,7 +403,7 @@
   <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
-      <a class="wordmark" href="/">csarko<span>.sh</span></a>
+      <a class="wordmark" href="/" data-visits-event="nav-home">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/projects" data-visits-event="nav-projects">Projects</a></li>
         <li><a href="/research" data-visits-event="nav-research">Research</a></li>
@@ -407,7 +413,7 @@
   <nav class="crumbs" aria-label="Breadcrumb">
     <div class="wrap">
       <ol>
-        <li><a href="/">Home</a></li>
+        <li><a href="/" data-visits-event="crumb-home">Home</a></li>
         <li><a href="/research">Research</a></li>
         <li><span aria-current="page">Rock on steep terrain: shape it, cover it, or skin it</span></li>
       </ol>
@@ -438,8 +444,7 @@
           <li>16 min read</li>
         </ul>
         <nav class="series-line" aria-label="Series">
-          <p>Part 6 of 7 in <strong>Rendering a browser forest</strong></p>
-          <p class="series-steps"><span>Previous: <a href="/research/ground-fog-without-the-wall" rel="prev" data-visits-event="series-ground-fog-without-the-wall">Volumetric ground fog without the sprite wall</a></span><span>Next: <a href="/research/soft-shade-bark-and-moss-for-browser-forests" rel="next" data-visits-event="series-soft-shade-bark-and-moss-for-browser-forests">Soft shade, bark and moss for browser forests</a></span></p>
+          <span>Part 6 of 7 in <strong>Rendering a browser forest</strong></span><span aria-hidden="true">·</span><a href="/research/ground-fog-without-the-wall" rel="prev" aria-label="Previous: Volumetric ground fog without the sprite wall" title="Volumetric ground fog without the sprite wall" data-visits-event="series-ground-fog-without-the-wall"><span aria-hidden="true">←</span> Previous</a><span aria-hidden="true">·</span><a href="/research/soft-shade-bark-and-moss-for-browser-forests" rel="next" aria-label="Next: Soft shade, bark and moss for browser forests" title="Soft shade, bark and moss for browser forests" data-visits-event="series-soft-shade-bark-and-moss-for-browser-forests">Next <span aria-hidden="true">→</span></a>
         </nav>
       </header>
       <div class="prose">
@@ -468,6 +473,7 @@ about 100 ms on the first frame of a hike. The game chose the skin. The look les
 much as the geometry: the relief function must fill its range, every column needs its own tilt or
 all of them face the light the same way, a face needs forms at 10 to 20 m as well as joints at 3,
 joints narrower than the vertex spacing smear, and a sun head-on to a face hides everything.</p>
+<p class="project-line">This is how the rock on the steep faces of Day Hike, a co-op horror game that runs in your browser, came to be drawn: a finer skin pushed out of the ground, after paint and cliff models were thrown away. <a href="https://games.csarko.sh/dayhike/" data-visits-event="lead-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>
 <p>The questions came from Day Hike, a co-op hiking game in Babylon.js set on a fictional stretch
 of the Olympic Peninsula. An earlier doc covers how that rock forms and how AAA games build it
 with kits and shaped height fields <a class="cite" href="#ref-1">[1]</a>; this one is about what happened when those answers were
@@ -749,37 +755,21 @@ already fine, the first approach is the simpler one.</p>
 <p>Either way, the work that made the difference was the relief function and the lessons of section 6,
 and those are the same for both.</p>
       </div>
-      <section class="keep-reading" aria-labelledby="next-reads">
-        <h2 id="next-reads" class="section-label">Keep reading</h2>
-        <p class="series-name">Rendering a browser forest · 7 parts</p>
-        <ol class="series-parts">
-          <li><a href="/research/floating-props-on-procedural-terrain" data-visits-event="next-floating-props-on-procedural-terrain">Why props float on procedural terrain</a></li>
-          <li><a href="/research/no-visible-pop-in" data-visits-event="next-no-visible-pop-in">No visible pop-in: dissolving a streamed forest</a></li>
-          <li><a href="/research/grass-and-trail-realism" data-visits-event="next-grass-and-trail-realism">Grass, wind and trails in a browser meadow</a></li>
-          <li><a href="/research/grass-fullness-without-thinning" data-visits-event="next-grass-fullness-without-thinning">Grass fullness without thinning the field</a></li>
-          <li><a href="/research/ground-fog-without-the-wall" data-visits-event="next-ground-fog-without-the-wall">Volumetric ground fog without the sprite wall</a></li>
-          <li aria-current="true"><span>Rock on steep terrain: shape it, cover it, or skin it</span></li>
-          <li><a href="/research/soft-shade-bark-and-moss-for-browser-forests" data-visits-event="next-soft-shade-bark-and-moss-for-browser-forests">Soft shade, bark and moss for browser forests</a></li>
-        </ol>
-        <ul class="doc-list next-list" role="list">
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/full-far-field-for-browser-worlds" data-visits-event="next-full-far-field-for-browser-worlds">A full far field: how games fill the distance</a></h3>
-            <p class="doc-meta">15 min read</p>
-            <p class="doc-desc">How shipped open-world games keep the distance looking full, from far terrain and vegetation to the camera-side tricks that hide the seams, for a browser frame.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/cloud-rigs-for-graphics-work" data-visits-event="next-cloud-rigs-for-graphics-work">Cloud rigs for graphics work: fan out, not a cheaper cloud</a></h3>
-            <p class="doc-meta">27 min read</p>
-            <p class="doc-desc">AWS, Azure and GCP price a T4 GPU within 3%. Fanning out shader recording and tests, not switching clouds, cuts a 4.5-hour graphics change to about 30 minutes.</p>
-          </li>
+      <section class="prose what-next" aria-labelledby="what-next">
+        <h2 id="what-next">What next</h2>
+        <p>Go back to the foot of the sea scarp that read as a sand dune. Since Oct 12, 2026 Day Hike has drawn section 5&#39;s skin over ground too steep to stand on: patches on 16 m cells that push columns or jointed blocks up to 4 m out of the smooth face, with no cliff models standing on it. At the start of a hike the nearest band of rock is built at once and the rest fills in a few milliseconds a frame, which is section 5&#39;s build over frames. <a href="https://games.csarko.sh/dayhike/" data-visits-event="close-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>
+        <ul>
+          <li><a href="/research/soft-shade-bark-and-moss-for-browser-forests" data-visits-event="series-soft-shade-bark-and-moss-for-browser-forests">Why does forest shade in a game go black, and why does bark look shiny?</a></li>
+          <li><a href="/research/full-far-field-for-browser-worlds" data-visits-event="next-full-far-field-for-browser-worlds">Why does the distance in a game look empty, and how do games fill it?</a></li>
+          <li><a href="/research/cloud-rigs-for-graphics-work" data-visits-event="next-cloud-rigs-for-graphics-work">Is AWS, Azure or GCP cheapest for a T4 GPU, and does switching save time?</a></li>
         </ul>
-        <p class="play-line"><a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
+        <p class="series-at"><span>Part 6 of 7 in <strong>Rendering a browser forest</strong></span><span>Previous: <a href="/research/ground-fog-without-the-wall" rel="prev" data-visits-event="series-ground-fog-without-the-wall">Volumetric ground fog without the sprite wall</a></span><span>Next: <a href="/research/soft-shade-bark-and-moss-for-browser-forests" rel="next" data-visits-event="series-soft-shade-bark-and-moss-for-browser-forests">Soft shade, bark and moss for browser forests</a></span></p>
         <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS).</p>
       </section>
       <div class="prose">
 <div class="section-head" data-read-end><p class="section-label">09</p><h2 id="sources"><a class="anchor" href="#sources">Sources</a></h2></div>
 <ol class="references">
-<li id="ref-1"><span class="ref-num">[1]</span><div>C. Sarkosh, &quot;Rock formations of the Olympic Peninsula, and how games build them,&quot; csarko.sh, Oct. 9, 2026. Accessed: Oct. 12, 2026. [Online]. Available: <a class="external" href="https://csarko.sh/research/rock-formations-of-the-olympic-peninsula" target="_blank" rel="noopener">https://csarko.sh/research/rock-formations-of-the-olympic-peninsula</a></div></li>
+<li id="ref-1"><span class="ref-num">[1]</span><div>C. Sarkosh, &quot;Rock formations of the Olympic Peninsula, and how games build them,&quot; csarko.sh, Oct. 9, 2026. Accessed: Oct. 12, 2026. [Online]. Available: <a href="https://csarko.sh/research/rock-formations-of-the-olympic-peninsula">https://csarko.sh/research/rock-formations-of-the-olympic-peninsula</a></div></li>
 <li id="ref-2"><span class="ref-num">[2]</span><div>F. Losasso and H. Hoppe, &quot;Geometry clipmaps: terrain rendering using nested regular grids,&quot; <em>ACM Trans. Graph.</em>, vol. 23, no. 3, pp. 769-776, Aug. 2004. Accessed: Oct. 12, 2026. [Online]. Available: <a class="external" href="https://hhoppe.com/proj/geomclipmap/" target="_blank" rel="noopener">https://hhoppe.com/proj/geomclipmap/</a></div></li>
 <li id="ref-3"><span class="ref-num">[3]</span><div>T. Smith, &quot;Ghost of Tsushima: World and Waterfall Shots,&quot; ArtStation. Accessed: Oct. 12, 2026. [Online]. Available: <a class="external" href="https://tsmith3d.artstation.com/projects/48NPak" target="_blank" rel="noopener">https://tsmith3d.artstation.com/projects/48NPak</a></div></li>
 <li id="ref-4"><span class="ref-num">[4]</span><div>J. van Muijden, &quot;GPU-Based Procedural Placement in Horizon Zero Dawn,&quot; GDC 2017, Guerrilla Games. Accessed: Oct. 12, 2026. [Online]. Available: <a class="external" href="https://www.guerrilla-games.com/read/gpu-based-procedural-placement-in-horizon-zero-dawn" target="_blank" rel="noopener">https://www.guerrilla-games.com/read/gpu-based-procedural-placement-in-horizon-zero-dawn</a></div></li>
@@ -792,13 +782,13 @@ and those are the same for both.</p>
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
-        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
+        <p class="author-name"><a href="/" data-visits-event="author-home">Cyrus Sarkosh</a></p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
-        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
+        <p class="author-links"><a href="/" data-visits-event="author-home">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
       <nav class="afterward" aria-label="Read next">
-        <a class="next" href="/research/soft-shade-bark-and-moss-for-browser-forests" data-visits-event="end-soft-shade-bark-and-moss-for-browser-forests"><span class="section-label">Read next</span><span>Soft shade, bark and moss for browser forests <span aria-hidden="true">→</span></span></a>
-        <a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        <span>Day Hike: <a href="https://games.csarko.sh/dayhike/" data-visits-event="after-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a></span>
+        <a href="/research/soft-shade-bark-and-moss-for-browser-forests" data-visits-event="end-soft-shade-bark-and-moss-for-browser-forests">Why does forest shade in a game go black, and why does bark look shiny?</a>
         <a href="/research">All research</a>
       </nav>
     </main>
@@ -813,7 +803,7 @@ and those are the same for both.</p>
   <!-- generated:analytics -->
   <script defer src="/assets/visits.4378bd36.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
-  <script defer src="/assets/reading.c3e27b33.js"></script>
+  <script defer src="/assets/reading.3a8c03e0.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

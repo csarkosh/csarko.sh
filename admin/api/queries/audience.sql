@@ -1,14 +1,14 @@
 -- Who the visitors are, by dimension, in [start, end). The check beacons (/deploy-check, /depth-check)
--- are left out, and so is every page load (id) that any of its rows calls a bot (Lighthouse's view
--- says bot=false, its leave and vitals true).
+-- are left out, and so is every page load (id) that is a bot's or a crawler's (the shared test in
+-- _bot.sql).
 WITH beacons AS (
   SELECT
     JSON_VALUE(json_payload.n) AS n,
     JSON_VALUE(json_payload.id) AS id,
     json_payload AS j,
-    -- A browser brand starting Headless (the client hints' HeadlessChrome, under a User-Agent that
-    -- claims a real browser) is a bot too, whatever s.bot says.
-    LOGICAL_OR(IFNULL(JSON_VALUE(json_payload.s.bot), 'false') = 'true' OR STARTS_WITH(IFNULL(JSON_VALUE(json_payload.s.bn), ''), 'Headless')) OVER (PARTITION BY JSON_VALUE(json_payload.id)) AS bot
+    -- The shared bot test, queries/_bot.sql: the collector's flag, a Headless brand, an impossible
+    -- device, the Linux fleet from google.com and Day Hike's tooling lobby, over the whole page load.
+    {{bot}} AS bot
   FROM `csarko-sh.csarko_visits._AllLogs`
   WHERE timestamp >= TIMESTAMP(@start) AND timestamp < TIMESTAMP(@end)
     AND JSON_VALUE(json_payload.p) NOT IN ('/deploy-check', '/depth-check')

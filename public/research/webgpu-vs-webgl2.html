@@ -18,7 +18,7 @@
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta property="article:published_time" content="2026-09-27" />
-  <meta property="article:modified_time" content="2026-10-23" />
+  <meta property="article:modified_time" content="2026-11-13" />
   <meta property="article:author" content="https://csarko.sh/" />
   <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -49,10 +49,10 @@
       "headline": "WebGPU vs WebGL2: what changes and what does not",
       "description": "WebGPU vs WebGL2, measured in a Babylon.js game: 1.3 to 1.5 ms faster per frame at native resolution, 9.9 ms at 4x the pixels, for 2.7 MB of shader translators.",
       "datePublished": "2026-09-27",
-      "dateModified": "2026-10-23",
+      "dateModified": "2026-11-13",
       "url": "https://csarko.sh/research/webgpu-vs-webgl2",
       "mainEntityOfPage": "https://csarko.sh/research/webgpu-vs-webgl2",
-      "wordCount": 6261,
+      "wordCount": 6465,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -328,19 +328,23 @@
     .doc-page .prose { font-size: 17px; }
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
-    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
-    .series-line p { margin: 0; }
+    .series-line { display: flex; gap: 8px; margin: 18px 0 0; font-size: 14.5px; color: var(--muted); white-space: nowrap; }
+    .series-line > * { flex: none; }
+    .series-line > :first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .series-line strong { color: var(--text); font-weight: 600; }
-    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
-    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-line a, .afterward a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
-    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .prose h2, .prose h3, .prose h4 { scroll-margin-top: 28px; }
+    ::target-text { background: var(--accent-underline); color: var(--text); }
+    .toc { margin: 32px 0 0; }
     .toc .section-label { margin: 0 0 6px; }
     .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
     .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
     .toc a:hover { color: var(--accent); }
     .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    @media (min-width: 1060px) { .toc { display: none; } }
+    @media (max-width: 1059px) { .prose > .section-head:first-child:not([data-read-end]) { border-top: 0; padding-top: 0; margin-top: 36px; } }
     .figure { margin: 32px 0; }
     .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
     /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
@@ -365,26 +369,28 @@
       radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
       radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
       var(--surface); }
-    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
-    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
-    .series-name { margin: 0 0 8px; font-weight: 600; }
-    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
-    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
-    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
-    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
-    .next-list .card { padding: 16px 18px; background: var(--bg); }
-    .next-list .doc-title { font-size: 1.05rem; }
-    .next-list .doc-desc { font-size: 14.5px; }
-    .play-line, .watch-line { margin: 20px 0 0; }
+    .what-next { margin-top: 48px; }
+    .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
+    .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
+    .watch-line { margin: 20px 0 0; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
-    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
-    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
-    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color var(--md-duration-short3) var(--md-easing-standard); }
-    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
-    .afterward .next:hover { border-color: var(--accent); }
-    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
+    .afterward { display: flex; align-items: baseline; gap: 6px 22px; margin-top: 24px; font-size: 14.5px; color: var(--muted); text-wrap: balance; }
+    .afterward > * { flex: none; }
+    .afterward > a:not(:last-child) { flex: 0 1 auto; }
+    @media (max-width: 640px) {
+      .doc-page .shell { padding-top: 16px; }
+      .doc-page .crumbs ol { padding-block: 8px; }
+      .doc-page .eyebrow { margin-bottom: 8px; }
+      .doc-page h1 { margin-bottom: 10px; font-size: 2rem; }
+      .doc-header .lead { margin-bottom: 12px; font-size: 1rem; line-height: 1.5; }
+      .doc-page .doc-header { padding-bottom: 12px; }
+      .series-line { gap: 6px; margin-top: 8px; font-size: 13px; }
+      .afterward { flex-direction: column; }
+    }
+    @media (max-width: 439px) { .series-line a span { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .play { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -397,7 +403,7 @@
   <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
-      <a class="wordmark" href="/">csarko<span>.sh</span></a>
+      <a class="wordmark" href="/" data-visits-event="nav-home">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/projects" data-visits-event="nav-projects">Projects</a></li>
         <li><a href="/research" data-visits-event="nav-research">Research</a></li>
@@ -407,7 +413,7 @@
   <nav class="crumbs" aria-label="Breadcrumb">
     <div class="wrap">
       <ol>
-        <li><a href="/">Home</a></li>
+        <li><a href="/" data-visits-event="crumb-home">Home</a></li>
         <li><a href="/research">Research</a></li>
         <li><span aria-current="page">WebGPU vs WebGL2: what changes and what does not</span></li>
       </ol>
@@ -428,65 +434,58 @@
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Sep 27, 2026 · Updated Oct 23, 2026</p>
+        <p class="eyebrow">Sep 27, 2026 · Updated Nov 13, 2026</p>
         <h1>WebGPU vs WebGL2: what changes and what does not</h1>
         <p class="lead">WebGPU vs WebGL2, measured in a Babylon.js game: 1.3 to 1.5 ms faster per frame at native resolution, 9.9 ms at 4x the pixels, for 2.7 MB of shader translators.</p>
         <ul class="tags">
-          <li>24 min read</li>
+          <li>25 min read</li>
         </ul>
         <nav class="series-line" aria-label="Series">
-          <p>Part 1 of 3 in <strong>WebGPU against WebGL2</strong></p>
-          <p class="series-steps"><span>Next: <a href="/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" rel="next" data-visits-event="series-scene-depth-for-a-post-process-webgpu-vs-webgl2">Scene depth for a post process: WebGPU against WebGL2</a></span></p>
+          <span>Part 1 of 3 in <strong>WebGPU against WebGL2</strong></span><span aria-hidden="true">·</span><a href="/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" rel="next" aria-label="Next: Scene depth for a post process: WebGPU against WebGL2" title="Scene depth for a post process: WebGPU against WebGL2" data-visits-event="series-scene-depth-for-a-post-process-webgpu-vs-webgl2">Next <span aria-hidden="true">→</span></a>
         </nav>
       </header>
       <div class="prose">
-<p><strong>Question:</strong> what does WebGPU change against WebGL2 in how a browser builds a frame, where does
-that make a real game faster, where can it not, and what goes wrong on the way?</p>
-<p><strong>Short answer:</strong> WebGPU replaces WebGL2&#39;s one global state machine with
-<button type="button" class="term" popovertarget="term-1">pipelines</button><span class="term-def" id="term-1" popover role="note">Immutable objects made up front that bake in a shader with its blend, depth and cull state and its vertex layout, so a draw does not re-describe them.</span>
-and other objects checked when they are made, and adds
-<button type="button" class="term" popovertarget="term-2">compute shaders</button><span class="term-def" id="term-2" popover role="note">GPU programs that are not drawing: culling, simulation and particles, feeding draws without a round trip to the CPU. WebGL2 has none.</span>.
-No API makes the shading of a pixel cheaper, and a frame the GPU limits hides any CPU saving. In
-a real Babylon.js game the engine switch alone saved 1.3 to 1.5 ms a frame at native resolution
-and 9.93 ms at four times the pixels: a gain that grows with pixels, not with draws. WebGL2 is
-still needed as a fallback.</p>
+<p><strong>Question:</strong> What does WebGPU change against WebGL2 in how a browser builds a frame, and where
+does that make a real game faster? Where can it not, and what goes wrong on the way?</p>
+<p><strong>Short answer:</strong> Each WebGL2 draw uses whatever settings are switched on at that moment. WebGPU
+fixes those settings up front in objects called
+<button type="button" class="term" popovertarget="term-1" data-visits-event="term">pipelines</button><span class="term-def" id="term-1" popover role="note">Immutable objects made up front that bake in a shader with its blend, depth and cull state and its vertex layout, so a draw does not re-describe them.</span>,
+checked when made, and adds
+<button type="button" class="term" popovertarget="term-2" data-visits-event="term">compute shaders</button><span class="term-def" id="term-2" popover role="note">GPU programs that are not drawing: culling, simulation and particles, feeding draws without a round trip to the CPU. WebGL2 has none.</span>,
+GPU programs that do work other than drawing. No API makes the shading of a pixel cheaper, and a
+frame the GPU limits hides any CPU saving. In a real Babylon.js game the engine switch alone saved
+1.3 to 1.5 ms a frame at native resolution and 9.93 ms at four times the pixels. WebGL2 is still
+needed as a fallback.</p>
+<p><strong>What that leaves open:</strong> why the saving is there at all. WebGPU&#39;s design promises less CPU work
+per draw, yet only 3.79 ms of the game&#39;s 24.2 ms frame was JavaScript, and the gain grows with
+pixels, not with draws: about 6.5 times larger at 4 times the pixels. This page does not attribute
+it: memory traffic, multisample resolves and what each pass loads and stores are the candidates,
+and per-pass GPU timestamps would settle it. By the end you can check which kind of frame yours is
+and what the switch costs: a WebGL2 fallback, six shader fixes and 2.7 MB of shader translators.</p>
+<p class="project-line">This page&#39;s own measurements were all taken in Day Hike, a first-person co-op horror game that runs in your browser: the same frame drawn with WebGL2 and with WebGPU. <a href="https://games.csarko.sh/dayhike/" data-visits-event="lead-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>
 <figure class="figure">
 <!-- generated:figure:webgpu-vs-webgl2/frame-times -->
 <img src="/assets/fig-webgpu-vs-webgl2-frame-times.1a9e0fbd.svg" width="420" height="280" alt="A bar chart of frame times in two pairs. At 1200 by 2029 pixels, WebGL2 24.22 ms and WebGPU 22.69 ms; at 2400 by 4058 pixels, WebGL2 55.14 ms and WebGPU 45.21 ms" decoding="async" />
 <!-- /generated:figure:webgpu-vs-webgl2/frame-times -->
-<figcaption>The same pose in Day Hike on an Apple M4 in Chrome 153: switching the engine to WebGPU saved 1.53 ms at native resolution (1.34 to 1.49 ms on the quiet pages) and 9.93 ms at four times the pixels, so the saving grows faster than the pixel count.</figcaption>
+<figcaption>Compare the gap inside each pair of bars. Both pairs are the same pose in Day Hike on an Apple M4 in Chrome 153: switching the engine to WebGPU saved 1.53 ms at native resolution (1.34 to 1.49 ms on the quiet pages) and 9.93 ms at four times the pixels, so the saving grows faster than the pixel count.</figcaption>
 </figure>
 <p><strong>In numbers:</strong></p>
 <ul>
 <li><strong>1.3 to 1.5 ms faster</strong> per frame at native resolution, and <strong>9.93 ms</strong> at 9.7 Mpx, from the
 WebGPU engine alone, drawing Day Hike&#39;s heaviest pose on an Apple M4 in Chrome 153
 (<a href="#1-3-to-1-5-ms-faster-at-native-9-93-ms-at-four-times-the-pixels">section 3</a>).</li>
-<li><strong>3.79 ms of a 24.2 ms frame</strong> was JavaScript, so the GPU limits it and per-draw CPU savings
-barely show (<a href="#1-3-to-1-5-ms-faster-at-native-9-93-ms-at-four-times-the-pixels">section 3</a>).</li>
 <li><strong>About 1 ms more</strong> from culling grass in a compute pass, but it dropped clumps on fast turns;
 against the CPU filter that has shipped since, it would be worth about 0.17 ms
 (<a href="#1-3-to-1-5-ms-faster-at-native-9-93-ms-at-four-times-the-pixels">section 3</a>).</li>
-<li><strong>2.7 MB of shader translators</strong> (913 KB gzipped) to run GLSL on WebGPU, and a cold start of
-1.37 s against 1.1 s on WebGL2
+<li><strong>2.7 MB of shader translators</strong> (913 KB gzipped) to run GLSL on WebGPU, a cold start of 1.37 s
+against 1.1 s on WebGL2, six fixes before every material compiled, and four defects in the
+engine and its loaders, two each in sections 4.4 and 4.8
 (<a href="#the-costs-a-fallback-six-wgsl-fixes-and-2-7-mb-of-translators">section 4</a>).</li>
-<li><strong>Six fixes</strong> before every material compiled, and four defects in the engine and its loaders,
-in sections 4.4 and 4.8 (<a href="#the-costs-a-fallback-six-wgsl-fixes-and-2-7-mb-of-translators">section 4</a>).</li>
 <li><strong>Still off</strong> for most Linux users, on Windows on Arm, and in Firefox on Linux and Android as of
 September 2026, though on by default in Safari 26, in Chrome and Edge on Windows, macOS,
 ChromeOS and most Android devices, and in Firefox on Windows and Apple-silicon Macs
 (<a href="#the-costs-a-fallback-six-wgsl-fixes-and-2-7-mb-of-translators">section 4</a>).</li>
 </ul>
-<p><strong>The test bed.</strong> Day Hike, our first-person co-op hiking game in Babylon.js 9.18, renders with
-WebGL2; a WebGPU path for it is being built and has not shipped. Every measurement here is from
-it. Day Hike is public at <a class="external" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener">game-dayhike</a> and playable at
-<a class="external" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener">games.csarko.sh/dayhike</a>. Its GLSL material plugins are described
-in <a href="/research/babylon-material-plugin-traps" data-visits-event="doc-babylon-material-plugin-traps">Babylon.js material plugins: hooks and traps</a>, and
-<a href="/research/grass-fullness-without-thinning" data-visits-event="doc-grass-fullness-without-thinning">Grass fullness without thinning the field</a> asked whether
-WebGPU compute culling would pay. Two later notes take the comparison down to single passes:
-<a href="/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" data-visits-event="doc-scene-depth-for-a-post-process-webgpu-vs-webgl2">Scene depth for a post process</a> finds
-six places the APIs part ways in getting depth to a post process, and
-<a href="/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" data-visits-event="doc-a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2">A painted look over a photoreal render</a>
-four in a stroke filter and a palette grade.</p>
       </div>
       <nav class="toc" aria-label="In this doc">
         <p class="section-label">In this doc</p>
@@ -500,6 +499,16 @@ four in a stroke filter and a palette grade.</p>
       </nav>
       <div class="prose">
 <div class="section-head"><p class="section-label">01</p><h2 id="webgl2-is-a-state-machine-webgpu-is-objects-made-up-front"><a class="anchor" href="#webgl2-is-a-state-machine-webgpu-is-objects-made-up-front">WebGL2 is a state machine; WebGPU is objects made up front</a></h2></div>
+<p>Take one frame of Day Hike, our first-person co-op hiking game in Babylon.js 9.18 and the test bed
+for every measurement here: measured on WebGL2, its heaviest pose took 222 to 229 draw calls and
+24.2 ms (section 3.2). WebGL2 runs each of those draws against whatever is bound at that moment and
+checks it then. On WebGPU the same draws refer to objects that were made beforehand, with the heavy
+checks done when they were made. This section sets the two side by side, down to the same triangle
+written in both.</p>
+<p>Day Hike is public at <a class="external" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener">game-dayhike</a> and playable at
+<a href="https://games.csarko.sh/dayhike/">games.csarko.sh/dayhike</a>. As of Sep 27, 2026 it rendered with
+WebGL2, and a WebGPU path for it was being built and had not shipped; that path became the high
+quality tier&#39;s default in Chrome and Edge on macOS and Windows on Sep 28, 2026.</p>
 <h3 id="1-1-webgl2-one-context-one-state-machine"><a class="anchor" href="#1-1-webgl2-one-context-one-state-machine">1.1 WebGL2: one context, one state machine</a></h3>
 <p>WebGL2 is &quot;an API that conforms closely to the OpenGL ES 3.0 API&quot;, reached through a canvas context,
 with shaders in GLSL ES 3.00 <a class="cite" href="#ref-1">[1]</a>. You bind a program, buffers, textures and framebuffers to
@@ -1069,28 +1078,24 @@ pixel-scaled gain lives.</li>
 <li>Only then port shaders to WGSL and move work to compute, one measured lever at a time, each
 against the best WebGL2 version of the same idea.</li>
 </ol>
+<p><strong>Where the comparison goes next.</strong> Two later notes take it down to single passes:
+<a href="/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" data-visits-event="doc-scene-depth-for-a-post-process-webgpu-vs-webgl2">Scene depth for a post process</a> finds
+six places the APIs part ways in getting depth to a post process, and
+<a href="/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" data-visits-event="doc-a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2">A painted look over a photoreal render</a>
+four in a stroke filter and a palette grade. Day Hike&#39;s GLSL material plugins are described in
+<a href="/research/babylon-material-plugin-traps" data-visits-event="doc-babylon-material-plugin-traps">Babylon.js material plugins: hooks and traps</a>, and
+<a href="/research/grass-fullness-without-thinning" data-visits-event="doc-grass-fullness-without-thinning">Grass fullness without thinning the field</a> asked whether
+WebGPU compute culling would pay.</p>
       </div>
-      <section class="keep-reading" aria-labelledby="next-reads">
-        <h2 id="next-reads" class="section-label">Keep reading</h2>
-        <p class="series-name">WebGPU against WebGL2 · 3 parts</p>
-        <ol class="series-parts">
-          <li aria-current="true"><span>WebGPU vs WebGL2: what changes and what does not</span></li>
-          <li><a href="/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" data-visits-event="next-scene-depth-for-a-post-process-webgpu-vs-webgl2">Scene depth for a post process: WebGPU against WebGL2</a></li>
-          <li><a href="/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" data-visits-event="next-a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2">A painted look over a photoreal render: WebGPU against WebGL2</a></li>
-        </ol>
-        <ul class="doc-list next-list" role="list">
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/babylon-material-plugin-traps" data-visits-event="next-babylon-material-plugin-traps">Babylon.js material plugins: hooks and traps</a></h3>
-            <p class="doc-meta">16 min read</p>
-            <p class="doc-desc">Babylon.js 9.18 splices plugin GLSL in after #include expansion, before #if: what each PBR hook sees, and the silent preprocessor, comment and bake traps.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/grass-fullness-without-thinning" data-visits-event="next-grass-fullness-without-thinning">Grass fullness without thinning the field</a></h3>
-            <p class="doc-meta">18 min read</p>
-            <p class="doc-desc">Why near grass reads bare from a first-person eye, what fixing it cost in a Babylon.js game, and the GPU techniques that win the frame back without thinning.</p>
-          </li>
+      <section class="prose what-next" aria-labelledby="what-next">
+        <h2 id="what-next">What next</h2>
+        <p>The bars this page opened on are one Day Hike pose: grass under a closed canopy, in mist, at noon. Since Sep 28, 2026 the game has drawn its high quality tier with WebGPU by default in Chrome and Edge on macOS and Windows, and has kept Safari and Firefox on WebGL2, the second render path section 4.2 says to keep. Adding ?engine=webgl2 to the game&#39;s address forces the WebGL2 path, so the two can be compared on one machine. <a href="https://games.csarko.sh/dayhike/" data-visits-event="close-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>
+        <ul>
+          <li><a href="/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" data-visits-event="series-scene-depth-for-a-post-process-webgpu-vs-webgl2">How does a blur or fog effect get each pixel&#39;s depth on WebGPU and WebGL2?</a></li>
+          <li><a href="/research/babylon-material-plugin-traps" data-visits-event="next-babylon-material-plugin-traps">Why does a Babylon.js material plugin silently do nothing?</a></li>
+          <li><a href="/research/grass-fullness-without-thinning" data-visits-event="next-grass-fullness-without-thinning">How do you make game grass look full without killing the frame rate?</a></li>
         </ul>
-        <p class="play-line"><a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
+        <p class="series-at"><span>Part 1 of 3 in <strong>WebGPU against WebGL2</strong></span><span>Next: <a href="/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" rel="next" data-visits-event="series-scene-depth-for-a-post-process-webgpu-vs-webgl2">Scene depth for a post process: WebGPU against WebGL2</a></span></p>
         <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS).</p>
       </section>
       <div class="prose">
@@ -1135,13 +1140,13 @@ against the best WebGL2 version of the same idea.</li>
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
-        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
+        <p class="author-name"><a href="/" data-visits-event="author-home">Cyrus Sarkosh</a></p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
-        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
+        <p class="author-links"><a href="/" data-visits-event="author-home">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
       <nav class="afterward" aria-label="Read next">
-        <a class="next" href="/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" data-visits-event="end-scene-depth-for-a-post-process-webgpu-vs-webgl2"><span class="section-label">Read next</span><span>Scene depth for a post process: WebGPU against WebGL2 <span aria-hidden="true">→</span></span></a>
-        <a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        <span>Day Hike: <a href="https://games.csarko.sh/dayhike/" data-visits-event="after-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a></span>
+        <a href="/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" data-visits-event="end-scene-depth-for-a-post-process-webgpu-vs-webgl2">How does a blur or fog effect get each pixel&#39;s depth on WebGPU and WebGL2?</a>
         <a href="/research">All research</a>
       </nav>
     </main>
@@ -1156,7 +1161,7 @@ against the best WebGL2 version of the same idea.</li>
   <!-- generated:analytics -->
   <script defer src="/assets/visits.4378bd36.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
-  <script defer src="/assets/reading.c3e27b33.js"></script>
+  <script defer src="/assets/reading.3a8c03e0.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

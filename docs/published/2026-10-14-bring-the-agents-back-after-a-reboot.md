@@ -4,6 +4,10 @@ published: 2026-10-14
 categories: Tooling, AI
 source: https://github.com/csarkosh/ide-sarkos/blob/main/docs/superpowers/specs/2026-10-14-update-in-place-design.md
 series: Arkos IDE notes
+project: ide-arkos
+project-line: Arkos IDE is a Mac app that keeps many Claude Code sessions running side by side; this page calls it by its earlier name, Sarkos IDE. The recovery design in section 6, a plan when this was written, shipped in it.
+closing: After a restart, Arkos IDE brings back what reached the disk, as section 6 planned: each shell in its folder, its old output closed off by a dim "resumed after restart" line, and Claude Code resumed by its session id in the shells that were running it. What section 7 lists as lost stays lost: a running build, shell variables, background jobs. The app only resumes and never sends the agent a message.
+asks: How can a terminal bring back Claude Code and Codex sessions after a reboot?
 ---
 # Bring the agents back after a reboot
 

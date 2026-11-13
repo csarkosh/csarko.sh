@@ -18,7 +18,7 @@
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Photorealistic water rendering: lakes and oceans" />
   <meta property="article:published_time" content="2026-09-29" />
-  <meta property="article:modified_time" content="2026-10-23" />
+  <meta property="article:modified_time" content="2026-11-13" />
   <meta property="article:author" content="https://csarko.sh/" />
   <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -49,10 +49,10 @@
       "headline": "Photorealistic water rendering: lakes and oceans",
       "description": "Water reads as real through light more than waves: a mirror past 20 m, FFT seas at 0.1 to 2 ms, baked breakers, and what WebGPU and WebGL2 can afford.",
       "datePublished": "2026-09-29",
-      "dateModified": "2026-10-23",
+      "dateModified": "2026-11-13",
       "url": "https://csarko.sh/research/photorealistic-water-rendering",
       "mainEntityOfPage": "https://csarko.sh/research/photorealistic-water-rendering",
-      "wordCount": 18380,
+      "wordCount": 18498,
       "inLanguage": "en",
       "image": "https://csarko.sh/research/figures/photorealistic-water-rendering-tarn.jpg",
       "author": {
@@ -328,19 +328,23 @@
     .doc-page .prose { font-size: 17px; }
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
-    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
-    .series-line p { margin: 0; }
+    .series-line { display: flex; gap: 8px; margin: 18px 0 0; font-size: 14.5px; color: var(--muted); white-space: nowrap; }
+    .series-line > * { flex: none; }
+    .series-line > :first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .series-line strong { color: var(--text); font-weight: 600; }
-    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
-    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-line a, .afterward a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
-    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .prose h2, .prose h3, .prose h4 { scroll-margin-top: 28px; }
+    ::target-text { background: var(--accent-underline); color: var(--text); }
+    .toc { margin: 32px 0 0; }
     .toc .section-label { margin: 0 0 6px; }
     .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
     .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
     .toc a:hover { color: var(--accent); }
     .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    @media (min-width: 1060px) { .toc { display: none; } }
+    @media (max-width: 1059px) { .prose > .section-head:first-child:not([data-read-end]) { border-top: 0; padding-top: 0; margin-top: 36px; } }
     .figure { margin: 32px 0; }
     .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
     /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
@@ -365,26 +369,28 @@
       radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
       radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
       var(--surface); }
-    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
-    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
-    .series-name { margin: 0 0 8px; font-weight: 600; }
-    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
-    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
-    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
-    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
-    .next-list .card { padding: 16px 18px; background: var(--bg); }
-    .next-list .doc-title { font-size: 1.05rem; }
-    .next-list .doc-desc { font-size: 14.5px; }
-    .play-line, .watch-line { margin: 20px 0 0; }
+    .what-next { margin-top: 48px; }
+    .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
+    .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
+    .watch-line { margin: 20px 0 0; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
-    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
-    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
-    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color var(--md-duration-short3) var(--md-easing-standard); }
-    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
-    .afterward .next:hover { border-color: var(--accent); }
-    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
+    .afterward { display: flex; align-items: baseline; gap: 6px 22px; margin-top: 24px; font-size: 14.5px; color: var(--muted); text-wrap: balance; }
+    .afterward > * { flex: none; }
+    .afterward > a:not(:last-child) { flex: 0 1 auto; }
+    @media (max-width: 640px) {
+      .doc-page .shell { padding-top: 16px; }
+      .doc-page .crumbs ol { padding-block: 8px; }
+      .doc-page .eyebrow { margin-bottom: 8px; }
+      .doc-page h1 { margin-bottom: 10px; font-size: 2rem; }
+      .doc-header .lead { margin-bottom: 12px; font-size: 1rem; line-height: 1.5; }
+      .doc-page .doc-header { padding-bottom: 12px; }
+      .series-line { gap: 6px; margin-top: 8px; font-size: 13px; }
+      .afterward { flex-direction: column; }
+    }
+    @media (max-width: 439px) { .series-line a span { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .play { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -397,7 +403,7 @@
   <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
-      <a class="wordmark" href="/">csarko<span>.sh</span></a>
+      <a class="wordmark" href="/" data-visits-event="nav-home">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/projects" data-visits-event="nav-projects">Projects</a></li>
         <li><a href="/research" data-visits-event="nav-research">Research</a></li>
@@ -407,7 +413,7 @@
   <nav class="crumbs" aria-label="Breadcrumb">
     <div class="wrap">
       <ol>
-        <li><a href="/">Home</a></li>
+        <li><a href="/" data-visits-event="crumb-home">Home</a></li>
         <li><a href="/research">Research</a></li>
         <li><span aria-current="page">Photorealistic water rendering: lakes and oceans</span></li>
       </ol>
@@ -434,33 +440,36 @@
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Sep 29, 2026 · Updated Oct 23, 2026</p>
+        <p class="eyebrow">Sep 29, 2026 · Updated Nov 13, 2026</p>
         <h1>Photorealistic water rendering: lakes and oceans</h1>
         <p class="lead">Water reads as real through light more than waves: a mirror past 20 m, FFT seas at 0.1 to 2 ms, baked breakers, and what WebGPU and WebGL2 can afford.</p>
         <ul class="tags">
-          <li>62 min read</li>
+          <li>63 min read</li>
         </ul>
         <nav class="series-line" aria-label="Series">
-          <p>Part 3 of 4 in <strong>Day Hike&#39;s look</strong></p>
-          <p class="series-steps"><span>Previous: <a href="/research/atmosphere-and-dread-shaders" rel="prev" data-visits-event="series-atmosphere-and-dread-shaders">Atmosphere and dread shaders for horror games</a></span><span>Next: <a href="/research/photorealistic-rain-for-browser-games" rel="next" data-visits-event="series-photorealistic-rain-for-browser-games">Photorealistic rain for browser games</a></span></p>
+          <span>Part 3 of 4 in <strong>Day Hike&#39;s look</strong></span><span aria-hidden="true">·</span><a href="/research/atmosphere-and-dread-shaders" rel="prev" aria-label="Previous: Atmosphere and dread shaders for horror games" title="Atmosphere and dread shaders for horror games" data-visits-event="series-atmosphere-and-dread-shaders"><span aria-hidden="true">←</span> Previous</a><span aria-hidden="true">·</span><a href="/research/photorealistic-rain-for-browser-games" rel="next" aria-label="Next: Photorealistic rain for browser games" title="Photorealistic rain for browser games" data-visits-event="series-photorealistic-rain-for-browser-games">Next <span aria-hidden="true">→</span></a>
         </nav>
       </header>
       <div class="prose">
-<p><strong>Question:</strong> how does real water behave, from a still forest lake to an ocean coast with
-breaking waves, what do shipped games do about it, and what can a browser afford on WebGPU and
-on WebGL2? The test bed is Day Hike, a first-person co-op hiking game in Babylon.js 9.18 set on a
-coast like Washington&#39;s Olympic Peninsula, whose water is a flat plane with one scrolling normal
-map and does not look real.</p>
-<p><strong>Short answer:</strong> most of what makes water read as real is cheap, and most of it is about light,
-not waves: water is a window at your feet and a mirror 20 m away, and the water itself is dark,
-so across a lake or a sea what is seen is the sky and the far shore upside down. Games solved the
-open sea years ago with an
-<button type="button" class="term" popovertarget="term-1">FFT</button><span class="term-def" id="term-1" popover role="note">A fast Fourier transform: here, the step that turns a statistical wave spectrum into a tileable patch of wave heights and sideways displacements.</span>
-of a wave spectrum, but at the shore they shrink waves where nature grows them, and the concave
-breaker has shipped only as a baked cross-section swept along the shore. In a browser one FFT
-cascade fits even on WebGL2, and in WebGPU compute drawing the water costs more than simulating
-it; for a still lake the mirror is the picture, and nobody has published what a mirrored render
-costs in a browser.</p>
+<p><strong>Question:</strong> How does real water behave, from a still forest lake to an ocean coast with
+breaking waves, and what do shipped games do about it? And what can a browser afford on its two
+graphics APIs, WebGPU and WebGL2?</p>
+<p><strong>Short answer:</strong> What makes water look real is mostly cheap, and mostly about light, not waves:
+water is a window at your feet and a mirror 20 m away, so a lake shows the sky and the far shore
+upside down. Games solved the open sea years ago with a repeating patch of waves from a fast Fourier
+transform, an
+<button type="button" class="term" popovertarget="term-1" data-visits-event="term">FFT</button><span class="term-def" id="term-1" popover role="note">A fast Fourier transform: here, the step that turns a statistical wave spectrum into a tileable patch of wave heights and sideways displacements.</span>;
+at the shore they shrink waves where nature grows them. In a browser one such patch fits even on
+WebGL2; on WebGPU, drawing the water costs more than simulating it.</p>
+<p><strong>What that leaves open:</strong> For a still lake the mirror is the picture, and nobody has published
+what a second, mirrored render of a scene costs in a browser; in Unreal&#39;s open landscape demo it
+took the frame from 31 ms to about 52 ms. The wave that curls over as it breaks has shipped only
+as one pre-made cross-section swept along the shore, at a cost no source gives, and the one
+browser project that tried to draw it reports two failures. By the end of this page you can check
+each option against its published cost, system by system
+(<a href="#the-options-by-system-surface-shore-foam-mirror-sound">section 9</a>), and read the list of what
+still has to be measured (<a href="#unmeasured-a-mirrored-render-in-a-browser-the-breaker-mesh">section 10</a>).</p>
+<p class="project-line">This survey was written for the water in Day Hike, a co-op horror game that runs in your browser. The colours of its lake and its sea and the dark, glossy wet sand of its beach come from the numbers on this page. <a href="https://games.csarko.sh/dayhike/" data-visits-event="lead-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>
 <figure class="figure">
 <!-- generated:figure:photorealistic-water-rendering/tarn -->
 <picture>
@@ -469,38 +478,30 @@ costs in a browser.</p>
 <img src="/assets/fig-photorealistic-water-rendering-tarn-720.431b3fe6.jpg" srcset="/assets/fig-photorealistic-water-rendering-tarn-480.64b71376.jpg 480w, /assets/fig-photorealistic-water-rendering-tarn-720.431b3fe6.jpg 720w, /assets/fig-photorealistic-water-rendering-tarn-960.7e3303ca.jpg 960w" sizes="(max-width: 768px) calc(100vw - 48px), 720px" width="1200" height="675" alt="Day Hike&#39;s tarn from its west shore: lily pads on dark water in the middle distance, a green margin and grey rocks in front, and a forest of tall conifers behind in mist" decoding="async" />
 </picture>
 <!-- /generated:figure:photorealistic-water-rendering/tarn -->
-<figcaption>A tarn added to Day Hike in October 2026, after this survey found no lake: lilies on dark water under the forest. Its material takes its attenuation in each colour from the lakes measured in section 2, set between the clear high lake and the brown lowland one by how murky the lake is.</figcaption>
+<figcaption>Look at the water, not the lilies: it is dark, as section 2 says water itself is, so the pads and the green margin stand out on it. This tarn was added to Day Hike in October 2026, after this survey found no lake. Its material takes how fast each colour of light dies with depth, its attenuation, from the lakes measured in section 2, set between the clear high lake and the brown lowland one by how murky the lake is.</figcaption>
 </figure>
 <p><strong>In numbers:</strong></p>
 <ul>
 <li><strong>2 % at your feet, 90 % at 100 m:</strong> how much light flat water reflects, so the whole change
 from window to mirror happens between 2 and 20 m from a standing walker
 (<a href="#real-water-is-a-window-at-your-feet-and-a-mirror-20-m-away">section 2</a>).</li>
-<li><strong>1.1, 1.5 and 3.5 per metre</strong> of attenuation in red, green and blue in a brown forest lake at a
-<button type="button" class="term" popovertarget="term-2">Secchi depth</button><span class="term-def" id="term-2" popover role="note">The depth at which a disc lowered into the water can no longer be seen from above: a measure of how clear the water is.</span>
-of 1.8 m, so its bed is an amber rim a few metres wide round a black mirror
+<li><strong>1.1, 1.5 and 3.5 per metre:</strong> how fast red, green and blue light die with depth, the
+attenuation, in a brown forest lake where a disc lowered into the water can no longer be seen
+at 1.8 m, its
+<button type="button" class="term" popovertarget="term-2" data-visits-event="term">Secchi depth</button><span class="term-def" id="term-2" popover role="note">The depth at which a disc lowered into the water can no longer be seen from above: a measure of how clear the water is.</span>,
+so its bed is an amber rim a few metres wide round a black mirror
 (<a href="#real-water-is-a-window-at-your-feet-and-a-mirror-20-m-away">section 2</a>).</li>
-<li><strong>1.5 to 3.8 m against 5 to 11 m:</strong> the Secchi depths of the Olympic Peninsula&#39;s murky lowland
-lakes, with marsh at an end, and of its clear high lakes, so one lake material has to span both
-with its attenuation as the setting (<a href="#only-lowland-lakes-with-marsh-are-murky-high-lakes-are-clear">section 5</a>).</li>
-<li><strong>A median of 2 m at 11 s</strong> offshore, 3 m in January: the sea here is never small, and waves
-break in water about 1.3 times their height (<a href="#coastal-waves-grow-turn-and-break-by-the-beach-s-slope">section 3</a>).</li>
-<li><strong>1:67 spills, 1:9 to 1:17 plunges:</strong> the game&#39;s sea bed spills in every sea; the concave
-<button type="button" class="term" popovertarget="term-3">plunging</button><span class="term-def" id="term-3" popover role="note">A breaking wave whose crest curls over and falls into the trough ahead of it: the concave wave.</span>
-wave belongs on the pebble faces between this coast&#39;s headlands, and foam lasting about 20 s
+<li><strong>1:67 spills, 1:9 to 1:17 plunges:</strong> on a slope as flat as the game&#39;s sea bed every wave
+spills in every sea, foam tumbling down its front; the wave whose crest curls over and falls
+into the trough ahead, the concave
+<button type="button" class="term" popovertarget="term-3" data-visits-event="term">plunging</button><span class="term-def" id="term-3" popover role="note">A breaking wave whose crest curls over and falls into the trough ahead of it: the concave wave.</span>
+wave, belongs on the pebble faces between this coast&#39;s headlands, and foam lasting about 20 s
 keeps the inner surf white through a set (<a href="#the-olympic-coast-long-sand-flats-steep-pocket-beaches-stacks">section 4</a>).</li>
-<li><strong>0.1 to 2 ms</strong> for an FFT ocean on desktop GPUs; in a browser about 0.7 ms a cascade as WebGL2
-fragment passes on an Apple M5, and under 1 ms for three small cascades in WebGPU compute
+<li><strong>0.1 to 2 ms</strong> for an FFT ocean on desktop GPUs; in a browser about 0.7 ms for each patch of
+waves, a cascade, as WebGL2 fragment passes on an Apple M5, and under 1 ms for three small
+cascades in WebGPU compute
 (<a href="#games-solved-the-open-sea-with-ffts-but-shrink-waves-at-shore">section 6</a>, <a href="#browser-water-the-fft-costs-on-webgl2-the-drawing-on-webgpu">section 8</a>).</li>
 </ul>
-<p>The game is public at <a class="external" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener">game-dayhike</a> and playable
-at <a class="external" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener">games.csarko.sh/dayhike</a>. Its renderer&#39;s two paths
-are described in <a href="/research/webgpu-vs-webgl2" data-visits-event="doc-webgpu-vs-webgl2">WebGPU vs WebGL2: what changes and what does not</a>,
-and its material plugins in
-<a href="/research/babylon-material-plugin-traps" data-visits-event="doc-babylon-material-plugin-traps">Babylon.js material plugins: hooks and traps</a>.
-Numbers given without a source are our own arithmetic from the sources beside them:
-Fresnel&#39;s equations, the wave dispersion relation, and the published buoy, lidar and survey
-data.</p>
       </div>
       <nav class="toc" aria-label="In this doc">
         <p class="section-label">In this doc</p>
@@ -520,18 +521,30 @@ data.</p>
       </nav>
       <div class="prose">
 <div class="section-head"><p class="section-label">01</p><h2 id="the-starting-point-a-flat-sea-with-one-scrolling-normal-map"><a class="anchor" href="#the-starting-point-a-flat-sea-with-one-scrolling-normal-map">The starting point: a flat sea with one scrolling normal map</a></h2></div>
+<p>As of Sep 29, 2026, the sea in Day Hike, a first-person co-op hiking game in Babylon.js 9.18, was
+a flat plane with one scrolling normal map, a single texture of ripples, and it did not look
+real. Its foam was a band one 8 m cell wide that never moved, and its reflection was the sky
+alone: no headland, stack or tree was ever reflected.</p>
 <p>The goal is photorealistic water of two kinds, rendered in real time in a browser: a still
 forest lake, murky with algae at its margin and insects over it, and an ocean coast with waves
 that are large and concave where real ones would be, small where real ones would be, and white
 where they break. The water system is meant to be reused, in later maps and in other games, so
 the survey covers water at arm&#39;s length as well as from a kilometre away.</p>
 <p>This section describes Day Hike as of Sep 29, 2026, when this survey was written; the game has
-changed since.</p>
+changed since. The game is public at <a class="external" href="https://github.com/csarkosh/game-dayhike" target="_blank" rel="noopener">game-dayhike</a> and
+playable at <a href="https://games.csarko.sh/dayhike/">games.csarko.sh/dayhike</a>. Its material plugins are
+described in
+<a href="/research/babylon-material-plugin-traps" data-visits-event="doc-babylon-material-plugin-traps">Babylon.js material plugins: hooks and traps</a>. Numbers
+given without a source, here and in the sections that follow, are our own arithmetic from the
+sources beside them: Fresnel&#39;s equations, the wave dispersion relation, and the published buoy,
+lidar and survey data.</p>
 <p>Day Hike&#39;s world is a procedural coast and forest modelled on Washington&#39;s Olympic Peninsula:
 the Pacific west of the start, sand bays between headlands, sea stacks, a highway along the
 shore, and a trail that climbs a peak. The player is on foot at eye height; there are no boats
 and no swimming, so water is always looked at from land, from a few metres to a few kilometres
 away.</p>
+<p>The table below lists each part as it was drawn; look at the reflection row first, because
+section 2 shows that most of what makes water read as real is light.</p>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
 <thead>
 <tr>
@@ -2235,28 +2248,15 @@ a way to read the scene&#39;s depth and colour, which refraction and reflections
 need; and whether the water&#39;s shader is written in WGSL beside the GLSL the other tiers
 use, which would spare it the translation that every other material goes through.</p>
       </div>
-      <section class="keep-reading" aria-labelledby="next-reads">
-        <h2 id="next-reads" class="section-label">Keep reading</h2>
-        <p class="series-name">Day Hike&#39;s look · 4 parts</p>
-        <ol class="series-parts">
-          <li><a href="/research/stylized-shader-looks" data-visits-event="next-stylized-shader-looks">Stylized shader looks: how games build a visual identity</a></li>
-          <li><a href="/research/atmosphere-and-dread-shaders" data-visits-event="next-atmosphere-and-dread-shaders">Atmosphere and dread shaders for horror games</a></li>
-          <li aria-current="true"><span>Photorealistic water rendering: lakes and oceans</span></li>
-          <li><a href="/research/photorealistic-rain-for-browser-games" data-visits-event="next-photorealistic-rain-for-browser-games">Photorealistic rain for browser games</a></li>
-        </ol>
-        <ul class="doc-list next-list" role="list">
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/olympic-lakes-for-game-worlds" data-visits-event="next-olympic-lakes-for-game-worlds">Olympic Peninsula lakes for game worlds</a></h3>
-            <p class="doc-meta">24 min read</p>
-            <p class="doc-desc">How the lakes of Washington&#39;s Olympic Peninsula formed, their measured shapes and perched cirque basins, and numeric rules for generating them in a game world.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/webgpu-vs-webgl2" data-visits-event="next-webgpu-vs-webgl2">WebGPU vs WebGL2: what changes and what does not</a></h3>
-            <p class="doc-meta">24 min read</p>
-            <p class="doc-desc">WebGPU vs WebGL2, measured in a Babylon.js game: 1.3 to 1.5 ms faster per frame at native resolution, 9.9 ms at 4x the pixels, for 2.7 MB of shader translators.</p>
-          </li>
+      <section class="prose what-next" aria-labelledby="what-next">
+        <h2 id="what-next">What next</h2>
+        <p>The tarn pictured at the top of this page is the place to check this. As of Nov 13, 2026, from its bank in Day Hike the bed shows through the shallows and the water beyond goes dark at the rate of section 2.3&#39;s measured lakes, while farther out the surface gives back the sky and, when the water is calm, the shore, as section 2.1 says it must. On the beach below the road, the ground under the wet line is section 2.4&#39;s soaked sand: 0.4 of its dry colour, and glossy. <a href="https://games.csarko.sh/dayhike/" data-visits-event="close-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>
+        <ul>
+          <li><a href="/research/photorealistic-rain-for-browser-games" data-visits-event="series-photorealistic-rain-for-browser-games">How do AAA games render realistic rain, and can a browser game afford it?</a></li>
+          <li><a href="/research/olympic-lakes-for-game-worlds" data-visits-event="next-olympic-lakes-for-game-worlds">What shape are real mountain lakes, and how can a game generate them?</a></li>
+          <li><a href="/research/webgpu-vs-webgl2" data-visits-event="next-webgpu-vs-webgl2">Is WebGPU actually faster than WebGL2 in a real game?</a></li>
         </ul>
-        <p class="play-line"><a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
+        <p class="series-at"><span>Part 3 of 4 in <strong>Day Hike&#39;s look</strong></span><span>Previous: <a href="/research/atmosphere-and-dread-shaders" rel="prev" data-visits-event="series-atmosphere-and-dread-shaders">Atmosphere and dread shaders for horror games</a></span><span>Next: <a href="/research/photorealistic-rain-for-browser-games" rel="next" data-visits-event="series-photorealistic-rain-for-browser-games">Photorealistic rain for browser games</a></span></p>
         <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS).</p>
       </section>
       <div class="prose">
@@ -2412,13 +2412,13 @@ use, which would spare it the translation that every other material goes through
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
-        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
+        <p class="author-name"><a href="/" data-visits-event="author-home">Cyrus Sarkosh</a></p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
-        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
+        <p class="author-links"><a href="/" data-visits-event="author-home">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
       <nav class="afterward" aria-label="Read next">
-        <a class="next" href="/research/photorealistic-rain-for-browser-games" data-visits-event="end-photorealistic-rain-for-browser-games"><span class="section-label">Read next</span><span>Photorealistic rain for browser games <span aria-hidden="true">→</span></span></a>
-        <a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        <span>Day Hike: <a href="https://games.csarko.sh/dayhike/" data-visits-event="after-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a></span>
+        <a href="/research/photorealistic-rain-for-browser-games" data-visits-event="end-photorealistic-rain-for-browser-games">How do AAA games render realistic rain, and can a browser game afford it?</a>
         <a href="/research">All research</a>
       </nav>
     </main>
@@ -2433,7 +2433,7 @@ use, which would spare it the translation that every other material goes through
   <!-- generated:analytics -->
   <script defer src="/assets/visits.4378bd36.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
-  <script defer src="/assets/reading.c3e27b33.js"></script>
+  <script defer src="/assets/reading.3a8c03e0.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

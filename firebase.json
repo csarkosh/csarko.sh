@@ -55,6 +55,11 @@
           "source": "/games/:file*",
           "destination": "/projects",
           "type": 301
+        },
+        {
+          "source": "/contact",
+          "destination": "/#contact",
+          "type": 301
         }
       ],
       "rewrites": [

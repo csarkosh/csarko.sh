@@ -2,25 +2,37 @@
 description: Memorable game looks come from one or two strong shader rules applied everywhere: ink outlines, cel bands, dithering, gradient fog or VHS.
 published: 2026-09-14
 categories: Rendering
-updated: 2026-10-23
+updated: 2026-11-13
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-14-stylized-shader-looks.md
 series: Day Hike's look
 related: a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2, ground-fog-without-the-wall
+project: day-hike
+project-line: This survey was the first step in choosing the look of Day Hike, a first-person co-op horror game that runs in your browser. As of October 2026 its fog follows section 6 and its brush-stroke filter section 5.
+closing: In the meadow picture at the top, the far tree line fading into mist is section 6's gradient fog, and the brush-like strokes across the frame are section 5's Kuwahara filter, which as of October 2026 runs on the medium and high quality tiers. Both are laid over a photoreal render and do not replace it, which is what the last section proposed for the fog. Stand before a far line of trees in Day Hike and the same fade is there to check.
+asks: How do games like Borderlands get a distinct look from their shaders?
 ---
 # Stylized shader looks: how games build a visual identity
 
-**Question:** what are the different ways games have used shaders to give themselves a distinct
-look, in the way Borderlands' ink outlines make it read as a comic book?
+**Question:** Borderlands' ink outlines make it read as a comic book. What other ways have games
+used shaders to give themselves a distinct look?
 
-**Short answer:** most memorable looks come from one or two strong rules applied everywhere,
-not from many small effects. Borderlands itself is mostly two things: a
-[post-process](#term "A full-screen shader run on the finished frame, after the scene has been drawn.")
-pass that finds edges in the
-[depth and normal buffers](#term "Per-pixel images of how far each surface is from the camera and which way it faces, kept beside the colour.")
-and draws them black, and textures that were hand-painted with ink lines already in them. The
-lighting underneath is fairly conventional.
+**Short answer:** Most memorable looks come from one or two strong rules applied everywhere,
+not from many small effects. Borderlands is mostly two things: a pass over the finished frame (a
+[post-process](#term "A full-screen shader run on the finished frame, after the scene has been drawn."))
+that draws a black line wherever depth or surface angle jumps, read from the
+[depth and normal buffers](#term "Per-pixel images of how far each surface is from the camera and which way it faces, kept beside the colour."),
+and textures hand-painted with ink lines already in them. The lighting underneath is fairly
+conventional. Other games use flat bands of light, two-colour dithering, deliberate low fidelity,
+painterly looks, fog coloured by distance, camera imitation, or effects tied to their mechanics.
 
-![A grass meadow in Day Hike before a line of tall trees under a grey sky, the far trees fading into mist](meadow.png "As of October 2026, Day Hike keeps its photoreal render and builds the look on top: fog whose colour runs along a gradient with distance fades the far tree line (section 6), and on the medium and high tiers a Kuwahara filter smears the frame into strokes (section 5) before a muted grade.")
+**What that leaves open:** which rule suits which game, and whether a game must give up a
+realistic render to get a look. A signature look can begin as a workaround or rest on a single
+shader: Silent Hill's fog started as a way to hide a short draw distance, and much of Firewatch's
+identity comes from one gradient fog shader. The last section answers the second question for one
+game: what was proposed for Day Hike is gradient fog laid on top of its photoreal render, and a
+post-process that shifts as dread builds.
+
+![A grass meadow in Day Hike before a line of tall trees under a grey sky, the far trees fading into mist](meadow.png "Look at the far tree line: it fades into fog whose colour runs along a gradient with distance (section 6). As of October 2026, Day Hike keeps its photoreal render and builds the look on top; on the medium and high tiers a Kuwahara filter also smears the frame into strokes (section 5) before a muted grade.")
 
 **In short:**
 
@@ -35,16 +47,17 @@ lighting underneath is fairly conventional.
   ([section 3](#limited-colour-1-bit-dither-and-restricted-palettes)).
 - **One gradient fog shader** carries much of Firewatch's identity, and it is the closest
   reference for Day Hike ([section 6](#atmosphere-as-the-style-firewatch-s-gradient-fog)).
-- **Film grain, vignette and chromatic aberration** are horror's shorthand for found footage
-  ([section 7](#camera-imitation-vhs-grain-and-fog-as-dread)).
-- **Sanity effects** warp the screen and drain the colour as the character's mind frays
-  ([section 8](#shaders-tied-to-mechanics-paint-scanning-and-sanity)).
-
-Every game below links to its Steam page so you can see the look in the store screenshots and
-trailers. Where a game is not sold on Steam, the link goes to its official site, or to its
-Wikipedia article if it is no longer sold at all.
 
 ## 1. Outlines: edge detection, inverted hulls and ink-wash
+
+Start with a frame of Borderlands: every object in it carries a black outline, and the outline is
+the same width everywhere. That is the mark of a line found on the finished frame, wherever depth
+or surface angle jumps. In the three methods below, note where the line comes from (the finished
+frame, a second copy of each mesh, or a brush stroke): the first's line width cannot be
+art-directed, and the second's can, down to the thickness of each line. Every game below links to
+its Steam page so you can see the look in the store screenshots and trailers. Where a game is not
+sold on Steam, the link goes to its official site, or to its Wikipedia article if it is no longer
+sold at all.
 
 - **Post-process edge detection:** [Borderlands](https://store.steampowered.com/app/729040/)
   and [XIII](https://store.steampowered.com/app/1170760/) (the 2003 original, sold as

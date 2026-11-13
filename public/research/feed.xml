@@ -5,7 +5,7 @@
   <link href="https://csarko.sh/research" />
   <link rel="self" href="https://csarko.sh/research/feed.xml" />
   <id>https://csarko.sh/research</id>
-  <updated>2026-11-12T00:00:00Z</updated>
+  <updated>2026-11-13T00:00:00Z</updated>
   <author><name>Cyrus Sarkosh</name><uri>https://csarko.sh/</uri></author>
   <entry>
     <title>A dashboard API that ran out of memory, made fast for free</title>
@@ -22,7 +22,7 @@
     <link href="https://csarko.sh/research/the-well-shot-by-shot" />
     <id>https://csarko.sh/research/the-well-shot-by-shot</id>
     <published>2026-11-11T00:00:00Z</published>
-    <updated>2026-11-12T00:00:00Z</updated>
+    <updated>2026-11-13T00:00:00Z</updated>
     <summary>An award-winning AI short measured shot by shot: 122 shots, two reused camera set-ups, straight cuts only, a human score, and the record of how it was made.</summary>
     <category term="AI" />
     <category term="Film" />
@@ -63,7 +63,7 @@
     <link href="https://csarko.sh/research/how-codex-embeds-its-browser" />
     <id>https://csarko.sh/research/how-codex-embeds-its-browser</id>
     <published>2026-10-24T00:00:00Z</published>
-    <updated>2026-10-24T00:00:00Z</updated>
+    <updated>2026-11-13T00:00:00Z</updated>
     <summary>Codex&#39;s browser pane is an Electron webview guest of its own Chromium, driven over CDP by a plugin; a Rust IDE gets there with WKWebView, not by docking Chrome.</summary>
     <category term="AI" />
     <category term="Tooling" />
@@ -73,7 +73,7 @@
     <link href="https://csarko.sh/research/how-horror-directors-make-sound-carry-the-fear" />
     <id>https://csarko.sh/research/how-horror-directors-make-sound-carry-the-fear</id>
     <published>2026-10-24T00:00:00Z</published>
-    <updated>2026-10-24T00:00:00Z</updated>
+    <updated>2026-11-13T00:00:00Z</updated>
     <summary>How horror directors use score, noise, voice, silence and the needle drop to make you afraid. Startle and roughness are measured; dread is lore.</summary>
     <category term="Film" />
   </entry>
@@ -120,7 +120,7 @@
     <link href="https://csarko.sh/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" />
     <id>https://csarko.sh/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2</id>
     <published>2026-10-17T00:00:00Z</published>
-    <updated>2026-10-24T00:00:00Z</updated>
+    <updated>2026-11-13T00:00:00Z</updated>
     <summary>A painterly post chain on WebGPU and WebGL2: the same look on both, but a stroke filter written with sector arrays cost 12.5 ms on WebGPU against 2.1 ms.</summary>
     <category term="Rendering" />
   </entry>
@@ -193,11 +193,11 @@
     <category term="Tooling" />
   </entry>
   <entry>
-    <title>Dark mode and headaches: check your eyes first</title>
+    <title>Dark mode, astigmatism and eye strain: the evidence</title>
     <link href="https://csarko.sh/research/check-your-eyes-before-your-theme" />
     <id>https://csarko.sh/research/check-your-eyes-before-your-theme</id>
     <published>2026-10-13T00:00:00Z</published>
-    <updated>2026-10-18T00:00:00Z</updated>
+    <updated>2026-11-13T00:00:00Z</updated>
     <summary>What the evidence says about dark mode, contrast, line spacing, font size, blue light, flicker, breaks and the eye exam for a developer&#39;s screen headaches.</summary>
     <category term="Tooling" />
   </entry>
@@ -252,7 +252,7 @@
     <link href="https://csarko.sh/research/ground-fog-without-the-wall" />
     <id>https://csarko.sh/research/ground-fog-without-the-wall</id>
     <published>2026-10-07T00:00:00Z</published>
-    <updated>2026-10-23T00:00:00Z</updated>
+    <updated>2026-11-13T00:00:00Z</updated>
     <summary>How AAA engines draw ground fog as a frustum-aligned volume instead of sprites, what it costs, where it ghosts, and which of it a browser game can run.</summary>
     <category term="Rendering" />
   </entry>
@@ -307,7 +307,7 @@
     <link href="https://csarko.sh/research/photorealistic-water-rendering" />
     <id>https://csarko.sh/research/photorealistic-water-rendering</id>
     <published>2026-09-29T00:00:00Z</published>
-    <updated>2026-10-23T00:00:00Z</updated>
+    <updated>2026-11-13T00:00:00Z</updated>
     <summary>Water reads as real through light more than waves: a mirror past 20 m, FFT seas at 0.1 to 2 ms, baked breakers, and what WebGPU and WebGL2 can afford.</summary>
     <category term="Rendering" />
   </entry>
@@ -327,7 +327,7 @@
     <link href="https://csarko.sh/research/webgpu-vs-webgl2" />
     <id>https://csarko.sh/research/webgpu-vs-webgl2</id>
     <published>2026-09-27T00:00:00Z</published>
-    <updated>2026-10-23T00:00:00Z</updated>
+    <updated>2026-11-13T00:00:00Z</updated>
     <summary>WebGPU vs WebGL2, measured in a Babylon.js game: 1.3 to 1.5 ms faster per frame at native resolution, 9.9 ms at 4x the pixels, for 2.7 MB of shader translators.</summary>
     <category term="Rendering" />
   </entry>
@@ -345,7 +345,7 @@
     <link href="https://csarko.sh/research/reverse-engineering-an-ai-horror-short" />
     <id>https://csarko.sh/research/reverse-engineering-an-ai-horror-short</id>
     <published>2026-09-26T00:00:00Z</published>
-    <updated>2026-10-23T00:00:00Z</updated>
+    <updated>2026-11-13T00:00:00Z</updated>
     <summary>A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe.</summary>
     <category term="AI" />
     <category term="Film" />
@@ -371,11 +371,11 @@
     <category term="Tooling" />
   </entry>
   <entry>
-    <title>AI short films: consistent characters and sets</title>
+    <title>Consistent characters in AI video: what holds up</title>
     <link href="https://csarko.sh/research/ai-short-film-generation" />
     <id>https://csarko.sh/research/ai-short-film-generation</id>
     <published>2026-09-16T00:00:00Z</published>
-    <updated>2026-10-23T00:00:00Z</updated>
+    <updated>2026-11-13T00:00:00Z</updated>
     <summary>2026 AI video can make one convincing short, but no model locks an actor and a room across a series. Where each tool fails, and the 3D-first build that holds.</summary>
     <category term="AI" />
     <category term="Film" />
@@ -395,7 +395,7 @@
     <link href="https://csarko.sh/research/grass-and-trail-realism" />
     <id>https://csarko.sh/research/grass-and-trail-realism</id>
     <published>2026-09-15T00:00:00Z</published>
-    <updated>2026-10-23T00:00:00Z</updated>
+    <updated>2026-11-13T00:00:00Z</updated>
     <summary>Flat game grass is a grounding failure, not a triangle count: ground tint, clumping, one wind field and a banded trail fix it in Babylon.js at 60 Hz.</summary>
     <category term="Rendering" />
   </entry>
@@ -404,7 +404,7 @@
     <link href="https://csarko.sh/research/stylized-shader-looks" />
     <id>https://csarko.sh/research/stylized-shader-looks</id>
     <published>2026-09-14T00:00:00Z</published>
-    <updated>2026-10-23T00:00:00Z</updated>
+    <updated>2026-11-13T00:00:00Z</updated>
     <summary>Memorable game looks come from one or two strong shader rules applied everywhere: ink outlines, cel bands, dithering, gradient fog or VHS.</summary>
     <category term="Rendering" />
   </entry>

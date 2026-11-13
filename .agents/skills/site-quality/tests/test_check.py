@@ -119,6 +119,12 @@ class Breadcrumbs(unittest.TestCase):
     def test_a_matching_trail_passes(self):
         self.assertEqual(self.failures_for(crumbs(*self.SHOWN)), [])
 
+    def test_a_crumb_that_names_its_click_still_reads(self):
+        # A doc page's Home crumb carries data-visits-event="crumb-home" (2026-11-13).
+        named = crumbs(*self.SHOWN).replace('<a href="/">', '<a href="/" data-visits-event="crumb-home">')
+        self.assertIn("crumb-home", named)
+        self.assertEqual(self.failures_for(named), [])
+
     def test_renaming_a_section_in_only_one_place_fails(self):
         shown = (("Home", "/"), ("Docs", "/research"), ("A doc", None))
         self.assertRegex(self.failures_for(crumbs(*shown))[0], r"breadcrumb reads .* but its BreadcrumbList says")

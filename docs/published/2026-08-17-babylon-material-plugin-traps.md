@@ -4,6 +4,10 @@ published: 2026-08-17
 categories: Rendering, Tooling
 updated: 2026-10-23
 related: webgpu-vs-webgl2, atmosphere-and-dread-shaders, no-visible-pop-in
+project: day-hike
+project-line: Day Hike is a co-op horror game that runs in your browser, drawn with Babylon.js. Its wind sway, its birds' wing beats and its blended terrain textures are material plugins, and these are the traps met while writing them.
+closing: In Day Hike the ground blends grass, forest floor, sand, pebble and rock through one terrain plugin, and the rock is the triplanar branch that a comment spelling #ifdef once deleted, as section 4 tells. The wind sway, the trees seated on their slopes and each bird's wing beat are plugin code too, spliced into Babylon's own PBR shader as plain text between include expansion and the preprocessor.
+asks: Why does a Babylon.js material plugin silently do nothing?
 ---
 # Babylon.js material plugins: hooks and traps
 

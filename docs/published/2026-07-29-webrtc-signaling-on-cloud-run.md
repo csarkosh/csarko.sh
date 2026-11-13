@@ -4,6 +4,10 @@ published: 2026-07-29
 categories: Distributed systems
 updated: 2026-10-10
 series: Day Hike netcode
+project: day-hike
+project-line: Day Hike is a co-op horror game for up to five players that runs in your browser. This is the small server behind its Invite link: it introduces the players' browsers to each other, and the hike then runs directly between them.
+closing: Press Invite in Day Hike and this server registers the lobby named in the link you are given. A friend who opens that link joins the lobby, the server carries their browser's WebRTC offer to yours, and from then on the hike runs directly between the two. If the host's signaling socket drops in the middle of a hike, the party keeps going: the server holds the lobby for 60 seconds so the host can reconnect and reclaim it, which is section 4.
+asks: What breaks when you host a WebRTC signaling server on Cloud Run?
 ---
 # Hosting WebRTC signaling on Cloud Run
 

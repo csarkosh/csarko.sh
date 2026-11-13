@@ -4,6 +4,10 @@ published: 2026-10-15
 updated: 2026-10-15
 categories: Tooling, Distributed systems
 series: Analytics without cookies
+project: lib-visits
+project-line: lib-visits is the cookieless web counter built from this research: a 3 KB script and a small Rust collector that count each visit and the path it took, with no cookies, no stored ID and no fingerprinting.
+closing: lib-visits is the design in section 6, built. Its visit is the keyed hash of the day, the address and the User-Agent, which keeps to the day-sized ceiling of section 1 with no session table. Its journey is the chain of same-site referrers from section 3, and its leave event carries the engaged seconds and scroll depth from the same section. Its page opens on one sample visit drawn that way: where it came from, each page with its engaged time and scroll depth, and how it ended.
+asks: How can a site count visits, and the path each took, without cookies?
 ---
 # Visits without cookies, and the path they took
 

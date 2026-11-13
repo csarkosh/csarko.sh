@@ -1,4 +1,6 @@
--- Named clicks, outbound links by host, docs read to the end (from the leave beacon), doc sections
+-- Named clicks, outbound links by host, docs read to the end (from the leave beacon: `re` on any
+-- of the page load's leaves AND a scroll depth, its MAX(sd), of 50 or more, since a crawler that
+-- renders the whole page at once sets `re` without scrolling), doc sections
 -- read (section-<n>, the site's reading.js), and the
 -- home page's visitors, in [start, end). Two numbers a name: `visitors`, the distinct visits
 -- that fired it, and `clicks`, how many times it fired (for a read, the page loads that reached
@@ -9,16 +11,16 @@
 -- A click or a leave belongs to its page load's visit (the view's, by id), since the daily hash
 -- can roll between a view and its beacons.
 -- The check beacons (/deploy-check, /depth-check) are left out, and so is every page load (id)
--- that any of its rows calls a bot (Lighthouse's view says bot=false, its leave and vitals true).
+-- that is a bot's or a crawler's (the shared test in _bot.sql).
 WITH beacons AS (
   SELECT
     JSON_VALUE(json_payload.n) AS n,
     JSON_VALUE(json_payload.id) AS id,
     json_payload AS j,
     COALESCE(JSON_VALUE(json_payload.s.visit), JSON_VALUE(json_payload.id)) AS visit,
-    -- A browser brand starting Headless (the client hints' HeadlessChrome, under a User-Agent that
-    -- claims a real browser) is a bot too, whatever s.bot says.
-    LOGICAL_OR(IFNULL(JSON_VALUE(json_payload.s.bot), 'false') = 'true' OR STARTS_WITH(IFNULL(JSON_VALUE(json_payload.s.bn), ''), 'Headless')) OVER (PARTITION BY JSON_VALUE(json_payload.id)) AS bot
+    -- The shared bot test, queries/_bot.sql: the collector's flag, a Headless brand, an impossible
+    -- device, the Linux fleet from google.com and Day Hike's tooling lobby, over the whole page load.
+    {{bot}} AS bot
   FROM `csarko-sh.csarko_visits._AllLogs`
   WHERE timestamp >= TIMESTAMP(@start) AND timestamp < TIMESTAMP(@end)
     AND JSON_VALUE(json_payload.p) NOT IN ('/deploy-check', '/depth-check')
@@ -39,9 +41,11 @@ SELECT name, COUNT(DISTINCT visit) AS visitors, COUNT(*) AS clicks FROM (
   SELECT CONCAT('link-', host), visit FROM clicks WHERE ev IS NULL AND host IS NOT NULL
   UNION ALL
   SELECT name, visit FROM (
-    SELECT DISTINCT CONCAT('read-', REGEXP_EXTRACT(JSON_VALUE(b.j.p), r'^/research/([^/]+)$')) AS name, COALESCE(l.visit, b.visit) AS visit, b.id
+    SELECT CONCAT('read-', REGEXP_EXTRACT(ANY_VALUE(JSON_VALUE(b.j.p)), r'^/research/([^/]+)$')) AS name, ANY_VALUE(COALESCE(l.visit, b.visit)) AS visit, b.id
     FROM beacons AS b LEFT JOIN loads AS l USING (id)
-    WHERE b.n = 'leave' AND NOT b.bot AND JSON_VALUE(b.j.re) = 'true' AND REGEXP_CONTAINS(JSON_VALUE(b.j.p), r'^/research/[^/]+$')
+    WHERE b.n = 'leave' AND NOT b.bot AND REGEXP_CONTAINS(JSON_VALUE(b.j.p), r'^/research/[^/]+$')
+    GROUP BY b.id
+    HAVING LOGICAL_OR(JSON_VALUE(b.j.re) = 'true') AND MAX(SAFE_CAST(JSON_VALUE(b.j.sd) AS INT64)) >= 50
   )
   UNION ALL
   -- A doc section read for 5 s with the page in view (the site's reading.js), as section-<n>,

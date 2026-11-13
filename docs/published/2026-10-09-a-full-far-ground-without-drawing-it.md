@@ -3,6 +3,10 @@ description: Cheap GPU tricks that make a game's far ground read as full of gras
 published: 2026-10-09
 categories: Rendering
 series: Filling the distance
+project: day-hike
+project-line: This research was done for the forest floor of Day Hike, a co-op horror game that runs in your browser. Its distant ground is painted with section 4's fitted cover colour and sun-shaded clumps.
+closing: Go back to the still under the canopy, where the ground past 25 m was a flat grey-green. Since Oct 10, 2026 Day Hike's terrain has taken the near cover's colour, ramping in between 24 and 30 m on the medium and high tiers, with clumps about a metre and 3 m across that shade with the sun and a cut to the grazing sky reflection: sections 4.1 to 4.3. Since Oct 16, 2026 the meadow's cards go on past where they used to end, one in two kept and widened to twice its width, the kind of sparse card section 6 describes.
+asks: How do you make distant ground in a game look full of grass without drawing it?
 ---
 # A full far ground without drawing it
 

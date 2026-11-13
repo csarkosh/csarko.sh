@@ -331,19 +331,23 @@
     .doc-page .prose { font-size: 17px; }
     .doc-page .prose p, .doc-page .prose li { color: var(--prose); }
     .doc-header .lead { margin: 0 0 20px; color: var(--prose); }
-    .series-line { margin: 18px 0 0; font-size: 14.5px; color: var(--muted); }
-    .series-line p { margin: 0; }
+    .series-line { display: flex; gap: 8px; margin: 18px 0 0; font-size: 14.5px; color: var(--muted); white-space: nowrap; }
+    .series-line > * { flex: none; }
+    .series-line > :first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .series-line strong { color: var(--text); font-weight: 600; }
-    .series-line .series-steps { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 4px; }
-    .series-line a, .follow a, .afterward a:not(.next):not(.play) { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
+    .series-line a, .afterward a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
     .rail a[aria-current] { color: var(--text); }
     .rail a[aria-current] .num { color: var(--accent); }
-    .toc { margin: 40px 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .prose h2, .prose h3, .prose h4 { scroll-margin-top: 28px; }
+    ::target-text { background: var(--accent-underline); color: var(--text); }
+    .toc { margin: 32px 0 0; }
     .toc .section-label { margin: 0 0 6px; }
     .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
     .toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--prose); font-size: 15px; line-height: 1.45; }
     .toc a:hover { color: var(--accent); }
     .toc .num { font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--faint); flex: none; }
+    @media (min-width: 1060px) { .toc { display: none; } }
+    @media (max-width: 1059px) { .prose > .section-head:first-child:not([data-read-end]) { border-top: 0; padding-top: 0; margin-top: 36px; } }
     .figure { margin: 32px 0; }
     .figure img, .figure picture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
     /* A tall figure (a portrait still, a diagram) keeps its shape inside one screen. */
@@ -368,26 +372,28 @@
       radial-gradient(farthest-side at 0 50%, var(--border-strong), transparent) left / 14px 100% no-repeat scroll,
       radial-gradient(farthest-side at 100% 50%, var(--border-strong), transparent) right / 14px 100% no-repeat scroll,
       var(--surface); }
-    .keep-reading { margin: 72px 0 0; padding: 26px 24px; background: linear-gradient(135deg, var(--accent-tint), transparent 55%), var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); }
-    .keep-reading .section-label { margin: 0 0 14px; color: var(--accent); }
-    .series-name { margin: 0 0 8px; font-weight: 600; }
-    .series-parts { margin: 0 0 22px; padding-left: 1.4em; display: grid; gap: 4px; color: var(--muted); }
-    .series-parts li::marker { color: var(--faint); font-family: var(--mono); font-size: 13px; }
-    .series-parts a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-underline); text-underline-offset: 3px; }
-    .series-parts [aria-current] { color: var(--text); font-weight: 600; }
-    .next-list .card { padding: 16px 18px; background: var(--bg); }
-    .next-list .doc-title { font-size: 1.05rem; }
-    .next-list .doc-desc { font-size: 14.5px; }
-    .play-line, .watch-line { margin: 20px 0 0; }
+    .what-next { margin-top: 48px; }
+    .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
+    .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
+    .watch-line { margin: 20px 0 0; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
-    .follow { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
-    .afterward { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 24px; font-size: 14.5px; }
-    .afterward .next { display: grid; gap: 2px; flex: 1 1 260px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: var(--radius); font-weight: 600; transition: border-color var(--md-duration-short3) var(--md-easing-standard); }
-    .afterward .next .section-label { margin: 0; color: var(--accent); font-weight: 400; }
-    .afterward .next:hover { border-color: var(--accent); }
-    @media (prefers-reduced-motion: reduce) { .play, .afterward .next { transition: none; } }
+    .afterward { display: flex; align-items: baseline; gap: 6px 22px; margin-top: 24px; font-size: 14.5px; color: var(--muted); text-wrap: balance; }
+    .afterward > * { flex: none; }
+    .afterward > a:not(:last-child) { flex: 0 1 auto; }
+    @media (max-width: 640px) {
+      .doc-page .shell { padding-top: 16px; }
+      .doc-page .crumbs ol { padding-block: 8px; }
+      .doc-page .eyebrow { margin-bottom: 8px; }
+      .doc-page h1 { margin-bottom: 10px; font-size: 2rem; }
+      .doc-header .lead { margin-bottom: 12px; font-size: 1rem; line-height: 1.5; }
+      .doc-page .doc-header { padding-bottom: 12px; }
+      .series-line { gap: 6px; margin-top: 8px; font-size: 13px; }
+      .afterward { flex-direction: column; }
+    }
+    @media (max-width: 439px) { .series-line a span { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .play { transition: none; } }
     .prose .references { list-style: none; padding-left: 0; }
     .prose .references li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); gap: 0 8px; border-radius: 8px; }
     .prose .references li:target { background: var(--surface-2); }
@@ -400,7 +406,7 @@
   <a class="skip-link" href="#top">Skip to content</a>
   <nav class="nav" aria-label="Primary">
     <div class="wrap">
-      <a class="wordmark" href="/">csarko<span>.sh</span></a>
+      <a class="wordmark" href="/" data-visits-event="nav-home">csarko<span>.sh</span></a>
       <ul>
         <li><a href="/projects" data-visits-event="nav-projects">Projects</a></li>
         <li><a href="/research" data-visits-event="nav-research">Research</a></li>
@@ -410,7 +416,7 @@
   <nav class="crumbs" aria-label="Breadcrumb">
     <div class="wrap">
       <ol>
-        <li><a href="/">Home</a></li>
+        <li><a href="/" data-visits-event="crumb-home">Home</a></li>
         <li><a href="/research">Research</a></li>
         <li><span aria-current="page">Atmosphere and dread shaders for horror games</span></li>
       </ol>
@@ -439,8 +445,7 @@
           <li><a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-09-15-atmosphere-and-dread-shaders.md" target="_blank" rel="noopener">Also on GitHub</a></li>
         </ul>
         <nav class="series-line" aria-label="Series">
-          <p>Part 2 of 4 in <strong>Day Hike&#39;s look</strong></p>
-          <p class="series-steps"><span>Previous: <a href="/research/stylized-shader-looks" rel="prev" data-visits-event="series-stylized-shader-looks">Stylized shader looks: how games build a visual identity</a></span><span>Next: <a href="/research/photorealistic-water-rendering" rel="next" data-visits-event="series-photorealistic-water-rendering">Photorealistic water rendering: lakes and oceans</a></span></p>
+          <span>Part 2 of 4 in <strong>Day Hike&#39;s look</strong></span><span aria-hidden="true">·</span><a href="/research/stylized-shader-looks" rel="prev" aria-label="Previous: Stylized shader looks: how games build a visual identity" title="Stylized shader looks: how games build a visual identity" data-visits-event="series-stylized-shader-looks"><span aria-hidden="true">←</span> Previous</a><span aria-hidden="true">·</span><a href="/research/photorealistic-water-rendering" rel="next" aria-label="Next: Photorealistic water rendering: lakes and oceans" title="Photorealistic water rendering: lakes and oceans" data-visits-event="series-photorealistic-water-rendering">Next <span aria-hidden="true">→</span></a>
         </nav>
       </header>
       <div class="prose">
@@ -453,15 +458,16 @@ and what do state-driven horror effects look like when they are done well? Which
 Babylon.js 9.18 do at 60 fps in a browser?</p>
 <p><strong>Short answer:</strong> every photoreal-but-atmospheric game in the survey puts the same three
 layers on a physically based sky and lighting: an artist-controlled
-<button type="button" class="term" popovertarget="term-1">height fog</button><span class="term-def" id="term-1" popover role="note">Fog that is thickest near the ground and thins with height, instead of one even density everywhere.</span>,
-a neutral <button type="button" class="term" popovertarget="term-2">tone map</button><span class="term-def" id="term-2" popover role="note">The step that squeezes a render&#39;s unlimited brightness into the range a screen can show; ACES and AgX are two of them.</span>
+<button type="button" class="term" popovertarget="term-1" data-visits-event="term">height fog</button><span class="term-def" id="term-1" popover role="note">Fog that is thickest near the ground and thins with height, instead of one even density everywhere.</span>,
+a neutral <button type="button" class="term" popovertarget="term-2" data-visits-event="term">tone map</button><span class="term-def" id="term-2" popover role="note">The step that squeezes a render&#39;s unlimited brightness into the range a screen can show; ACES and AgX are two of them.</span>
 followed by a grade, and a film treatment
-(<button type="button" class="term" popovertarget="term-3">halation</button><span class="term-def" id="term-3" popover role="note">The red-orange glow film shows around bright lights: a threshold, a wide blur, a tint and a screen blend, not bloom.</span>,
+(<button type="button" class="term" popovertarget="term-3" data-visits-event="term">halation</button><span class="term-def" id="term-3" popover role="note">The red-orange glow film shows around bright lights: a threshold, a wide blur, a tint and a screen blend, not bloom.</span>,
 luminance-weighted grain, dither) so a dark, foggy image survives 8-bit output. The horror
 games that hold up over hours drive how often and how badly events land from their dread
 state, and keep screen distortion the smallest channel, at the edge of the frame. Almost all
 of it is cheap in Babylon; a fog hook, an AgX tone map and a headlamp cone are the three
 pieces it does not give for free.</p>
+<p class="project-line">This survey was done for Day Hike, a first-person co-op horror game that runs in your browser. As of October 2026 its look follows most of direction 1 in section 5: height fog, an AgX tone map and one grade pass. <a href="https://games.csarko.sh/dayhike/" data-visits-event="lead-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>
 <figure class="figure">
 <!-- generated:figure:atmosphere-and-dread-shaders/forest -->
 <picture>
@@ -889,33 +895,15 @@ exposure, vignette, grain and mist.</li>
 headroom.</li>
 </ol>
       </div>
-      <section class="keep-reading" aria-labelledby="next-reads">
-        <h2 id="next-reads" class="section-label">Keep reading</h2>
-        <p class="series-name">Day Hike&#39;s look · 4 parts</p>
-        <ol class="series-parts">
-          <li><a href="/research/stylized-shader-looks" data-visits-event="next-stylized-shader-looks">Stylized shader looks: how games build a visual identity</a></li>
-          <li aria-current="true"><span>Atmosphere and dread shaders for horror games</span></li>
-          <li><a href="/research/photorealistic-water-rendering" data-visits-event="next-photorealistic-water-rendering">Photorealistic water rendering: lakes and oceans</a></li>
-          <li><a href="/research/photorealistic-rain-for-browser-games" data-visits-event="next-photorealistic-rain-for-browser-games">Photorealistic rain for browser games</a></li>
-        </ol>
-        <ul class="doc-list next-list" role="list">
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/ground-fog-without-the-wall" data-visits-event="next-ground-fog-without-the-wall">Volumetric ground fog without the sprite wall</a></h3>
-            <p class="doc-meta">9 min read</p>
-            <p class="doc-desc">How AAA engines draw ground fog as a frustum-aligned volume instead of sprites, what it costs, where it ghosts, and which of it a browser game can run.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" data-visits-event="next-a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2">A painted look over a photoreal render: WebGPU against WebGL2</a></h3>
-            <p class="doc-meta">12 min read</p>
-            <p class="doc-desc">A painterly post chain on WebGPU and WebGL2: the same look on both, but a stroke filter written with sector arrays cost 12.5 ms on WebGPU against 2.1 ms.</p>
-          </li>
-          <li class="card">
-            <h3 class="doc-title"><a class="stretch" href="/research/building-dread-toward-a-late-reveal" data-visits-event="next-building-dread-toward-a-late-reveal">Building dread toward a late reveal in horror games</a></h3>
-            <p class="doc-meta">10 min read</p>
-            <p class="doc-desc">How horror games make a late monster reveal feel earned, with traces, sound and pacing, and what to do with a mechanic that punishes looking at the monster.</p>
-          </li>
+      <section class="prose what-next" aria-labelledby="what-next">
+        <h2 id="what-next">What next</h2>
+        <p>In the picture at the top, the far trunks fade into grey mist without banding: the fog, tone map and closing dither of section 2&#39;s five moves, at work in Day Hike. As of November 2026 its medium and high quality tiers also shift the grade after dark with a night white point and a Purkinje matrix, the second move, and carry pollen and frost motes on the wind, the fourth. The high tier adds halation, the film glow of the third. <a href="https://games.csarko.sh/dayhike/" data-visits-event="close-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a>.</p>
+        <ul>
+          <li><a href="/research/photorealistic-water-rendering" data-visits-event="series-photorealistic-water-rendering">What makes water look real in a game, and what can a browser afford?</a></li>
+          <li><a href="/research/ground-fog-without-the-wall" data-visits-event="next-ground-fog-without-the-wall">How do AAA games draw ground fog, and can a browser game do the same?</a></li>
+          <li><a href="/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" data-visits-event="next-a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2">Why can the same painterly shader cost far more on WebGPU than on WebGL2?</a></li>
         </ul>
-        <p class="play-line"><a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
+        <p class="series-at"><span>Part 2 of 4 in <strong>Day Hike&#39;s look</strong></span><span>Previous: <a href="/research/stylized-shader-looks" rel="prev" data-visits-event="series-stylized-shader-looks">Stylized shader looks: how games build a visual identity</a></span><span>Next: <a href="/research/photorealistic-water-rendering" rel="next" data-visits-event="series-photorealistic-water-rendering">Photorealistic water rendering: lakes and oceans</a></span></p>
         <p class="follow">New research as it lands: <a href="/research/feed.xml">the feed</a> (RSS).</p>
       </section>
       <div class="prose">
@@ -953,13 +941,13 @@ headroom.</li>
       </div>
       <section class="author" aria-label="About the author">
         <p class="section-label">Written by</p>
-        <p class="author-name"><a href="/">Cyrus Sarkosh</a></p>
+        <p class="author-name"><a href="/" data-visits-event="author-home">Cyrus Sarkosh</a></p>
         <p>Senior software engineer leading distributed systems and AI products.</p>
-        <p class="author-links"><a href="/">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
+        <p class="author-links"><a href="/" data-visits-event="author-home">csarko.sh</a> · <a class="external" href="https://www.linkedin.com/in/csarkosh" target="_blank" rel="noopener">LinkedIn</a></p>
       </section>
       <nav class="afterward" aria-label="Read next">
-        <a class="next" href="/research/photorealistic-water-rendering" data-visits-event="end-photorealistic-water-rendering"><span class="section-label">Read next</span><span>Photorealistic water rendering: lakes and oceans <span aria-hidden="true">→</span></span></a>
-        <a class="play" href="https://games.csarko.sh/dayhike/" target="_blank" rel="noopener" data-visits-event="play-day-hike">Play Day Hike in your browser <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+        <span>Day Hike: <a href="https://games.csarko.sh/dayhike/" data-visits-event="after-day-hike">Play it in your browser,&nbsp;no&nbsp;install</a></span>
+        <a href="/research/photorealistic-water-rendering" data-visits-event="end-photorealistic-water-rendering">What makes water look real in a game, and what can a browser afford?</a>
         <a href="/research">All research</a>
       </nav>
     </main>
@@ -974,7 +962,7 @@ headroom.</li>
   <!-- generated:analytics -->
   <script defer src="/assets/visits.4378bd36.js" data-visits="/v"></script>
   <script defer src="/assets/vitals.75ad3d15.js"></script>
-  <script defer src="/assets/reading.c3e27b33.js"></script>
+  <script defer src="/assets/reading.3a8c03e0.js"></script>
   <!-- /generated:analytics -->
 </body>
 </html>

@@ -4,6 +4,10 @@ published: 2026-10-14
 categories: Tooling
 source: https://github.com/csarkosh/ide-sarkos/blob/main/docs/superpowers/specs/2026-10-14-update-in-place-design.md
 series: Arkos IDE notes
+project: ide-arkos
+project-line: Arkos IDE is a Mac app that keeps many Claude Code sessions running side by side, called Sarkos IDE on this page. The design in section 5, a spec when written, shipped in it: the daemon replaces itself in place, so an update ends no shell.
+closing: An update ends sessions when it quits the process that owns the terminals, and an Arkos IDE update does not quit it. The daemon writes a handover file and execs the new binary under the same pid, so the shells stay its children, and the window relaunches with every tab and its history. The gap section 6 names remains: when the daemon is killed or the Mac restarts, the shells end, and the app recovers by resuming the sessions, not by keeping them alive.
+asks: Why does updating an IDE kill its terminals, and how can the shells survive?
 ---
 # Update the IDE, keep the shells
 

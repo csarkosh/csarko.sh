@@ -3,6 +3,10 @@ description: AWS, Azure and GCP price a T4 GPU within 3%. Fanning out shader rec
 published: 2026-10-29
 categories: Tooling, Distributed systems, Rendering
 related: parallel-gpu-browser-rigs, webgpu-vs-webgl2
+project: day-hike
+project-line: The game in the worked example is Day Hike, a co-op horror game that runs in your browser. The change timed here is the one that dropped the sun's shadow map on its medium and high tiers.
+closing: The 4 h 24 min at the top was one real change to Day Hike: on Oct 28, 2026, the sun's shadow map was dropped on the medium and high tiers, so the shader corpus was recorded again and the map rebuilt. As of Oct 29, 2026, the recorder ran its 34 jobs one at a time; the fan-out is this doc's recommendation, with probes A and B to run first. The recorder, the map build with its 10 MiB ceiling and the CI workflow are in the game's public repository.
+asks: Is AWS, Azure or GCP cheapest for a T4 GPU, and does switching save time?
 ---
 # Cloud rigs for graphics work: fan out, not a cheaper cloud
 
