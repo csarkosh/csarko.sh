@@ -16,20 +16,20 @@ asks: What keeps a reader on a long technical article, and gets them to try the 
 
 **What that leaves open:** Which of this is measured and which is habit: each section names the evidence it rests on, and no experiment has tested a paragraph like this one. And whether it works: this site rebuilt its doc pages on these findings on Nov 13, 2026 and has measured nothing since. Section 13 says how it will be judged.
 
-![Bar chart of where 184 visits to this site went between Oct 15 and Nov 13, 2026: 168 never opened a second page, 56 of 170 doc reads reached the end and 23 of those took under 30 seconds, 10 to 14% read through the body, the Keep reading cards got 1 click in the 172 doc page loads since Oct 23, Read next got none, and the button to play the site's browser game got 4 clicks from the 29 readers who finished a doc that carried it](where-visits-went.svg "Look at the last three bars: at the end of a doc, links to other docs drew 1 click in 172 page loads, while the button for the site's browser game beside them drew 4 of the 29 readers who finished.")
+![Bar chart of where 184 visits to this site went between Oct 15 and Nov 13, 2026: 168 never opened a second page, 56 of 170 doc reads reached the end and 23 of those took under 30 seconds, 10 to 14% read the body and reached the end, the Keep reading cards got 1 click in the 172 doc page loads since Oct 23, Read next got none, and the button to play the site's browser game got 4 clicks from the 29 readers who finished a doc that carried it](where-visits-went.svg "Look at the last three bars: at the end of a doc, links to other docs drew 1 click in 172 page loads, while the button for the site's browser game beside them drew 4 of the 29 readers who finished.")
 
 **In numbers:**
 
 - **21.5 seconds** was the median time on a doc on this site ([section 1](#a-median-of-21-5-seconds-on-a-doc)).
 - **74%** of viewing time went to the first two screenfuls ([section 2](#short-visits-are-normal-everywhere)).
 - **2.47%** is the click rate of the official-site link at the top of a Wikipedia article; links in its body get 0.14% ([section 7](#one-plain-link-early-an-invitation-last)).
-- **A doubling** of the share who read, or four times the clicks, is the least four weeks can show ([section 13](#what-this-site-changed-unmeasured)).
+- **1.4 times** the share who read, or four times the clicks, is the least four weeks can show ([section 13](#what-this-site-changed-unmeasured)).
 
 ## 1. A median of 21.5 seconds on a doc
 
 Between Oct 15 and Nov 13, 2026, this site had 184 visits by people, most of them to a research doc. That is the count after removing the site's owner and the bots, which made about 60% of all logged page loads. The median engaged time on a doc, meaning the seconds the page was visible in the tab, was 21.5 seconds.
 
-A marker at the end of each doc records whether a reader got there. Of 170 doc reads, 56 reached it, but 23 of those took under 30 seconds: a flick to the bottom, not a read. A stricter test asks whether any section of the body stayed mid-screen for five seconds. By that test, 10 to 14% of reads were real reading.
+A marker at the end of each doc records whether a reader got there. Of 170 doc reads, 56 reached it, but 23 of those took under 30 seconds: a flick to the bottom, not a read. A stricter test asks whether any section of the body stayed mid-screen for five seconds. Of the 145 doc reads since that test began on Oct 23, 54 passed it (37%), 29 held two body sections or more (20%), and only 10 to 14% both read the body and reached the end.
 
 Almost nobody went further: 168 of the 184 visits never opened a second page. Each doc ended with a boxed block titled Keep reading. It held cards for other docs and, on the 26 docs that name the site's browser game, a Play button; a Read next link and the same button followed the author box. In the 172 doc page loads since those blocks were added on Oct 23, the cards got 1 click and Read next none. The Play button was clicked by 4 of the 29 readers who finished a doc that carried it.
 
@@ -150,7 +150,7 @@ Raw time on page is a poor target. The median is set by the screeners, a faster 
 
 | Measure | Definition | Why it is better |
 |---|---|---|
-| Reader rate | Share of visits in which a section of the body stayed mid-screen for 5 seconds | A flick never triggers it. On this site: 10 to 14% |
+| Reader rate | Share of visits in which a section of the body stayed mid-screen for 5 seconds | A flick never triggers it. On this site: 37% (54 of 145 reads, Oct 24 to Nov 13) |
 | Past 30 seconds | Share of visits with more than 30 seconds of engaged time | Leaving flattens there, and the median hides movement on either side |
 | Product clicks per reader | Clicks on each product link, named by its position on the page | A screener was never going to click, so per reader is the fair rate |
 | Follow-through | Visits in which the click is followed by use of the product | A click is not use |
@@ -185,7 +185,7 @@ Here is one opening before and after, abridged, from [the site's most visited do
 
 The two terms that sat behind taps, image-to-video and Reddit's transcode, are said in plain words, and the reader who has the answer is handed a puzzle the body solves: how anyone can tell. Every fact was already in the doc.
 
-None of this has been measured. It will be judged after four weeks, on two numbers: the share of readers who dwell on section 1 or later, and clicks on the product links. It will not be judged on the median, which cannot show a change at this size. At about 50 visits a week, four weeks give roughly 200 visits before and 200 after. The figures that follow are our own rough power estimates, for an 80% chance of detecting a change at the 5% significance level. The reader rate would have to roughly double, from about 12% to about 23%, and product clicks to roughly quadruple, from 4 to about 16, to be told from noise. Anything smaller is not failure; it is unmeasurable at this size.
+None of this has been measured. It will be judged after four weeks, on two numbers: the share of readers who dwell on section 1 or later, and clicks on the product links. It will not be judged on the median, which cannot show a change at this size. At about 50 visits a week, four weeks give roughly 200 visits before and 200 after. The figures that follow are our own rough power estimates, for an 80% chance of detecting a change at the 5% significance level. The reader rate would have to rise from 37% to about 51%, roughly 1.4 times, and product clicks to roughly quadruple, from 4 to about 16, to be told from noise. Anything smaller is not failure; it is unmeasurable at this size.
 
 Three things limit even a result that large. The click count is not like for like. The old button sat at the end of 26 docs and the new link sits in three places on 44, so some rise is expected from the extra links alone. All five changes shipped together, so no gain could be credited to one of them. And the comparison has no control group, so a shift in which docs people land on could fake a gain or hide one. A result worth reporting is one that repeats in the four weeks after.
 

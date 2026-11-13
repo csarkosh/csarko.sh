@@ -737,7 +737,7 @@ most-landed docs, write B1 and B2 for those five, then for the other 44 in order
   inference). No experiment tests this on article pages.
 - Expected effect: goal 1. The best candidate for moving visits past 30 s into the body.
 - Cost: none. Writing only.
-- Measure: share of visits with a `section` event for n of 1 or more (now 10 to 14%); share past
+- Measure: share of visits with a `section` event for n of 1 or more (now 37%, 54 of 145 reads; corrected 2026-11-13, 10 to 14% is the share that also reached the end); share past
   60 s.
 
 Before and after, the opening of "Reverse engineering an AI horror short" (most visited, median
@@ -989,7 +989,7 @@ body reader, the finisher), but it is the reason to watch returning readers (sec
 
 | Measure | Definition | Why |
 |---|---|---|
-| Reader rate | Share of human doc visits with at least one `section` event for n of 1 or more | Counts people who stayed 5 s in the body. A flick never fires it. Baseline 10 to 14%. |
+| Reader rate | Share of human doc visits with at least one `section` event for n of 1 or more | Counts people who stayed 5 s in the body. A flick never fires it. Baseline 37% (54 of 145 reads since Oct 23, the last section's bottom zone left out as the new counter does; corrected 2026-11-13). |
 | Past 30 s, past 60 s | Share of doc visits with engaged time over each mark | 30 s is where leaving flattens. The median hides movement on either side of it. |
 | 75th percentile engaged time | Per doc and overall | Tracks the readers, not the screeners. Wikipedia's is 75 s. |
 | Sections per reader | Mean distinct `section` events among readers | Shows whether the joins carry people forward. |
@@ -1014,7 +1014,7 @@ own rough power figures (80% power, 5% two-sided), not from a source:
 
 | Measure | Baseline | Smallest change four weeks can show |
 |---|---|---|
-| Reader rate | about 12% | about 23% |
+| Reader rate | 37% | about 51% (corrected 2026-11-13 from about 12% to 23%) |
 | Share past 30 s | under 50% (assume 40%) | about 54% |
 | Product clicks per doc visit | 4 in about 172 loads (2.3%; only 26 of the 49 docs carry the button) | about 9%, or 16 clicks |
 | Median engaged time | 21.5 s | Not readable at this size. Report it; do not judge by it. |

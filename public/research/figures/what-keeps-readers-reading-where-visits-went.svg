@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 444" width="440" height="444" role="img" aria-labelledby="t">
-  <title id="t">Where 184 visits to this site went, Oct 15 to Nov 13, 2026, bots and the owner removed. 168 of 184 visits never opened a second page. 56 of 170 doc reads reached the end, 23 of them in under 30 seconds. 10 to 14% of reads showed reading through the body. In the 172 doc page loads since Oct 23, the Keep reading cards got 1 click and Read next got 0. The button to play the site's browser game got 4 clicks from the 29 readers who finished a doc that carried it.</title>
+  <title id="t">Where 184 visits to this site went, Oct 15 to Nov 13, 2026, bots and the owner removed. 168 of 184 visits never opened a second page. 56 of 170 doc reads reached the end, 23 of them in under 30 seconds. 10 to 14% of reads both read the body and reached the end. In the 172 doc page loads since Oct 23, the Keep reading cards got 1 click and Read next got 0. The button to play the site's browser game got 4 clicks from the 29 readers who finished a doc that carried it.</title>
   <style>
     text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 15px; fill: #e8eaf0; }
     .title { font-size: 17px; font-weight: 600; }
@@ -35,7 +35,7 @@
   <rect class="track" x="16" y="174" width="408" height="16" rx="3"/>
   <rect class="stay" x="16" y="174" width="134.4" height="16" rx="3"/>
   <rect class="left" x="16" y="174" width="55.2" height="16" rx="3"/>
-  <text x="16" y="212">Read through the body <tspan class="sec">10 to 14% of reads</tspan></text>
+  <text x="16" y="212">Read the body to the end <tspan class="sec">10 to 14% of reads</tspan></text>
   <rect class="track" x="16" y="220" width="408" height="16" rx="3"/>
   <rect class="range" x="16" y="220" width="57.1" height="16" rx="3"/>
   <rect class="stay" x="16" y="220" width="40.8" height="16" rx="3"/>
