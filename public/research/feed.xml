@@ -8,6 +8,15 @@
   <updated>2026-11-13T00:00:00Z</updated>
   <author><name>Cyrus Sarkosh</name><uri>https://csarko.sh/</uri></author>
   <entry>
+    <title>What keeps readers on a long technical article</title>
+    <link href="https://csarko.sh/research/what-keeps-readers-reading" />
+    <id>https://csarko.sh/research/what-keeps-readers-reading</id>
+    <published>2026-11-13T00:00:00Z</published>
+    <updated>2026-11-13T00:00:00Z</updated>
+    <summary>Long articles on one site held readers for a median of 21.5 seconds. What reading research supports, what is habit, and what the site changed on Nov 13, 2026.</summary>
+    <category term="Tooling" />
+  </entry>
+  <entry>
     <title>A dashboard API that ran out of memory, made fast for free</title>
     <link href="https://csarko.sh/research/dashboard-api-out-of-memory-made-fast-for-free" />
     <id>https://csarko.sh/research/dashboard-api-out-of-memory-made-fast-for-free</id>

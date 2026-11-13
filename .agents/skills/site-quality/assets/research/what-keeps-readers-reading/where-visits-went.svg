@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 444" width="440" height="444" role="img" aria-labelledby="t">
+  <title id="t">Where 184 visits to this site went, Oct 15 to Nov 13, 2026, bots and the owner removed. 168 of 184 visits never opened a second page. 56 of 170 doc reads reached the end, 23 of them in under 30 seconds. 10 to 14% of reads showed reading through the body. In the 172 doc page loads since Oct 23, the Keep reading cards got 1 click and Read next got 0. The button to play the site's browser game got 4 clicks from the 29 readers who finished a doc that carried it.</title>
+  <style>
+    text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 15px; fill: #e8eaf0; }
+    .title { font-size: 17px; font-weight: 600; }
+    .sec { fill: #a0a8b8; }
+    .sub { fill: #a0a8b8; font-size: 13px; }
+    .grp { fill: #a0a8b8; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; }
+    .stay { fill: #7dd3c0; }
+    .range { fill: #7dd3c0; opacity: 0.4; }
+    .left { fill: #a0a8b8; }
+    .track { fill: none; stroke: #3a3f4b; stroke-width: 1; }
+    .axis { stroke: #3a3f4b; stroke-width: 1.5; }
+    @media (prefers-color-scheme: light) {
+      text { fill: #12151c; }
+      .sec, .sub, .grp { fill: #4a5263; }
+      .stay, .range { fill: #0a735f; }
+      .left { fill: #4a5263; }
+      .track, .axis { stroke: #c9ced6; }
+    }
+  </style>
+  <text class="title" x="16" y="28">Where 184 visits to this site went</text>
+  <text class="sub" x="16" y="48">Oct 15 to Nov 13, 2026, bots and the owner removed</text>
+
+  <rect class="stay" x="16" y="58" width="14" height="14" rx="3"/>
+  <text x="36" y="70">Stayed or clicked</text>
+  <rect class="left" x="176" y="58" width="14" height="14" rx="3"/>
+  <text x="196" y="70">Left, or flicked to the end</text>
+
+  <text class="grp" x="16" y="96">READING</text>
+  <text x="16" y="120">Never opened a second page <tspan class="sec">168 of 184 visits</tspan></text>
+  <rect class="track" x="16" y="128" width="408" height="16" rx="3"/>
+  <rect class="left" x="16" y="128" width="372.5" height="16" rx="3"/>
+  <text x="16" y="166">Reached the end <tspan class="sec">56 of 170 doc reads, 23 in under 30 s</tspan></text>
+  <rect class="track" x="16" y="174" width="408" height="16" rx="3"/>
+  <rect class="stay" x="16" y="174" width="134.4" height="16" rx="3"/>
+  <rect class="left" x="16" y="174" width="55.2" height="16" rx="3"/>
+  <text x="16" y="212">Read through the body <tspan class="sec">10 to 14% of reads</tspan></text>
+  <rect class="track" x="16" y="220" width="408" height="16" rx="3"/>
+  <rect class="range" x="16" y="220" width="57.1" height="16" rx="3"/>
+  <rect class="stay" x="16" y="220" width="40.8" height="16" rx="3"/>
+  <text class="grp" x="16" y="260">CLICKS AT THE END OF A DOC</text>
+  <text x="16" y="284">Keep reading cards <tspan class="sec">1 click in 172 loads since Oct 23</tspan></text>
+  <rect class="track" x="16" y="292" width="408" height="16" rx="3"/>
+  <rect class="stay" x="16" y="292" width="2.4" height="16" rx="3"/>
+  <text x="16" y="330">Read next <tspan class="sec">0 clicks in 172 loads since Oct 23</tspan></text>
+  <rect class="track" x="16" y="338" width="408" height="16" rx="3"/>
+  <text x="16" y="376">The game's Play button <tspan class="sec">4 of 29 readers who finished</tspan></text>
+  <rect class="track" x="16" y="384" width="408" height="16" rx="3"/>
+  <rect class="stay" x="16" y="384" width="56.3" height="16" rx="3"/>
+
+  <line class="axis" x1="16" y1="408" x2="424" y2="408"/>
+  <line class="axis" x1="16.75" y1="408" x2="16.75" y2="414"/>
+  <line class="axis" x1="220" y1="408" x2="220" y2="414"/>
+  <line class="axis" x1="423.25" y1="408" x2="423.25" y2="414"/>
+  <text class="sub" x="16" y="432">0</text>
+  <text class="sub" x="220" y="432" text-anchor="middle">half of the total named in the row</text>
+  <text class="sub" x="424" y="432" text-anchor="end">all</text>
+</svg>
