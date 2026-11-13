@@ -49,6 +49,19 @@ function fakeAnalytics({ fail = {} } = {}) {
       if (fail.external) throw new Error("external refused");
       return [{ url: "https://www.reddit.com/r/horror/comments/abc/", views: 8, minutes: 4 }];
     },
+    async countries(id, start, end) {
+      calls.push(["countries", id, start, end]);
+      return [{ country: "ID", views: 60, engaged: 15, minutes: 20 }, { country: "US", views: 40, engaged: 18, minutes: 25 }];
+    },
+    async devices(id, start, end) {
+      calls.push(["devices", id, start, end]);
+      if (fail.devices) throw new Error("devices refused");
+      return [{ device: "MOBILE", views: 90, engaged: 30, minutes: 40 }, { device: "DESKTOP", views: 10, engaged: 3, minutes: 5 }];
+    },
+    async demographics(id, start, end) {
+      calls.push(["demographics", id, start, end]);
+      return [{ age: "age18-24", gender: "male", percent: 60 }, { age: "age25-34", gender: "female", percent: 40 }];
+    },
   };
 }
 
@@ -92,7 +105,8 @@ test("collectFilms makes every report once, the ranges ending three days back, a
   assert.deepEqual(kinds("retention").map((c) => c.slice(1)), [["C1XsDuJE4MQ", "2026-10-29", "2026-10-30"], ["jBh7F1knRAA", "2026-09-17", "2026-10-30"]], "from the film's release");
   assert.equal(kinds("sources").length, 6);
   assert.equal(kinds("external").length, 6);
-  assert.equal(analytics.calls.length, 22, "about twenty calls for two films");
+  for (const k of ["countries", "devices", "demographics"]) assert.equal(kinds(k).length, 6, `${k}: each period, per film`);
+  assert.equal(analytics.calls.length, 40, "about forty calls for two films");
 
   const [last, hall] = part.films;
   assert.deepEqual(Object.keys(last.periods), ["7", "30", "90"]);
@@ -101,6 +115,9 @@ test("collectFilms makes every report once, the ranges ending three days back, a
   assert.equal(last.daily.length, 90);
   assert.equal(last.retention.length, 100);
   assert.equal(last.periods["30"].external[0].url, "https://www.reddit.com/r/horror/comments/abc/");
+  assert.equal(last.periods["30"].countries[1].country, "US");
+  assert.equal(last.periods["30"].devices[0].device, "MOBILE");
+  assert.equal(last.periods["30"].demographics[0].percent, 60);
   assert.equal(last.errors, undefined);
   assert.equal(hall.title, "Who is standing in my hallway?");
 
@@ -111,12 +128,14 @@ test("collectFilms makes every report once, the ranges ending three days back, a
   walk(part);
 });
 
-test("a film's retention, sources or External failing is its own error; totals or daily failing fails the step", async () => {
-  const part = await collectFilms({ analytics: fakeAnalytics({ fail: { retention: true, external: true } }), films: [LAST], today: TODAY, at: AT, log: quiet });
-  assert.deepEqual(part.films[0].errors, { retention: "retention refused", external: "external refused" });
+test("a film's retention, sources, External, countries, devices or demographics failing is its own error; totals or daily failing fails the step", async () => {
+  const part = await collectFilms({ analytics: fakeAnalytics({ fail: { retention: true, external: true, devices: true } }), films: [LAST], today: TODAY, at: AT, log: quiet });
+  assert.deepEqual(part.films[0].errors, { retention: "retention refused", external: "external refused", devices: "devices refused" });
   assert.equal(part.films[0].retention, null);
   assert.equal(part.films[0].periods["7"].external, null);
+  assert.equal(part.films[0].periods["7"].devices, null);
   assert.equal(part.films[0].periods["7"].sources.length, 2, "the rest is kept");
+  assert.equal(part.films[0].periods["7"].countries.length, 2);
   assert.deepEqual(part.others.map((o) => o.videoId), ["jBh7F1knRAA", "other-upload1"], "without YOUTUBE_KEY the others come from the top videos report");
   assert.equal(part.others[1].title, null);
 
@@ -132,7 +151,7 @@ test("filmsAnswer cuts the stored part to the range; there is no day view, so 1 
   assert.equal(week.films[0].daily.at(-1).day, "2026-10-30");
   assert.equal(week.films[0].totals.views, 700);
   assert.equal(week.films[0].prev.views, 350);
-  assert.deepEqual(Object.keys(week.films[0]), ["slug", "title", "videoId", "published", "runtime", "totals", "prev", "daily", "retention", "sources", "external"]);
+  assert.deepEqual(Object.keys(week.films[0]), ["slug", "title", "videoId", "published", "runtime", "totals", "prev", "daily", "retention", "sources", "external", "countries", "devices", "demographics"]);
   assert.deepEqual(Object.keys(week.others[0]), ["videoId", "title", "totals", "prev"]);
 
   const quarter = filmsAnswer(stored, 90);

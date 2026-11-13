@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createCache } from "../src/cache.mjs";
 import {
-  createYouTubeAnalytics, rowsOf, totalsOf, dailyOf, retentionOf, sourcesOf, externalOf, classifyTokenError, classifyApiError,
+  createYouTubeAnalytics, rowsOf, totalsOf, dailyOf, retentionOf, sourcesOf, externalOf, countriesOf, devicesOf, demographicsOf, classifyTokenError, classifyApiError,
   CONSENT_EXPIRED, TOKEN_URL, REPORTS_URL, VIDEO_METRICS,
 } from "../src/collectors/youtube-analytics.mjs";
 
@@ -116,4 +116,14 @@ test("the mappers shape each documented report", () => {
   assert.deepEqual(externalOf(FIX.external).map((e) => e.views), [48, 27, 21]);
   assert.deepEqual(externalOf(FIX.external)[0], { url: "https://www.reddit.com/r/horror/comments/abc123/the_last_trail/", views: 48, engaged: 41, minutes: 36 });
   assert.deepEqual(externalOf(FIX.empty), []);
+
+  assert.deepEqual(countriesOf(FIX.countries).map((c) => c.country), ["ID", "US", "BR"], "most views first; a row with no country is dropped");
+  assert.deepEqual(countriesOf(FIX.countries)[1], { country: "US", views: 144, engaged: 58, minutes: 31 });
+  assert.deepEqual(devicesOf(FIX.devices).map((d) => d.device), ["MOBILE", "DESKTOP", "TV"]);
+  assert.deepEqual(devicesOf(FIX.devices)[0], { device: "MOBILE", views: 1080, engaged: 300, minutes: 110 });
+  assert.deepEqual(demographicsOf(FIX.demographics), [
+    { age: "age18-24", gender: "female", percent: 18.1 }, { age: "age18-24", gender: "male", percent: 40.5 },
+    { age: "age25-34", gender: "female", percent: 10.2 }, { age: "age25-34", gender: "male", percent: 31.2 },
+  ], "youngest first, a share of viewers and nothing else");
+  assert.deepEqual([countriesOf(FIX.empty), devicesOf(FIX.empty), demographicsOf(FIX.empty)], [[], [], []]);
 });

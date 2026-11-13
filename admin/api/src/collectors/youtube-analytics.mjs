@@ -2,8 +2,9 @@
  * YouTube Analytics API v2 (2026-11-01): what only the channel owner can see, per film. Views,
  * engaged views (added 2026-11-03: the views that stayed past a Short's first seconds; the rest
  * swiped away), watch time, average view duration and percentage viewed, subscribers gained, the retention
- * curve, and where the views came from (traffic source types, and for External the sites and
- * pages, so a Reddit post shows up by its URL). `youtube.mjs` stays the public Data API
+ * curve, where the views came from (traffic source types, and for External the sites and
+ * pages, so a Reddit post shows up by its URL), and who watched (added 2026-11-12: views and
+ * engaged views by country and by device, and the age and gender shares). `youtube.mjs` stays the public Data API
  * collector; this one reads the owner's numbers with the owner's consent.
  *
  * The credential is `YOUTUBE_OAUTH`, JSON `{ client_id, client_secret, refresh_token }`, minted
@@ -104,6 +105,22 @@ export function createYouTubeAnalytics({ oauth, fetch, cache, ttlMs = HOUR }) {
     async sources(id, start, end) {
       return sourcesOf(await report({ startDate: start, endDate: end, dimensions: "insightTrafficSourceType", metrics: SOURCE_METRICS, filters: `video==${id}`, sort: "-views" }));
     },
+    /** Views, engaged views and watch time by viewer country (ISO 3166-1 alpha-2), most views first (sorted here, so no `sort` the report might refuse). */
+    async countries(id, start, end) {
+      return countriesOf(await report({ startDate: start, endDate: end, dimensions: "country", metrics: SOURCE_METRICS, filters: `video==${id}` }));
+    },
+    /** Views, engaged views and watch time by device type (MOBILE, DESKTOP, TABLET, TV...), most views first. */
+    async devices(id, start, end) {
+      return devicesOf(await report({ startDate: start, endDate: end, dimensions: "deviceType", metrics: SOURCE_METRICS, filters: `video==${id}` }));
+    },
+    /**
+     * The signed-in viewers' age groups and genders: each pair's share of them, in percent. The
+     * demographics report has no views, engaged or not, and no watch time, so it cannot say how
+     * long any group watched; YouTube leaves rows out where too few viewers would be shown.
+     */
+    async demographics(id, start, end) {
+      return demographicsOf(await report({ startDate: start, endDate: end, dimensions: "ageGroup,gender", metrics: "viewerPercentage", filters: `video==${id}` }));
+    },
     /** External's sites and pages: each URL that sent views, most first, at most 25. */
     async external(id, start, end) {
       return externalOf(await report({ startDate: start, endDate: end, dimensions: "insightTrafficSourceDetail", metrics: SOURCE_METRICS, filters: `video==${id};insightTrafficSourceType==EXT_URL`, sort: "-views", maxResults: EXTERNAL_LIMIT }));
@@ -194,4 +211,26 @@ export function externalOf(table) {
     .map((r) => ({ url: String(r.insightTrafficSourceDetail ?? ""), views: num(r.views), engaged: num(r.engagedViews), minutes: num(r.estimatedMinutesWatched) }))
     .filter((r) => r.url !== "")
     .sort((a, b) => b.views - a.views || b.minutes - a.minutes);
+}
+
+/** A views, engaged views and watch time report as `[{ <key>, views, engaged, minutes }]`, most views first. */
+function viewsBy(table, dimension, key) {
+  return rowsOf(table)
+    .map((r) => ({ [key]: String(r[dimension] ?? ""), views: num(r.views), engaged: num(r.engagedViews), minutes: num(r.estimatedMinutesWatched) }))
+    .filter((r) => r[key] !== "")
+    .sort((a, b) => b.views - a.views || b.minutes - a.minutes);
+}
+
+/** The country report as `[{ country, views, engaged, minutes }]`, most views first. */
+export const countriesOf = (table) => viewsBy(table, "country", "country");
+
+/** The device type report as `[{ device, views, engaged, minutes }]`, most views first. */
+export const devicesOf = (table) => viewsBy(table, "deviceType", "device");
+
+/** The demographics report as `[{ age, gender, percent }]` (age13-17..., female/male/user_specified), youngest first. */
+export function demographicsOf(table) {
+  return rowsOf(table)
+    .map((r) => ({ age: String(r.ageGroup ?? ""), gender: String(r.gender ?? ""), percent: num(r.viewerPercentage) }))
+    .filter((r) => r.age !== "" && r.gender !== "")
+    .sort((a, b) => a.age.localeCompare(b.age) || a.gender.localeCompare(b.gender));
 }

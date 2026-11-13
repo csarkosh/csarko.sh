@@ -137,6 +137,33 @@
         { "url": "https://old.reddit.com/r/aivideo/comments/1okr7bd/a_ranger_radio_that_answers_back/", "views": 39, "engaged": 34, "minutes": 28 },
         { "url": "csarko.sh", "views": 21, "engaged": 18, "minutes": 15 },
         { "url": "https://www.google.com/", "views": 7, "engaged": 6, "minutes": 5 }
+      ],
+      "countries": [
+        { "country": "ID", "views": 286, "engaged": 92, "minutes": 140 },
+        { "country": "US", "views": 152, "engaged": 98, "minutes": 118 },
+        { "country": "BR", "views": 81, "engaged": 40, "minutes": 52 },
+        { "country": "VN", "views": 66, "engaged": 21, "minutes": 30 },
+        { "country": "IN", "views": 61, "engaged": 24, "minutes": 31 },
+        { "country": "UZ", "views": 52, "engaged": 14, "minutes": 19 },
+        { "country": "PH", "views": 49, "engaged": 22, "minutes": 27 },
+        { "country": "MX", "views": 44, "engaged": 23, "minutes": 25 },
+        { "country": "GB", "views": 31, "engaged": 22, "minutes": 24 },
+        { "country": "CA", "views": 24, "engaged": 17, "minutes": 18 }
+      ],
+      "devices": [
+        { "device": "MOBILE", "views": 1102, "engaged": 639, "minutes": 770 },
+        { "device": "DESKTOP", "views": 109, "engaged": 92, "minutes": 92 },
+        { "device": "TABLET", "views": 77, "engaged": 62, "minutes": 60 },
+        { "device": "TV", "views": 24, "engaged": 20, "minutes": 18 }
+      ],
+      "demographics": [
+        { "age": "age13-17", "gender": "male", "percent": 9.4 },
+        { "age": "age18-24", "gender": "female", "percent": 11.2 },
+        { "age": "age18-24", "gender": "male", "percent": 28.6 },
+        { "age": "age25-34", "gender": "female", "percent": 9.8 },
+        { "age": "age25-34", "gender": "male", "percent": 22.1 },
+        { "age": "age35-44", "gender": "male", "percent": 11.5 },
+        { "age": "age45-54", "gender": "male", "percent": 7.4 }
       ]
     },
     {
@@ -265,7 +292,17 @@
       ],
       "external": [
         { "url": "csarko.sh", "views": 5, "engaged": 4, "minutes": 1 }
-      ]
+      ],
+      "countries": [
+        { "country": "US", "views": 31, "engaged": 19, "minutes": 7 },
+        { "country": "ID", "views": 22, "engaged": 9, "minutes": 4 },
+        { "country": "GB", "views": 18, "engaged": 13, "minutes": 4 }
+      ],
+      "devices": [
+        { "device": "MOBILE", "views": 63, "engaged": 35, "minutes": 13 },
+        { "device": "DESKTOP", "views": 8, "engaged": 8, "minutes": 3 }
+      ],
+      "demographics": []
     }
   ],
   "others": [

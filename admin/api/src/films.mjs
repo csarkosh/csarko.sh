@@ -13,8 +13,8 @@
  *
  * "Make sure it loads quick" (Cyrus, 2026-11-01): the numbers move once a day, so the snapshot
  * makes every report once (totals for 7, 30 and 90 days and the period before each, 90 days of
- * daily rows, the retention curve, the traffic sources and External's URLs per period, per film:
- * about 22 calls for two films) and stores a few KB; a page load reads that and never waits on
+ * daily rows, the retention curve, the traffic sources, External's URLs, the countries, the devices
+ * and the age and gender shares per period, per film: about 40 calls for two films) and stores a few KB; a page load reads that and never waits on
  * YouTube. The ranges end LAG_DAYS before today, the last day YouTube has finished counting.
  */
 
@@ -46,11 +46,12 @@ const messageOf = (error) => (error instanceof Error ? error.message : String(er
  * Every report the card needs, as the snapshot stores it:
  *
  *   { at, lag, through, films: [{ slug, title, videoId, published, runtime, daily, retention,
- *       periods: { "7": { totals, prev, sources, external }, "30": ..., "90": ... }, errors? }],
+ *       periods: { "7": { totals, prev, sources, external, countries, devices, demographics }, "30": ..., "90": ... }, errors? }],
  *     others: [{ videoId, title, periods: { "7": { totals, prev }, ... } }] }
  *
  * The totals and the daily rows must all answer, or the step fails and the snapshot keeps the
- * last good part (queries.mjs). The retention curve, the sources and External's URLs are a film's
+ * last good part (queries.mjs). The retention curve, the sources, External's URLs, the countries,
+ * the devices and the demographics are a film's
  * own `errors` when they fail, so one report YouTube refuses does not cost the card its numbers.
  */
 export async function collectFilms({ analytics, youtube = null, films = FILMS, today, at, log = console }) {
@@ -84,11 +85,14 @@ export async function collectFilms({ analytics, youtube = null, films = FILMS, t
       soft("retention", () => analytics.retention(film.videoId, retentionStart, through)),
       Promise.all(PERIODS.map(async (d) => {
         const r = ranges[d];
-        const [sources, external] = await Promise.all([
+        const [sources, external, countries, devices, demographics] = await Promise.all([
           soft("sources", () => analytics.sources(film.videoId, r.startDate, r.endDate)),
           soft("external", () => analytics.external(film.videoId, r.startDate, r.endDate)),
+          soft("countries", () => analytics.countries(film.videoId, r.startDate, r.endDate)),
+          soft("devices", () => analytics.devices(film.videoId, r.startDate, r.endDate)),
+          soft("demographics", () => analytics.demographics(film.videoId, r.startDate, r.endDate)),
         ]);
-        return [String(d), { totals: totalsBy[d].cur.get(film.videoId) ?? emptyMetrics(), prev: totalsBy[d].prev.get(film.videoId) ?? emptyMetrics(), sources, external }];
+        return [String(d), { totals: totalsBy[d].cur.get(film.videoId) ?? emptyMetrics(), prev: totalsBy[d].prev.get(film.videoId) ?? emptyMetrics(), sources, external, countries, devices, demographics }];
       })),
     ]);
     return {
@@ -121,7 +125,8 @@ export async function collectFilms({ analytics, youtube = null, films = FILMS, t
 /**
  * The stored part as the `films` query answers it for `days` (7, 30 or 90; 1 is 7):
  * `{ days, from, to, at, lag, films: [{ slug, title, videoId, published, runtime, totals, prev, daily,
- * retention, sources, external, errors? }], others: [{ videoId, title, totals, prev }] }`, the
+ * retention, sources, external, countries, devices, demographics, errors? }], others: [{ videoId,
+ * title, totals, prev }] }`, the
  * daily rows cut to the range.
  */
 export function filmsAnswer(stored, days) {
@@ -148,6 +153,9 @@ export function filmsAnswer(stored, days) {
         retention: f.retention ?? null,
         sources: p.sources ?? null,
         external: p.external ?? null,
+        countries: p.countries ?? null,
+        devices: p.devices ?? null,
+        demographics: p.demographics ?? null,
         ...(f.errors ? { errors: f.errors } : {}),
       };
     }),

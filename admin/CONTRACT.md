@@ -334,7 +334,10 @@ says what is unknown).
     "daily": [ { "day": "2026-11-02", "views": 310, "engagedViews": 192, "estimatedMinutesWatched": 222, "averageViewDuration": 43, "averageViewPercentage": 75.6, "subscribersGained": 3, "likes": 14, "shares": 2, "comments": 1 } ],
     "retention": [ { "ratio": 0.01, "watch": 0.965, "relative": 0.678 } ],
     "sources": [ { "source": "SHORTS", "views": 1004, "engaged": 562, "minutes": 721 }, { "source": "EXT_URL", "views": 141, "engaged": 121, "minutes": 104 } ],
-    "external": [ { "url": "https://www.reddit.com/r/horror/comments/1okq2xa/the_last_trail_a_56_second_horror_short/", "views": 74, "engaged": 64, "minutes": 56 } ]
+    "external": [ { "url": "https://www.reddit.com/r/horror/comments/1okq2xa/the_last_trail_a_56_second_horror_short/", "views": 74, "engaged": 64, "minutes": 56 } ],
+    "countries": [ { "country": "ID", "views": 286, "engaged": 92, "minutes": 140 }, { "country": "US", "views": 152, "engaged": 98, "minutes": 118 } ],
+    "devices": [ { "device": "MOBILE", "views": 1102, "engaged": 639, "minutes": 770 }, { "device": "DESKTOP", "views": 109, "engaged": 92, "minutes": 92 } ],
+    "demographics": [ { "age": "age18-24", "gender": "male", "percent": 28.6 }, { "age": "age25-34", "gender": "female", "percent": 9.8 } ]
   } ],
   "others": [ { "videoId": "pQ7sTrAiLr0", "title": "The Last Trail, a ten second teaser", "totals": { "views": 38 }, "prev": { "views": 52 } } ]
 }
@@ -368,8 +371,17 @@ hour). `at` is when the numbers were made: the snapshot's time, or now for a liv
   External's detail (`insightTrafficSourceDetail`), the same three numbers, at most 25 entries, most views first: each a
   full URL or a bare host, as YouTube reports it; a Reddit post appears by its URL, and the page
   groups every reddit.com host as one site.
-- `retention`, `sources` and `external` are `null` on a film whose report failed, with the film's
-  own `errors: { retention | sources | external: "<message>" }`; the rest of the film stands.
+- `countries` and `devices` *(2026-11-12)* are the same three numbers by viewer country (`country`,
+  ISO 3166-1 alpha-2) and by device (`device`, the API's `deviceType`: `MOBILE`, `DESKTOP`,
+  `TABLET`, `TV`...), most views first. `engaged / views` per row is how much of that group stayed
+  past the first seconds, which is where groups differ. `demographics` is the signed-in viewers'
+  shares by `age` (`age13-17` ... `age65-`) and `gender` (`female`, `male`, `user_specified`), in
+  percent, youngest first: the API's demographics report has `viewerPercentage` and nothing else, so
+  no group's views or watch time; an empty list where YouTube withholds it for too few viewers.
+- `retention`, `sources`, `external`, `countries`, `devices` and `demographics` are `null` on a film
+  whose report failed, with the film's own `errors: { <that report>: "<message>" }`; the rest of the
+  film stands. A snapshot made before 2026-11-12 has no `countries`, `devices` or `demographics`
+  (`null`), and the page says the next daily snapshot reads them.
 - `others` is every other upload on the channel, never dropped: each with `totals` and `prev`
   (the same metrics as a film's) and its `title` from the Data API, or `null` without
   `YOUTUBE_KEY`. Most views over 90 days first.

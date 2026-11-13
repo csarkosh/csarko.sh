@@ -589,6 +589,58 @@ function filmSources(f, days) {
   return [el('div', { class: 'pair' }, left, right), list];
 }
 
+/** YouTube's device types in Studio's words. */
+const DEVICES = { MOBILE: 'Phone', DESKTOP: 'Computer', TABLET: 'Tablet', TV: 'TV', GAME_CONSOLE: 'Game console', UNKNOWN_PLATFORM: 'Unknown' };
+const deviceName = (type) => DEVICES[str(type)] ?? cap(str(type).toLowerCase().replace(/_/g, ' '));
+let regionNames = null;
+/** A country code as its English name (ID is Indonesia), the code itself where the browser has no name for it. */
+const countryName = (code) => { try { regionNames ??= new Intl.DisplayNames(['en'], { type: 'region' }); return regionNames.of(str(code)) || str(code); } catch { return str(code); } };
+/** An age group as Studio says it: age18-24 is 18 to 24, age65- is 65 and over. */
+const ageName = (group) => { const m = /^age(\d+)-(\d*)$/.exec(str(group)); return m ? (m[2] ? `${m[1]} to ${m[2]}` : `${m[1]} and over`) : str(group); };
+const GENDERS = { female: 'Female', male: 'Male', user_specified: 'User-specified' };
+/** The countries the bars show; the rest are in the fold under them. */
+const COUNTRY_BARS = 8;
+
+/**
+ * Who watched a film (2026-11-12): views by country and by device, each with the share that played
+ * past the first seconds, which is the number that differs between groups (a Short's swipes are
+ * most of its views). Then the age and gender shares, which are all YouTube gives for them.
+ */
+function filmAudience(f, days) {
+  const countries = Array.isArray(f.countries) ? f.countries : null;
+  const devices = Array.isArray(f.devices) ? f.devices : null;
+  const demographics = Array.isArray(f.demographics) ? f.demographics : null;
+  const viewsBars = (rows, nameOf, label) => bars(rows.map((r) => ({ name: nameOf(r), value: num(r.views), aside: engagedShare(r), detail: `${nameOf(r)}, ${engagedOf(r) === null ? '' : `${compact(engagedOf(r))} engaged, `}${watchTime(r.minutes)} watched` })), { label });
+  const country = (r) => countryName(r.country);
+  const left = el('div', {}, el('h3', {}, 'Countries'), countries === null
+    ? el('p', { class: 'empty' }, f.errors?.countries ? 'Countries were not read.' : 'Not in this snapshot: the next daily one reads them.')
+    : countries.length ? viewsBars(countries.slice(0, COUNTRY_BARS), country, `Views by country, ${rangeText(days)}`) : el('p', { class: 'empty' }, 'No views in this range.'));
+  const right = el('div', {}, el('h3', {}, 'Devices'), devices === null
+    ? el('p', { class: 'empty' }, f.errors?.devices ? 'Devices were not read.' : 'Not in this snapshot: the next daily one reads them.')
+    : devices.length ? viewsBars(devices, (r) => deviceName(r.device), `Views by device, ${rangeText(days)}`) : el('p', { class: 'empty' }, 'No views in this range.'));
+  const parts = [el('div', { class: 'pair' }, left, right)];
+  if (countries !== null && countries.length > COUNTRY_BARS) {
+    parts.push(folded(`Every country · ${countries.length}`, table([
+      { key: 'country', label: 'Country', wrap: true, render: (v) => countryName(v) },
+      { key: 'views', label: 'Views', num: true },
+      { key: 'engaged', label: 'Engaged', num: true, render: (v) => (v === null ? '–' : compact(v)) },
+      { key: 'views', label: 'Stayed', num: true, render: (v, row) => engagedShare(row)?.replace(' engaged', '') ?? '–' },
+      { key: 'minutes', label: 'Watch time', num: true, render: (v) => watchTime(v) },
+    ], countries, 'No views in this range.')));
+  }
+  parts.push(el('p', { class: 'note' }, 'Engaged is the share of a group\'s views that played past the first seconds; the rest swiped away. With few views it moves by chance: by up to 10 points either way at 100 views, 5 at 400.'));
+  parts.push(el('h3', {}, 'Age and gender'));
+  if (demographics === null) parts.push(el('p', { class: 'empty' }, f.errors?.demographics ? 'Age and gender were not read.' : 'Not in this snapshot: the next daily one reads them.'));
+  else if (!demographics.length) parts.push(el('p', { class: 'empty' }, 'YouTube shows no age or gender for this range: too few signed-in viewers.'));
+  else {
+    const sum = (key) => { const m = new Map(); for (const d of demographics) m.set(d[key], (m.get(d[key]) ?? 0) + num(d.percent)); return [...m]; };
+    const share = (v) => Math.round(v * 10) / 10;
+    parts.push(bars(sum('age').map(([age, v]) => ({ name: ageName(age), value: share(v), detail: `${ageName(age)} years old` })), { unit: '%', label: `Signed-in viewers by age, ${rangeText(days)}` }));
+    parts.push(el('p', { class: 'note' }, `${sum('gender').sort((a, b) => b[1] - a[1]).map(([g, v]) => `${GENDERS[g] ?? cap(str(g))} ${share(v)}%`).join(' · ')}. Shares of signed-in viewers only; YouTube gives no views or watch time by age or gender, so it cannot say which group stayed.`));
+  }
+  return parts;
+}
+
 /** A film's views per day, each day split into its engaged views and the rest once the snapshot has them. */
 function dailyViews(f, daily, days) {
   const label = `Views per day of ${str(f.title)}, ${rangeText(days)}: ${compact(num(f.totals?.views))} in all`;
@@ -610,13 +662,14 @@ function filmBlock(f, days) {
   const title = el('h3', { class: 'film-title' }, href ? el('a', { href, target: '_blank', rel: 'noopener' }, str(f.title)) : str(f.title));
   if (f.published) title.append(el('small', {}, ` released ${shortDay(f.published)}`));
   const daily = Array.isArray(f.daily) ? f.daily : [];
-  const opened = folded(`${str(f.title)}: by day, retention, traffic sources`, [
+  const opened = folded(`${str(f.title)}: by day, retention, traffic sources, audience`, [
     ...errorLines(f),
     el('h3', {}, 'Views per day'),
     daily.length ? dailyViews(f, daily, days) : el('p', { class: 'empty' }, 'No days in this range.'),
     el('h3', {}, 'Retention'),
     retentionChart(f),
     ...filmSources(f, days),
+    ...filmAudience(f, days),
   ].flat());
   return el('div', { class: 'film' }, title, filmTiles(f, days), opened);
 }
@@ -648,7 +701,7 @@ function filmsSub(d, films) {
   const shown = films?.days ?? (d === 1 ? 7 : d);
   const through = films?.to ? ` through ${shortDay(films.to)}` : '';
   const noDay = d === 1 ? 'YouTube Analytics has no view of a single day, so this is 7 days. ' : '';
-  return `${noDay}Each film on YouTube over the ${shown} days${through}, against the ${shown} days before: views, engaged views (the ones that played past a Short's first seconds), watch time, how much of it people watched and the subscribers it brought. Open a film for its days, its retention and where its views came from. YouTube Analytics runs 2 to 3 days behind, so the range ends on the last day it has finished; its days are Pacific Time's.`;
+  return `${noDay}Each film on YouTube over the ${shown} days${through}, against the ${shown} days before: views, engaged views (the ones that played past a Short's first seconds), watch time, how much of it people watched and the subscribers it brought. Open a film for its days, its retention, where its views came from and who watched: the countries and devices, each with the share that stayed, and the age and gender shares. YouTube Analytics runs 2 to 3 days behind, so the range ends on the last day it has finished; its days are Pacific Time's.`;
 }
 
 function healthCard([health]) {

@@ -91,5 +91,48 @@
       { "name": "engagedViews", "columnType": "METRIC", "dataType": "INTEGER" },
       { "name": "estimatedMinutesWatched", "columnType": "METRIC", "dataType": "INTEGER" }
     ]
+  },
+  "countries": {
+    "kind": "youtubeAnalytics#resultTable",
+    "columnHeaders": [
+      { "name": "country", "columnType": "DIMENSION", "dataType": "STRING" },
+      { "name": "views", "columnType": "METRIC", "dataType": "INTEGER" },
+      { "name": "engagedViews", "columnType": "METRIC", "dataType": "INTEGER" },
+      { "name": "estimatedMinutesWatched", "columnType": "METRIC", "dataType": "INTEGER" }
+    ],
+    "rows": [
+      ["US", 144, 58, 31],
+      ["ID", 280, 64, 40],
+      ["BR", 79, 20, 9],
+      ["", 3, 1, 0]
+    ]
+  },
+  "devices": {
+    "kind": "youtubeAnalytics#resultTable",
+    "columnHeaders": [
+      { "name": "deviceType", "columnType": "DIMENSION", "dataType": "STRING" },
+      { "name": "views", "columnType": "METRIC", "dataType": "INTEGER" },
+      { "name": "engagedViews", "columnType": "METRIC", "dataType": "INTEGER" },
+      { "name": "estimatedMinutesWatched", "columnType": "METRIC", "dataType": "INTEGER" }
+    ],
+    "rows": [
+      ["DESKTOP", 61, 30, 11],
+      ["MOBILE", 1080, 300, 110],
+      ["TV", 12, 9, 3]
+    ]
+  },
+  "demographics": {
+    "kind": "youtubeAnalytics#resultTable",
+    "columnHeaders": [
+      { "name": "ageGroup", "columnType": "DIMENSION", "dataType": "STRING" },
+      { "name": "gender", "columnType": "DIMENSION", "dataType": "STRING" },
+      { "name": "viewerPercentage", "columnType": "METRIC", "dataType": "FLOAT" }
+    ],
+    "rows": [
+      ["age25-34", "male", 31.2],
+      ["age18-24", "male", 40.5],
+      ["age18-24", "female", 18.1],
+      ["age25-34", "female", 10.2]
+    ]
   }
 }
