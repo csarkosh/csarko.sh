@@ -251,6 +251,67 @@ function pictureHtml({ light, alt }, images, { lazy = true } = {}) {
   return `<img src="${l.url}" width="${l.width}" height="${l.height}" alt="${escapeHtml(alt)}" decoding="async"${lazy ? ' loading="lazy"' : ' fetchpriority="high"'} />`;
 }
 
+/** A picture's twin for a layout: its file with the layout's suffix before the extension; the
+ * README's own layout (no suffix) is the picture itself. */
+export const twinOf = (file, suffix) => (suffix ? file.replace(/\.(png|jpe?g)$/, `${suffix}.$1`) : file);
+
+/**
+ * A picture with a twin for each of the app's `layouts`: the twins stacked, the first layout's
+ * first, and the CSS (layoutsCss) shows the one the bar's switch picks. The README's layout keeps
+ * the picture's alt; another's says the same window in that layout, by the alt's first clause.
+ * Without layouts, the picture alone.
+ */
+function layeredHtml(picture, images, layouts, { lazy = true } = {}) {
+  if (!layouts) return pictureHtml(picture, images, { lazy });
+  const first = picture.alt.split(':')[0].trim();
+  const twins = layouts.map((l) => pictureHtml({ light: twinOf(picture.light, l.suffix), alt: l.suffix ? `${first}, in the ${l.label} layout` : picture.alt }, images, { lazy }));
+  return `<span class="lays">${twins.join('')}</span>`;
+}
+
+/** The bar's switch: a radio a layout, the first chosen, each with its label as a segment. */
+function layoutSwitchHtml(layouts) {
+  const parts = layouts.map((l, i) => `<input type="radio" class="layout-input" name="layout" id="layout-${i}"${i ? '' : ' checked'} /><label for="layout-${i}">${escapeHtml(l.label)}</label>`);
+  return `<div class="layout-switch" role="radiogroup" aria-label="Layout">${parts.join('')}</div>`;
+}
+
+// The layouts' CSS: the switch's segments, the chosen one filled, and every stack of twins
+// showing the chosen layout's, crossfading on the motion tokens. No script: the radios hold the
+// choice and `:has()` carries it down the page.
+export function layoutsCss(count) {
+  const each = [...Array(count).keys()];
+  return `
+    /* The layouts (product.mjs): the bar's switch and the twins it picks between. */
+    .layout-switch { position: relative; display: inline-flex; gap: 2px; padding: 3px; margin-left: auto; background: var(--paper); border-radius: var(--r-pill); }
+    .layout-input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
+    .layout-switch label { display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border-radius: var(--r-pill); font-size: 14px; font-weight: 500; color: var(--ink-2); cursor: pointer; transition: background var(--md-duration-short3) var(--md-easing-standard), color var(--md-duration-short3) var(--md-easing-standard); }
+    .layout-switch label:hover { color: var(--ink); }
+    .bar-inner:has(.layout-switch) .pill { margin-left: 4px; }
+    .lays { display: grid; }
+    .lays > img { grid-area: 1 / 1; transition: opacity var(--md-duration-medium2) var(--md-easing-standard), visibility var(--md-duration-medium2) var(--md-easing-standard); }
+    .lays > img + img { opacity: 0; visibility: hidden; }
+${each.map((i) => `    .bar:has(#layout-${i}:checked) label[for="layout-${i}"] { background: var(--ink); color: var(--white); }
+    .bar:has(#layout-${i}:focus-visible) label[for="layout-${i}"] { outline: 2px solid var(--link); outline-offset: 2px; }
+    body:has(#layout-${i}:checked) .lays > img { opacity: 0; visibility: hidden; }
+    body:has(#layout-${i}:checked) .lays > img:nth-child(${i + 1}) { opacity: 1; visibility: visible; }`).join('\n')}
+    /* The layouts side by side, and the theme gallery. */
+    .body > .layout-cards, .body > .theme-grid { max-width: none; }
+    .layout-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 24px; }
+    .layout-card { margin: 0; padding: 20px; background: var(--white); border-radius: var(--r-card); }
+    .t-white .layout-card { background: var(--paper); }
+    .layout-card img { width: 100%; border-radius: 14px; }
+    .layout-card h3 { margin: 20px 0 8px; font-size: 26px; line-height: 1.2; }
+    .layout-card p { margin: 0; font-size: 16.5px; }
+    .theme-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 24px 20px; }
+    .theme-grid figure { margin: 0; }
+    .theme-grid img { width: 100%; border-radius: 12px; }
+    .theme-grid figcaption { margin-top: 10px; font-size: 15px; font-weight: 500; text-align: center; }
+    @media (max-width: 640px) { .layout-switch label { min-height: 36px; padding: 0 12px; } }
+    @media (max-width: 420px) { .bar-name { display: none; } .layout-switch { margin-left: 0; } }`;
+}
+
+// The number of things, as a headline says it ("Two layouts.").
+const WORDS = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'];
+
 /**
  * The app's loop: a muted video that plays on its own and repeats, its poster the first frame,
  * fetched only once it is near (preload none) so the page's first paint owes it nothing. It is
@@ -260,11 +321,15 @@ export function recordingHtml({ url, poster, width, height, alt }) {
   return `<figure class="recording"><video autoplay muted loop playsinline preload="none" poster="${escapeHtml(poster)}" width="${width}" height="${height}" aria-label="${escapeHtml(alt)}"><source src="${escapeHtml(url)}" type="video/mp4" /></video></figure>`;
 }
 
-/** Every README image the page shows, for build.mjs to copy: the light one of each picture, and
- * a swap's alternates (the app's `swap`). The README's hero is left out when the page opens with a
- * clip instead (`withHero` false). */
-export const imagesOf = ({ hero, panels, figures = [] }, { withHero = true, swap = null } = {}) =>
-  [...new Set([...[withHero ? hero : null, ...panels, ...figures].filter(Boolean).map((p) => p.light), ...(swap ?? []).map((s) => s.file)])];
+/** Every README image the page shows, for build.mjs to copy: the light one of each picture, a
+ * swap's alternates (the app's `swap`), the pictures of the layouts' showcase and the theme
+ * gallery (`extra`), and with `layouts` every one's twins but the hero's. The README's hero is
+ * left out when the page opens with a clip instead (`withHero` false). */
+export const imagesOf = ({ hero, panels, figures = [] }, { withHero = true, swap = null, layouts = null, extra = [] } = {}) => {
+  const pictures = [...panels, ...figures].map((p) => p.light).concat((swap ?? []).map((s) => s.file), extra);
+  const twins = layouts ? pictures.flatMap((file) => layouts.map((l) => twinOf(file, l.suffix))) : pictures;
+  return [...new Set([...(withHero && hero ? [hero.light] : []), ...twins])];
+};
 
 /**
  * A picture the visitor can swap for its alternates (the app's `swap`, the README's picture
@@ -272,10 +337,10 @@ export const imagesOf = ({ hero, panels, figures = [] }, { withHero = true, swap
  * script runs on this host, so a radio per picture holds the choice and the CSS shows the chosen
  * one. Each alternate's alt is the picture's with the first label put for its own.
  */
-function swapHtml(figure, swap, images, slug) {
+function swapHtml(figure, swap, images, slug, layouts = null) {
   const name = `swap-${slug}`;
   const inputs = swap.map((_, i) => `<input type="radio" class="swap-input" name="${name}" id="${name}-${i}"${i ? '' : ' checked'} />`).join('');
-  const pictures = swap.map((s, i) => pictureHtml({ light: s.file, alt: i ? figure.alt.replaceAll(swap[0].label, s.label) : figure.alt }, images)).join('');
+  const pictures = swap.map((s, i) => layeredHtml({ light: s.file, alt: i ? figure.alt.replaceAll(swap[0].label, s.label) : figure.alt }, images, layouts)).join('');
   const chips = swap.map((s, i) => `<label for="${name}-${i}">${escapeHtml(s.label)}</label>`).join('');
   return `<div class="swap">${inputs}<div class="swap-stage">${pictures}</div><div class="swap-chips">${chips}</div></div>`;
 }
@@ -376,11 +441,11 @@ export function productPage({ app, prepared, release, images, motion = '', recor
   else swap(`<p>${RELEASE}</p>`, downloadsHtml(release, { strict: false, event: `download-${app.slug}` }));
   flows.forEach((flow, i) => swap(`<p>${FLOW(i)}</p>`, flowHtml(flow)));
   panels.forEach((panel, i) => {
-    swap(`<p>${PANEL(i)}</p>`, `<div class="panel"><div class="panel-image">${pictureHtml(panel, images)}</div><div class="panel-body">`);
+    swap(`<p>${PANEL(i)}</p>`, `<div class="panel"><div class="panel-image">${layeredHtml(panel, images, app.layouts)}</div><div class="panel-body">`);
     swap(`<p>${PANEL_END}</p>`, '</div></div>');
   });
   if (app.swap && !figures.some((f) => f.light === app.swap[0].file)) throw new ProductError(`README: no picture ${app.swap[0].file} in the README for the swap`);
-  figures.forEach((figure, i) => swap(`<p>${FIGURE(i)}</p>`, `<figure class="figure">${app.swap && figure.light === app.swap[0].file ? swapHtml(figure, app.swap, images, app.slug) : pictureHtml(figure, images)}</figure>`));
+  figures.forEach((figure, i) => swap(`<p>${FIGURE(i)}</p>`, `<figure class="figure">${app.swap && figure.light === app.swap[0].file ? swapHtml(figure, app.swap, images, app.slug, app.layouts) : layeredHtml(figure, images, app.layouts)}</figure>`));
   html = html.replaceAll(`<p>${MUTED} `, '<p class="muted">');
   if (html.includes('@@')) throw new ProductError('README: a marker was left in the page');
   // HTML the README carried that nothing above handled reaches the page escaped; refuse it.
@@ -397,7 +462,32 @@ export function productPage({ app, prepared, release, images, motion = '', recor
   // The bands, the tints taking turns; the sections of plain words wait for the closing fold.
   const bands = [];
   const folds = [];
+  // The layouts side by side and the theme gallery lead the README's bands, taking the first
+  // tints, so the turns go on from where they leave off.
+  const showcase = [];
+  const layouts = app.layouts ?? null;
+  if (layouts && app.layoutsShow) {
+    const { file, lede, copy } = app.layoutsShow;
+    const cardsHtml = layouts.map((l, i) => `<figure class="layout-card">${pictureHtml({ light: twinOf(file, l.suffix), alt: `${app.title} in the ${l.label} layout` }, images)}<figcaption><h3>${escapeHtml(l.label)}.</h3><p>${escapeHtml(copy[i])}</p></figcaption></figure>`).join('\n');
+    showcase.push(['layouts', `${WORDS[layouts.length]} layouts.`, lede, `<div class="layout-cards">\n${cardsHtml}\n</div>`]);
+  }
+  if (app.themes) {
+    const tiles = app.themes.items.map((t) => `<li><figure>${layeredHtml({ light: t.file, alt: `${app.title} in ${t.name}` }, images, layouts)}<figcaption>${escapeHtml(t.name)}</figcaption></figure></li>`).join('\n');
+    showcase.push(['themes', `${WORDS[app.themes.items.length] ?? app.themes.items.length} themes.`, app.themes.lede, `<ul class="theme-grid">\n${tiles}\n</ul>`]);
+  }
   let turn = 0;
+  for (const [id, headline, lede, inner] of showcase) {
+    const tint = TINTS[turn % TINTS.length];
+    turn += 1;
+    bands.push(`    <section class="band t-${tint}" aria-labelledby="${id}">
+      <div class="wrap">
+        <div class="headline"><h2 id="${id}">${escapeHtml(headline)}</h2>${lede ? `<p>${escapeHtml(lede)}</p>` : ''}</div>
+        <div class="body">
+${inner}
+        </div>
+      </div>
+    </section>`);
+  }
   for (const s of sections) {
     const plays = recording && s.title.toLowerCase() === recording.under.toLowerCase();
     if (!plays && !SHOWS.test(s.body)) {
@@ -495,12 +585,14 @@ ${hero ? `  <figure class="hero">
     top,
     bar: {
       name: app.title,
+      switch: layouts ? layoutSwitchHtml(layouts) : '',
       // The pill counts get-<slug>; the download buttons it leads to count download-<slug>.
       action: getIt ? [prepared.downloads ? 'Download' : 'Install', `#${getIt.id}`, `get-${app.slug}`] : ['Release', release.url, `release-${app.slug}`],
       under,
     },
     main: `${promo}${introBand}${bands.join('\n')}`,
     footer: [`${app.title}${app.license ? ` · ${app.license}` : ''}`, [[release.tag, release.url, `release-${app.slug}`], ...(app.repo ? [['GitHub', app.repo, `source-${app.slug}`]] : [])]],
+    extraCss: layouts ? layoutsCss(layouts.length) : '',
     analytics,
   });
 }

@@ -710,6 +710,28 @@ test('an app\'s swap is a README picture and its alternates, each an image in it
   assert.throws(() => app('x', ['swap: a.png A | b.png B | c.png C | d.png D | e.png E']), /two to four/);
 });
 
+test('an app\'s layouts name the page\'s pictures\' twins, one each, the README\'s the one with no suffix; its showcase and gallery check their pictures', () => {
+  const layouts = 'layouts: Inbox -inbox | Grid';
+  assert.deepEqual(app('x', [layouts]).layouts, [{ label: 'Inbox', suffix: '-inbox' }, { label: 'Grid', suffix: '' }]);
+  assert.equal(app('x').layouts, undefined);
+  assert.throws(() => app('x', ['layouts: Inbox -inbox']), /layouts need two or three/);
+  assert.throws(() => app('x', ['layouts: Inbox -inbox | Grid -grid']), /exactly one layout is the README's own, with no suffix/);
+  assert.throws(() => app('x', ['layouts: Inbox | Grid']), /exactly one layout is the README's own/);
+  assert.throws(() => app('x', ['layouts: Inbox -In_Box | Grid']), /a layout is its label and an optional suffix/);
+  // The side-by-side showcase: a picture (the README's layout's) and a line for each layout.
+  const show = ['layouts-show: docs/images/a.png', 'layouts-lede: Pick one.', 'layouts-copy: A list. | Panes.'];
+  const shown = app('x', [layouts, ...show]);
+  assert.deepEqual(shown.layoutsShow, { file: 'docs/images/a.png', lede: 'Pick one.', copy: ['A list.', 'Panes.'] });
+  assert.throws(() => app('x', [...show]), /layouts-show needs layouts/);
+  assert.throws(() => app('x', [layouts, 'layouts-show: ../a.png', 'layouts-copy: A | B']), /layouts-show must be a \.png or \.jpg inside the repository/);
+  assert.throws(() => app('x', [layouts, 'layouts-show: docs/a.png', 'layouts-copy: Only one.']), /layouts-copy needs a line for each layout/);
+  // The theme gallery: two to twelve pictures, each with its theme's name.
+  const themes = app('x', ['themes: docs/a.png Navy | docs/b.png Tokyo Rain', 'themes-lede: Ten built in.']);
+  assert.deepEqual(themes.themes, { lede: 'Ten built in.', items: [{ file: 'docs/a.png', name: 'Navy' }, { file: 'docs/b.png', name: 'Tokyo Rain' }] });
+  assert.throws(() => app('x', ['themes: docs/a.png Navy']), /themes need two to twelve/);
+  assert.throws(() => app('x', ['themes: docs/a.png Navy | docs/b.png']), /each theme is a \.png or \.jpg inside the repository and its name/);
+});
+
 test('an app card links out to its page, with SoftwareApplication JSON-LD', () => {
   const html = projectsPage([app('lib-visits', ['license: GPL-3.0'])], themeBlocks(INDEX));
   assert.ok(html.includes('<p class="project-kicker">Released · Open source, GPL-3.0</p>'));

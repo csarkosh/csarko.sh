@@ -57,7 +57,8 @@ const jsonLd = (graph) => JSON.stringify({ '@context': 'https://schema.org', '@g
 
 /**
  * The page: head, the floating bar, `main` and the footer. `bar` is { name, action, under }:
- * the app's name and `action` [label, href], the black pill, and nothing else (Cyrus,
+ * the app's name, `switch` (optional HTML between them: the layouts' switch) and `action`
+ * [label, href], the black pill, and nothing else (Cyrus,
  * 2026-11-01: no licence line, no version, no GitHub there); `under` is the HTML of one quiet
  * line set right-aligned beneath the bar, outside it, the page's Buy me tokens. `top` is the
  * title, tagline and hero, drawn above the bar, which floats up over the hero's foot and then
@@ -123,7 +124,7 @@ ${top}
   <div class="bar">
     <div class="bar-inner">
       <a class="bar-name" href="#top">${escapeHtml(bar.name)}</a>
-      <a class="pill" href="${escapeHtml(bar.action[1])}"${bar.action[2] ? ` data-visits-event="${escapeHtml(bar.action[2])}"` : ''}>${escapeHtml(bar.action[0])}</a>
+${bar.switch ? `      ${bar.switch}\n` : ''}      <a class="pill" href="${escapeHtml(bar.action[1])}"${bar.action[2] ? ` data-visits-event="${escapeHtml(bar.action[2])}"` : ''}>${escapeHtml(bar.action[0])}</a>
     </div>
   </div>
 ${bar.under ? `  <div class="wrap bar-under">${bar.under}</div>\n` : ''}
@@ -307,13 +308,13 @@ ${Object.entries(STORE_TOKENS).map(([k, v]) => `      ${k}: ${v};`).join('\n')}
     /* The radios sit by the chips, so a chip's click (which focuses its radio) scrolls nothing. */
     .swap-input { position: absolute; bottom: 20px; left: 50%; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
     .swap-stage { display: grid; width: 100%; }
-    .swap-stage > img { grid-area: 1 / 1; transition: opacity var(--md-duration-medium2) var(--md-easing-standard); }
-    .swap-stage > img + img { opacity: 0; }
+    .swap-stage > * { grid-area: 1 / 1; transition: opacity var(--md-duration-medium2) var(--md-easing-standard); }
+    .swap-stage > * + * { opacity: 0; }
     .swap-chips { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 4px; padding: 4px; background: var(--white); border-radius: var(--r-pill); box-shadow: var(--shadow); }
     .swap-chips label { display: inline-flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: var(--r-pill); font-size: 14px; font-weight: 500; color: var(--ink-2); cursor: pointer; transition: background var(--md-duration-short3) var(--md-easing-standard), color var(--md-duration-short3) var(--md-easing-standard); }
     .swap-chips label:hover { color: var(--ink); }
-${[1, 2, 3, 4].map((k) => `    .swap-input:nth-of-type(${k}):checked ~ .swap-stage > img { opacity: 0; }
-    .swap-input:nth-of-type(${k}):checked ~ .swap-stage > img:nth-child(${k}) { opacity: 1; }
+${[1, 2, 3, 4].map((k) => `    .swap-input:nth-of-type(${k}):checked ~ .swap-stage > * { opacity: 0; }
+    .swap-input:nth-of-type(${k}):checked ~ .swap-stage > :nth-child(${k}) { opacity: 1; }
     .swap-input:nth-of-type(${k}):checked ~ .swap-chips > label:nth-child(${k}) { background: var(--ink); color: var(--white); }
     .swap-input:nth-of-type(${k}):focus-visible ~ .swap-chips > label:nth-child(${k}) { outline: 2px solid var(--link); outline-offset: 3px; }`).join('\n')}
     .row-copy > h3 { margin: 0 0 14px; font-size: 32px; line-height: 1.2; }

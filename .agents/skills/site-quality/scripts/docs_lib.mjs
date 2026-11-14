@@ -95,7 +95,7 @@ const GAME_FIELDS = { description: true, status: true, tags: true, play: false, 
 // `recording` is a loop the app's page plays (an .mp4 in the app's repository, its poster the same
 // name as .jpg), `recording-under` the README's `## ` heading it goes under, `recording-alt` what
 // it shows (Cyrus, 2026-10-31: Arkos IDE's window through its themes, under "Who it's for").
-const APP_FIELDS = { description: true, status: true, page: true, platforms: true, tags: true, license: false, repo: false, released: false, alt: false, link: false, order: false, sections: false, recording: false, 'recording-under': false, 'recording-alt': false, promo: false, 'promo-link': false, 'hero-video': false, 'hero-video-alt': false, swap: false, blurb: false };
+const APP_FIELDS = { description: true, status: true, page: true, platforms: true, tags: true, license: false, repo: false, released: false, alt: false, link: false, order: false, sections: false, recording: false, 'recording-under': false, 'recording-alt': false, promo: false, 'promo-link': false, 'hero-video': false, 'hero-video-alt': false, swap: false, blurb: false, layouts: false, 'layouts-show': false, 'layouts-lede': false, 'layouts-copy': false, themes: false, 'themes-lede': false };
 // A film is a video hosted on YouTube: the page carries its poster and links out, so every field
 // here but "order" is needed to build the card and its VideoObject. "alt" describes the poster.
 // There is no warning field: every film card carries the same notice (FILM_NOTICE).
@@ -296,7 +296,47 @@ export function parseAppFrontMatter(text, file) {
       return { file: m[1], label: m[2].trim() };
     });
   }
-  return { meta: { ...meta, tags, order, sections, recording, promo, heroVideo, swap }, body };
+  // The store page's layouts (apps/product.mjs): the app's ways of looking, each "label suffix",
+  // the first the one the page opens on; each of the page's pictures has a twin per layout, its
+  // file name with the suffix before the extension, and the layout with no suffix is the
+  // README's own pictures. A switch in the page's bar picks one.
+  let layouts;
+  if (meta.layouts !== undefined) {
+    const entries = meta.layouts.split('|').map((s) => s.trim()).filter(Boolean);
+    if (entries.length < 2 || entries.length > 3) throw new DocError(`${file}: layouts need two or three, each "label suffix" (the README's with no suffix), joined by " | "`);
+    layouts = entries.map((entry) => {
+      const m = /^(\S(?:.*?\S)?)(?:\s+(-[a-z0-9-]+))?$/.exec(entry);
+      if (!m || /\s-\S/.test(m[1])) throw new DocError(`${file}: a layout is its label and an optional suffix, such as "Inbox -inbox": "${entry}"`);
+      return { label: m[1], suffix: m[2] ?? '' };
+    });
+    if (layouts.filter((l) => !l.suffix).length !== 1) throw new DocError(`${file}: exactly one layout is the README's own, with no suffix`);
+  }
+  // The layouts side by side, in a band of their own: one picture (the README layout's, the
+  // others its twins), a line under the band's headline, and a line for each layout.
+  let layoutsShow;
+  if (meta['layouts-show'] !== undefined || meta['layouts-copy'] !== undefined) {
+    if (!layouts) throw new DocError(`${file}: layouts-show needs layouts`);
+    const show = meta['layouts-show'] ?? '';
+    if (!/^[\w./-]+\.(?:png|jpg)$/.test(show) || show.includes('..') || show.startsWith('/')) throw new DocError(`${file}: layouts-show must be a .png or .jpg inside the repository`);
+    const copy = (meta['layouts-copy'] ?? '').split('|').map((s) => s.trim()).filter(Boolean);
+    if (copy.length !== layouts.length) throw new DocError(`${file}: layouts-copy needs a line for each layout, joined by " | "`);
+    layoutsShow = { file: show, lede: meta['layouts-lede'] ?? '', copy };
+  }
+  // The store page's theme gallery: each theme's picture and its name, two to twelve.
+  let themes;
+  if (meta.themes !== undefined) {
+    const entries = meta.themes.split('|').map((s) => s.trim()).filter(Boolean);
+    if (entries.length < 2 || entries.length > 12) throw new DocError(`${file}: themes need two to twelve pictures, each "path name", joined by " | "`);
+    themes = {
+      lede: meta['themes-lede'] ?? '',
+      items: entries.map((entry) => {
+        const m = /^([\w./-]+\.(?:png|jpg))\s+(\S.*)$/.exec(entry);
+        if (!m || m[1].includes('..') || m[1].startsWith('/')) throw new DocError(`${file}: each theme is a .png or .jpg inside the repository and its name: "${entry}"`);
+        return { file: m[1], name: m[2].trim() };
+      }),
+    };
+  }
+  return { meta: { ...meta, tags, order, sections, recording, promo, heroVideo, swap, layouts, layoutsShow, themes }, body };
 }
 
 export function parseFilmFrontMatter(text, file) {

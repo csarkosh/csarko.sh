@@ -293,6 +293,40 @@ test('a swap shows its picture with its alternates stacked, a chip each to pick 
   assert.throws(() => productPage({ app: { ...APP, slug: 'app', title: 'App', swap: [{ file: 'docs/none.png', label: 'A' }, swap[1]] }, prepared, release: { ...RELEASE, assets: [] }, images, motion: MOTION }), /no picture docs\/none\.png in the README for the swap/);
 });
 
+test('layouts: a switch in the bar, every picture beside its twins, the layouts side by side and a theme gallery, with no script', () => {
+  const readme = `# App\n\nIntro.\n\n## Install\n\nSteps.\n\n## Who it's for\n\nPeople.\n\n**The blogger** lives in markdown.\n\n<picture>\n  <img alt="A window in Peach Watercolor: two panes" src="docs/b.png">\n</picture>\n`;
+  const prepared = prepareReadme(readme, { blob: BLOB });
+  const layouts = [{ label: 'Inbox', suffix: '-inbox' }, { label: 'Grid', suffix: '' }];
+  const layoutsShow = { file: 'docs/m.png', lede: 'Pick one.', copy: ['Every session in a list.', 'Panes you arrange.'] };
+  const themes = { lede: 'Ten built in.', items: [{ file: 'docs/n.png', name: 'Navy' }, { file: 'docs/b.png', name: 'Peach Watercolor' }] };
+  const app = { ...APP, slug: 'app', title: 'App', layouts, layoutsShow, themes };
+  const files = imagesOf(prepared, { layouts, extra: [layoutsShow.file, ...themes.items.map((t) => t.file)] });
+  for (const f of ['docs/b.png', 'docs/b-inbox.png', 'docs/m.png', 'docs/m-inbox.png', 'docs/n.png', 'docs/n-inbox.png']) assert.ok(files.includes(f), `the build copies ${f}`);
+  const images = Object.fromEntries(files.map((p) => [p, { url: `/app/${p.split('/').pop().replace('.png', '.webp')}`, width: 1200, height: 800 }]));
+  const html = productPage({ app, prepared, release: { ...RELEASE, assets: [] }, images, motion: MOTION });
+  // The switch: a radio a layout in the bar, the first chosen, a label each.
+  assert.ok(html.includes('<div class="layout-switch" role="radiogroup" aria-label="Layout"><input type="radio" class="layout-input" name="layout" id="layout-0" checked /><label for="layout-0">Inbox</label><input type="radio" class="layout-input" name="layout" id="layout-1" /><label for="layout-1">Grid</label></div>'));
+  assert.ok(/<div class="bar-inner">[\s\S]*class="layout-switch"[\s\S]*class="pill"/.test(html), 'between the name and the pill');
+  // A README picture: its twins stacked, the first layout's first; the README's keeps its alt.
+  assert.ok(html.includes('<span class="lays"><img src="/app/b-inbox.webp"') && html.includes('alt="A window in Peach Watercolor, in the Inbox layout"'));
+  assert.ok(html.includes('<img src="/app/b.webp" width="1200" height="800" alt="A window in Peach Watercolor: two panes"'));
+  // The CSS shows the chosen layout's twin, by the radio.
+  assert.ok(html.includes('body:has(#layout-1:checked) .lays > img:nth-child(2)'));
+  // The layouts side by side, under a headline that counts them, each with its line.
+  assert.ok(html.includes('<h2 id="layouts">Two layouts.</h2><p>Pick one.</p>'));
+  assert.ok(/<figure class="layout-card"><img src="\/app\/m-inbox\.webp"[^>]*alt="App in the Inbox layout"[^>]*\/><figcaption><h3>Inbox.<\/h3><p>Every session in a list.<\/p><\/figcaption><\/figure>/.test(html));
+  assert.ok(/<figure class="layout-card"><img src="\/app\/m\.webp"[^>]*alt="App in the Grid layout"/.test(html));
+  // The gallery: a tile a theme, its picture following the switch, its name under it.
+  assert.ok(html.includes('<h2 id="themes">Two themes.</h2><p>Ten built in.</p>'));
+  assert.ok(/<li><figure><span class="lays"><img src="\/app\/n-inbox\.webp"[^>]*alt="App in Navy, in the Inbox layout"[\s\S]*?<figcaption>Navy<\/figcaption><\/figure><\/li>/.test(html));
+  // Both bands come before the README's.
+  assert.ok(html.indexOf('id="layouts"') < html.indexOf('id="themes"') && html.indexOf('id="themes"') < html.indexOf('id="install"'));
+  assert.ok(!/<script(?![^>]*(?:src=|application\/ld\+json))/.test(html), 'no script but the JSON-LD');
+  // Without layouts, nothing of the kind.
+  const plain = productPage({ app: { ...APP, slug: 'app', title: 'App' }, prepared, release: { ...RELEASE, assets: [] }, images, motion: MOTION });
+  assert.ok(!plain.includes('layout-switch') && !plain.includes('class="lays"'));
+});
+
 test('a recording plays under the headline its front matter names, and a heading the README lacks fails the build', () => {
   const prepared = prepareReadme(README, { blob: BLOB });
   const recording = { url: '/lib-visits/themes.mp4', poster: '/lib-visits/themes.jpg', width: 1320, height: 860, under: 'Running it in the cloud', alt: 'The window through its themes' };
