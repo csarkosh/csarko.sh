@@ -270,29 +270,34 @@ function layeredHtml(picture, images, layouts, { lazy = true } = {}) {
 
 /** The bar's switch: a radio a layout, the first chosen, each with its label as a segment. */
 function layoutSwitchHtml(layouts) {
-  const parts = layouts.map((l, i) => `<input type="radio" class="layout-input" name="layout" id="layout-${i}"${i ? '' : ' checked'} /><label for="layout-${i}">${escapeHtml(l.label)}</label>`);
-  return `<div class="layout-switch" role="radiogroup" aria-label="Layout">${parts.join('')}</div>`;
+  const inputs = layouts.map((l, i) => `<input type="radio" class="layout-input" name="layout" id="layout-${i}" aria-label="${escapeHtml(l.label)} layout"${i ? '' : ' checked'} />`).join('');
+  const labels = layouts.map((l, i) => `<label for="layout-${i}">${escapeHtml(l.label)}</label>`).join('');
+  // The radios lead the body (the shell puts `inputs` first) so the CSS reaches every picture
+  // with "~"; the labels are the segments a pointer clicks, the radios what a keyboard and a
+  // screen reader use.
+  return { inputs, labels: `<div class="layout-switch" aria-hidden="true">${labels}</div>` };
 }
 
 // The layouts' CSS: the switch's segments, the chosen one filled, and every stack of twins
 // showing the chosen layout's, crossfading on the motion tokens. No script: the radios hold the
-// choice and `:has()` carries it down the page.
+// choice, and from the head of the body "~" carries it down the page. Not `:has()`: the
+// preview viewer Cyrus used (WebKit) never flipped the pictures with it (2026-11-14).
 export function layoutsCss(count) {
   const each = [...Array(count).keys()];
   return `
     /* The layouts (product.mjs): the bar's switch and the twins it picks between. */
     .layout-switch { position: relative; display: inline-flex; gap: 2px; padding: 3px; margin-left: auto; background: var(--paper); border-radius: var(--r-pill); }
-    .layout-input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
+    .layout-input { position: fixed; top: 0; left: 0; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
     .layout-switch label { display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border-radius: var(--r-pill); font-size: 14px; font-weight: 500; color: var(--ink-2); cursor: pointer; transition: background var(--md-duration-short3) var(--md-easing-standard), color var(--md-duration-short3) var(--md-easing-standard); }
     .layout-switch label:hover { color: var(--ink); }
-    .bar-inner:has(.layout-switch) .pill { margin-left: 4px; }
+    .layout-switch + .pill { margin-left: 4px; }
     .lays { display: grid; }
     .lays > img { grid-area: 1 / 1; transition: opacity var(--md-duration-medium2) var(--md-easing-standard), visibility var(--md-duration-medium2) var(--md-easing-standard); }
     .lays > img + img { opacity: 0; visibility: hidden; }
-${each.map((i) => `    .bar:has(#layout-${i}:checked) label[for="layout-${i}"] { background: var(--ink); color: var(--white); }
-    .bar:has(#layout-${i}:focus-visible) label[for="layout-${i}"] { outline: 2px solid var(--link); outline-offset: 2px; }
-    body:has(#layout-${i}:checked) .lays > img { opacity: 0; visibility: hidden; }
-    body:has(#layout-${i}:checked) .lays > img:nth-child(${i + 1}) { opacity: 1; visibility: visible; }`).join('\n')}
+${each.map((i) => `    #layout-${i}:checked ~ .bar label[for="layout-${i}"] { background: var(--ink); color: var(--white); }
+    #layout-${i}:focus-visible ~ .bar label[for="layout-${i}"] { outline: 2px solid var(--link); outline-offset: 2px; }
+    #layout-${i}:checked ~ * .lays > img { opacity: 0; visibility: hidden; }
+    #layout-${i}:checked ~ * .lays > img:nth-child(${i + 1}) { opacity: 1; visibility: visible; }`).join('\n')}
     /* The layouts side by side, and the theme gallery. */
     .body > .layout-cards, .body > .theme-grid { max-width: none; }
     .layout-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 24px; }
@@ -592,7 +597,7 @@ ${hero ? `  <figure class="hero">
     top,
     bar: {
       name: app.title,
-      switch: layouts ? layoutSwitchHtml(layouts) : '',
+      switch: layouts ? layoutSwitchHtml(layouts) : null,
       // The pill counts get-<slug>; the download buttons it leads to count download-<slug>.
       action: getIt ? [prepared.downloads ? 'Download' : 'Install', `#${getIt.id}`, `get-${app.slug}`] : ['Release', release.url, `release-${app.slug}`],
       under,

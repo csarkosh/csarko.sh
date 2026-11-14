@@ -120,11 +120,11 @@ ${STORE_CSS}${extraCss}
 </head>
 <body>
   <a class="skip-link" href="#top">Skip to content</a>
-${top}
+${bar.switch ? `  ${bar.switch.inputs}\n` : ''}${top}
   <div class="bar">
     <div class="bar-inner">
       <a class="bar-name" href="#top">${escapeHtml(bar.name)}</a>
-${bar.switch ? `      ${bar.switch}\n` : ''}      <a class="pill" href="${escapeHtml(bar.action[1])}"${bar.action[2] ? ` data-visits-event="${escapeHtml(bar.action[2])}"` : ''}>${escapeHtml(bar.action[0])}</a>
+${bar.switch ? `      ${bar.switch.labels}\n` : ''}      <a class="pill" href="${escapeHtml(bar.action[1])}"${bar.action[2] ? ` data-visits-event="${escapeHtml(bar.action[2])}"` : ''}>${escapeHtml(bar.action[0])}</a>
     </div>
   </div>
 ${bar.under ? `  <div class="wrap bar-under">${bar.under}</div>\n` : ''}

@@ -311,14 +311,20 @@ test('layouts: a switch in the bar, every picture beside its twins, the layouts 
   for (const f of ['docs/b.png', 'docs/b-inbox.png', 'docs/m.png', 'docs/m-inbox.png', 'docs/n.png', 'docs/n-inbox.png']) assert.ok(files.includes(f), `the build copies ${f}`);
   const images = Object.fromEntries(files.map((p) => [p, { url: `/app/${p.split('/').pop().replace('.png', '.webp')}`, width: 1200, height: 800 }]));
   const html = productPage({ app, prepared, release: { ...RELEASE, assets: [] }, images, motion: MOTION });
-  // The switch: a radio a layout in the bar, the first chosen, a label each.
-  assert.ok(html.includes('<div class="layout-switch" role="radiogroup" aria-label="Layout"><input type="radio" class="layout-input" name="layout" id="layout-0" checked /><label for="layout-0">Inbox</label><input type="radio" class="layout-input" name="layout" id="layout-1" /><label for="layout-1">Grid</label></div>'));
+  // The switch: a radio a layout leading the body, the first chosen, so every later part of the
+  // page can follow it with "~" (no :has(), which a WebKit viewer did not follow); a label each
+  // in the bar.
+  assert.ok(html.includes('<input type="radio" class="layout-input" name="layout" id="layout-0" aria-label="Inbox layout" checked /><input type="radio" class="layout-input" name="layout" id="layout-1" aria-label="Grid layout" />'));
+  assert.ok(/<body>\s*<a class="skip-link"[^>]*>[^<]*<\/a>\s*<input type="radio" class="layout-input"/.test(html), 'right after the skip link, before anything they steer');
+  assert.ok(html.includes('<div class="layout-switch" aria-hidden="true"><label for="layout-0">Inbox</label><label for="layout-1">Grid</label></div>'));
   assert.ok(/<div class="bar-inner">[\s\S]*class="layout-switch"[\s\S]*class="pill"/.test(html), 'between the name and the pill');
   // A README picture: its twins stacked, the first layout's first; the README's keeps its alt.
   assert.ok(html.includes('<span class="lays"><img src="/app/b-inbox.webp"') && html.includes('alt="A window in Peach Watercolor, in the Inbox layout"'));
   assert.ok(html.includes('<img src="/app/b.webp" width="1200" height="800" alt="A window in Peach Watercolor: two panes"'));
-  // The CSS shows the chosen layout's twin, by the radio.
-  assert.ok(html.includes('body:has(#layout-1:checked) .lays > img:nth-child(2)'));
+  // The CSS shows the chosen layout's twin, by the radio, and fills the chosen label.
+  assert.ok(html.includes('#layout-1:checked ~ * .lays > img:nth-child(2)'));
+  assert.ok(html.includes('#layout-1:checked ~ .bar label[for="layout-1"]'));
+  assert.ok(!html.includes(':has(#layout-'), 'nothing hangs on :has()');
   // The layouts side by side, under a headline that counts them, each with its line.
   assert.ok(html.includes('<h2 id="layouts">Two layouts.</h2><p>Pick one.</p>'));
   assert.ok(/<figure class="layout-card"><img src="\/app\/m-inbox\.webp"[^>]*alt="App in the Inbox layout"[^>]*\/><figcaption><h3>Inbox.<\/h3><p>Every session in a list.<\/p><\/figcaption><\/figure>/.test(html));
