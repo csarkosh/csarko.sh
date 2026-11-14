@@ -303,7 +303,8 @@ ${each.map((i) => `    .bar:has(#layout-${i}:checked) label[for="layout-${i}"] {
     .layout-card p { margin: 0; font-size: 16.5px; }
     .theme-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 24px 20px; }
     .theme-grid figure { margin: 0; }
-    .theme-grid img { width: 100%; border-radius: 12px; }
+    /* One shape for every tile, whatever its picture's, cut from the window's top left. */
+    .theme-grid img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; object-position: left top; border-radius: 12px; }
     .theme-grid figcaption { margin-top: 10px; font-size: 15px; font-weight: 500; text-align: center; }
     @media (max-width: 640px) { .layout-switch label { min-height: 36px; padding: 0 12px; } }
     @media (max-width: 420px) { .bar-name { display: none; } .layout-switch { margin-left: 0; } }`;
