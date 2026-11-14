@@ -702,7 +702,11 @@ test('an app\'s opening clip is an .mp4 in its repository with what it shows', (
 
 test('an app\'s swap is a README picture and its alternates, each an image in its repository with its label', () => {
   const line = 'swap: docs/images/blogger-dark.png Peach Watercolor | docs/images/blogger-lavender.png Lavender Watercolor';
-  assert.deepEqual(app('x', [line]).swap, [{ file: 'docs/images/blogger-dark.png', label: 'Peach Watercolor' }, { file: 'docs/images/blogger-lavender.png', label: 'Lavender Watercolor' }]);
+  assert.deepEqual(app('x', [line]).swap, [[{ file: 'docs/images/blogger-dark.png', label: 'Peach Watercolor' }, { file: 'docs/images/blogger-lavender.png', label: 'Lavender Watercolor' }]]);
+  // Several pictures, each its own group, joined by " ; ".
+  const two = app('x', [`${line} ; docs/m.png Tokyo Rain | docs/m-navy.png Navy`]).swap;
+  assert.deepEqual(two.map((g) => g.map((s) => s.label)), [['Peach Watercolor', 'Lavender Watercolor'], ['Tokyo Rain', 'Navy']]);
+  assert.throws(() => app('x', [`${line} ; docs/m.png Tokyo Rain`]), /a swap needs two to four pictures/);
   assert.equal(app('x').swap, undefined);
   assert.throws(() => app('x', ['swap: docs/images/a.png A']), /a swap needs two to four pictures/);
   assert.throws(() => app('x', ['swap: docs/a.png A | ../b.png B']), /each swap picture is a \.png or \.jpg inside the repository and its label/);

@@ -327,7 +327,7 @@ export function recordingHtml({ url, poster, width, height, alt }) {
  * gallery (`extra`), and with `layouts` every one's twins but the hero's. The README's hero is
  * left out when the page opens with a clip instead (`withHero` false). */
 export const imagesOf = ({ hero, panels, figures = [] }, { withHero = true, swap = null, layouts = null, extra = [] } = {}) => {
-  const pictures = [...panels, ...figures].map((p) => p.light).concat((swap ?? []).map((s) => s.file), extra);
+  const pictures = [...panels, ...figures].map((p) => p.light).concat((swap ?? []).flat().map((s) => s.file), extra);
   const twins = layouts ? pictures.flatMap((file) => layouts.map((l) => twinOf(file, l.suffix))) : pictures;
   return [...new Set([...(withHero && hero ? [hero.light] : []), ...twins])];
 };
@@ -338,8 +338,8 @@ export const imagesOf = ({ hero, panels, figures = [] }, { withHero = true, swap
  * script runs on this host, so a radio per picture holds the choice and the CSS shows the chosen
  * one. Each alternate's alt is the picture's with the first label put for its own.
  */
-function swapHtml(figure, swap, images, slug, layouts = null) {
-  const name = `swap-${slug}`;
+function swapHtml(figure, swap, images, slug, layouts = null, group = 0) {
+  const name = `swap-${slug}-${group}`;
   const inputs = swap.map((_, i) => `<input type="radio" class="swap-input" name="${name}" id="${name}-${i}"${i ? '' : ' checked'} />`).join('');
   const pictures = swap.map((s, i) => layeredHtml({ light: s.file, alt: i ? figure.alt.replaceAll(swap[0].label, s.label) : figure.alt }, images, layouts)).join('');
   const chips = swap.map((s, i) => `<label for="${name}-${i}">${escapeHtml(s.label)}</label>`).join('');
@@ -445,8 +445,14 @@ export function productPage({ app, prepared, release, images, motion = '', recor
     swap(`<p>${PANEL(i)}</p>`, `<div class="panel"><div class="panel-image">${layeredHtml(panel, images, app.layouts)}</div><div class="panel-body">`);
     swap(`<p>${PANEL_END}</p>`, '</div></div>');
   });
-  if (app.swap && !figures.some((f) => f.light === app.swap[0].file)) throw new ProductError(`README: no picture ${app.swap[0].file} in the README for the swap`);
-  figures.forEach((figure, i) => swap(`<p>${FIGURE(i)}</p>`, `<figure class="figure">${app.swap && figure.light === app.swap[0].file ? swapHtml(figure, app.swap, images, app.slug, app.layouts) : layeredHtml(figure, images, app.layouts)}</figure>`));
+  const swaps = app.swap ?? [];
+  for (const group of swaps) {
+    if (!figures.some((f) => f.light === group[0].file)) throw new ProductError(`README: no picture ${group[0].file} in the README for the swap`);
+  }
+  figures.forEach((figure, i) => {
+    const g = swaps.findIndex((group) => group[0].file === figure.light);
+    swap(`<p>${FIGURE(i)}</p>`, `<figure class="figure">${g >= 0 ? swapHtml(figure, swaps[g], images, app.slug, app.layouts, g) : layeredHtml(figure, images, app.layouts)}</figure>`);
+  });
   html = html.replaceAll(`<p>${MUTED} `, '<p class="muted">');
   if (html.includes('@@')) throw new ProductError('README: a marker was left in the page');
   // HTML the README carried that nothing above handled reaches the page escaped; refuse it.

@@ -286,14 +286,17 @@ export function parseAppFrontMatter(text, file) {
   }
   // A picture the store page lets the visitor swap (apps/product.mjs): the README picture first,
   // then its alternates, each "path label" and joined by " | ", two to four in all.
+  // Several pictures may each swap: their groups joined by " ; ".
   let swap;
   if (meta.swap !== undefined) {
-    const entries = meta.swap.split('|').map((s) => s.trim()).filter(Boolean);
-    if (entries.length < 2 || entries.length > 4) throw new DocError(`${file}: a swap needs two to four pictures, each "path label", joined by " | "`);
-    swap = entries.map((entry) => {
-      const m = /^([\w./-]+\.(?:png|jpg))\s+(\S.*)$/.exec(entry);
-      if (!m || m[1].includes('..') || m[1].startsWith('/')) throw new DocError(`${file}: each swap picture is a .png or .jpg inside the repository and its label: "${entry}"`);
-      return { file: m[1], label: m[2].trim() };
+    swap = meta.swap.split(';').map((g) => g.trim()).filter(Boolean).map((group) => {
+      const entries = group.split('|').map((s) => s.trim()).filter(Boolean);
+      if (entries.length < 2 || entries.length > 4) throw new DocError(`${file}: a swap needs two to four pictures, each "path label", joined by " | " (and each swap's group by " ; ")`);
+      return entries.map((entry) => {
+        const m = /^([\w./-]+\.(?:png|jpg))\s+(\S.*)$/.exec(entry);
+        if (!m || m[1].includes('..') || m[1].startsWith('/')) throw new DocError(`${file}: each swap picture is a .png or .jpg inside the repository and its label: "${entry}"`);
+        return { file: m[1], label: m[2].trim() };
+      });
     });
   }
   // The store page's layouts (apps/product.mjs): the app's ways of looking, each "label suffix",

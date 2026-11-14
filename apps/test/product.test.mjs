@@ -280,17 +280,24 @@ test('the paragraphs before a picture become a row beside it, its bold lead a he
 test('a swap shows its picture with its alternates stacked, a chip each to pick one, and no script', () => {
   const readme = `# App\n\nIntro.\n\n## Install\n\nSteps.\n\n## Who it's for\n\nPeople.\n\n**The blogger** lives in markdown.\n\n<picture>\n  <img alt="A window in Peach Watercolor" src="docs/b.png">\n</picture>\n`;
   const prepared = prepareReadme(readme, { blob: BLOB });
-  const swap = [{ file: 'docs/b.png', label: 'Peach Watercolor' }, { file: 'docs/b-lavender.png', label: 'Lavender Watercolor' }];
+  const swap = [[{ file: 'docs/b.png', label: 'Peach Watercolor' }, { file: 'docs/b-lavender.png', label: 'Lavender Watercolor' }]];
   const images = Object.fromEntries(imagesOf(prepared, { swap }).map((p) => [p, { url: `/app/${p.split('/').pop().replace('.png', '.webp')}`, width: 1200, height: 800 }]));
   assert.ok(images['docs/b-lavender.png'], 'the build copies the alternates too');
   const html = productPage({ app: { ...APP, slug: 'app', title: 'App', swap }, prepared, release: { ...RELEASE, assets: [] }, images, motion: MOTION });
-  assert.ok(html.includes('<input type="radio" class="swap-input" name="swap-app" id="swap-app-0" checked /><input type="radio" class="swap-input" name="swap-app" id="swap-app-1" />'), 'a radio each, the first chosen');
+  assert.ok(html.includes('<input type="radio" class="swap-input" name="swap-app-0" id="swap-app-0-0" checked /><input type="radio" class="swap-input" name="swap-app-0" id="swap-app-0-1" />'), 'a radio each, the first chosen');
   assert.ok(html.includes('<div class="swap-stage"><img src="/app/b.webp"') && html.includes('alt="A window in Peach Watercolor"'));
   assert.ok(html.includes('<img src="/app/b-lavender.webp"') && html.includes('alt="A window in Lavender Watercolor"'), 'the alternate says its own theme');
-  assert.ok(html.includes('<div class="swap-chips"><label for="swap-app-0">Peach Watercolor</label><label for="swap-app-1">Lavender Watercolor</label></div>'));
+  assert.ok(html.includes('<div class="swap-chips"><label for="swap-app-0-0">Peach Watercolor</label><label for="swap-app-0-1">Lavender Watercolor</label></div>'));
   assert.ok(/<div class="row"><div class="row-media"><div class="swap">/.test(html), 'still a row beside its words');
   assert.ok(!/<script(?![^>]*(?:src=|application\/ld\+json))/.test(html), 'no script but the JSON-LD');
-  assert.throws(() => productPage({ app: { ...APP, slug: 'app', title: 'App', swap: [{ file: 'docs/none.png', label: 'A' }, swap[1]] }, prepared, release: { ...RELEASE, assets: [] }, images, motion: MOTION }), /no picture docs\/none\.png in the README for the swap/);
+  assert.throws(() => productPage({ app: { ...APP, slug: 'app', title: 'App', swap: [[{ file: 'docs/none.png', label: 'A' }, swap[0][1]]] }, prepared, release: { ...RELEASE, assets: [] }, images, motion: MOTION }), /no picture docs\/none\.png in the README for the swap/);
+  // Two pictures swap, each with its own radios.
+  const readme2 = readme + `\n**The multi tasker** runs many.\n\n<picture>\n  <img alt="A window in Tokyo Rain" src="docs/m.png">\n</picture>\n`;
+  const prepared2 = prepareReadme(readme2, { blob: BLOB });
+  const swap2 = [...swap, [{ file: 'docs/m.png', label: 'Tokyo Rain' }, { file: 'docs/m-navy.png', label: 'Navy' }]];
+  const images2 = Object.fromEntries(imagesOf(prepared2, { swap: swap2 }).map((p) => [p, { url: `/app/${p.split('/').pop().replace('.png', '.webp')}`, width: 1200, height: 800 }]));
+  const html2 = productPage({ app: { ...APP, slug: 'app', title: 'App', swap: swap2 }, prepared: prepared2, release: { ...RELEASE, assets: [] }, images: images2, motion: MOTION });
+  assert.ok(html2.includes('id="swap-app-1-1"') && html2.includes('<label for="swap-app-1-1">Navy</label>') && html2.includes('alt="A window in Navy"'));
 });
 
 test('layouts: a switch in the bar, every picture beside its twins, the layouts side by side and a theme gallery, with no script', () => {
