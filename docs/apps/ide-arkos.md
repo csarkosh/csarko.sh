@@ -14,7 +14,7 @@ hero-video: docs/images/hero.mp4
 hero-video-alt: The camera pulls back from the tab bar of an Arkos IDE window, its sessions working and waiting, to show it in Navy Runic with every other persona's window fanned behind it, each in its own theme
 swap: docs/images/multitasker-dark.png Tokyo Rain | docs/images/multitasker-navy.png Navy ; docs/images/blogger-dark.png Peach Watercolor | docs/images/blogger-lavender.png Lavender Watercolor ; docs/images/indie-game-dev-dark.png Timo Purple | docs/images/indie-game-dev-solar.png Arabia Solar
 layouts: Inbox -inbox | Grid
-layouts-show: docs/images/indie-game-dev-solar.png
+layouts-show: docs/images/multitasker-solar.png
 layouts-lede: Pick one in Settings and switch whenever you like: the same sessions and files, regrouped.
 layouts-copy: Every session in one list, sorted by what it asks of you: needs you, unread, new, working, quiet. One session at full size, the files it opened beside it. | Panes and tabs you split and arrange, every session in view at once, each tab marked when it is working or waiting on you.
 blurb: a Mac app that keeps many Claude Code sessions running side by side
