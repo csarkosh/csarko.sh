@@ -336,6 +336,13 @@ ${[1, 2, 3, 4].map((k) => `    .swap-input:nth-of-type(${k}):checked ~ .swap-sta
 
     .figure { max-width: 1000px; margin: 40px auto; }
     .figure img { width: 100%; border-radius: var(--r-card); }
+    /* A picture's loop (product.mjs loopedHtml): laid over the picture's window, unseen until
+       loops.js plays it, then faded in over the still it starts from. */
+    .looped { position: relative; display: block; }
+    .looped > img { display: block; }
+    .loop { position: absolute; object-fit: fill; opacity: 0; pointer-events: none; transition: opacity var(--md-duration-medium2) var(--md-easing-emphasized-decelerate); }
+    .loop.on { opacity: 1; }
+    @media (prefers-reduced-motion: reduce) { .loop { display: none; } }
     .recording { max-width: 1000px; margin: 0 auto 56px; }
     .recording video { width: 100%; border-radius: var(--r-card); background: var(--ink); }
 

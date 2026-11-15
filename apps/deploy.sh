@@ -42,10 +42,10 @@ if grep -nE '\+?1?[ .-]?\(?[0-9]{3}\)?[ .-][0-9]{3}[ .-][0-9]{4}' "${PAGES[@]}";
   die "an apps page contains a phone number — refusing to deploy"
 fi
 if grep -n '—' "${PAGES[@]}"; then die "an apps page contains an em-dash — refusing to deploy"; fi
-# The only scripts: the page's JSON-LD and the site's two hashed lib-visits files, which the
-# site's own checks hold to the vendored bytes.
-if grep -noE '<script\b[^>]*>' "${PAGES[@]}" | grep -vE '<script type="application/ld\+json">$|<script defer src="/assets/(visits|vitals)\.[0-9a-f]{8}\.js"( data-visits="/v")?>$'; then
-  die "an apps page carries a script other than lib-visits' two — refusing to deploy"
+# The only scripts: the page's JSON-LD, the site's two hashed lib-visits files, which the
+# site's own checks hold to the vendored bytes, and the loops' player (apps/loops.js, hashed by the build).
+if grep -noE '<script\b[^>]*>' "${PAGES[@]}" | grep -vE '<script type="application/ld\+json">$|<script defer src="/assets/(visits|vitals)\.[0-9a-f]{8}\.js"( data-visits="/v")?>$|<script defer src="/assets/loops\.[0-9a-f]{8}\.js">$'; then
+  die "an apps page carries a script other than lib-visits' two and the loops' player — refusing to deploy"
 fi
 echo
 

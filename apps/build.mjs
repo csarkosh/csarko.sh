@@ -66,6 +66,26 @@ im.save(sys.argv[2], "WEBP", quality=88, method=6)
 print(json.dumps({"width": im.width, "height": im.height}))`;
 const toWebp = (src, dest) => JSON.parse(execFileSync('python3', ['-I', '-c', WEBP, src, dest], { encoding: 'utf8' }));
 
+// Where a picture's loop goes over it (product.mjs loopedHtml): the picture's window, its fully
+// opaque part (the shoot frames each window on a transparent ground under a soft shadow that
+// never reaches full opacity), as percentages of the picture, and its corners' radius as
+// percentages of the window's width and height.
+const WINDOW = `import sys, json
+from PIL import Image
+im = Image.open(sys.argv[1])
+if im.mode != "RGBA":
+    sys.exit(f"{sys.argv[1]}: a picture with a loop must be a framed window on a transparent ground")
+alpha = im.getchannel("A")
+box = alpha.point(lambda a: 255 if a == 255 else 0).getbbox()
+if not box:
+    sys.exit(f"{sys.argv[1]}: no opaque window to lay its loop over")
+x0, y0, x1, y1 = box
+row = [alpha.getpixel((x, y0)) for x in range(x0, x1)]
+r = next((i for i, a in enumerate(row) if a == 255), 0)
+w, h = x1 - x0, y1 - y0
+print(json.dumps({"left": 100 * x0 / im.width, "top": 100 * y0 / im.height, "width": 100 * w / im.width, "height": 100 * h / im.height, "rx": 100 * r / w, "ry": 100 * r / h}))`;
+const windowOf = (src) => JSON.parse(execFileSync('python3', ['-I', '-c', WINDOW, src], { encoding: 'utf8' }));
+
 // The share card: the hero laid on the page's cream, 1200 by 630.
 const OG = `import sys
 from PIL import Image
@@ -102,6 +122,11 @@ const visitsJs = siteAssets.find((f) => /^visits\.[0-9a-f]{8}\.js$/.test(f));
 const vitalsJs = siteAssets.find((f) => /^vitals\.[0-9a-f]{8}\.js$/.test(f));
 if (!visitsJs || !vitalsJs) throw new Error('public/assets has no hashed visits.js and vitals.js (run generate-assets.sh)');
 for (const f of [visitsJs, vitalsJs]) copyFileSync(path.join(SITE_PUBLIC, 'assets', f), path.join(OUT, 'assets', f));
+// The loops' player (apps/loops.js), hashed as the site's own scripts are, for the pages with a
+// loop.
+const loopsData = readFileSync(path.join(APPS, 'loops.js'));
+const loopsJs = `loops.${createHash('sha256').update(loopsData).digest('hex').slice(0, 8)}.js`;
+writeFileSync(path.join(OUT, 'assets', loopsJs), loopsData);
 const analytics = `  <script defer src="/assets/${visitsJs}" data-visits="/v"></script>\n  <script defer src="/assets/${vitalsJs}"></script>\n`;
 for (const icon of ['favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'apple-touch-icon.png']) {
   copyFileSync(path.join(SITE_PUBLIC, icon), path.join(OUT, icon));
@@ -122,6 +147,12 @@ for (const name of sources) {
   const dirOf = local.get(app.slug);
   const fetchFile = (file) => (dirOf ? readFileSync(path.join(dirOf, file)) : github(`https://raw.githubusercontent.com/${repo}/${branch}/${file}`, { raw: true }));
   const readme = (await fetchFile('README.md')).toString('utf8');
+  // Which files the repository has, so a picture's loop (`<picture>.mp4` beside it) is found
+  // without asking for every picture's.
+  const tree = dirOf ? null : await github(`repos/${repo}/git/trees/${branch}?recursive=1`);
+  if (tree?.truncated) throw new Error(`${repo}: its file list came back truncated, so a picture's loop could be missed`);
+  const files = tree && new Set(tree.tree.map((t) => t.path));
+  const has = (file) => (dirOf ? existsSync(path.join(dirOf, file)) : files.has(file));
   const latest = await github(`repos/${repo}/releases/latest`);
   const release = {
     tag: latest.tag_name,
@@ -146,6 +177,13 @@ for (const name of sources) {
     writeFileSync(tmp, await fetchFile(src));
     const file = `${path.basename(src).replace(/\.(png|jpe?g)$/, '')}.webp`;
     images[src] = { url: `/${app.slug}/${file}`, ...toWebp(tmp, path.join(dir, file)) };
+    // A picture's loop: its .mp4 beside it, played over its window (product.mjs loopedHtml).
+    const loopFile = src.replace(/\.(png|jpe?g)$/, '.mp4');
+    if (has(loopFile)) {
+      const name = path.basename(loopFile);
+      writeFileSync(path.join(dir, name), await fetchFile(loopFile));
+      images[src].loop = { url: `/${app.slug}/${name}`, ...windowOf(tmp) };
+    }
     rmSync(tmp);
   }
 
@@ -177,7 +215,7 @@ for (const name of sources) {
     execFileSync('python3', ['-I', '-c', OG, path.join(dir, `${stem}.jpg`), path.join(dir, 'og.jpg')]);
     ogImage = { url: `${APPS_HOST}/${app.slug}/og.jpg`, width: 1200, height: 630, alt: app.heroVideo.alt };
   }
-  let html = productPage({ app, prepared, release, images, motion, recording, ogImage, heroVideo, analytics });
+  let html = productPage({ app, prepared, release, images, motion, recording, ogImage, heroVideo, analytics, loopsJs: `/assets/${loopsJs}` });
   html = html.replace(/\/\* generated:fonts \*\/\n\s*\/\* \/generated:fonts \*\//,
     `/* generated:fonts */\n${faces}\n    /* /generated:fonts */`);
   html = html.replace(/<!-- generated:head -->\n\s*<!-- \/generated:head -->/,

@@ -248,7 +248,22 @@ export function prepareReadme(readme, { blob, sections = null, install = null })
 function pictureHtml({ light, alt }, images, { lazy = true } = {}) {
   const l = images[light];
   if (!l) throw new ProductError(`no copy of the README image ${light}`);
-  return `<img src="${l.url}" width="${l.width}" height="${l.height}" alt="${escapeHtml(alt)}" decoding="async"${lazy ? ' loading="lazy"' : ' fetchpriority="high"'} />`;
+  const img = `<img src="${l.url}" width="${l.width}" height="${l.height}" alt="${escapeHtml(alt)}" decoding="async"${lazy ? ' loading="lazy"' : ' fetchpriority="high"'} />`;
+  return l.loop ? loopedHtml(img, l.loop) : img;
+}
+
+/**
+ * A picture with a loop (`<picture>.mp4` beside it in the app's repository): the picture, and
+ * over its window the loop, unloaded and unseen until `loops.js` plays it, which it does only
+ * while the picture is on screen and the one its swap and the layout switch show. Without the
+ * script (or with Reduce Motion) the picture is all there is. The loop is the window alone,
+ * placed by `loop` (percentages of the picture, from its opaque window, and the corners'
+ * radius) so the picture's shadow and corners stay its own.
+ */
+export function loopedHtml(img, loop) {
+  const pct = (n) => `${+n.toFixed(3)}%`;
+  const style = `left:${pct(loop.left)};top:${pct(loop.top)};width:${pct(loop.width)};height:${pct(loop.height)};border-radius:${pct(loop.rx)} / ${pct(loop.ry)}`;
+  return `<span class="looped">${img}<video class="loop" data-src="${escapeHtml(loop.url)}" muted loop playsinline disablepictureinpicture preload="none" aria-hidden="true" tabindex="-1" style="${style}"></video></span>`;
 }
 
 /** A picture's twin for a layout: its file with the layout's suffix before the extension; the
@@ -292,12 +307,12 @@ export function layoutsCss(count) {
     .layout-switch label:hover { color: var(--ink); }
     .layout-switch + .pill { margin-left: 4px; }
     .lays { display: grid; }
-    .lays > img { grid-area: 1 / 1; transition: opacity var(--md-duration-medium2) var(--md-easing-standard), visibility var(--md-duration-medium2) var(--md-easing-standard); }
-    .lays > img + img { opacity: 0; visibility: hidden; }
+    .lays > * { grid-area: 1 / 1; transition: opacity var(--md-duration-medium2) var(--md-easing-standard), visibility var(--md-duration-medium2) var(--md-easing-standard); }
+    .lays > * + * { opacity: 0; visibility: hidden; }
 ${each.map((i) => `    #layout-${i}:checked ~ .bar label[for="layout-${i}"] { background: var(--ink); color: var(--white); }
     #layout-${i}:focus-visible ~ .bar label[for="layout-${i}"] { outline: 2px solid var(--link); outline-offset: 2px; }
-    #layout-${i}:checked ~ * .lays > img { opacity: 0; visibility: hidden; }
-    #layout-${i}:checked ~ * .lays > img:nth-child(${i + 1}) { opacity: 1; visibility: visible; }`).join('\n')}
+    #layout-${i}:checked ~ * .lays > * { opacity: 0; visibility: hidden; }
+    #layout-${i}:checked ~ * .lays > :nth-child(${i + 1}) { opacity: 1; visibility: visible; }`).join('\n')}
     /* The layouts side by side, and the theme gallery. */
     .body > .layout-cards, .body > .theme-grid { max-width: none; }
     .layout-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 24px; }
@@ -435,7 +450,7 @@ const SHOWS = /<figure|<div class="row|<div class="panel|<div class="downloads|<
  * from the hero; live: whether donate.csarko.sh serves the doors yet (DONATE_LIVE), without
  * which the bar has no Buy me tokens.
  */
-export function productPage({ app, prepared, release, images, motion = '', recording = null, ogImage = null, heroVideo = null, analytics = '', live = DONATE_LIVE }) {
+export function productPage({ app, prepared, release, images, motion = '', recording = null, ogImage = null, heroVideo = null, analytics = '', loopsJs = null, live = DONATE_LIVE }) {
   const { text, hero, caption, tagline = '', panels, flows, figures = [] } = prepared;
   const doc = renderMarkdown(text, `${app.slug} README`);
   let html = doc.html;
@@ -584,6 +599,7 @@ ${hero ? `  <figure class="hero">
   // the one quiet line under it, set to the right; the source and the release go to the footer.
   // Every one of them is named in the visits log (get, download, tokens, promo, release, source,
   // each -<slug>), so a journey from csarko.sh's card through this page reads as its clicks.
+  const main = `${promo}${introBand}${bands.join('\n')}`;
   const door = doorOf(app.slug);
   const under = live && door?.shipped ? `<a href="${escapeHtml(`${DONATE_URL}${door.path}`)}" target="_blank" rel="noopener" data-visits-event="tokens-${escapeHtml(app.slug)}">${iconSvg()}Buy me tokens</a>` : '';
   return storeShell({
@@ -602,9 +618,10 @@ ${hero ? `  <figure class="hero">
       action: getIt ? [prepared.downloads ? 'Download' : 'Install', `#${getIt.id}`, `get-${app.slug}`] : ['Release', release.url, `release-${app.slug}`],
       under,
     },
-    main: `${promo}${introBand}${bands.join('\n')}`,
+    main,
     footer: [`${app.title}${app.license ? ` · ${app.license}` : ''}`, [[release.tag, release.url, `release-${app.slug}`], ...(app.repo ? [['GitHub', app.repo, `source-${app.slug}`]] : [])]],
     extraCss: layouts ? layoutsCss(layouts.length) : '',
-    analytics,
+    // The loops' player only on a page with a loop.
+    analytics: loopsJs && main.includes('<video class="loop"') ? `${analytics}  <script defer src="${loopsJs}"></script>\n` : analytics,
   });
 }

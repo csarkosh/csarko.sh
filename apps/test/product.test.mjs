@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { downloadsHtml, flowHtml, formatSize, imagesOf, parseFlow, prepareReadme, ProductError, productPage, splitSections } from '../product.mjs';
+import { downloadsHtml, flowHtml, formatSize, imagesOf, loopedHtml, parseFlow, prepareReadme, ProductError, productPage, splitSections } from '../product.mjs';
+import { readFileSync } from 'node:fs';
 
 const BLOB = 'https://github.com/o/r/blob/main/';
 
@@ -322,7 +323,7 @@ test('layouts: a switch in the bar, every picture beside its twins, the layouts 
   assert.ok(html.includes('<span class="lays"><img src="/app/b-inbox.webp"') && html.includes('alt="A window in Peach Watercolor, in the Inbox layout"'));
   assert.ok(html.includes('<img src="/app/b.webp" width="1200" height="800" alt="A window in Peach Watercolor: two panes"'));
   // The CSS shows the chosen layout's twin, by the radio, and fills the chosen label.
-  assert.ok(html.includes('#layout-1:checked ~ * .lays > img:nth-child(2)'));
+  assert.ok(html.includes('#layout-1:checked ~ * .lays > :nth-child(2)'));
   assert.ok(html.includes('#layout-1:checked ~ .bar label[for="layout-1"]'));
   assert.ok(!html.includes(':has(#layout-'), 'nothing hangs on :has()');
   // The layouts side by side, under a headline that counts them, each with its line.
@@ -407,4 +408,42 @@ test('splitSections cuts the rendered README at its ## headings', () => {
   const { intro, sections } = splitSections(html);
   assert.equal(intro, '<p>Intro.</p>\n');
   assert.deepEqual(sections.map((s) => [s.id, s.title, s.body]), [['a', "Who it's for", '<p>A.</p>\n'], ['b', 'B', '<p>B.</p>\n']]);
+});
+
+test('a picture with a loop carries it over its window, unloaded until the player wants it, and only such a page loads the player', () => {
+  const readme = `# App\n\nIntro.\n\n## Install\n\nSteps.\n\n## Who it's for\n\nPeople.\n\n**The hacker** hardens a service.\n\n<picture>\n  <img alt="A window in Matrix: three panes" src="docs/h.png">\n</picture>\n`;
+  const prepared = prepareReadme(readme, { blob: BLOB });
+  const layouts = [{ label: 'Inbox', suffix: '-inbox' }, { label: 'Grid', suffix: '' }];
+  const app = { ...APP, slug: 'app', title: 'App', layouts };
+  const loop = (name) => ({ url: `/app/${name}.mp4`, left: 3.92, top: 5.845, width: 92.16, height: 88.31, rx: 0.9116, ry: 1.4184 });
+  const images = {
+    'docs/h.png': { url: '/app/h.webp', width: 1200, height: 800, loop: loop('h') },
+    'docs/h-inbox.png': { url: '/app/h-inbox.webp', width: 1200, height: 800, loop: loop('h-inbox') },
+  };
+  const html = productPage({ app, prepared, release: { ...RELEASE, assets: [] }, images, motion: MOTION, loopsJs: '/assets/loops.abcd1234.js' });
+  // Each twin is the still and its loop, the twins still stacked by the layout switch.
+  assert.ok(html.includes('<span class="lays"><span class="looped"><img src="/app/h-inbox.webp"'), 'a twin is the picture and its loop together');
+  assert.ok(html.includes('<video class="loop" data-src="/app/h-inbox.mp4" muted loop playsinline disablepictureinpicture preload="none" aria-hidden="true" tabindex="-1" style="left:3.92%;top:5.845%;width:92.16%;height:88.31%;border-radius:0.912% / 1.418%"></video>'));
+  assert.ok(!/<video class="loop"[^>]*\ssrc=/.test(html), 'nothing loads until the player asks');
+  assert.ok(!/<video class="loop"[^>]*autoplay/.test(html), 'nothing plays on its own');
+  assert.ok(html.includes('alt="A window in Matrix: three panes"'), 'the still keeps the alt; the loop is hidden from screen readers');
+  assert.ok(html.includes('<script defer src="/assets/loops.abcd1234.js"></script>'), 'the page loads the player');
+  // The same page without loops never loads it.
+  const plainImages = Object.fromEntries(Object.entries(images).map(([k, v]) => [k, { url: v.url, width: v.width, height: v.height }]));
+  const plain = productPage({ app, prepared, release: { ...RELEASE, assets: [] }, images: plainImages, motion: MOTION, loopsJs: '/assets/loops.abcd1234.js' });
+  assert.ok(!plain.includes('loops.abcd1234.js') && !plain.includes('class="looped"'));
+});
+
+test('a loop is placed by percentages, so it sits on the picture at any width', () => {
+  const html = loopedHtml('<img src="/a.webp" />', { url: '/a.mp4', left: 4, top: 6, width: 92, height: 88, rx: 1, ry: 1.5 });
+  assert.equal(html, '<span class="looped"><img src="/a.webp" /><video class="loop" data-src="/a.mp4" muted loop playsinline disablepictureinpicture preload="none" aria-hidden="true" tabindex="-1" style="left:4%;top:6%;width:92%;height:88%;border-radius:1% / 1.5%"></video></span>');
+});
+
+test('the loops player pauses what is off screen or not chosen, and plays nothing under Reduce Motion', () => {
+  const js = readFileSync(new URL('../loops.js', import.meta.url), 'utf8');
+  assert.ok(js.includes('IntersectionObserver'), 'it watches what is on screen');
+  assert.ok(/v\.pause\(\)/.test(js), 'it pauses');
+  assert.ok(js.includes("prefers-reduced-motion: reduce"), 'it honours Reduce Motion');
+  assert.ok(js.includes("'.swap-input, .layout-input'"), 'it follows the swaps and the layout switch');
+  assert.ok(!/fetch\(|XMLHttpRequest|sendBeacon|localStorage|document\.cookie/.test(js), 'it sends and stores nothing');
 });
