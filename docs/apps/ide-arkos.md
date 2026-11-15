@@ -12,8 +12,6 @@ tags: Rust, GPUI, macOS, Claude Code
 alt: Six Arkos IDE windows fanned out like postcards, each in its own theme: in front the multi tasker, three Claude Code sessions each running its own subagents on an unrelated project; behind, the blogger, the data analyst, the hacker, the student and the web developer
 hero-video: docs/images/hero.mp4
 hero-video-alt: The camera pulls back from the tab bar of an Arkos IDE window, its sessions working and waiting, to show it in Navy Runic with every other persona's window fanned behind it, each in its own theme
-promo: Sessions that survive updates, restarts and frozen windows. Two layouts: an Inbox that sorts your sessions by what they need from you, or a Grid of panes you arrange. Ten built-in themes, nine with animated effects, or your own. A markdown editor you edit in its rendered view, a web pane, a video pane and a file tree.
-promo-link: https://github.com/csarkosh/ide-arkos/blob/main/docs/guide.md
 swap: docs/images/multitasker-dark.png Tokyo Rain | docs/images/multitasker-navy.png Navy ; docs/images/blogger-dark.png Peach Watercolor | docs/images/blogger-lavender.png Lavender Watercolor ; docs/images/indie-game-dev-dark.png Timo Purple | docs/images/indie-game-dev-solar.png Arabia Solar
 layouts: Inbox -inbox | Grid
 layouts-show: docs/images/multitasker-dark.png
