@@ -18,7 +18,7 @@
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
   <meta property="article:published_time" content="2026-11-01" />
-  <meta property="article:modified_time" content="2026-11-01" />
+  <meta property="article:modified_time" content="2026-11-16" />
   <meta property="article:author" content="https://csarko.sh/" />
   <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -49,10 +49,10 @@
       "headline": "Buy me tokens: tips priced from the cloud bill",
       "description": "Tip tiers set at 1%, 3% and 10% of the last 30 days' cloud bill, gathered daily from five billing sources and repriced weekly with no hand in the loop.",
       "datePublished": "2026-11-01",
-      "dateModified": "2026-11-01",
+      "dateModified": "2026-11-16",
       "url": "https://csarko.sh/research/buy-me-tokens-tips-priced-from-the-cloud-bill",
       "mainEntityOfPage": "https://csarko.sh/research/buy-me-tokens-tips-priced-from-the-cloud-bill",
-      "wordCount": 2939,
+      "wordCount": 3004,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -443,7 +443,7 @@
     </aside>
     <main id="top" tabindex="-1">
       <header class="doc-header">
-        <p class="eyebrow">Nov 1, 2026</p>
+        <p class="eyebrow">Nov 1, 2026 · Updated Nov 16, 2026</p>
         <h1>Buy me tokens: tips priced from the cloud bill</h1>
         <p class="lead">Tip tiers set at 1%, 3% and 10% of the last 30 days&#39; cloud bill, gathered daily from five billing sources and repriced weekly with no hand in the loop.</p>
         <ul class="tags">
@@ -452,7 +452,7 @@
       </header>
       <div class="prose">
 <p><strong>Question:</strong> The apps, the browser game and the short films on this site are free, and they are built with AI and run in the cloud, which is not. How do you let people who find the work useful help cover what it costs, with prices that track the real bill, without anyone having to update them by hand?</p>
-<p><strong>Short answer:</strong> As of Nov 1, 2026, the tip page at donate.csarko.sh prices three tiers as shares of the <button type="button" class="term" popovertarget="term-1" data-visits-event="term">pool</button><span class="term-def" id="term-1" popover role="note">The cloud spend of the 30 days ending yesterday, summed across every billing source, less any spend on work that is not public. Each tier is a share of it.</span>: about 1%, 3% and 10%, rounded up to the dollar, plus a box for your own number. A daily job collects the costs from five billing sources into one set of daily rows, and every seven days a step on the same job sums the last 30 days, makes the Stripe prices and payment links, and publishes one JSON file that the static pages read on every visit. Nothing in the loop needs a person: a source that lags holds the turn back, every Stripe call can be repeated safely, and old links retire on their own except the ones the live pages still carry. Because Stripe prints a support email and a support address on every receipt, both point at stand-ins rather than the owner: an email alias at the site&#39;s domain and a virtual mailbox.</p>
+<p><strong>Short answer:</strong> As of Nov 1, 2026, the tip page at donate.csarko.sh prices three tiers as shares of the <button type="button" class="term" popovertarget="term-1" data-visits-event="term">pool</button><span class="term-def" id="term-1" popover role="note">The cloud spend of the 30 days ending yesterday, summed across every billing source, less any spend on work that is not public and, as of Nov 16, 2026, less the Claude subscription. Each tier is a share of it.</span>: about 1%, 3% and 10%, rounded up to the dollar, plus a box for your own number. A daily job collects the costs from five billing sources into one set of daily rows, and every seven days a step on the same job sums the last 30 days, makes the Stripe prices and payment links, and publishes one JSON file that the static pages read on every visit. Nothing in the loop needs a person: a source that lags holds the turn back, every Stripe call can be repeated safely, and old links retire on their own except the ones the live pages still carry. Because Stripe prints a support email and a support address on every receipt, both point at stand-ins rather than the owner: an email alias at the site&#39;s domain and a virtual mailbox.</p>
 <figure class="figure">
 <!-- generated:figure:buy-me-tokens-tips-priced-from-the-cloud-bill/flow -->
 <img src="/assets/fig-buy-me-tokens-tips-priced-from-the-cloud-bill-flow.7ab17c0c.svg" width="760" height="540" alt="Diagram of the pipeline: five billing sources feed a daily snapshot on Cloud Run at 06:00 New York time, which keeps daily rows in Firestore; every 7 days the donate step turns the last 30 days into three tiers, makes Stripe prices and links and writes prices.json to a public bucket, which the donate pages read on every visit before sending a visitor to Stripe&#39;s checkout" decoding="async" />
@@ -494,14 +494,14 @@
 <li><strong>Google Cloud</strong> is read from its billing export, which writes cost rows into a BigQuery dataset throughout the day <a class="cite" href="#ref-3">[3]</a>. The export is the one source that lags by days rather than hours, which matters for the pool (section 3).</li>
 <li><strong>GitHub</strong> reports usage through its billing API. The repositories are public, so the net amount is $0 and adds nothing to the pool, but the rows keep the gross for the Billing page.</li>
 <li><strong>Two GPU and model services</strong> have no daily cost API to call. One publishes only a usage report, so a small Python job on Cloud Run reads it shortly before the snapshot and writes its share into the day&#39;s record; the other exposes only a credit balance, so a day&#39;s spend is how far the balance fell between two snapshots.</li>
-<li><strong>The Claude subscription</strong> has no API at all. Its monthly fee is entered by hand on the private Billing page whenever it changes, and the rows spread it evenly over the days of each month, so a 30-day window counts about one month of it.</li>
+<li><strong>The Claude subscription</strong> has no API at all. Its monthly fee is entered by hand on the private Billing page whenever it changes, and the rows spread it evenly over the days of each month, so a 30-day window counts about one month of it. As of Nov 16, 2026, the subscription no longer counts toward the pool: the Billing page still shows it, but the donate step leaves its rows out.</li>
 </ul>
 <p>All of this runs as one daily snapshot. Cloud Scheduler calls the admin API at 06:00 New York time with a signed identity token <a class="cite" href="#ref-4">[4]</a>, the handler accepts only that service account&#39;s token, and the run collects every source, stores the result as the day&#39;s document in Firestore, and then runs the donate step over the assembled rows. Each source is collected on its own, so one that fails is recorded as failed for the day rather than failing the run; the donate step reads that list (section 3). The step&#39;s result, including why it held, is stored with the day&#39;s snapshot, and its errors go to the service&#39;s log.</p>
 <blockquote>
 <p><strong>Takeaway:</strong> the expensive and slow sources are read once a day and never on a request. A page view reads stored rows, so reading the AWS bill costs under a dollar a month however often the Billing page is opened.</p>
 </blockquote>
 <div class="section-head"><p class="section-label">03</p><h2 id="the-pool-is-the-30-days-ending-yesterday-and-a-turn-waits-for-late-data"><a class="anchor" href="#the-pool-is-the-30-days-ending-yesterday-and-a-turn-waits-for-late-data">The pool is the 30 days ending yesterday, and a turn waits for late data</a></h2></div>
-<p>The window is the 30 days that end the day before the turn, in UTC. On Oct 31, 2026 that was Oct 1 through Oct 30. Yesterday is the last day because a day&#39;s costs are still arriving while it lasts. The pool sums every row in the window and leaves out spend tagged to work that is not public, so the bill a tipper sees is the bill of the work they can use.</p>
+<p>The window is the 30 days that end the day before the turn, in UTC. On Oct 31, 2026 that was Oct 1 through Oct 30. Yesterday is the last day because a day&#39;s costs are still arriving while it lasts. The pool sums every row in the window and leaves out spend tagged to work that is not public, so the bill a tipper sees is the bill of the work they can use. As of Nov 16, 2026, it also leaves out the Claude subscription&#39;s rows.</p>
 <p>A turn is due seven days after the last one. On a due day the step runs only if the data is good enough to price:</p>
 <ol>
 <li><strong>The Google Cloud export must reach close to the window&#39;s end.</strong> The export runs behind, and when it was first switched on it backfilled a month over several days, which Google&#39;s documentation allows for: retroactive data can take up to five days to finish exporting <a class="cite" href="#ref-3">[3]</a>. The step therefore holds the turn while the export&#39;s newest day is more than 6 days before the window&#39;s last day. On the launch day the export reached Oct 24 for a window ending Oct 30, which is inside that tolerance, so the first turn went ahead.</li>
@@ -510,7 +510,7 @@
 </ol>
 <p>When a turn is held, the step says why in its result (<code>waiting on GCP rows through 2026-10-24</code>, <code>waiting on aws</code>), the snapshot stores that, and the next day&#39;s run tries again. Nobody has to notice.</p>
 <div class="section-head"><p class="section-label">04</p><h2 id="three-tiers-at-1-3-and-10-rounded-up-to-the-dollar"><a class="anchor" href="#three-tiers-at-1-3-and-10-rounded-up-to-the-dollar">Three tiers at 1%, 3% and 10%, rounded up to the dollar</a></h2></div>
-<p>Each tier is its share of the pool, rounded up to a whole dollar, with $1 as the floor. Rounding up keeps the labels honest: a tier called &quot;about 1%&quot; never comes in under 1%. The first turn, on Oct 31, 2026, priced the window of Oct 1 to Oct 30:</p>
+<p>Each tier is its share of the pool, rounded up to a whole dollar, with $1 as the floor. Rounding up keeps the labels honest: a tier called &quot;about 1%&quot; never comes in under 1%. The first turn, on Oct 31, 2026, priced the window of Oct 1 to Oct 30 (its pool still counted the Claude subscription, which left the pool on Nov 16, 2026):</p>
 <div class="scroll" tabindex="0" role="region" aria-label="Table"><table>
 <thead>
 <tr>

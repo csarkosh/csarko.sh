@@ -1,6 +1,7 @@
 ---
 description: Tip tiers set at 1%, 3% and 10% of the last 30 days' cloud bill, gathered daily from five billing sources and repriced weekly with no hand in the loop.
 published: 2026-11-01
+updated: 2026-11-16
 categories: Distributed systems, Tooling
 related: unlimited-email-aliases-that-scale-to-zero, a-zero-cost-analytics-dashboard-without-cookies
 project: none
@@ -10,7 +11,7 @@ asks: How do you price a tip jar from your real cloud bill, with no manual updat
 
 **Question:** The apps, the browser game and the short films on this site are free, and they are built with AI and run in the cloud, which is not. How do you let people who find the work useful help cover what it costs, with prices that track the real bill, without anyone having to update them by hand?
 
-**Short answer:** As of Nov 1, 2026, the tip page at donate.csarko.sh prices three tiers as shares of the [pool](#term "The cloud spend of the 30 days ending yesterday, summed across every billing source, less any spend on work that is not public. Each tier is a share of it."): about 1%, 3% and 10%, rounded up to the dollar, plus a box for your own number. A daily job collects the costs from five billing sources into one set of daily rows, and every seven days a step on the same job sums the last 30 days, makes the Stripe prices and payment links, and publishes one JSON file that the static pages read on every visit. Nothing in the loop needs a person: a source that lags holds the turn back, every Stripe call can be repeated safely, and old links retire on their own except the ones the live pages still carry. Because Stripe prints a support email and a support address on every receipt, both point at stand-ins rather than the owner: an email alias at the site's domain and a virtual mailbox.
+**Short answer:** As of Nov 1, 2026, the tip page at donate.csarko.sh prices three tiers as shares of the [pool](#term "The cloud spend of the 30 days ending yesterday, summed across every billing source, less any spend on work that is not public and, as of Nov 16, 2026, less the Claude subscription. Each tier is a share of it."): about 1%, 3% and 10%, rounded up to the dollar, plus a box for your own number. A daily job collects the costs from five billing sources into one set of daily rows, and every seven days a step on the same job sums the last 30 days, makes the Stripe prices and payment links, and publishes one JSON file that the static pages read on every visit. Nothing in the loop needs a person: a source that lags holds the turn back, every Stripe call can be repeated safely, and old links retire on their own except the ones the live pages still carry. Because Stripe prints a support email and a support address on every receipt, both point at stand-ins rather than the owner: an email alias at the site's domain and a virtual mailbox.
 
 ![Diagram of the pipeline: five billing sources feed a daily snapshot on Cloud Run at 06:00 New York time, which keeps daily rows in Firestore; every 7 days the donate step turns the last 30 days into three tiers, makes Stripe prices and links and writes prices.json to a public bucket, which the donate pages read on every visit before sending a visitor to Stripe's checkout](flow.svg "Teal is the costs coming in once a day; amber is what the weekly turn publishes. The pages have no server: a visit reads one public JSON file and goes to Stripe's hosted checkout.")
 
@@ -39,7 +40,7 @@ Each provider exposes cost differently, so each has its own collector in the adm
 - **Google Cloud** is read from its billing export, which writes cost rows into a BigQuery dataset throughout the day [3]. The export is the one source that lags by days rather than hours, which matters for the pool (section 3).
 - **GitHub** reports usage through its billing API. The repositories are public, so the net amount is $0 and adds nothing to the pool, but the rows keep the gross for the Billing page.
 - **Two GPU and model services** have no daily cost API to call. One publishes only a usage report, so a small Python job on Cloud Run reads it shortly before the snapshot and writes its share into the day's record; the other exposes only a credit balance, so a day's spend is how far the balance fell between two snapshots.
-- **The Claude subscription** has no API at all. Its monthly fee is entered by hand on the private Billing page whenever it changes, and the rows spread it evenly over the days of each month, so a 30-day window counts about one month of it.
+- **The Claude subscription** has no API at all. Its monthly fee is entered by hand on the private Billing page whenever it changes, and the rows spread it evenly over the days of each month, so a 30-day window counts about one month of it. As of Nov 16, 2026, the subscription no longer counts toward the pool: the Billing page still shows it, but the donate step leaves its rows out.
 
 All of this runs as one daily snapshot. Cloud Scheduler calls the admin API at 06:00 New York time with a signed identity token [4], the handler accepts only that service account's token, and the run collects every source, stores the result as the day's document in Firestore, and then runs the donate step over the assembled rows. Each source is collected on its own, so one that fails is recorded as failed for the day rather than failing the run; the donate step reads that list (section 3). The step's result, including why it held, is stored with the day's snapshot, and its errors go to the service's log.
 
@@ -47,7 +48,7 @@ All of this runs as one daily snapshot. Cloud Scheduler calls the admin API at 0
 
 ## 3. The pool is the 30 days ending yesterday, and a turn waits for late data
 
-The window is the 30 days that end the day before the turn, in UTC. On Oct 31, 2026 that was Oct 1 through Oct 30. Yesterday is the last day because a day's costs are still arriving while it lasts. The pool sums every row in the window and leaves out spend tagged to work that is not public, so the bill a tipper sees is the bill of the work they can use.
+The window is the 30 days that end the day before the turn, in UTC. On Oct 31, 2026 that was Oct 1 through Oct 30. Yesterday is the last day because a day's costs are still arriving while it lasts. The pool sums every row in the window and leaves out spend tagged to work that is not public, so the bill a tipper sees is the bill of the work they can use. As of Nov 16, 2026, it also leaves out the Claude subscription's rows.
 
 A turn is due seven days after the last one. On a due day the step runs only if the data is good enough to price:
 
@@ -59,7 +60,7 @@ When a turn is held, the step says why in its result (`waiting on GCP rows throu
 
 ## 4. Three tiers at 1%, 3% and 10%, rounded up to the dollar
 
-Each tier is its share of the pool, rounded up to a whole dollar, with $1 as the floor. Rounding up keeps the labels honest: a tier called "about 1%" never comes in under 1%. The first turn, on Oct 31, 2026, priced the window of Oct 1 to Oct 30:
+Each tier is its share of the pool, rounded up to a whole dollar, with $1 as the floor. Rounding up keeps the labels honest: a tier called "about 1%" never comes in under 1%. The first turn, on Oct 31, 2026, priced the window of Oct 1 to Oct 30 (its pool still counted the Claude subscription, which left the pool on Nov 16, 2026):
 
 | Tier | Share | Pool | Exact share | Price |
 |---|---|---|---|---|
