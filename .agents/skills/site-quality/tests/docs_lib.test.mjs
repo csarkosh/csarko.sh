@@ -1142,7 +1142,9 @@ test('What next: an ordinary heading, the closing with the project\'s link, next
   assert.ok(!end.includes('section-head') && !end.includes('section-label'));
   assert.ok(!html.includes('href="#what-next"'));
   assert.equal((html.match(/<h1/g) ?? []).length, 1);
-  for (const gone of ['keep-reading', 'Keep reading', 'next-list', 'series-parts', 'play-line', 'class="play"', 'class="next"', 'Read next</span>']) assert.ok(!html.includes(gone), gone);
+  for (const gone of ['keep-reading', 'Keep reading', 'next-list', 'series-parts', 'play-line', 'class="next"', 'Read next</span>']) assert.ok(!html.includes(gone), gone);
+  // The project's pill is in the header alone (2026-11-15), never in What next.
+  assert.ok(!end.includes('class="play"'), 'no pill in What next');
   assert.ok(!/<section class="prose what-next"[\s\S]*?class="card"[\s\S]*?<\/section>/.test(html), 'no cards');
   // A doc heading of the same words keeps the closing section's id free.
   assert.deepEqual(renderMarkdown('# T\n\n## What next\n', FILE, { slug: 'fog' }).rail.map((r) => r.id), ['what-next-1']);
@@ -1261,6 +1263,18 @@ test('a doc page styles a text-fragment landing with theme tokens, keeps linked 
   for (const gone of ['.keep-reading', '.next-list', '.series-parts', '.series-name', '.play-line', '.afterward .next']) assert.ok(!css.includes(gone), `${gone} rule`);
   // The list pages carry none of it.
   assert.ok(!indexPage([doc('a', '2026-01-01')], themeBlocks(INDEX)).includes('::target-text'));
+});
+
+test('a doc with a project carries its pill in the header, by kind, beside a watch pill (2026-11-15)', () => {
+  const header = (html) => /<header class="doc-header">([\s\S]*?)<\/header>/.exec(html)[1];
+  const pill = (slug) => header(page(longDoc('fog', '2026-10-07', `project: ${slug}\n`, LABELS)));
+  assert.ok(pill('day-hike').includes(`<p class="watch-line"><a class="play" href="${PLAY}" data-visits-event="top-day-hike">Play day-hike title in your browser <span aria-hidden="true">→</span></a></p>`), pill('day-hike'));
+  assert.ok(pill('ide-arkos').includes('<a class="play" href="https://apps.csarko.sh/ide-arkos" data-visits-event="top-ide-arkos">See ide-arkos <span aria-hidden="true">→</span></a>'), pill('ide-arkos'));
+  assert.ok(pill('the-last-trail').includes(`<a class="play" href="${WATCH}" target="_blank" rel="noopener" data-visits-event="top-the-last-trail">Watch the-last-trail title on YouTube <svg`), pill('the-last-trail'));
+  assert.ok(!page(longDoc('fog', '2026-10-07', 'project: none\n', LABELS)).includes('class="watch-line"'), 'project: none, no pill');
+  // A doc about someone else's video keeps its Watch pill first, then its own project's.
+  const both = header(page(longDoc('fog', '2026-10-07', 'watch: https://www.youtube.com/watch?v=yBs_pMUDrrk\nwatch-title: The Well\nproject: the-last-trail\n', LABELS)));
+  assert.match(both, /data-visits-event="watch-fog">Watch The Well on YouTube[\s\S]*data-visits-event="top-the-last-trail"/);
 });
 
 // ---------------------------------------------------------------- the review's fixes (2026-11-13)

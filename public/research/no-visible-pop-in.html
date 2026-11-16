@@ -372,7 +372,8 @@
     .what-next { margin-top: 48px; }
     .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
     .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
-    .watch-line { margin: 20px 0 0; }
+    .watch-line { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 0; }
+    .watch-line .play { max-width: 100%; text-wrap: balance; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
@@ -448,6 +449,7 @@
         <nav class="series-line" aria-label="Series">
           <span>Part 2 of 7 in <strong>Rendering a browser forest</strong></span><span aria-hidden="true">·</span><a href="/research/floating-props-on-procedural-terrain" rel="prev" aria-label="Previous: Why props float on procedural terrain" title="Why props float on procedural terrain" data-visits-event="series-floating-props-on-procedural-terrain"><span aria-hidden="true">←</span> Previous</a><span aria-hidden="true">·</span><a href="/research/grass-and-trail-realism" rel="next" aria-label="Next: Grass, wind and trails in a browser meadow" title="Grass, wind and trails in a browser meadow" data-visits-event="series-grass-and-trail-realism">Next <span aria-hidden="true">→</span></a>
         </nav>
+        <p class="watch-line"><a class="play" href="https://games.csarko.sh/dayhike/" data-visits-event="top-day-hike">Play Day Hike in your browser <span aria-hidden="true">→</span></a></p>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> Day Hike streams an endless forest around the player in a browser, with

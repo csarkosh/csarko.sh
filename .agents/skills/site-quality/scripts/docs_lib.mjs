@@ -1248,10 +1248,29 @@ function seriesLine(doc, links) {
         </nav>`;
 }
 
-// The video a doc is about, as an accent pill under the title so it is on the first screen.
-const watchLine = (doc) => (doc.watch
-  ? `\n        <p class="watch-line"><a class="play" href="${escapeHtml(doc.watch.url)}" target="_blank" rel="noopener" data-visits-event="watch-${doc.slug}">Watch ${escapeHtml(doc.watch.title)} on YouTube ${EXTERNAL_ARROW}</a></p>`
-  : '');
+// The pills under the title, on the first screen: the video a doc is about (watch:, Cyrus,
+// 2026-11-12, for The Well) and the doc's own project, its game, app or film (Cyrus, 2026-11-15:
+// the product line alone did not make the link out to his apps, films and game prominent enough;
+// it should look like The Well's Watch pill). The project's pill names it, since it sits apart
+// from the sentence that introduces it: [the field that holds its address, the words before and
+// after its title]. One on the site's own hosts opens in the same tab with a plain arrow, YouTube
+// in a new tab with the external mark. Its event is top-<project slug>, the fourth place a doc
+// links its project (lead, close, after are the others).
+const PILL_WORDS = { game: ['play', 'Play', 'in your browser'], app: ['page', 'See', ''], film: ['watch', 'Watch', 'on YouTube'] };
+function projectPill(project) {
+  const [field, verb, tail] = PILL_WORDS[project.kind];
+  const href = project[field];
+  const own = OWN_HOST.test(href);
+  const words = [verb, escapeHtml(named(project.title)), tail].filter(Boolean).join(' ');
+  return `<a class="play" href="${escapeHtml(href)}"${own ? '' : ' target="_blank" rel="noopener"'} data-visits-event="top-${project.slug}">${words} ${own ? ARROW : EXTERNAL_ARROW}</a>`;
+}
+const watchLine = (doc, project) => {
+  const pills = [
+    doc.watch && `<a class="play" href="${escapeHtml(doc.watch.url)}" target="_blank" rel="noopener" data-visits-event="watch-${doc.slug}">Watch ${escapeHtml(doc.watch.title)} on YouTube ${EXTERNAL_ARROW}</a>`,
+    project && projectPill(project),
+  ].filter(Boolean);
+  return pills.length ? `\n        <p class="watch-line">${pills.join('')}</p>` : '';
+};
 
 // The link that sends a doc's reader on to its project (2026-11-13), in words that say what the
 // click gives: [the field that holds its address, the link's words] by kind. It took the place of
@@ -1431,7 +1450,8 @@ const DOC_CSS = `
     .what-next { margin-top: 48px; }
     .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
     .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
-    .watch-line { margin: 20px 0 0; }
+    .watch-line { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 0; }
+    .watch-line .play { max-width: 100%; text-wrap: balance; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
@@ -1515,7 +1535,7 @@ ${rail}    <main id="top" tabindex="-1">
         <p class="lead">${escapeHtml(doc.description)}</p>
         <ul class="tags">
           <li>${readingMinutes(doc.readWords)} min read</li>${source}
-        </ul>${seriesLine(doc, links)}${watchLine(doc)}
+        </ul>${seriesLine(doc, links)}${watchLine(doc, links.project)}
       </header>
 ${prose(opening)}${inlineContents(doc)}${prose(sections)}${whatNext(doc, links)}${prose(sources)}      <section class="author" aria-label="About the author"${doc.hasSources ? '' : ' data-read-end'}>
         <p class="section-label">Written by</p>

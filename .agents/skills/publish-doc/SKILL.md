@@ -95,6 +95,11 @@ doc was about that film and its only link was source [1] at the bottom)*: `watch
 draw "Watch <watch-title> on YouTube" as the accent pill, under the title and the series line, so it
 is on the first screen. Keep the video in Sources too; the pill is not a citation.
 
+**A doc with a project links it from its header too** *(Cyrus, 2026-11-15: the product line
+alone did not make the link out to his apps, films and game prominent enough)*: the page draws
+the project's pill after any Watch pill, by kind, "Play <Title> in your browser", "See <Title>"
+or "Watch <Title> on YouTube". Nothing to write for it: `project:` is enough, and `none` gets no pill.
+
 The build refuses: em-dashes (use commas, colons or semicolons), an image that is
 not a figure (below), links that aren't `https://`, `#anchor` or `/root-relative`,
 skipped heading levels, and more than one `# ` title. Fix the copy, not the build.
@@ -123,8 +128,8 @@ sections; a What next section comes right under the last section and before Sour
 doc's `closing` with its project's link, up to three next questions, its place in its
 series, the feed); one line after the author box repeats the project's link, the next
 question and All research; and the read time counts the words before Sources. There is no
-Keep reading box, no card and no Play pill any more: a block that looks like a promotion
-got 1 click in 172 page loads. What the doc has to do:
+Keep reading box and no card any more: a block that looks like a promotion got 1 click in
+172 page loads. The one pill is the project's, in the header (2026-11-15). What the doc has to do:
 
 1. **Open with the answer, then say what it leaves open.** Three labelled paragraphs, in
    this order and spelled exactly so, since the page places the product line by them
@@ -297,7 +302,7 @@ followed: `toc` and `toc-rail` (the contents), `doc-<slug>` (a link in the text 
 another doc), `series-<slug>` (a part of the doc's own series: under the title, and in What
 next whether it is the next part or one named in `related`),
 `next-<slug>` (a next question in What next from outside the series), `end-<slug>` (the next question after
-the author box), `lead-<project>`, `close-<project>` and `after-<project>` (the project's
+the author box), `top-<project>` (the project's pill under the title), `lead-<project>`, `close-<project>` and `after-<project>` (the project's
 link in the opening, in What next and after the author box), `watch-<doc slug>` (the
 header's watch pill), `term` (a definition tapped open), `crumb-home` and `author-home`
 (the trail's and the author box's links home), plus `section-<n>` from `reading.js` when

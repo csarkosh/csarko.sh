@@ -280,8 +280,11 @@ three from the command line):
   `/research/feed.xml`. A link to one of the site's own hosts (csarko.sh, games, apps, donate)
   opens in the same tab, so Back returns to the doc; links to other sites keep their new tab.
   A sentence reached by a text-fragment link wears the accent tint (`::target-text`), and a
-  heading reached by a link clears the sticky nav. The header's Watch pill (`watch:`) is as it
-  was. `project-line`, `closing` and `asks` are plain text, printed as written (the build refuses
+  heading reached by a link clears the sticky nav. The header carries the doc's pills, on the first screen *(Cyrus, 2026-11-15: the product line alone did not make the
+  link out to his apps, films and game prominent enough; it should look like The Well's Watch pill)*: the Watch pill
+  (`watch:`, a video the doc is about) and then the project's own, named ("Play Day Hike in your browser", "See
+  Arkos IDE", "Watch The Last Trail on YouTube"), sent as `top-<project slug>`; the product line, What next and
+  the line after the author box keep their plain links. `project-line`, `closing` and `asks` are plain text, printed as written (the build refuses
   Markdown in them), and the first two date their present as the body does. `project` stays
   optional in the build until every doc carries it; making it required is
   one flag, `FIELDS.project` in `docs_lib.mjs`. The `publish-doc` skill's "Write for the skim"
@@ -594,7 +597,7 @@ dropped because its host went down and took the numbers with it.)*
   2026-11-13, when Cyrus had the page rebuilt)*: the contents count `toc` and
   `toc-rail`, a link in the text to another doc `doc-<slug>`, a part of the doc's series `series-<slug>` (the previous and the next part in the line under the title, *2026-11-12*, and again in What next, where the next part also leads the questions and a part named in `related:` counts the same), a next question in What
   next from outside the series `next-<slug>` (the name Keep reading's cards had), the next question after the author box `end-<slug>`, the link to the doc's project
-  `lead-<project slug>` in the opening, `close-<project slug>` in What next and `after-<project slug>` after the author box (three names so the three places can be compared; they took the place of the doc page's Play button, so `play-<game>` now comes from the `/projects` card alone, and the dashboard's Events card sums the three as its own tile and bar, "Doc to its project"), the header's watch pill `watch-<doc slug>` (a doc's `watch:` video, *2026-11-12*), a term's definition tapped open `term`, the trail's Home link `crumb-home` and the author box's two links to the home page `author-home`, and the site's own `reading.js` (the one script of ours, doc pages only) sends
+  `top-<project slug>` for its pill under the title (2026-11-15), `lead-<project slug>` in the opening, `close-<project slug>` in What next and `after-<project slug>` after the author box (four names so the places can be compared; the Events card's "Doc to its project" sums all four; they took the place of the doc page's Play button, so `play-<game>` now comes from the `/projects` card alone, and the dashboard's Events card sums the three as its own tile and bar, "Doc to its project"), the header's watch pill `watch-<doc slug>` (a doc's `watch:` video, *2026-11-12*), a term's definition tapped open `term`, the trail's Home link `crumb-home` and the author box's two links to the home page `author-home`, and the site's own `reading.js` (the one script of ours, doc pages only) sends
   `section` (`d.n`, n 0 for the opening) once a section has sat across the middle of a visible
   screen for 5 s, which a flick never does; the dashboard's Events card lists it as `section-<n>`. The last section stops counting once What next reaches the middle of the screen *(2026-11-13: 30 of 145 reads had logged only the links, the source list and the author box under it)*. A
   doc page now carries about 5,225 B of the 10,000 B script budget. Campaign tags on links Cyrus posts (`?ref=substack`, `?ref=linkedin`) are

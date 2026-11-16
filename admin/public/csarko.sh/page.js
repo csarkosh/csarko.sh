@@ -136,9 +136,9 @@ function pagesCard([pages]) {
 
 // A doc page's kinds are as of 2026-11-13, when its Keep reading box became the What next section and
 // its Play button the three links to the doc's project (lead, close, after; -<project slug>).
-const KINDS = { out: 'Outbound', play: 'Play', watch: 'Watch', read: 'Read to the end', nav: 'Navigation', start: 'Research: Start here', filter: 'Research: filter', toc: 'Doc: contents', doc: 'Doc: link to a doc', next: 'Doc: next question', series: 'Doc: series part', end: 'Doc: next question, page end', section: 'Doc: section read 5 s', lead: 'Doc: project link, opening', close: 'Doc: project link, What next', after: 'Doc: project link, page end', term: 'Doc: term opened', crumb: 'Doc: trail to Home', author: 'Doc: author box to Home', other: 'Other' };
+const KINDS = { out: 'Outbound', play: 'Play', watch: 'Watch', read: 'Read to the end', nav: 'Navigation', start: 'Research: Start here', filter: 'Research: filter', toc: 'Doc: contents', doc: 'Doc: link to a doc', next: 'Doc: next question', series: 'Doc: series part', end: 'Doc: next question, page end', section: 'Doc: section read 5 s', lead: 'Doc: project link, opening', close: 'Doc: project link, What next', after: 'Doc: project link, page end', top: 'Doc: project pill, header', term: 'Doc: term opened', crumb: 'Doc: trail to Home', author: 'Doc: author box to Home', other: 'Other' };
 /** The kinds of a doc's link on to its project: a game's play address, an app's page or a film on YouTube. */
-const PROJECT_LINK_KINDS = ['lead', 'close', 'after'];
+const PROJECT_LINK_KINDS = ['top', 'lead', 'close', 'after'];
 
 function eventsCard([events, visits], days) {
   if (!events.rows) return [notConfigured(missing(events, 'visits'))];
