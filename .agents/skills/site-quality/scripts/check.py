@@ -1918,7 +1918,7 @@ def admin_motion_pages():
     ]
     # A view seen before loads with nothing moving (Cyrus, 2026-10-29: "Never jumps"); the content
     # fades in where it will stay.
-    for url in ("/?preview", "/csarko.sh/?preview", "/ide-arkos/?preview", "/finance/?preview"):
+    for url in ("/?preview", "/csarko.sh/?preview", "/film/?preview", "/ide-arkos/?preview", "/finance/?preview"):
         pages.append((f"{url}: a warm reload moves no card, and the content fades in", """{ run: async (_, t) => {
           // The first visit remembers each card's height once its settling window (1.5 s) is over.
           let f = await t.open('%s');

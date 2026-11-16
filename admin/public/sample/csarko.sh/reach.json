@@ -1,13 +1,4 @@
 {
-  "youtube": {
-    "subscribers": 41,
-    "views": 2184,
-    "videos": 1,
-    "videosList": [
-      { "id": "dQw4w9WgXcQ", "title": "Who Is Standing in My Hallway", "views": 2184, "likes": 37 }
-    ],
-    "prev": { "subscribers": 38, "views": 2051 }
-  },
   "github": [
     {
       "repo": "csarkosh/game-dayhike",

@@ -18,6 +18,9 @@ const queries = {
   async search(days) { return { days }; },
   async reach(days) { if (days === 90) throw Object.assign(new TypeError("fetch failed"), { cause: { code: "ETIMEDOUT" } }); return { days }; },
   async health(days) { if (days === 90) throw new Error("boom"); return { days }; },
+  async films(days) { calls.push(["films", days]); return { days }; },
+  async channel(days) { calls.push(["channel", days]); return { days }; },
+  async filmKpis() { return { app: "film", kpis: [] }; },
   async manual(key, value) { calls.push(["manual", key, value]); return { ok: true, at: "t" }; },
   async snapshot() { calls.push(["snapshot"]); return { date: "2026-10-12" }; },
 };
@@ -164,6 +167,25 @@ test("with an empty allowlist every admin route answers 503 and /health still wo
   assert.equal(r.status, 503);
   assert.deepEqual(r.body, { error: "admin readers not configured" });
   assert.equal((await call(server, "POST", "/admin/snapshot", { headers: { authorization: "Bearer oidc-ok" } })).status, 503);
+});
+
+test("Film under /film: the index card and its two queries, through the same auth; films left the csarko.sh routes", async () => {
+  const server = await serve({});
+  servers.push(server);
+  assert.equal((await call(server, "GET", "/film/admin/kpis", { ip: "10.1.0.2" })).status, 401, "no token");
+  const kpis = await call(server, "GET", "/film/admin/kpis", auth("10.1.0.1"));
+  assert.equal(kpis.status, 200);
+  assert.equal(kpis.body.app, "film");
+  for (const name of ["films", "channel"]) {
+    const r = await call(server, "GET", `/film/admin/query/${name}?days=30`, auth("10.1.0.1"));
+    assert.equal(r.status, 200, name);
+    assert.deepEqual(calls.at(-1), [name, 30]);
+  }
+  assert.equal((await call(server, "GET", "/film/admin/query/films?days=14", auth("10.1.0.1"))).status, 400);
+  assert.equal((await call(server, "GET", "/film/admin/query/visits", auth("10.1.0.1"))).status, 404, "the csarko.sh queries are not Film's");
+  assert.equal((await call(server, "GET", "/admin/query/films", auth("10.1.0.1"))).status, 404, "films moved to /film");
+  assert.equal((await call(server, "POST", "/film/admin/kpis", auth("10.1.0.1"))).status, 405);
+  assert.equal((await call(server, "POST", "/film/admin/snapshot", auth("10.1.0.1"))).status, 404, "no snapshot or manual routes under the prefix");
 });
 
 test("Arkos under /arkos: the index card and its four queries, through the same auth", async () => {

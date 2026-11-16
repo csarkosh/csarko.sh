@@ -1,5 +1,6 @@
 [
   { "slug": "csarko.sh", "name": "csarko.sh", "home": "https://csarko.sh", "api": "https://csarko-admin-lwkslxdnnq-uw.a.run.app", "saved": "https://firestore.googleapis.com/v1/projects/csarko-sh/databases/(default)/documents/adminViews", "page": "/csarko.sh/" },
+  { "slug": "film", "name": "Film", "home": "https://www.youtube.com/@csarkosh", "api": "https://csarko-admin-lwkslxdnnq-uw.a.run.app/film", "saved": "https://firestore.googleapis.com/v1/projects/csarko-sh/databases/(default)/documents/adminViews", "page": "/film/" },
   { "slug": "game-dayhike", "name": "Day Hike", "home": "https://games.csarko.sh/dayhike", "api": "https://fps-telemetry-5pogqa5sqq-uw.a.run.app", "page": "/game-dayhike/" },
   { "slug": "ide-arkos", "name": "Arkos IDE", "home": "https://apps.csarko.sh/ide-arkos", "api": "https://csarko-admin-lwkslxdnnq-uw.a.run.app/arkos", "saved": "https://firestore.googleapis.com/v1/projects/csarko-sh/databases/(default)/documents/adminViews", "page": "/ide-arkos/" },
   { "slug": "finance", "name": "Billing", "listed": false, "home": "https://console.cloud.google.com/billing", "api": "https://csarko-admin-lwkslxdnnq-uw.a.run.app/finance", "views": "https://firestore.googleapis.com/v1/projects/csarko-sh/databases/(default)/documents/financeViews", "page": "/finance/" }

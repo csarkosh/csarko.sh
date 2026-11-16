@@ -1,0 +1,12 @@
+{
+  "youtube": {
+    "subscribers": 41,
+    "views": 2184,
+    "videos": 2,
+    "videosList": [
+      { "id": "C1XsDuJE4MQ", "title": "The Last Trail", "views": 1890, "likes": 52 },
+      { "id": "dQw4w9WgXcQ", "title": "Who Is Standing in My Hallway", "views": 294, "likes": 37 }
+    ],
+    "prev": { "subscribers": 38, "views": 2051 }
+  }
+}

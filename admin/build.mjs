@@ -13,7 +13,7 @@
  *   assets/*.woff2                       the hashed font files those rules name, copied from
  *                                        public/assets/ (stale ones removed)
  *   favicon.ico, favicon.svg             the site's icons
- *   index.html, csarko.sh/index.html, ide-arkos/index.html, finance/index.html
+ *   index.html, csarko.sh/index.html, film/index.html, ide-arkos/index.html, finance/index.html
  *                      generated:head    the Inter preload with the current hash
  *                      generated:nav     one link per app in apps.json, aria-current on its page
  *   apps.json                            with --api <url> or ADMIN_API_URL set, the csarko.sh
@@ -50,7 +50,7 @@ const PUBLIC = path.join(ADMIN, 'public');
 // The host's own pages, and each app's page when its bundle has been pulled
 // (admin/deploy.sh pulls Day Hike's before building): an app's page carries
 // the same chrome with the same generated blocks, filled here.
-const PAGES = ['index.html', path.join('csarko.sh', 'index.html'), path.join('ide-arkos', 'index.html'), path.join('finance', 'index.html'), path.join('game-dayhike', 'index.html')]
+const PAGES = ['index.html', path.join('csarko.sh', 'index.html'), path.join('film', 'index.html'), path.join('ide-arkos', 'index.html'), path.join('finance', 'index.html'), path.join('game-dayhike', 'index.html')]
   .filter((page) => page !== path.join('game-dayhike', 'index.html') || existsSync(path.join(ADMIN, 'public', page)));
 
 const argv = process.argv.slice(2);

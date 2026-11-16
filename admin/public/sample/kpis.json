@@ -38,6 +38,17 @@
     ],
     "health": { "status": "warning", "note": "10 of 16 pages not yet indexed" }
   },
+  "film": {
+    "app": "film",
+    "at": "2026-10-12T13:05:00Z",
+    "kpis": [
+      { "key": "views", "label": "Film views, 7 days", "value": 1383, "prev": 1044, "unit": "", "trend": [120, 180, 240, 210, 260, 310, 420, 560, 610, 880, 1044, 1383] },
+      { "key": "engaged", "label": "Engaged views, 7 days", "value": 857, "prev": 640, "unit": "", "trend": [70, 110, 150, 130, 160, 190, 260, 340, 380, 540, 640, 857] },
+      { "key": "watch", "label": "Watch time, 7 days", "value": 955, "prev": 700, "unit": "min", "trend": [80, 120, 160, 140, 170, 210, 290, 390, 420, 600, 700, 955] },
+      { "key": "subscribers", "label": "Subscribers", "value": 41, "prev": 38, "unit": "", "trend": [12, 14, 15, 17, 19, 22, 25, 28, 31, 35, 38, 41] }
+    ],
+    "health": { "status": "good", "note": "YouTube Analytics through 2026-10-09" }
+  },
   "game-dayhike": {
     "app": "game-dayhike",
     "at": "2026-10-12T13:04:40Z",

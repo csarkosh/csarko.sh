@@ -9,6 +9,8 @@
  *   GET  /admin/query/<name>?days=N[&tz=Zone]   one of the saved queries; `tz` the reader's zone, UTC when absent
  *   POST /admin/manual/<key>           { value } appended to the hand-entered series
  *   POST /admin/snapshot               the daily ledger write (admin token or the scheduler's OIDC token)
+ *   GET  /film/admin/kpis              the Film page's index card
+ *   GET  /film/admin/query/<name>?days=N  films or channel, the Film page's two queries
  *   GET  /arkos/admin/kpis             Arkos IDE's index card
  *   GET  /arkos/admin/query/<name>?days=N[&who=users|me|all]   one of Arkos's four queries
  *   GET  /finance/admin/kpis           the finance page's index card
@@ -16,10 +18,10 @@
  *   POST /finance/admin/manual/<key>   { value } appended to a finance series (claude-subscription)
  *   POST /finance/admin/refresh        rewrites the finance page's views (admin token or the scheduler's OIDC token)
  *
- * Arkos IDE is served under the prefix `/arkos`, and the finance page under
- * `/finance`, so that each one's `api` in apps.json is `<service>/<prefix>`
- * and the shell's two routes hold for it. All three prefixes go through the
- * same checks in the same order; only the route table differs.
+ * Arkos IDE is served under the prefix `/arkos`, the Film page under `/film`
+ * and the finance page under `/finance`, so that each one's `api` in apps.json
+ * is `<service>/<prefix>` and the shell's two routes hold for it. Every prefix
+ * goes through the same checks in the same order; only the route table differs.
  *
  * Order of the checks, and why: the origin first, so somebody else's page
  * gets a 403 and no CORS headers; the preflight next, since it carries no
@@ -32,7 +34,7 @@
 import { bearerOf, audiencesFor } from "./auth.mjs";
 import { answer, fail, failureOf, readBody, parseDays, parseTz, isAllowedOrigin, corsHeaders, preflightHeaders } from "./http.mjs";
 import { clientIpOf } from "./limiter.mjs";
-import { isQueryName, isManualKey } from "./queries.mjs";
+import { isQueryName, isFilmQueryName, isManualKey } from "./queries.mjs";
 import { isArkosQueryName, parseWho } from "./arkos-queries.mjs";
 import { isFinanceQueryName, isFinanceManualKey, parseRange } from "./finance-queries.mjs";
 import { savedId, SAVED_SLUGS } from "./saved.mjs";
@@ -40,6 +42,7 @@ import { savedId, SAVED_SLUGS } from "./saved.mjs";
 const MAX_BODY_BYTES = 1024;
 
 const ARKOS_PREFIX = "/arkos";
+const FILM_PREFIX = "/film";
 const FINANCE_PREFIX = "/finance";
 /** The routes Cloud Scheduler calls with its OIDC token: the daily snapshot and the hourly finance views. */
 const SCHEDULED = ["/admin/snapshot", `${FINANCE_PREFIX}/admin/refresh`];
@@ -63,7 +66,8 @@ export function createApp({ config, queries, arkos = null, finance = null, saver
     }
     const isArkos = arkos !== null && path.startsWith(`${ARKOS_PREFIX}/admin/`);
     const isFinance = finance !== null && path.startsWith(`${FINANCE_PREFIX}/admin/`);
-    if (!path.startsWith("/admin/") && !isArkos && !isFinance) return fail(res, 404, "not found");
+    const isFilm = path.startsWith(`${FILM_PREFIX}/admin/`);
+    if (!path.startsWith("/admin/") && !isArkos && !isFinance && !isFilm) return fail(res, 404, "not found");
 
     const origin = req.headers.origin;
     if (!isAllowedOrigin(origin, config.allowedOrigins)) return fail(res, 403, "origin not allowed");
@@ -94,6 +98,7 @@ export function createApp({ config, queries, arkos = null, finance = null, saver
         }
         if (!authorized) return fail(res, 401, "unauthorized", cors);
         if (isArkos) await routeArkos(req, res, path.slice(ARKOS_PREFIX.length), url.searchParams, cors);
+        else if (isFilm) await routeFilm(req, res, path.slice(FILM_PREFIX.length), url.searchParams, cors);
         else if (isFinance) await routeFinance(req, res, path.slice(FINANCE_PREFIX.length), url.searchParams, cors);
         else await route(req, res, path, url.searchParams, cors);
       } catch (error) {
@@ -134,6 +139,25 @@ export function createApp({ config, queries, arkos = null, finance = null, saver
     if (path === "/admin/snapshot") {
       if (req.method !== "POST") return fail(res, 405, "method not allowed", { ...cors, allow: "POST, OPTIONS" });
       return answer(res, 200, await queries.snapshot(), cors);
+    }
+
+    return fail(res, 404, "not found", cors);
+  }
+
+  /** The Film page's two routes, `path` with the prefix taken off: the index card and its two queries (csarko.sh's source answers both). */
+  async function routeFilm(req, res, path, search, cors) {
+    if (path === "/admin/kpis") {
+      if (req.method !== "GET") return fail(res, 405, "method not allowed", { ...cors, allow: "GET, OPTIONS" });
+      return answerSaved(res, FILM_PREFIX, path, search, await queries.filmKpis(), cors);
+    }
+
+    const query = /^\/admin\/query\/([a-z]+)$/.exec(path);
+    if (query !== null) {
+      if (!isFilmQueryName(query[1])) return fail(res, 404, "no such query", cors);
+      if (req.method !== "GET") return fail(res, 405, "method not allowed", { ...cors, allow: "GET, OPTIONS" });
+      const days = parseDays(search.get("days"));
+      if (days === null) return fail(res, 400, "days must be 1, 7, 30 or 90", cors);
+      return answerSaved(res, FILM_PREFIX, path, search, await queries[query[1]](days), cors);
     }
 
     return fail(res, 404, "not found", cors);

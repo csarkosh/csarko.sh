@@ -25,7 +25,13 @@ import { ANALYTICS_LAG } from "./collectors/youtube-analytics.mjs";
 import { collectFilms, filmsAnswer, filmsDays, isFilmsPart } from "./films.mjs";
 import { HOUR } from "./cache.mjs";
 
-export const QUERY_NAMES = ["visits", "pages", "referrers", "events", "journeys", "audience", "search", "reach", "health", "films"];
+export const QUERY_NAMES = ["visits", "pages", "referrers", "events", "journeys", "audience", "search", "reach", "health"];
+/**
+ * The Film page's queries, served under `/film` (app.mjs): the films and the YouTube channel moved
+ * off the csarko.sh page to a top-level page of their own (Cyrus, 2026-11-16).
+ */
+export const FILM_QUERY_NAMES = ["films", "channel"];
+export const FILM_APP = "film";
 export const MANUAL_KEYS = ["substack"];
 export const APP_NAME = "csarko.sh";
 export const TREND_WEEKS = 12;
@@ -52,6 +58,30 @@ const outboundOf = (rows) => rows.filter((r) => eventKindOf(r.name) === "out").r
 
 export function isQueryName(name) {
   return QUERY_NAMES.includes(name);
+}
+
+export function isFilmQueryName(name) {
+  return FILM_QUERY_NAMES.includes(name);
+}
+
+/** The films' `key` summed over every film in a films answer (its totals, or its prev). */
+const filmsSum = (answer, which, key) => (answer?.films ?? []).reduce((n, f) => n + Number(f?.[which]?.[key] ?? 0), 0);
+
+/**
+ * Twelve weekly sums of `key` over every film's daily rows, the last week ending on `through`
+ * (YouTube's last finished day) and each week before it seven days earlier; a day with no row is 0.
+ */
+export function filmsWeekly(answer, key, through, weeks = TREND_WEEKS) {
+  const byDay = new Map();
+  for (const f of answer?.films ?? []) for (const r of f.daily ?? []) byDay.set(r.day, (byDay.get(r.day) ?? 0) + Number(r[key] ?? 0));
+  const out = [];
+  for (let i = weeks - 1; i >= 0; i -= 1) {
+    const end = addDays(through, -7 * i);
+    let n = 0;
+    for (let d = 0; d < 7; d += 1) n += byDay.get(addDays(end, -d)) ?? 0;
+    out.push(n);
+  }
+  return out;
 }
 
 export function isManualKey(key) {
@@ -309,18 +339,26 @@ export function createQueries({ visits, gsc, youtube, youtubeAnalytics = null, g
 
     async reach() {
       const h = hints();
-      const today = isoDate(now());
-      const [snapshots, channel, repos, mentions, series] = await Promise.all([
-        store.listSnapshots(addDays(today, -14), today, { fields: ["youtube"] }),
-        part(h, "youtube", "YOUTUBE_KEY", youtube.configured, () => youtube.channel()),
+      const [repos, mentions, series] = await Promise.all([
         part(h, "github", "GITHUB_OWNER", github.enabled, () => github.all()),
         part(h, "hn", "HN", true, () => hn.mentions()),
         store.getManual("substack"),
       ]);
       if (repos !== null && !github.configured) h.notConfigured.githubTraffic = "GITHUB_TOKEN";
+      return withHints({ github: repos, hn: mentions, substack: { series } }, h);
+    },
+
+    /** The Film page's Channel card: the YouTube channel now, and its subscribers and views in the snapshot a week back. */
+    async channel() {
+      const h = hints();
+      const today = isoDate(now());
+      const [snapshots, channel] = await Promise.all([
+        store.listSnapshots(addDays(today, -14), today, { fields: ["youtube"] }),
+        part(h, "youtube", "YOUTUBE_KEY", youtube.configured, () => youtube.channel()),
+      ]);
       const ago = snapshotAgo(snapshots, today, 7);
       const yt = channel === null ? null : { ...channel, prev: ago?.youtube ? { subscribers: ago.youtube.subscribers ?? null, views: ago.youtube.views ?? null } : null };
-      return withHints({ youtube: yt, github: repos, hn: mentions, substack: { series } }, h);
+      return withHints({ youtube: yt }, h);
     },
 
     async health(days = 7) {
@@ -424,6 +462,58 @@ export function createQueries({ visits, gsc, youtube, youtubeAnalytics = null, g
           kpi("outbound", "Outbound clicks, 7 days", outbound?.value ?? null, outbound?.prev ?? null, "outbound7"),
         ],
         health: health?.overall ?? { status: "warning", note: "health check failed" },
+      }, h);
+    },
+
+    /**
+     * The Film page's index card: the films' views, engaged views and watch time over YouTube's last
+     * seven finished days against the seven before, each with twelve weeks of the films' daily rows,
+     * and the channel's subscribers against the snapshot a week back. Reads the snapshot's films part
+     * as the Films card does, so a load makes no YouTube Analytics call once one holds it.
+     */
+    async filmKpis() {
+      const h = hints();
+      const today = isoDate(now());
+      const [snapshots, channel, week, quarter] = await Promise.all([
+        store.listSnapshots(addDays(today, -7 * TREND_WEEKS + 1), today, { fields: ["youtube"] }),
+        part(h, "subscribers", "YOUTUBE_KEY", youtube.configured, () => youtube.channel()),
+        queries.films(7),
+        queries.films(90),
+      ]);
+      const has = Array.isArray(week.films);
+      if (!has && week.notConfigured?.films) for (const key of ["views", "engaged", "watch"]) h.notConfigured[key] = week.notConfigured.films;
+      if (week.errors?.films) h.errors.films = week.errors.films;
+      const through = week.to ?? quarter.to;
+      const trend = (key) => (has && through ? filmsWeekly(quarter, key, through) : Array(TREND_WEEKS).fill(0));
+      const kpi = (key, label, field, unit = "") => ({
+        key, label, unit,
+        value: has ? Math.round(filmsSum(week, "totals", field)) : null,
+        prev: has ? Math.round(filmsSum(week, "prev", field)) : null,
+        trend: trend(field).map(Math.round),
+      });
+      const subsAgo = snapshotAgo(snapshots, today, 7)?.youtube?.subscribers;
+      const health = !has
+        ? { status: "warning", note: week.notConfigured?.films ? `Not configured (${week.notConfigured.films})` : "YouTube Analytics failed" }
+        : week.errors?.films
+          ? { status: "warning", note: `YouTube Analytics failed; the numbers are from ${week.at ? week.at.slice(0, 10) : "an older snapshot"}` }
+          : { status: "good", note: `YouTube Analytics through ${week.to}` };
+      return withHints({
+        app: FILM_APP,
+        at: new Date(now()).toISOString(),
+        kpis: [
+          kpi("views", "Film views, 7 days", "views"),
+          kpi("engaged", "Engaged views, 7 days", "engagedViews"),
+          kpi("watch", "Watch time, 7 days", "estimatedMinutesWatched", "min"),
+          {
+            key: "subscribers",
+            label: "Subscribers",
+            unit: "",
+            value: channel?.subscribers ?? null,
+            prev: channel === null ? null : (typeof subsAgo === "number" ? subsAgo : null),
+            trend: weeklyTrend(snapshots.map((s) => ({ date: s.date, subscribers: s.youtube?.subscribers ?? 0 })), "subscribers", today),
+          },
+        ],
+        health,
       }, h);
     },
 

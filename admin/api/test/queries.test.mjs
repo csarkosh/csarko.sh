@@ -245,19 +245,26 @@ test("search ends on Google's last finished day, with the lag note, per-day rows
   assert.deepEqual(off.notConfigured, { search: "GSC_SA_KEY" });
 });
 
-test("reach reports each source, the GitHub traffic hint without a token, and YouTube's prev from the snapshot", async () => {
+test("reach reports each source and the GitHub traffic hint without a token; YouTube is the Film page's", async () => {
   const deps = fakes({ youtubeOn: true });
-  await deps.store.writeSnapshot("2026-10-05", { youtube: { subscribers: 35, views: 1000 } });
   await deps.store.appendManual("substack", { at: "2026-10-01T00:00:00Z", value: 12 });
   const reach = await createQueries(deps).reach(7);
-  assert.deepEqual(reach.youtube.prev, { subscribers: 35, views: 1000 });
+  assert.equal(reach.youtube, undefined, "the channel moved to the Film page (2026-11-16)");
   assert.equal(reach.github[0].traffic, null);
   assert.deepEqual(reach.notConfigured, { githubTraffic: "GITHUB_TOKEN" });
   assert.deepEqual(reach.hn, { mentions: 0, items: [] });
   assert.deepEqual(reach.substack.series, [{ at: "2026-10-01T00:00:00Z", value: 12 }]);
-  const off = await createQueries(fakes()).reach(7);
+});
+
+test("channel reports the YouTube channel with its prev from the snapshot a week back", async () => {
+  const deps = fakes({ youtubeOn: true });
+  await deps.store.writeSnapshot("2026-10-05", { youtube: { subscribers: 35, views: 1000 } });
+  const channel = await createQueries(deps).channel(7);
+  assert.equal(channel.youtube.subscribers, 40);
+  assert.deepEqual(channel.youtube.prev, { subscribers: 35, views: 1000 });
+  const off = await createQueries(fakes()).channel(7);
   assert.equal(off.youtube, null);
-  assert.equal(off.notConfigured.youtube, "YOUTUBE_KEY");
+  assert.deepEqual(off.notConfigured, { youtube: "YOUTUBE_KEY" });
 });
 
 test("health reads Lighthouse from the latest snapshot, or runs it once when there is none", async () => {
@@ -391,6 +398,33 @@ test("films without the consent is not configured, never a 500", async () => {
   const doc = await createQueries({ ...fakes(), youtubeAnalytics: { configured: false } }).snapshot();
   assert.equal(doc.films, undefined);
   assert.equal(doc.notConfigured.films, "YOUTUBE_OAUTH");
+});
+
+test("filmKpis sums the films over YouTube's last seven days, with twelve weeks of their days and the channel's subscribers", async () => {
+  const deps = fakes({ youtubeOn: true });
+  await deps.store.writeSnapshot("2026-10-05", { youtube: { subscribers: 35, views: 1000 } });
+  const yta = fakeAnalytics();
+  const q = createQueries({ ...deps, youtubeAnalytics: yta, now: () => NOW });
+  const week = await q.films(7);
+  const k = await q.filmKpis();
+  assert.equal(k.app, "film");
+  assert.deepEqual(k.kpis.map((x) => x.key), ["views", "engaged", "watch", "subscribers"]);
+  const views = k.kpis[0];
+  assert.equal(views.value, week.films.reduce((n, f) => n + f.totals.views, 0));
+  assert.equal(views.prev, week.films.reduce((n, f) => n + f.prev.views, 0));
+  assert.equal(views.trend.length, 12);
+  const lastWeek = week.films.reduce((n, f) => n + f.daily.reduce((m, r) => m + r.views, 0), 0);
+  assert.equal(views.trend.at(-1), lastWeek, "the last week is the seven days the value counts");
+  assert.equal(k.kpis[2].unit, "min");
+  assert.equal(k.kpis[3].value, 40);
+  assert.equal(k.kpis[3].prev, 35);
+  assert.deepEqual(k.health, { status: "good", note: "YouTube Analytics through 2026-10-09" });
+
+  const off = await createQueries({ ...fakes(), youtubeAnalytics: { configured: false } }).filmKpis();
+  assert.deepEqual(off.kpis.map((x) => x.value), [null, null, null, null]);
+  assert.deepEqual(off.notConfigured, { subscribers: "YOUTUBE_KEY", views: "YOUTUBE_OAUTH", engaged: "YOUTUBE_OAUTH", watch: "YOUTUBE_OAUTH" });
+  assert.equal(off.health.status, "warning");
+  assert.ok(off.kpis.every((x) => x.trend.length === 12));
 });
 
 test("a failed films step keeps the last good part with its age, and the rest of the day is still written", async () => {

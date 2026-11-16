@@ -17,7 +17,7 @@
 /** The parameters an id carries, in this (sorted) order; anything else in the query is ignored. */
 export const SAVED_PARAMS = ["days", "range", "tz", "who"];
 /** The app slug (apps.json) of each prefix whose answers are saved. Billing has its own views. */
-export const SAVED_SLUGS = { "": "csarko.sh", "/arkos": "ide-arkos" };
+export const SAVED_SLUGS = { "": "csarko.sh", "/film": "film", "/arkos": "ide-arkos" };
 /** An answer larger than this is not saved (a Firestore document is at most 1 MiB). */
 export const SAVED_MAX_BYTES = 900_000;
 

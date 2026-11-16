@@ -10,7 +10,7 @@
 #                                  pages, once per theme, the way site-quality's check.py runs it
 #   admin/preview.sh --stop        stop a server started without flags
 #   admin/preview.sh --shots --page finance
-#                                  one page only (index, csarko-sh, ide-arkos or finance), for
+#                                  one page only (index, csarko-sh, film, ide-arkos or finance), for
 #                                  --shots and --lighthouse
 #
 # Flags combine. --shots and --lighthouse alone do not open Chrome. The pages follow the
@@ -32,7 +32,7 @@ OUT="/tmp/csarko-sh-admin-preview"
 PORT=8788
 SHOT_PORT=8789
 PIDFILE="$OUT/server.pid"
-PAGES=("|/?preview" "csarko-sh-|/csarko.sh/?preview" "ide-arkos-|/ide-arkos/?preview" "finance-|/finance/?preview")     # <file prefix>|<path>
+PAGES=("|/?preview" "csarko-sh-|/csarko.sh/?preview" "film-|/film/?preview" "ide-arkos-|/ide-arkos/?preview" "finance-|/finance/?preview")     # <file prefix>|<path>
 # A page named as an argument (`--page finance`, the file prefix without its dash, or `index`)
 # narrows --shots and --lighthouse to that page.
 
@@ -45,7 +45,7 @@ while (( $# )); do
     --shots) SHOTS=1; SERVE=0 ;;
     --lighthouse) LIGHTHOUSE=1; SERVE=0 ;;
     --stop) STOP=1; SERVE=0 ;;
-    --page) shift; ONLY="${1:-}"; [[ -n "$ONLY" ]] || die "--page needs a name (index, csarko-sh, ide-arkos, finance)" ;;
+    --page) shift; ONLY="${1:-}"; [[ -n "$ONLY" ]] || die "--page needs a name (index, csarko-sh, film, ide-arkos, finance)" ;;
     *) die "unknown argument: $1" ;;
   esac
   shift
@@ -56,7 +56,7 @@ if [[ -n "$ONLY" ]]; then
     prefix="${entry%%|*}"
     [[ "${prefix%-}" == "$ONLY" || ( -z "$prefix" && "$ONLY" == index ) ]] && kept+=("$entry")
   done
-  (( ${#kept[@]} )) || die "no page named $ONLY (index, csarko-sh, ide-arkos, finance)"
+  (( ${#kept[@]} )) || die "no page named $ONLY (index, csarko-sh, film, ide-arkos, finance)"
   PAGES=("${kept[@]}")
 fi
 
@@ -155,5 +155,5 @@ if (( SERVE )); then
     echo $! > "$PIDFILE"
     echo "serving $PUBLIC on http://localhost:$PORT (pid $!); stop with --stop"
   fi
-  open -a "Google Chrome" "http://localhost:$PORT/?preview" "http://localhost:$PORT/csarko.sh/?preview" "http://localhost:$PORT/ide-arkos/?preview" "http://localhost:$PORT/finance/?preview"
+  open -a "Google Chrome" "http://localhost:$PORT/?preview" "http://localhost:$PORT/csarko.sh/?preview" "http://localhost:$PORT/film/?preview" "http://localhost:$PORT/ide-arkos/?preview" "http://localhost:$PORT/finance/?preview"
 fi

@@ -20,7 +20,9 @@ bucket), `jose`, and for Cost Explorer `@aws-sdk/client-cost-explorer` and
 |---|---|---|
 | `GET /health` | none | `{ ok: true, at }` (Cloud Run's probe) |
 | `GET /admin/kpis` | admin token | the index card: four KPIs with the previous period and a 12-week trend, plus the health dot |
-| `GET /admin/query/<name>?days=1\|7\|30\|90` | admin token | one of `visits`, `pages`, `referrers`, `events`, `journeys`, `audience`, `search`, `reach`, `health`, `films` (YouTube Analytics per film, read from the snapshot; `days=1` answers 7); `days` defaults to 7, anything else is 400 |
+| `GET /admin/query/<name>?days=1\|7\|30\|90` | admin token | one of `visits`, `pages`, `referrers`, `events`, `journeys`, `audience`, `search`, `reach`, `health`; `days` defaults to 7, anything else is 400 |
+| `GET /film/admin/kpis` | admin token | the Film page's index card (2026-11-16): the films' views, engaged views and watch time over YouTube's last 7 finished days against the 7 before, each with a 12-week trend from the films' daily rows, and the channel's subscribers |
+| `GET /film/admin/query/<name>?days=1\|7\|30\|90` | admin token | `films` (YouTube Analytics per film, read from the snapshot; `days=1` answers 7) or `channel` (the YouTube channel now, against the snapshot a week back) |
 | `POST /admin/manual/<key>` body `{ "value": n }` | admin token | appends `{ at, value }` to `manual/<key>` (key: `substack`) |
 | `POST /admin/snapshot` | admin token, or Cloud Scheduler's OIDC token | runs every collector and merges `snapshots/<YYYY-MM-DD>` (UTC) |
 | `GET /arkos/admin/kpis` | admin token | Arkos IDE's index card: active Macs, new installs, sessions and crash-free sessions over 7 days, each with the 7 days before and a 12-week trend computed from the rows, plus the health dot |
@@ -141,7 +143,7 @@ the old unit (a browser once per page per session) and is merged by day, path an
 ## Films: YouTube Analytics
 
 *(2026-11-01; plan `docs/superpowers/plans/2026-11-01-youtube-analytics.md`.)* The `films` query is
-the csarko.sh page's Films card: per film the views, watch time, average view duration and
+the Film page's Films card (`/film/admin/query/films`; on the csarko.sh page until 2026-11-16): per film the views, watch time, average view duration and
 percentage viewed, subscribers gained, the days, the retention curve, the traffic source types and
 External's sites and pages (a Reddit post by its URL), against the period before; every other
 upload on the channel under "Other uploads" with its totals. Only the channel owner can read these,

@@ -360,15 +360,13 @@ fetched the feed.
 
 ```json
 {
-  "youtube": { "subscribers": 41, "views": 2184, "videos": 1, "videosList": [ { "id": "dQw4w9WgXcQ", "title": "Who Is Standing in My Hallway", "views": 2184, "likes": 37 } ], "prev": { "subscribers": 38, "views": 2051 } },
   "github": [ { "repo": "csarkosh/game-dayhike", "stars": 12, "forks": 1, "watchers": 12, "traffic": { "views": 184, "uniques": 61, "clones": 7, "referrers": [ { "referrer": "csarko.sh", "count": 44, "uniques": 19 } ] } } ],
   "hn": { "mentions": 1, "items": [ { "title": "Rock on steep terrain: shape it, cover it, or skin it", "url": "https://news.ycombinator.com/item?id=45000001", "points": 6, "at": "2026-10-09T15:42:00Z", "kind": "story" } ] },
   "substack": { "series": [ { "at": "2026-10-05T10:00:00Z", "value": 47 } ] }
 }
 ```
 
-- `youtube` is `null` with `notConfigured.youtube = "YOUTUBE_KEY"`; `youtube.prev` is
-  the snapshot a week back, `null` until there is one.
+- The YouTube channel is the Film page's `channel` (2026-11-16), no longer a part of `reach`.
 - `github` lists every public, non-fork repository of the account (`GITHUB_OWNER`,
   found by listing it, so a private one can never appear); it is `null` with
   `notConfigured.github = "GITHUB_OWNER"`. Stars come without a token;
@@ -400,6 +398,53 @@ fetched the feed.
 `notConfigured.indexed`; `sitemapFetchedAt` with `notConfigured.sitemapState`.
 `overall` is always present (an unknown check does not degrade the status; the note
 says what is unknown).
+
+## `POST <api>/admin/manual/substack` (csarko.sh)
+
+Body `{ "value": 47 }` (a non-negative integer). Answer `{ "ok": true, "at": "2026-10-12T13:05:00Z" }`.
+Appends `{ at, value }` to the `substack` series that `reach` returns; the page then
+reloads the Reach card. `substack` is the only key.
+
+## Film: `GET <api>/film/admin/kpis` and `/film/admin/query/<name>?days=1|7|30|90&tz=<zone>`
+
+*(Cyrus, 2026-11-16: the films' metrics on their own top-level page and index card, `/film/`,
+after csarko.sh's, rather than as a card on the site's page.)* The csarko-admin service serves the
+Film page under the prefix `/film`, so `apps.json` names `<service>/film` as its `api` and the
+shell's two routes hold. Same auth, CORS, rate limit and saved answers as csarko.sh's (`film/...`
+ids); csarko.sh's own source answers, and the snapshot's `films` and `youtube` parts feed it. There
+is no snapshot or manual route under the prefix, and `/admin/query/films` is gone from csarko.sh's.
+
+### `kpis`
+
+```json
+{
+  "app": "film", "at": "2026-11-16T13:05:00Z",
+  "kpis": [
+    { "key": "views", "label": "Film views, 7 days", "value": 1383, "prev": 1044, "unit": "", "trend": [ 120, 180, "…12" ] },
+    { "key": "engaged", "label": "Engaged views, 7 days", "value": 857, "prev": 640, "unit": "", "trend": [ "…12" ] },
+    { "key": "watch", "label": "Watch time, 7 days", "value": 955, "prev": 700, "unit": "min", "trend": [ "…12" ] },
+    { "key": "subscribers", "label": "Subscribers", "value": 41, "prev": 38, "unit": "", "trend": [ "…12" ] }
+  ],
+  "health": { "status": "good", "note": "YouTube Analytics through 2026-11-13" }
+}
+```
+
+- The first three are every film's (`films.json`, not the other uploads) totals over the `films`
+  query's 7 days against the 7 before, watch time in whole minutes; each trend is twelve weekly sums
+  of the films' daily rows, the last week ending on YouTube's last finished day. Without the consent
+  they are `null` with `notConfigured.<key> = "YOUTUBE_OAUTH"`, and `health` is a warning.
+- `subscribers` is the channel now (`YOUTUBE_KEY`, else `null` with `notConfigured.subscribers`),
+  `prev` the snapshot a week back, the trend the snapshots' `youtube.subscribers` a week apart.
+- `health` is a warning naming the failure while the films part is the last good one.
+
+### `channel`
+
+```json
+{ "youtube": { "subscribers": 41, "views": 2184, "videos": 2, "videosList": [ { "id": "C1XsDuJE4MQ", "title": "The Last Trail", "views": 1890, "likes": 52 } ], "prev": { "subscribers": 38, "views": 2051 } } }
+```
+
+- `youtube` is `null` with `notConfigured.youtube = "YOUTUBE_KEY"`; `youtube.prev` is the snapshot a
+  week back, `null` until there is one. `days` is accepted and ignored: the channel is as it is now.
 
 ### `films`
 
@@ -473,12 +518,6 @@ hour). `at` is when the numbers were made: the snapshot's time, or now for a liv
   `at`, and `errors.films` with the failure (`"YouTube consent expired or was revoked: run
   admin/tools/youtube-consent.mjs"` when the refresh token is refused). With no good part to keep,
   `films` is `null` with `errors.films`.
-
-## `POST <api>/admin/manual/substack` (csarko.sh)
-
-Body `{ "value": 47 }` (a non-negative integer). Answer `{ "ok": true, "at": "2026-10-12T13:05:00Z" }`.
-Appends `{ at, value }` to the `substack` series that `reach` returns; the page then
-reloads the Reach card. `substack` is the only key.
 
 ## Arkos IDE: `GET <api>/arkos/admin/kpis` and `/arkos/admin/query/<name>?days=1|7|30|90&who=users|me|all`
 
