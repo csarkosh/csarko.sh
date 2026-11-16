@@ -41,7 +41,7 @@ test('parseFrontMatter reads a watch link: a YouTube URL and the video\'s title,
   assert.deepEqual(meta.watch, { url, title: 'The Well' });
   assert.ok(!('watch-title' in meta), 'the title travels inside watch');
   assert.equal(parseFrontMatter(fm(base), FILE).meta.watch, undefined);
-  rejects(fm([...base, 'watch: https://vimeo.com/123', 'watch-title: The Well']), /watch must be a youtube\.com\/shorts\/<id> or youtube\.com\/watch\?v=<id> URL/);
+  rejects(fm([...base, 'watch: https://vimeo.com/123', 'watch-title: The Well']), /watch must be a youtube\.com\/shorts\/<id>, youtube\.com\/watch\?v=<id> or youtube\.com\/@<channel> URL/);
   rejects(fm([...base, `watch: ${url}`]), /watch needs "watch-title"/);
   rejects(fm([...base, 'watch-title: The Well']), /watch-title without "watch"/);
   rejects(fm([...base, `watch: ${url}`, `watch-title: ${'x'.repeat(61)}`]), /watch-title is 61 characters \(1 to 60\)/);
@@ -357,6 +357,10 @@ test('a doc with a watch link carries it as a pill in its header, on the first s
   const header = /<header class="doc-header">([\s\S]*?)<\/header>/.exec(html)[1];
   assert.ok(header.includes(`<p class="watch-line"><a class="play" href="${url}" target="_blank" rel="noopener" data-visits-event="watch-the-well">Watch The Well &amp; co on YouTube&nbsp;<svg`), header);
   assert.ok(!docPage(doc('plain', '2026-09-14'), themeBlocks(INDEX)).includes('<p class="watch-line">'), 'no watch, no pill');
+  // A doc about one creator's several videos links their channel (2026-11-15, Evillica).
+  const channel = docPage(doc('evillica', '2026-09-14', 'watch: https://www.youtube.com/@Evillica\nwatch-title: Evillica\n'), themeBlocks(INDEX));
+  assert.ok(channel.includes('<a class="play" href="https://www.youtube.com/@Evillica" target="_blank" rel="noopener" data-visits-event="watch-evillica">Watch Evillica on YouTube&nbsp;<svg'));
+  assert.throws(() => doc('x', '2026-09-14', 'watch: https://www.youtube.com/c/Evillica\nwatch-title: Evillica\n'), /watch must be a youtube.com\/shorts\/<id>, youtube.com\/watch\?v=<id> or youtube.com\/@<channel> URL/);
 });
 
 test('indexPage lists every doc with CollectionPage JSON-LD', () => {

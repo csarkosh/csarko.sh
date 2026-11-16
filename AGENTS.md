@@ -291,7 +291,12 @@ three from the command line):
   day: "The pill link only looks good for single line text. Multi line looks ugly"), which `check.py`'s pill check
   measures in Chrome on every doc: about 30 characters, so "See the night mist in Day Hike" and not more), sent as
   `top-<project slug>`; the product line, What next and
-  the line after the author box keep their plain links. `project-line`, `closing` and `asks` are plain text, printed as written (the build refuses
+  the line after the author box keep their plain links. **A doc about another author's work links their work,
+  never his** *(Cyrus, 2026-11-15: "For articles about other author's work, it should always link to their work
+  and not mine: The Well, Evillica")*: its `watch:` is that film, or the creator's channel (`youtube.com/@<name>`)
+  for a doc about several of their videos (Evillica's), so it carries their pill and no `pill:`; The Well, the
+  Evillica doc and the XCVmind short taken apart in reverse-engineering-an-ai-horror-short do. A doc that reviews
+  a wide range of authors' works (the Horror craft series) links his project's pill. `project-line`, `closing` and `asks` are plain text, printed as written (the build refuses
   Markdown in them), and the first two date their present as the body does. `project` stays
   optional in the build until every doc carries it; making it required is
   one flag, `FIELDS.project` in `docs_lib.mjs`. The `publish-doc` skill's "Write for the skim"

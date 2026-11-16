@@ -30,7 +30,10 @@ export const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ENTI
 // up to three, and the third is not shown on a doc that has a next part.
 // "watch" with "watch-title" is the video a doc is about, drawn as a pill in its header so the
 // reader can open it from the first screen (Cyrus, 2026-11-12, for The Well: the whole doc is about
-// that film and its only link was a source at the bottom).
+// that film and its only link was a source at the bottom), or the channel of the one creator whose
+// videos it studies. A doc about another author's work always links their work, not his (Cyrus,
+// 2026-11-15: "For articles about other author's work, it should always link to their work and not
+// mine: The Well, Evillica"); a doc that reviews many authors' works links his project's pill.
 // "project" ties a doc to the game, app or film its research was done for (a slug in docs/games,
 // docs/apps or docs/films, or "none"), so the page can send its reader on to it (Cyrus, 2026-11-13,
 // after the metrics review: 91% of visits never opened a second page and no doc linked its app or
@@ -113,6 +116,9 @@ const FILM_MODEL = /^(Video|Image) model: (\S.{0,39})$/;
 
 // Either shape YouTube serves a video at; the 11-character id is what the embed and poster need.
 const WATCH_URL = /^https:\/\/(?:www\.)?youtube\.com\/(?:shorts\/|watch\?v=)([A-Za-z0-9_-]{11})$/;
+// A doc's watch may also be a creator's channel, for a doc about several of one creator's videos
+// (Evillica's three Shorts; Cyrus, 2026-11-15: a doc about another author's work links their work).
+const CHANNEL_URL = /^https:\/\/(?:www\.)?youtube\.com\/@[A-Za-z0-9._-]{3,30}$/;
 const RUNTIME = /^(\d{1,2}):([0-5]\d)$/;
 
 // A game's status is also the kicker line above its title, so the two can never disagree.
@@ -219,7 +225,7 @@ export function parseFrontMatter(text, file) {
   }
   if (meta['watch-title'] !== undefined && meta.watch === undefined) throw new DocError(`${file}: watch-title without "watch"`);
   if (meta.watch !== undefined) {
-    if (!WATCH_URL.test(meta.watch)) throw new DocError(`${file}: watch must be a youtube.com/shorts/<id> or youtube.com/watch?v=<id> URL`);
+    if (!WATCH_URL.test(meta.watch) && !CHANNEL_URL.test(meta.watch)) throw new DocError(`${file}: watch must be a youtube.com/shorts/<id>, youtube.com/watch?v=<id> or youtube.com/@<channel> URL`);
     const title = meta['watch-title'];
     if (!title) throw new DocError(`${file}: watch needs "watch-title", the video's name for the button`);
     const length = [...title].length;

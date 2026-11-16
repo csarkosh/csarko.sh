@@ -85,11 +85,17 @@ asks: <15 to 90 characters ending in "?", plain text: the question this doc answ
 series: <the run of docs it belongs to, only if it has one; see "Series and What next">
 related: <1 to 3 doc slugs for its What next section, only to hand-pick them; 2 on a doc with a next part in its series>
 source: <https://github.com/… URL of the original, only if that repo is public>
-watch: <youtube.com/watch?v=<id> or youtube.com/shorts/<id> URL, only for a doc about one video>
+watch: <youtube.com/watch?v=<id>, youtube.com/shorts/<id> or youtube.com/@<channel>: the other author's work a doc is about>
 watch-title: <the video's name, up to 60 characters; required with watch>
 ---
 # <Title>
 ```
+
+**A doc about another author's work links their work, never Cyrus's** *(Cyrus, 2026-11-15: "For
+articles about other author's work, it should always link to their work and not mine: The Well,
+Evillica")*: set `watch:` to that film, or to the creator's channel (`https://www.youtube.com/@<name>`)
+when the doc studies several of their videos, and write no `pill:`. A doc that reviews a wide range
+of authors' works (the Horror craft docs) takes a `pill:` to his project as usual.
 
 **A doc about one video links it from its header** *(Cyrus, 2026-11-12, for The Well: the whole
 doc was about that film and its only link was source [1] at the bottom)*: `watch` and `watch-title`
