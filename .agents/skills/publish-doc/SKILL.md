@@ -78,41 +78,18 @@ published: <YYYY-MM-DD, the doc's original date>
 categories: <one to three of the list below, comma-separated, spelled exactly>
 updated: <YYYY-MM-DD, only when revising a published doc>
 project: <the game, app or film this research was done for: its slug in docs/games, docs/apps or docs/films, or none>
-pill: <the header pill's words, written for this doc: "See the night mist in Day Hike"; required with a project, not with watch>
+pill: <"See the <one thing> in <the project>", one line at 320px (about 30 characters): required with a project, refused with watch (see "The link under the title")>
 project-line: <20 to 240 characters, whole sentences, plain text: the product line, in place of the default; only with a project>
 closing: <40 to 520 characters, whole sentences, plain text: the doc's last paragraph, under What next>
 asks: <15 to 90 characters ending in "?", plain text: the question this doc answers, in a reader's words>
 series: <the run of docs it belongs to, only if it has one; see "Series and What next">
 related: <1 to 3 doc slugs for its What next section, only to hand-pick them; 2 on a doc with a next part in its series>
 source: <https://github.com/… URL of the original, only if that repo is public>
-watch: <youtube.com/watch?v=<id>, youtube.com/shorts/<id> or youtube.com/@<channel>: the other author's work a doc is about>
-watch-title: <the video's name, up to 60 characters; required with watch>
+watch: <for a doc about one other author's work: their film, youtube.com/watch?v=<id> or youtube.com/shorts/<id>, or their channel, youtube.com/@<name>>
+watch-title: <the film's or the creator's name, short enough that "Watch <it> on YouTube" is one line at 320px; required with watch>
 ---
 # <Title>
 ```
-
-**A doc about another author's work links their work, never Cyrus's** *(Cyrus, 2026-11-15: "For
-articles about other author's work, it should always link to their work and not mine: The Well,
-Evillica")*: set `watch:` to that film, or to the creator's channel (`https://www.youtube.com/@<name>`)
-when the doc studies several of their videos, and write no `pill:`. A doc that reviews a wide range
-of authors' works (the Horror craft docs) takes a `pill:` to his project as usual.
-
-**A doc about one video links it from its header** *(Cyrus, 2026-11-12, for The Well: the whole
-doc was about that film and its only link was source [1] at the bottom)*: `watch` and `watch-title`
-draw "Watch <watch-title> on YouTube" as the accent pill, under the title and the series line, so it
-is on the first screen. Keep the video in Sources too; the pill is not a citation.
-
-**A doc with a project links it from its header too** *(Cyrus, 2026-11-15: the product line
-alone did not make the link out to his apps, films and game prominent enough, and "The hyperlink
-text need to contain something relevant to the article")*: `pill:` is that pill's words, required
-with a project, 10 to 60 characters, plain, no end mark (the page adds the arrow), and always
-"See the <what this doc explains> in <the project>" (Cyrus, 2026-11-15; the build refuses any
-other shape): "See the night mist in Day Hike", "See the live update in Arkos IDE",
-"See the voice in The Last Trail". **It must fit one line on a 320px phone** (Cyrus, 2026-11-15: a
-pill that wraps looks ugly), about 30 characters with the project's name, so name one thing:
-`check.py` measures every pill and names any that wraps. Claim only what is in
-the project as of publishing, as the closing does. A doc with `watch:` (one about another video,
-The Well) carries that pill alone and refuses `pill:`.
 
 The build refuses: em-dashes (use commas, colons or semicolons), an image that is
 not a figure (below), links that aren't `https://`, `#anchor` or `/root-relative`,
@@ -143,7 +120,8 @@ doc's `closing` with its project's link, up to three next questions, its place i
 series, the feed); one line after the author box repeats the project's link, the next
 question and All research; and the read time counts the words before Sources. There is no
 Keep reading box and no card any more: a block that looks like a promotion got 1 click in
-172 page loads. The one pill is the project's, in the header (2026-11-15). What the doc has to do:
+172 page loads. The one pill is in the header, under the title ("The link under the title",
+above). What the doc has to do:
 
 1. **Open with the answer, then say what it leaves open.** Three labelled paragraphs, in
    this order and spelled exactly so, since the page places the product line by them
@@ -199,7 +177,8 @@ Keep reading box and no card any more: a block that looks like a promotion got 1
 
 *(Cyrus, 2026-11-13: no doc linked its app or its film, and the Play button reached only the
 readers who finished.)* Four front matter fields tie a doc to the game, app or film its
-research was done for, and say how another doc points to it:
+research was done for, and say how another doc points to it; a fifth, `pill:`, is the link
+under the title ("The link under the title", below):
 
 - **`project:`** a slug in `docs/games`, `docs/apps` or `docs/films`, or `none` for a doc
   with no honest tie to one. Every doc makes the choice once. The build refuses a slug
@@ -236,6 +215,45 @@ even when it leaves for YouTube, and its last three words stay on one line.
 How a film was made stays private (AGENTS.md, the films row): a `project-line` or `closing`
 on a film doc may say what to watch for in the film, and nothing about models beyond the
 one its card names, prompts, pipeline or costs.
+
+### The link under the title
+
+*(Cyrus, 2026-11-12 to 2026-11-15.)* Every doc with somewhere to send its reader carries **one
+accent pill under its title**, on the first screen. Its words say something about this article
+("The hyperlink text need to contain something relevant to the article"), and it **fits one line
+on a 320px phone** ("The pill link only looks good for single line text. Multi line looks ugly").
+Pick the pill by what the doc is about:
+
+1. **One other author's work** (a film, or several videos by one creator): the pill links
+   **their work, never Cyrus's** ("For articles about other author's work, it should always link
+   to their work and not mine: The Well, Evillica"). Set `watch:` to the film
+   (`youtube.com/watch?v=<id>` or `youtube.com/shorts/<id>`), or to the creator's channel
+   (`https://www.youtube.com/@<name>`) when the doc studies several of their videos, and
+   `watch-title:` to the name in "Watch <watch-title> on YouTube". Keep that short enough for one
+   line: the film's title when it is short ("The Well"), else the creator's name ("Evillica",
+   "XCVmind"). Write no `pill:`: the build refuses one beside `watch:`. The doc still names its
+   `project:`, which keeps the product line and What next. Keep the video in Sources too; the pill
+   is not a citation. Done this way: The Well, the Evillica doc (ai-short-film-generation) and the
+   XCVmind short in reverse-engineering-an-ai-horror-short.
+2. **Cyrus's own project**, including a doc that reviews a wide range of authors' works (the
+   Horror craft docs link The Last Trail): write `pill:`, which the build requires with a
+   project and no `watch:`. It is always **"See the <one thing> in <the project>"**: "See the
+   night mist in Day Hike", "See the live update in Arkos IDE", "See the voice in The Last Trail".
+   The thing is what this doc explains, as the reader will find it in the project; claim only
+   what is in the project as of publishing, as the closing does. Plain text, no end mark (the
+   page adds the arrow), and about 30 characters in all, since "in Day Hike" or "in The Last
+   Trail" takes a third of the line: name one thing, not a list ("See the mossy bark", not "See
+   the bark and moss on the trees"). A project title too long to fit ("Who is standing in my
+   hallway?") is "the short", and the product line names it.
+3. **`project: none` and no `watch:`**: no pill.
+
+A doc about one other author's game or app (Alan Wake, Codex) is not settled yet: `watch:` takes
+YouTube links only, so such a doc keeps its project's pill until Cyrus decides; ask before
+publishing one.
+
+The build refuses a pill that breaks the shape, the length (10 to 60 characters) or the plain
+text, and `check.py` opens every doc in Chrome at 320px and names any pill that wraps. Shorten
+the words; never the pill's type or padding.
 
 ## Date the present
 
@@ -417,6 +435,9 @@ Read `doc-desktop.png`, `doc-desktop-light.png`, `doc-mobile.png` and
 Check the first two phone screens in particular: the title, the description, the
 Question and the first line of the Short answer should be on the first, and the product
 line near the end of the second.
+The pill under the title is one line on the phone shots and its words name something in this
+article; on a doc about another author's work it links their work, not Cyrus's ("The link under
+the title").
 The desktop shots are 1440×4000, so a long doc's bottom is cut off in
 `doc-desktop*.png`; use `preview.sh --serve` to check the end of a long doc.
 `check.py` must pass. A title longer than 65 characters only warns.
