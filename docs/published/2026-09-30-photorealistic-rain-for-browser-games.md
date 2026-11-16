@@ -4,7 +4,7 @@ published: 2026-09-30
 categories: Rendering
 series: Day Hike's look
 project: day-hike
-pill: Walk through Day Hike's rain
+pill: See the rain in Day Hike
 project-line: This survey was done for Day Hike, a first-person co-op horror game that runs in your browser, whose rain was a particle box that followed the camera. The game's rain was then rebuilt from section 7, layer by layer.
 closing: The opening complaint was a rain source chasing the player. Day Hike's rain was rebuilt as section 7's stack on Oct 1, 2026: a camera-locked volume of wrapped streaks, fog that thickens with the rain and, on the medium and high tiers, a top-down map that stops it under cover, splashes, canopy drip and drops on the lens. When the weather turns to rain, sprint: no dry edge runs ahead of the player. The game's verification note measured that build's whole stack at about 1 ms or less on an Apple M4 in Chrome at 1080p.
 asks: How do AAA games render realistic rain, and can a browser game afford it?

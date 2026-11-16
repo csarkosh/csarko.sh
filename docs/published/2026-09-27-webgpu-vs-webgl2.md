@@ -6,7 +6,7 @@ updated: 2026-11-13
 series: WebGPU against WebGL2
 related: babylon-material-plugin-traps, grass-fullness-without-thinning
 project: day-hike
-pill: Compare WebGPU and WebGL2 in Day Hike
+pill: See the WebGPU renderer in Day Hike
 project-line: This page's own measurements were all taken in Day Hike, a first-person co-op horror game that runs in your browser: the same frame drawn with WebGL2 and with WebGPU.
 closing: The bars this page opened on are one Day Hike pose: grass under a closed canopy, in mist, at noon. Since Sep 28, 2026 the game has drawn its high quality tier with WebGPU by default in Chrome and Edge on macOS and Windows, and has kept Safari and Firefox on WebGL2, the second render path section 4.2 says to keep. Adding ?engine=webgl2 to the game's address forces the WebGL2 path, so the two can be compared on one machine.
 asks: Is WebGPU actually faster than WebGL2 in a real game?

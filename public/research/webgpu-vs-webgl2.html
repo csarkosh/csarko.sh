@@ -373,7 +373,11 @@
     .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
     .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
     .watch-line { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 0; }
-    .watch-line .play { max-width: 100%; text-wrap: balance; }
+    /* One block of text with the arrow after its last word, so a pill that wraps (a long pill: on a phone)
+       ends on the arrow. Its first line fills the box (pretty, not balance: a balanced box keeps the unbalanced
+       width and shows a gap at the right of every line). */
+    .watch-line .play { display: inline-block; max-width: 100%; line-height: 1.4; text-wrap: pretty; }
+    .watch-line .play svg { display: inline; vertical-align: -1px; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
@@ -444,7 +448,7 @@
         <nav class="series-line" aria-label="Series">
           <span>Part 1 of 3 in <strong>WebGPU against WebGL2</strong></span><span aria-hidden="true">·</span><a href="/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" rel="next" aria-label="Next: Scene depth for a post process: WebGPU against WebGL2" title="Scene depth for a post process: WebGPU against WebGL2" data-visits-event="series-scene-depth-for-a-post-process-webgpu-vs-webgl2">Next <span aria-hidden="true">→</span></a>
         </nav>
-        <p class="watch-line"><a class="play" href="https://games.csarko.sh/dayhike/" data-visits-event="top-day-hike">Compare WebGPU and WebGL2 in Day Hike <span aria-hidden="true">→</span></a></p>
+        <p class="watch-line"><a class="play" href="https://games.csarko.sh/dayhike/" data-visits-event="top-day-hike">See the WebGPU renderer in Day Hike&nbsp;<span aria-hidden="true">→</span></a></p>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> What does WebGPU change against WebGL2 in how a browser builds a frame, and where

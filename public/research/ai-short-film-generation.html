@@ -373,7 +373,11 @@
     .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
     .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
     .watch-line { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 0; }
-    .watch-line .play { max-width: 100%; text-wrap: balance; }
+    /* One block of text with the arrow after its last word, so a pill that wraps (a long pill: on a phone)
+       ends on the arrow. Its first line fills the box (pretty, not balance: a balanced box keeps the unbalanced
+       width and shows a gap at the right of every line). */
+    .watch-line .play { display: inline-block; max-width: 100%; line-height: 1.4; text-wrap: pretty; }
+    .watch-line .play svg { display: inline; vertical-align: -1px; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }
@@ -449,7 +453,7 @@
         <nav class="series-line" aria-label="Series">
           <span>Part 1 of 4 in <strong>AI short films</strong></span><span aria-hidden="true">·</span><a href="/research/reverse-engineering-an-ai-horror-short" rel="next" aria-label="Next: Reverse engineering an AI horror short" title="Reverse engineering an AI horror short" data-visits-event="series-reverse-engineering-an-ai-horror-short">Next <span aria-hidden="true">→</span></a>
         </nav>
-        <p class="watch-line"><a class="play" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener" data-visits-event="top-who-is-standing-in-my-hallway">Test it on &quot;Who is standing in my hallway?&quot; <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
+        <p class="watch-line"><a class="play" href="https://www.youtube.com/shorts/jBh7F1knRAA" target="_blank" rel="noopener" data-visits-event="top-who-is-standing-in-my-hallway">See the same hall in &quot;Who is standing in my hallway?&quot;&nbsp;<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a></p>
       </header>
       <div class="prose">
 <p><strong>Question:</strong> Can AI generate a multi-scene short film like Evillica&#39;s analog-horror YouTube

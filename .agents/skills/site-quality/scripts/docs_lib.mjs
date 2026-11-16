@@ -194,6 +194,8 @@ export function parseFrontMatter(text, file) {
     const length = [...meta.pill].length;
     if (length < 10 || length > MAX_PILL) throw new DocError(`${file}: pill is ${length} characters (10 to ${MAX_PILL})`);
     if (/[.!?,:;]$/.test(meta.pill)) throw new DocError(`${file}: pill ends without punctuation (the page adds the arrow)`);
+    // Cyrus, 2026-11-15: "I like the 'See the ... in Day Hike →' phrasing. Make them like that."
+    if (!/^See the \S.* (?:in|on) \S/.test(meta.pill)) throw new DocError(`${file}: pill reads "See the <what this doc explains> in <the project>" ("See the night mist in Day Hike")`);
   } else if (hasProject && meta.watch === undefined) {
     throw new DocError(`${file}: a doc with a project needs "pill", the words of its link under the title, written for this doc ("See the night mist in Day Hike")`);
   }
@@ -1273,11 +1275,11 @@ const PILL_HREF = { game: 'play', app: 'page', film: 'watch' };
 function projectPill(doc, project) {
   const href = project[PILL_HREF[project.kind]];
   const own = OWN_HOST.test(href);
-  return `<a class="play" href="${escapeHtml(href)}"${own ? '' : ' target="_blank" rel="noopener"'} data-visits-event="top-${project.slug}">${escapeHtml(doc.pill)} ${own ? ARROW : EXTERNAL_ARROW}</a>`;
+  return `<a class="play" href="${escapeHtml(href)}"${own ? '' : ' target="_blank" rel="noopener"'} data-visits-event="top-${project.slug}">${escapeHtml(doc.pill)}&nbsp;${own ? ARROW : EXTERNAL_ARROW}</a>`;
 }
 const watchLine = (doc, project) => {
   const pill = doc.watch
-    ? `<a class="play" href="${escapeHtml(doc.watch.url)}" target="_blank" rel="noopener" data-visits-event="watch-${doc.slug}">Watch ${escapeHtml(doc.watch.title)} on YouTube ${EXTERNAL_ARROW}</a>`
+    ? `<a class="play" href="${escapeHtml(doc.watch.url)}" target="_blank" rel="noopener" data-visits-event="watch-${doc.slug}">Watch ${escapeHtml(doc.watch.title)} on YouTube&nbsp;${EXTERNAL_ARROW}</a>`
     : project && doc.pill ? projectPill(doc, project) : '';
   return pill ? `\n        <p class="watch-line">${pill}</p>` : '';
 };
@@ -1461,7 +1463,11 @@ const DOC_CSS = `
     .doc-page .prose .series-at, .doc-page .prose .follow { font-size: 14.5px; color: var(--muted); }
     .series-at { display: flex; flex-wrap: wrap; gap: 2px 20px; }
     .watch-line { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 0; }
-    .watch-line .play { max-width: 100%; text-wrap: balance; }
+    /* One block of text with the arrow after its last word, so a pill that wraps (a long pill: on a phone)
+       ends on the arrow. Its first line fills the box (pretty, not balance: a balanced box keeps the unbalanced
+       width and shows a gap at the right of every line). */
+    .watch-line .play { display: inline-block; max-width: 100%; line-height: 1.4; text-wrap: pretty; }
+    .watch-line .play svg { display: inline; vertical-align: -1px; }
     .play { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 14.5px; font-weight: 600; transition: background var(--md-duration-short3) var(--md-easing-standard); }
     .play:hover { background: var(--accent-hover); }
     .play svg { width: 14px; height: 14px; }

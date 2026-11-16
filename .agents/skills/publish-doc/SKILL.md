@@ -99,9 +99,10 @@ is on the first screen. Keep the video in Sources too; the pill is not a citatio
 **A doc with a project links it from its header too** *(Cyrus, 2026-11-15: the product line
 alone did not make the link out to his apps, films and game prominent enough, and "The hyperlink
 text need to contain something relevant to the article")*: `pill:` is that pill's words, required
-with a project, 10 to 60 characters, plain, no end mark (the page adds the arrow). Name the thing
-in the project this doc explains and the project itself: "See the night mist in Day Hike", "See
-Arkos IDE update without ending a shell", "Mute and unmute The Last Trail". Claim only what is in
+with a project, 10 to 60 characters, plain, no end mark (the page adds the arrow), and always
+"See the <what this doc explains> in <the project>" (Cyrus, 2026-11-15; the build refuses any
+other shape): "See the night mist in Day Hike", "See the shells survive an update in Arkos IDE",
+"See the voice on the radio in The Last Trail". Claim only what is in
 the project as of publishing, as the closing does. A doc with `watch:` (one about another video,
 The Well) carries that pill alone and refuses `pill:`.
 

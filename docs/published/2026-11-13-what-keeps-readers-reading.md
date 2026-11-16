@@ -4,7 +4,7 @@ published: 2026-11-13
 categories: Tooling
 related: reverse-engineering-an-ai-horror-short, how-codex-embeds-its-browser, visits-without-cookies
 project: lib-visits
-pill: See lib-visits, which counted these visits
+pill: See the engaged time and scroll depth in lib-visits
 project-line: This site's visit numbers in this doc were counted by lib-visits, the cookieless analytics that runs on csarko.sh: a 3 KB script and a small collector.
 closing: To check your own pages, open one on a phone and see where the first line of the answer falls, then count the visits that hold a section of the body for five seconds. This site's visit numbers came out of lib-visits, which counts csarko.sh with no cookies. Its page opens on one sample visit, drawn as lib-visits records every visit: where it came from, each page with its engaged time and scroll depth, and how it ended. The numbers that judge the Nov 13, 2026 change will come from it too.
 asks: What keeps a reader on a long technical article, and gets them to try the product?

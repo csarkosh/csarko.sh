@@ -6,7 +6,7 @@ categories: Film
 series: Horror craft
 related: horror-cinematography-shot-by-shot, horror-sequences-shot-by-shot, how-horror-directors-steer-the-eye
 project: the-last-trail
-pill: Mute and unmute The Last Trail
+pill: See the voice on the radio in The Last Trail
 project-line: This research covers how horror directors make a voice, a score and a silence carry the fear. The Last Trail is a 56 second AI-generated horror short in which a voice that sounds like a woman's late father answers on his ranger radio.
 closing: Spielberg's line on Jaws was that John Williams became the shark: two notes stood in for a monster the picture was not showing. Carpenter's Halloween was not scary to an executive who saw it without music, so the test is open to anyone: mute a horror film, unmute it, and name which of the five ways brought the fear back. One short enough to try twice is The Last Trail, a 56 second horror short about a woman, her late father's ashes and a voice on his ranger radio.
 asks: How do horror films use sound and silence to scare you, and is any of it proven?

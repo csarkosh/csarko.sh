@@ -6,7 +6,7 @@ updated: 2026-11-13
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-17-painted-post-webgpu-vs-webgl2.md
 series: WebGPU against WebGL2
 project: day-hike
-pill: See Day Hike's painted look
+pill: See the painted look in Day Hike
 project-line: This is how the painted look of Day Hike, a co-op horror game that runs in your browser, is made: a stroke filter and an oils palette, measured on WebGPU and on WebGL2.
 closing: The 25.5 ms bar in the opening chart is the sector-array shape, which Day Hike does not use. Its stroke filter is written with named sums, the shape that added 2.3 ms a frame on both APIs: on the medium and high tiers it flattens the fine texture of bark and grass into strokes and keeps the edges. The umber shadows, olive midtones and cream highlights are the oils palette, the default.
 asks: Why can the same painterly shader cost far more on WebGPU than on WebGL2?

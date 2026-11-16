@@ -355,7 +355,7 @@ test('a doc with a watch link carries it as a pill in its header, on the first s
   const url = 'https://www.youtube.com/watch?v=yBs_pMUDrrk';
   const html = docPage(doc('the-well', '2026-09-14', `watch: ${url}\nwatch-title: The Well & co\n`), themeBlocks(INDEX));
   const header = /<header class="doc-header">([\s\S]*?)<\/header>/.exec(html)[1];
-  assert.ok(header.includes(`<p class="watch-line"><a class="play" href="${url}" target="_blank" rel="noopener" data-visits-event="watch-the-well">Watch The Well &amp; co on YouTube <svg`), header);
+  assert.ok(header.includes(`<p class="watch-line"><a class="play" href="${url}" target="_blank" rel="noopener" data-visits-event="watch-the-well">Watch The Well &amp; co on YouTube&nbsp;<svg`), header);
   assert.ok(!docPage(doc('plain', '2026-09-14'), themeBlocks(INDEX)).includes('<p class="watch-line">'), 'no watch, no pill');
 });
 
@@ -1044,6 +1044,10 @@ test('parseFrontMatter reads project, project-line, closing and asks, and refuse
   rejects(fm([...base, 'project: day-hike', 'pill: See it']), /pill is 6 characters \(10 to 60\)/);
   rejects(fm([...base, 'project: day-hike', `pill: ${'x'.repeat(61)}`]), /pill is 61 characters/);
   rejects(fm([...base, 'project: day-hike', 'pill: See the fog in Day Hike.']), /pill ends without punctuation/);
+  // One phrasing for every pill (Cyrus, 2026-11-15): "See the <what> in <project>".
+  for (const bad of ['Play Day Hike in your browser', 'Walk through the rain in Day Hike', 'See Day Hike and its fog', 'See the fog of Day Hike']) {
+    rejects(fm([...base, 'project: day-hike', `pill: ${bad}`]), /pill reads "See the <what this doc explains> in <the project>"/);
+  }
   rejects(fm([...base, 'watch: https://www.youtube.com/watch?v=yBs_pMUDrrk', 'watch-title: The Well', 'project: the-last-trail', 'pill: Watch The Last Trail too']), /pill with watch/);
   assert.equal(parseFrontMatter(fm([...base, 'watch: https://www.youtube.com/watch?v=yBs_pMUDrrk', 'watch-title: The Well', 'project: the-last-trail']), FILE).meta.pill, undefined, 'a watch stands in for the pill');
   // A closing needs no project: it is then shown without a link.
@@ -1280,9 +1284,9 @@ test('a doc page styles a text-fragment landing with theme tokens, keeps linked 
 test('a doc with a project carries its pill in the header, in its own words; a doc with a watch keeps that pill alone (2026-11-15)', () => {
   const header = (html) => /<header class="doc-header">([\s\S]*?)<\/header>/.exec(html)[1];
   const pill = (slug, words) => header(page(longDoc('fog', '2026-10-07', `project: ${slug}\npill: ${words}\n`, LABELS)));
-  assert.ok(pill('day-hike', 'See the night mist in Day Hike').includes(`<p class="watch-line"><a class="play" href="${PLAY}" data-visits-event="top-day-hike">See the night mist in Day Hike <span aria-hidden="true">→</span></a></p>`));
-  assert.ok(pill('ide-arkos', 'See Arkos IDE & its shells').includes('<a class="play" href="https://apps.csarko.sh/ide-arkos" data-visits-event="top-ide-arkos">See Arkos IDE &amp; its shells <span aria-hidden="true">→</span></a>'));
-  assert.ok(pill('the-last-trail', 'Mute and unmute The Last Trail').includes(`<a class="play" href="${WATCH}" target="_blank" rel="noopener" data-visits-event="top-the-last-trail">Mute and unmute The Last Trail <svg`));
+  assert.ok(pill('day-hike', 'See the night mist in Day Hike').includes(`<p class="watch-line"><a class="play" href="${PLAY}" data-visits-event="top-day-hike">See the night mist in Day Hike&nbsp;<span aria-hidden="true">→</span></a></p>`));
+  assert.ok(pill('ide-arkos', 'See the shells & tabs in Arkos IDE').includes('<a class="play" href="https://apps.csarko.sh/ide-arkos" data-visits-event="top-ide-arkos">See the shells &amp; tabs in Arkos IDE&nbsp;<span aria-hidden="true">→</span></a>'));
+  assert.ok(pill('the-last-trail', 'See the voice on the radio in The Last Trail').includes(`<a class="play" href="${WATCH}" target="_blank" rel="noopener" data-visits-event="top-the-last-trail">See the voice on the radio in The Last Trail&nbsp;<svg`));
   assert.ok(!page(longDoc('fog', '2026-10-07', 'project: none\n', LABELS)).includes('class="watch-line"'), 'project: none, no pill');
   // A doc about someone else's video links that video alone in its header; its project is still in the product line.
   const well = page(longDoc('fog', '2026-10-07', 'watch: https://www.youtube.com/watch?v=yBs_pMUDrrk\nwatch-title: The Well\nproject: the-last-trail\n', LABELS));

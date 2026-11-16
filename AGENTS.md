@@ -284,8 +284,10 @@ three from the command line):
   link out to his apps, films and game prominent enough; it should look like The Well's Watch pill)*: one accent pill
   under the title, the Watch pill (`watch:`) on a doc about another video (The Well keeps its own alone), else the
   project's, in the words of the doc's `pill:`, required with a project and written for the doc, not the project
-  (*Cyrus, 2026-11-15: "The hyperlink text need to contain something relevant to the article"*: "See the night mist
-  in Day Hike", "Mute and unmute The Last Trail"; at most 60 characters, plain, no end mark), sent as
+  (*Cyrus, 2026-11-15: "The hyperlink text need to contain something relevant to the article"*: always "See the <what
+  the doc explains> in <the project>", Cyrus the same day: "I like the 'See the ... in Day Hike →' phrasing. Make
+  them like that", so "See the night mist in Day Hike", "See the voice on the radio in The Last Trail"; at most
+  60 characters, plain, no end mark, the arrow joined to its last word so a pill that wraps ends on it), sent as
   `top-<project slug>`; the product line, What next and
   the line after the author box keep their plain links. `project-line`, `closing` and `asks` are plain text, printed as written (the build refuses
   Markdown in them), and the first two date their present as the body does. `project` stays

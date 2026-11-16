@@ -6,7 +6,7 @@ series: AI short films
 updated: 2026-11-13
 related: horror-sequences-shot-by-shot, horror-cinematography-shot-by-shot, ai-short-film-generation
 project: the-last-trail
-pill: Try the same checks on The Last Trail
+pill: See the clues to look for in The Last Trail
 project-line: The author of this page makes AI-generated horror shorts too. The Last Trail, 56 seconds long, is one of them, and is a different film from the one taken apart here.
 closing: Go back to the woman on the windowsill. The white shape that becomes her, the candles that change number within one take and the door lock that changes as the camera nears are the tells that settle that it was generated, and 19 to 21 new frames a second is the one that narrows the field of models. None of them needs the file's tags, only the picture, so the same checks can be tried on any clip. The Last Trail, a 56 second AI-generated horror short, is one to try them on.
 asks: How was a viral AI horror short made, and what does one like it cost?
