@@ -6,7 +6,7 @@ updated: 2026-11-13
 related: horror-sequences-shot-by-shot, stylized-shader-looks
 series: AI short films
 project: who-is-standing-in-my-hallway
-pill: See the same hall in "Who is standing in my hallway?"
+pill: See the same hall in the short
 project-line: "Who is standing in my hallway?" is a 16 second AI-generated analog horror short. It tests the question this page researches: how far generation can go toward the same actor and the same room from shot to shot.
 closing: The benchmark this page opened with is one actress in one apartment, held across 14 to 23 cuts and again in the next upload. So in any generated short the two things to check are whether the person and the room stay the same from shot to shot: section 2 shows the genre forgives flicker but not those. Bring both checks to "Who is standing in my hallway?", an AI-generated horror short of one woman and one hallway that runs 16 seconds.
 asks: Can AI video keep the same actor and room across a whole series?

@@ -6,7 +6,7 @@ series: Day Hike's look
 updated: 2026-11-13
 related: olympic-lakes-for-game-worlds, webgpu-vs-webgl2
 project: day-hike
-pill: See the lake, sea and wet sand in Day Hike
+pill: See the lake and sea in Day Hike
 project-line: This survey was written for the water in Day Hike, a co-op horror game that runs in your browser. The colours of its lake and its sea and the dark, glossy wet sand of its beach come from the numbers on this page.
 closing: The tarn pictured at the top of this page is the place to check this. As of Nov 13, 2026, from its bank in Day Hike the bed shows through the shallows and the water beyond goes dark at the rate of section 2.3's measured lakes, while farther out the surface gives back the sky and, when the water is calm, the shore, as section 2.1 says it must. On the beach below the road, the ground under the wet line is section 2.4's soaked sand: 0.4 of its dry colour, and glossy.
 asks: What makes water look real in a game, and what can a browser afford?

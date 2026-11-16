@@ -820,6 +820,66 @@ for (const {key, width: w, src} of frames) {
         check(not problems, f"{frame['key']}: {'; '.join(problems) or 'all nav links visible on one line, no overflow'}")
 
 
+
+PILL_WIDTH = 320
+
+
+def pill_checks():
+    """Every doc's pill under its title stays on one line on the narrowest phone (Cyrus, 2026-11-15:
+    "The pill link only looks good for single line text. Multi line looks ugly"). A pill that wraps
+    at 320px fails, naming its words, so the doc's pill: is shortened."""
+    print(f"pills (headless Chrome, {PILL_WIDTH}px)")
+    if not Path(CHROME).exists():
+        warn("Google Chrome not found — pill checks skipped")
+        return
+    pages = sorted(rel.relative_to(PUBLIC).as_posix() for rel in (PUBLIC / DOCS_DIR).glob("*.html")
+                   if 'class="watch-line"' in rel.read_text())
+    if not pages:
+        return
+    # Served over HTTP, not file://, so the pages' root-relative fonts load: the pill is measured
+    # in Inter, as a phone draws it, and not in a wider fallback.
+    import functools, http.server, threading
+    class Quiet(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, *args):
+            pass
+    handler = functools.partial(Quiet, directory=str(PUBLIC))
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    origin = f"http://127.0.0.1:{server.server_address[1]}"
+    frames = [{"key": rel, "src": f"/{rel}"} for rel in pages]
+    if True:
+        harness = PUBLIC / "__pills.html"
+        harness.write_text("""<!doctype html><html><body><pre id="result">pending</pre><script>
+const frames = %s, out = {}; let pending = frames.length;
+for (const {key, src} of frames) {
+  const f = document.createElement('iframe');
+  f.style.cssText = 'width:%dpx;height:600px;border:0';
+  f.src = src;
+  f.onload = () => f.contentDocument.fonts.ready.then(() => setTimeout(() => {
+    const a = f.contentDocument.querySelector('.watch-line .play');
+    const lines = a ? a.getClientRects().length && Math.round((a.getBoundingClientRect().height - parseFloat(getComputedStyle(a).paddingTop) - parseFloat(getComputedStyle(a).paddingBottom)) / parseFloat(getComputedStyle(a).lineHeight)) : 0;
+    out[key] = { words: a ? a.textContent.trim() : null, lines, right: a ? Math.ceil(a.getBoundingClientRect().right) : 0 };
+    if (--pending === 0) document.getElementById('result').textContent = JSON.stringify(out);
+  }, 300));
+  document.body.appendChild(f);
+}
+</script></body></html>""" % (json.dumps(frames), PILL_WIDTH))
+        try:
+            dom = subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--virtual-time-budget=30000",
+                                  "--dump-dom", f"{origin}/__pills.html"], capture_output=True, text=True, timeout=300).stdout
+        finally:
+            harness.unlink(missing_ok=True)
+            server.shutdown()
+    m = re.search(r'<pre id="result">(.*?)</pre>', dom, re.S)
+    try:
+        data = json.loads(htmllib.unescape(m.group(1)))
+    except (AttributeError, json.JSONDecodeError):
+        warn("pill harness produced no result — checks skipped")
+        return
+    wrapped = [f"{rel} ({r['words']!r})" for rel, r in sorted(data.items()) if r["lines"] != 1 or r["right"] > PILL_WIDTH]
+    check(not wrapped, f"every doc's pill is one line at {PILL_WIDTH}px ({len(data)} pills)"
+          + (f"; shorten the pill: of {', '.join(wrapped)}" if wrapped else ""))
+
 # ------------------------------------------------------------------------ motion
 
 _serve_spec = importlib.util.spec_from_file_location("serve", ROOT / ".agents/skills/preview/scripts/serve.py")
@@ -2013,6 +2073,7 @@ def main(argv):
     analytics_checks(pages)
     docs_build_checks()
     layout_checks()
+    pill_checks()
     motion_checks(PUBLIC, public_motion_pages())
 
     def arg(flag, default):

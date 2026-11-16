@@ -1483,6 +1483,7 @@ const DOC_CSS = `
       .doc-page .doc-header { padding-bottom: 12px; }
       .series-line { gap: 6px; margin-top: 8px; font-size: 13px; }
       .afterward { flex-direction: column; }
+      .watch-line .play { padding: 10px 14px; font-size: 14px; }
     }
     @media (max-width: 439px) { .series-line a span { display: none; } }
     @media (prefers-reduced-motion: reduce) { .play { transition: none; } }`;

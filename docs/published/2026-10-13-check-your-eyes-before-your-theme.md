@@ -4,7 +4,7 @@ published: 2026-10-13
 categories: Tooling
 updated: 2026-11-13
 project: ide-arkos
-pill: See the 16 px text defaults in Arkos IDE
+pill: See the text size in Arkos IDE
 project-line: This research set Arkos IDE's default text size and line spacing, 16 px at line height 1.5. Arkos IDE is a Mac app that keeps many Claude Code sessions running side by side.
 closing: The developer this page opened with has an order to work in: red flags, an eye examination and a headache diary before any theme debate, then larger text with looser lines, hourly breaks and the room's lighting. As of Nov 13, 2026, Arkos IDE ships the text part as its defaults: 16 px Menlo at line height 1.5, with a 14 px preset its configuration file labels as below the research's comfort floor. That file calls each default a preference, not a health feature, and puts the eye examination ahead of any setting.
 asks: Does dark mode cause eye strain or headaches, and is it worse with astigmatism?

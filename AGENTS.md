@@ -286,8 +286,10 @@ three from the command line):
   project's, in the words of the doc's `pill:`, required with a project and written for the doc, not the project
   (*Cyrus, 2026-11-15: "The hyperlink text need to contain something relevant to the article"*: always "See the <what
   the doc explains> in <the project>", Cyrus the same day: "I like the 'See the ... in Day Hike →' phrasing. Make
-  them like that", so "See the night mist in Day Hike", "See the voice on the radio in The Last Trail"; at most
-  60 characters, plain, no end mark, the arrow joined to its last word so a pill that wraps ends on it), sent as
+  them like that", so "See the night mist in Day Hike", "See the voice in The Last Trail"; at most
+  60 characters, plain, no end mark, the arrow joined to its last word; and **one line at 320px** (Cyrus, the same
+  day: "The pill link only looks good for single line text. Multi line looks ugly"), which `check.py`'s pill check
+  measures in Chrome on every doc: about 30 characters, so "See the night mist in Day Hike" and not more), sent as
   `top-<project slug>`; the product line, What next and
   the line after the author box keep their plain links. `project-line`, `closing` and `asks` are plain text, printed as written (the build refuses
   Markdown in them), and the first two date their present as the body does. `project` stays
