@@ -31,9 +31,10 @@ export const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ENTI
 // "watch" with "watch-title" is the video a doc is about, drawn as a pill in its header so the
 // reader can open it from the first screen (Cyrus, 2026-11-12, for The Well: the whole doc is about
 // that film and its only link was a source at the bottom), or the channel of the one creator whose
-// videos it studies. A doc about another author's work always links their work, not his (Cyrus,
+// videos it studies. A doc about a small creator's work always links their work, not his (Cyrus,
 // 2026-11-15: "For articles about other author's work, it should always link to their work and not
-// mine: The Well, Evillica"); a doc that reviews many authors' works links his project's pill.
+// mine: The Well, Evillica"; a large company's, such as Remedy's or OpenAI's, gets his project's
+// pill instead, since his traffic does nothing for them); so does a doc that reviews many authors'.
 // "project" ties a doc to the game, app or film its research was done for (a slug in docs/games,
 // docs/apps or docs/films, or "none"), so the page can send its reader on to it (Cyrus, 2026-11-13,
 // after the metrics review: 91% of visits never opened a second page and no doc linked its app or

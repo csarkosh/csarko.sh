@@ -224,9 +224,10 @@ accent pill under its title**, on the first screen. Its words say something abou
 on a 320px phone** ("The pill link only looks good for single line text. Multi line looks ugly").
 Pick the pill by what the doc is about:
 
-1. **One other author's work** (a film, or several videos by one creator): the pill links
-   **their work, never Cyrus's** ("For articles about other author's work, it should always link
-   to their work and not mine: The Well, Evillica"). Set `watch:` to the film
+1. **One small creator's work** (a film, or several videos by one creator, from someone the size
+   of a small business): the pill links **their work, never Cyrus's** ("For articles about other
+   author's work, it should always link to their work and not mine: The Well, Evillica"), so his
+   traffic supports them. Set `watch:` to the film
    (`youtube.com/watch?v=<id>` or `youtube.com/shorts/<id>`), or to the creator's channel
    (`https://www.youtube.com/@<name>`) when the doc studies several of their videos, and
    `watch-title:` to the name in "Watch <watch-title> on YouTube". Keep that short enough for one
@@ -235,8 +236,10 @@ Pick the pill by what the doc is about:
    `project:`, which keeps the product line and What next. Keep the video in Sources too; the pill
    is not a citation. Done this way: The Well, the Evillica doc (ai-short-film-generation) and the
    XCVmind short in reverse-engineering-an-ai-horror-short.
-2. **Cyrus's own project**, including a doc that reviews a wide range of authors' works (the
-   Horror craft docs link The Last Trail): write `pill:`, which the build requires with a
+2. **Cyrus's own project**, for a doc that reviews a wide range of authors' works (the Horror
+   craft docs link The Last Trail), and for a doc about one large company's work, where his
+   traffic does nothing for them (Alan Wake's Remedy links Day Hike, OpenAI's Codex links Arkos
+   IDE): write `pill:`, which the build requires with a
    project and no `watch:`. It is always **"See the <one thing> in <the project>"**: "See the
    night mist in Day Hike", "See the live update in Arkos IDE", "See the voice in The Last Trail".
    The thing is what this doc explains, as the reader will find it in the project; claim only
@@ -247,9 +250,13 @@ Pick the pill by what the doc is about:
    hallway?") is "the short", and the product line names it.
 3. **`project: none` and no `watch:`**: no pill.
 
-A doc about one other author's game or app (Alan Wake, Codex) is not settled yet: `watch:` takes
-YouTube links only, so such a doc keeps its project's pill until Cyrus decides; ask before
-publishing one.
+**Small or large** *(Cyrus, 2026-11-15: "if they're small enough to be small business, then we
+should link out to them to support them. Otherwise they're large enough that my traffic does
+nothing and we should use it to benefit myself instead")*: an independent filmmaker, a YouTube
+channel, a solo developer or a small studio is small; a public company, a big studio or a
+household-name product (Remedy, OpenAI, a AAA publisher) is large. When it is unclear, ask.
+`watch:` takes YouTube links only, so a small creator whose work is not on YouTube (a small
+studio's game, an indie app) needs `watch:` widened first; ask before publishing that doc.
 
 The build refuses a pill that breaks the shape, the length (10 to 60 characters) or the plain
 text, and `check.py` opens every doc in Chrome at 320px and names any pill that wraps. Shorten

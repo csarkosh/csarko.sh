@@ -291,9 +291,11 @@ three from the command line):
   day: "The pill link only looks good for single line text. Multi line looks ugly"), which `check.py`'s pill check
   measures in Chrome on every doc: about 30 characters, so "See the night mist in Day Hike" and not more), sent as
   `top-<project slug>`; the product line, What next and
-  the line after the author box keep their plain links. **A doc about another author's work links their work,
+  the line after the author box keep their plain links. **A doc about a small creator's work links their work,
   never his** *(Cyrus, 2026-11-15: "For articles about other author's work, it should always link to their work
-  and not mine: The Well, Evillica")*: its `watch:` is that film, or the creator's channel (`youtube.com/@<name>`)
+  and not mine: The Well, Evillica"; and the same day, a creator "small enough to be small business" gets the
+  link to support them, while one large enough that his traffic does nothing (Remedy's Alan Wake, OpenAI's Codex)
+  does not, and the doc links his project instead)*: its `watch:` is that film, or the creator's channel (`youtube.com/@<name>`)
   for a doc about several of their videos (Evillica's), so it carries their pill and no `pill:`; The Well, the
   Evillica doc and the XCVmind short taken apart in reverse-engineering-an-ai-horror-short do. A doc that reviews
   a wide range of authors' works (the Horror craft series) links his project's pill. `project-line`, `closing` and `asks` are plain text, printed as written (the build refuses
