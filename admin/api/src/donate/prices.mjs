@@ -1,6 +1,7 @@
 /**
  * The price rule of the donate site, pure: the last 30 days' spend (the 30 days ending yesterday,
- * UTC, less the commercial project, which is not free public work) is the pool, each tier is a
+ * UTC, less the commercial project, which is not free public work, and less Claude Code, which
+ * Cyrus pays for himself: Cyrus, 2026-11-16) is the pool, each tier is a
  * share of it rounded up to the dollar, and `decide` says whether today's snapshot run should
  * publish new prices. Prices turn every seven days from the last repricing, from the launch day
  * `DONATE_FROM` on; a due turn waits while a collector failed, up to three days late, and while
@@ -19,12 +20,16 @@ const LATE_DAYS = 3;
 /** The window priced on `today`: the 30 days ending yesterday. */
 export const windowOf = (today) => ({ from: addDays(today, -WINDOW_DAYS), to: addDays(today, -1) });
 
-/** The unrounded sum of the window's daily rows outside the commercial project, never below 0. */
+/** The providers whose spend never counts toward the pool: Claude Code (Cyrus, 2026-11-16). */
+export const POOL_EXCLUDED_PROVIDERS = new Set(["claude"]);
+
+/** The unrounded sum of the window's daily rows outside the commercial project and Claude Code, never below 0. */
 export function poolOf(dailyRows, window) {
   let sum = 0;
   for (const r of dailyRows) {
     if (typeof r.day !== "string" || r.day < window.from || r.day > window.to) continue;
     if (r.project === "commercial" || projectOf(r) === "commercial") continue;
+    if (POOL_EXCLUDED_PROVIDERS.has(r.provider)) continue;
     sum += r.amount;
   }
   return Math.max(0, sum);

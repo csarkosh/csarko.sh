@@ -22,7 +22,7 @@ test("the window is the 30 days ending yesterday", () => {
   assert.deepEqual(windowOf("2026-03-01"), { from: "2026-01-30", to: "2026-02-28" });
 });
 
-test("the pool is the window's daily rows less the commercial project, never negative", () => {
+test("the pool is the window's daily rows less the commercial project and Claude Code, never negative", () => {
   const w = { from: "2026-10-01", to: "2026-10-30" };
   const rows = [
     { day: "2026-10-01", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 200 },
@@ -31,6 +31,7 @@ test("the pool is the window's daily rows less the commercial project, never neg
     { day: "2026-10-31", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 999 },
     { month: "2026-10", provider: "aws", line: "BoxUsage:g4dn.xlarge", amount: 999 },
     { day: "2026-10-15", provider: "gcp", where: "magicpixel-487014", service: "Compute Engine", amount: 50, project: "commercial" },
+    { day: "2026-10-20", provider: "claude", line: "Claude Max", category: "ai", amount: 6.67 },
   ];
   assert.equal(poolOf(rows, w), 287.4);
   assert.equal(poolOf([{ day: "2026-10-12", provider: "gcp", where: "csarko-sh", amount: -12 }], w), 0);

@@ -134,13 +134,15 @@ The door slugs are mine (short, human, no prefixes); every project card's slug m
 ## 3. The bill: one pool, exponential shares
 
 **The pool** is the total spend on everything Cyrus gives away, as the Finance page counts it:
-every provider (AWS, GCP, GitHub, Modal, fal, Claude Code), every category including the fixed
-ones (domains, the Claude Code subscription), net of credits, in USD, over the 30 days ending
+every provider (AWS, GCP, GitHub, Modal, fal), every category including the fixed
+ones (domains), net of credits, in USD, over the 30 days ending
 yesterday (UTC), summed from the Finance page's daily rows *(amended Oct 31: Cyrus chose a
 rolling 30-day bill repriced weekly so the site could launch without waiting for a closed month;
 it was the calendar month that most recently closed)*. It is one number for every door (Cyrus: "It should
 be my total spend across all my work. I view things like tipping on Arkos IDE / MacStats /
-Films / etc as different funnels for tipping").
+Films / etc as different funnels for tipping"). *Amended 2026-11-16: Cyrus excluded Claude Code
+spend from the pool ("I want my Claude Code spend excluded from the Donation calculation"); its
+subscription still shows on the Finance page.*
 
 **The exclusion.** The Finance page's project axis (`admin/api/src/finance/projects.mjs`:
 Films, Day Hike, csarko.sh and admin, Other) gains a fifth key, `commercial`, with no rules
