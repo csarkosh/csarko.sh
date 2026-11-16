@@ -281,9 +281,12 @@ three from the command line):
   opens in the same tab, so Back returns to the doc; links to other sites keep their new tab.
   A sentence reached by a text-fragment link wears the accent tint (`::target-text`), and a
   heading reached by a link clears the sticky nav. The header carries the doc's pills, on the first screen *(Cyrus, 2026-11-15: the product line alone did not make the
-  link out to his apps, films and game prominent enough; it should look like The Well's Watch pill)*: the Watch pill
-  (`watch:`, a video the doc is about) and then the project's own, named ("Play Day Hike in your browser", "See
-  Arkos IDE", "Watch The Last Trail on YouTube"), sent as `top-<project slug>`; the product line, What next and
+  link out to his apps, films and game prominent enough; it should look like The Well's Watch pill)*: one accent pill
+  under the title, the Watch pill (`watch:`) on a doc about another video (The Well keeps its own alone), else the
+  project's, in the words of the doc's `pill:`, required with a project and written for the doc, not the project
+  (*Cyrus, 2026-11-15: "The hyperlink text need to contain something relevant to the article"*: "See the night mist
+  in Day Hike", "Mute and unmute The Last Trail"; at most 60 characters, plain, no end mark), sent as
+  `top-<project slug>`; the product line, What next and
   the line after the author box keep their plain links. `project-line`, `closing` and `asks` are plain text, printed as written (the build refuses
   Markdown in them), and the first two date their present as the body does. `project` stays
   optional in the build until every doc carries it; making it required is

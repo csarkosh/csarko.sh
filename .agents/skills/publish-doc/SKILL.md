@@ -78,6 +78,7 @@ published: <YYYY-MM-DD, the doc's original date>
 categories: <one to three of the list below, comma-separated, spelled exactly>
 updated: <YYYY-MM-DD, only when revising a published doc>
 project: <the game, app or film this research was done for: its slug in docs/games, docs/apps or docs/films, or none>
+pill: <the header pill's words, written for this doc: "See the night mist in Day Hike"; required with a project, not with watch>
 project-line: <20 to 240 characters, whole sentences, plain text: the product line, in place of the default; only with a project>
 closing: <40 to 520 characters, whole sentences, plain text: the doc's last paragraph, under What next>
 asks: <15 to 90 characters ending in "?", plain text: the question this doc answers, in a reader's words>
@@ -96,9 +97,13 @@ draw "Watch <watch-title> on YouTube" as the accent pill, under the title and th
 is on the first screen. Keep the video in Sources too; the pill is not a citation.
 
 **A doc with a project links it from its header too** *(Cyrus, 2026-11-15: the product line
-alone did not make the link out to his apps, films and game prominent enough)*: the page draws
-the project's pill after any Watch pill, by kind, "Play <Title> in your browser", "See <Title>"
-or "Watch <Title> on YouTube". Nothing to write for it: `project:` is enough, and `none` gets no pill.
+alone did not make the link out to his apps, films and game prominent enough, and "The hyperlink
+text need to contain something relevant to the article")*: `pill:` is that pill's words, required
+with a project, 10 to 60 characters, plain, no end mark (the page adds the arrow). Name the thing
+in the project this doc explains and the project itself: "See the night mist in Day Hike", "See
+Arkos IDE update without ending a shell", "Mute and unmute The Last Trail". Claim only what is in
+the project as of publishing, as the closing does. A doc with `watch:` (one about another video,
+The Well) carries that pill alone and refuses `pill:`.
 
 The build refuses: em-dashes (use commas, colons or semicolons), an image that is
 not a figure (below), links that aren't `https://`, `#anchor` or `/root-relative`,

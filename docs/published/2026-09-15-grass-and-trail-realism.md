@@ -7,6 +7,7 @@ source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-0
 series: Rendering a browser forest
 related: grass-fullness-without-thinning, babylon-material-plugin-traps, olympic-vegetation-for-games
 project: day-hike
+pill: Walk Day Hike's meadow and trail in the wind
 project-line: This research was done for Day Hike, a first-person co-op horror game that runs in your browser. Its ground-tinted grass, its one shared wind and its four-band trail were built from this survey.
 closing: The picture at the top is Day Hike's trailhead, where each hike starts, a month after this research. The path is painted as section 5's four bands: its edge is ragged, and wear widens and darkens it in places along its length. In the game the grass leans and gusts with the bushes and the nearer trees, and the mist drifts and the rain slants along the same wind: that is section 4's one wind field. On the medium and high quality tiers the grass nearest the camera is section 6's opaque blade clumps.
 asks: Why do grass and trails in a game look flat and fake, and what fixes them?

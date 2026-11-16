@@ -6,6 +6,7 @@ source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-1
 updated: 2026-11-13
 series: Rendering a browser forest
 project: day-hike
+pill: See the night mist in Day Hike
 project-line: Day Hike, a co-op horror game that runs in your browser, first drew its night mist as camera-facing sprites, and it read as a wall. This research is why that mist became a volume the game steps through, up to 12 steps a pixel.
 closing: In the picture at the top, the tree line fades into Day Hike's closed-form height fog, the first design of section 3. As of Nov 13, 2026, the mist that rises after dark is the march of section 4, run once a pixel in a post pass that reads the scene's depth: 12 steps on the high tier, 8 on medium and none on low, out to 40 m. On the low tier the closed-form fog stands alone.
 asks: How do AAA games draw ground fog, and can a browser game do the same?

@@ -263,8 +263,11 @@ const INDEX = `<style>
     }
   </style>
   <main></main>`;
+// A doc that names a project needs a pill (2026-11-15); a fixture gets one unless it writes its own,
+// has a watch, or names none.
+const withPill = (extra) => (/^project: (?!none$)\S+$/m.test(extra) && !/^(?:pill|watch):/m.test(extra) ? `${extra}pill: See the fog in the project\n` : extra);
 const src = (slug, published, extra = '') =>
-  ({ name: `${published}-${slug}.md`, text: `---\ndescription: ${DESC}\npublished: ${published}\n${extra.includes('categories:') ? '' : 'categories: Tooling\n'}${/^project:/m.test(extra) ? '' : 'project: none\n'}${extra}---\n# ${slug} title\n\n## 1. One\n\nText.\n` });
+  ({ name: `${published}-${slug}.md`, text: `---\ndescription: ${DESC}\npublished: ${published}\n${extra.includes('categories:') ? '' : 'categories: Tooling\n'}${/^project:/m.test(extra) ? '' : 'project: none\n'}${withPill(extra)}---\n# ${slug} title\n\n## 1. One\n\nText.\n` });
 const doc = (...args) => { const s = src(...args); return loadDoc(s.name, s.text); };
 const jsonLd = (html) => JSON.parse(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(html)[1])['@graph'];
 
@@ -828,7 +831,7 @@ test('sitemap carries /projects before /research, neither with a lastmod', () =>
 // ---------------------------------------------------------------- reading (2026-10-23)
 
 const longDoc = (slug, published, extra = '', body = 'Text.') =>
-  ({ name: `${published}-${slug}.md`, text: `---\ndescription: ${DESC}\npublished: ${published}\n${extra.includes('categories:') ? '' : 'categories: Tooling\n'}${/^project:/m.test(extra) ? '' : 'project: none\n'}${extra}---\n# ${slug} title\n\n${body}\n\n## 1. One\n\nText one.\n\n## 2. Two\n\nText two.\n\n## 3. Three\n\nText three.\n` });
+  ({ name: `${published}-${slug}.md`, text: `---\ndescription: ${DESC}\npublished: ${published}\n${extra.includes('categories:') ? '' : 'categories: Tooling\n'}${/^project:/m.test(extra) ? '' : 'project: none\n'}${withPill(extra)}---\n# ${slug} title\n\n${body}\n\n## 1. One\n\nText one.\n\n## 2. Two\n\nText two.\n\n## 3. Three\n\nText three.\n` });
 const load = (s, figures) => loadDoc(s.name, s.text, figures);
 
 test('a paragraph that is one image is a figure, from the doc\'s own files, with alt and caption', () => {
@@ -1017,7 +1020,7 @@ test('parseFrontMatter reads project, project-line, closing and asks, and refuse
   const base = [`description: ${DESC}`, 'published: 2026-09-14'];
   const line = 'I build Day Hike. This doc is how its fog is drawn.';
   const end = 'Stand at the trailhead at dusk: the band under the trees is section 3.';
-  const { meta } = parseFrontMatter(fm([...base, 'project: day-hike', `project-line: ${line}`, `closing: ${end}`, 'asks: Why does ground fog cut along the terrain?']), FILE);
+  const { meta } = parseFrontMatter(fm([...base, 'project: day-hike', 'pill: See the fog in Day Hike', `project-line: ${line}`, `closing: ${end}`, 'asks: Why does ground fog cut along the terrain?']), FILE);
   assert.equal(meta.project, 'day-hike');
   assert.equal(meta['project-line'], line);
   assert.equal(meta.closing, end);
@@ -1025,15 +1028,24 @@ test('parseFrontMatter reads project, project-line, closing and asks, and refuse
   assert.equal(parseFrontMatter(fm(base), FILE).meta.project, 'none');
   rejects(fm([...base, 'project: Day Hike']), /project must be a game's, app's or film's slug, or none/);
   rejects(fm([...base, `project-line: ${line}`]), /project-line without a project/);
-  rejects(fm([...base, 'project: day-hike', 'project-line: Too short.']), /project-line is 10 characters \(20 to 240\)/);
-  rejects(fm([...base, 'project: day-hike', `project-line: ${'x'.repeat(241)}`]), /project-line is 241 characters/);
-  rejects(fm([...base, 'project: day-hike', 'project-line: I build Day Hike, and this is its fog']), /project-line must be whole sentences/);
+  rejects(fm([...base, 'project: day-hike', 'pill: See the fog in Day Hike', 'project-line: Too short.']), /project-line is 10 characters \(20 to 240\)/);
+  rejects(fm([...base, 'project: day-hike', 'pill: See the fog in Day Hike', `project-line: ${'x'.repeat(241)}`]), /project-line is 241 characters/);
+  rejects(fm([...base, 'project: day-hike', 'pill: See the fog in Day Hike', 'project-line: I build Day Hike, and this is its fog']), /project-line must be whole sentences/);
   rejects(fm([...base, 'closing: Too short to close on.']), /closing is 22 characters \(40 to 520\)/);
   rejects(fm([...base, `closing: ${'x'.repeat(521)}`]), /closing is 521 characters/);
   rejects(fm([...base, 'closing: Stand at the trailhead at dusk and look under the trees']), /closing must be whole sentences/);
   rejects(fm([...base, 'asks: Why fog?']), /asks is one question of 15 to 90 characters ending in "\?" \(8\)/);
   rejects(fm([...base, 'asks: This one is a statement, not a question.']), /asks is one question/);
   rejects(fm([...base, `asks: ${'x'.repeat(90)}?`]), /asks is one question/);
+  // The pill: required with a project, refused without one or beside a watch, short and unpunctuated.
+  assert.equal(meta.pill, 'See the fog in Day Hike');
+  rejects(fm([...base, 'project: day-hike']), /a doc with a project needs "pill"/);
+  rejects(fm([...base, 'pill: See the fog in Day Hike']), /pill without a project/);
+  rejects(fm([...base, 'project: day-hike', 'pill: See it']), /pill is 6 characters \(10 to 60\)/);
+  rejects(fm([...base, 'project: day-hike', `pill: ${'x'.repeat(61)}`]), /pill is 61 characters/);
+  rejects(fm([...base, 'project: day-hike', 'pill: See the fog in Day Hike.']), /pill ends without punctuation/);
+  rejects(fm([...base, 'watch: https://www.youtube.com/watch?v=yBs_pMUDrrk', 'watch-title: The Well', 'project: the-last-trail', 'pill: Watch The Last Trail too']), /pill with watch/);
+  assert.equal(parseFrontMatter(fm([...base, 'watch: https://www.youtube.com/watch?v=yBs_pMUDrrk', 'watch-title: The Well', 'project: the-last-trail']), FILE).meta.pill, undefined, 'a watch stands in for the pill');
   // A closing needs no project: it is then shown without a link.
   assert.equal(parseFrontMatter(fm([...base, `closing: ${end}`]), FILE).meta.closing, end);
 });
@@ -1265,16 +1277,18 @@ test('a doc page styles a text-fragment landing with theme tokens, keeps linked 
   assert.ok(!indexPage([doc('a', '2026-01-01')], themeBlocks(INDEX)).includes('::target-text'));
 });
 
-test('a doc with a project carries its pill in the header, by kind, beside a watch pill (2026-11-15)', () => {
+test('a doc with a project carries its pill in the header, in its own words; a doc with a watch keeps that pill alone (2026-11-15)', () => {
   const header = (html) => /<header class="doc-header">([\s\S]*?)<\/header>/.exec(html)[1];
-  const pill = (slug) => header(page(longDoc('fog', '2026-10-07', `project: ${slug}\n`, LABELS)));
-  assert.ok(pill('day-hike').includes(`<p class="watch-line"><a class="play" href="${PLAY}" data-visits-event="top-day-hike">Play day-hike title in your browser <span aria-hidden="true">→</span></a></p>`), pill('day-hike'));
-  assert.ok(pill('ide-arkos').includes('<a class="play" href="https://apps.csarko.sh/ide-arkos" data-visits-event="top-ide-arkos">See ide-arkos <span aria-hidden="true">→</span></a>'), pill('ide-arkos'));
-  assert.ok(pill('the-last-trail').includes(`<a class="play" href="${WATCH}" target="_blank" rel="noopener" data-visits-event="top-the-last-trail">Watch the-last-trail title on YouTube <svg`), pill('the-last-trail'));
+  const pill = (slug, words) => header(page(longDoc('fog', '2026-10-07', `project: ${slug}\npill: ${words}\n`, LABELS)));
+  assert.ok(pill('day-hike', 'See the night mist in Day Hike').includes(`<p class="watch-line"><a class="play" href="${PLAY}" data-visits-event="top-day-hike">See the night mist in Day Hike <span aria-hidden="true">→</span></a></p>`));
+  assert.ok(pill('ide-arkos', 'See Arkos IDE & its shells').includes('<a class="play" href="https://apps.csarko.sh/ide-arkos" data-visits-event="top-ide-arkos">See Arkos IDE &amp; its shells <span aria-hidden="true">→</span></a>'));
+  assert.ok(pill('the-last-trail', 'Mute and unmute The Last Trail').includes(`<a class="play" href="${WATCH}" target="_blank" rel="noopener" data-visits-event="top-the-last-trail">Mute and unmute The Last Trail <svg`));
   assert.ok(!page(longDoc('fog', '2026-10-07', 'project: none\n', LABELS)).includes('class="watch-line"'), 'project: none, no pill');
-  // A doc about someone else's video keeps its Watch pill first, then its own project's.
-  const both = header(page(longDoc('fog', '2026-10-07', 'watch: https://www.youtube.com/watch?v=yBs_pMUDrrk\nwatch-title: The Well\nproject: the-last-trail\n', LABELS)));
-  assert.match(both, /data-visits-event="watch-fog">Watch The Well on YouTube[\s\S]*data-visits-event="top-the-last-trail"/);
+  // A doc about someone else's video links that video alone in its header; its project is still in the product line.
+  const well = page(longDoc('fog', '2026-10-07', 'watch: https://www.youtube.com/watch?v=yBs_pMUDrrk\nwatch-title: The Well\nproject: the-last-trail\n', LABELS));
+  assert.match(header(well), /data-visits-event="watch-fog">Watch The Well on YouTube/);
+  assert.ok(!well.includes('data-visits-event="top-'), 'no project pill beside a watch');
+  assert.ok(well.includes('data-visits-event="lead-the-last-trail"'));
 });
 
 // ---------------------------------------------------------------- the review's fixes (2026-11-13)
@@ -1313,7 +1327,7 @@ test('a project whose title ends in its own mark is quoted in a sentence, and ta
 });
 
 test('project-line, closing and asks are plain text: Markdown in one is refused, since the page would print its marks', () => {
-  const base = [`description: ${DESC}`, 'published: 2026-09-14', 'project: day-hike'];
+  const base = [`description: ${DESC}`, 'published: 2026-09-14', 'project: day-hike', 'pill: See the fog in Day Hike'];
   for (const [key, value] of [
     ['closing', 'Open `fog.wgsl` and read the march: the band under the trees is there.'],
     ['closing', 'Stand at the trailhead in **Day Hike** at dusk and look under the trees.'],

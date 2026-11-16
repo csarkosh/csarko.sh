@@ -5,6 +5,7 @@ categories: Tooling, AI
 series: Arkos IDE notes
 updated: 2026-11-13
 project: ide-arkos
+pill: See Arkos IDE's built-in browser tab
 project-line: This research was done for Arkos IDE, a Mac app that keeps many Claude Code sessions running side by side, and it is why the app's browser tab is a WebKit view inside the Arkos window and not a docked Chrome.
 closing: Look again at the diagram at the top: the pane sits inside Codex's own window. Arkos IDE's browser tab has that and the separate profile: WebKit draws the page in a view of the Arkos window, and its pages keep a profile apart from Safari and Chrome. CDP is the part Arkos IDE does not have: its coding agents put a page in the pane with the arkos open command.
 asks: How does the Codex app embed its browser, and can a non-Electron app copy it?

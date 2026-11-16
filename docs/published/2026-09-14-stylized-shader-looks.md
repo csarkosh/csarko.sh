@@ -7,6 +7,7 @@ source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-0
 series: Day Hike's look
 related: a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2, ground-fog-without-the-wall
 project: day-hike
+pill: See Day Hike's gradient fog and brush strokes
 project-line: This survey was the first step in choosing the look of Day Hike, a first-person co-op horror game that runs in your browser. As of October 2026 its fog follows section 6 and its brush-stroke filter section 5.
 closing: In the meadow picture at the top, the far tree line fading into mist is section 6's gradient fog, and the brush-like strokes across the frame are section 5's Kuwahara filter, which as of October 2026 runs on the medium and high quality tiers. Both are laid over a photoreal render and do not replace it, which is what the last section proposed for the fog. Stand before a far line of trees in Day Hike and the same fade is there to check.
 asks: How do games like Borderlands get a distinct look from their shaders?

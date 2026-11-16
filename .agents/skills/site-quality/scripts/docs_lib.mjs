@@ -39,15 +39,20 @@ export const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ENTI
 // "closing" is the doc's last paragraph (what the reader can now recognise in the project and
 // where to see it), and "asks" is the question this doc answers in a reader's words, the link's
 // text when another doc points here. The page appends the project's link to both sentences itself.
-const FIELDS = { description: true, published: true, categories: true, updated: false, source: false, series: false, related: false, watch: false, 'watch-title': false, project: true, 'project-line': false, closing: false, asks: false };
+// "pill" is the words of the project's pill under the title, written for the doc (Cyrus, 2026-11-15:
+// "The hyperlink text need to contain something relevant to the article", so "See the night mist in
+// Day Hike" and not "Play Day Hike in your browser"). Required on a doc with a project, refused on a
+// doc with "watch": a doc about another film keeps that film's pill alone (Cyrus, of The Well).
+const FIELDS = { description: true, published: true, categories: true, updated: false, source: false, series: false, related: false, watch: false, 'watch-title': false, project: true, pill: false, 'project-line': false, closing: false, asks: false };
 const MAX_PROJECT_LINE = 240;
+const MAX_PILL = 60;
 const MAX_CLOSING = 520;
 const MAX_ASKS = 90;
 const MAX_WATCH_TITLE = 60;
 const MAX_QUESTIONS = 3;
 const MAX_RELATED = MAX_QUESTIONS;
-// The page prints these three as written, so Markdown in one would show as its marks.
-const PLAIN_FIELDS = ['project-line', 'closing', 'asks'];
+// The page prints these as written, so Markdown in one would show as its marks.
+const PLAIN_FIELDS = ['project-line', 'closing', 'asks', 'pill'];
 const MARKDOWN = /`|\*|\[[^\]]*\]\([^)]*\)|(?<!\w)_[^_\s](?:[^_]*[^_\s])?_(?!\w)/;
 const SERIES_NAME = /^[A-Z][A-Za-z0-9' ]{2,39}$/;
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -181,6 +186,16 @@ export function parseFrontMatter(text, file) {
   }
   if (meta.project !== undefined && meta.project !== 'none' && !SLUG.test(meta.project)) {
     throw new DocError(`${file}: project must be a game's, app's or film's slug, or none`);
+  }
+  const hasProject = meta.project !== undefined && meta.project !== 'none';
+  if (meta.pill !== undefined) {
+    if (!hasProject) throw new DocError(`${file}: pill without a project`);
+    if (meta.watch !== undefined) throw new DocError(`${file}: pill with watch; a doc about another video keeps that video's pill alone`);
+    const length = [...meta.pill].length;
+    if (length < 10 || length > MAX_PILL) throw new DocError(`${file}: pill is ${length} characters (10 to ${MAX_PILL})`);
+    if (/[.!?,:;]$/.test(meta.pill)) throw new DocError(`${file}: pill ends without punctuation (the page adds the arrow)`);
+  } else if (hasProject && meta.watch === undefined) {
+    throw new DocError(`${file}: a doc with a project needs "pill", the words of its link under the title, written for this doc ("See the night mist in Day Hike")`);
   }
   if (meta['project-line'] !== undefined) {
     if (meta.project === undefined || meta.project === 'none') throw new DocError(`${file}: project-line without a project`);
@@ -1248,28 +1263,23 @@ function seriesLine(doc, links) {
         </nav>`;
 }
 
-// The pills under the title, on the first screen: the video a doc is about (watch:, Cyrus,
-// 2026-11-12, for The Well) and the doc's own project, its game, app or film (Cyrus, 2026-11-15:
-// the product line alone did not make the link out to his apps, films and game prominent enough;
-// it should look like The Well's Watch pill). The project's pill names it, since it sits apart
-// from the sentence that introduces it: [the field that holds its address, the words before and
-// after its title]. One on the site's own hosts opens in the same tab with a plain arrow, YouTube
-// in a new tab with the external mark. Its event is top-<project slug>, the fourth place a doc
-// links its project (lead, close, after are the others).
-const PILL_WORDS = { game: ['play', 'Play', 'in your browser'], app: ['page', 'See', ''], film: ['watch', 'Watch', 'on YouTube'] };
-function projectPill(project) {
-  const [field, verb, tail] = PILL_WORDS[project.kind];
-  const href = project[field];
+// The pill under the title, on the first screen: the video a doc is about (watch:, Cyrus,
+// 2026-11-12, for The Well), or else the doc's own project, its game, app or film, in the doc's own
+// words (pill:; Cyrus, 2026-11-15: the product line alone did not make the link out to his apps,
+// films and game prominent enough, and the link's words must say something about the article). One
+// on the site's own hosts opens in the same tab with a plain arrow, YouTube in a new tab with the
+// external mark. Its event is top-<project slug>, the fourth place a doc links its project.
+const PILL_HREF = { game: 'play', app: 'page', film: 'watch' };
+function projectPill(doc, project) {
+  const href = project[PILL_HREF[project.kind]];
   const own = OWN_HOST.test(href);
-  const words = [verb, escapeHtml(named(project.title)), tail].filter(Boolean).join(' ');
-  return `<a class="play" href="${escapeHtml(href)}"${own ? '' : ' target="_blank" rel="noopener"'} data-visits-event="top-${project.slug}">${words} ${own ? ARROW : EXTERNAL_ARROW}</a>`;
+  return `<a class="play" href="${escapeHtml(href)}"${own ? '' : ' target="_blank" rel="noopener"'} data-visits-event="top-${project.slug}">${escapeHtml(doc.pill)} ${own ? ARROW : EXTERNAL_ARROW}</a>`;
 }
 const watchLine = (doc, project) => {
-  const pills = [
-    doc.watch && `<a class="play" href="${escapeHtml(doc.watch.url)}" target="_blank" rel="noopener" data-visits-event="watch-${doc.slug}">Watch ${escapeHtml(doc.watch.title)} on YouTube ${EXTERNAL_ARROW}</a>`,
-    project && projectPill(project),
-  ].filter(Boolean);
-  return pills.length ? `\n        <p class="watch-line">${pills.join('')}</p>` : '';
+  const pill = doc.watch
+    ? `<a class="play" href="${escapeHtml(doc.watch.url)}" target="_blank" rel="noopener" data-visits-event="watch-${doc.slug}">Watch ${escapeHtml(doc.watch.title)} on YouTube ${EXTERNAL_ARROW}</a>`
+    : project && doc.pill ? projectPill(doc, project) : '';
+  return pill ? `\n        <p class="watch-line">${pill}</p>` : '';
 };
 
 // The link that sends a doc's reader on to its project (2026-11-13), in words that say what the
