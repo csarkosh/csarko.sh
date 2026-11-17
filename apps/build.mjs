@@ -126,6 +126,11 @@ for (const f of [visitsJs, vitalsJs]) copyFileSync(path.join(SITE_PUBLIC, 'asset
 // loop.
 const loopsData = readFileSync(path.join(APPS, 'loops.js'));
 const loopsJs = `loops.${createHash('sha256').update(loopsData).digest('hex').slice(0, 8)}.js`;
+
+// A page file's address with its content's hash: the files keep their names (a picture, a loop,
+// the opening clip), served for a day from the CDN and the browser, so a new cut under the same
+// name must come with a new address or visitors see the old one until the day is out.
+const versioned = (url, file) => `${url}?v=${createHash('sha256').update(readFileSync(file)).digest('hex').slice(0, 8)}`;
 writeFileSync(path.join(OUT, 'assets', loopsJs), loopsData);
 const analytics = `  <script defer src="/assets/${visitsJs}" data-visits="/v"></script>\n  <script defer src="/assets/${vitalsJs}"></script>\n`;
 for (const icon of ['favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'apple-touch-icon.png']) {
@@ -176,13 +181,14 @@ for (const name of sources) {
     const tmp = path.join(dir, `.${path.basename(src)}`);
     writeFileSync(tmp, await fetchFile(src));
     const file = `${path.basename(src).replace(/\.(png|jpe?g)$/, '')}.webp`;
-    images[src] = { url: `/${app.slug}/${file}`, ...toWebp(tmp, path.join(dir, file)) };
+    const sized = toWebp(tmp, path.join(dir, file));
+    images[src] = { url: versioned(`/${app.slug}/${file}`, path.join(dir, file)), ...sized };
     // A picture's loop: its .mp4 beside it, played over its window (product.mjs loopedHtml).
     const loopFile = src.replace(/\.(png|jpe?g)$/, '.mp4');
     if (has(loopFile)) {
       const name = path.basename(loopFile);
       writeFileSync(path.join(dir, name), await fetchFile(loopFile));
-      images[src].loop = { url: `/${app.slug}/${name}`, ...windowOf(tmp) };
+      images[src].loop = { url: versioned(`/${app.slug}/${name}`, path.join(dir, name)), ...windowOf(tmp) };
     }
     rmSync(tmp);
   }
@@ -194,13 +200,13 @@ for (const name of sources) {
     writeFileSync(path.join(dir, `${stem}.mp4`), await fetchFile(app.recording.file));
     writeFileSync(path.join(dir, `${stem}.jpg`), await fetchFile(app.recording.file.replace(/\.mp4$/, '.jpg')));
     const size = JSON.parse(execFileSync('python3', ['-I', '-c', 'import sys, json\nfrom PIL import Image\nim = Image.open(sys.argv[1])\nprint(json.dumps({"width": im.width, "height": im.height}))', path.join(dir, `${stem}.jpg`)], { encoding: 'utf8' }));
-    recording = { url: `/${app.slug}/${stem}.mp4`, poster: `/${app.slug}/${stem}.jpg`, ...size, under: app.recording.under, alt: app.recording.alt };
+    recording = { url: versioned(`/${app.slug}/${stem}.mp4`, path.join(dir, `${stem}.mp4`)), poster: versioned(`/${app.slug}/${stem}.jpg`, path.join(dir, `${stem}.jpg`)), ...size, under: app.recording.under, alt: app.recording.alt };
   }
   // The share card, from the hero (its copy beside the page); with an opening clip, from its
   // poster below instead.
   let ogImage = null;
   if (prepared.hero && !app.heroVideo) {
-    execFileSync('python3', ['-I', '-c', OG, path.join(dir, path.basename(images[prepared.hero.light].url)), path.join(dir, 'og.jpg')]);
+    execFileSync('python3', ['-I', '-c', OG, path.join(dir, path.basename(images[prepared.hero.light].url.split('?')[0])), path.join(dir, 'og.jpg')]);
     ogImage = { url: `${APPS_HOST}/${app.slug}/og.jpg`, width: 1200, height: 630, alt: prepared.hero.alt };
   }
   // The opening clip (its front matter): the .mp4 and its .jpg poster beside the page; the
@@ -211,7 +217,7 @@ for (const name of sources) {
     writeFileSync(path.join(dir, `${stem}.mp4`), await fetchFile(app.heroVideo.file));
     writeFileSync(path.join(dir, `${stem}.jpg`), await fetchFile(app.heroVideo.file.replace(/\.mp4$/, '.jpg')));
     const size = JSON.parse(execFileSync('python3', ['-I', '-c', 'import sys, json\nfrom PIL import Image\nim = Image.open(sys.argv[1])\nprint(json.dumps({"width": im.width, "height": im.height}))', path.join(dir, `${stem}.jpg`)], { encoding: 'utf8' }));
-    heroVideo = { url: `/${app.slug}/${stem}.mp4`, poster: `/${app.slug}/${stem}.jpg`, ...size, alt: app.heroVideo.alt };
+    heroVideo = { url: versioned(`/${app.slug}/${stem}.mp4`, path.join(dir, `${stem}.mp4`)), poster: versioned(`/${app.slug}/${stem}.jpg`, path.join(dir, `${stem}.jpg`)), ...size, alt: app.heroVideo.alt };
     execFileSync('python3', ['-I', '-c', OG, path.join(dir, `${stem}.jpg`), path.join(dir, 'og.jpg')]);
     ogImage = { url: `${APPS_HOST}/${app.slug}/og.jpg`, width: 1200, height: 630, alt: app.heroVideo.alt };
   }
