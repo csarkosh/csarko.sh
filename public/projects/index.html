@@ -77,7 +77,7 @@
             "item": {
               "@type": "SoftwareApplication",
               "name": "Arkos IDE",
-              "description": "A terminal layout manager for many Claude Code sessions at once: panes with tabs, a docked Chrome pane, a file tree, and a daemon that keeps them alive.",
+              "description": "A terminal layout manager for many Claude Code sessions at once: panes with tabs, a web pane, a markdown editor, a file tree and a daemon that keeps them alive.",
               "author": {
                 "@type": "Person",
                 "@id": "https://csarko.sh/#person",
@@ -545,12 +545,12 @@ those docs shaped what you see on the trail.</p>
         <div class="project-media">
           <!-- generated:app-preview:ide-arkos -->
           <picture class="portrait">
-            <source media="(max-width: 640px)" type="image/avif" srcset="/assets/app-ide-arkos-360.871b713f.avif 360w, /assets/app-ide-arkos-540.d16e9a9c.avif 540w, /assets/app-ide-arkos-720.7aef4110.avif 720w, /assets/app-ide-arkos-1080.d5047122.avif 1080w" sizes="calc(100vw - 94px)" />
-            <source media="(max-width: 640px)" type="image/webp" srcset="/assets/app-ide-arkos-360.020fc6b0.webp 360w, /assets/app-ide-arkos-540.c165bd9a.webp 540w, /assets/app-ide-arkos-720.1c45d2c8.webp 720w, /assets/app-ide-arkos-1080.619b9ef8.webp 1080w" sizes="calc(100vw - 94px)" />
-            <source media="(max-width: 640px)" type="image/jpeg" srcset="/assets/app-ide-arkos-360.7c951e9c.jpg 360w, /assets/app-ide-arkos-540.a9edeb8a.jpg 540w, /assets/app-ide-arkos-720.34003c02.jpg 720w, /assets/app-ide-arkos-1080.16513cd4.jpg 1080w" sizes="calc(100vw - 94px)" />
-            <source type="image/avif" srcset="/assets/app-ide-arkos-portrait-light-240.8f28fdd3.avif 240w, /assets/app-ide-arkos-portrait-light-480.41bbb537.avif 480w, /assets/app-ide-arkos-portrait-light-720.0951731b.avif 720w" sizes="240px" />
-            <source type="image/webp" srcset="/assets/app-ide-arkos-portrait-light-240.a1d710a1.webp 240w, /assets/app-ide-arkos-portrait-light-480.69c6a089.webp 480w, /assets/app-ide-arkos-portrait-light-720.97dee662.webp 720w" sizes="240px" />
-            <img src="/assets/app-ide-arkos-portrait-light-240.5fbd4354.jpg" srcset="/assets/app-ide-arkos-portrait-light-240.5fbd4354.jpg 240w, /assets/app-ide-arkos-portrait-light-480.43776b74.jpg 480w, /assets/app-ide-arkos-portrait-light-720.7e7657fa.jpg 720w" sizes="240px" width="240" height="258" alt="Six Arkos IDE windows fanned out like postcards, each in its own theme: in front the multi tasker, three Claude Code sessions each running its own subagents on an unrelated project; behind, the blogger, the data analyst, the hacker, the student and the web developer" loading="lazy" decoding="async" />
+            <source media="(max-width: 640px)" type="image/avif" srcset="/assets/app-ide-arkos-360.e9bd492c.avif 360w, /assets/app-ide-arkos-540.40f66d46.avif 540w, /assets/app-ide-arkos-720.632e27ce.avif 720w, /assets/app-ide-arkos-1080.a5a36edf.avif 1080w" sizes="calc(100vw - 94px)" />
+            <source media="(max-width: 640px)" type="image/webp" srcset="/assets/app-ide-arkos-360.60bac309.webp 360w, /assets/app-ide-arkos-540.af4f75e2.webp 540w, /assets/app-ide-arkos-720.42058508.webp 720w, /assets/app-ide-arkos-1080.7ed1430d.webp 1080w" sizes="calc(100vw - 94px)" />
+            <source media="(max-width: 640px)" type="image/jpeg" srcset="/assets/app-ide-arkos-360.84d3986d.jpg 360w, /assets/app-ide-arkos-540.4714e80d.jpg 540w, /assets/app-ide-arkos-720.4f714b97.jpg 720w, /assets/app-ide-arkos-1080.eb1de2dd.jpg 1080w" sizes="calc(100vw - 94px)" />
+            <source type="image/avif" srcset="/assets/app-ide-arkos-portrait-light-240.efeddfc9.avif 240w, /assets/app-ide-arkos-portrait-light-480.fc3cb070.avif 480w, /assets/app-ide-arkos-portrait-light-720.5f1ce98d.avif 720w" sizes="240px" />
+            <source type="image/webp" srcset="/assets/app-ide-arkos-portrait-light-240.bc56fb44.webp 240w, /assets/app-ide-arkos-portrait-light-480.460804c5.webp 480w, /assets/app-ide-arkos-portrait-light-720.4feecc13.webp 720w" sizes="240px" />
+            <img src="/assets/app-ide-arkos-portrait-light-240.1253acfa.jpg" srcset="/assets/app-ide-arkos-portrait-light-240.1253acfa.jpg 240w, /assets/app-ide-arkos-portrait-light-480.369aaa0e.jpg 480w, /assets/app-ide-arkos-portrait-light-720.55baee70.jpg 720w" sizes="240px" width="240" height="259" alt="Seven Arkos IDE windows fanned out like postcards, each in its own theme. In front, the multi tasker: three Claude Code sessions side by side, each running its own subagents on an unrelated project. Behind, the blogger with a launch plan in the markdown editor, the data analyst with a weekly report and its chart, the hacker hardening a service in Matrix green, the indie game dev with a dungeon crawl in pixel-framed purple, the student with lecture notes on a ruled notebook page, and the web developer with the app&#39;s page in a web tab" loading="lazy" decoding="async" />
           </picture>
           <!-- /generated:app-preview:ide-arkos -->
         </div>
@@ -562,7 +562,7 @@ those docs shaped what you see on the trail.</p>
 every tab shows whether its session is working or waiting on you, and a daemon brings each session
 back, resumed, after a frozen window, an update or a restart. Agents inside it can open a video, a
 document or a web page in a pane beside you with one command.</p>
-<p>Written in Rust with Claude Code, nearly every one of its 600+ commits, and I now build it inside
+<p>Written in Rust with Claude Code, nearly every one of its 1,200+ commits, and I now build it inside
 Arkos itself. The hardest parts started as research with Claude, such as
 <a href="/research/update-the-ide-keep-the-shells" data-visits-event="doc-update-the-ide-keep-the-shells">keeping the shells alive through an update</a>.</p>
           </div>
