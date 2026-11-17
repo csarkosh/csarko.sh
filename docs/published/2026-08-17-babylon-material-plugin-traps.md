@@ -2,6 +2,7 @@
 description: Babylon.js 9.18 splices plugin GLSL in after #include expansion, before #if: what each PBR hook sees, and the silent preprocessor, comment and bake traps.
 published: 2026-08-17
 categories: Rendering, Tooling
+series: Browser game traps
 updated: 2026-10-23
 related: webgpu-vs-webgl2, atmosphere-and-dread-shaders, no-visible-pop-in
 project: day-hike

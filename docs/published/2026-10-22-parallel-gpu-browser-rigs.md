@@ -2,6 +2,7 @@
 description: Ten stopped AWS Windows GPU machines run a round of browser GPU benchmarks in under two hours; GCP allows one GPU, and Modal's Chrome falls back to software.
 published: 2026-10-22
 categories: Tooling, Distributed systems, Rendering
+series: Cloud GPU rigs
 updated: 2026-10-24
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-22-parallel-rigs-research.md
 project: day-hike

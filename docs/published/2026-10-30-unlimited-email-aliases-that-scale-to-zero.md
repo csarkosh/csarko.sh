@@ -2,6 +2,7 @@
 description: Every address at a domain receives mail through SES and one Lambda, about $0.0003 a message and $0 idle. Why Google Cloud cannot, what Cloudflare costs.
 published: 2026-10-30
 categories: Distributed systems, Tooling
+series: A site on free tiers
 related: cloud-rigs-for-graphics-work, how-codex-embeds-its-browser
 project: none
 asks: How do you run unlimited email aliases on your own domain with no monthly fee?

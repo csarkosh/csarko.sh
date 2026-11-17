@@ -322,7 +322,9 @@ series needs two or more docs (the build refuses one of one); the name is 3 to 4
 letters, digits, spaces or apostrophes, starting with a capital, spelled the same on
 every doc. The series now: WebGPU against WebGL2; Rendering a browser forest; Filling the
 distance; Day Hike's look; Olympic Peninsula field notes; Horror craft; AI short films;
-Arkos IDE notes; Analytics without cookies; Day Hike netcode. A new doc joins one when
+Arkos IDE notes; Analytics without cookies; Day Hike netcode; A site on free tiers; Cloud GPU
+rigs; Browser game traps; Writing for readers (the last four from 2026-11-16, to put the docs
+that stood alone in front of more readers). A new doc joins one when
 it continues that work, and a new series starts when a second doc would join it.
 
 What next *(2026-11-13; it was a boxed Keep reading block)* also offers up to three docs

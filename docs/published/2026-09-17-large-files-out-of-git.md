@@ -2,6 +2,7 @@
 description: Git LFS is not tied to GitHub. How its endpoint is discovered, three ways to put a cloud bucket behind it, and when to skip LFS entirely.
 published: 2026-09-17
 categories: Distributed systems, Tooling
+series: A site on free tiers
 updated: 2026-10-23
 project: none
 asks: Can Git LFS use a cloud bucket in place of GitHub's storage?

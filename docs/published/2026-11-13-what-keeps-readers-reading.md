@@ -2,6 +2,7 @@
 description: Long articles on one site held readers for a median of 21.5 seconds. What reading research supports, what is habit, and what the site changed on Nov 13, 2026.
 published: 2026-11-13
 categories: Tooling
+series: Writing for readers
 related: reverse-engineering-an-ai-horror-short, how-codex-embeds-its-browser, visits-without-cookies
 project: lib-visits
 pill: See the read time in lib-visits

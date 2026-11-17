@@ -2,6 +2,7 @@
 description: A Claude draft written to its author's voice profile scored 100% AI on Substack's Pangram check. Why, and the workflow that replaced it.
 published: 2026-09-24
 categories: AI, Tooling
+series: Writing for readers
 project: none
 asks: Can a voice profile get AI-written posts past Substack's AI detector?
 ---

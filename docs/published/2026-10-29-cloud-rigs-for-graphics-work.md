@@ -2,6 +2,7 @@
 description: AWS, Azure and GCP price a T4 GPU within 3%. Fanning out shader recording and tests, not switching clouds, cuts a 4.5-hour graphics change to about 30 minutes.
 published: 2026-10-29
 categories: Tooling, Distributed systems, Rendering
+series: Cloud GPU rigs
 related: parallel-gpu-browser-rigs, webgpu-vs-webgl2
 project: day-hike
 pill: See the shadows in Day Hike

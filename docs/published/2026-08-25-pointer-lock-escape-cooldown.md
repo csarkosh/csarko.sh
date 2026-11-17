@@ -2,6 +2,7 @@
 description: Chromium refuses pointer lock for 1.25 s after Esc. What failed in the browser, and how an 8-byte patch to prebuilt Electron removed the cooldown.
 published: 2026-08-25
 categories: Tooling
+series: Browser game traps
 updated: 2026-10-18
 project: day-hike
 pill: See the pause menu in Day Hike
