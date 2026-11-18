@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 452" width="640" height="452" role="img" aria-labelledby="t">
+  <title id="t">Four ways an IDE can show a Claude Code conversation: host the terminal UI, run the binary headless and read its events, go through the Agent SDK or an ACP adapter, or call the Claude API with an agent loop of its own</title>
+  <style>
+    text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 14px; fill: #e8eaf0; }
+    .title { font-size: 16px; font-weight: 600; }
+    .h { font-weight: 600; }
+    .sec { fill: #a0a8b8; font-size: 13px; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; fill: #a0a8b8; }
+    .box { fill: none; stroke: #3a3f4b; stroke-width: 1.5; }
+    .hot { fill: none; stroke: #7dd3c0; stroke-width: 1.5; }
+    .hh { fill: #7dd3c0; }
+    .ln { stroke: #a0a8b8; stroke-width: 1.5; fill: none; }
+    .hd { fill: #a0a8b8; }
+    @media (prefers-color-scheme: light) {
+      text { fill: #12151c; }
+      .sec, .mono { fill: #4a5263; }
+      .box { stroke: #c9ced6; }
+      .hot { stroke: #0a735f; }
+      .hh { fill: #0a735f; }
+      .ln { stroke: #4a5263; }
+      .hd { fill: #4a5263; }
+    }
+  </style>
+  <text class="title" x="16" y="26">Who runs the agent, and who draws the conversation</text>
+  <text class="sec" x="16" y="52">What runs the agent loop</text>
+  <text class="sec" x="386" y="52">What the IDE draws</text>
+
+  <!-- 1. Host the terminal UI -->
+  <rect class="box" x="16" y="64" width="300" height="82" rx="8"/>
+  <text class="h" x="30" y="88">1. Claude Code's terminal UI</text>
+  <text class="mono" x="30" y="110">claude</text>
+  <text class="sec" x="30" y="130">in a pseudo-terminal the IDE owns</text>
+  <rect class="box" x="386" y="64" width="238" height="82" rx="8"/>
+  <text class="h" x="400" y="88">Terminal cells</text>
+  <text class="sec" x="400" y="110">the program draws; the scroll</text>
+  <text class="sec" x="400" y="130">is the terminal's or its own</text>
+  <line class="ln" x1="316" y1="105" x2="386" y2="105"/>
+  <polygon class="hd" points="379,100 386,105 379,110"/>
+  <text class="sec" x="326" y="98">bytes</text>
+
+  <!-- 2. Headless -->
+  <rect class="hot" x="16" y="160" width="300" height="82" rx="8"/>
+  <text class="h hh" x="30" y="184">2. The same binary, headless</text>
+  <text class="mono" x="30" y="206">claude -p --output-format stream-json</text>
+  <text class="sec" x="30" y="226">one JSON event per line</text>
+  <rect class="hot" x="386" y="160" width="238" height="178" rx="8"/>
+  <text class="h hh" x="400" y="184">Its own list of messages</text>
+  <text class="sec" x="400" y="206">text, tool calls, permission</text>
+  <text class="sec" x="400" y="226">requests, compaction marks;</text>
+  <text class="sec" x="400" y="246">the scroll is the IDE's, so a</text>
+  <text class="sec" x="400" y="266">resize or a compaction cannot</text>
+  <text class="sec" x="400" y="286">take rows away</text>
+  <line class="ln" x1="316" y1="201" x2="386" y2="201"/>
+  <polygon class="hd" points="379,196 386,201 379,206"/>
+  <text class="sec" x="322" y="194">events</text>
+
+  <!-- 3. SDK or ACP -->
+  <rect class="hot" x="16" y="256" width="300" height="82" rx="8"/>
+  <text class="h hh" x="30" y="280">3. Agent SDK, or an ACP adapter</text>
+  <text class="sec" x="30" y="302">a Node or Python process that runs</text>
+  <text class="sec" x="30" y="322">the same binary and speaks both ways</text>
+  <line class="ln" x1="316" y1="297" x2="386" y2="297"/>
+  <polygon class="hd" points="379,292 386,297 379,302"/>
+  <text class="sec" x="322" y="290">events</text>
+
+  <!-- 4. Raw API -->
+  <rect class="box" x="16" y="352" width="300" height="82" rx="8"/>
+  <text class="h" x="30" y="376">4. The Claude API, called directly</text>
+  <text class="sec" x="30" y="398">the IDE writes the tool loop, the</text>
+  <text class="sec" x="30" y="418">permissions and the sessions itself</text>
+  <rect class="box" x="386" y="352" width="238" height="82" rx="8"/>
+  <text class="h" x="400" y="376">Its own list of messages</text>
+  <text class="sec" x="400" y="398">and everything else: this is</text>
+  <text class="sec" x="400" y="418">a second agent, with an API key</text>
+  <line class="ln" x1="316" y1="393" x2="386" y2="393"/>
+  <polygon class="hd" points="379,388 386,393 379,398"/>
+  <text class="sec" x="318" y="386">replies</text>
+</svg>
