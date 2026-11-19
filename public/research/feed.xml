@@ -27,6 +27,16 @@
     <category term="Tooling" />
   </entry>
   <entry>
+    <title>Streaming a procedural world in the browser</title>
+    <link href="https://csarko.sh/research/streaming-a-procedural-world-in-the-browser" />
+    <id>https://csarko.sh/research/streaming-a-procedural-world-in-the-browser</id>
+    <published>2026-11-19T00:00:00Z</published>
+    <updated>2026-11-19T00:00:00Z</updated>
+    <summary>Generate a procedural world around the player in jobs that show whole, in a fixed slice of each frame ended by the clock. On a phone, slow frames fell 98%.</summary>
+    <category term="Rendering" />
+    <category term="Worlds and terrain" />
+  </entry>
+  <entry>
     <title>Can an IDE draw Claude Code&#39;s conversation itself?</title>
     <link href="https://csarko.sh/research/can-an-ide-draw-claude-codes-conversation" />
     <id>https://csarko.sh/research/can-an-ide-draw-claude-codes-conversation</id>

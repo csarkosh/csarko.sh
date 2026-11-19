@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 400" width="440" height="400" role="img" aria-labelledby="t">
+  <title id="t">Frames over 33 ms per 10 second window on a Pixel 9, before and after the scheduler's change. Walk by day: 13.9 before, 0.3 after. Chase: 15.7 before, 0.5 after. Reveal: 18.7 before, 0 after. Walk by night: 1.8 before, 0.3 after.</title>
+  <style>
+    text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 14px; fill: #e8eaf0; }
+    .title { font-size: 16px; font-weight: 600; }
+    .sec { fill: #a0a8b8; }
+    .bad { fill: #f5c451; }
+    .good { fill: #7dd3c0; }
+    @media (prefers-color-scheme: light) {
+      text { fill: #12151c; }
+      .sec { fill: #4a5263; }
+      .bad { fill: #8a6100; }
+      .good { fill: #0a735f; }
+    }
+  </style>
+  <text class="title" x="16" y="28">Frames over 33 ms, per 10 s window</text>
+  <text class="sec" x="16" y="50">Pixel 9, Chrome, the game's Low tier, while the world streams</text>
+  <rect class="bad" x="16" y="66" width="12" height="12" rx="2"/>
+  <text class="sec" x="34" y="77">Before: a late job run to its end</text>
+  <rect class="good" x="16" y="88" width="12" height="12" rx="2"/>
+  <text class="sec" x="34" y="99">After: a late job given 8 ms a frame</text>
+
+  <text x="16" y="140">Walk by day</text>
+  <rect class="bad" x="130" y="126" width="193" height="18" rx="3"/>
+  <text x="331" y="140">13.9</text>
+  <rect class="good" x="130" y="148" width="4" height="18" rx="2"/>
+  <text x="142" y="162">0.3</text>
+
+  <text x="16" y="208">Chase</text>
+  <rect class="bad" x="130" y="194" width="218" height="18" rx="3"/>
+  <text x="356" y="208">15.7</text>
+  <rect class="good" x="130" y="216" width="7" height="18" rx="2"/>
+  <text x="145" y="230">0.5</text>
+
+  <text x="16" y="276">Reveal</text>
+  <rect class="bad" x="130" y="262" width="260" height="18" rx="3"/>
+  <text x="398" y="276">18.7</text>
+  <text x="130" y="298">0</text>
+
+  <text x="16" y="344">Walk by night</text>
+  <rect class="bad" x="130" y="330" width="25" height="18" rx="3"/>
+  <text x="163" y="344">1.8</text>
+  <rect class="good" x="130" y="352" width="4" height="18" rx="2"/>
+  <text x="142" y="366">0.3</text>
+
+  <text class="sec" x="16" y="392">Same work per window before and after: spread, not cut.</text>
+</svg>
