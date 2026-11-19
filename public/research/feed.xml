@@ -5,8 +5,17 @@
   <link href="https://csarko.sh/research" />
   <link rel="self" href="https://csarko.sh/research/feed.xml" />
   <id>https://csarko.sh/research</id>
-  <updated>2026-11-17T00:00:00Z</updated>
+  <updated>2026-11-19T00:00:00Z</updated>
   <author><name>Cyrus Sarkosh</name><uri>https://csarko.sh/</uri></author>
+  <entry>
+    <title>Why a phone game stutters only while you touch the screen</title>
+    <link href="https://csarko.sh/research/phone-120-hz-under-the-thumb" />
+    <id>https://csarko.sh/research/phone-120-hz-under-the-thumb</id>
+    <published>2026-11-19T00:00:00Z</published>
+    <updated>2026-11-19T00:00:00Z</updated>
+    <summary>A Pixel 9 runs its display at 120 Hz while a finger is on it. A game that draws every refresh then stutters; drawing every second refresh made it even.</summary>
+    <category term="Rendering" />
+  </entry>
   <entry>
     <title>Can an IDE draw Claude Code&#39;s conversation itself?</title>
     <link href="https://csarko.sh/research/can-an-ide-draw-claude-codes-conversation" />

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 384" width="440" height="384" role="img" aria-labelledby="t">
+  <title id="t">Gaps between drawn frames on a Pixel 9 while the player steers with a thumb, display at 120 Hz. Unpaced, 1,841 gaps: 24.5% at 8.3 ms, 70.9% at 16.7 ms, 2.6% at 25 ms, 2.0% at 33 ms or more. Paced, 264 gaps: 1.1% at 8.3 ms, 97.3% at 16.7 ms, 1.1% at 25 ms, 0.4% at 33 ms.</title>
+  <style>
+    text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 14px; fill: #e8eaf0; }
+    .title { font-size: 16px; font-weight: 600; }
+    .sec { fill: #a0a8b8; }
+    .bad { fill: #f5c451; }
+    .good { fill: #7dd3c0; }
+    @media (prefers-color-scheme: light) {
+      text { fill: #12151c; }
+      .sec { fill: #4a5263; }
+      .bad { fill: #8a6100; }
+      .good { fill: #0a735f; }
+    }
+  </style>
+  <text class="title" x="16" y="28">Time between drawn frames while steering</text>
+  <text class="sec" x="16" y="50">Pixel 9, Chrome 157, display at 120 Hz under the thumb</text>
+  <text class="sec" x="16" y="72">Share of gaps, by refreshes of the display</text>
+  <text class="sec" x="16" y="112">Unpaced, 31 s of steering</text>
+  <text class="sec" x="424" y="112" text-anchor="end">1,841 gaps</text>
+  <text x="126" y="137" text-anchor="end">8.3 ms</text>
+  <rect class="bad" x="136" y="122" width="59" height="20" rx="3"/>
+  <text x="203" y="137">24.5%</text>
+  <text x="126" y="163" text-anchor="end">16.7 ms</text>
+  <rect class="bad" x="136" y="148" width="170" height="20" rx="3"/>
+  <text x="314" y="163">70.9%</text>
+  <text x="126" y="189" text-anchor="end">25 ms</text>
+  <rect class="bad" x="136" y="174" width="6" height="20" rx="3"/>
+  <text x="150" y="189">2.6%</text>
+  <text x="126" y="215" text-anchor="end">33 ms or more</text>
+  <rect class="bad" x="136" y="200" width="5" height="20" rx="3"/>
+  <text x="149" y="215">2.0%</text>
+  <text class="sec" x="16" y="254">Paced, 5 s of steering</text>
+  <text class="sec" x="424" y="254" text-anchor="end">264 gaps</text>
+  <text x="126" y="279" text-anchor="end">8.3 ms</text>
+  <rect class="good" x="136" y="264" width="3" height="20" rx="3"/>
+  <text x="147" y="279">1.1%</text>
+  <text x="126" y="305" text-anchor="end">16.7 ms</text>
+  <rect class="good" x="136" y="290" width="234" height="20" rx="3"/>
+  <text x="378" y="305">97.3%</text>
+  <text x="126" y="331" text-anchor="end">25 ms</text>
+  <rect class="good" x="136" y="316" width="3" height="20" rx="3"/>
+  <text x="147" y="331">1.1%</text>
+  <text x="126" y="357" text-anchor="end">33 ms or more</text>
+  <rect class="good" x="136" y="342" width="2" height="20" rx="3"/>
+  <text x="146" y="357">0.4%</text>
+</svg>
