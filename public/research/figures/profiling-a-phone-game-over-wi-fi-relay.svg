@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 470" width="440" height="470" role="img" aria-labelledby="t">
+  <title id="t">The path from the Mac to the phone's Chrome over Wi-Fi. Refused: adb straight to the phone at port 5555 fails with No route to host. Works: adb connects to 127.0.0.1 port 5560 on the Mac; a relay run by macOS's own /usr/bin/python3 carries it to the phone's adb daemon at port 5555 over Wi-Fi; adb forward then maps the Mac's port 9222 to Chrome's chrome_devtools_remote socket on the phone, which the harness drives.</title>
+  <style>
+    text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 14px; fill: #e8eaf0; }
+    .title { font-size: 16px; font-weight: 600; }
+    .sec { fill: #a0a8b8; }
+    .bad { fill: #f5c451; }
+    .box { fill: none; stroke: #a0a8b8; stroke-width: 1.5; }
+    .good { fill: none; stroke: #7dd3c0; stroke-width: 2; }
+    .line { stroke: #7dd3c0; stroke-width: 2; }
+    .badline { stroke: #f5c451; stroke-width: 2; stroke-dasharray: 5 4; }
+    .head { fill: #7dd3c0; }
+    .badhead { fill: #f5c451; }
+    @media (prefers-color-scheme: light) {
+      text { fill: #12151c; }
+      .sec { fill: #4a5263; }
+      .bad { fill: #8a6100; }
+      .box { stroke: #4a5263; }
+      .good { stroke: #0a735f; }
+      .line { stroke: #0a735f; }
+      .badline { stroke: #8a6100; }
+      .head { fill: #0a735f; }
+      .badhead { fill: #8a6100; }
+    }
+  </style>
+  <text class="title" x="16" y="28">Reaching a phone's Chrome over Wi-Fi</text>
+  <text class="sec" x="16" y="50">From a terminal macOS keeps off the local network</text>
+
+  <text class="sec" x="16" y="86">On the Mac</text>
+  <rect class="box" x="16" y="96" width="408" height="48" rx="8"/>
+  <text x="32" y="125">adb, node and the frame harness</text>
+
+  <line class="badline" x1="404" y1="144" x2="404" y2="370"/>
+  <text class="bad" x="396" y="190" text-anchor="end">adb connect phone:5555</text>
+  <text class="bad" x="396" y="210" text-anchor="end">No route to host</text>
+
+  <line class="line" x1="80" y1="144" x2="80" y2="166"/>
+  <polygon class="head" points="74,164 86,164 80,174"/>
+  <rect class="good" x="16" y="176" width="200" height="48" rx="8"/>
+  <text x="32" y="198">127.0.0.1:5560</text>
+  <text class="sec" x="32" y="216">the loopback, allowed</text>
+
+  <line class="line" x1="80" y1="224" x2="80" y2="246"/>
+  <polygon class="head" points="74,244 86,244 80,254"/>
+  <rect class="good" x="16" y="256" width="320" height="48" rx="8"/>
+  <text x="32" y="278">relay run by /usr/bin/python3</text>
+  <text class="sec" x="32" y="296">a program that ships with macOS</text>
+
+  <line class="line" x1="80" y1="304" x2="80" y2="344"/>
+  <polygon class="head" points="74,342 86,342 80,352"/>
+  <text class="sec" x="94" y="330">Wi-Fi</text>
+
+  <text class="sec" x="16" y="372">On the phone</text>
+  <rect class="box" x="16" y="380" width="408" height="48" rx="8"/>
+  <text x="32" y="402">adbd on port 5555</text>
+  <text class="sec" x="32" y="420">then adb forward tcp:9222 to Chrome's socket</text>
+  <polygon class="badhead" points="398,370 410,370 404,380"/>
+
+  <text class="sec" x="16" y="458">The harness talks to 127.0.0.1:9222 as to any Chrome.</text>
+</svg>

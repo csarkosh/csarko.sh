@@ -17,6 +17,16 @@
     <category term="Rendering" />
   </entry>
   <entry>
+    <title>Profiling a WebGPU game on an Android phone over Wi-Fi</title>
+    <link href="https://csarko.sh/research/profiling-a-phone-game-over-wi-fi" />
+    <id>https://csarko.sh/research/profiling-a-phone-game-over-wi-fi</id>
+    <published>2026-11-19T00:00:00Z</published>
+    <updated>2026-11-19T00:00:00Z</updated>
+    <summary>Chrome on Android can be profiled over Wi-Fi, but macOS may refuse the connection with No route to host. A loopback relay, a charger and a cool phone fix it.</summary>
+    <category term="Rendering" />
+    <category term="Tooling" />
+  </entry>
+  <entry>
     <title>Can an IDE draw Claude Code&#39;s conversation itself?</title>
     <link href="https://csarko.sh/research/can-an-ide-draw-claude-codes-conversation" />
     <id>https://csarko.sh/research/can-an-ide-draw-claude-codes-conversation</id>
