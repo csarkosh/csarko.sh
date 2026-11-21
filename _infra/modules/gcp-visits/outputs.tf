@@ -5,3 +5,12 @@ output "secret_id" { value = google_secret_manager_secret.visits.secret_id }
 output "dataset" { value = google_logging_linked_dataset.visits.link_id }
 output "history_dataset" { value = google_bigquery_dataset.history.dataset_id }
 output "history_table" { value = google_bigquery_table.goatcounter_history.table_id }
+
+data "google_project" "this" {
+  project_id = var.project_id
+}
+
+output "place_token_secret" {
+  description = "The place route's token, by its full name, which a service in another project references."
+  value       = "projects/${data.google_project.this.number}/secrets/${google_secret_manager_secret.place.secret_id}"
+}

@@ -57,3 +57,15 @@ variable "apps" {
   type        = list(string)
   default     = []
 }
+
+variable "place_clients" {
+  description = "Service accounts, in any project, that may read the place route's token and so ask the collector where an address is (POST /place, lib-visits v0.6.0)."
+  type        = list(string)
+  default     = []
+}
+
+variable "outside_readers" {
+  description = "Service accounts in other projects that may query the visits dataset (its log view and the linked dataset), and nothing else here."
+  type        = list(string)
+  default     = []
+}

@@ -45,6 +45,28 @@ resource "google_secret_manager_secret_iam_member" "visits_reads" {
   member    = "serviceAccount:${google_service_account.visits.email}"
 }
 
+# The place route's token (lib-visits v0.6.0 `POST /place`): the owner's other services hold a
+# client's address and ask the collector where it is, from the city database bundled in its
+# image, instead of keeping a database of their own. Created empty here, its one version added by
+# hand as the hash secret's is; read by the collector and by each service in `place_clients`
+# (Day Hike's telemetry, in its own project, references it by its full name).
+resource "google_secret_manager_secret" "place" {
+  project   = var.project_id
+  secret_id = "visits-place-token"
+  replication {
+    auto {}
+  }
+  depends_on = [google_project_service.apis]
+}
+
+resource "google_secret_manager_secret_iam_member" "place_reads" {
+  for_each  = toset(concat([google_service_account.visits.email], var.place_clients))
+  project   = var.project_id
+  secret_id = google_secret_manager_secret.place.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${each.value}"
+}
+
 resource "google_cloud_run_v2_service" "visits" {
   project  = var.project_id
   location = var.region
@@ -73,8 +95,10 @@ resource "google_cloud_run_v2_service" "visits" {
       resources {
         cpu_idle = true
         limits = {
-          cpu    = "1"
-          memory = "128Mi"
+          cpu = "1"
+          # The city database the image bundles (DB-IP's City Lite, lib-visits v0.6.0) is read
+          # whole into memory, about 127 MB; billed only while a request is handled (cpu_idle).
+          memory = "512Mi"
         }
       }
       env {
@@ -90,6 +114,15 @@ resource "google_cloud_run_v2_service" "visits" {
         value_source {
           secret_key_ref {
             secret  = google_secret_manager_secret.visits.secret_id
+            version = "latest"
+          }
+        }
+      }
+      env {
+        name = "VISITS_PLACE_TOKEN"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.place.secret_id
             version = "latest"
           }
         }
@@ -117,7 +150,7 @@ resource "google_cloud_run_v2_service" "visits" {
     ]
   }
 
-  depends_on = [google_project_service.apis, google_secret_manager_secret_iam_member.visits_reads]
+  depends_on = [google_project_service.apis, google_secret_manager_secret_iam_member.visits_reads, google_secret_manager_secret_iam_member.place_reads]
 }
 
 resource "google_cloud_run_v2_service_iam_member" "public" {
@@ -221,4 +254,26 @@ resource "google_bigquery_dataset_iam_member" "reader_history" {
   dataset_id = google_bigquery_dataset.history.dataset_id
   role       = "roles/bigquery.dataViewer"
   member     = "serviceAccount:${var.reader_service_account_email}"
+}
+
+# Readers in other projects (Day Hike's telemetry, for its admin page's map of where players are):
+# the visits view alone, not every log in the project, and the linked dataset, which a query of the
+# view is refused without. Their BigQuery jobs run in their own projects.
+resource "google_project_iam_member" "outside_view" {
+  for_each = toset(var.outside_readers)
+  project  = var.project_id
+  role     = "roles/logging.viewAccessor"
+  member   = "serviceAccount:${each.value}"
+  condition {
+    title      = "visits view only"
+    expression = "resource.name == \"projects/${var.project_id}/locations/global/buckets/${google_logging_project_bucket_config.visits.bucket_id}/views/_AllLogs\""
+  }
+}
+
+resource "google_bigquery_dataset_iam_member" "outside_visits" {
+  for_each   = toset(var.outside_readers)
+  project    = var.project_id
+  dataset_id = google_logging_linked_dataset.visits.link_id
+  role       = "roles/bigquery.dataViewer"
+  member     = "serviceAccount:${each.value}"
 }

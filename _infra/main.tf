@@ -266,6 +266,10 @@ module "gcp_visits" {
   trusted_proxies              = 2
   ignore_ips                   = var.visits_ignore_ips
   reader_service_account_email = module.gcp_admin_api.service_account_email
+  # Day Hike's telemetry (another project): it asks the place route where a new session's
+  # address is, and its admin page reads the game's visits by city (2026-11-21).
+  place_clients   = ["fps-telemetry@fps-csarko.iam.gserviceaccount.com"]
+  outside_readers = ["fps-telemetry@fps-csarko.iam.gserviceaccount.com"]
 
   providers = {
     google      = google

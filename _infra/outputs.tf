@@ -151,6 +151,7 @@ output "admin_web_api_key" {
 output "visits_service_name" { value = module.gcp_visits.service_name }
 output "visits_service_url" { value = module.gcp_visits.service_url }
 output "visits_secret_id" { value = module.gcp_visits.secret_id }
+output "visits_place_token_secret" { value = module.gcp_visits.place_token_secret }
 output "visits_dataset" { value = module.gcp_visits.dataset }
 output "visits_history_dataset" { value = module.gcp_visits.history_dataset }
 
