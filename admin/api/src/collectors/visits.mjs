@@ -101,12 +101,19 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
       return { current: shape("current", range.start, range.end), previous: shape("previous", range.prevStart, range.prevEnd) };
     },
 
+    // Each path's visitors, the range before's, where visits landed and went on, and how far they
+    // got (pages.sql). GoatCounter's history has visitors alone: a range before the cutover adds
+    // them to `visitors` (and the range before's to `previous`), and leaves the rest live-only.
     async pages(range) {
-      const live = await run("pages", { start: range.start, end: range.end });
-      const rows = live.map((r) => ({ path: r.path, title: r.title ?? "", visitors: Number(r.visitors), pageviews: null, engagedMedian: r.engaged_median === null || r.engaged_median === undefined ? null : Number(r.engaged_median), reached: r.reached === null || r.reached === undefined ? null : Number(r.reached) }));
-      if (!wantsHistory(range.start)) return rows;
-      const history = await hist("history-pages", { start: range.start, end: range.end });
-      return sumBy([...rows, ...history.map((r) => ({ path: r.path, title: r.title ?? "", visitors: Number(r.visitors), pageviews: null, engagedMedian: null, reached: null }))], "path", "visitors");
+      const live = await run("pages", win(range));
+      const nul = (v) => (v === null || v === undefined ? null : Number(v));
+      const rows = live.map((r) => ({ path: r.path, title: r.title ?? "", visitors: Number(r.visitors), previous: Number(r.previous ?? 0), pageviews: null, landed: Number(r.landed ?? 0), onward: Number(r.onward ?? 0), engagedMedian: nul(r.engaged_median), depthMedian: nul(r.depth_median), lcp: nul(r.lcp_p75), reached: nul(r.reached) }));
+      const blank = { pageviews: null, landed: 0, onward: 0, engagedMedian: null, depthMedian: null, lcp: null, reached: null };
+      const history = wantsHistory(range.start) ? (await hist("history-pages", { start: range.start, end: range.end })).map((r) => ({ path: r.path, title: r.title ?? "", visitors: Number(r.visitors), previous: 0, ...blank })) : [];
+      const before = wantsHistory(range.prevStart) ? (await hist("history-pages", { start: range.prevStart, end: range.prevEnd })).map((r) => ({ path: r.path, title: r.title ?? "", visitors: 0, previous: Number(r.visitors), ...blank })) : [];
+      if (!history.length && !before.length) return rows;
+      // Live rows first, so a path's engaged time and the rest come from them; one seen only before is left out.
+      return sumBy([...rows, ...history, ...before], "path", "visitors", "previous").filter((r) => r.visitors > 0);
     },
 
     // A visit that came with no external referrer but with an assistant's tag (ChatGPT sends no
@@ -145,6 +152,18 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
     async journeys(range) {
       const rows = await run("journeys", { start: range.start, end: range.end });
       return stitchJourneys(rows.map(journeyOf));
+    },
+
+    // Where the visitors are, one row a city (places.sql), and the visits with no place apart: every
+    // one before the collector had its city database (lib-visits v0.6.0, 2026-11-21).
+    async places(range) {
+      const rows = await run("places", { start: range.start, end: range.end });
+      const placed = rows.filter((r) => r.country);
+      const unplaced = rows.filter((r) => !r.country).reduce((n, r) => n + Number(r.visitors), 0);
+      return {
+        rows: placed.map((r) => ({ city: r.city ?? null, region: r.region ?? null, country: String(r.country), lat: num(r.lat), lon: num(r.lon), visitors: Number(r.visitors) })),
+        unplaced,
+      };
     },
 
     async audience(range) {
@@ -245,7 +264,9 @@ export function journeyOf(row) {
     else if (s.secs !== null) s.left = s.at + s.secs;
     if (i > 0) s.back = s.at - (steps[i - 1].at + (steps[i - 1].secs ?? 0)) >= RETURN_GAP_SECS;
   });
-  return { started: r.started, source, device, steps, exit, engaged: engagedOf(steps), stitched: 0, returns: steps.filter((s) => s.back).length, suspect: suspectOf(device, steps), reader: readerOf(steps, exit) };
+  const pl = r.place ? plainRow(r.place) : null;
+  const place = pl?.cc ? { city: pl.ct ?? null, region: pl.rg ?? null, country: String(pl.cc) } : null;
+  return { started: r.started, source, device, place, steps, exit, engaged: engagedOf(steps), stitched: 0, returns: steps.filter((s) => s.back).length, suspect: suspectOf(device, steps), reader: readerOf(steps, exit) };
 }
 
 /** The reader rule in visits.sql: a page engaged 5 s or more, two or more paths, or a click. */
@@ -302,6 +323,7 @@ export function stitchJourneys(journeys) {
     onto.steps[onto.steps.length - 1].left = gap + j.steps[0].at;
     for (const s of j.steps) onto.steps.push({ ...s, at: s.at + gap, left: s.left === null ? null : s.left + gap });
     onto.exit = j.exit;
+    onto.place = j.place ?? onto.place;
     onto.engaged = onto.engaged === null && j.engaged === null ? null : (onto.engaged ?? 0) + (j.engaged ?? 0);
     onto.stitched += 1 + j.stitched;
     onto.returns += j.returns;

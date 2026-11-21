@@ -186,10 +186,16 @@ calendar day; the other ranges carry no `label`. `current` and `previous` are `n
 ### `pages`
 
 ```json
-{ "rows": [ { "path": "/research/stylized-shader-looks", "title": "Stylized shader looks", "visitors": 31, "pageviews": null, "inSitemap": true, "engagedMedian": 48, "reached": 0.62 } ] }
+{ "rows": [ { "path": "/research/stylized-shader-looks", "title": "Stylized shader looks", "visitors": 31, "previous": 24, "pageviews": null, "landed": 27, "onward": 6, "inSitemap": true, "engagedMedian": 48, "depthMedian": 71, "lcp": 1084, "reached": 0.62 } ] }
 ```
 
-Events are excluded. `visitors` is the distinct visits with a view of the path.
+Events are excluded. `visitors` is the distinct visits with a view of the path; `previous` the
+same over the range before (0 for a path not seen then; a path seen only then is left out).
+`landed` is the visits whose first view in the range was the path, and `onward` the visits that
+saw it and whose last view was another path *(2026-11-21)*. `depthMedian` is the median over
+visits of each one's deepest scroll on the path (0 to 100) and `lcp` the 75th percentile of its
+page loads' LCP in ms, each `null` with no leave or vitals beacon. Before the cutover only
+`visitors` and `previous` come from GoatCounter's history; the rest are lib-visits' alone.
 `inSitemap: false` marks a path that is not in `sitemap.xml` (a 404 candidate). A page on another of the site's hosts is named with it, `apps.csarko.sh/ide-arkos` (since 2026-11-01), and checked against that host's own sitemap.
 `engagedMedian` is the median, in seconds, over visits of each visit's longest engaged time
 on the path, among page loads that sent a leave (a load's time is the most its leaves
@@ -203,6 +209,19 @@ without scrolling, and in the four weeks to 2026-11-13 it sat on 18 page loads t
 past a depth of 15 (17 of them crawlers the bot test now drops), while every page load that
 did scroll to the end was at 72 or more. `inSitemap: null` on every row means the sitemap could not be read
 (`notConfigured.sitemap`). `rows` is `null` with `notConfigured.visits`.
+
+### `places`
+
+```json
+{ "rows": [ { "city": "Shoreline", "region": "Washington", "country": "US", "lat": 47.8, "lon": -122.3, "visitors": 3 } ], "unplaced": 21 }
+```
+
+Where the visitors are, one row a city *(2026-11-21)*: the collector (lib-visits v0.6.0) looks each
+address up in its bundled DB-IP City Lite database and writes the city, region, country and the
+city's coordinates to a tenth of a degree, never the address. A visit counts once, at the first
+place it was seen in. `city` (and `region`) is `null` where the database knew the country alone.
+`unplaced` is the visits with no place at all: every one before 2026-11-21. `rows` is `null` with
+`notConfigured.visits`.
 
 ### `referrers`
 
@@ -253,6 +272,8 @@ without `www.`) is kind `out`. `outboundVisitors` is the distinct visitors who c
 reached the home page in the range. `rows` is `null` with `notConfigured.visits`.
 
 ### `journeys`
+
+Each journey carries `place`, `{ city, region, country }`, the city its visitor was last placed in, or `null` before 2026-11-21 *(2026-11-21)*.
 
 The 50 most recent visits in the range (fewer once stitched), newest first, each as its
 journey. From lib-visits' rows only (GoatCounter's history holds no visit's sequence), so

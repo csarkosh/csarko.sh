@@ -1575,7 +1575,7 @@ def admin_motion_pages():
         ("/csarko.sh/: Enter on a focused summary opens it like a click", """{ url: '/csarko.sh/?preview', run: async (f, t) => {
           const d = f.contentDocument, p = [];
           if (!await t.loaded(d)) return ['the cards did not load'];
-          const fold = d.querySelector('#card-referrers details.folded'), summary = fold.querySelector('summary');
+          const fold = d.querySelector('#card-visitors details.folded'), summary = fold.querySelector('summary');
           summary.focus();
           if (d.activeElement !== summary) p.push('the summary does not take focus');
           const key = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });

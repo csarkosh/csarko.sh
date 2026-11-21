@@ -1,5 +1,6 @@
 -- The 50 visitors most recently seen in [start, end), each as its journey: where it came from (the
--- first view's referrer, internal path and campaign), the first view's device, its latest 40 page
+-- first view's referrer, internal path and campaign), the first view's device, the city it was last
+-- placed in (s.ct, s.rg, s.cc, from 2026-11-21; NULL before), its latest 40 page
 -- views (newest first here; the API puts them in order) with the engaged seconds, scroll depth and
 -- read-to-the-end of that page load's leaves (`re` AND a scroll depth of 50 or more, as in
 -- pages.sql) and the LCP, CLS and INP of its vitals row, and its
@@ -47,7 +48,11 @@ views AS (
     JSON_VALUE(j.tz) AS tz,
     JSON_VALUE(j.th) AS th,
     IFNULL(JSON_VALUE(j.tp) = 'true', FALSE) AS tp,
-    COALESCE(JSON_VALUE(j.lg), JSON_VALUE(j.s.lg)) AS lg
+    COALESCE(JSON_VALUE(j.lg), JSON_VALUE(j.s.lg)) AS lg,
+    -- The city the collector placed the address in (lib-visits v0.6.0, from 2026-11-21), never the address.
+    JSON_VALUE(j.s.ct) AS ct,
+    JSON_VALUE(j.s.rg) AS rg,
+    JSON_VALUE(j.s.cc) AS cc
   FROM beacons WHERE n = 'view' AND NOT bot
 ),
 leaves AS (
@@ -88,10 +93,12 @@ visits AS (
     MAX(ts) AS last_seen,
     ARRAY_AGG(STRUCT(rk, rh, rp, campaign) ORDER BY ts LIMIT 1)[OFFSET(0)] AS source,
     ARRAY_AGG(STRUCT(bn, bv, os, vw, vh, tz, th, tp, lg) ORDER BY ts LIMIT 1)[OFFSET(0)] AS device,
+    -- Where the visitor was last placed: a view from before the city database has none.
+    ARRAY_AGG(IF(cc IS NULL, NULL, STRUCT(ct, rg, cc)) IGNORE NULLS ORDER BY ts DESC LIMIT 1)[SAFE_OFFSET(0)] AS place,
     ARRAY_AGG(STRUCT(FORMAT_TIMESTAMP('%FT%TZ', ts) AS stamp, path, host, title, nt, secs, depth, reached, lcp, cls, inp) ORDER BY ts DESC LIMIT 40) AS steps
   FROM steps GROUP BY visit
 )
-SELECT FORMAT_TIMESTAMP('%FT%TZ', v.started) AS started, v.source, v.device, v.steps, o.last_click
+SELECT FORMAT_TIMESTAMP('%FT%TZ', v.started) AS started, v.source, v.device, v.place, v.steps, o.last_click
 FROM visits AS v LEFT JOIN outbound AS o USING (visit)
 ORDER BY v.last_seen DESC
 LIMIT 50

@@ -147,7 +147,7 @@ export function tile(label, value, { delta: change, trend, note, unit = '', tren
  * for a frame in case a show follows straight away, as it does between neighbouring marks. The fade
  * is `.fades`, the host's own: Day Hike's page shares theme.css and draws a bare `.tooltip`.
  */
-function tooltip(host) {
+export function tooltip(host) {
   const node = el('div', { class: 'tooltip fades', 'aria-hidden': 'true' });
   host.append(node);
   let leaving = 0;

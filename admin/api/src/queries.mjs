@@ -25,7 +25,7 @@ import { ANALYTICS_LAG } from "./collectors/youtube-analytics.mjs";
 import { collectFilms, filmsAnswer, filmsDays, isFilmsPart } from "./films.mjs";
 import { HOUR } from "./cache.mjs";
 
-export const QUERY_NAMES = ["visits", "pages", "referrers", "events", "journeys", "audience", "search", "reach", "health"];
+export const QUERY_NAMES = ["visits", "pages", "referrers", "events", "journeys", "audience", "places", "search", "reach", "health"];
 /**
  * The Film page's queries, served under `/film` (app.mjs): the films and the YouTube channel moved
  * off the csarko.sh page to a top-level page of their own (Cyrus, 2026-11-16).
@@ -299,6 +299,13 @@ export function createQueries({ visits, gsc, youtube, youtubeAnalytics = null, g
       const empty = requireVisits();
       if (empty) return { countries: null, sizes: null, browsers: null, systems: null, languages: null, themes: null, viewports: null, touch: null, timezones: null, ...empty };
       return visits.audience(hourlyRange(days, now()));
+    },
+
+    // The visitors' cities (2026-11-21): one row a city, and `unplaced`, the visits with none.
+    async places(days) {
+      const empty = requireVisits();
+      if (empty) return { rows: null, unplaced: null, ...empty };
+      return visits.places(hourlyRange(days, now()));
     },
 
     async search(days) {

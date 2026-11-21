@@ -61,7 +61,9 @@ test("history is asked for by each query's own lower bound, as instants", async 
   const { v, calls } = make({ historyUntil: "2026-10-11T00:00:00Z" });
   await v.visits(range);
   await v.pages(range);
-  assert.deepEqual(calls.map((c) => c.name), ["visits", "history-visits", "pages"]);
+  // Pages' range starts after the cutover, but the range before it does not: its visitors come from the history.
+  assert.deepEqual(calls.map((c) => c.name), ["visits", "history-visits", "pages", "history-pages"]);
+  assert.deepEqual(calls.at(-1).params, { start: range.prevStart, end: range.prevEnd, until: "2026-10-11T00:00:00Z" });
 });
 
 test("history is not queried when the window starts after the cutover", async () => {
@@ -88,11 +90,22 @@ test("journeyOf: a reader engaged 5 s on a page, saw two paths or clicked; a gla
   assert.equal(journeyOf(journeyRow({ steps: [step("/", null)], last_click: { stamp: "2026-10-15T15:33:00Z", ev: "out-github", u: "https://github.com/csarkosh" } })).reader, true);
 });
 
-test("pages merge history by path and keep engaged time and reached share from live rows", async () => {
+test("pages merge history by path, the range before's too, and keep the rest from live rows", async () => {
   const { v } = make();
   const r = await v.pages(range);
-  assert.deepEqual(r[0], { path: "/", title: "Home", visitors: 16, pageviews: null, engagedMedian: 12, reached: null });
-  assert.equal(r[1].reached, 0.5);
+  // The fake answers history-pages alike for both ranges: 10 visitors in each.
+  assert.deepEqual(r[0], { path: "/", title: "Home", visitors: 16, previous: 13, pageviews: null, landed: 5, onward: 2, engagedMedian: 12, depthMedian: 40, lcp: 812, reached: null });
+  assert.deepEqual([r[1].reached, r[1].lcp, r[1].depthMedian], [0.5, null, 88]);
+});
+
+test("places keep a row a placed city, and count the visits with no place apart", async () => {
+  const { v } = make();
+  const r = await v.places(range);
+  assert.deepEqual(r.rows, [
+    { city: "Shoreline", region: "Washington", country: "US", lat: 47.8, lon: -122.3, visitors: 3 },
+    { city: null, region: null, country: "FR", lat: 46, lon: 2, visitors: 1 },
+  ]);
+  assert.equal(r.unplaced, 21);
 });
 
 test("referrers split into referrers (direct as empty name), campaigns and internal paths", async () => {
@@ -117,7 +130,7 @@ test("a visit with no external referrer and an assistant's tag is that assistant
   assert.equal(groups.reduce((n, g) => n + g.visitors, 0), 15, "every visit in one group");
 });
 
-const VISITS_QUERIES = ["visits", "pages", "referrers", "events", "journeys", "audience"];
+const VISITS_QUERIES = ["visits", "pages", "referrers", "events", "journeys", "audience", "places"];
 const botFragment = () => readFileSync(`${queriesDir}_bot.sql`, "utf8").replace(/^(--.*\n)+/, "").trim();
 
 test("every visits query runs the one shared bot test over the page load, spliced in from _bot.sql", () => {
@@ -406,4 +419,10 @@ test("stitchJourneys picks the nearest first half, and a half already stitched t
 
   const full = stitchable("2026-10-14T23:58:00Z", { stitched: 3 });
   assert.equal(stitchJourneys([second("2026-10-15T00:01:00Z"), full]).length, 2, "three joins is the cap");
+});
+
+test("a journey carries the city it was last placed in, null before the city database", () => {
+  assert.deepEqual(journeyOf(journeyRow({ place: { ct: "Shoreline", rg: "Washington", cc: "US" } })).place, { city: "Shoreline", region: "Washington", country: "US" });
+  assert.deepEqual(journeyOf(journeyRow({ place: { ct: null, rg: null, cc: "FR" } })).place, { city: null, region: null, country: "FR" });
+  assert.equal(journeyOf(journeyRow()).place, null);
 });

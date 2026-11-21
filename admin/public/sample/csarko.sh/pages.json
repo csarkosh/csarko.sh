@@ -2,12 +2,17 @@
   "rows": [
     {
       "path": "/",
-      "title": "Cyrus Sarkosh · Senior Software Engineer",
+      "title": "Cyrus Sarkosh \u00b7 Senior Software Engineer",
       "visitors": 118,
       "pageviews": null,
       "inSitemap": true,
       "engagedMedian": 41,
-      "reached": 0.62
+      "reached": 0.62,
+      "previous": 113,
+      "landed": 91,
+      "onward": 31,
+      "depthMedian": 19,
+      "lcp": 640
     },
     {
       "path": "/research/stylized-shader-looks",
@@ -16,7 +21,12 @@
       "pageviews": null,
       "inSitemap": true,
       "engagedMedian": 38,
-      "reached": 0.55
+      "reached": 0.55,
+      "previous": 0,
+      "landed": 20,
+      "onward": 6,
+      "depthMedian": 15,
+      "lcp": 812
     },
     {
       "path": "/research/babylon-material-plugin-traps",
@@ -25,7 +35,12 @@
       "pageviews": null,
       "inSitemap": true,
       "engagedMedian": 33,
-      "reached": 0.48
+      "reached": 0.48,
+      "previous": 21,
+      "landed": 11,
+      "onward": 3,
+      "depthMedian": 21,
+      "lcp": 1084
     },
     {
       "path": "/games",
@@ -34,7 +49,12 @@
       "pageviews": null,
       "inSitemap": true,
       "engagedMedian": 30,
-      "reached": 0.4
+      "reached": 0.4,
+      "previous": 13,
+      "landed": 16,
+      "onward": 8,
+      "depthMedian": 42,
+      "lcp": 812
     },
     {
       "path": "/research/rock-on-steep-terrain",
@@ -43,7 +63,12 @@
       "pageviews": null,
       "inSitemap": true,
       "engagedMedian": 26,
-      "reached": 0.35
+      "reached": 0.35,
+      "previous": 15,
+      "landed": 12,
+      "onward": 6,
+      "depthMedian": 55,
+      "lcp": 640
     },
     {
       "path": "/film",
@@ -52,56 +77,96 @@
       "pageviews": null,
       "inSitemap": true,
       "engagedMedian": null,
-      "reached": null
+      "reached": null,
+      "previous": 13,
+      "landed": 10,
+      "onward": 4,
+      "depthMedian": 30,
+      "lcp": 812
     },
     {
       "path": "/research",
       "title": "Research & notes",
       "visitors": 12,
       "pageviews": null,
-      "inSitemap": true
+      "inSitemap": true,
+      "previous": 7,
+      "landed": 11,
+      "onward": 5,
+      "depthMedian": 78,
+      "lcp": 1084
     },
     {
       "path": "/research/browser-coop-netcode",
       "title": "Browser co-op netcode",
       "visitors": 9,
       "pageviews": null,
-      "inSitemap": true
+      "inSitemap": true,
+      "previous": 0,
+      "landed": 4,
+      "onward": 3,
+      "depthMedian": 47,
+      "lcp": 2860
     },
     {
       "path": "/research/ai-short-film-generation",
       "title": "AI short film generation",
       "visitors": 7,
       "pageviews": null,
-      "inSitemap": true
+      "inSitemap": true,
+      "previous": 7,
+      "landed": 5,
+      "onward": 2,
+      "depthMedian": 28,
+      "lcp": 812
     },
     {
       "path": "/research/olympic-peninsula-rock-formations",
       "title": "Rock formations of the Olympic Peninsula",
       "visitors": 6,
       "pageviews": null,
-      "inSitemap": true
+      "inSitemap": true,
+      "previous": 12,
+      "landed": 2,
+      "onward": 0,
+      "depthMedian": 88,
+      "lcp": 1084
     },
     {
       "path": "/projects",
       "title": "Page not found",
       "visitors": 4,
       "pageviews": null,
-      "inSitemap": false
+      "inSitemap": false,
+      "previous": 8,
+      "landed": 2,
+      "onward": 1,
+      "depthMedian": null,
+      "lcp": null
     },
     {
       "path": "/contact",
       "title": "Page not found",
       "visitors": 3,
       "pageviews": null,
-      "inSitemap": false
+      "inSitemap": false,
+      "previous": 0,
+      "landed": 1,
+      "onward": 1,
+      "depthMedian": null,
+      "lcp": null
     },
     {
       "path": "/wp-login.php",
       "title": "Page not found",
       "visitors": 2,
       "pageviews": null,
-      "inSitemap": false
+      "inSitemap": false,
+      "previous": 3,
+      "landed": 1,
+      "onward": 0,
+      "depthMedian": null,
+      "lcp": null
     }
   ]
 }

@@ -73,7 +73,7 @@ fi
 node "$ADMIN/build.mjs"
 
 serve_bg() {   # serve_bg <port> → pid; waits until it answers
-  python3 -m http.server "$1" --directory "$PUBLIC" --bind 127.0.0.1 >"$OUT/server-$1.log" 2>&1 &
+  python3 "$ADMIN/tools/serve.py" "$1" --directory "$PUBLIC" --bind 127.0.0.1 >"$OUT/server-$1.log" 2>&1 &
   local pid=$!
   for _ in $(seq 50); do curl -fs -o /dev/null "http://localhost:$1/robots.txt" && break; sleep 0.1; done
   echo "$pid"
@@ -151,7 +151,7 @@ if (( SERVE )); then
   if [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
     echo "server already running (pid $(cat "$PIDFILE"))"
   else
-    nohup python3 -m http.server "$PORT" --directory "$PUBLIC" --bind 127.0.0.1 >"$OUT/server.log" 2>&1 &
+    nohup python3 "$ADMIN/tools/serve.py" "$PORT" --directory "$PUBLIC" --bind 127.0.0.1 >"$OUT/server.log" 2>&1 &
     echo $! > "$PIDFILE"
     echo "serving $PUBLIC on http://localhost:$PORT (pid $!); stop with --stop"
   fi

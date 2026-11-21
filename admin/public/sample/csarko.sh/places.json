@@ -1,0 +1,93 @@
+{
+  "rows": [
+    {
+      "city": "Brooklyn",
+      "region": "New York",
+      "country": "US",
+      "lat": 40.7,
+      "lon": -73.9,
+      "visitors": 31
+    },
+    {
+      "city": "Seattle",
+      "region": "Washington",
+      "country": "US",
+      "lat": 47.6,
+      "lon": -122.3,
+      "visitors": 18
+    },
+    {
+      "city": "San Francisco",
+      "region": "California",
+      "country": "US",
+      "lat": 37.8,
+      "lon": -122.4,
+      "visitors": 12
+    },
+    {
+      "city": "London",
+      "region": "England",
+      "country": "GB",
+      "lat": 51.5,
+      "lon": -0.1,
+      "visitors": 9
+    },
+    {
+      "city": "Berlin",
+      "region": "Berlin",
+      "country": "DE",
+      "lat": 52.5,
+      "lon": 13.4,
+      "visitors": 7
+    },
+    {
+      "city": "Toronto",
+      "region": "Ontario",
+      "country": "CA",
+      "lat": 43.7,
+      "lon": -79.4,
+      "visitors": 5
+    },
+    {
+      "city": "Bengaluru",
+      "region": "Karnataka",
+      "country": "IN",
+      "lat": 13.0,
+      "lon": 77.6,
+      "visitors": 4
+    },
+    {
+      "city": "Tokyo",
+      "region": "Tokyo",
+      "country": "JP",
+      "lat": 35.7,
+      "lon": 139.7,
+      "visitors": 3
+    },
+    {
+      "city": "São Paulo",
+      "region": "São Paulo",
+      "country": "BR",
+      "lat": -23.5,
+      "lon": -46.6,
+      "visitors": 2
+    },
+    {
+      "city": "Sydney",
+      "region": "New South Wales",
+      "country": "AU",
+      "lat": -33.9,
+      "lon": 151.2,
+      "visitors": 2
+    },
+    {
+      "city": null,
+      "region": null,
+      "country": "FR",
+      "lat": 46.0,
+      "lon": 2.0,
+      "visitors": 1
+    }
+  ],
+  "unplaced": 118
+}
