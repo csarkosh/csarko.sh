@@ -160,5 +160,87 @@
       "name": "America/Los_Angeles",
       "visitors": 15
     }
+  ],
+  "networks": [
+    {
+      "name": "Comcast Cable Communications, LLC",
+      "asn": 7922,
+      "visitors": 38
+    },
+    {
+      "name": "Verizon Business",
+      "asn": 701,
+      "visitors": 24
+    },
+    {
+      "name": "Google LLC",
+      "asn": 15169,
+      "visitors": 11
+    },
+    {
+      "name": "Meta Platforms, Inc.",
+      "asn": 32934,
+      "visitors": 6
+    },
+    {
+      "name": "Deutsche Telekom AG",
+      "asn": 3320,
+      "visitors": 5
+    },
+    {
+      "name": "Cloudflare, Inc.",
+      "asn": 13335,
+      "visitors": 4
+    }
+  ],
+  "netkinds": [
+    {
+      "name": "isp",
+      "visitors": 160
+    },
+    {
+      "name": "relay",
+      "visitors": 22
+    },
+    {
+      "name": "vpn",
+      "visitors": 9
+    },
+    {
+      "name": "tor",
+      "visitors": 1
+    }
+  ],
+  "connections": [
+    {
+      "name": "4g",
+      "visitors": 101
+    },
+    {
+      "name": "3g",
+      "visitors": 7
+    },
+    {
+      "name": "2g",
+      "visitors": 1
+    }
+  ],
+  "rtts": [
+    {
+      "name": "under 100 ms",
+      "visitors": 64
+    },
+    {
+      "name": "100 to 299 ms",
+      "visitors": 38
+    },
+    {
+      "name": "300 to 999 ms",
+      "visitors": 6
+    },
+    {
+      "name": "1 s and up",
+      "visitors": 1
+    }
   ]
 }

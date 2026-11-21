@@ -656,7 +656,7 @@ details.folded .scroll { border: 1px solid var(--border); border-radius: 10px; }
    across on a desktop, two on a tablet, one on a phone, each a heading over its top five bars. */
 .facets { display: grid; grid-template-columns: 1fr; gap: 24px 32px; margin-top: 22px; }
 @media (min-width: 600px) { .facets { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (min-width: 1000px) { .facets.six { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1000px) { .facets.six, .facets.trio { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 details.folded > .facets { margin-top: 14px; }
 
 /* Where they are (csarko.sh, 2026-11-21, as Day Hike's admin has): the flat world beside the cities.
@@ -677,7 +677,7 @@ details.folded > .facets { margin-top: 14px; }
 .world-map .mark:focus-visible .ring { stroke-width: 2.5; }
 .where > .facet-note { margin-top: 18px; }
 .where .facet-note a { color: var(--accent); }
-.j-head .j-where { color: var(--text); }
+.j-head .j-where, .j-head .j-net { color: var(--text); }
 
 /* The site's health in the page head (csarko.sh, 2026-11-21): small pills, a dot in their tone, on
    one row of their own under the lead, so filling them never moves the page (a narrow screen
@@ -693,6 +693,24 @@ a.signal:hover, a.signal:focus-visible { border-color: var(--accent); }
 .signal.critical { border-color: var(--warning); }
 .signal.critical .dot { background: var(--warning); box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--warning); }
 .signals .skel.pill { display: inline-block; width: 96px; height: 30px; }
+
+/* What they read's filters (2026-11-21): a button a filter, its checklist the account menu's
+   panel and motion (motion.js showMenu), opening under the button's left edge. */
+.pf-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 4px 0 14px; }
+.pf { position: relative; }
+.pf-button { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: inherit; font-size: 13px; cursor: pointer; transition: border-color var(--md-duration-short3) var(--md-easing-standard), background-color var(--md-duration-short3) var(--md-easing-standard); }
+.pf-button:hover, .pf-button[aria-expanded="true"] { border-color: var(--accent); }
+.pf-button.on { border-color: var(--accent); background: var(--accent-glow); }
+.pf-label { color: var(--muted); }
+.pf-value { font-weight: 600; max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-caret { color: var(--faint); font-size: 11px; }
+.pf .menu { left: 0; right: auto; top: calc(100% + 8px); width: min(280px, calc(100vw - 32px)); min-width: 0; padding: 8px 14px 10px; gap: 4px; }
+.pf-options { display: grid; grid-template-columns: minmax(0, 1fr); max-height: 300px; overflow-y: auto; margin: 0 -14px; padding: 0 14px; }
+.pf-option { min-width: 0; display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 14px; color: var(--text); cursor: pointer; }
+.pf-option input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); flex: none; }
+.pf-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-count { color: var(--faint); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.pf-note { font-size: 12.5px; color: var(--faint); }
 
 /* What they read: one line a page (2026-11-21). The title is cut at its column, the path its title. */
 .pages table { font-size: 13.5px; }

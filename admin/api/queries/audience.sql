@@ -29,7 +29,18 @@ views AS (
       WHEN SAFE_CAST(JSON_VALUE(j.vw) AS INT64) IS NOT NULL THEN '1200 and up'
     END AS viewport,
     IF(JSON_VALUE(j.tp) = 'true', 'touch', 'pointer') AS touch,
-    JSON_VALUE(j.tz) AS timezone
+    JSON_VALUE(j.tz) AS timezone,
+    -- The network (lib-visits v0.7.0, 2026-11-21): its number and owner as `asn|owner`, its kind
+    -- (an ISP or a company when the collector names none), and Chromium's connection hints.
+    IF(JSON_VALUE(j.s.an) IS NULL, NULL, CONCAT(JSON_VALUE(j.s.an), '|', IFNULL(JSON_VALUE(j.s.ao), ''))) AS network,
+    IF(JSON_VALUE(j.s.an) IS NULL AND JSON_VALUE(j.s.nk) IS NULL, NULL, IFNULL(JSON_VALUE(j.s.nk), 'isp')) AS netkind,
+    JSON_VALUE(j.s.ect) AS connection,
+    CASE
+      WHEN SAFE_CAST(JSON_VALUE(j.s.rtt) AS INT64) < 100 THEN 'under 100 ms'
+      WHEN SAFE_CAST(JSON_VALUE(j.s.rtt) AS INT64) < 300 THEN '100 to 299 ms'
+      WHEN SAFE_CAST(JSON_VALUE(j.s.rtt) AS INT64) < 1000 THEN '300 to 999 ms'
+      WHEN SAFE_CAST(JSON_VALUE(j.s.rtt) AS INT64) IS NOT NULL THEN '1 s and up'
+    END AS rtt
   FROM beacons WHERE n = 'view' AND NOT bot
 )
 SELECT dim, name, COUNT(DISTINCT visit) AS visitors FROM (
@@ -42,6 +53,10 @@ SELECT dim, name, COUNT(DISTINCT visit) AS visitors FROM (
   UNION ALL SELECT 'viewports', viewport, visit FROM views
   UNION ALL SELECT 'touch', touch, visit FROM views
   UNION ALL SELECT 'timezones', timezone, visit FROM views
+  UNION ALL SELECT 'networks', network, visit FROM views
+  UNION ALL SELECT 'netkinds', netkind, visit FROM views
+  UNION ALL SELECT 'connections', connection, visit FROM views
+  UNION ALL SELECT 'rtts', rtt, visit FROM views
 )
 WHERE name IS NOT NULL AND name != ''
 GROUP BY dim, name

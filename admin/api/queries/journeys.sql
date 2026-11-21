@@ -1,6 +1,7 @@
 -- The 50 visitors most recently seen in [start, end), each as its journey: where it came from (the
 -- first view's referrer, internal path and campaign), the first view's device, the city it was last
--- placed in (s.ct, s.rg, s.cc, from 2026-11-21; NULL before), its latest 40 page
+-- placed in (s.ct, s.rg, s.cc, from 2026-11-21; NULL before), the network it was last on and its
+-- connection hints (lib-visits v0.7.0, from 2026-11-21), its latest 40 page
 -- views (newest first here; the API puts them in order) with the engaged seconds, scroll depth and
 -- read-to-the-end of that page load's leaves (`re` AND a scroll depth of 50 or more, as in
 -- pages.sql) and the LCP, CLS and INP of its vitals row, and its
@@ -52,7 +53,15 @@ views AS (
     -- The city the collector placed the address in (lib-visits v0.6.0, from 2026-11-21), never the address.
     JSON_VALUE(j.s.ct) AS ct,
     JSON_VALUE(j.s.rg) AS rg,
-    JSON_VALUE(j.s.cc) AS cc
+    JSON_VALUE(j.s.cc) AS cc,
+    -- The network and Chromium's connection hints (lib-visits v0.7.0, from 2026-11-21).
+    SAFE_CAST(JSON_VALUE(j.s.an) AS INT64) AS an,
+    JSON_VALUE(j.s.ao) AS ao,
+    JSON_VALUE(j.s.nk) AS nk,
+    JSON_VALUE(j.s.ect) AS ect,
+    SAFE_CAST(JSON_VALUE(j.s.rtt) AS INT64) AS rtt,
+    SAFE_CAST(JSON_VALUE(j.s.dl) AS FLOAT64) AS dl,
+    JSON_VALUE(j.s.sd) = 'true' AS sd
   FROM beacons WHERE n = 'view' AND NOT bot
 ),
 leaves AS (
@@ -95,10 +104,13 @@ visits AS (
     ARRAY_AGG(STRUCT(bn, bv, os, vw, vh, tz, th, tp, lg) ORDER BY ts LIMIT 1)[OFFSET(0)] AS device,
     -- Where the visitor was last placed: a view from before the city database has none.
     ARRAY_AGG(IF(cc IS NULL, NULL, STRUCT(ct, rg, cc)) IGNORE NULLS ORDER BY ts DESC LIMIT 1)[SAFE_OFFSET(0)] AS place,
+    -- The network it was last on, and its last connection hints.
+    ARRAY_AGG(IF(an IS NULL AND nk IS NULL, NULL, STRUCT(an, ao, nk)) IGNORE NULLS ORDER BY ts DESC LIMIT 1)[SAFE_OFFSET(0)] AS network,
+    ARRAY_AGG(IF(ect IS NULL AND rtt IS NULL, NULL, STRUCT(ect, rtt, dl, sd)) IGNORE NULLS ORDER BY ts DESC LIMIT 1)[SAFE_OFFSET(0)] AS connection,
     ARRAY_AGG(STRUCT(FORMAT_TIMESTAMP('%FT%TZ', ts) AS stamp, path, host, title, nt, secs, depth, reached, lcp, cls, inp) ORDER BY ts DESC LIMIT 40) AS steps
   FROM steps GROUP BY visit
 )
-SELECT FORMAT_TIMESTAMP('%FT%TZ', v.started) AS started, v.source, v.device, v.place, v.steps, o.last_click
+SELECT FORMAT_TIMESTAMP('%FT%TZ', v.started) AS started, v.source, v.device, v.place, v.network, v.connection, v.steps, o.last_click
 FROM visits AS v LEFT JOIN outbound AS o USING (visit)
 ORDER BY v.last_seen DESC
 LIMIT 50

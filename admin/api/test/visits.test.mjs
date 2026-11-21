@@ -426,3 +426,71 @@ test("a journey carries the city it was last placed in, null before the city dat
   assert.deepEqual(journeyOf(journeyRow({ place: { ct: null, rg: null, cc: "FR" } })).place, { city: null, region: null, country: "FR" });
   assert.equal(journeyOf(journeyRow()).place, null);
 });
+
+test("filtered pages pass the countries and the sources of the chosen groups, and leave the history out", async () => {
+  const { v, calls } = make();
+  await v.pages(range, { countries: ["US", "GB"], groups: ["ai", "direct"] });
+  const pages = calls.find((c) => c.name === "pages");
+  assert.deepEqual(pages.params.countries, ["US", "GB"]);
+  // ChatGPT by referrer and by tag are ai; no referrer, untagged or tagged with the site's own campaign, is direct.
+  assert.deepEqual(new Set(pages.params.sources), new Set(["|", "|chatgpt.com", "chatgpt.com|", "|substack"]));
+  assert.ok(!calls.some((c) => c.name === "history-pages"), "the history cannot be filtered");
+  const both = calls.filter((c) => c.name === "referrers").map((c) => c.params.start);
+  assert.deepEqual(both, [range.start, range.prevStart], "the sources of the range before count too");
+});
+
+test("unfiltered pages keep every visit, and a group with no source in the range keeps none", async () => {
+  const a = make();
+  await a.v.pages(range);
+  const all = a.calls.find((c) => c.name === "pages").params;
+  assert.deepEqual([all.countries, all.sources], [["*"], ["*"]]);
+  const b = make();
+  await b.v.pages(range, { groups: ["video"] });
+  assert.deepEqual(b.calls.find((c) => c.name === "pages").params.sources, ["\u0000none"]);
+});
+
+test("events count only clicks to Cyrus's own destinations: the films' videos are passed, and everyone else's are filtered in the SQL", async () => {
+  const { v, calls } = make();
+  await v.events(range);
+  const { FILMS } = await import("../src/films.mjs");
+  assert.deepEqual(calls.find((c) => c.name === "events").params.own_videos, FILMS.map((f) => f.videoId));
+  const sql = readFileSync(`${queriesDir}events.sql`, "utf8");
+  for (const use of ["FROM own_clicks WHERE ev IS NOT NULL", "FROM own_clicks WHERE ev IS NULL AND host IS NOT NULL", "'(outbound)', visit FROM own_clicks"]) assert.ok(sql.includes(use), use);
+  assert.ok(!/FROM clicks WHERE/.test(sql), "no count reads every click");
+  // The rule, as BigQuery's RE2 reads it: his profiles and hosts in, a look-alike out.
+  const profile = /^https?:\/\/(www\.)?(linkedin\.com\/in\/csarkosh|github\.com\/csarkosh|youtube\.com\/@csarkosh|csarko\.substack\.com)([/?#]|$)/;
+  assert.ok(profile.test("https://github.com/csarkosh/game-dayhike") && profile.test("https://www.youtube.com/@csarkosh"));
+  assert.ok(!profile.test("https://github.com/csarkoshx") && !profile.test("https://www.youtube.com/watch?v=yBs_pMUDrrk"));
+});
+
+test("audience names a network by its owner and keeps its number as the id, an owner's commas and all", async () => {
+  const { v } = make();
+  const a = await v.audience(range);
+  assert.deepEqual(a.networks, [{ name: "Comcast Cable Communications, LLC", asn: 7922, visitors: 4 }, { name: "AS15169", asn: 15169, visitors: 1 }]);
+  assert.deepEqual(a.netkinds, [{ name: "isp", visitors: 5 }]);
+  assert.deepEqual(a.connections, [{ name: "4g", visitors: 3 }]);
+});
+
+test("a journey carries its network and connection, null before lib-visits v0.7.0", () => {
+  const j = journeyOf(journeyRow({ network: { an: "7922", ao: "Comcast", nk: null }, connection: { ect: "3g", rtt: "350", dl: "1.45", sd: true } }));
+  assert.deepEqual(j.network, { asn: 7922, org: "Comcast", kind: null });
+  assert.deepEqual(j.connection, { ect: "3g", rtt: 350, downlink: 1.45, saveData: true });
+  const old = journeyOf(journeyRow());
+  assert.equal(old.network, null);
+  assert.equal(old.connection, null);
+});
+
+test("pages filtered by network pass its AS numbers, and every visit without one", async () => {
+  const a = make();
+  await a.v.pages(range, { networks: [7922] });
+  assert.deepEqual(a.calls.find((c) => c.name === "pages").params.networks, ["7922"]);
+  const b = make();
+  await b.v.pages(range);
+  assert.deepEqual(b.calls.find((c) => c.name === "pages").params.networks, ["*"]);
+});
+
+test("the bot test drops a page load on a cloud network (C1), and keeps VPNs and relays", () => {
+  const sql = renderSql("visits", queriesDir);
+  assert.ok(sql.includes("OR JSON_VALUE(json_payload.s.nk) = 'cloud'"));
+  assert.ok(!/s\.nk\) = '(vpn|relay)'/.test(sql));
+});

@@ -102,6 +102,10 @@
             {
               "key": "Cross-Origin-Opener-Policy",
               "value": "same-origin"
+            },
+            {
+              "key": "Accept-CH",
+              "value": "ECT, RTT, Downlink, Save-Data"
             }
           ]
         },
@@ -262,6 +266,10 @@
             {
               "key": "Cross-Origin-Opener-Policy",
               "value": "same-origin"
+            },
+            {
+              "key": "Accept-CH",
+              "value": "ECT, RTT, Downlink, Save-Data"
             }
           ]
         },
@@ -333,6 +341,10 @@
             {
               "key": "Cross-Origin-Opener-Policy",
               "value": "same-origin"
+            },
+            {
+              "key": "Accept-CH",
+              "value": "ECT, RTT, Downlink, Save-Data"
             }
           ]
         },

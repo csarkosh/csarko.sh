@@ -350,3 +350,15 @@ test("finance refresh: the admin token or the scheduler's OIDC token, POST only;
     server.close();
   }
 });
+
+test("the pages filters parse as ISO codes and referrer groups, and refuse anything else", async () => {
+  const { parsePageFilters } = await import("../src/app.mjs");
+  const q = (s) => parsePageFilters(new URLSearchParams(s));
+  assert.deepEqual(q("country=us,GB,US&from=search,ai"), { countries: ["US", "GB"], groups: ["search", "ai"], networks: [] });
+  assert.deepEqual(q("from=direct"), { countries: [], groups: ["direct"], networks: [] });
+  assert.deepEqual(q("net=7922,15169,7922"), { countries: [], groups: [], networks: [7922, 15169] });
+  assert.equal(q("net=AS7922"), null);
+  assert.equal(q("country=USA"), null);
+  assert.equal(q("from=search,friends"), null);
+  assert.equal(q("country=x';DROP"), null);
+});

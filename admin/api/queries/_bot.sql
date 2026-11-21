@@ -23,6 +23,10 @@
 --             arriving from google.com, and the load never sent a leave: a cloud box's default
 --             profile, the browser killed and not closed. A person on that exact desktop counts
 --             from their first leave on (the first time the tab is hidden or closed).
+--   cloud     C1 (2026-11-21, lib-visits v0.7.0): any of the load's rows is on a cloud or hosting
+--             network (s.nk = 'cloud': AWS, Google Cloud, DigitalOcean, Hetzner and the like, never an
+--             ISP or an office). A person on a VPN is `vpn` and one on iCloud Private Relay `relay`,
+--             and both stay in. Rows before v0.7.0 carry no s.nk and are judged by the rest.
 --   rig       T1: the load's visit (the daily hash) opened Day Hike's tooling lobby, the fixed game
 --             id its capture and frame-budget tools use; every load of that visit.
 -- Checked against four weeks of rows, 2026-10-15 to 2026-11-13: of 458 page loads the flag missed,
@@ -36,6 +40,8 @@
   IFNULL(LOGICAL_OR(
     IFNULL(JSON_VALUE(json_payload.s.bot), 'false') = 'true'
     OR STARTS_WITH(IFNULL(JSON_VALUE(json_payload.s.bn), ''), 'Headless')
+    -- C1
+    OR JSON_VALUE(json_payload.s.nk) = 'cloud'
     OR (JSON_VALUE(json_payload.n) = 'view' AND IFNULL(
       -- D1
       (SAFE_CAST(JSON_VALUE(json_payload.dpr) AS FLOAT64) = 1

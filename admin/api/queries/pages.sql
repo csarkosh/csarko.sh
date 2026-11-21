@@ -19,6 +19,12 @@
 --                   crawler that renders the whole page at once sets `re` without scrolling, and
 --                   in four weeks of rows no load sat between 15 and 72 (2026-11-13).
 -- Everything but `previous` is the current range's.
+-- Filters (2026-11-21, multi-select on the What they read card): a visit is kept when its country
+-- (the first its views were placed in, s.cc) is in @countries and its source (its first view's
+-- referrer as referrers.sql names it, `name|target`) is in @sources and its network (the first
+-- its views were on, s.an, lib-visits v0.7.0) is in @networks; a list holding '*' keeps every
+-- visit. The API turns the card's referrer groups into the sources the range holds
+-- (collectors/visits.mjs), since the groups are referrers.mjs's rules, not SQL's.
 -- The check beacons (/deploy-check, /depth-check) are left out, and so is every page load (id)
 -- that is a bot's or a crawler's (the shared test in _bot.sql).
 -- A page on another of the site's hosts (apps.csarko.sh, donate.csarko.sh, whose beacons the
@@ -38,9 +44,26 @@ WITH beacons AS (
   WHERE ((timestamp >= TIMESTAMP(@start) AND timestamp < TIMESTAMP(@end)) OR (timestamp >= TIMESTAMP(@prev_start) AND timestamp < TIMESTAMP(@prev_end)))
     AND JSON_VALUE(json_payload.p) NOT IN ('/deploy-check', '/depth-check')
 ),
-views AS (
-  SELECT id, ts, cur, IF(IFNULL(JSON_VALUE(j.s.host), 'csarko.sh') IN ('csarko.sh', 'www.csarko.sh'), JSON_VALUE(j.p), CONCAT(JSON_VALUE(j.s.host), JSON_VALUE(j.p))) AS path, JSON_VALUE(j.t) AS title, COALESCE(JSON_VALUE(j.s.visit), id) AS visit
+all_views AS (
+  SELECT id, ts, cur, JSON_VALUE(j.s.cc) AS cc, JSON_VALUE(j.s.an) AS an, JSON_VALUE(j.s.rk) AS rk, JSON_VALUE(j.s.rh) AS rh, COALESCE(JSON_VALUE(j.cr), JSON_VALUE(j.us)) AS campaign, IF(IFNULL(JSON_VALUE(j.s.host), 'csarko.sh') IN ('csarko.sh', 'www.csarko.sh'), JSON_VALUE(j.p), CONCAT(JSON_VALUE(j.s.host), JSON_VALUE(j.p))) AS path, JSON_VALUE(j.t) AS title, COALESCE(JSON_VALUE(j.s.visit), id) AS visit
   FROM beacons WHERE n = 'view' AND NOT bot
+),
+kept AS (
+  SELECT visit
+  FROM (
+    SELECT
+      visit,
+      ARRAY_AGG(cc IGNORE NULLS ORDER BY ts LIMIT 1)[SAFE_OFFSET(0)] AS country,
+      ARRAY_AGG(an IGNORE NULLS ORDER BY ts LIMIT 1)[SAFE_OFFSET(0)] AS network,
+      ARRAY_AGG(STRUCT(rk, rh, campaign) ORDER BY ts LIMIT 1)[OFFSET(0)] AS f
+    FROM all_views GROUP BY visit
+  )
+  WHERE ('*' IN UNNEST(@countries) OR country IN UNNEST(@countries))
+    AND ('*' IN UNNEST(@networks) OR network IN UNNEST(@networks))
+    AND ('*' IN UNNEST(@sources) OR CONCAT(CASE f.rk WHEN 'external' THEN IFNULL(f.rh, '(unknown)') WHEN 'internal' THEN 'csarko.sh' ELSE '' END, '|', IF(f.rk = 'external', '', IFNULL(f.campaign, ''))) IN UNNEST(@sources))
+),
+views AS (
+  SELECT id, ts, cur, path, title, visit FROM all_views JOIN kept USING (visit)
 ),
 leaves AS (
   SELECT

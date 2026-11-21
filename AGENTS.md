@@ -507,7 +507,7 @@ cutover deploy is the step that makes it live. GoatCounter, set up 2026-09-11, w
 dropped because its host went down and took the numbers with it.)*
 
 - **[lib-visits](https://github.com/csarkosh/lib-visits)** (public, GPL-3.0-only; the client is
-  tag `v0.5.0` since 2026-11-01, `v0.2.0` from 2026-10-15) is Cyrus's own analytics: two small scripts and a collector. No cookies,
+  tag `v0.5.0` since 2026-11-01, `v0.2.0` from 2026-10-15; the collector is `v0.7.0` since 2026-11-21, `visits/deploy.sh`) is Cyrus's own analytics: two small scripts and a collector. The collector writes each visit's city (`s.cc`, `s.rg`, `s.ct`, `s.la`, `s.lo`, DB-IP City Lite, v0.6.0) and network (`s.an`, `s.ao`, `s.nk`: the AS number, its owner and `cloud`, `vpn`, `relay` or `tor`, DB-IP ASN Lite and the Tor exit list, v0.7.0), never the address; and Chromium's connection hints (`s.ect`, `s.rtt`, `s.dl`, `s.sd`), which every page asks for with `Accept-CH: ECT, RTT, Downlink, Save-Data` in `firebase.json` (csarko.sh, apps and donate; *2026-11-21*). No cookies,
   so no consent banner. The only storage is the visitor's own `#visits-off` opt-out.
 - **Configured in one place:** `.agents/skills/site-quality/site.json`
   (`analytics.provider` is `visits`, `endpoint` is `/v`). `generate-assets.sh` derives the

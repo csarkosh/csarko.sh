@@ -74,6 +74,17 @@
         "city": "Brooklyn",
         "region": "New York",
         "country": "US"
+      },
+      "network": {
+        "asn": 701,
+        "org": "Verizon Business",
+        "kind": null
+      },
+      "connection": {
+        "ect": "4g",
+        "rtt": 50,
+        "downlink": 10,
+        "saveData": false
       }
     },
     {
@@ -150,7 +161,13 @@
         "city": "London",
         "region": "England",
         "country": "GB"
-      }
+      },
+      "network": {
+        "asn": 13335,
+        "org": "Cloudflare, Inc.",
+        "kind": "relay"
+      },
+      "connection": null
     },
     {
       "started": "2026-10-15T11:20:44Z",
@@ -236,7 +253,9 @@
       "stitched": 0,
       "suspect": false,
       "reader": true,
-      "place": null
+      "place": null,
+      "network": null,
+      "connection": null
     },
     {
       "started": "2026-10-15T09:58:30Z",
@@ -283,6 +302,17 @@
         "city": "Seattle",
         "region": "Washington",
         "country": "US"
+      },
+      "network": {
+        "asn": 32934,
+        "org": "Meta Platforms, Inc.",
+        "kind": null
+      },
+      "connection": {
+        "ect": "3g",
+        "rtt": 350,
+        "downlink": 1.45,
+        "saveData": false
       }
     },
     {
@@ -346,6 +376,17 @@
         "city": "Berlin",
         "region": "Berlin",
         "country": "DE"
+      },
+      "network": {
+        "asn": 3320,
+        "org": "Deutsche Telekom AG",
+        "kind": null
+      },
+      "connection": {
+        "ect": "4g",
+        "rtt": 100,
+        "downlink": 8.5,
+        "saveData": true
       }
     },
     {
@@ -406,6 +447,17 @@
         "city": "Brooklyn",
         "region": "New York",
         "country": "US"
+      },
+      "network": {
+        "asn": 701,
+        "org": "Verizon Business",
+        "kind": null
+      },
+      "connection": {
+        "ect": "4g",
+        "rtt": 50,
+        "downlink": 10,
+        "saveData": false
       }
     },
     {
@@ -469,7 +521,13 @@
         "city": "London",
         "region": "England",
         "country": "GB"
-      }
+      },
+      "network": {
+        "asn": 13335,
+        "org": "Cloudflare, Inc.",
+        "kind": "relay"
+      },
+      "connection": null
     },
     {
       "started": "2026-10-14T19:03:15Z",
@@ -537,7 +595,9 @@
       "stitched": 0,
       "suspect": true,
       "reader": true,
-      "place": null
+      "place": null,
+      "network": null,
+      "connection": null
     },
     {
       "started": "2026-10-15T13:20:41Z",
@@ -583,6 +643,17 @@
         "city": "Seattle",
         "region": "Washington",
         "country": "US"
+      },
+      "network": {
+        "asn": 32934,
+        "org": "Meta Platforms, Inc.",
+        "kind": null
+      },
+      "connection": {
+        "ect": "3g",
+        "rtt": 350,
+        "downlink": 1.45,
+        "saveData": false
       }
     },
     {
@@ -630,6 +701,17 @@
         "city": "Berlin",
         "region": "Berlin",
         "country": "DE"
+      },
+      "network": {
+        "asn": 3320,
+        "org": "Deutsche Telekom AG",
+        "kind": null
+      },
+      "connection": {
+        "ect": "4g",
+        "rtt": 100,
+        "downlink": 8.5,
+        "saveData": true
       }
     }
   ]

@@ -16,7 +16,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { UpstreamError } from "../http.mjs";
-import { assistantOf } from "../referrers.mjs";
+import { assistantOf, classifyReferrer } from "../referrers.mjs";
+import { FILMS } from "../films.mjs";
 
 const LIVE_TABLE = /`csarko-sh\.csarko_visits\._AllLogs`/g;
 const HISTORY_TABLE = /`csarko-sh\.csarko_history\.goatcounter_history`/g;
@@ -57,12 +58,25 @@ export function createRunner({ bigquery, projectId, dataset, historyDataset, cac
   };
 }
 
+/** A source no visit has, for a group filter that matched none: pages.sql then keeps no visit. */
+const NO_SOURCE = "\u0000none";
+/** The YouTube ids of Cyrus's own films, the videos events.sql counts a click to (films.json). */
+const OWN_VIDEOS = FILMS.map((f) => f.videoId).filter(Boolean);
+
 export function createVisits({ bigquery, projectId, dataset, historyDataset, historyUntil, cache, now = Date.now, log = console, ttlMs = 300_000, queriesDir = join(process.cwd(), "queries") }) {
   const run = createRunner({ bigquery, projectId, dataset, historyDataset, cache, ttlMs, queriesDir });
 
   const wantsHistory = (bound) => Boolean(historyDataset && historyUntil && Date.parse(bound) < Date.parse(historyUntil));
   const hist = (name, params) => run(name, { ...params, until: historyUntil });
   const win = (range) => ({ start: range.start, end: range.end, prev_start: range.prevStart, prev_end: range.prevEnd });
+  // The sources (`name|target`, as pages.sql builds them) in the range and the range before whose
+  // group, as the Visitors card counts it (an assistant's tag is the assistant's), is in `groups`.
+  const sourcesOf = async (range, groups) => {
+    const want = new Set(groups);
+    const rows = [...(await run("referrers", { start: range.start, end: range.end })), ...(await run("referrers", { start: range.prevStart, end: range.prevEnd }))];
+    const keys = rows.filter((r) => r.kind === "referrer" && want.has(classifyReferrer(assistantOf(r.target) ?? r.name ?? ""))).map((r) => `${r.name ?? ""}|${r.target ?? ""}`);
+    return [...new Set(keys)];
+  };
 
   return {
     get configured() {
@@ -104,10 +118,16 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
     // Each path's visitors, the range before's, where visits landed and went on, and how far they
     // got (pages.sql). GoatCounter's history has visitors alone: a range before the cutover adds
     // them to `visitors` (and the range before's to `previous`), and leaves the rest live-only.
-    async pages(range) {
-      const live = await run("pages", win(range));
+    // `filters` (2026-11-21) keeps the visits from `countries` (ISO codes) that arrived from
+    // `groups` (referrers.mjs's groups), either list empty for all; a filtered answer is live rows
+    // alone, since the history knows neither a visit's country nor its referrer.
+    async pages(range, { countries = [], groups = [], networks = [] } = {}) {
+      const filtered = countries.length > 0 || groups.length > 0 || networks.length > 0;
+      const sources = groups.length ? await sourcesOf(range, groups) : ["*"];
+      const live = await run("pages", { ...win(range), countries: countries.length ? countries : ["*"], networks: networks.length ? networks.map(String) : ["*"], sources: sources.length ? sources : [NO_SOURCE] });
       const nul = (v) => (v === null || v === undefined ? null : Number(v));
       const rows = live.map((r) => ({ path: r.path, title: r.title ?? "", visitors: Number(r.visitors), previous: Number(r.previous ?? 0), pageviews: null, landed: Number(r.landed ?? 0), onward: Number(r.onward ?? 0), engagedMedian: nul(r.engaged_median), depthMedian: nul(r.depth_median), lcp: nul(r.lcp_p75), reached: nul(r.reached) }));
+      if (filtered) return rows.filter((r) => r.visitors > 0);
       const blank = { pageviews: null, landed: 0, onward: 0, engagedMedian: null, depthMedian: null, lcp: null, reached: null };
       const history = wantsHistory(range.start) ? (await hist("history-pages", { start: range.start, end: range.end })).map((r) => ({ path: r.path, title: r.title ?? "", visitors: Number(r.visitors), previous: 0, ...blank })) : [];
       const before = wantsHistory(range.prevStart) ? (await hist("history-pages", { start: range.prevStart, end: range.prevEnd })).map((r) => ({ path: r.path, title: r.title ?? "", visitors: 0, previous: Number(r.visitors), ...blank })) : [];
@@ -137,7 +157,8 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
     // visitors, and the distinct visits that clicked any out-* or link-* (summed from the history's
     // out-* rows, the closest it has).
     async events(range) {
-      const live = await run("events", { start: range.start, end: range.end });
+      // Only clicks to Cyrus's own destinations count (events.sql): his films' videos among them.
+      const live = await run("events", { start: range.start, end: range.end, own_videos: OWN_VIDEOS });
       const liveRows = live.map((r) => ({ name: r.name, visitors: Number(r.visitors), clicks: Number(r.clicks) }));
       const historyRows = wantsHistory(range.start) ? (await hist("history-events", { start: range.start, end: range.end })).map((r) => ({ name: r.name, visitors: Number(r.visitors), clicks: Number(r.visitors) })) : [];
       const rows = sumBy([...liveRows, ...historyRows], "name", "visitors", "clicks");
@@ -168,8 +189,15 @@ export function createVisits({ bigquery, projectId, dataset, historyDataset, his
 
     async audience(range) {
       const rows = await run("audience", { start: range.start, end: range.end });
-      const out = { countries: [], sizes: [], browsers: [], systems: [], languages: [], themes: [], viewports: [], touch: [], timezones: [] };
-      for (const r of rows) if (out[r.dim]) out[r.dim].push({ name: String(r.name), visitors: Number(r.visitors) });
+      const out = { countries: [], sizes: [], browsers: [], systems: [], languages: [], themes: [], viewports: [], touch: [], timezones: [], networks: [], netkinds: [], connections: [], rtts: [] };
+      for (const r of rows) {
+        if (!out[r.dim]) continue;
+        // A network is `asn|owner`: the owner is its name, the number its id (an owner's name has commas).
+        if (r.dim === "networks") {
+          const [asn, ...org] = String(r.name).split("|");
+          out.networks.push({ name: org.join("|") || `AS${asn}`, asn: Number(asn), visitors: Number(r.visitors) });
+        } else out[r.dim].push({ name: String(r.name), visitors: Number(r.visitors) });
+      }
       return out;
     },
   };
@@ -264,9 +292,13 @@ export function journeyOf(row) {
     else if (s.secs !== null) s.left = s.at + s.secs;
     if (i > 0) s.back = s.at - (steps[i - 1].at + (steps[i - 1].secs ?? 0)) >= RETURN_GAP_SECS;
   });
+  const nw = r.network ? plainRow(r.network) : null;
+  const network = nw && (nw.an !== null && nw.an !== undefined || nw.nk) ? { asn: num(nw.an), org: nw.ao ?? null, kind: nw.nk ?? null } : null;
+  const cn = r.connection ? plainRow(r.connection) : null;
+  const connection = cn ? { ect: cn.ect ?? null, rtt: num(cn.rtt), downlink: num(cn.dl), saveData: flag(cn.sd) } : null;
   const pl = r.place ? plainRow(r.place) : null;
   const place = pl?.cc ? { city: pl.ct ?? null, region: pl.rg ?? null, country: String(pl.cc) } : null;
-  return { started: r.started, source, device, place, steps, exit, engaged: engagedOf(steps), stitched: 0, returns: steps.filter((s) => s.back).length, suspect: suspectOf(device, steps), reader: readerOf(steps, exit) };
+  return { started: r.started, source, device, place, network, connection, steps, exit, engaged: engagedOf(steps), stitched: 0, returns: steps.filter((s) => s.back).length, suspect: suspectOf(device, steps), reader: readerOf(steps, exit) };
 }
 
 /** The reader rule in visits.sql: a page engaged 5 s or more, two or more paths, or a click. */
@@ -324,6 +356,8 @@ export function stitchJourneys(journeys) {
     for (const s of j.steps) onto.steps.push({ ...s, at: s.at + gap, left: s.left === null ? null : s.left + gap });
     onto.exit = j.exit;
     onto.place = j.place ?? onto.place;
+    onto.network = j.network ?? onto.network;
+    onto.connection = j.connection ?? onto.connection;
     onto.engaged = onto.engaged === null && j.engaged === null ? null : (onto.engaged ?? 0) + (j.engaged ?? 0);
     onto.stitched += 1 + j.stitched;
     onto.returns += j.returns;

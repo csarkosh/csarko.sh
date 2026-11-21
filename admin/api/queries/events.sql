@@ -10,6 +10,12 @@
 -- clicked any out-* or link-*, so the rate over home visitors cannot pass 100%.
 -- A click or a leave belongs to its page load's visit (the view's, by id), since the daily hash
 -- can roll between a view and its beacons.
+-- Only clicks to Cyrus's own destinations count (Cyrus, 2026-11-21: "I only want those for
+-- tracking destinations that belong to me"): a click with no url (the site's own controls), any
+-- *.csarko.sh host, his LinkedIn, GitHub (his repositories too), YouTube channel and Substack, and
+-- a YouTube video of his own films (@own_videos, films.json's ids). A click to anyone else's (The
+-- Well on YouTube from its doc's Watch pill, a source a doc cites) is left out here, and still ends
+-- its journey in journeys.sql.
 -- The check beacons (/deploy-check, /depth-check) are left out, and so is every page load (id)
 -- that is a bot's or a crawler's (the shared test in _bot.sql).
 WITH beacons AS (
@@ -32,13 +38,21 @@ clicks AS (
   SELECT
     COALESCE(l.visit, b.visit) AS visit,
     JSON_VALUE(b.j.ev) AS ev,
-    REGEXP_REPLACE(REGEXP_EXTRACT(JSON_VALUE(b.j.u), r'^https?://([^/:?#]+)'), r'^www\.', '') AS host
+    REGEXP_REPLACE(REGEXP_EXTRACT(JSON_VALUE(b.j.u), r'^https?://([^/:?#]+)'), r'^www\.', '') AS host,
+    JSON_VALUE(b.j.u) AS u
   FROM beacons AS b LEFT JOIN loads AS l USING (id) WHERE b.n = 'click' AND NOT b.bot
+),
+own_clicks AS (
+  SELECT visit, ev, host FROM clicks
+  WHERE u IS NULL
+    OR REGEXP_CONTAINS(LOWER(host), r'(^|\.)csarko\.sh$')
+    OR REGEXP_CONTAINS(LOWER(u), r'^https?://(www\.)?(linkedin\.com/in/csarkosh|github\.com/csarkosh|youtube\.com/@csarkosh|csarko\.substack\.com)([/?#]|$)')
+    OR REGEXP_EXTRACT(u, r'(?:youtube\.com/(?:watch\?(?:[^#]*&)?v=|shorts/|embed/)|youtu\.be/)([A-Za-z0-9_-]{11})') IN UNNEST(@own_videos)
 )
 SELECT name, COUNT(DISTINCT visit) AS visitors, COUNT(*) AS clicks FROM (
-  SELECT ev AS name, visit FROM clicks WHERE ev IS NOT NULL
+  SELECT ev AS name, visit FROM own_clicks WHERE ev IS NOT NULL
   UNION ALL
-  SELECT CONCAT('link-', host), visit FROM clicks WHERE ev IS NULL AND host IS NOT NULL
+  SELECT CONCAT('link-', host), visit FROM own_clicks WHERE ev IS NULL AND host IS NOT NULL
   UNION ALL
   SELECT name, visit FROM (
     SELECT CONCAT('read-', REGEXP_EXTRACT(ANY_VALUE(JSON_VALUE(b.j.p)), r'^/research/([^/]+)$')) AS name, ANY_VALUE(COALESCE(l.visit, b.visit)) AS visit, b.id
@@ -56,7 +70,7 @@ SELECT name, COUNT(DISTINCT visit) AS visitors, COUNT(*) AS clicks FROM (
   UNION ALL
   SELECT '(home)', visit FROM beacons WHERE n = 'view' AND NOT bot AND JSON_VALUE(j.p) = '/'
   UNION ALL
-  SELECT DISTINCT '(outbound)', visit FROM clicks WHERE STARTS_WITH(ev, 'out-') OR (ev IS NULL AND host IS NOT NULL)
+  SELECT DISTINCT '(outbound)', visit FROM own_clicks WHERE STARTS_WITH(ev, 'out-') OR (ev IS NULL AND host IS NOT NULL)
 )
 WHERE name IS NOT NULL
 GROUP BY name

@@ -63,6 +63,9 @@ Conventions, for every route:
     was a third of what the page called search. A person on that exact desktop is counted from
     their first leave on (the first time the tab is hidden or closed), so one still reading is
     missing until then;
+  - **a cloud network** *(2026-11-21, C1)*: any of its rows says lib-visits v0.7.0's `s.nk` is
+    `cloud` (AWS, Google Cloud, DigitalOcean, Hetzner and the like; never an ISP or an office). A
+    VPN (`vpn`) or iCloud Private Relay (`relay`) is a person and stays in;
   - **the game's tooling** *(2026-11-13)*: its visit (the daily hash) opened Day Hike's tooling
     lobby, `/dayhike/game/0f1c2a3b-4d5e-4f60-8a9b-0c1d2e3f4a5b`, the fixed game id the game's
     capture and frame-budget tools open from the cloud; every page load of that visit. If the
@@ -196,6 +199,12 @@ saw it and whose last view was another path *(2026-11-21)*. `depthMedian` is the
 visits of each one's deepest scroll on the path (0 to 100) and `lcp` the 75th percentile of its
 page loads' LCP in ms, each `null` with no leave or vitals beacon. Before the cutover only
 `visitors` and `previous` come from GoatCounter's history; the rest are lib-visits' alone.
+**Filters** *(2026-11-21)*: `country=US,GB` (ISO codes), `from=search,ai` (the `referrers`
+groups) and `net=7922,15169` (AS numbers), each optional and multi-select, keep the visits whose
+first placed country is one of `country`, whose arrival (the first view's referrer, an
+assistant's tag as the assistant) is in one of `from`'s groups, and whose first network is one of
+`net`; a bad value is a 400. A filtered answer is lib-visits' rows alone (the
+history knows neither), and it is never saved as the card's first draw.
 `inSitemap: false` marks a path that is not in `sitemap.xml` (a 404 candidate). A page on another of the site's hosts is named with it, `apps.csarko.sh/ide-arkos` (since 2026-11-01), and checked against that host's own sitemap.
 `engagedMedian` is the median, in seconds, over visits of each visit's longest engaged time
 on the path, among page loads that sent a leave (a load's time is the most its leaves
@@ -260,7 +269,7 @@ card names it "ChatGPT", by a tagged link, where the Referrers card counts it.
 ### `events`
 
 ```json
-{ "rows": [ { "name": "out-linkedin", "kind": "out", "visitors": 14, "clicks": 17 }, { "name": "link-example.org", "kind": "out", "visitors": 1, "clicks": 1 } ], "outboundVisitors": 19, "outboundRate": 0.16 }
+{ "rows": [ { "name": "out-linkedin", "kind": "out", "visitors": 14, "clicks": 17 }, { "name": "link-github.com", "kind": "out", "visitors": 1, "clicks": 1 } ], "outboundVisitors": 19, "outboundRate": 0.16 }
 ```
 
 `visitors` is the distinct visits that fired the event, `clicks` how many times it fired
@@ -268,12 +277,13 @@ card names it "ChatGPT", by a tagged link, where the Referrers card counts it.
 flag and a scroll depth of 50 or more; the history's one count stands for both). `kind` is the name's prefix: `out`, `play`, `watch`, `read`, `nav`, `start` (a card in /research's Start here row), `filter` (a category chip there), `app` (an app card's link to its page), and since 2026-11-01, when apps.csarko.sh and donate.csarko.sh began sending beacons too, on an app's page `get` (the bar's Install or Download pill), `download` (a release button), `promo`, `tokens`, `release` and `source` (each `-<slug>`), and on the donate pages `tier` (a tier picked, `tier-<key>`), `pay` (the Stripe button, `pay-<door>`), `tipped` (the thanks page after Stripe, with `door` in its data: the tip made) and `back`; and on a doc page *(2026-10-23)* `toc` (its contents, `toc` inline and `toc-rail` in the rail), `doc` (a link in its text to another doc, `doc-<slug>`), `next` (a next question in its What next section, Keep reading until 2026-11-13, `next-<slug>`), `series` (a part of its series, `series-<slug>`: the series line under the title, and in What next, a part named in the doc's `related:` included), `end` (the next question after the author box, `end-<slug>`) and `section` (`section-<n>`, a section that sat across the middle of a visible screen for 5 s, n 0 for the opening, the last one ending where What next begins since 2026-11-13; from the site's `reading.js`, so `clicks` counts page loads), and since 2026-11-13 `lead`, `close` and `after` (the link to the doc's project, its game, app or film: in the opening, in What next and after the author box, each `-<project slug>`; since 2026-11-15 also `top`, its pill under the title), `term` (a term's definition tapped open), `crumb` (`crumb-home`, the trail's Home link) and `author` (`author-home`, the author box's links to the home page). A doc sends no `play-<game>` since that day, so the Events card's "Went to play" and "Went to watch" count the `/projects` cards (and a doc's Watch pill), and its "Doc to its project" tile and bar sum the visitors of `top`, `lead`, `close` and `after`; `nav-home` (the nav's wordmark on any page but the home page) is kind `nav`; else `other`;
 `link-<host>` (a click on a link to another host that the page did not name, the host
 without `www.`) is kind `out`. `outboundVisitors` is the distinct visitors who clicked any `out-*` or `link-*` event; `outboundRate` is the distinct visitors who clicked any
+**Only clicks to Cyrus's own destinations are counted** *(2026-11-21)*: a click with no url, any `*.csarko.sh` host, his LinkedIn, GitHub (his repositories too), YouTube channel and Substack, and a video of one of his films (`films.json`). A click to anyone else's (The Well on YouTube from its doc's Watch pill, a source a doc cites) is in no row and no rate here; it still ends its journey (`journeys`' `exit`).
 `out-*` or `link-*` over the home page's visitors, so it never passes 1; `null` when nobody
 reached the home page in the range. `rows` is `null` with `notConfigured.visits`.
 
 ### `journeys`
 
-Each journey carries `place`, `{ city, region, country }`, the city its visitor was last placed in, or `null` before 2026-11-21 *(2026-11-21)*.
+Each journey carries `place`, `{ city, region, country }`, the city its visitor was last placed in, or `null` before 2026-11-21 *(2026-11-21)*; `network`, `{ asn, org, kind }`, the network it was last on (`kind` is `cloud`, `vpn`, `relay`, `tor` or `null` for an ISP or a company); and `connection`, `{ ect, rtt, downlink, saveData }`, Chromium's last connection hints, each `null` before lib-visits v0.7.0 (2026-11-21) and `connection` `null` for Safari and Firefox, which send none.
 
 The 50 most recent visits in the range (fewer once stitched), newest first, each as its
 journey. From lib-visits' rows only (GoatCounter's history holds no visit's sequence), so
@@ -344,10 +354,10 @@ page, the mark of a headless browser.
 ### `audience`
 
 ```json
-{ "countries": [ { "name": "US", "visitors": 121 } ], "sizes": [], "browsers": [], "systems": [], "languages": [], "themes": [], "viewports": [], "touch": [], "timezones": [] }
+{ "countries": [ { "name": "US", "visitors": 121 } ], "sizes": [], "browsers": [], "systems": [], "languages": [], "themes": [], "viewports": [], "touch": [], "timezones": [], "networks": [ { "name": "Comcast Cable Communications, LLC", "asn": 7922, "visitors": 38 } ], "netkinds": [ { "name": "isp", "visitors": 160 } ], "connections": [ { "name": "4g", "visitors": 101 } ], "rtts": [ { "name": "under 100 ms", "visitors": 64 } ] }
 ```
 
-Nine lists of `{ name, visitors }`, most visited first. `themes` is the visitor's colour scheme, `viewports` is bucketed as `under 400`, `400 to 799`, `800 to 1199` and `1200 and up`, `touch` is `touch` or `pointer`, and `timezones` are IANA names. Each is `null` with
+Thirteen lists of `{ name, visitors }`, most visited first. *(2026-11-21, lib-visits v0.7.0)* `networks` is the network owner by name with its AS number as `asn`; `netkinds` is `isp` (an ISP or a company), `cloud`, `vpn`, `relay` or `tor`; `connections` is Chromium's effective connection type (`4g`, `3g`, `2g`, `slow-2g`) and `rtts` its round trip, bucketed as `under 100 ms`, `100 to 299 ms`, `300 to 999 ms` and `1 s and up`, both from Chromium browsers only. `themes` is the visitor's colour scheme, `viewports` is bucketed as `under 400`, `400 to 799`, `800 to 1199` and `1200 and up`, `touch` is `touch` or `pointer`, and `timezones` are IANA names. Each is `null` with
 `notConfigured.visits`.
 
 ### `search`

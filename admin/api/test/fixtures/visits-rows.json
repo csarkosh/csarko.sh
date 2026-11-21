@@ -184,6 +184,26 @@
       "dim": "touch",
       "name": "pointer",
       "visitors": 6
+    },
+    {
+      "dim": "networks",
+      "name": "7922|Comcast Cable Communications, LLC",
+      "visitors": 4
+    },
+    {
+      "dim": "networks",
+      "name": "15169|",
+      "visitors": 1
+    },
+    {
+      "dim": "netkinds",
+      "name": "isp",
+      "visitors": 5
+    },
+    {
+      "dim": "connections",
+      "name": "4g",
+      "visitors": 3
     }
   ],
   "journeys": [

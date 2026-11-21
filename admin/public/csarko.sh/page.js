@@ -17,8 +17,8 @@
 
 import { accountMenu, requireSession } from '/auth.js';
 import { ago, bars, columns, compact, delta, el, errorLine, filteredList, folded, hold, loading, pct, settle, shortDay, skeleton, status, table, tile, tooltip } from '/charts.js';
-import { RANGES, loadApps, preview, readRange, readToggles, source, utcMidnightHere, viewerZone, viewerZoneName, writeRange, writeToggles } from '/data.js';
-import { fadeIn, fadeOut, tokens } from '/motion.js';
+import { RANGES, loadApps, preview, readParam, readRange, readToggles, source, utcMidnightHere, viewerZone, viewerZoneName, writeParam, writeRange, writeToggles } from '/data.js';
+import { fadeIn, fadeOut, hideMenu, showMenu, tokens } from '/motion.js';
 import { savedAll, savedThenLive } from '/instant.js';
 
 const SLUG = 'csarko.sh';
@@ -124,18 +124,22 @@ function visitorsCard([visits, refs, audience, events, places], days) {
   const noAudience = audience.countries === null || audience.countries === undefined ? notConfigured(missing(audience, 'visits')) : null;
   const noRefs = refs.groups ? null : notConfigured(missing(refs, 'visits'));
   const noEvents = events.rows ? null : notConfigured(missing(events, 'visits'));
-  parts.push(el('div', { class: 'facets pair' },
+  parts.push(el('div', { class: 'facets trio' },
     facet('Arrived from', refs.groups, { name: (g) => groupName(g.group), empty: 'No referrers in this range.', missingNote: noRefs }),
-    facet('Went on to', events.rows ? destinations(events.rows) : null, { empty: 'No clicks on to a profile or a project in this range.', missingNote: noEvents, of: cur ? num(cur.visits) : null })));
+    facet('Went on to', events.rows ? destinations(events.rows) : null, { empty: 'No clicks on to a profile or a project in this range.', missingNote: noEvents, of: cur ? num(cur.visits) : null }),
+    facet('Networks', audience.networks, { name: (r) => shortOrg(r.name), detail: (r) => `${str(r.name)} (AS${num(r.asn)})`, empty: NO_NETWORKS, missingNote: noAudience })));
   parts.push(whereTheyAre(places));
   // Who they are, folded by default (Cyrus, 2026-11-21): where they came, went and are stay open.
-  parts.push(folded('Countries, languages and devices', el('div', { class: 'facets six' },
+  parts.push(folded('Countries, languages, devices and connections', el('div', { class: 'facets six' },
     facet('Countries', audience.countries, { name: (r) => countryName(r.name), empty: NO_COUNTRIES, missingNote: noAudience }),
     facet('Languages', audience.languages, { missingNote: noAudience }),
     facet('Systems', audience.systems, { missingNote: noAudience }),
     facet('Browsers', audience.browsers, { missingNote: noAudience }),
     facet('Screens', audience.sizes, { missingNote: noAudience }),
-    facet('Theme', audience.themes, { missingNote: noAudience }))));
+    facet('Theme', audience.themes, { missingNote: noAudience }),
+    facet('Network type', audience.netkinds, { name: (r) => NET_KINDS[str(r.name)] ?? cap(str(r.name)), empty: NO_NETWORKS, missingNote: noAudience }),
+    facet('Connection', audience.connections, { name: (r) => CONNECTIONS[str(r.name)] ?? str(r.name), empty: NO_HINTS, missingNote: noAudience }),
+    facet('Round trip', audience.rtts, { empty: NO_HINTS, missingNote: noAudience }))));
   if (refs.groups) {
     parts.push(folded(`Referrers · ${refs.rows?.length ?? 0}`, table([
       { key: 'referrer', label: 'Referrer', render: mono },
@@ -162,6 +166,15 @@ function clickedOutTile(events) {
   return tile('Clicked out', out, { note: rate === null ? 'LinkedIn, GitHub, YouTube and other sites' : `${pct(rate)} of home page visitors went on to a profile` });
 }
 
+// The network an address is on (lib-visits v0.7.0, 2026-11-21): its kind as the collector names it,
+// none for an ISP or a company, and Chromium's effective connection type.
+const NET_KINDS = { isp: 'ISP or company', cloud: 'Cloud', vpn: 'VPN', relay: 'Private relay', tor: 'Tor' };
+const CONNECTIONS = { '4g': 'Fast (4G or better)', '3g': '3G', '2g': '2G', 'slow-2g': 'Slow 2G' };
+/** A network owner's name without its legal suffixes, for the narrow places: "Comcast Cable Communications, LLC" is "Comcast Cable". The full name is in the title. */
+const shortOrg = (name) => str(name).replace(/[,.]?\s+(Inc|LLC|L\.L\.C|Ltd|Limited|Corp|Corporation|Co|Company|AG|GmbH|S\.A|SA|B\.V|BV|PLC|Pty|SAS|AB|AS|Oy)\.?$/i, '').replace(/[,.]?\s+(Inc|LLC|Ltd|Corp|AG|GmbH)\.?$/i, '').replace(/\s+(Communications|Communication|Telecommunications|Network Services|Networks?)$/i, '').trim() || str(name);
+const NO_NETWORKS = 'No networks in this range: the collector records them from 2026-11-21 (lib-visits v0.7.0).';
+const NO_HINTS = 'No connection hints in this range: Chrome, Edge and other Chromium browsers send them from 2026-11-21; Safari and Firefox never do.';
+
 // The site's projects by the slug their events carry (a card's play-dayhike, a doc's lead-day-hike).
 const PROJECTS = { dayhike: 'Day Hike', 'day-hike': 'Day Hike', 'ide-arkos': 'Arkos IDE', 'lib-visits': 'lib-visits', 'app-macstats': 'MacStats', macstats: 'MacStats', 'the-last-trail': 'The Last Trail', 'who-is-standing-in-my-hallway': 'Hallway' };
 const PROFILES = { linkedin: 'LinkedIn', github: 'GitHub', youtube: 'YouTube', substack: 'Substack' };
@@ -180,7 +193,7 @@ function destinations(rows) {
     const name = str(r.name);
     const rest = name.slice(name.indexOf('-') + 1);
     const place = r.kind === 'tokens' ? 'Buy me tokens'
-      : name.startsWith('link-') ? rest
+      : name.startsWith('link-') ? PROFILES[rest.replace(/\.com$/, '').replace(/^.*\./, '')] ?? rest
         : r.kind === 'out' ? PROFILES[rest] ?? cap(rest)
           : PROJECTS[rest] ?? rest;
     by.set(place, (by.get(place) ?? 0) + num(r.visitors));
@@ -295,8 +308,9 @@ function lcpCell(ms) {
  * share of a doc's views read to the end, and the p75 LCP. The first ten, the rest and the 404
  * paths folded under them.
  */
-function pagesCard([pages], days) {
-  if (!pages.rows) return [notConfigured(missing(pages, 'visits'))];
+function pagesCard([pages, audience, refs], days, reload) {
+  const filters = pageFilterRow(audience, refs, reload);
+  if (!pages.rows) return [filters, ...errorLines(pages), ...(pages.errors ? [] : [notConfigured(missing(pages, 'visits'))])];
   const rows = [...pages.rows].sort((a, b) => b.visitors - a.visitors);
   const known = rows.some((r) => r.inSitemap !== null && r.inSitemap !== undefined);
   const live = rows.filter((r) => r.inSitemap !== false);
@@ -312,7 +326,8 @@ function pagesCard([pages], days) {
     { key: 'lcp', label: 'LCP p75', num: true, render: lcpCell },
   ];
   const dense = (list, empty) => { const t = table(cols, list, empty); t.classList.add('pages'); return t; };
-  const parts = [...errorLines(pages), dense(live.slice(0, PAGES_SHOWN), 'No visits in this range.')];
+  const filtered = PAGE_FILTERS.some((f) => readSet(f.param).size);
+  const parts = [filters, ...errorLines(pages), dense(live.slice(0, PAGES_SHOWN), filtered ? 'No visit in this range matches the filters.' : 'No visits in this range.')];
   if (live.length > PAGES_SHOWN) parts.push(folded(`All pages · ${live.length}`, dense(live)));
   parts.push(folded(`404 paths · ${known ? notFound.length : '?'}`, known
     ? table([{ key: 'path', label: 'Path asked for', render: mono }, { key: 'visitors', label: 'Visitors', num: true }], notFound, 'Nobody hit a missing page in this range.')
@@ -320,6 +335,79 @@ function pagesCard([pages], days) {
   return parts;
 }
 const PAGES_SHOWN = 10;
+
+// ---------------------------------------------------------------- the pages filters
+
+/**
+ * What they read's filters (Cyrus, 2026-11-21: country, arrival source and network owner,
+ * multi-select): each a button over a checklist, kept in the address
+ * (`?country=US,GB&from=search,ai&net=7922`, a network by its AS number), and sent to the API's
+ * pages query, which keeps the visits from any chosen country that arrived from any chosen source
+ * on any chosen network. A checklist applies when it closes, so ticking three boxes is one reload, not three.
+ */
+const PAGE_FILTERS = [
+  { param: 'country', label: 'Country', all: 'All countries' },
+  { param: 'from', label: 'Arrived from', all: 'All sources' },
+  { param: 'net', label: 'Network', all: 'All networks' },
+];
+const readSet = (param) => new Set(String(readParam(param) ?? '').split(',').map((x) => x.trim()).filter(Boolean));
+const pageFilterParams = () => Object.fromEntries(PAGE_FILTERS.map((f) => [f.param, [...readSet(f.param)].join(',')]).filter(([, v]) => v));
+
+/** The filter whose checklist is open, closed by a click outside it or Escape; one at a time. */
+let openFilter = null;
+document.addEventListener('click', (event) => { if (openFilter && !openFilter.host.contains(event.target)) openFilter.close(); });
+document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && openFilter) { const { button } = openFilter; openFilter.close(); button.focus(); } });
+
+function multiFilter(f, options, reload) {
+  const chosen = readSet(f.param);
+  const nameOf = new Map(options.map((o) => [o.id, o.name]));
+  const summary = () => (chosen.size === 0 ? f.all : chosen.size <= 2 ? [...chosen].map((id) => nameOf.get(id) ?? id).join(', ') : `${chosen.size} chosen`);
+  const value = el('span', { class: 'pf-value' }, summary());
+  const id = `pf-${f.param}`;
+  const button = el('button', { type: 'button', class: `pf-button${chosen.size ? ' on' : ''}`, 'aria-haspopup': 'true', 'aria-expanded': 'false', 'aria-controls': id }, el('span', { class: 'pf-label' }, f.label), value, el('span', { class: 'pf-caret', 'aria-hidden': 'true' }, '▾'));
+  const boxes = options.map((o) => {
+    const box = el('input', { type: 'checkbox', value: o.id, checked: chosen.has(o.id) || null });
+    box.addEventListener('change', () => { if (box.checked) chosen.add(o.id); else chosen.delete(o.id); value.textContent = summary(); });
+    return el('label', { class: 'pf-option', title: o.title ?? null }, box, el('span', { class: 'pf-name' }, o.name), isNum(o.count) ? el('span', { class: 'pf-count' }, o.count.toLocaleString('en-US')) : null);
+  });
+  const clear = el('button', { type: 'button', class: 'item pf-clear' }, 'Clear');
+  clear.addEventListener('click', () => { chosen.clear(); for (const b of boxes) b.querySelector('input').checked = false; value.textContent = summary(); });
+  const menu = el('div', { class: 'menu pf-menu', id, role: 'group', 'aria-label': f.label, hidden: '' },
+    options.length ? el('div', { class: 'pf-options' }, ...boxes) : el('p', { class: 'empty' }, 'Nothing to choose from in this range.'),
+    el('div', { class: 'items' }, clear));
+  const host = el('span', { class: 'pf' }, button, menu);
+  const before = [...chosen].sort().join(',');
+  const close = () => {
+    hideMenu(menu);
+    button.setAttribute('aria-expanded', 'false');
+    if (openFilter?.host === host) openFilter = null;
+    const after = [...chosen].sort().join(',');
+    if (after !== before) { writeParam(f.param, after || null); reload(); }
+  };
+  button.addEventListener('click', (event) => {
+    event.stopPropagation();
+    if (button.getAttribute('aria-expanded') === 'true') return close();
+    openFilter?.close();
+    showMenu(menu);
+    button.setAttribute('aria-expanded', 'true');
+    openFilter = { host, button, close };
+  });
+  return host;
+}
+
+/** The two filters, their options this range's countries and referrer groups (and any chosen one the range lacks), each with its visitors. */
+function pageFilterRow(audience, refs, reload) {
+  const countries = [...(audience?.countries ?? [])].sort((a, b) => num(b.visitors) - num(a.visitors)).map((r) => ({ id: str(r.name), name: countryName(r.name), count: num(r.visitors) }));
+  const groups = (refs?.groups ?? []).filter((g) => g.group !== 'spam' && num(g.visitors) > 0).map((g) => ({ id: g.group, name: groupName(g.group), count: num(g.visitors) }));
+  const networks = [...(audience?.networks ?? [])].sort((a, b) => num(b.visitors) - num(a.visitors)).map((r) => ({ id: String(num(r.asn)), name: shortOrg(r.name), title: `${str(r.name)} (AS${num(r.asn)})`, count: num(r.visitors) }));
+  const withChosen = (param, options, name) => [...options, ...[...readSet(param)].filter((id) => !options.some((o) => o.id === id)).map((id) => ({ id, name: name(id), count: null }))];
+  const filtered = PAGE_FILTERS.some((f) => readSet(f.param).size);
+  return el('div', { class: 'pf-row' },
+    multiFilter(PAGE_FILTERS[0], withChosen('country', countries, countryName), reload),
+    multiFilter(PAGE_FILTERS[1], withChosen('from', groups, groupName), reload),
+    multiFilter(PAGE_FILTERS[2], withChosen('net', networks, (id) => `AS${id}`), reload),
+    filtered ? el('span', { class: 'pf-note' }, 'Filtered visits since the cutover only') : null);
+}
 
 // ---------------------------------------------------------------- journeys
 
@@ -432,15 +520,20 @@ function journey(j, now) {
   const chips = [];
   if (num(j.returns) > 0) chips.push(el('span', { class: 'badge' }, `came back ${j.returns === 1 ? 'once' : `${j.returns} times`}`));
   if (num(j.stitched) > 0) chips.push(el('span', { class: 'badge' }, 'across midnight'));
+  if (j.network?.kind) chips.push(el('span', { class: `badge${j.network.kind === 'cloud' ? ' warn' : ''}`, title: 'The kind of network the visitor was on' }, NET_KINDS[j.network.kind] ?? j.network.kind));
+  const cn = j.connection;
+  if (cn && (cn.ect && cn.ect !== '4g' || cn.saveData)) chips.push(el('span', { class: 'badge warn', title: [cn.ect ? `Effective connection ${CONNECTIONS[cn.ect] ?? cn.ect}` : '', isNum(cn.rtt) ? `round trip ${cn.rtt} ms` : '', isNum(cn.downlink) ? `${cn.downlink} Mbit/s` : '', cn.saveData ? 'Data Saver on' : ''].filter(Boolean).join(' · ') }, [cn.ect && cn.ect !== '4g' ? CONNECTIONS[cn.ect] ?? cn.ect : '', cn.saveData ? 'Data Saver' : ''].filter(Boolean).join(' · ')));
   if (j.suspect) chips.push(el('span', { class: 'badge warn', title: 'UTC clock, no engaged time' }, 'suspect'));
   else if (j.reader === false) chips.push(el('span', { class: 'badge warn', title: 'One page, under 5 s, no click' }, 'glance'));
   // An assistant's tag is already the journey's source, so it is not said twice.
   if (src.campaign && !src.assistant) chips.push(el('span', { class: 'badge' }, `tagged ${str(src.campaign)}`));
   const device = deviceLine(j.device);
   const where = j.place?.country ? placeName(j.place) : '';
+  const net = j.network?.org ? shortOrg(j.network.org) : '';
   const head = el('p', { class: 'j-head' },
     el('span', { class: 'j-when' }, wallClock(j.started, now)),
     where ? el('span', { class: 'j-where' }, ` · ${where}`) : null,
+    net ? el('span', { class: 'j-net', title: `${str(j.network.org)}${isNum(j.network.asn) ? ` (AS${j.network.asn})` : ''}` }, ` · ${net}`) : null,
     ` · ${ago(j.started, now)} · ${isNum(j.engaged) ? `${duration(j.engaged)} engaged` : 'no engaged time'} · ${n} page${n === 1 ? '' : 's'}${span !== null ? ` over ${stretch(span)}` : ''}`,
     device ? el('span', { class: 'j-device', title: device }, ` · ${[j.device?.browser, j.device?.os].map(str).filter(Boolean).join(', ')}`) : null,
     ...chips);
@@ -612,7 +705,7 @@ function visitorsSub(d, visits) {
   const dayNote = visits?.dayLabel && visits.dayLabel !== 'utc'
     ? `Days are ${visits.dayLabel === viewerZone ? viewerZoneName : visits.dayLabel} days. A visit is one browser until UTC midnight (${utcMidnightHere()} here), so one on the site across it counts twice that day; nothing is stored in it.`
     : `Days are UTC days, which roll at ${utcMidnightHere()} here. A visit is one browser on one UTC day; nothing is stored in it.`;
-  return `Who the visitors are: visits ${label} against ${previousText(d)}, where they arrived from and went on to, the cities they are in, their countries, languages, systems, browsers, screens and theme. ${dayNote} ${GOATCOUNTER_NOTE}`;
+  return `Who the visitors are: visits ${label} against ${previousText(d)}, where they arrived from and went on to, the networks and cities they are in, their countries, languages, systems, browsers, screens, theme and connections. ${dayNote} ${GOATCOUNTER_NOTE}`;
 }
 
 /** The Search card's sub: the day the range ends on, Google's last finished one, since Search Console runs behind. */
@@ -625,8 +718,8 @@ function searchSub(d, search) {
 /** Each card: its queries, its copy, how it renders, and the skeleton that stands in for it while the queries run. */
 const CARDS = [
   { id: 'visitors', title: 'Visitors', queries: ['visits', 'referrers', 'audience', 'events', 'places'], sub: visitorsSub, render: visitorsCard, skeleton: [{ tiles: 3, tile: 188, chart: true }, { heading: false, bars: 10, cols: 2 }, { chart: 300, folds: 3 }] },
-  { id: 'pages', title: 'What they read', queries: ['pages'], sub: (d) => `Each page's visitors, ▲▼ against ${previousText(d)}; the share who landed on it and who went on to another; the median time engaged and scroll; a doc's views read to the end; and the LCP 75% of loads beat, a dot past Google's 2.5 s. Hover a title for its path. ${GOATCOUNTER_NOTE}`, render: pagesCard, skeleton: { rows: 10, row: 36, folds: 2 } },
-  { id: 'journeys', title: 'Journeys', queries: ['journeys'], sub: () => 'The most recent visits, newest first, each with the city it came from (since 2026-11-21) and one row from where it came to how it left: every page with the time it was visible, a line under it as far as it was scrolled, ✓ when read to the end, a dot when it loaded slowly. Hover a page for the rest. From lib-visits, so since the cutover only.', render: journeysCard, skeleton: { chips: 4, items: 8, item: 64 } },
+  { id: 'pages', title: 'What they read', queries: ['pages', 'audience', 'referrers'], extra: { pages: pageFilterParams }, sub: (d) => `Each page's visitors, ▲▼ against ${previousText(d)}; the share who landed on it and who went on to another; the median time engaged and scroll; a doc's views read to the end; and the LCP 75% of loads beat, a dot past Google's 2.5 s. Filter by the visitors' country, where they arrived from and the network they were on; hover a title for its path. ${GOATCOUNTER_NOTE}`, render: pagesCard, skeleton: { chips: 2, rows: 10, row: 36, folds: 2 } },
+  { id: 'journeys', title: 'Journeys', queries: ['journeys'], sub: () => 'The most recent visits, newest first, each with the city and network it came from (since 2026-11-21), a mark for a VPN, relay, cloud or slow connection, and one row from where it came to how it left: every page with the time it was visible, a line under it as far as it was scrolled, ✓ when read to the end, a dot when it loaded slowly. Hover a page for the rest. From lib-visits, so since the cutover only.', render: journeysCard, skeleton: { chips: 4, items: 8, item: 64 } },
   { id: 'search', title: 'Search', queries: ['search'], sub: searchSub, render: searchCard, skeleton: { tiles: 5, chart: 185, folds: 3 } },
 ];
 
@@ -642,10 +735,13 @@ function cardShell(def) {
 async function loadCard(def, gen, card) {
   const body = card.querySelector('.body');
   body.setAttribute('aria-busy', 'true');
-  const answers = Promise.all(def.queries.map((name) => data.query(app, name, range)));
+  // A card's own parameters for a query (What they read's filters); a request that carries any is
+  // never drawn from a saved answer, which is the card's at its defaults.
+  const extraOf = (name) => def.extra?.[name]?.() ?? {};
+  const answers = Promise.all(def.queries.map((name) => data.query(app, name, range, extraOf(name))));
   answers.catch(() => {});
   // The answers this request last got, drawn first when they come before the live ones (instant.js).
-  const saved = savedAll(def.queries.map((name) => data.saved(app, name, range)));
+  const saved = savedAll(def.queries.map((name) => (Object.keys(extraOf(name)).length ? Promise.resolve(null) : data.saved(app, name, range))));
   // A rendered card goes back to its skeleton while it reloads (its content fades out, the
   // skeleton in), held at the height this view had last, else the one it has now, so nothing
   // under it moves but by easing; see hold() in charts.js.

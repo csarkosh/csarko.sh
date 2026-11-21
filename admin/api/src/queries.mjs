@@ -261,12 +261,13 @@ export function createQueries({ visits, gsc, youtube, youtubeAnalytics = null, g
       return { ...head, current, previous };
     },
 
-    async pages(days) {
+    // `filters`: { countries, groups, networks }, the What they read card's (2026-11-21); see visits.pages.
+    async pages(days, _tz, filters = {}) {
       const empty = requireVisits();
       if (empty) return { rows: null, ...empty };
       const range = hourlyRange(days, now());
       const h = hints();
-      const rows = await visits.pages(range);
+      const rows = await visits.pages(range, filters);
       const inSitemap = await inSitemapOf(rows, h);
       return withHints({ rows: rows.map((r, i) => ({ ...r, inSitemap: inSitemap[i] })) }, h);
     },
@@ -297,7 +298,7 @@ export function createQueries({ visits, gsc, youtube, youtubeAnalytics = null, g
 
     async audience(days) {
       const empty = requireVisits();
-      if (empty) return { countries: null, sizes: null, browsers: null, systems: null, languages: null, themes: null, viewports: null, touch: null, timezones: null, ...empty };
+      if (empty) return { countries: null, sizes: null, browsers: null, systems: null, languages: null, themes: null, viewports: null, touch: null, timezones: null, networks: null, netkinds: null, connections: null, rtts: null, ...empty };
       return visits.audience(hourlyRange(days, now()));
     },
 

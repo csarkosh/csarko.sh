@@ -35,6 +35,7 @@ import { bearerOf, audiencesFor } from "./auth.mjs";
 import { answer, fail, failureOf, readBody, parseDays, parseTz, isAllowedOrigin, corsHeaders, preflightHeaders } from "./http.mjs";
 import { clientIpOf } from "./limiter.mjs";
 import { isQueryName, isFilmQueryName, isManualKey } from "./queries.mjs";
+import { REFERRER_GROUPS } from "./referrers.mjs";
 import { isArkosQueryName, parseWho } from "./arkos-queries.mjs";
 import { isFinanceQueryName, isFinanceManualKey, parseRange } from "./finance-queries.mjs";
 import { savedId, SAVED_SLUGS } from "./saved.mjs";
@@ -124,6 +125,13 @@ export function createApp({ config, queries, arkos = null, finance = null, saver
       if (days === null) return fail(res, 400, "days must be 1, 7, 30 or 90", cors);
       const tz = parseTz(search.get("tz"));
       if (tz === null) return fail(res, 400, "tz must be an IANA time zone", cors);
+      // The What they read card's filters (2026-11-21): `country=US,GB`, `from=search,ai` and `net=7922,15169`. A
+      // filtered answer is not saved: the saved answer is the card's first draw at its defaults.
+      if (query[1] === "pages" && (search.get("country") || search.get("from") || search.get("net"))) {
+        const filters = parsePageFilters(search);
+        if (filters === null) return fail(res, 400, "country must be ISO codes, from referrer groups and net AS numbers, comma-separated", cors);
+        return answer(res, 200, await queries.pages(days, tz, filters), cors);
+      }
       return answerSaved(res, "", path, search, await queries[query[1]](days, tz), cors);
     }
 
@@ -229,4 +237,15 @@ export function parseManualValue(body) {
   } catch {
     return null;
   }
+}
+
+/** The pages filters from `country`, `from` and `net` (AS numbers), each a comma-separated list (at most 50), or null when one names something it cannot be. */
+export function parsePageFilters(search) {
+  const list = (k) => String(search.get(k) ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  const countries = list("country").map((c) => c.toUpperCase());
+  const groups = list("from");
+  const networks = list("net");
+  if (countries.length > 50 || groups.length > REFERRER_GROUPS.length || networks.length > 50) return null;
+  if (!countries.every((c) => /^[A-Z]{2}$/.test(c)) || !groups.every((g) => REFERRER_GROUPS.includes(g)) || !networks.every((n) => /^\d{1,10}$/.test(n))) return null;
+  return { countries: [...new Set(countries)], groups: [...new Set(groups)], networks: [...new Set(networks.map(Number))] };
 }
