@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 336" width="440" height="336" role="img" aria-labelledby="t">
+  <title id="t">Speed of one terrain sample against the game's TypeScript. In a benchmark on a MacBook Air M4 in headless Chrome 157: TypeScript with no object made per call 1.56 times, Rust in WebAssembly with one call a sample 2.05 times. Wired into the game on a cloud Windows machine in Chrome, one call a sample: 1.09 times, under the 1.5 times the game set before merging it.</title>
+  <style>
+    text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 14px; fill: #e8eaf0; }
+    .title { font-size: 16px; font-weight: 600; }
+    .sec { fill: #a0a8b8; }
+    .good { fill: #7dd3c0; }
+    .bad { fill: #f5c451; }
+    .rule { stroke: #a0a8b8; stroke-width: 1.5; stroke-dasharray: 4 4; }
+    .base { stroke: #a0a8b8; stroke-width: 1; }
+    @media (prefers-color-scheme: light) {
+      text { fill: #12151c; }
+      .sec { fill: #4a5263; }
+      .good { fill: #0a735f; }
+      .bad { fill: #8a6100; }
+      .rule { stroke: #4a5263; }
+      .base { stroke: #4a5263; }
+    }
+  </style>
+  <text class="title" x="16" y="28">The terrain maths, times as fast as the game's</text>
+  <text class="sec" x="16" y="50">One sample: height and two slopes, same bits in all</text>
+
+  <text class="sec" x="16" y="88">Benchmark: MacBook Air M4, headless Chrome 157</text>
+  <text x="16" y="114">TypeScript, no object made per call</text>
+  <rect class="good" x="16" y="122" width="125" height="20" rx="3"/>
+  <text x="149" y="137">1.56</text>
+  <text x="16" y="168">Rust in WebAssembly, a call a sample</text>
+  <rect class="good" x="16" y="176" width="164" height="20" rx="3"/>
+  <text x="188" y="191">2.05</text>
+
+  <text class="sec" x="16" y="232">In the game: cloud Windows machine, Chrome</text>
+  <text x="16" y="258">Rust in WebAssembly, a call a sample</text>
+  <rect class="bad" x="16" y="266" width="87" height="20" rx="3"/>
+  <text x="144" y="281">1.09</text>
+
+  <line class="base" x1="96" y1="118" x2="96" y2="146"/>
+  <line class="base" x1="96" y1="172" x2="96" y2="200"/>
+  <line class="base" x1="96" y1="262" x2="96" y2="296"/>
+  <line class="rule" x1="136" y1="118" x2="136" y2="146"/>
+  <line class="rule" x1="136" y1="172" x2="136" y2="200"/>
+  <line class="rule" x1="136" y1="262" x2="136" y2="296"/>
+  <text class="sec" x="96" y="318" text-anchor="middle">1x</text>
+  <text class="sec" x="142" y="318">1.5x: the bar to switch it on</text>
+</svg>

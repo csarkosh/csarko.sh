@@ -5,8 +5,19 @@
   <link href="https://csarko.sh/research" />
   <link rel="self" href="https://csarko.sh/research/feed.xml" />
   <id>https://csarko.sh/research</id>
-  <updated>2026-11-19T00:00:00Z</updated>
+  <updated>2026-11-21T00:00:00Z</updated>
   <author><name>Cyrus Sarkosh</name><uri>https://csarko.sh/</uri></author>
+  <entry>
+    <title>When WebAssembly is worth it in the browser</title>
+    <link href="https://csarko.sh/research/when-webassembly-is-worth-it" />
+    <id>https://csarko.sh/research/when-webassembly-is-worth-it</id>
+    <published>2026-11-21T00:00:00Z</published>
+    <updated>2026-11-21T00:00:00Z</updated>
+    <summary>A Rust port of a game&#39;s terrain maths ran twice as fast in a benchmark and matched to the bit, yet only 1.09 times in place. How to tell before you port.</summary>
+    <category term="Rendering" />
+    <category term="Worlds and terrain" />
+    <category term="Tooling" />
+  </entry>
   <entry>
     <title>Why a phone game stutters only while you touch the screen</title>
     <link href="https://csarko.sh/research/phone-120-hz-under-the-thumb" />
