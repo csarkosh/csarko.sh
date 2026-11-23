@@ -79,6 +79,13 @@ _FORWARD_DROP = ("return-path", "dkim-signature", "received", "authentication-re
                  "x-alias")
 _FORWARD_DROP_PREFIXES = ("arc-", "x-ses-", "x-original-")
 
+# Headers a message may carry once (RFC 5322 section 3.6, RFC 2045). SES refuses a send with two
+# of any of them ("Duplicate header 'MIME-Version'"), and some senders write one twice in two
+# spellings (TikTok's notices carry both Mime-Version and MIME-Version, 2026-11-23), so a
+# forward or a reply keeps the first and drops the rest, as a mail client reading it would.
+_SINGLE = ("date", "subject", "message-id", "in-reply-to", "mime-version", "content-type",
+           "content-transfer-encoding")
+
 # Any line break, the way the stdlib parser (and every mail client) sees one. Splitting a CRLF
 # header block on CRLF alone would let a lone LF hide a header inside the previous one's value.
 _EOL = re.compile(rb"\r\n|\r|\n")
@@ -215,6 +222,8 @@ def build_forward(raw: bytes, *, alias_local: str, base_domain: str, owner: str,
         # owner's own address. References is rebuilt below.
         if lower in ("from", "to", "reply-to", "cc", "bcc", "references"):
             continue
+        if lower in _SINGLE and any((k or "").lower() == lower for k, _ in kept):
+            continue
         kept.append([n, value])
 
     display = f"{_clean(name) or _clean(addr)} via {base_domain}"
@@ -299,6 +308,8 @@ def build_reply(raw: bytes, *, alias_local: str, domain: str, alias_name: Option
     for n, value in headers:
         lower = (n or "").lower()
         if lower not in _REPLY_KEEP:
+            continue
+        if lower in _SINGLE and any((k or "").lower() == lower for k, _ in kept):
             continue
         if lower in ("in-reply-to", "references"):
             # The owner's provider's own Message-IDs (an earlier reply of theirs) name the

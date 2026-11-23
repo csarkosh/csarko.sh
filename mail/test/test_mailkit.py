@@ -149,6 +149,16 @@ class BuildForward(unittest.TestCase):
         self.assertEqual(parse(out)["From"].addresses[0].display_name, "Adá via csarko.sh")
 
 
+    def test_a_header_sent_twice_in_two_spellings_is_kept_once(self):
+        # TikTok's notices carry Mime-Version and MIME-Version; SES refused the forward
+        # ("Duplicate header 'MIME-Version'"), 2026-11-23.
+        raw = b"Mime-Version: 1.0\n" + FIX["plain"].replace(b"\n\n", b"\nMIME-Version: 1.0\n\n", 1)
+        out = build_forward(raw, **self.ARGS)
+        head = out[:out.index(b"\n\n")].lower()
+        self.assertEqual(head.count(b"\nmime-version:") + head.startswith(b"mime-version:"), 1)
+        self.assertTrue(out.endswith(raw[raw.index(b"\n\n"):]))
+
+
 class Tokens(unittest.TestCase):
     def test_shape(self):
         t = mint_token()
@@ -182,7 +192,6 @@ class IsOwner(unittest.TestCase):
     def test_header_mismatch_is_not_owner(self):
         self.assertFalse(is_owner(self.MAIL, self.PASS, FIX["plain"], "owner@example.net"))
 
-
 class BuildReply(unittest.TestCase):
     def built(self, name=None):
         raw = build_reply(FIX["gmail-reply"], alias_local="hello", domain="csarko.sh", alias_name=name, external="ada@example.com")
@@ -211,6 +220,11 @@ class BuildReply(unittest.TestCase):
         self.assertEqual(payloads(m), payloads(orig))
         src = FIX["gmail-reply"]
         self.assertTrue(raw.endswith(src[src.index(b"\n\n"):]))
+
+    def test_a_repeated_mime_version_is_kept_once(self):
+        raw = FIX["gmail-reply"].replace(b"\n\n", b"\nMime-Version: 1.0\n\n", 1)
+        out = build_reply(raw, alias_local="hello", domain="csarko.sh", alias_name=None, external="ada@example.com")
+        self.assertEqual(len(parse(out).get_all("MIME-Version")), 1)
 
     def test_each_reply_gets_its_own_message_id(self):
         self.assertNotEqual(self.built()[1]["Message-ID"], self.built()[1]["Message-ID"])
