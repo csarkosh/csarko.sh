@@ -420,12 +420,12 @@
     <category term="Rendering" />
   </entry>
   <entry>
-    <title>Reverse engineering an AI horror short</title>
+    <title>How to tell a horror short is AI-generated</title>
     <link href="https://csarko.sh/research/reverse-engineering-an-ai-horror-short" />
     <id>https://csarko.sh/research/reverse-engineering-an-ai-horror-short</id>
     <published>2026-09-26T00:00:00Z</published>
     <updated>2026-11-13T00:00:00Z</updated>
-    <summary>A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe.</summary>
+    <summary>Three tells in the picture prove a viral horror short was AI-generated with no tags to go on; then its five clips, its studio and a $14.10 recipe.</summary>
     <category term="AI" />
     <category term="Film" />
   </entry>

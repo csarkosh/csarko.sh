@@ -1,5 +1,5 @@
 ---
-description: A viral AI horror short, taken apart from its pixels: five image-to-video clips on one character reference, slowed and grained in an editor; a $14.10 recipe.
+description: Three tells in the picture prove a viral horror short was AI-generated with no tags to go on; then its five clips, its studio and a $14.10 recipe.
 published: 2026-09-26
 categories: AI, Film
 series: AI short films
@@ -12,7 +12,7 @@ project-line: The author of this page makes AI-generated horror shorts too. The 
 closing: Go back to the woman on the windowsill. The white shape that becomes her, the candles that change number within one take and the door lock that changes as the camera nears are the tells that settle that it was generated, and 19 to 21 new frames a second is the one that narrows the field of models. None of them needs the file's tags, only the picture, so the same checks can be tried on any clip. The Last Trail, a 56 second AI-generated horror short, is one to try them on.
 asks: How was a viral AI horror short made, and what does one like it cost?
 ---
-# Reverse engineering an AI horror short
+# How to tell a horror short is AI-generated
 
 **Question:** A 45 second vertical horror short turned up on Reddit with no credit: a grinning
 woman in a nightgown climbs out of a fifth floor window, and by the end she is climbing in through

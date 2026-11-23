@@ -5,6 +5,7 @@ categories: Rendering
 source: https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-07-ground-fog-in-aaa-games.md
 updated: 2026-11-13
 series: Rendering a browser forest
+related: photorealistic-rain-for-browser-games
 project: day-hike
 pill: See the night mist in Day Hike
 project-line: Day Hike, a co-op horror game that runs in your browser, first drew its night mist as camera-facing sprites, and it read as a wall. This research is why that mist became a volume the game steps through, up to 12 steps a pixel.
