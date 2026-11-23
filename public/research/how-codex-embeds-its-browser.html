@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>How Codex embeds its browser, and what a Rust IDE can copy · Cyrus Sarkosh</title>
-  <meta name="description" content="Codex&#39;s browser pane is an Electron webview guest of its own Chromium, driven over CDP by a plugin; a Rust IDE gets there with WKWebView, not by docking Chrome." />
+  <title>How Codex&#39;s in-app browser works · Cyrus Sarkosh</title>
+  <meta name="description" content="The Codex app&#39;s in-app browser is a Chromium webview inside its Electron window, driven over CDP by a bundled plugin, and what an app without Chromium can copy." />
   <link rel="canonical" href="https://csarko.sh/research/how-codex-embeds-its-browser" />
 
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="Cyrus Sarkosh" />
   <meta property="og:locale" content="en_US" />
   <meta property="og:url" content="https://csarko.sh/research/how-codex-embeds-its-browser" />
-  <meta property="og:title" content="How Codex embeds its browser, and what a Rust IDE can copy" />
-  <meta property="og:description" content="Codex&#39;s browser pane is an Electron webview guest of its own Chromium, driven over CDP by a plugin; a Rust IDE gets there with WKWebView, not by docking Chrome." />
+  <meta property="og:title" content="How Codex&#39;s in-app browser works" />
+  <meta property="og:description" content="The Codex app&#39;s in-app browser is a Chromium webview inside its Electron window, driven over CDP by a bundled plugin, and what an app without Chromium can copy." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -22,8 +22,8 @@
   <meta property="article:author" content="https://csarko.sh/" />
   <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="How Codex embeds its browser, and what a Rust IDE can copy" />
-  <meta name="twitter:description" content="Codex&#39;s browser pane is an Electron webview guest of its own Chromium, driven over CDP by a plugin; a Rust IDE gets there with WKWebView, not by docking Chrome." />
+  <meta name="twitter:title" content="How Codex&#39;s in-app browser works" />
+  <meta name="twitter:description" content="The Codex app&#39;s in-app browser is a Chromium webview inside its Electron window, driven over CDP by a bundled plugin, and what an app without Chromium can copy." />
   <meta name="twitter:image" content="https://csarko.sh/og-image.jpg" />
   <meta name="twitter:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
 
@@ -46,8 +46,8 @@
     {
       "@type": "TechArticle",
       "@id": "https://csarko.sh/research/how-codex-embeds-its-browser#article",
-      "headline": "How Codex embeds its browser, and what a Rust IDE can copy",
-      "description": "Codex's browser pane is an Electron webview guest of its own Chromium, driven over CDP by a plugin; a Rust IDE gets there with WKWebView, not by docking Chrome.",
+      "headline": "How Codex's in-app browser works",
+      "description": "The Codex app's in-app browser is a Chromium webview inside its Electron window, driven over CDP by a bundled plugin, and what an app without Chromium can copy.",
       "datePublished": "2026-10-24",
       "dateModified": "2026-11-13",
       "url": "https://csarko.sh/research/how-codex-embeds-its-browser",
@@ -89,7 +89,7 @@
         {
           "@type": "ListItem",
           "position": 3,
-          "name": "How Codex embeds its browser, and what a Rust IDE can copy",
+          "name": "How Codex's in-app browser works",
           "item": "https://csarko.sh/research/how-codex-embeds-its-browser"
         }
       ]
@@ -421,7 +421,7 @@
       <ol>
         <li><a href="/" data-visits-event="crumb-home">Home</a></li>
         <li><a href="/research">Research</a></li>
-        <li><span aria-current="page">How Codex embeds its browser, and what a Rust IDE can copy</span></li>
+        <li><span aria-current="page">How Codex&#39;s in-app browser works</span></li>
       </ol>
     </div>
   </nav>
@@ -443,8 +443,8 @@
     <main id="top" tabindex="-1">
       <header class="doc-header">
         <p class="eyebrow">Oct 24, 2026 · Updated Nov 13, 2026</p>
-        <h1>How Codex embeds its browser, and what a Rust IDE can copy</h1>
-        <p class="lead">Codex&#39;s browser pane is an Electron webview guest of its own Chromium, driven over CDP by a plugin; a Rust IDE gets there with WKWebView, not by docking Chrome.</p>
+        <h1>How Codex&#39;s in-app browser works</h1>
+        <p class="lead">The Codex app&#39;s in-app browser is a Chromium webview inside its Electron window, driven over CDP by a bundled plugin, and what an app without Chromium can copy.</p>
         <ul class="tags">
           <li>9 min read</li>
         </ul>

@@ -138,12 +138,12 @@
     <category term="Tooling" />
   </entry>
   <entry>
-    <title>How Codex embeds its browser, and what a Rust IDE can copy</title>
+    <title>How Codex&#39;s in-app browser works</title>
     <link href="https://csarko.sh/research/how-codex-embeds-its-browser" />
     <id>https://csarko.sh/research/how-codex-embeds-its-browser</id>
     <published>2026-10-24T00:00:00Z</published>
     <updated>2026-11-13T00:00:00Z</updated>
-    <summary>Codex&#39;s browser pane is an Electron webview guest of its own Chromium, driven over CDP by a plugin; a Rust IDE gets there with WKWebView, not by docking Chrome.</summary>
+    <summary>The Codex app&#39;s in-app browser is a Chromium webview inside its Electron window, driven over CDP by a bundled plugin, and what an app without Chromium can copy.</summary>
     <category term="AI" />
     <category term="Tooling" />
   </entry>

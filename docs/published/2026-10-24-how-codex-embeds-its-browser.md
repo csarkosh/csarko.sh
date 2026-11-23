@@ -1,5 +1,5 @@
 ---
-description: Codex's browser pane is an Electron webview guest of its own Chromium, driven over CDP by a plugin; a Rust IDE gets there with WKWebView, not by docking Chrome.
+description: The Codex app's in-app browser is a Chromium webview inside its Electron window, driven over CDP by a bundled plugin, and what an app without Chromium can copy.
 published: 2026-10-24
 categories: Tooling, AI
 series: Arkos IDE notes
@@ -10,7 +10,7 @@ project-line: This research was done for Arkos IDE, a Mac app that keeps many Cl
 closing: Look again at the diagram at the top: the pane sits inside Codex's own window. Arkos IDE's browser tab has that and the separate profile: WebKit draws the page in a view of the Arkos window, and its pages keep a profile apart from Safari and Chrome. CDP is the part Arkos IDE does not have: its coding agents put a page in the pane with the arkos open command.
 asks: How does the Codex app embed its browser, and can a non-Electron app copy it?
 ---
-# How Codex embeds its browser, and what a Rust IDE can copy
+# How Codex's in-app browser works
 
 **Question:** Arkos IDE, a Rust app with no browser engine of its own, wanted what the Codex
 desktop app has: a browser pane beside the chat that the agent can drive. How does Codex do it,
