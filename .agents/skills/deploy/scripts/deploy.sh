@@ -68,7 +68,10 @@ echo "→ project  $PROJECT"
 echo "→ site     $SITE"
 
 if [[ "$MODE" == "preview" ]]; then
-  npx -y firebase-tools hosting:channel:deploy preview --only "$SITE" --expires 7d --project "$PROJECT" --non-interactive
+  # --no-authorized-domains: by default the CLI adds the channel's address to Firebase Auth's
+  # authorized domains, which Terraform owns (module.gcp_auth), so every preview left a domain
+  # the next plan wanted to remove. The public site has no sign-in, so the address needs none.
+  npx -y firebase-tools hosting:channel:deploy preview --only "$SITE" --expires 7d --project "$PROJECT" --non-interactive --no-authorized-domains
   echo
   echo "✓ preview channel deployed (the URL is printed above; it expires in 7 days)"
   exit 0
