@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 596" width="420" height="596" role="img" aria-labelledby="t">
+  <title id="t">Dot chart of street grids in 21 coastal towns by bearing from true north, folded to minus 45 to plus 45 degrees, with each grid's share of street length. One grid: Astoria, Raymond, Montesano, Ilwaco, Long Beach, Ocean Shores, Oysterville, Tokeland, McCleary, Pe Ell, Forks, Naselle. Two grids: Aberdeen, Hoquiam, Port Angeles, South Bend, Cosmopolis, Elma, Westport. Three grids: Port Townsend, Port Gamble.</title>
+  <style>
+    text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 12px; fill: #e8eaf0; }
+    .title { font-size: 16px; font-weight: 600; }
+    .sec { fill: #a0a8b8; }
+    .main { fill: #7dd3c0; }
+    .other { fill: #f5c451; }
+    .grid { stroke: #a0a8b8; stroke-width: 1; opacity: 0.35; }
+    .zero { stroke: #a0a8b8; stroke-width: 1.5; opacity: 0.8; }
+    @media (prefers-color-scheme: light) {
+      text { fill: #12151c; }
+      .sec { fill: #4a5263; }
+      .main { fill: #0a735f; }
+      .other { fill: #8a6100; }
+      .grid { stroke: #4a5263; }
+      .zero { stroke: #4a5263; }
+    }
+  </style>
+  <text class="title" x="16" y="26">Street grids in 21 coastal towns, by bearing</text>
+  <text class="sec" x="16" y="46">Dot size and label: the grid's share of street length.</text>
+  <line class="grid" x1="100.0" y1="74" x2="100.0" y2="540"/>
+  <text class="sec" x="100.0" y="68" text-anchor="middle">-45</text>
+  <line class="grid" x1="141.7" y1="74" x2="141.7" y2="540"/>
+  <text class="sec" x="141.7" y="68" text-anchor="middle">-30</text>
+  <line class="grid" x1="183.3" y1="74" x2="183.3" y2="540"/>
+  <text class="sec" x="183.3" y="68" text-anchor="middle">-15</text>
+  <line class="zero" x1="225.0" y1="74" x2="225.0" y2="540"/>
+  <text class="sec" x="225.0" y="68" text-anchor="middle">0</text>
+  <line class="grid" x1="266.7" y1="74" x2="266.7" y2="540"/>
+  <text class="sec" x="266.7" y="68" text-anchor="middle">+15</text>
+  <line class="grid" x1="308.3" y1="74" x2="308.3" y2="540"/>
+  <text class="sec" x="308.3" y="68" text-anchor="middle">+30</text>
+  <line class="grid" x1="350.0" y1="74" x2="350.0" y2="540"/>
+  <text class="sec" x="350.0" y="68" text-anchor="middle">+45</text>
+  <text class="sec" x="225" y="560" text-anchor="middle">Degrees clockwise from true north, folded to</text>
+  <text class="sec" x="225" y="576" text-anchor="middle">-45 to +45 (a grid also runs 90 degrees from it)</text>
+  <text class="sec" x="410" y="68" text-anchor="end">No grid</text>
+  <text x="16" y="92">Aberdeen</text>
+  <circle class="main" cx="226.4" cy="88" r="7.4"/>
+  <text class="sec" x="236.8" y="92" style="font-size:10px">58%</text>
+  <circle class="other" cx="123.6" cy="88" r="5.7"/>
+  <text class="sec" x="132.4" y="92" style="font-size:10px">25%</text>
+  <text class="sec" x="410" y="92" text-anchor="end">18%</text>
+  <text x="16" y="114">Hoquiam</text>
+  <circle class="main" cx="226.4" cy="110" r="7.4"/>
+  <text class="sec" x="236.8" y="114" style="font-size:10px">56%</text>
+  <circle class="other" cx="104.2" cy="110" r="5.6"/>
+  <text class="sec" x="112.8" y="114" style="font-size:10px">23%</text>
+  <text class="sec" x="410" y="114" text-anchor="end">20%</text>
+  <text x="16" y="136">Port Angeles</text>
+  <circle class="main" cx="312.5" cy="132" r="7.5"/>
+  <text class="sec" x="323.0" y="136" style="font-size:10px">60%</text>
+  <circle class="other" cx="229.2" cy="132" r="5.9"/>
+  <text class="sec" x="238.1" y="136" style="font-size:10px">28%</text>
+  <text class="sec" x="410" y="136" text-anchor="end">12%</text>
+  <text x="16" y="158">Astoria</text>
+  <circle class="main" cx="229.2" cy="154" r="7.4"/>
+  <text class="sec" x="239.6" y="158" style="font-size:10px">57%</text>
+  <text class="sec" x="410" y="158" text-anchor="end">43%</text>
+  <text x="16" y="180">Port Townsend</text>
+  <circle class="main" cx="223.6" cy="176" r="6.9"/>
+  <text class="sec" x="233.5" y="180" style="font-size:10px">46%</text>
+  <circle class="other" cx="137.5" cy="176" r="6.0"/>
+  <text class="sec" x="146.5" y="180" style="font-size:10px">30%</text>
+  <circle class="other" cx="254.2" cy="176" r="5.0"/>
+  <text class="sec" x="262.2" y="180" style="font-size:10px">15%</text>
+  <text class="sec" x="410" y="180" text-anchor="end">9%</text>
+  <text x="16" y="202">Raymond</text>
+  <circle class="main" cx="223.6" cy="198" r="7.6"/>
+  <text class="sec" x="234.2" y="202" style="font-size:10px">61%</text>
+  <text class="sec" x="410" y="202" text-anchor="end">39%</text>
+  <text x="16" y="224">South Bend</text>
+  <circle class="main" cx="229.2" cy="220" r="7.1"/>
+  <text class="sec" x="239.2" y="224" style="font-size:10px">49%</text>
+  <circle class="other" cx="118.1" cy="220" r="5.4"/>
+  <text class="sec" x="126.4" y="224" style="font-size:10px">20%</text>
+  <text class="sec" x="410" y="224" text-anchor="end">31%</text>
+  <text x="16" y="246">Cosmopolis</text>
+  <circle class="main" cx="118.1" cy="242" r="6.8"/>
+  <text class="sec" x="127.8" y="246" style="font-size:10px">43%</text>
+  <circle class="other" cx="226.4" cy="242" r="6.7"/>
+  <text class="sec" x="236.1" y="246" style="font-size:10px">43%</text>
+  <text class="sec" x="410" y="246" text-anchor="end">14%</text>
+  <text x="16" y="268">Montesano</text>
+  <circle class="main" cx="226.4" cy="264" r="7.7"/>
+  <text class="sec" x="237.1" y="268" style="font-size:10px">63%</text>
+  <text class="sec" x="410" y="268" text-anchor="end">37%</text>
+  <text x="16" y="290">Elma</text>
+  <circle class="main" cx="220.8" cy="286" r="7.8"/>
+  <text class="sec" x="231.7" y="290" style="font-size:10px">68%</text>
+  <circle class="other" cx="156.9" cy="286" r="5.1"/>
+  <text class="sec" x="165.0" y="290" style="font-size:10px">16%</text>
+  <text class="sec" x="410" y="290" text-anchor="end">17%</text>
+  <text x="16" y="312">Westport</text>
+  <circle class="main" cx="226.4" cy="308" r="8.1"/>
+  <text class="sec" x="237.5" y="312" style="font-size:10px">75%</text>
+  <circle class="other" cx="343.1" cy="308" r="4.8"/>
+  <text class="sec" x="350.8" y="312" style="font-size:10px">12%</text>
+  <text class="sec" x="410" y="312" text-anchor="end">13%</text>
+  <text x="16" y="334">Ilwaco</text>
+  <circle class="main" cx="226.4" cy="330" r="7.0"/>
+  <text class="sec" x="236.3" y="334" style="font-size:10px">47%</text>
+  <text class="sec" x="410" y="334" text-anchor="end">53%</text>
+  <text x="16" y="356">Long Beach</text>
+  <circle class="main" cx="231.9" cy="352" r="8.9"/>
+  <text class="sec" x="243.8" y="356" style="font-size:10px">96%</text>
+  <text class="sec" x="410" y="356" text-anchor="end">4%</text>
+  <text x="16" y="378">Ocean Shores</text>
+  <circle class="main" cx="220.8" cy="374" r="6.7"/>
+  <text class="sec" x="230.5" y="378" style="font-size:10px">42%</text>
+  <text class="sec" x="410" y="378" text-anchor="end">58%</text>
+  <text x="16" y="400">Oysterville</text>
+  <circle class="main" cx="229.2" cy="396" r="8.6"/>
+  <text class="sec" x="240.7" y="400" style="font-size:10px">87%</text>
+  <text class="sec" x="410" y="400" text-anchor="end">13%</text>
+  <text x="16" y="422">Tokeland</text>
+  <circle class="main" cx="309.7" cy="418" r="7.8"/>
+  <text class="sec" x="320.5" y="422" style="font-size:10px">66%</text>
+  <text class="sec" x="410" y="422" text-anchor="end">34%</text>
+  <text x="16" y="444">Port Gamble</text>
+  <circle class="main" cx="226.4" cy="440" r="6.6"/>
+  <text class="sec" x="235.9" y="444" style="font-size:10px">39%</text>
+  <circle class="other" cx="262.5" cy="440" r="5.7"/>
+  <text class="sec" x="271.2" y="444" style="font-size:10px">25%</text>
+  <circle class="other" cx="173.6" cy="440" r="5.6"/>
+  <text class="sec" x="182.2" y="444" style="font-size:10px">23%</text>
+  <text class="sec" x="410" y="444" text-anchor="end">13%</text>
+  <text x="16" y="466">McCleary</text>
+  <circle class="main" cx="229.2" cy="462" r="7.1"/>
+  <text class="sec" x="239.2" y="466" style="font-size:10px">49%</text>
+  <text class="sec" x="410" y="466" text-anchor="end">51%</text>
+  <text x="16" y="488">Pe Ell</text>
+  <circle class="main" cx="223.6" cy="484" r="7.9"/>
+  <text class="sec" x="234.5" y="488" style="font-size:10px">69%</text>
+  <text class="sec" x="410" y="488" text-anchor="end">31%</text>
+  <text x="16" y="510">Forks</text>
+  <circle class="main" cx="229.2" cy="506" r="8.0"/>
+  <text class="sec" x="240.2" y="510" style="font-size:10px">72%</text>
+  <text class="sec" x="410" y="510" text-anchor="end">28%</text>
+  <text x="16" y="532">Naselle</text>
+  <circle class="main" cx="234.7" cy="528" r="6.3"/>
+  <text class="sec" x="244.0" y="532" style="font-size:10px">34%</text>
+  <text class="sec" x="410" y="532" text-anchor="end">66%</text>
+</svg>

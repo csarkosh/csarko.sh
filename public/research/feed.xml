@@ -5,8 +5,18 @@
   <link href="https://csarko.sh/research" />
   <link rel="self" href="https://csarko.sh/research/feed.xml" />
   <id>https://csarko.sh/research</id>
-  <updated>2026-11-21T00:00:00Z</updated>
+  <updated>2026-11-22T00:00:00Z</updated>
   <author><name>Cyrus Sarkosh</name><uri>https://csarko.sh/</uri></author>
+  <entry>
+    <title>How Cascadia&#39;s coastal port towns came to look the way they do</title>
+    <link href="https://csarko.sh/research/how-cascadia-port-towns-grew" />
+    <id>https://csarko.sh/research/how-cascadia-port-towns-grew</id>
+    <published>2026-11-22T00:00:00Z</published>
+    <updated>2026-11-22T00:00:00Z</updated>
+    <summary>Sawmills, railroads and the 1889 to 1893 speculation placed Washington&#39;s coast port towns; 21 street grids measured from OpenStreetMap show how each differs.</summary>
+    <category term="Worlds and terrain" />
+    <category term="Game design" />
+  </entry>
   <entry>
     <title>When WebAssembly is worth it in the browser</title>
     <link href="https://csarko.sh/research/when-webassembly-is-worth-it" />
