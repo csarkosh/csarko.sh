@@ -18,7 +18,7 @@
 
 import * as gscMap from "./collectors/gsc.mjs";
 import { groupReferrers } from "./referrers.mjs";
-import { pathsOf, normalizePath } from "./collectors/sitemap.mjs";
+import { pathsOf, normalizePath, NotASitemap } from "./collectors/sitemap.mjs";
 import { assessHealth } from "./health.mjs";
 import { addDays, isoDate, hourlyRange, dailyRangeThrough } from "./time.mjs";
 import { ANALYTICS_LAG } from "./collectors/youtube-analytics.mjs";
@@ -225,7 +225,11 @@ export function createQueries({ visits, gsc, youtube, youtubeAnalytics = null, g
       if (!hosts.has(host)) {
         hosts.set(host, (async () => {
           if (typeof sitemapFor !== "function") return null;
-          try { return pathsOf(await sitemapFor(host).urls()); } catch (error) { log.error(`admin: sitemap of ${host} failed`, error); return null; }
+          try { return pathsOf(await sitemapFor(host).urls()); } catch (error) {
+            // A host that has no sitemap is not a failure, only a host whose paths are not judged.
+            if (!(error instanceof NotASitemap)) log.error(`admin: sitemap of ${host} failed`, error);
+            return null;
+          }
         })());
       }
       return hosts.get(host);

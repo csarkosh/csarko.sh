@@ -5,7 +5,7 @@ import { generateKeyPairSync, createVerify } from "node:crypto";
 import { createCache } from "../src/cache.mjs";
 import { createGsc, signedJwt, isIndexed, perDayOf, totalsOf, topRowsOf, classifyApiError } from "../src/collectors/gsc.mjs";
 import { dailyRange } from "../src/time.mjs";
-import { locsOf, pathsOf, normalizePath } from "../src/collectors/sitemap.mjs";
+import { locsOf, pathsOf, normalizePath, createSitemap, isSitemap, NotASitemap } from "../src/collectors/sitemap.mjs";
 
 const rows = JSON.parse(readFileSync(new URL("./fixtures/gsc-dates.json", import.meta.url), "utf8")).rows;
 
@@ -117,4 +117,15 @@ test("the sitemap's locs and paths", () => {
   assert.deepEqual([...pathsOf(locs)], ["/", "/research/a&b"]);
   assert.equal(normalizePath("/games/?ref=x"), "/games");
   assert.equal(normalizePath("/"), "/");
+});
+
+test("a page served where the sitemap should be is no sitemap, not an empty one", async () => {
+  assert.equal(isSitemap(`<?xml version="1.0"?><urlset xmlns="x"><url><loc>https://a/</loc></url></urlset>`), true);
+  assert.equal(isSitemap(`<sitemapindex xmlns="x"></sitemapindex>`), true);
+  // games.csarko.sh's catch-all rewrite answers /sitemap.xml with its redirect page (2026-11-23).
+  const page = `<!doctype html><html lang="en"><head><title>Day Hike</title></head></html>`;
+  assert.equal(isSitemap(page), false);
+  const cache = { get: (_k, _t, load) => load() };
+  const sitemap = createSitemap({ url: "https://games.csarko.sh/sitemap.xml", cache, fetch: async () => ({ ok: true, text: async () => page }) });
+  await assert.rejects(sitemap.urls(), NotASitemap);
 });
