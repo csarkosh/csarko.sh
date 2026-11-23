@@ -1,5 +1,5 @@
 ---
-description: A painterly post chain on WebGPU and WebGL2: the same look on both, but a stroke filter written with sector arrays cost 12.5 ms on WebGPU against 2.1 ms.
+description: The same oil-paint look on both APIs, but a stroke filter written with sector arrays took 12.5 ms on WebGPU against 2.1 ms on WebGL2. Why, and the fix.
 published: 2026-10-17
 categories: Rendering
 updated: 2026-11-13
@@ -11,7 +11,7 @@ project-line: This is how the painted look of Day Hike, a co-op horror game that
 closing: The 25.5 ms bar in the opening chart is the sector-array shape, which Day Hike does not use. Its stroke filter is written with named sums, the shape that added 2.3 ms a frame on both APIs: on the medium and high tiers it flattens the fine texture of bark and grass into strokes and keeps the edges. The umber shadows, olive midtones and cream highlights are the oils palette, the default.
 asks: Why can the same painterly shader cost far more on WebGPU than on WebGL2?
 ---
-# A painted look over a photoreal render: WebGPU against WebGL2
+# Why a painterly shader ran 6x slower on WebGPU than WebGL2
 
 **Question:** a browser game built to read as a photograph can be given the look of a landscape
 in oils with two full-screen shaders written once in GLSL, WebGL's shading language: a stroke
@@ -62,7 +62,7 @@ Day Hike is the worked example: a first-person hiking game in Babylon.js 9.18, p
 frame on an Apple M4 running Chrome 157, WebGPU through Metal and WebGL2 through ANGLE's Metal
 backend. As of Oct 17, 2026, the game's high tier draws with WebGPU in Chrome and Edge and
 everything else draws with WebGL2
-([WebGPU vs WebGL2: what changes and what does not](/research/webgpu-vs-webgl2)); the post
+([WebGPU vs WebGL2: is it faster in a real game?](/research/webgpu-vs-webgl2)); the post
 chain's prepass for the far field is the subject of
 [Scene depth for a post process](/research/scene-depth-for-a-post-process-webgpu-vs-webgl2).
 

@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>A painted look over a photoreal render: WebGPU against WebGL2 · Cyrus Sarkosh</title>
-  <meta name="description" content="A painterly post chain on WebGPU and WebGL2: the same look on both, but a stroke filter written with sector arrays cost 12.5 ms on WebGPU against 2.1 ms." />
+  <title>Why a painterly shader ran 6x slower on WebGPU than WebGL2 · Cyrus Sarkosh</title>
+  <meta name="description" content="The same oil-paint look on both APIs, but a stroke filter written with sector arrays took 12.5 ms on WebGPU against 2.1 ms on WebGL2. Why, and the fix." />
   <link rel="canonical" href="https://csarko.sh/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" />
 
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="Cyrus Sarkosh" />
   <meta property="og:locale" content="en_US" />
   <meta property="og:url" content="https://csarko.sh/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2" />
-  <meta property="og:title" content="A painted look over a photoreal render: WebGPU against WebGL2" />
-  <meta property="og:description" content="A painterly post chain on WebGPU and WebGL2: the same look on both, but a stroke filter written with sector arrays cost 12.5 ms on WebGPU against 2.1 ms." />
+  <meta property="og:title" content="Why a painterly shader ran 6x slower on WebGPU than WebGL2" />
+  <meta property="og:description" content="The same oil-paint look on both APIs, but a stroke filter written with sector arrays took 12.5 ms on WebGPU against 2.1 ms on WebGL2. Why, and the fix." />
   <meta property="og:image" content="https://csarko.sh/og-image.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -22,8 +22,8 @@
   <meta property="article:author" content="https://csarko.sh/" />
   <link rel="alternate" type="application/atom+xml" title="Research by Cyrus Sarkosh" href="/research/feed.xml" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="A painted look over a photoreal render: WebGPU against WebGL2" />
-  <meta name="twitter:description" content="A painterly post chain on WebGPU and WebGL2: the same look on both, but a stroke filter written with sector arrays cost 12.5 ms on WebGPU against 2.1 ms." />
+  <meta name="twitter:title" content="Why a painterly shader ran 6x slower on WebGPU than WebGL2" />
+  <meta name="twitter:description" content="The same oil-paint look on both APIs, but a stroke filter written with sector arrays took 12.5 ms on WebGPU against 2.1 ms on WebGL2. Why, and the fix." />
   <meta name="twitter:image" content="https://csarko.sh/og-image.jpg" />
   <meta name="twitter:image:alt" content="Cyrus Sarkosh, Senior Software Engineer in New York, with his portrait" />
 
@@ -46,13 +46,13 @@
     {
       "@type": "TechArticle",
       "@id": "https://csarko.sh/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2#article",
-      "headline": "A painted look over a photoreal render: WebGPU against WebGL2",
-      "description": "A painterly post chain on WebGPU and WebGL2: the same look on both, but a stroke filter written with sector arrays cost 12.5 ms on WebGPU against 2.1 ms.",
+      "headline": "Why a painterly shader ran 6x slower on WebGPU than WebGL2",
+      "description": "The same oil-paint look on both APIs, but a stroke filter written with sector arrays took 12.5 ms on WebGPU against 2.1 ms on WebGL2. Why, and the fix.",
       "datePublished": "2026-10-17",
       "dateModified": "2026-11-13",
       "url": "https://csarko.sh/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2",
       "mainEntityOfPage": "https://csarko.sh/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2",
-      "wordCount": 3247,
+      "wordCount": 3248,
       "inLanguage": "en",
       "image": "https://csarko.sh/og-image.jpg",
       "author": {
@@ -92,7 +92,7 @@
         {
           "@type": "ListItem",
           "position": 3,
-          "name": "A painted look over a photoreal render: WebGPU against WebGL2",
+          "name": "Why a painterly shader ran 6x slower on WebGPU than WebGL2",
           "item": "https://csarko.sh/research/a-painted-look-over-a-photoreal-render-webgpu-vs-webgl2"
         }
       ]
@@ -424,7 +424,7 @@
       <ol>
         <li><a href="/" data-visits-event="crumb-home">Home</a></li>
         <li><a href="/research">Research</a></li>
-        <li><span aria-current="page">A painted look over a photoreal render: WebGPU against WebGL2</span></li>
+        <li><span aria-current="page">Why a painterly shader ran 6x slower on WebGPU than WebGL2</span></li>
       </ol>
     </div>
   </nav>
@@ -447,8 +447,8 @@
     <main id="top" tabindex="-1">
       <header class="doc-header">
         <p class="eyebrow">Oct 17, 2026 · Updated Nov 13, 2026</p>
-        <h1>A painted look over a photoreal render: WebGPU against WebGL2</h1>
-        <p class="lead">A painterly post chain on WebGPU and WebGL2: the same look on both, but a stroke filter written with sector arrays cost 12.5 ms on WebGPU against 2.1 ms.</p>
+        <h1>Why a painterly shader ran 6x slower on WebGPU than WebGL2</h1>
+        <p class="lead">The same oil-paint look on both APIs, but a stroke filter written with sector arrays took 12.5 ms on WebGPU against 2.1 ms on WebGL2. Why, and the fix.</p>
         <ul class="tags">
           <li>12 min read</li>
           <li><a class="external" href="https://github.com/csarkosh/game-dayhike/blob/main/docs/rendering/2026-10-17-painted-post-webgpu-vs-webgl2.md" target="_blank" rel="noopener">Also on GitHub</a></li>
@@ -524,7 +524,7 @@ Day Hike is the worked example: a first-person hiking game in Babylon.js 9.18, p
 frame on an Apple M4 running Chrome 157, WebGPU through Metal and WebGL2 through ANGLE&#39;s Metal
 backend. As of Oct 17, 2026, the game&#39;s high tier draws with WebGPU in Chrome and Edge and
 everything else draws with WebGL2
-(<a href="/research/webgpu-vs-webgl2" data-visits-event="doc-webgpu-vs-webgl2">WebGPU vs WebGL2: what changes and what does not</a>); the post
+(<a href="/research/webgpu-vs-webgl2" data-visits-event="doc-webgpu-vs-webgl2">WebGPU vs WebGL2: is it faster in a real game?</a>); the post
 chain&#39;s prepass for the far field is the subject of
 <a href="/research/scene-depth-for-a-post-process-webgpu-vs-webgl2" data-visits-event="doc-scene-depth-for-a-post-process-webgpu-vs-webgl2">Scene depth for a post process</a>.</p>
 <p>Three things, read off landscape painting in oils, and each a different part of

@@ -53,7 +53,7 @@ is Day Hike, a first-person hiking game in Babylon.js 9.18, public at
 [game-dayhike](https://github.com/csarkosh/game-dayhike) and playable at
 [games.csarko.sh/dayhike](https://games.csarko.sh/dayhike/). As of Oct 16, 2026, its high tier draws with
 WebGPU in Chrome and Edge and everything else draws with WebGL2
-([WebGPU vs WebGL2: what changes and what does not](/research/webgpu-vs-webgl2)).
+([WebGPU vs WebGL2: is it faster in a real game?](/research/webgpu-vs-webgl2)).
 The post process in question softens the far field, part of the work in
 [A full far field](/research/full-far-field-for-browser-worlds): past 80 m of camera
 depth the frame is blurred by a radius rising to 5 texels at 450 m, each read kept

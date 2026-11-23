@@ -1,5 +1,5 @@
 ---
-description: WebGPU vs WebGL2, measured in a Babylon.js game: 1.3 to 1.5 ms faster per frame at native resolution, 9.9 ms at 4x the pixels, for 2.7 MB of shader translators.
+description: Measured in a Babylon.js game: WebGPU is 1.3 to 1.5 ms faster per frame at native resolution and 9.9 ms faster at 4x the pixels, for a 913 KB larger download.
 published: 2026-09-27
 categories: Rendering
 updated: 2026-11-13
@@ -11,7 +11,7 @@ project-line: This page's own measurements were all taken in Day Hike, a first-p
 closing: The bars this page opened on are one Day Hike pose: grass under a closed canopy, in mist, at noon. Since Sep 28, 2026 the game has drawn its high quality tier with WebGPU by default in Chrome and Edge on macOS and Windows, and has kept Safari and Firefox on WebGL2, the second render path section 4.2 says to keep. Adding ?engine=webgl2 to the game's address forces the WebGL2 path, so the two can be compared on one machine.
 asks: Is WebGPU actually faster than WebGL2 in a real game?
 ---
-# WebGPU vs WebGL2: what changes and what does not
+# WebGPU vs WebGL2: is it faster in a real game?
 
 **Question:** What does WebGPU change against WebGL2 in how a browser builds a frame, and where
 does that make a real game faster? Where can it not, and what goes wrong on the way?

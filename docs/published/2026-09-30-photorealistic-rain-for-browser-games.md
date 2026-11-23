@@ -67,7 +67,7 @@ on a coast and forest like Washington's Olympic Peninsula, whose rain, as of Sep
 particle box that followed the camera. It is public at [game-dayhike](https://github.com/csarkosh/game-dayhike)
 and playable at [games.csarko.sh/dayhike](https://games.csarko.sh/dayhike/); its
 renderer's two paths are described in
-[WebGPU vs WebGL2: what changes and what does not](/research/webgpu-vs-webgl2), its
+[WebGPU vs WebGL2: is it faster in a real game?](/research/webgpu-vs-webgl2), its
 post-processing in [Atmosphere and dread shaders](/research/atmosphere-and-dread-shaders),
 and its water in
 [Photorealistic water rendering: lakes and oceans](/research/photorealistic-water-rendering).
