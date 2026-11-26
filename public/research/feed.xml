@@ -5,8 +5,17 @@
   <link href="https://csarko.sh/research" />
   <link rel="self" href="https://csarko.sh/research/feed.xml" />
   <id>https://csarko.sh/research</id>
-  <updated>2026-11-23T00:00:00Z</updated>
+  <updated>2026-11-26T00:00:00Z</updated>
   <author><name>Cyrus Sarkosh</name><uri>https://csarko.sh/</uri></author>
+  <entry>
+    <title>An ink line in WebGPU that outlines shapes, not textures</title>
+    <link href="https://csarko.sh/research/ink-line-from-depth-webgpu" />
+    <id>https://csarko.sh/research/ink-line-from-depth-webgpu</id>
+    <published>2026-11-26T00:00:00Z</published>
+    <updated>2026-11-26T00:00:00Z</updated>
+    <summary>An ink line found from the second difference of inverse depth outlines objects, ignores texture and glancing walls, and costs five depth reads a pixel.</summary>
+    <category term="Rendering" />
+  </entry>
   <entry>
     <title>How to run many Claude Code sessions at once</title>
     <link href="https://csarko.sh/research/run-many-claude-code-sessions-at-once" />
