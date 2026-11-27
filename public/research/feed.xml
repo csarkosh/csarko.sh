@@ -8,6 +8,16 @@
   <updated>2026-11-26T00:00:00Z</updated>
   <author><name>Cyrus Sarkosh</name><uri>https://csarko.sh/</uri></author>
   <entry>
+    <title>How big games give sand volume, and what fits a browser game</title>
+    <link href="https://csarko.sh/research/giving-sand-volume-in-a-browser-game" />
+    <id>https://csarko.sh/research/giving-sand-volume-in-a-browser-game</id>
+    <published>2026-11-26T00:00:00Z</published>
+    <updated>2026-11-26T00:00:00Z</updated>
+    <summary>Big games give sand volume by stacking cheap cues, not one trick. Six reasons a beach reads as paint, and the fixes that fit a browser game, in order.</summary>
+    <category term="Rendering" />
+    <category term="Game design" />
+  </entry>
+  <entry>
     <title>An ink line in WebGPU that outlines shapes, not textures</title>
     <link href="https://csarko.sh/research/ink-line-from-depth-webgpu" />
     <id>https://csarko.sh/research/ink-line-from-depth-webgpu</id>
